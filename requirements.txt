@@ -1,0 +1,7 @@
+# Core dependencies
+scapy>=2.4.0
+cryptography>=3.4.0
+
+# Development dependencies (optional)
+pytest>=7.0.0
+pytest-cov>=3.0.0

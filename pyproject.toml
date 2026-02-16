@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ja4plus"
+version = "0.2.0"
+description = "JA4+ network fingerprinting library for TLS, TCP, HTTP, SSH, and X.509 analysis"
+readme = "README.md"
+license = "BSD-3-Clause"
+requires-python = ">=3.8"
+keywords = ["ja4", "ja4plus", "fingerprinting", "tls", "tcp", "http", "ssh", "x509", "network", "security", "scapy"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Topic :: Security",
+    "Topic :: System :: Networking :: Monitoring",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "scapy>=2.4.0",
+    "cryptography>=3.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Crank-Git/ja4plus"
+"Bug Tracker" = "https://github.com/Crank-Git/ja4plus/issues"
+"Source Code" = "https://github.com/Crank-Git/ja4plus"
+Documentation = "https://github.com/Crank-Git/ja4plus/tree/main/docs"
+"JA4+ Specification" = "https://github.com/FoxIO-LLC/ja4"
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "tests.*", "examples"]
