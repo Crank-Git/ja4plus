@@ -302,6 +302,49 @@ def cmd_cert(args):
     _output_results(results, args.format, csv_writer, ja4db_client)
 
 
+def cmd_db(args):
+    """Handle the 'db' subcommand."""
+    import csv as csv_mod
+    from ja4plus.ja4db import _BUNDLED_CSV, _MAPPING_URL, _load_bundled_db
+
+    if args.db_command == "info":
+        db = _load_bundled_db()
+        print(f"Database: {_BUNDLED_CSV}")
+        print(f"Entries:  {len(db)}")
+        if os.path.exists(_BUNDLED_CSV):
+            import time
+            mtime = os.path.getmtime(_BUNDLED_CSV)
+            print(f"Updated:  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))}")
+        print(f"Source:   {_MAPPING_URL}")
+        return
+
+    # db update
+    print(f"Downloading latest fingerprint database from FoxIO...")
+    try:
+        import urllib.request
+        data = urllib.request.urlopen(_MAPPING_URL, timeout=15).read().decode("utf-8")
+    except Exception as e:
+        print(f"Error: could not download database: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Validate it's a real CSV with expected headers
+    lines = data.strip().split("\n")
+    if len(lines) < 2 or "Application" not in lines[0]:
+        print("Error: downloaded file does not look like a valid ja4plus-mapping.csv", file=sys.stderr)
+        sys.exit(1)
+
+    # Count entries
+    reader = csv_mod.DictReader(lines)
+    entry_count = sum(1 for row in reader if any(row.get(f, "").strip() for f in ("ja4", "ja4s", "ja4h", "ja4x", "ja4t")))
+
+    # Write to bundled location
+    os.makedirs(os.path.dirname(_BUNDLED_CSV), exist_ok=True)
+    with open(_BUNDLED_CSV, "w", encoding="utf-8") as f:
+        f.write(data)
+
+    print(f"Updated: {entry_count} fingerprint entries written to {_BUNDLED_CSV}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="ja4plus",
@@ -350,6 +393,16 @@ def main():
     )
     cert_parser.add_argument("cert_file", help="Path to certificate file (DER or PEM)")
 
+    # db subcommand
+    db_parser = subparsers.add_parser(
+        "db", help="Manage the fingerprint identification database"
+    )
+    db_sub = db_parser.add_subparsers(dest="db_command", metavar="ACTION")
+    db_sub.required = True
+    db_update_parser = db_sub.add_parser("update", help="Download latest fingerprint database from FoxIO")
+    db_update_parser.add_argument("--force", action="store_true", help="Update even if already up to date")
+    db_sub.add_parser("info", help="Show database location and entry count")
+
     args = parser.parse_args()
 
     if args.command == "analyze":
@@ -358,6 +411,8 @@ def main():
         cmd_live(args)
     elif args.command == "cert":
         cmd_cert(args)
+    elif args.command == "db":
+        cmd_db(args)
 
 
 if __name__ == "__main__":
