@@ -26,3 +26,31 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---
+
+DUAL-LICENSE NOTICE
+===================
+
+This repository has a dual-license structure:
+
+1. The ja4plus library code (this repository) is licensed under the
+   BSD 3-Clause License above.
+
+2. The JA4+ fingerprinting specifications themselves were created by
+   FoxIO-LLC. The fingerprinting methods JA4S, JA4H, JA4T, JA4TS, JA4L,
+   JA4X, and JA4SSH are implementations of those specifications and are
+   subject to the FoxIO License 1.1.
+
+   JA4 (TLS Client Fingerprinting) is open source under BSD-3-Clause
+   per FoxIO's own licensing terms.
+
+   The FoxIO License 1.1 is permissive for most use cases, including:
+   - Academic and research use
+   - Internal business use
+   - Security research and tooling
+
+   Commercial productization or resale of JA4+ fingerprinting (other than
+   JA4 itself) may require a separate commercial license from FoxIO.
+
+   Full terms: https://github.com/FoxIO-LLC/ja4/blob/main/LICENSE

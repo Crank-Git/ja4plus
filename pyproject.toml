@@ -7,7 +7,7 @@ name = "ja4plus"
 version = "0.2.0"
 description = "JA4+ network fingerprinting library for TLS, TCP, HTTP, SSH, and X.509 analysis"
 readme = "README.md"
-license = "BSD-3-Clause"
+license = "BSD-3-Clause AND LicenseRef-FoxIO-1.1"
 requires-python = ">=3.8"
 keywords = ["ja4", "ja4plus", "fingerprinting", "tls", "tcp", "http", "ssh", "x509", "network", "security", "scapy"]
 classifiers = [
