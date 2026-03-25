@@ -3,7 +3,10 @@ Enhanced TLS utility functions for JA4+ fingerprinting.
 """
 
 import struct
+import logging
 from scapy.all import Raw
+
+logger = logging.getLogger(__name__)
 
 
 def extract_tls_info(packet):
@@ -26,7 +29,8 @@ def extract_tls_info(packet):
     try:
         raw_data = bytes(packet[Raw])
         return parse_tls_handshake(raw_data)
-    except Exception:
+    except (ValueError, TypeError, AttributeError) as e:
+        logger.debug(f"Packet does not contain TLS data: {e}")
         return None
 
 
@@ -278,7 +282,8 @@ def _parse_sni(data):
             return hostname if hostname else True
 
         return True
-    except Exception:
+    except (ValueError, IndexError, UnicodeDecodeError) as e:
+        logger.debug(f"Failed to parse SNI: {e}")
         return True
 
 
@@ -297,8 +302,8 @@ def _parse_supported_versions_client(data):
             ver = (data[pos] << 8) | data[pos + 1]
             versions.append(ver)
             pos += 2
-    except Exception:
-        pass
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to parse supported_versions: {e}")
 
     return versions
 
@@ -325,8 +330,8 @@ def _parse_alpn(data):
             protocol = data[pos:pos + proto_len].decode('ascii', errors='ignore')
             protocols.append(protocol)
             pos += proto_len
-    except Exception:
-        pass
+    except (ValueError, IndexError, UnicodeDecodeError) as e:
+        logger.debug(f"Failed to parse ALPN: {e}")
 
     return protocols
 
@@ -346,8 +351,8 @@ def _parse_signature_algorithms(data):
             alg = (data[pos] << 8) | data[pos + 1]
             algorithms.append(alg)
             pos += 2
-    except Exception:
-        pass
+    except (ValueError, IndexError, struct.error) as e:
+        logger.debug(f"Failed to parse signature algorithms: {e}")
 
     return algorithms
 
