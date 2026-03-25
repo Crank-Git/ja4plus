@@ -1,0 +1,27 @@
+# Downloaded FoxIO test vectors (not committed)
+tests/foxio_vectors/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo

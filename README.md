@@ -131,6 +131,16 @@ pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
+## Spec Validation
+
+ja4plus is validated against [FoxIO's official test vectors](https://github.com/FoxIO-LLC/ja4).
+Run the validation suite:
+
+```bash
+python tests/download_test_vectors.py
+pytest -m spec_validation -v
+```
+
 ## License
 
 BSD 3-Clause License. See [LICENSE](LICENSE) for details.

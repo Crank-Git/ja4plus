@@ -47,3 +47,8 @@ Documentation = "https://github.com/Crank-Git/ja4plus/tree/main/docs"
 
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*", "examples"]
+
+[tool.pytest.ini_options]
+markers = [
+    "spec_validation: FoxIO reference validation tests",
+]
