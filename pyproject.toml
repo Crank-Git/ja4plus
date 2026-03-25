@@ -49,3 +49,8 @@ ja4plus = "ja4plus.cli:main"
 
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*", "examples"]
+
+[tool.pytest.ini_options]
+markers = [
+    "spec_validation: FoxIO reference validation tests",
+]

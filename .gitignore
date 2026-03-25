@@ -1,3 +1,6 @@
+# Downloaded FoxIO test vectors (not committed)
+tests/foxio_vectors/
+
 __pycache__/
 *.py[cod]
 *.egg-info/
