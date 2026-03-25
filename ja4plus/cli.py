@@ -89,18 +89,46 @@ def _get_packet_source(packet):
     return "unknown"
 
 
-def _output_results(results, fmt, writer=None):
+def _output_results(results, fmt, writer=None, ja4db_client=None):
     """
     Output a list of (source, type, fingerprint) tuples in the requested format.
     writer is only used for csv format (a csv.writer instance).
+    ja4db_client is optional JA4DBClient for fingerprint identification.
     """
     for source, fp_type, fingerprint in results:
+        identified = ""
+        if ja4db_client:
+            match = ja4db_client.lookup(fingerprint)
+            if match:
+                identified = match.get("application", "")
+
         if fmt == "json":
-            print(json.dumps({"source": source, "type": fp_type, "fingerprint": fingerprint}))
+            obj = {"source": source, "type": fp_type, "fingerprint": fingerprint}
+            if ja4db_client:
+                obj["identified_as"] = identified or None
+            print(json.dumps(obj))
         elif fmt == "csv":
-            writer.writerow([source, fp_type, fingerprint])
+            row = [source, fp_type, fingerprint]
+            if ja4db_client:
+                row.append(identified)
+            writer.writerow(row)
         else:  # table
-            print(f"{source:<50}  {fp_type:<10}  {fingerprint}")
+            if identified:
+                print(f"{source:<50}  {fp_type:<10}  {fingerprint}  ({identified})")
+            else:
+                print(f"{source:<50}  {fp_type:<10}  {fingerprint}")
+
+
+def _init_lookup(args):
+    """Initialize ja4db client if --lookup is set."""
+    if not getattr(args, "lookup", False):
+        return None
+    try:
+        from ja4plus.ja4db import JA4DBClient
+        return JA4DBClient()
+    except Exception as e:
+        print(f"Warning: could not initialize ja4db lookup: {e}", file=sys.stderr)
+        return None
 
 
 def cmd_analyze(args):
@@ -112,15 +140,22 @@ def cmd_analyze(args):
 
     types = _parse_types(args.types) if args.types else list(ALL_FINGERPRINTERS.keys())
     fingerprinters = _build_fingerprinters(types)
+    ja4db_client = _init_lookup(args)
 
     # Set up output
     csv_writer = None
     if args.format == "table":
-        print(f"{'Source':<50}  {'Type':<10}  Fingerprint")
-        print("-" * 90)
+        header = f"{'Source':<50}  {'Type':<10}  Fingerprint"
+        if ja4db_client:
+            header += "  Identified As"
+        print(header)
+        print("-" * (110 if ja4db_client else 90))
     elif args.format == "csv":
         csv_writer = csv.writer(sys.stdout)
-        csv_writer.writerow(["source", "type", "fingerprint"])
+        row = ["source", "type", "fingerprint"]
+        if ja4db_client:
+            row.append("identified_as")
+        csv_writer.writerow(row)
 
     try:
         from scapy.utils import PcapReader
@@ -141,7 +176,7 @@ def cmd_analyze(args):
                     except Exception:
                         pass
                 if row_batch:
-                    _output_results(row_batch, args.format, csv_writer)
+                    _output_results(row_batch, args.format, csv_writer, ja4db_client)
     except FileNotFoundError:
         print(f"Error: file not found: {pcap_file}", file=sys.stderr)
         sys.exit(1)
@@ -166,14 +201,21 @@ def cmd_live(args):
 
     types = _parse_types(args.types) if args.types else list(ALL_FINGERPRINTERS.keys())
     fingerprinters = _build_fingerprinters(types)
+    ja4db_client = _init_lookup(args)
 
     csv_writer = None
     if args.format == "table":
-        print(f"{'Source':<50}  {'Type':<10}  Fingerprint")
-        print("-" * 90)
+        header = f"{'Source':<50}  {'Type':<10}  Fingerprint"
+        if ja4db_client:
+            header += "  Identified As"
+        print(header)
+        print("-" * (110 if ja4db_client else 90))
     elif args.format == "csv":
         csv_writer = csv.writer(sys.stdout)
-        csv_writer.writerow(["source", "type", "fingerprint"])
+        row = ["source", "type", "fingerprint"]
+        if ja4db_client:
+            row.append("identified_as")
+        csv_writer.writerow(row)
 
     print(f"Starting live capture on '{args.interface}'... (Ctrl-C to stop)", file=sys.stderr)
 
@@ -188,7 +230,7 @@ def cmd_live(args):
             except Exception:
                 pass
         if row_batch:
-            _output_results(row_batch, args.format, csv_writer)
+            _output_results(row_batch, args.format, csv_writer, ja4db_client)
             sys.stdout.flush()
 
     try:
@@ -273,6 +315,12 @@ def main():
         default=None,
         metavar="TYPES",
         help=f"Comma-separated fingerprint types to include. Valid: {', '.join(VALID_TYPES)}",
+    )
+    parser.add_argument(
+        "--lookup",
+        action="store_true",
+        default=False,
+        help="Identify fingerprints using ja4db (bundled database + optional remote lookup)",
     )
 
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
