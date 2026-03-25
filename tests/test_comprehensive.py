@@ -854,7 +854,7 @@ class TestJA4XComprehensive(unittest.TestCase):
             x509.NameAttribute(NameOID.COMMON_NAME, cn),
             x509.NameAttribute(NameOID.COUNTRY_NAME, country),
         ])
-        now = datetime.datetime.now(datetime.UTC)
+        now = datetime.datetime.now(datetime.timezone.utc)
         builder = (
             x509.CertificateBuilder()
             .subject_name(subject)
@@ -900,7 +900,7 @@ class TestJA4XComprehensive(unittest.TestCase):
         from cryptography.hazmat.primitives.serialization import Encoding
 
         key = rsa.generate_private_key(65537, 2048, default_backend())
-        now = datetime.datetime.now(datetime.UTC)
+        now = datetime.datetime.now(datetime.timezone.utc)
 
         # Cert A: Org + CN + Country (3 OIDs)
         cert_a = self._make_cert(org="Org A", cn="a.com")

@@ -45,7 +45,7 @@ class TestJA4X(unittest.TestCase):
         ])
         
         # Time range for certificate validity
-        now = datetime.datetime.now(datetime.UTC)
+        now = datetime.datetime.now(datetime.timezone.utc)
         valid_from = now
         valid_to = now + datetime.timedelta(days=365)
         

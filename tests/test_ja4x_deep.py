@@ -34,7 +34,7 @@ def _make_cert(subject_attrs, issuer_attrs=None, extensions=None):
 
     subject = x509.Name(subject_attrs)
     issuer = x509.Name(issuer_attrs)
-    now = datetime.datetime.now(datetime.UTC)
+    now = datetime.datetime.now(datetime.timezone.utc)
 
     builder = (
         x509.CertificateBuilder()
