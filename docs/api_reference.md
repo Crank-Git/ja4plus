@@ -169,3 +169,49 @@ result = generate_ja4(packet)
 | Function | Description |
 |----------|-------------|
 | `oid_to_hex(oid_string)` | Convert OID dotted string to ASN.1 hex encoding |
+| `get_cert_details(cert)` | Extract issuer/subject RDNs and extensions from an x509 certificate |
+| `extract_certificate_from_bytes(data)` | Find DER certificates in raw TLS record bytes |
+| `extract_certificate_info(packet)` | Extract certificate details from a scapy packet |
+
+## CLI Module
+
+### ja4plus.cli
+
+Command-line interface for JA4+ fingerprinting. Installed as the `ja4plus` command.
+
+```bash
+ja4plus analyze <pcap_file>   # Fingerprint a PCAP file
+ja4plus live <interface>      # Live capture (requires root)
+ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
+```
+
+| Option | Description |
+|--------|-------------|
+| `--format table\|json\|csv` | Output format (default: table) |
+| `--types ja4,ja4s,...` | Filter to specific fingerprint types |
+| `--lookup` | Identify fingerprints using bundled ja4db database |
+| `--version` | Print version |
+
+## Lookup Module
+
+### ja4plus.ja4db
+
+Fingerprint identification using FoxIO's ja4plus-mapping.csv database.
+
+```python
+from ja4plus.ja4db import JA4DBClient, lookup
+
+# Module-level convenience function
+result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
+# {"application": "Chromium Browser", "type": "ja4", "notes": ""}
+
+# Or use the client for caching across multiple lookups
+client = JA4DBClient()
+result = client.lookup(fingerprint_string)
+```
+
+| Class/Function | Description |
+|----------------|-------------|
+| `JA4DBClient()` | Client with local cache and bundled database |
+| `JA4DBClient.lookup(fingerprint)` | Look up a fingerprint, returns dict or None |
+| `lookup(fingerprint)` | Module-level convenience using a shared client |

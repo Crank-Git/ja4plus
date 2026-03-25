@@ -48,6 +48,47 @@ The FoxIO License 1.1 is permissive for most use cases, including academic use, 
 
 See the [FoxIO License](https://github.com/FoxIO-LLC/ja4/blob/main/LICENSE) for full terms, and [LICENSE](LICENSE) in this repository for the complete dual-license notice.
 
+## CLI Tool
+
+After installing, the `ja4plus` command is available:
+
+```bash
+# Fingerprint a PCAP file
+ja4plus analyze capture.pcap
+
+# Output as JSON (for SIEM ingestion)
+ja4plus --format json analyze capture.pcap
+
+# Filter to specific fingerprint types
+ja4plus --types ja4,ja4t analyze capture.pcap
+
+# Live capture from a network interface (requires root)
+sudo ja4plus live eth0
+
+# Fingerprint an X.509 certificate
+ja4plus cert server.der
+
+# Identify known fingerprints (browsers, malware, C2)
+ja4plus --lookup analyze capture.pcap
+```
+
+### Fingerprint Lookup
+
+ja4plus includes a bundled database of known JA4+ fingerprints from FoxIO's [ja4plus-mapping.csv](https://github.com/FoxIO-LLC/ja4/blob/main/ja4plus-mapping.csv), identifying browsers (Chrome, Firefox, Safari), malware (IcedID, Cobalt Strike, Sliver), and operating systems.
+
+```bash
+# Install with lookup support (adds optional requests dependency)
+pip install ja4plus[lookup]
+
+# Use in CLI
+ja4plus --lookup analyze capture.pcap
+
+# Use in code
+from ja4plus.ja4db import lookup
+result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
+# {"application": "Chromium Browser", "type": "ja4", "notes": ""}
+```
+
 ## Quick Start
 
 ```python
@@ -137,7 +178,7 @@ See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter.
 
 - Python 3.8+
 - [scapy](https://scapy.net/) >= 2.4.0
-- [cryptography](https://cryptography.io/) >= 3.4.0
+- [cryptography](https://cryptography.io/) >= 42.0.0
 
 ## Development
 
