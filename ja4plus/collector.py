@@ -9,7 +9,10 @@ import json
 import sys
 import time
 import signal
+import logging
 from scapy.all import sniff
+
+logger = logging.getLogger(__name__)
 
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter

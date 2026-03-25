@@ -2,7 +2,10 @@
 JA4T TCP Client Fingerprinting implementation.
 """
 
+import logging
 from scapy.all import TCP, IP
+
+logger = logging.getLogger(__name__)
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 
@@ -84,5 +87,6 @@ def generate_ja4t(packet):
 
         return ja4t
 
-    except Exception:
-        return None 
+    except (ValueError, TypeError, IndexError, AttributeError) as e:
+        logger.debug(f"Packet does not contain JA4T data: {e}")
+        return None

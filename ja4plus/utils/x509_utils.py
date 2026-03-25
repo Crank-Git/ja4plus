@@ -7,6 +7,9 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import NameOID, ExtensionOID
 import binascii
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 def extract_certificate_from_bytes(data, verbose=False, try_asn1=False):
     """
@@ -200,7 +203,8 @@ def get_cert_details(cert):
             'not_after': cert.not_valid_after_utc,
             'version': cert.version.name
         }
-    except Exception:
+    except (ValueError, TypeError, AttributeError) as e:
+        logger.warning(f"Certificate error: {e}")
         return None
 
 def extract_certificate_info(packet, verbose=False):
@@ -233,9 +237,8 @@ def extract_certificate_info(packet, verbose=False):
                 from cryptography.hazmat.backends import default_backend
                 cert = x509.load_der_x509_certificate(raw_data, default_backend())
                 return get_cert_details(cert)
-            except Exception:
-                # Silently fail if direct parsing doesn't work
-                pass
+            except (ValueError, TypeError, Exception) as e:
+                logger.debug(f"Direct certificate parsing failed: {e}")
             
         if not cert_data:
             if verbose:
@@ -300,53 +303,7 @@ def get_name_attribute(name, oid):
         attrs = name.get_attributes_for_oid(oid)
         if attrs:
             return attrs[0].value
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError) as e:
+        logger.debug(f"Failed to get name attribute: {e}")
     return None
 
-def parse_certificate(cert_data):
-    """
-    Parse an X.509 certificate and extract key information.
-    
-    Args:
-        cert_data: DER or PEM encoded certificate data
-        
-    Returns:
-        Dictionary with certificate information
-    """
-    try:
-        # Load the certificate
-        if isinstance(cert_data, str):
-            # Assuming PEM format
-            cert = x509.load_pem_x509_certificate(cert_data.encode(), default_backend())
-        else:
-            # Assuming DER format
-            cert = x509.load_der_x509_certificate(cert_data, default_backend())
-        
-        # Extract basic information
-        cert_info = {
-            'subject': _format_name(cert.subject),
-            'issuer': _format_name(cert.issuer),
-            'serial_number': format(cert.serial_number, 'x'),
-            'version': cert.version.value,
-            # Use UTC-aware datetime properties to avoid deprecation warnings
-            'not_before': cert.not_valid_before_utc,
-            'not_after': cert.not_valid_after_utc,
-            'public_key_type': _get_public_key_type(cert.public_key()),
-        }
-        
-        # Extract extensions
-        extensions = {}
-        try:
-            for ext in cert.extensions:
-                ext_name = ext.oid._name
-                extensions[ext_name] = _format_extension(ext)
-        except Exception as e:
-            extensions['error'] = str(e)
-        
-        cert_info['extensions'] = extensions
-        
-        return cert_info
-    
-    except Exception as e:
-        return {'error': str(e)} 

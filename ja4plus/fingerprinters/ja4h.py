@@ -9,7 +9,10 @@ JA4H fingerprints HTTP requests based on:
 """
 
 import hashlib
+import logging
 from scapy.all import IP, TCP, Raw
+
+logger = logging.getLogger(__name__)
 from ja4plus.utils.http_utils import extract_http_info
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -127,5 +130,6 @@ def generate_ja4h(packet):
 
         return ja4h
 
-    except Exception:
+    except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
+        logger.debug(f"Packet does not contain JA4H data: {e}")
         return None
