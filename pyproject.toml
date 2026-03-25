@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64.0", "wheel"]
+requires = ["setuptools>=64.0", "setuptools-scm", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -36,6 +36,9 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=3.0",
 ]
+lookup = [
+    "requests>=2.20.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/Crank-Git/ja4plus"
@@ -49,6 +52,9 @@ ja4plus = "ja4plus.cli:main"
 
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*", "examples"]
+
+[tool.setuptools.package-data]
+ja4plus = ["data/*.csv"]
 
 [tool.pytest.ini_options]
 markers = [
