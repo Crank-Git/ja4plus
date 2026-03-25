@@ -2,6 +2,11 @@
 Base fingerprinter class for JA4+ fingerprinters.
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class BaseFingerprinter:
     """Base class for all JA4+ fingerprinters."""
     

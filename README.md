@@ -1,3 +1,7 @@
+[![Tests](https://github.com/Crank-Git/ja4plus/actions/workflows/test.yml/badge.svg)](https://github.com/Crank-Git/ja4plus/actions/workflows/test.yml)
+[![PyPI version](https://badge.fury.io/py/ja4plus.svg)](https://pypi.org/project/ja4plus/)
+[![Python versions](https://img.shields.io/pypi/pyversions/ja4plus.svg)](https://pypi.org/project/ja4plus/)
+
 # JA4+
 
 A Python library for JA4+ network fingerprinting. Implements all eight JA4+ methods for identifying and classifying network traffic based on TLS, TCP, HTTP, SSH, and X.509 characteristics.
@@ -30,6 +34,19 @@ git clone https://github.com/Crank-Git/ja4plus.git
 cd ja4plus
 pip install -e .
 ```
+
+## Licensing
+
+This library (ja4plus) is released under the **BSD 3-Clause License**.
+
+The JA4+ fingerprinting specifications were created by [FoxIO](https://foxio.io):
+
+- **JA4** (TLS Client Fingerprinting) is open source under **BSD-3-Clause** per FoxIO.
+- **JA4S, JA4H, JA4T, JA4TS, JA4L, JA4X, JA4SSH** implement FoxIO's specifications and are subject to the **FoxIO License 1.1**.
+
+The FoxIO License 1.1 is permissive for most use cases, including academic use, internal business use, and security research. Commercial productization or resale of these fingerprinting methods (other than JA4) may require a separate license from FoxIO.
+
+See the [FoxIO License](https://github.com/FoxIO-LLC/ja4/blob/main/LICENSE) for full terms, and [LICENSE](LICENSE) in this repository for the complete dual-license notice.
 
 ## Quick Start
 

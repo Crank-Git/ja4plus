@@ -25,6 +25,6 @@ from ja4plus.fingerprinters.ja4ssh import generate_ja4ssh
 from ja4plus.fingerprinters.ja4t import generate_ja4t
 from ja4plus.fingerprinters.ja4ts import generate_ja4ts
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "ja4plus contributors"
 __license__ = "BSD-3-Clause"

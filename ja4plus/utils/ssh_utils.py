@@ -4,6 +4,9 @@ SSH utility functions for JA4+ fingerprinting.
 
 import struct
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def parse_ssh_packet(data):
@@ -27,7 +30,8 @@ def parse_ssh_packet(data):
                 "type": "version",
                 "version_string": version_string
             }
-        except Exception:
+        except (UnicodeDecodeError, AttributeError) as e:
+            logger.debug(f"Failed to parse SSH banner: {e}")
             return None
 
     # Try to parse as SSH binary packet
@@ -88,8 +92,8 @@ def _parse_test_kexinit(data):
                 "mac_algorithms": algorithm_parts[2].decode('utf-8', errors='ignore'),
                 "compression_algorithms": algorithm_parts[3].decode('utf-8', errors='ignore')
             }
-    except Exception:
-        pass
+    except (IndexError, UnicodeDecodeError, AttributeError) as e:
+        logger.debug(f"Failed to parse test KEXINIT: {e}")
     return None
 
 
@@ -141,8 +145,8 @@ def _parse_kexinit(data):
                 "compression_algorithms": algorithm_lists[6] if len(algorithm_lists) > 6 else "",
                 "compression_algorithms_s2c": algorithm_lists[7] if len(algorithm_lists) > 7 else "",
             }
-    except Exception:
-        pass
+    except (struct.error, ValueError, IndexError, UnicodeDecodeError) as e:
+        logger.debug(f"Failed to parse SSH KEXINIT: {e}")
 
     return None
 
@@ -173,8 +177,8 @@ def extract_hassh(data):
             hassh = hashlib.md5(hassh_string.encode('utf-8')).hexdigest()
             return hassh
 
-        except Exception:
-            pass
+        except (ValueError, TypeError, UnicodeDecodeError) as e:
+            logger.debug(f"Failed to compute HASSH: {e}")
 
     return None
 

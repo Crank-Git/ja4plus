@@ -4,6 +4,9 @@ HTTP utility functions for JA4+ fingerprinting.
 
 from scapy.all import Raw, TCP, IP
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 def parse_http_request(data):
     """
@@ -84,7 +87,8 @@ def parse_http_request(data):
             'headers': headers,
             'cookies': cookies
         }
-    except:
+    except (ValueError, TypeError, UnicodeDecodeError) as e:
+        logger.debug(f"Not an HTTP request: {e}")
         return None
 
 def is_http_request(data):
@@ -177,5 +181,6 @@ def extract_http_info(packet):
             'referer': referer
         }
     
-    except Exception:
+    except (ValueError, TypeError, UnicodeDecodeError) as e:
+        logger.debug(f"Packet does not contain HTTP data: {e}")
         return None 
