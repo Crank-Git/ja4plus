@@ -84,7 +84,7 @@ def _get_packet_source(packet):
             return f"{src_ip}:{src_port} -> {dst_ip}:{dst_port}"
         elif src_ip:
             return f"{src_ip} -> {dst_ip}"
-    except Exception:
+    except (AttributeError, IndexError, TypeError):
         pass
     return "unknown"
 
@@ -268,9 +268,8 @@ def cmd_cert(args):
             from cryptography.hazmat.backends import default_backend
 
             cert = cx509.load_pem_x509_certificate(cert_bytes, default_backend())
-            cert_bytes = cert.public_bytes(
-                __import__("cryptography.hazmat.primitives.serialization", fromlist=["Encoding"]).Encoding.DER
-            )
+            from cryptography.hazmat.primitives.serialization import Encoding
+            cert_bytes = cert.public_bytes(Encoding.DER)
         except Exception as e:
             print(f"Error parsing PEM certificate: {e}", file=sys.stderr)
             sys.exit(1)
@@ -284,16 +283,23 @@ def cmd_cert(args):
 
     source = os.path.basename(cert_file)
     results = [(source, "ja4x", fingerprint)]
+    ja4db_client = _init_lookup(args)
 
     csv_writer = None
     if args.format == "table":
-        print(f"{'Source':<50}  {'Type':<10}  Fingerprint")
-        print("-" * 90)
+        header = f"{'Source':<50}  {'Type':<10}  Fingerprint"
+        if ja4db_client:
+            header += "  Identified As"
+        print(header)
+        print("-" * (110 if ja4db_client else 90))
     elif args.format == "csv":
         csv_writer = csv.writer(sys.stdout)
-        csv_writer.writerow(["source", "type", "fingerprint"])
+        row = ["source", "type", "fingerprint"]
+        if ja4db_client:
+            row.append("identified_as")
+        csv_writer.writerow(row)
 
-    _output_results(results, args.format, csv_writer)
+    _output_results(results, args.format, csv_writer, ja4db_client)
 
 
 def main():
