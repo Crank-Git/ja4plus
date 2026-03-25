@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 """
-JA4+ collector for Elastic Agent integration.
-Captures network traffic and outputs JA4+ fingerprints as JSON.
+DEPRECATED: Use the `ja4plus` CLI command instead.
+This module is kept for backward compatibility and will be removed in v0.4.0.
+Run `ja4plus --help` for usage.
 """
+import warnings
+warnings.warn(
+    "collector.py is deprecated. Use the 'ja4plus' CLI command instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 import argparse
 import json
