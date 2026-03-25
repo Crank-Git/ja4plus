@@ -7,7 +7,10 @@ Format: JA4L-C=<latency_us>_<ttl> and JA4L-S=<latency_us>_<ttl>
 """
 
 import time
+import logging
 from scapy.all import IP, TCP, UDP
+
+logger = logging.getLogger(__name__)
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 
@@ -235,7 +238,8 @@ def generate_ja4l(packet, conn=None):
                 return f"JA4L-C={latency}_{conn['ttls'].get('client', ttl)}"
 
         return None
-    except Exception:
+    except (ValueError, TypeError, IndexError, AttributeError) as e:
+        logger.debug(f"Packet does not contain JA4L data: {e}")
         return None
 
 

@@ -3,7 +3,11 @@ JA4X X.509 Certificate Fingerprinting implementation.
 """
 
 import hashlib
+import logging
+import struct
 from scapy.all import IP, TCP, Raw
+
+logger = logging.getLogger(__name__)
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from ja4plus.fingerprinters.base import BaseFingerprinter
@@ -45,8 +49,8 @@ def generate_ja4x(cert_info):
         
         return ja4x
         
-    except Exception:
-        # Don't print any error messages
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        logger.debug(f"Failed to generate JA4X fingerprint: {e}")
         return None
 
 class JA4XFingerprinter(BaseFingerprinter):
@@ -160,12 +164,10 @@ class JA4XFingerprinter(BaseFingerprinter):
                                                     result = fingerprint
                                                     self.add_fingerprint(fingerprint, packet)
                                                     self.processed_certs.add(cert_hash)
-                                            except Exception:
-                                                # Silently fail for any certificate processing errors
-                                                pass
-                            except Exception:
-                                # If certificate extraction fails, just move on
-                                pass
+                                            except (ValueError, TypeError, Exception) as e:
+                                                logger.warning(f"Certificate error: {e}")
+                            except (ValueError, IndexError, struct.error) as e:
+                                logger.debug(f"Certificate extraction failed: {e}")
                         
                         # Move past this record
                         i += 5 + record_length
@@ -221,7 +223,8 @@ class JA4XFingerprinter(BaseFingerprinter):
                 pos += cert_len
             
             return certificates
-        except Exception:
+        except (ValueError, IndexError, struct.error) as e:
+            logger.debug(f"Failed to extract certificate from TLS record: {e}")
             return None
     
     def get_cert_details(self, cert):
@@ -263,9 +266,10 @@ class JA4XFingerprinter(BaseFingerprinter):
                 'subject_rdns': subject_rdns,
                 'extensions': extensions
             }
-        except Exception:
+        except (ValueError, TypeError, Exception) as e:
+            logger.warning(f"Certificate error: {e}")
             return None
-    
+
     def fingerprint_certificate(self, cert_data):
         """
         Generate a JA4X fingerprint from raw certificate data.
@@ -289,7 +293,8 @@ class JA4XFingerprinter(BaseFingerprinter):
             
             # Generate fingerprint
             return generate_ja4x(cert_info)
-        except Exception:
+        except (ValueError, TypeError, Exception) as e:
+            logger.warning(f"Certificate error: {e}")
             return None
     
     def reset(self):

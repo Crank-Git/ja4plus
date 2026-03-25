@@ -3,7 +3,10 @@ JA4 TLS Client Hello Fingerprinting implementation.
 """
 
 import hashlib
+import logging
 from scapy.all import TCP, UDP, Raw, IP
+
+logger = logging.getLogger(__name__)
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -129,7 +132,8 @@ def generate_ja4(tls_info):
         
         return ja4
         
-    except Exception:
+    except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
+        logger.debug(f"Failed to generate JA4 fingerprint: {e}")
         return None
 
 def get_raw_fingerprint(tls_info, original_order=False):
@@ -244,7 +248,8 @@ def get_raw_fingerprint(tls_info, original_order=False):
         else:
             return f"JA4_r = {raw_ja4}"
             
-    except Exception:
+    except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
+        logger.debug(f"Failed to generate JA4 fingerprint: {e}")
         return None
 
 class JA4Fingerprinter(BaseFingerprinter):

@@ -3,7 +3,10 @@ JA4S TLS Server Hello Fingerprinting implementation.
 """
 
 import hashlib
+import logging
 from scapy.all import IP, TCP, Raw
+
+logger = logging.getLogger(__name__)
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -101,7 +104,8 @@ def generate_ja4s(packet):
 
         return ja4s
 
-    except Exception:
+    except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
+        logger.debug(f"Packet does not contain JA4S data: {e}")
         return None
 
 
