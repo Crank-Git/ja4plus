@@ -135,7 +135,7 @@ def make_test_certificate():
     from cryptography.hazmat.primitives.serialization import Encoding
 
     key = rsa.generate_private_key(65537, 2048, default_backend())
-    now = datetime.datetime.now(datetime.UTC)
+    now = datetime.datetime.now(datetime.timezone.utc)
     subject = issuer = x509.Name([
         x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
         x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
