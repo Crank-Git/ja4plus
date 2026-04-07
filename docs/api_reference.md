@@ -173,6 +173,30 @@ result = generate_ja4(packet)
 | `extract_certificate_from_bytes(data)` | Find DER certificates in raw TLS record bytes |
 | `extract_certificate_info(packet)` | Extract certificate details from a scapy packet |
 
+### ja4plus.utils.quic_utils
+
+| Function | Description |
+|----------|-------------|
+| `parse_quic_initial(udp_payload)` | Parse QUIC Initial, return tls_info with `is_quic=True` or None |
+| `derive_initial_secrets(dcid, version)` | Derive secrets from DCID (version 1 or 2) |
+| `extract_crypto_frames(plaintext)` | Reassemble CRYPTO frames from decrypted payload |
+
+### ja4plus.utils.tcp_stream
+
+| Class/Function | Description |
+|----------------|-------------|
+| `TCPStreamReassembler(max_streams, max_stream_bytes)` | Sequence-aware TCP stream reassembly |
+| `.add_segment(key, seq, data)` | Add a TCP segment |
+| `.get_stream(key)` | Get reassembled contiguous bytes |
+| `.remove_stream(key)` | Remove a tracked stream |
+
+### ja4plus.utils.packet_utils
+
+| Function | Description |
+|----------|-------------|
+| `get_ip_layer(packet)` | Return IP or IPv6 layer, or None |
+| `get_ttl(packet)` | Return TTL (IPv4) or Hop Limit (IPv6), or None |
+
 ## CLI Module
 
 ### ja4plus.cli
