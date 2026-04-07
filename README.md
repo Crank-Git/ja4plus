@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/logo.png" width="300"></p>
 
-A Python library and CLI for JA4+ network fingerprinting. Implements all eight JA4+ methods for identifying and classifying network traffic based on TLS, TCP, HTTP, SSH, and X.509 characteristics.
+A Python library and CLI for JA4+ network fingerprinting. Implements all eight JA4+ methods for identifying and classifying network traffic based on TLS, TCP, HTTP, SSH, and X.509 characteristics. Supports QUIC, IPv4/IPv6, and multi-segment TCP reassembly.
 
 JA4+ is a set of network fingerprinting standards created by [FoxIO](https://foxio.io). This library is an independent Python implementation of the published specification. For the original spec, see the [FoxIO JA4+ repository](https://github.com/FoxIO-LLC/ja4).
 
@@ -13,14 +13,16 @@ JA4+ is a set of network fingerprinting standards created by [FoxIO](https://fox
 
 | Type | Protocol | Description |
 |------|----------|-------------|
-| JA4 | TLS | Client fingerprint from ClientHello messages |
-| JA4S | TLS | Server fingerprint from ServerHello messages |
+| JA4 | TLS/QUIC | Client fingerprint from ClientHello messages |
+| JA4S | TLS/QUIC | Server fingerprint from ServerHello messages |
 | JA4H | HTTP | Client fingerprint from request headers and cookies |
 | JA4T | TCP | Client OS fingerprint from SYN packets |
 | JA4TS | TCP | Server fingerprint from SYN-ACK packets |
-| JA4L | TCP | Light distance and latency estimation |
+| JA4L | TCP/QUIC | Light distance and latency estimation |
 | JA4X | X.509 | Certificate structure fingerprint from OID sequences |
 | JA4SSH | SSH | Session type classification from traffic patterns |
+
+QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS ClientHellos. IPv4 and IPv6 are both supported across all fingerprinters.
 
 ## Installation
 
@@ -132,7 +134,7 @@ See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter an
 | JA4H | `{method}{ver}{cookie}{ref}{cnt}{lang}_{h}_{h}_{h}` | `ge11cr0800_edb4461d7a83_...` |
 | JA4T | `{window}_{options}_{mss}_{wscale}` | `65535_2-4-8-1-3_1460_7` |
 | JA4TS | `{window}_{options}_{mss}_{wscale}` | `14600_2-4-8-1-3_1460_0` |
-| JA4L | `{latency_us}_{ttl}` | `2500_56` |
+| JA4L | `JA4L-{C\|S}={latency_us}_{ttl}` | `JA4L-S=2500_56` |
 | JA4X | `{issuer}_{subject}_{extensions}` | `a37f49ba31e2_a37f49ba31e2_dd4f1a0ef8b2` |
 | JA4SSH | `c{mode}s{mode}_c{pkts}s{pkts}_c{acks}s{acks}` | `c36s36_c51s80_c69s0` |
 
