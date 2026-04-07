@@ -4,6 +4,7 @@
 
 - [Usage Guide](usage.md) - Detailed usage for each fingerprinter with examples
 - [API Reference](api_reference.md) - Classes, methods, and convenience functions
+- [Implementation Notes](implementation_notes.md) - Spec deviations and undocumented behaviors
 
 ## Quick Links
 
