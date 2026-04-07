@@ -79,13 +79,14 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             client_port, server_port = dst_port, src_port
             is_client_to_server = False
         else:
-            # SSH on non-standard port - determine direction by who initiated connection
-            # Use lower port as server (common convention) or analyze packet content
-            if src_port < dst_port:
+            # SSH on non-standard port - lower port is typically the server
+            if dst_port < src_port:
+                # dst has the lower port -> dst is server, src is client
                 client_ip, server_ip = src_ip, dst_ip
                 client_port, server_port = src_port, dst_port
                 is_client_to_server = True
             else:
+                # src has the lower port -> src is server, dst is client
                 client_ip, server_ip = dst_ip, src_ip
                 client_port, server_port = dst_port, src_port
                 is_client_to_server = False
