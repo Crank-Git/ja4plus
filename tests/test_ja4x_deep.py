@@ -299,7 +299,7 @@ class TestJA4XFingerprinterClass(unittest.TestCase):
         fp.fingerprint_certificate(cert)
         fp.reset()
         self.assertEqual(len(fp.get_fingerprints()), 0)
-        self.assertEqual(len(fp.streams), 0)
+        self.assertEqual(len(fp.reassembler.streams), 0)
         self.assertEqual(len(fp.processed_certs), 0)
 
     def test_get_cert_details(self):

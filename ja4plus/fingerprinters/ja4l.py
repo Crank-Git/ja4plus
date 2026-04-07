@@ -8,7 +8,7 @@ Format: JA4L-C=<latency_us>_<ttl> and JA4L-S=<latency_us>_<ttl>
 
 import time
 import logging
-from scapy.all import IP, TCP, UDP
+from scapy.all import IP, IPv6, TCP, UDP
 
 logger = logging.getLogger(__name__)
 from ja4plus.fingerprinters.base import BaseFingerprinter
@@ -36,7 +36,7 @@ class JA4LFingerprinter(BaseFingerprinter):
         Returns:
             The extracted fingerprint if successful, None otherwise
         """
-        if IP not in packet or (TCP not in packet and UDP not in packet):
+        if (IP not in packet and IPv6 not in packet) or (TCP not in packet and UDP not in packet):
             return None
 
         if TCP in packet:
@@ -48,8 +48,12 @@ class JA4LFingerprinter(BaseFingerprinter):
             sport = packet[UDP].sport
             dport = packet[UDP].dport
 
-        src_ip = packet[IP].src
-        dst_ip = packet[IP].dst
+        from ja4plus.utils.packet_utils import get_ip_layer
+        ip_layer = get_ip_layer(packet)
+        if ip_layer is None:
+            return None
+        src_ip = ip_layer.src
+        dst_ip = ip_layer.dst
 
         # Normalize connection key (ordered src/dst)
         if src_ip < dst_ip or (src_ip == dst_ip and sport < dport):
@@ -169,7 +173,8 @@ def generate_ja4l(packet, conn=None):
     if not conn:
         return None
 
-    if not packet.haslayer(IP):
+    from ja4plus.utils.packet_utils import get_ip_layer as _get_ip, get_ttl
+    if _get_ip(packet) is None:
         return None
 
     try:
@@ -178,7 +183,9 @@ def generate_ja4l(packet, conn=None):
         if 'ttls' not in conn:
             conn['ttls'] = {}
 
-        ttl = packet[IP].ttl
+        ttl = get_ttl(packet)
+        if ttl is None:
+            return None
 
         # Use pcap timestamp if available (for offline analysis), else wall clock
         current_time = float(packet.time) if hasattr(packet, 'time') else time.time()
@@ -254,10 +261,12 @@ def _src_is_client(packet, conn):
     Returns:
         True if the source is the client, False otherwise
     """
-    if not packet.haslayer(IP):
+    from ja4plus.utils.packet_utils import get_ip_layer
+    ip_layer = get_ip_layer(packet)
+    if ip_layer is None:
         return False
 
-    src_ip = packet[IP].src
+    src_ip = ip_layer.src
 
     if conn.get('direction') == 'forward':
         conn_key = conn.get('conn_key', '')

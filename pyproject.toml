@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ja4plus"
-version = "0.3.0"
+version = "0.4.0"
 description = "JA4+ network fingerprinting library for TLS, TCP, HTTP, SSH, and X.509 analysis"
 readme = "README.md"
 license = {text = "BSD-3-Clause AND LicenseRef-FoxIO-1.1"}

@@ -5,7 +5,7 @@ JA4X X.509 Certificate Fingerprinting implementation.
 import hashlib
 import logging
 import struct
-from scapy.all import IP, TCP, Raw
+from scapy.all import IP, IPv6, TCP, Raw
 
 logger = logging.getLogger(__name__)
 from cryptography import x509
@@ -59,78 +59,56 @@ class JA4XFingerprinter(BaseFingerprinter):
     def __init__(self):
         """Initialize the fingerprinter with TCP stream tracking."""
         super().__init__()
-        # Track TCP streams to reassemble fragmented certificate messages
-        self.streams = {}  # Use dict with bytes instead of defaultdict with bytearray
-        # Keep track of certificates we've already processed
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+        self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
         self.processed_certs = set()
-        # Last cleanup time to prevent memory leaks
         self.last_cleanup = time.time()
     
     def process_packet(self, packet):
         """Process a packet and extract JA4X fingerprint if applicable."""
-        # Quick check if this might be a TLS handshake packet
         if not (TCP in packet and Raw in packet):
             return None
-        
-        # Get connection information
+
         try:
-            src_ip = packet[IP].src
-            dst_ip = packet[IP].dst
+            from ja4plus.utils.packet_utils import get_ip_layer
+            ip_layer = get_ip_layer(packet)
+            if ip_layer is None:
+                return None
+            src_ip = ip_layer.src
+            dst_ip = ip_layer.dst
             src_port = packet[TCP].sport
             dst_port = packet[TCP].dport
         except (IndexError, AttributeError):
             return None
-        
-        # Create a stream identifier
+
         stream_id = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-        
-        # Get raw data from packet
-        raw_data = bytes(packet[Raw])  # Ensure we have bytes, not Raw
-        
-        # Add data to the stream
-        if stream_id not in self.streams:
-            self.streams[stream_id] = b""
-        self.streams[stream_id] += raw_data  # Append bytes to existing stream data
-        
-        # Try to find and process certificate messages in the stream
-        fingerprint = self._find_certificates_in_stream(stream_id, packet)
-        
-        # Clean up old streams periodically (every 30 seconds)
+        raw_data = bytes(packet[Raw])
+        seq = packet[TCP].seq if hasattr(packet[TCP], 'seq') else 0
+
+        self.reassembler.add_segment(stream_id, seq, raw_data)
+        stream_data = self.reassembler.get_stream(stream_id)
+
+        fingerprint = self._find_certificates_in_stream_data(stream_id, stream_data, packet)
+
         current_time = time.time()
         if current_time - self.last_cleanup > 30:
-            # Keep only the last 50 streams to prevent memory leaks
-            if len(self.streams) > 50:
-                stream_ids = list(self.streams.keys())
-                for old_id in stream_ids[:-50]:
-                    del self.streams[old_id]
-            # Keep the processed certs set reasonable too
             if len(self.processed_certs) > 1000:
                 self.processed_certs = set(list(self.processed_certs)[-500:])
             self.last_cleanup = current_time
-        
+
         return fingerprint
     
-    def _find_certificates_in_stream(self, stream_id, packet):
+    def _find_certificates_in_stream_data(self, stream_id, stream_data, packet):
         """Find and process certificate messages in a TCP stream."""
         result = None
-        
-        # Safety check
-        if stream_id not in self.streams:
+
+        if not stream_data:
             return None
-            
-        stream_data = self.streams[stream_id]
-        
-        # Limit processing to reasonable size to avoid excessive CPU
-        MAX_STREAM_SIZE = 1024 * 1024  # 1MB limit
-        if len(stream_data) > MAX_STREAM_SIZE:
-            # Trim the stream data to the last part
-            self.streams[stream_id] = stream_data[-MAX_STREAM_SIZE:]
-            stream_data = self.streams[stream_id]
-        
+
         i = 0
         # Set a reasonable maximum search length to avoid hanging
-        max_search = min(len(stream_data), 200000)  # 200KB search limit (increased)
-        
+        max_search = min(len(stream_data), 200000)  # 200KB search limit
+
         # Look for TLS records with certificate messages
         while i < max_search - 10:
             # Check for TLS handshake record
@@ -138,12 +116,12 @@ class JA4XFingerprinter(BaseFingerprinter):
                 # Make sure we have enough data for the record header
                 if i + 5 < len(stream_data):
                     record_length = (stream_data[i+3] << 8) | stream_data[i+4]
-                    
+
                     # Sanity check the record length
                     if record_length < 4 or record_length > 65535:
                         i += 1
                         continue
-                    
+
                     # Check if we have the complete record
                     if i + 5 + record_length <= len(stream_data):
                         # Check if this is a certificate message
@@ -151,12 +129,12 @@ class JA4XFingerprinter(BaseFingerprinter):
                             # We found a certificate message, extract it
                             try:
                                 cert_data = self._extract_certificate(stream_data[i:i+5+record_length])
-                            
+
                                 if cert_data:
                                     for cert_bytes in cert_data:
                                         # Use hash of cert to avoid duplicates
                                         cert_hash = hashlib.sha256(cert_bytes).hexdigest()
-                                        
+
                                         if cert_hash not in self.processed_certs:
                                             try:
                                                 fingerprint = self.fingerprint_certificate(cert_bytes)
@@ -168,18 +146,18 @@ class JA4XFingerprinter(BaseFingerprinter):
                                                 logger.warning(f"Certificate error: {e}")
                             except (ValueError, IndexError, struct.error) as e:
                                 logger.debug(f"Certificate extraction failed: {e}")
-                        
+
                         # Move past this record
                         i += 5 + record_length
                         continue
-            
+
             # Move to next byte
             i += 1
-        
+
         # Trim the stream if we've processed a significant amount
         if i > 1000:
-            self.streams[stream_id] = stream_data[i:]
-        
+            self.reassembler.trim_stream(stream_id, i)
+
         return result
     
     def _extract_certificate(self, data):
@@ -300,6 +278,7 @@ class JA4XFingerprinter(BaseFingerprinter):
     def reset(self):
         """Reset the fingerprinter state."""
         self.fingerprints = []
-        self.streams = {}
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+        self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
         self.processed_certs = set()
-        self.last_cleanup = time.time() 
+        self.last_cleanup = time.time()

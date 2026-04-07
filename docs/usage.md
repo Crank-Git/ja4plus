@@ -32,7 +32,7 @@ result = fp.process_packet(packet)
 ```
 
 **Format breakdown:**
-- `t` = TCP (`q` = QUIC, `d` = DTLS)
+- `t` = TCP, `q` = QUIC (auto-detected from UDP/QUIC Initial), `d` = DTLS
 - `13` = TLS 1.3 (from `supported_versions` extension)
 - `d` = domain name present via SNI (`i` = IP / no SNI)
 - `15` = 15 cipher suites (excluding GREASE, max 99)
@@ -238,6 +238,30 @@ for h in hassh_fps:
 # Look up known HASSH values
 info = fp.lookup_hassh("b5752e36ba6c5979a575e43178908adf")
 print(info["identified_as"])  # "Paramiko 2.4.1 (Metasploit)"
+```
+
+---
+
+## QUIC Support
+
+QUIC Initial packets (RFC 9001, RFC 9369) are automatically detected on UDP.
+The library decrypts the Initial packet using DCID-derived keys, extracts
+the CRYPTO frames containing the TLS ClientHello, and feeds it into the
+standard JA4 fingerprinting pipeline.
+
+**Supported:** QUIC v1 (`0x00000001`) and v2 (`0x6b3343cf`).
+
+**Limitations:** Only client Initial packets. No retry or 0-RTT. No coalesced packet splitting.
+
+```python
+from scapy.all import rdpcap
+from ja4plus import JA4Fingerprinter
+
+fp = JA4Fingerprinter()
+for packet in rdpcap("quic_capture.pcap"):
+    result = fp.process_packet(packet)
+    if result:
+        print(result)  # QUIC: q13d1007h2_...
 ```
 
 ---
