@@ -4,7 +4,8 @@ Enhanced TLS utility functions for JA4+ fingerprinting.
 
 import struct
 import logging
-from scapy.all import Raw
+from scapy.all import Raw, UDP
+from ja4plus.utils.quic_utils import parse_quic_initial
 
 logger = logging.getLogger(__name__)
 
@@ -13,13 +14,15 @@ def extract_tls_info(packet):
     """
     Extract TLS information from a packet.
 
+    Checks for QUIC Initial packets on UDP before falling through
+    to standard TLS record parsing on TCP.
+
     Args:
         packet: A network packet
 
     Returns:
         Dictionary with TLS handshake information or None if not applicable
     """
-    # Special handling for test packets with embedded TLS info
     if hasattr(packet, 'tls_info'):
         return packet.tls_info
 
@@ -28,6 +31,12 @@ def extract_tls_info(packet):
 
     try:
         raw_data = bytes(packet[Raw])
+
+        if UDP in packet:
+            quic_info = parse_quic_initial(raw_data)
+            if quic_info:
+                return quic_info
+
         return parse_tls_handshake(raw_data)
     except (ValueError, TypeError, AttributeError) as e:
         logger.debug(f"Packet does not contain TLS data: {e}")
