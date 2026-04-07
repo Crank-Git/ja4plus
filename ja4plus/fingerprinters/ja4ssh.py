@@ -8,7 +8,7 @@ even when the content is encrypted. Also includes HASSH support.
 import hashlib
 import logging
 from collections import Counter
-from scapy.all import TCP, Raw, IP
+from scapy.all import TCP, Raw, IP, IPv6
 import time
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         Returns:
             The extracted fingerprint if a new one is generated, None otherwise
         """
-        if not (packet.haslayer(TCP) and packet.haslayer(IP)):
+        if not (packet.haslayer(TCP) and (packet.haslayer(IP) or packet.haslayer(IPv6))):
             return None
 
         # First check if this packet contains SSH data - do this BEFORE any other processing
@@ -60,7 +60,8 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             return None
 
         tcp = packet[TCP]
-        ip = packet[IP]
+        from ja4plus.utils.packet_utils import get_ip_layer
+        ip = get_ip_layer(packet)
 
         # Create connection key
         src_ip = ip.src

@@ -5,7 +5,7 @@ JA4X X.509 Certificate Fingerprinting implementation.
 import hashlib
 import logging
 import struct
-from scapy.all import IP, TCP, Raw
+from scapy.all import IP, IPv6, TCP, Raw
 
 logger = logging.getLogger(__name__)
 from cryptography import x509
@@ -74,8 +74,12 @@ class JA4XFingerprinter(BaseFingerprinter):
         
         # Get connection information
         try:
-            src_ip = packet[IP].src
-            dst_ip = packet[IP].dst
+            from ja4plus.utils.packet_utils import get_ip_layer
+            ip_layer = get_ip_layer(packet)
+            if ip_layer is None:
+                return None
+            src_ip = ip_layer.src
+            dst_ip = ip_layer.dst
             src_port = packet[TCP].sport
             dst_port = packet[TCP].dport
         except (IndexError, AttributeError):
