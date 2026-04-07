@@ -47,5 +47,43 @@ class TestSSHDirectionNonStandardPort(unittest.TestCase):
         self.assertIsNotNone(conn["server_id"])
 
 
+class TestSSHBareACKCounting(unittest.TestCase):
+    """Verify bare ACK packets are counted for known SSH connections."""
+
+    def test_bare_acks_counted(self):
+        """Bare ACKs after SSH banner should increment ACK counters."""
+        fp = JA4SSHFingerprinter(packet_count=200)
+
+        # Establish SSH connection with a banner
+        banner = IP(src="10.0.0.1", dst="10.0.0.2") / TCP(
+            sport=50000, dport=22
+        ) / Raw(load=b"SSH-2.0-OpenSSH_8.9\r\n")
+        fp.process_packet(banner)
+
+        # Send bare ACKs (no Raw layer) — these should be counted
+        for _ in range(5):
+            ack = IP(src="10.0.0.1", dst="10.0.0.2") / TCP(
+                sport=50000, dport=22, flags="A"
+            )
+            fp.process_packet(ack)
+
+        conn = list(fp.connections.values())[0]
+        self.assertEqual(conn["bare_acks"]["client"], 5,
+                         "Bare ACKs should be counted for known SSH connections")
+
+    def test_bare_acks_not_counted_for_unknown_connections(self):
+        """Bare ACKs for unknown connections should be ignored."""
+        fp = JA4SSHFingerprinter(packet_count=200)
+
+        # Send bare ACK without any prior SSH data
+        ack = IP(src="10.0.0.1", dst="10.0.0.2") / TCP(
+            sport=50000, dport=80, flags="A"
+        )
+        fp.process_packet(ack)
+
+        self.assertEqual(len(fp.connections), 0,
+                         "Should not create connection for non-SSH bare ACK")
+
+
 if __name__ == "__main__":
     unittest.main()

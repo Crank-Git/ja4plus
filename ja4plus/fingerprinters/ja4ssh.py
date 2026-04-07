@@ -49,15 +49,11 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         if not (packet.haslayer(TCP) and (packet.haslayer(IP) or packet.haslayer(IPv6))):
             return None
 
-        # First check if this packet contains SSH data - do this BEFORE any other processing
+        # Check if this packet contains SSH data
         has_ssh_data = False
         if packet.haslayer(Raw):
             payload = bytes(packet[Raw])
             has_ssh_data = is_ssh_packet(payload)
-
-        # If no SSH data detected, skip this packet entirely
-        if not has_ssh_data:
-            return None
 
         tcp = packet[TCP]
         from ja4plus.utils.packet_utils import get_ip_layer
@@ -91,11 +87,15 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 client_ip, server_ip = dst_ip, src_ip
                 client_port, server_port = dst_port, src_port
                 is_client_to_server = False
-        
+
         # Connection key for tracking
         conn_key = f"{client_ip}:{client_port}-{server_ip}:{server_port}"
 
-        # Initialize connection if needed (we already know this is SSH traffic)
+        # Skip packets that aren't SSH data AND don't belong to a known SSH connection
+        if not has_ssh_data and conn_key not in self.connections:
+            return None
+
+        # Initialize connection if needed
         if conn_key not in self.connections:
             self.connections[conn_key] = {
                 "client_ip": client_ip,

@@ -157,14 +157,21 @@ def parse_quic_initial(udp_payload):
     if version == 0:
         return None
 
+    # Packet type is in bits 4-5 of the first byte.
+    # QUIC v1: Initial = 0x00, QUIC v2 (RFC 9369): Initial = 0x01
     packet_type = (first_byte & 0x30) >> 4
-    if packet_type != 0x00:
-        return None
+    is_v2 = version == 0x6B3343CF
+    if is_v2:
+        if packet_type != 0x01:
+            return None
+    else:
+        if packet_type != 0x00:
+            return None
 
     dcid_len = udp_payload[5]
     dcid = udp_payload[6:6 + dcid_len]
 
-    quic_version = 2 if version == 0x6B3343CF else 1
+    quic_version = 2 if is_v2 else 1
     client_secret, _ = derive_initial_secrets(dcid, quic_version)
     key, iv, hp_key = derive_key_iv_hp(client_secret)
 
