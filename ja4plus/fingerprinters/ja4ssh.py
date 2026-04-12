@@ -273,7 +273,15 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         super().reset()
         self.hassh_fingerprints = []
         self.connections = {}
-        
+
+    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+        """Remove stored SSH session state for the given connection."""
+        # JA4SSH stores state as client:port-server:port (client is higher port)
+        fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+        rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+        self.connections.pop(fwd, None)
+        self.connections.pop(rev, None)
+
     def interpret_fingerprint(self, fingerprint):
         """
         Interpret a JA4SSH fingerprint to determine session type.

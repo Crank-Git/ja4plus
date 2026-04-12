@@ -63,7 +63,14 @@ class JA4XFingerprinter(BaseFingerprinter):
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
         self.processed_certs = set()
         self.last_cleanup = time.time()
-    
+
+    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+        """Remove TCP stream buffer for the given connection."""
+        stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+        self.reassembler.remove_stream(stream_key)
+        rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+        self.reassembler.remove_stream(rev_key)
+
     def process_packet(self, packet):
         """Process a packet and extract JA4X fingerprint if applicable."""
         if not (TCP in packet and Raw in packet):

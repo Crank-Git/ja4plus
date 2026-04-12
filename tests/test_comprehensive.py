@@ -315,7 +315,9 @@ class TestJA4Comprehensive(unittest.TestCase):
         packet = IP() / TCP(sport=12345, dport=443) / Raw(load=raw)
         raw_fp = self.fp.get_raw_fingerprint(packet)
         self.assertIsNotNone(raw_fp)
-        self.assertTrue(raw_fp.startswith("JA4_r"))
+        # Returns clean fingerprint string (no "JA4_r = " prefix)
+        self.assertFalse(raw_fp.startswith("JA4_"))
+        self.assertIn("_", raw_fp)
 
     def test_ssl30_version(self):
         """SSL 3.0 should produce 's3' version string."""

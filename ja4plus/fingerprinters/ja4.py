@@ -242,11 +242,7 @@ def get_raw_fingerprint(tls_info, original_order=False):
         else:
             raw_ja4 = f"{part_a}_{cipher_list}_{ext_list}"
         
-        # Add suffix to indicate format
-        if original_order:
-            return f"JA4_ro = {raw_ja4}"
-        else:
-            return f"JA4_r = {raw_ja4}"
+        return raw_ja4
             
     except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
         logger.debug(f"Failed to generate JA4 fingerprint: {e}")

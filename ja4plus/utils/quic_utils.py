@@ -144,6 +144,82 @@ def extract_crypto_frames(plaintext):
     return bytes(reassembled)
 
 
+def parse_quic_server_initial(udp_payload, client_dcid):
+    """
+    Parse a QUIC Server Initial packet and extract the TLS ServerHello.
+
+    The client_dcid is the Destination Connection ID from the *client's*
+    Initial packet, needed to derive the server's decryption keys.
+
+    Args:
+        udp_payload: Raw bytes of the UDP payload (server → client)
+        client_dcid: bytes — the DCID the client sent in its Initial
+
+    Returns:
+        A tls_info dict with is_quic=True and handshake_type='server_hello',
+        or None if the packet is not a QUIC Initial or decryption fails.
+    """
+    if len(udp_payload) < 5 or not client_dcid:
+        return None
+
+    first_byte = udp_payload[0]
+    if not (first_byte & 0x80):
+        return None  # short header
+
+    version = struct.unpack("!I", udp_payload[1:5])[0]
+    if version == 0:
+        return None  # version negotiation
+
+    quic_version = None
+    packet_type = (first_byte & 0x30) >> 4
+    is_v2 = version == 0x6B3343CF
+    if is_v2:
+        if packet_type != 0x01:
+            return None
+        quic_version = 2
+    else:
+        if packet_type != 0x00:
+            return None
+        quic_version = 1
+
+    # Derive server keys using the CLIENT's original DCID
+    _, server_secret = derive_initial_secrets(bytes(client_dcid), quic_version)
+    key, iv, hp_key = derive_key_iv_hp(server_secret)
+
+    try:
+        unprotected, pn, pn_length = remove_header_protection(udp_payload, hp_key)
+        pn_offset = _find_pn_offset(udp_payload)
+
+        plaintext = decrypt_initial_payload(
+            unprotected, pn, pn_length, pn_offset, key, iv
+        )
+
+        server_hello_bytes = extract_crypto_frames(plaintext)
+        if not server_hello_bytes:
+            return None
+
+        # Must be a ServerHello (handshake type 0x02)
+        if len(server_hello_bytes) < 1 or server_hello_bytes[0] != 0x02:
+            return None
+
+        sh_length = len(server_hello_bytes)
+        fake_record = (
+            bytes([0x16, 0x03, 0x01])
+            + struct.pack("!H", sh_length)
+            + server_hello_bytes
+        )
+
+        from ja4plus.utils.tls_utils import parse_tls_handshake
+        tls_info = parse_tls_handshake(fake_record)
+        if tls_info:
+            tls_info["is_quic"] = True
+        return tls_info
+
+    except Exception as e:
+        logger.debug(f"QUIC server Initial parsing failed: {e}")
+        return None
+
+
 def parse_quic_initial(udp_payload):
     """Parse a QUIC Initial packet and extract the TLS ClientHello."""
     if len(udp_payload) < 20:

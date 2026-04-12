@@ -46,4 +46,20 @@ class BaseFingerprinter:
     
     def reset(self):
         """Reset the fingerprinter state."""
-        self.fingerprints = [] 
+        self.fingerprints = []
+
+    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+        """
+        Remove internal state for the given completed or evicted connection.
+
+        Stateless fingerprinters (JA4, JA4T, JA4TS, JA4D) use this no-op.
+        Stateful subclasses override to evict per-connection data and prevent
+        memory leaks in long-running monitors.
+
+        Args:
+            src_ip:   Source IP address string
+            src_port: Source port (int)
+            dst_ip:   Destination IP address string
+            dst_port: Destination port (int)
+            proto:    Protocol string, e.g. 'tcp' or 'udp'
+        """

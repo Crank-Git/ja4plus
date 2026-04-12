@@ -387,13 +387,17 @@ class TestJA4RawFingerprint(unittest.TestCase):
         info = _tls_info(ciphers=[0xC02F, 0x1301], sni="test.com")
         raw = get_raw_fingerprint(info, original_order=False)
         self.assertIsNotNone(raw)
-        self.assertTrue(raw.startswith("JA4_r = "))
+        # Returns clean fingerprint string (no "JA4_r = " prefix)
+        self.assertFalse(raw.startswith("JA4_"))
+        self.assertIn("_", raw)
 
     def test_raw_original_order_format(self):
         info = _tls_info(ciphers=[0xC02F, 0x1301], sni="test.com")
         raw = get_raw_fingerprint(info, original_order=True)
         self.assertIsNotNone(raw)
-        self.assertTrue(raw.startswith("JA4_ro = "))
+        # Returns clean fingerprint string (no "JA4_ro = " prefix)
+        self.assertFalse(raw.startswith("JA4_"))
+        self.assertIn("_", raw)
 
     def test_raw_contains_cipher_hex(self):
         info = _tls_info(ciphers=[0x1301, 0xC02F])
@@ -441,7 +445,9 @@ class TestJA4FingerprinterClass(unittest.TestCase):
         fp = JA4Fingerprinter()
         result = fp.get_raw_fingerprint(packet)
         self.assertIsNotNone(result)
-        self.assertTrue(result.startswith("JA4_r"))
+        # Returns clean fingerprint string (no "JA4_r = " prefix)
+        self.assertFalse(result.startswith("JA4_"))
+        self.assertIn("_", result)
 
 
 if __name__ == "__main__":
