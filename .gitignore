@@ -10,3 +10,4 @@ build/
 .omc/
 .claude/
 .gstack/
+.worktrees/
