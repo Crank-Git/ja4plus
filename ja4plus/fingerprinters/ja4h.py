@@ -83,6 +83,14 @@ class JA4HFingerprinter(BaseFingerprinter):
         super().reset()
         self.reassembler = TCPStreamReassembler(max_streams=100)
 
+    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+        """Remove TCP stream buffer for the given connection."""
+        stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+        self.reassembler.remove_stream(stream_key)
+        # Also try reverse direction
+        rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+        self.reassembler.remove_stream(rev_key)
+
 
 def _extract_http_info_from_bytes(data):
     """Extract HTTP info from raw bytes, preserving original header name casing.

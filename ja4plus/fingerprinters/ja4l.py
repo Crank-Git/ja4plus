@@ -90,6 +90,14 @@ class JA4LFingerprinter(BaseFingerprinter):
         super().reset()
         self.connections = {}
 
+    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+        """Remove stored timing state for the given connection."""
+        # JA4L normalizes the key so we must try both orderings
+        fwd = f"{proto}_{src_ip}:{src_port}_{dst_ip}:{dst_port}"
+        rev = f"{proto}_{dst_ip}:{dst_port}_{src_ip}:{src_port}"
+        self.connections.pop(fwd, None)
+        self.connections.pop(rev, None)
+
     def calculate_distance(self, latency_us, propagation_factor=1.6):
         """
         Calculate the physical distance based on JA4L latency.

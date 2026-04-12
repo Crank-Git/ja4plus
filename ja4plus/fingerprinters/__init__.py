@@ -10,6 +10,7 @@ from .ja4x import JA4XFingerprinter
 from .ja4ssh import JA4SSHFingerprinter
 from .ja4t import JA4TFingerprinter
 from .ja4ts import JA4TSFingerprinter
+from .ja4d import JA4DFingerprinter
 
 __all__ = [
     'JA4Fingerprinter',
@@ -19,5 +20,6 @@ __all__ = [
     'JA4XFingerprinter',
     'JA4SSHFingerprinter',
     'JA4TFingerprinter',
-    'JA4TSFingerprinter'
+    'JA4TSFingerprinter',
+    'JA4DFingerprinter',
 ] 
