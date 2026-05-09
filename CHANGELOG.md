@@ -1,0 +1,76 @@
+# Changelog
+
+All notable changes to ja4plus are documented here. The format is based
+on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
+project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.6.0] - 2026-05
+
+Major spec-compliance update against the May 2026 FoxIO JA4+ spec
+(PRs #267, #270, #277, #281, #288), and a parity pass against the Go
+reference implementation.
+
+### Added
+
+- **JA4D6** (`ja4plus.JA4D6Fingerprinter` / `generate_ja4d6`): DHCPv6
+  fingerprinting (10th JA4+ method). Format mirrors JA4D with DHCPv6
+  semantics — DUID size from option 1, IATA presence flag, Client FQDN
+  flag, all option types in presence order including nested options
+  inside IA_NA / IA_TA / IA_PD / IA Address / IA Prefix.
+- **JA4D** is now a public package export
+  (`from ja4plus import JA4DFingerprinter, generate_ja4d`).
+- **`Processor`** aggregator class (`ja4plus.Processor`) — runs every
+  JA4+ fingerprinter on each packet and returns a list of result dicts.
+  Provides `process_packet`, `reset`, `cleanup_connection`,
+  `get_shard_key` (sorted 5-tuple, direction-independent).
+- **JA4 / JA4S raw exposure**: every result entry on these fingerprinters
+  now includes `raw` and `raw_original_order` keys, plus
+  `last_raw` / `last_raw_original_order` instance attributes for the most
+  recent successful parse. JSON CLI output emits these fields.
+- **Multi-packet QUIC CRYPTO reassembly**: large ClientHellos that span
+  multiple Initial datagrams (sharing a DCID) are now reassembled. New
+  helpers `decrypt_quic_initial_crypto`, `parse_crypto_frames`,
+  `reassemble_crypto_fragments`, `client_hello_from_crypto_fragments` in
+  `ja4plus.utils.quic_utils`. The CRYPTO frame parser now skips ACK
+  frames (0x02/0x03) instead of bailing on them.
+- **X.509 module helpers**: `compute_ja4x_from_pem(bytes)` and
+  `compute_ja4x_from_der(bytes)` mirroring Go's
+  `ComputeJA4XFromPEM` / `ComputeJA4XFromDER`.
+- CLI `--types` accepts `ja4d` and `ja4d6`.
+
+### Fixed
+
+- **JA4 ALPN non-alphanumeric** (PR #277): when the first or last byte
+  of the first ALPN value is not ASCII alphanumeric, the JA4 ALPN
+  component is now the first/last character of the lowercase HEX of the
+  full first ALPN value. Previously ja4plus dropped non-ASCII bytes via
+  `decode('ascii', errors='ignore')` and emitted `"99"` on the first
+  byte being non-ASCII. Raw ALPN bytes are now preserved on
+  `tls_info["alpn_raw"]`.
+- **JA4H HTTP/2 + HTTP/3 version codes** (PR #288): `HTTP/2` now maps to
+  `"20"` and `HTTP/3` to `"30"` in the JA4H part-A version code (not
+  `"2"` / `"3"`). HTTP/1.0 / HTTP/1.1 unchanged.
+- **JA4H cookie-VALUES sort by NAME only** (PR #288): the cookie-values
+  hash component now sorts pairs explicitly by cookie name; previously
+  relied on tuple-sort tie-breaking.
+- **JA4SSH deterministic mode tiebreak** (PR #281): when multiple packet
+  sizes tie for the highest frequency, the LOWEST value wins. Previously
+  used `Counter.most_common(1)[0][0]`, whose result could vary based on
+  insertion order.
+- **JA4L UDP/QUIC server-first orderings**: the QUIC timing path no
+  longer requires the connection's lexicographic direction to be
+  `forward`. The first packet on the flow defines the client; subsequent
+  packets are routed by comparing endpoints to that anchor.
+- **JA4D skip set** matches the spec exactly: `{0, 53, 50, 81}`. The
+  End marker (255) is handled by the parse loop and never recorded.
+
+### Changed
+
+- Bumped version to **0.6.0**.
+- README updated to reflect 10 JA4+ methods and new APIs.
+
+### Internal
+
+- Per-DCID QUIC fragment buffer + reverse map for cleanup.
+- New `ja4plus.utils.quic_utils._parse_alpn_with_bytes` returns both
+  decoded strings and raw bytes for ALPN.

@@ -238,12 +238,19 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         return ja4ssh
     
     def _mode(self, values):
-        """Find the most common value in a list."""
+        """Find the most common value in a list (deterministic).
+
+        Per FoxIO PR #281, when multiple values tie for the highest frequency,
+        the LOWEST value wins. This guarantees deterministic JA4SSH output
+        regardless of the iteration order of the underlying Counter.
+        """
         if not values:
             return 0
-            
+
         counter = Counter(values)
-        return counter.most_common(1)[0][0]
+        max_count = max(counter.values())
+        # Among values with the top frequency, pick the smallest.
+        return min(v for v, c in counter.items() if c == max_count)
     
     def get_hassh_fingerprints(self):
         """

@@ -23,8 +23,13 @@ from ja4plus.fingerprinters.ja4t import JA4TFingerprinter
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
+from ja4plus.fingerprinters.ja4d import JA4DFingerprinter
+from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
 
-VALID_TYPES = ["ja4", "ja4s", "ja4h", "ja4l", "ja4t", "ja4ts", "ja4x", "ja4ssh"]
+VALID_TYPES = [
+    "ja4", "ja4s", "ja4h", "ja4l", "ja4t", "ja4ts", "ja4x", "ja4ssh",
+    "ja4d", "ja4d6",
+]
 
 ALL_FINGERPRINTERS = {
     "ja4": JA4Fingerprinter,
@@ -35,6 +40,8 @@ ALL_FINGERPRINTERS = {
     "ja4ts": JA4TSFingerprinter,
     "ja4x": JA4XFingerprinter,
     "ja4ssh": JA4SSHFingerprinter,
+    "ja4d": JA4DFingerprinter,
+    "ja4d6": JA4D6Fingerprinter,
 }
 
 
@@ -91,11 +98,21 @@ def _get_packet_source(packet):
 
 def _output_results(results, fmt, writer=None, ja4db_client=None):
     """
-    Output a list of (source, type, fingerprint) tuples in the requested format.
+    Output a list of result tuples in the requested format.
+
+    Each result is (source, fp_type, fingerprint, raw, raw_oo) where raw and
+    raw_oo are optional (None for fingerprinters that don't expose them).
     writer is only used for csv format (a csv.writer instance).
     ja4db_client is optional JA4DBClient for fingerprint identification.
     """
-    for source, fp_type, fingerprint in results:
+    for entry in results:
+        # Backward compat: accept 3-tuples too
+        if len(entry) == 3:
+            source, fp_type, fingerprint = entry
+            raw, raw_oo = None, None
+        else:
+            source, fp_type, fingerprint, raw, raw_oo = entry
+
         identified = ""
         if ja4db_client:
             match = ja4db_client.lookup(fingerprint)
@@ -104,6 +121,10 @@ def _output_results(results, fmt, writer=None, ja4db_client=None):
 
         if fmt == "json":
             obj = {"source": source, "type": fp_type, "fingerprint": fingerprint}
+            if raw is not None:
+                obj["raw"] = raw
+            if raw_oo is not None:
+                obj["raw_original_order"] = raw_oo
             if ja4db_client:
                 obj["identified_as"] = identified or None
             print(json.dumps(obj))
@@ -172,7 +193,9 @@ def cmd_analyze(args):
                     try:
                         result = fp.process_packet(packet)
                         if result:
-                            row_batch.append((source, fp_type, result))
+                            raw = getattr(fp, 'last_raw', None)
+                            raw_oo = getattr(fp, 'last_raw_original_order', None)
+                            row_batch.append((source, fp_type, result, raw, raw_oo))
                     except Exception:
                         pass
                 if row_batch:
@@ -226,7 +249,9 @@ def cmd_live(args):
             try:
                 result = fp.process_packet(packet)
                 if result:
-                    row_batch.append((source, fp_type, result))
+                    raw = getattr(fp, 'last_raw', None)
+                    raw_oo = getattr(fp, 'last_raw_original_order', None)
+                    row_batch.append((source, fp_type, result, raw, raw_oo))
             except Exception:
                 pass
         if row_batch:

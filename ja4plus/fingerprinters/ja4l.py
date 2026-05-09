@@ -228,9 +228,27 @@ def generate_ja4l(packet, conn=None):
                     latency = max(1, int(diff * 1000000))
                     return f"JA4L-C={latency}_{ttl}"
 
-        # Handle QUIC (UDP) protocol
+        # Handle QUIC (UDP) protocol.
+        # Per FoxIO spec, the first UDP packet seen on a flow defines the
+        # client; the response defines the server. We don't depend on the
+        # lexicographic conn_key direction (which produced silent failures
+        # for server-first capture orderings — the previous code only
+        # advanced state when direction was 'forward').
         elif packet.haslayer(UDP) and conn.get('proto') == 'udp':
-            is_client = _src_is_client(packet, conn)
+            from ja4plus.utils.packet_utils import get_ip_layer
+            ip_layer = get_ip_layer(packet)
+            if ip_layer is None:
+                return None
+            src_ip = ip_layer.src
+            sport = int(packet[UDP].sport)
+            dport = int(packet[UDP].dport)
+
+            # Lock in the client identity on the first packet.
+            if 'client_endpoint' not in conn:
+                conn['client_endpoint'] = (src_ip, sport, dport)
+            client_ip, client_sport, client_dport = conn['client_endpoint']
+            is_client = (src_ip == client_ip and sport == client_sport
+                         and dport == client_dport)
 
             if 'A' not in conn['timestamps'] and is_client:
                 conn['timestamps']['A'] = current_time

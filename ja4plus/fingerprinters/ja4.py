@@ -10,6 +10,50 @@ logger = logging.getLogger(__name__)
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
+
+def _is_alnum_byte(b):
+    """ASCII alphanumeric per FoxIO PR #277: 0-9, A-Z, a-z."""
+    return (0x30 <= b <= 0x39) or (0x41 <= b <= 0x5A) or (0x61 <= b <= 0x7A)
+
+
+def compute_alpn_value(first_alpn_bytes):
+    """Compute the JA4 ALPN value per FoxIO spec PR #277.
+
+    Rules:
+        - empty / None: '00'
+        - both first and last byte ASCII alphanumeric: those two bytes as chars
+          (single-byte ALPN duplicates the byte, e.g. 'h' -> 'hh')
+        - either end non-alphanumeric: first and last char of HEX representation
+          of the FULL first ALPN string (lowercase)
+
+    Examples:
+        b'\\xab'         -> 'ab'
+        b'\\x20'         -> '20'
+        b'\\xab\\xcd'    -> 'ad'
+        b'\\x20\\x61'    -> '21'
+        b'\\x30\\xab'    -> '3b'  (first alnum, last not -> hex)
+        b'\\x61\\x20'    -> '60'
+        b'\\x30\\x31\\xab\\xcd' -> '3d'
+        b'\\x30\\xab\\xcd\\x31' -> '01'  (both ends alnum -> bytes directly)
+        b'h2'            -> 'h2'
+        b'h'             -> 'hh'
+    """
+    if not first_alpn_bytes:
+        return "00"
+
+    first = first_alpn_bytes[0]
+    last = first_alpn_bytes[-1]
+
+    if _is_alnum_byte(first) and _is_alnum_byte(last):
+        if len(first_alpn_bytes) == 1:
+            ch = chr(first)
+            return ch + ch
+        return chr(first) + chr(last)
+
+    # Non-alphanumeric at either end: use hex of full first ALPN value.
+    hex_str = first_alpn_bytes.hex()  # always lowercase
+    return hex_str[0] + hex_str[-1]
+
 def generate_ja4(tls_info):
     """
     Generate a JA4 fingerprint from TLS Client Hello info.
@@ -74,25 +118,18 @@ def generate_ja4(tls_info):
         ext_count = min(len(extensions), 99)  # Cap at 99
         ext_count_str = f"{ext_count:02d}"
         
-        # Get ALPN value - extract first and last character
-        # Per FoxIO spec: first+last alphanumeric char of first ALPN protocol
-        # Non-ASCII (ord > 127) -> '99'
+        # ALPN value per FoxIO spec PR #277: see compute_alpn_value().
+        # Prefer the raw bytes (full byte fidelity) and fall back to the
+        # decoded string for backward-compat callers that only set
+        # alpn_protocols.
+        alpn_raw = tls_info.get('alpn_raw') or []
         alpn_protocols = tls_info.get('alpn_protocols', [])
-        if not alpn_protocols:
-            alpn_value = '00'
+        if alpn_raw:
+            alpn_value = compute_alpn_value(alpn_raw[0])
+        elif alpn_protocols and alpn_protocols[0]:
+            alpn_value = compute_alpn_value(alpn_protocols[0].encode('latin-1', errors='replace'))
         else:
-            first_alpn = alpn_protocols[0]
-
-            if not first_alpn:
-                alpn_value = '00'
-            else:
-                # FoxIO spec: if first char is non-ASCII, use '99'
-                if ord(first_alpn[0]) > 127:
-                    alpn_value = '99'
-                elif len(first_alpn) == 1:
-                    alpn_value = first_alpn[0] + first_alpn[0]
-                else:
-                    alpn_value = f"{first_alpn[0]}{first_alpn[-1]}"
+            alpn_value = '00'
         
         # Form part_a of the fingerprint
         part_a = f"{proto}{version_str}{sni_type}{cipher_count_str}{ext_count_str}{alpn_value}"
@@ -198,21 +235,15 @@ def get_raw_fingerprint(tls_info, original_order=False):
         ext_count = min(len(extensions), 99)
         ext_count_str = f"{ext_count:02d}"
         
-        # ALPN - same as in generate_ja4
+        # ALPN per FoxIO spec PR #277 — same path as generate_ja4
+        alpn_raw = tls_info.get('alpn_raw') or []
         alpn_protocols = tls_info.get('alpn_protocols', [])
-        if not alpn_protocols:
-            alpn_value = '00'
+        if alpn_raw:
+            alpn_value = compute_alpn_value(alpn_raw[0])
+        elif alpn_protocols and alpn_protocols[0]:
+            alpn_value = compute_alpn_value(alpn_protocols[0].encode('latin-1', errors='replace'))
         else:
-            first_alpn = alpn_protocols[0]
-
-            if not first_alpn:
-                alpn_value = '00'
-            elif ord(first_alpn[0]) > 127:
-                alpn_value = '99'
-            elif len(first_alpn) == 1:
-                alpn_value = first_alpn[0] + first_alpn[0]
-            else:
-                alpn_value = f"{first_alpn[0]}{first_alpn[-1]}"
+            alpn_value = '00'
         
         # First part of fingerprint
         part_a = f"{proto}{version_str}{sni_type}{cipher_count_str}{ext_count_str}{alpn_value}"
@@ -249,37 +280,120 @@ def get_raw_fingerprint(tls_info, original_order=False):
         return None
 
 class JA4Fingerprinter(BaseFingerprinter):
-    """Fingerprinter for JA4 (TLS Client Hello)."""
-    
+    """Fingerprinter for JA4 (TLS Client Hello).
+
+    In addition to the hashed JA4 fingerprint returned by ``process_packet``,
+    this fingerprinter exposes the raw (unhashed) variants on every entry in
+    ``get_fingerprints()`` and on ``last_raw`` / ``last_raw_original_order``
+    for the most recent successful parse, mirroring the Go reference's
+    FingerprintResult.Raw / RawOriginalOrder fields.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.last_raw = None
+        self.last_raw_original_order = None
+        # DCID -> list[(offset, data)] for multi-datagram QUIC CRYPTO reassembly.
+        # Keyed by DCID hex so packets with the same connection ID accumulate
+        # together regardless of UDP 5-tuple changes.
+        self._quic_fragments = {}
+        self._quic_dcid_to_tuple = {}
+
     def process_packet(self, packet):
-        """Process a packet and extract JA4 fingerprint if applicable."""
-        # First extract TLS info from the packet
+        """Process a packet and extract JA4 fingerprint if applicable.
+
+        For QUIC Initials larger than one datagram, CRYPTO frame fragments
+        accumulate per Destination Connection ID until a full ClientHello
+        can be reassembled. Once parsed, the per-DCID buffer is released.
+        """
         tls_info = extract_tls_info(packet)
-        
+        if not tls_info:
+            tls_info = self._try_quic_multi_packet(packet)
         if not tls_info:
             return None
-        
-        # Then generate JA4 from the extracted TLS info
+
         fingerprint = generate_ja4(tls_info)
-        
         if fingerprint:
-            self.add_fingerprint(fingerprint, packet)
-        
+            raw = get_raw_fingerprint(tls_info, original_order=False)
+            raw_oo = get_raw_fingerprint(tls_info, original_order=True)
+            self.last_raw = raw
+            self.last_raw_original_order = raw_oo
+            self.fingerprints.append({
+                'fingerprint': fingerprint,
+                'raw': raw,
+                'raw_original_order': raw_oo,
+                'packet': packet,
+            })
+
         return fingerprint
-        
+
+    def _try_quic_multi_packet(self, packet):
+        """Accumulate QUIC CRYPTO fragments per DCID; return tls_info if a
+        full ClientHello has been reassembled."""
+        from scapy.all import UDP
+        from ja4plus.utils.quic_utils import (
+            decrypt_quic_initial_crypto,
+            client_hello_from_crypto_fragments,
+        )
+
+        udp = packet.getlayer(UDP)
+        if udp is None:
+            return None
+        udp_payload = bytes(udp.payload)
+        if not udp_payload:
+            return None
+
+        fragments, dcid = decrypt_quic_initial_crypto(udp_payload)
+        if dcid is None or fragments is None:
+            return None
+
+        dcid_key = dcid.hex()
+        existing = self._quic_fragments.setdefault(dcid_key, [])
+        existing.extend(fragments)
+
+        # Track DCID -> 5-tuple for cleanup_connection.
+        from ja4plus.utils.packet_utils import get_ip_layer
+        ip = get_ip_layer(packet)
+        if ip is not None:
+            tuple_key = f"{ip.src}:{int(udp.sport)}-{ip.dst}:{int(udp.dport)}"
+            self._quic_dcid_to_tuple[dcid_key] = tuple_key
+
+        tls_info = client_hello_from_crypto_fragments(existing)
+        if tls_info is not None:
+            # ClientHello is complete — release the buffer.
+            del self._quic_fragments[dcid_key]
+            self._quic_dcid_to_tuple.pop(dcid_key, None)
+        return tls_info
+
+    def reset(self):
+        super().reset()
+        self.last_raw = None
+        self.last_raw_original_order = None
+        self._quic_fragments = {}
+        self._quic_dcid_to_tuple = {}
+
+    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+        """Drop any accumulated QUIC CRYPTO fragments for the given 5-tuple."""
+        tuple_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+        rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+        for dcid_key, tup in list(self._quic_dcid_to_tuple.items()):
+            if tup == tuple_key or tup == rev_key:
+                self._quic_fragments.pop(dcid_key, None)
+                self._quic_dcid_to_tuple.pop(dcid_key, None)
+
     def get_raw_fingerprint(self, packet, original_order=False):
         """
         Get raw JA4 fingerprint with visible components.
-        
+
         Args:
             packet: A packet containing a TLS Client Hello
             original_order: Whether to maintain original ordering
-            
+
         Returns:
             Raw JA4 fingerprint string or None
         """
         tls_info = extract_tls_info(packet)
         if not tls_info:
             return None
-            
-        return get_raw_fingerprint(tls_info, original_order) 
+
+        return get_raw_fingerprint(tls_info, original_order)

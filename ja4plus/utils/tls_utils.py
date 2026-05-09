@@ -134,6 +134,7 @@ def _parse_client_hello(raw_data):
     extension_data = {}
     supported_versions = []
     alpn_protocols = []
+    alpn_raw = []
     signature_algorithms = []
     sni = None
 
@@ -162,7 +163,9 @@ def _parse_client_hello(raw_data):
 
             # Parse ALPN (0x0010)
             elif ext_type == 0x0010:
-                alpn_protocols = _parse_alpn(raw_data[ext_data_start:ext_data_end])
+                alpn_protocols, alpn_raw = _parse_alpn_with_bytes(
+                    raw_data[ext_data_start:ext_data_end]
+                )
 
             # Parse signature_algorithms (0x000d)
             elif ext_type == 0x000d:
@@ -176,6 +179,7 @@ def _parse_client_hello(raw_data):
     tls_info['extension_data'] = extension_data
     tls_info['supported_versions'] = supported_versions
     tls_info['alpn_protocols'] = alpn_protocols
+    tls_info['alpn_raw'] = alpn_raw
     tls_info['signature_algorithms'] = signature_algorithms
     if sni is not None:
         tls_info['sni'] = sni
@@ -223,6 +227,7 @@ def _parse_server_hello(raw_data):
     extensions = []
     extension_data = {}
     alpn_protocols = []
+    alpn_raw = []
     supported_versions = []
 
     if pos + 2 <= len(raw_data):
@@ -240,7 +245,9 @@ def _parse_server_hello(raw_data):
 
             # Parse ALPN (0x0010)
             if ext_type == 0x0010:
-                alpn_protocols = _parse_alpn(raw_data[ext_data_start:ext_data_end])
+                alpn_protocols, alpn_raw = _parse_alpn_with_bytes(
+                    raw_data[ext_data_start:ext_data_end]
+                )
                 extension_data[0x0010] = {'protocols': alpn_protocols}
 
             # Parse supported_versions (0x002b) - server selects one version
@@ -254,6 +261,7 @@ def _parse_server_hello(raw_data):
     tls_info['extensions'] = extensions
     tls_info['extension_data'] = extension_data
     tls_info['alpn_protocols'] = alpn_protocols
+    tls_info['alpn_raw'] = alpn_raw
     tls_info['supported_versions'] = supported_versions
 
     # If supported_versions indicates TLS 1.3, update the version
@@ -318,13 +326,30 @@ def _parse_supported_versions_client(data):
 
 
 def _parse_alpn(data):
-    """Parse Application-Layer Protocol Negotiation extension data."""
+    """Parse Application-Layer Protocol Negotiation extension data.
+
+    Returns a list of decoded strings. Raw bytes are stored separately on the
+    tls_info dict via _parse_alpn_with_bytes() — callers that need byte-level
+    fidelity (e.g. JA4 ALPN per PR #277) should use that helper.
+    """
+    protocols, _ = _parse_alpn_with_bytes(data)
+    return protocols
+
+
+def _parse_alpn_with_bytes(data):
+    """Parse ALPN, returning both decoded strings and original bytes.
+
+    Returns:
+        (protocols, raw_protocols) where ``protocols`` is a list of best-effort
+        ASCII-decoded strings (errors ignored, non-ASCII bytes dropped) and
+        ``raw_protocols`` is a list of the corresponding raw bytes objects.
+    """
     protocols = []
+    raw_protocols = []
     if len(data) < 2:
-        return protocols
+        return protocols, raw_protocols
 
     try:
-        # ALPN list length (2 bytes)
         alpn_list_len = (data[0] << 8) | data[1]
         pos = 2
 
@@ -336,13 +361,14 @@ def _parse_alpn(data):
 
             if pos + proto_len > len(data):
                 break
-            protocol = data[pos:pos + proto_len].decode('ascii', errors='ignore')
-            protocols.append(protocol)
+            raw = bytes(data[pos:pos + proto_len])
+            raw_protocols.append(raw)
+            protocols.append(raw.decode('ascii', errors='ignore'))
             pos += proto_len
     except (ValueError, IndexError, UnicodeDecodeError) as e:
         logger.debug(f"Failed to parse ALPN: {e}")
 
-    return protocols
+    return protocols, raw_protocols
 
 
 def _parse_signature_algorithms(data):

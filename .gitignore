@@ -11,3 +11,22 @@ build/
 .claude/
 .gstack/
 .worktrees/
+
+# Claude Code / agent artifacts (local only)
+CLAUDE.md
+AGENTS.md
+TODOS.md
+PYTHON_ISSUES.md
+docs/superpowers/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Captures (not committed)
+*.pcap
+*.pcapng

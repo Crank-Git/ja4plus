@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/logo.png" width="300"></p>
 
-A Python library and CLI for JA4+ network fingerprinting. Implements all eight JA4+ methods for identifying and classifying network traffic based on TLS, TCP, HTTP, SSH, and X.509 characteristics. Supports QUIC, IPv4/IPv6, and multi-segment TCP reassembly.
+A Python library and CLI for JA4+ network fingerprinting. Implements all ten JA4+ methods for identifying and classifying network traffic based on TLS, TCP, HTTP, SSH, X.509, and DHCP characteristics. Supports QUIC, IPv4/IPv6, and multi-segment TCP reassembly.
 
 JA4+ is a set of network fingerprinting standards created by [FoxIO](https://foxio.io). This library is an independent Python implementation of the published specification. For the original spec, see the [FoxIO JA4+ repository](https://github.com/FoxIO-LLC/ja4).
 
@@ -21,6 +21,8 @@ JA4+ is a set of network fingerprinting standards created by [FoxIO](https://fox
 | JA4L | TCP/QUIC | Light distance and latency estimation |
 | JA4X | X.509 | Certificate structure fingerprint from OID sequences |
 | JA4SSH | SSH | Session type classification from traffic patterns |
+| JA4D | DHCPv4 | DHCP client/server fingerprint (FoxIO PR #267/#270) |
+| JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint (FoxIO PR #267/#270) |
 
 QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS ClientHellos. IPv4 and IPv6 are both supported across all fingerprinters.
 
@@ -102,6 +104,8 @@ from ja4plus import (
     JA4LFingerprinter,     # Latency
     JA4XFingerprinter,     # X.509 Certificate
     JA4SSHFingerprinter,   # SSH
+    JA4DFingerprinter,     # DHCPv4
+    JA4D6Fingerprinter,    # DHCPv6
 )
 ```
 
@@ -123,6 +127,38 @@ from ja4plus import generate_ja4, generate_ja4s, generate_ja4h
 fingerprint = generate_ja4(packet)
 ```
 
+### Aggregating Processor
+
+Run every fingerprinter on each packet and get a list of results:
+
+```python
+from ja4plus import Processor
+
+p = Processor()
+for packet in packets:
+    for r in p.process_packet(packet):
+        print(r["type"], r["fingerprint"], r.get("raw"))
+
+# Use get_shard_key to bucket packets per connection
+shard_key = p.get_shard_key(packet)
+
+# Cleanup state for a finished connection
+p.cleanup_connection(src_ip, src_port, dst_ip, dst_port, "tcp")
+```
+
+JA4 and JA4S result dicts include the unhashed `raw` and
+`raw_original_order` variants — useful for human-readable output and
+fingerprint debugging.
+
+### X.509 Helpers
+
+```python
+from ja4plus import compute_ja4x_from_pem, compute_ja4x_from_der
+
+ja4x = compute_ja4x_from_pem(pem_bytes)
+ja4x = compute_ja4x_from_der(der_bytes)
+```
+
 See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter and [`docs/api_reference.md`](docs/api_reference.md) for the full API.
 
 ## Fingerprint Formats
@@ -137,6 +173,8 @@ See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter an
 | JA4L | `JA4L-{C\|S}={latency_us}_{ttl}` | `JA4L-S=2500_56` |
 | JA4X | `{issuer}_{subject}_{extensions}` | `a37f49ba31e2_a37f49ba31e2_dd4f1a0ef8b2` |
 | JA4SSH | `c{mode}s{mode}_c{pkts}s{pkts}_c{acks}s{acks}` | `c36s36_c51s80_c69s0` |
+| JA4D | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `disco0000in_61-55_1-3-6-42` |
+| JA4D6 | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `solct0014nn_1-6-8-25_23-24` |
 
 ## Spec Validation
 
