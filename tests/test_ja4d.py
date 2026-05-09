@@ -102,23 +102,23 @@ class TestBuildOptionList(unittest.TestCase):
         self.assertEqual(build_option_list([]), "00")
 
     def test_all_skipped(self):
-        self.assertEqual(build_option_list([53, 255, 50, 81]), "00")
+        self.assertEqual(build_option_list([53, 0, 50, 81]), "00")
 
     def test_single_option(self):
-        self.assertEqual(build_option_list([53, 61, 255]), "61")
+        self.assertEqual(build_option_list([53, 61]), "61")
 
     def test_multiple_options(self):
         self.assertEqual(
-            build_option_list([53, 61, 57, 60, 12, 55, 255]),
+            build_option_list([53, 61, 57, 60, 12, 55]),
             "61-57-60-12-55"
         )
 
     def test_with_skipped_mixed(self):
-        self.assertEqual(build_option_list([53, 50, 61, 81, 57, 255]), "61-57")
+        self.assertEqual(build_option_list([53, 50, 61, 81, 57]), "61-57")
 
     def test_skip_set_respected(self):
         # Option 57 (max msg size) is NOT in the skip set, so it should appear
-        self.assertIn("57", build_option_list([53, 57, 61, 255]))
+        self.assertIn("57", build_option_list([53, 57, 61]))
 
 
 class TestBuildParamList(unittest.TestCase):
@@ -211,8 +211,9 @@ class TestGenerateJA4D(unittest.TestCase):
         pkt = _make_dhcp_packet(msg_type=1, options=[61])
         result = generate_ja4d(pkt)
         parts = result.split('_')
-        # 53 (msg type), 255 (end) are added by the builder but must not appear
+        # 53 (msg type) is added by the builder but must not appear in section b
         self.assertNotIn("53", parts[1].split('-'))
+        # 255 (end) terminates the parse loop and is never recorded
         self.assertNotIn("255", parts[1].split('-'))
 
     def test_max_msg_size_capped_at_9999(self):

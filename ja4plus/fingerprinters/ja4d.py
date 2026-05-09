@@ -39,8 +39,10 @@ DHCP_MESSAGE_TYPES = {
     18: "dhtls",  # DHCPTLS
 }
 
-# Options to skip in section b (already encoded in section a or terminal).
-DHCP_SKIP_OPTIONS = {53, 255, 50, 81}
+# Options to skip in section b (per FoxIO spec PR #267/#270):
+# 0 = Pad, 53 = Message Type, 50 = Requested IP, 81 = Client FQDN
+# (255 = End breaks the parse loop, never appears in option_codes.)
+DHCP_SKIP_OPTIONS = {0, 53, 50, 81}
 
 # DHCP magic cookie
 _DHCP_MAGIC = b'\x63\x82\x53\x63'
@@ -110,8 +112,7 @@ def _parse_dhcp_options(raw_payload):
         opt_code = raw_payload[pos]
         pos += 1
 
-        if opt_code == 255:  # End
-            option_codes.append(255)
+        if opt_code == 255:  # End marker — terminate; do not record
             break
         if opt_code == 0:    # Pad
             continue
