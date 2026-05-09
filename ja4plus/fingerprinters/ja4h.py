@@ -19,6 +19,30 @@ from ja4plus.utils.packet_utils import get_ip_layer
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 
+def _http_version_to_str(version):
+    """Map an HTTP version string to a JA4H 2-char code per FoxIO PR #288.
+
+    HTTP/1.0 -> '10', HTTP/1.1 -> '11', HTTP/2 -> '20', HTTP/3 -> '30'.
+    Falls back to digits-only stripped of dots for unknown versions, padded
+    to length 2 with trailing zeros so the result fits the fixed format.
+    """
+    if not version:
+        return '11'
+    v = version.replace('HTTP/', '').strip()
+    # Normalize: HTTP/2 and HTTP/3 are version strings without the minor
+    # part; map them to 20 / 30 explicitly.
+    if v == '2' or v == '2.0':
+        return '20'
+    if v == '3' or v == '3.0':
+        return '30'
+    digits = v.replace('.', '')
+    if len(digits) >= 2:
+        return digits[:2]
+    if len(digits) == 1:
+        return digits + '0'
+    return '11'
+
+
 class JA4HFingerprinter(BaseFingerprinter):
     """
     JA4H HTTP Fingerprinting implementation.
@@ -183,8 +207,7 @@ def _generate_ja4h_from_info(http_info):
 
     try:
         method = http_info.get('method', '').lower()
-        version = http_info.get('version', '').replace('HTTP/', '')
-        version_str = version.replace('.', '')
+        version_str = _http_version_to_str(http_info.get('version', ''))
 
         has_cookie = 'c' if http_info.get('cookie_fields', []) else 'n'
         has_referer = 'r' if http_info.get('referer', '') else 'n'
@@ -220,8 +243,11 @@ def _generate_ja4h_from_info(http_info):
         cookie_fields_str = ','.join(cookie_fields)
         part_c = hashlib.sha256(cookie_fields_str.encode()).hexdigest()[:12] if cookie_fields_str else '000000000000'
 
+        # Cookie-VALUES hash: pairs sorted by NAME only (FoxIO PR #288).
+        # We sort by key explicitly so the ordering doesn't depend on tuple
+        # tie-breaking when two cookies happen to have identical names.
         cookie_dict = http_info.get('cookies', {})
-        sorted_cookie_pairs = sorted(cookie_dict.items())
+        sorted_cookie_pairs = sorted(cookie_dict.items(), key=lambda kv: kv[0])
         cookie_values_str = ','.join(f"{k}={v}" for k, v in sorted_cookie_pairs)
         part_d = hashlib.sha256(cookie_values_str.encode()).hexdigest()[:12] if cookie_values_str else '000000000000'
 
