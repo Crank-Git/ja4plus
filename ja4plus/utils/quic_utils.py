@@ -112,36 +112,190 @@ def decrypt_initial_payload(packet_bytes, pn, pn_length, pn_offset, key, iv):
 
 
 def extract_crypto_frames(plaintext):
-    """Extract and reassemble CRYPTO frame data from decrypted QUIC payload."""
-    crypto_data = {}
+    """Extract and reassemble CRYPTO frame data from decrypted QUIC payload.
+
+    Single-datagram convenience: reassembles fragments from a single
+    Initial packet's plaintext into a contiguous byte string, or returns
+    None if no CRYPTO frames are present.
+    """
+    fragments = parse_crypto_frames(plaintext)
+    if not fragments:
+        return None
+    return reassemble_crypto_fragments(fragments)
+
+
+def parse_crypto_frames(plaintext):
+    """Extract CRYPTO frame fragments from a decrypted QUIC Initial payload.
+
+    Returns a list of (offset, data) tuples in the order they appear.
+    Skips PADDING (0x00), PING (0x01), and ACK (0x02, 0x03) frames so
+    multi-packet captures with intermixed ACKs still surface their
+    CRYPTO fragments. Stops at the first unknown frame type.
+    """
+    fragments = []
     pos = 0
     while pos < len(plaintext):
         frame_type = plaintext[pos]
 
-        if frame_type == 0x00:
-            pos += 1
-            continue
-        if frame_type == 0x01:
+        if frame_type == 0x00 or frame_type == 0x01:
             pos += 1
             continue
 
-        if frame_type == 0x06:
+        if frame_type == 0x06:  # CRYPTO
             pos += 1
             offset, consumed = _decode_varint(plaintext[pos:])
             pos += consumed
             length, consumed = _decode_varint(plaintext[pos:])
             pos += consumed
-            crypto_data[offset] = plaintext[pos:pos + length]
+            if pos + length > len(plaintext):
+                break
+            fragments.append((offset, bytes(plaintext[pos:pos + length])))
             pos += length
-        else:
-            break
+            continue
 
-    if not crypto_data:
+        if frame_type == 0x02 or frame_type == 0x03:  # ACK
+            pos += 1
+            try:
+                _, c = _decode_varint(plaintext[pos:])
+                pos += c
+                _, c = _decode_varint(plaintext[pos:])
+                pos += c
+                range_count, c = _decode_varint(plaintext[pos:])
+                pos += c
+                _, c = _decode_varint(plaintext[pos:])
+                pos += c
+                for _ in range(range_count):
+                    _, c = _decode_varint(plaintext[pos:])
+                    pos += c
+                    _, c = _decode_varint(plaintext[pos:])
+                    pos += c
+                if frame_type == 0x03:
+                    for _ in range(3):
+                        _, c = _decode_varint(plaintext[pos:])
+                        pos += c
+            except (IndexError, ValueError):
+                break
+            continue
+
+        # Unknown frame type — can't safely skip, stop here.
+        break
+
+    return fragments
+
+
+def reassemble_crypto_fragments(fragments):
+    """Reassemble offset-keyed CRYPTO fragments into a contiguous bytestring.
+
+    Args:
+        fragments: iterable of (offset, data) tuples (data may be bytes/bytearray)
+
+    Returns:
+        bytes (possibly empty if there are gaps that haven't been filled).
+    """
+    if not fragments:
+        return b""
+    # Deduplicate identical offsets (a fragment can appear in multiple Initials)
+    by_offset = {}
+    for offset, data in fragments:
+        # Prefer the longest fragment seen for an offset (rare, but defensive).
+        existing = by_offset.get(offset)
+        if existing is None or len(data) > len(existing):
+            by_offset[offset] = bytes(data)
+
+    sorted_frags = sorted(by_offset.items())
+    total_len = max(off + len(data) for off, data in sorted_frags)
+    buf = bytearray(total_len)
+    for off, data in sorted_frags:
+        buf[off:off + len(data)] = data
+    return bytes(buf)
+
+
+def decrypt_quic_initial_crypto(udp_payload):
+    """Decrypt a QUIC Initial packet and return its CRYPTO fragments.
+
+    This is the multi-packet-friendly variant of parse_quic_initial:
+    it returns the *fragments* and the DCID rather than trying to parse
+    a ClientHello from a single datagram. Callers (e.g. JA4Fingerprinter)
+    accumulate fragments per DCID across packets and try
+    ``client_hello_from_crypto_fragments`` whenever new fragments arrive.
+
+    Returns:
+        (fragments, dcid) on success, or (None, None) if the packet is
+        not a QUIC v1/v2 Initial (or decryption fails).
+
+        ``fragments`` is a list of (offset, data) tuples.
+    """
+    if len(udp_payload) < 20:
+        return None, None
+
+    first_byte = udp_payload[0]
+    if not (first_byte & 0x80):
+        return None, None
+
+    version = struct.unpack("!I", udp_payload[1:5])[0]
+    if version == 0:
+        return None, None
+
+    packet_type = (first_byte & 0x30) >> 4
+    is_v2 = version == 0x6B3343CF
+    if is_v2:
+        if packet_type != 0x01:
+            return None, None
+    else:
+        if packet_type != 0x00:
+            return None, None
+
+    dcid_len = udp_payload[5]
+    if 6 + dcid_len > len(udp_payload):
+        return None, None
+    dcid = bytes(udp_payload[6:6 + dcid_len])
+
+    quic_version = 2 if is_v2 else 1
+    client_secret, _ = derive_initial_secrets(dcid, quic_version)
+    key, iv, hp_key = derive_key_iv_hp(client_secret)
+
+    try:
+        unprotected, pn, pn_length = remove_header_protection(udp_payload, hp_key)
+        pn_offset = _find_pn_offset(udp_payload)
+        plaintext = decrypt_initial_payload(
+            unprotected, pn, pn_length, pn_offset, key, iv
+        )
+    except Exception as e:
+        logger.debug(f"QUIC Initial decryption failed: {e}")
+        return None, None
+
+    return parse_crypto_frames(plaintext), dcid
+
+
+def client_hello_from_crypto_fragments(fragments):
+    """Reassemble fragments and try to parse a TLS ClientHello.
+
+    Returns a tls_info dict (with is_quic=True) on success, or None if
+    the assembled bytes don't form a complete ClientHello.
+    """
+    assembled = reassemble_crypto_fragments(fragments)
+    if len(assembled) < 4:
         return None
-    reassembled = bytearray()
-    for offset in sorted(crypto_data.keys()):
-        reassembled.extend(crypto_data[offset])
-    return bytes(reassembled)
+    if assembled[0] != 0x01:  # ClientHello handshake type
+        return None
+
+    # The handshake message embeds a 24-bit length at bytes [1:4].
+    msg_len = (assembled[1] << 16) | (assembled[2] << 8) | assembled[3]
+    if 4 + msg_len > len(assembled):
+        # Not yet complete — caller should keep accumulating fragments.
+        return None
+
+    fake_record = (
+        bytes([0x16, 0x03, 0x01])
+        + struct.pack("!H", min(len(assembled), 0xFFFF))
+        + bytes(assembled)
+    )
+
+    from ja4plus.utils.tls_utils import parse_tls_handshake
+    tls_info = parse_tls_handshake(fake_record)
+    if tls_info:
+        tls_info["is_quic"] = True
+    return tls_info
 
 
 def parse_quic_server_initial(udp_payload, client_dcid):

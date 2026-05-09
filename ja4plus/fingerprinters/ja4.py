@@ -293,10 +293,22 @@ class JA4Fingerprinter(BaseFingerprinter):
         super().__init__()
         self.last_raw = None
         self.last_raw_original_order = None
+        # DCID -> list[(offset, data)] for multi-datagram QUIC CRYPTO reassembly.
+        # Keyed by DCID hex so packets with the same connection ID accumulate
+        # together regardless of UDP 5-tuple changes.
+        self._quic_fragments = {}
+        self._quic_dcid_to_tuple = {}
 
     def process_packet(self, packet):
-        """Process a packet and extract JA4 fingerprint if applicable."""
+        """Process a packet and extract JA4 fingerprint if applicable.
+
+        For QUIC Initials larger than one datagram, CRYPTO frame fragments
+        accumulate per Destination Connection ID until a full ClientHello
+        can be reassembled. Once parsed, the per-DCID buffer is released.
+        """
         tls_info = extract_tls_info(packet)
+        if not tls_info:
+            tls_info = self._try_quic_multi_packet(packet)
         if not tls_info:
             return None
 
@@ -315,6 +327,60 @@ class JA4Fingerprinter(BaseFingerprinter):
 
         return fingerprint
 
+    def _try_quic_multi_packet(self, packet):
+        """Accumulate QUIC CRYPTO fragments per DCID; return tls_info if a
+        full ClientHello has been reassembled."""
+        from scapy.all import UDP
+        from ja4plus.utils.quic_utils import (
+            decrypt_quic_initial_crypto,
+            client_hello_from_crypto_fragments,
+        )
+
+        udp = packet.getlayer(UDP)
+        if udp is None:
+            return None
+        udp_payload = bytes(udp.payload)
+        if not udp_payload:
+            return None
+
+        fragments, dcid = decrypt_quic_initial_crypto(udp_payload)
+        if dcid is None or fragments is None:
+            return None
+
+        dcid_key = dcid.hex()
+        existing = self._quic_fragments.setdefault(dcid_key, [])
+        existing.extend(fragments)
+
+        # Track DCID -> 5-tuple for cleanup_connection.
+        from ja4plus.utils.packet_utils import get_ip_layer
+        ip = get_ip_layer(packet)
+        if ip is not None:
+            tuple_key = f"{ip.src}:{int(udp.sport)}-{ip.dst}:{int(udp.dport)}"
+            self._quic_dcid_to_tuple[dcid_key] = tuple_key
+
+        tls_info = client_hello_from_crypto_fragments(existing)
+        if tls_info is not None:
+            # ClientHello is complete — release the buffer.
+            del self._quic_fragments[dcid_key]
+            self._quic_dcid_to_tuple.pop(dcid_key, None)
+        return tls_info
+
+    def reset(self):
+        super().reset()
+        self.last_raw = None
+        self.last_raw_original_order = None
+        self._quic_fragments = {}
+        self._quic_dcid_to_tuple = {}
+
+    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+        """Drop any accumulated QUIC CRYPTO fragments for the given 5-tuple."""
+        tuple_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+        rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+        for dcid_key, tup in list(self._quic_dcid_to_tuple.items()):
+            if tup == tuple_key or tup == rev_key:
+                self._quic_fragments.pop(dcid_key, None)
+                self._quic_dcid_to_tuple.pop(dcid_key, None)
+
     def get_raw_fingerprint(self, packet, original_order=False):
         """
         Get raw JA4 fingerprint with visible components.
@@ -331,8 +397,3 @@ class JA4Fingerprinter(BaseFingerprinter):
             return None
 
         return get_raw_fingerprint(tls_info, original_order)
-
-    def reset(self):
-        super().reset()
-        self.last_raw = None
-        self.last_raw_original_order = None
