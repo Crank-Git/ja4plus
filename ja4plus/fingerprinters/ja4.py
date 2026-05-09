@@ -10,6 +10,50 @@ logger = logging.getLogger(__name__)
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
+
+def _is_alnum_byte(b):
+    """ASCII alphanumeric per FoxIO PR #277: 0-9, A-Z, a-z."""
+    return (0x30 <= b <= 0x39) or (0x41 <= b <= 0x5A) or (0x61 <= b <= 0x7A)
+
+
+def compute_alpn_value(first_alpn_bytes):
+    """Compute the JA4 ALPN value per FoxIO spec PR #277.
+
+    Rules:
+        - empty / None: '00'
+        - both first and last byte ASCII alphanumeric: those two bytes as chars
+          (single-byte ALPN duplicates the byte, e.g. 'h' -> 'hh')
+        - either end non-alphanumeric: first and last char of HEX representation
+          of the FULL first ALPN string (lowercase)
+
+    Examples:
+        b'\\xab'         -> 'ab'
+        b'\\x20'         -> '20'
+        b'\\xab\\xcd'    -> 'ad'
+        b'\\x20\\x61'    -> '21'
+        b'\\x30\\xab'    -> '3b'  (first alnum, last not -> hex)
+        b'\\x61\\x20'    -> '60'
+        b'\\x30\\x31\\xab\\xcd' -> '3d'
+        b'\\x30\\xab\\xcd\\x31' -> '01'  (both ends alnum -> bytes directly)
+        b'h2'            -> 'h2'
+        b'h'             -> 'hh'
+    """
+    if not first_alpn_bytes:
+        return "00"
+
+    first = first_alpn_bytes[0]
+    last = first_alpn_bytes[-1]
+
+    if _is_alnum_byte(first) and _is_alnum_byte(last):
+        if len(first_alpn_bytes) == 1:
+            ch = chr(first)
+            return ch + ch
+        return chr(first) + chr(last)
+
+    # Non-alphanumeric at either end: use hex of full first ALPN value.
+    hex_str = first_alpn_bytes.hex()  # always lowercase
+    return hex_str[0] + hex_str[-1]
+
 def generate_ja4(tls_info):
     """
     Generate a JA4 fingerprint from TLS Client Hello info.
@@ -74,25 +118,18 @@ def generate_ja4(tls_info):
         ext_count = min(len(extensions), 99)  # Cap at 99
         ext_count_str = f"{ext_count:02d}"
         
-        # Get ALPN value - extract first and last character
-        # Per FoxIO spec: first+last alphanumeric char of first ALPN protocol
-        # Non-ASCII (ord > 127) -> '99'
+        # ALPN value per FoxIO spec PR #277: see compute_alpn_value().
+        # Prefer the raw bytes (full byte fidelity) and fall back to the
+        # decoded string for backward-compat callers that only set
+        # alpn_protocols.
+        alpn_raw = tls_info.get('alpn_raw') or []
         alpn_protocols = tls_info.get('alpn_protocols', [])
-        if not alpn_protocols:
-            alpn_value = '00'
+        if alpn_raw:
+            alpn_value = compute_alpn_value(alpn_raw[0])
+        elif alpn_protocols and alpn_protocols[0]:
+            alpn_value = compute_alpn_value(alpn_protocols[0].encode('latin-1', errors='replace'))
         else:
-            first_alpn = alpn_protocols[0]
-
-            if not first_alpn:
-                alpn_value = '00'
-            else:
-                # FoxIO spec: if first char is non-ASCII, use '99'
-                if ord(first_alpn[0]) > 127:
-                    alpn_value = '99'
-                elif len(first_alpn) == 1:
-                    alpn_value = first_alpn[0] + first_alpn[0]
-                else:
-                    alpn_value = f"{first_alpn[0]}{first_alpn[-1]}"
+            alpn_value = '00'
         
         # Form part_a of the fingerprint
         part_a = f"{proto}{version_str}{sni_type}{cipher_count_str}{ext_count_str}{alpn_value}"
@@ -198,21 +235,15 @@ def get_raw_fingerprint(tls_info, original_order=False):
         ext_count = min(len(extensions), 99)
         ext_count_str = f"{ext_count:02d}"
         
-        # ALPN - same as in generate_ja4
+        # ALPN per FoxIO spec PR #277 — same path as generate_ja4
+        alpn_raw = tls_info.get('alpn_raw') or []
         alpn_protocols = tls_info.get('alpn_protocols', [])
-        if not alpn_protocols:
-            alpn_value = '00'
+        if alpn_raw:
+            alpn_value = compute_alpn_value(alpn_raw[0])
+        elif alpn_protocols and alpn_protocols[0]:
+            alpn_value = compute_alpn_value(alpn_protocols[0].encode('latin-1', errors='replace'))
         else:
-            first_alpn = alpn_protocols[0]
-
-            if not first_alpn:
-                alpn_value = '00'
-            elif ord(first_alpn[0]) > 127:
-                alpn_value = '99'
-            elif len(first_alpn) == 1:
-                alpn_value = first_alpn[0] + first_alpn[0]
-            else:
-                alpn_value = f"{first_alpn[0]}{first_alpn[-1]}"
+            alpn_value = '00'
         
         # First part of fingerprint
         part_a = f"{proto}{version_str}{sni_type}{cipher_count_str}{ext_count_str}{alpn_value}"

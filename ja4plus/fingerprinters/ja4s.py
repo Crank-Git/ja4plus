@@ -148,13 +148,14 @@ def _generate_ja4s_from_tls_info(tls_info):
         ext_count = f"{min(len(extensions), 99):02d}"
 
         alpn_protocols = tls_info.get('alpn_protocols', [])
+        alpn_raw = tls_info.get('alpn_raw') or []
         if not alpn_protocols:
             for ext_id, ext_data in tls_info.get('extension_data', {}).items():
                 if ext_id == 0x0010 and 'protocols' in ext_data and ext_data['protocols']:
                     alpn_protocols = ext_data['protocols']
                     break
 
-        alpn_value = _get_alpn_value(alpn_protocols)
+        alpn_value = _get_alpn_value(alpn_protocols, alpn_raw)
         part_a = f"{proto}{version_str}{ext_count}{alpn_value}"
 
         cipher = tls_info.get('cipher')
@@ -207,24 +208,18 @@ def _version_to_str(version):
     return version_map.get(version, '00')
 
 
-def _get_alpn_value(alpn_protocols):
+def _get_alpn_value(alpn_protocols, alpn_raw=None):
+    """Extract the ALPN value for the JA4S fingerprint.
+
+    Delegates to ja4plus.fingerprinters.ja4.compute_alpn_value() to get
+    PR #277 non-alphanumeric handling. Prefers raw bytes when available.
     """
-    Extract ALPN value for JA4S fingerprint.
-    Per FoxIO spec: first and last char of first protocol.
-    Non-ASCII (ord > 127) -> '99'.
-    """
-    if not alpn_protocols:
-        return '00'
+    from ja4plus.fingerprinters.ja4 import compute_alpn_value
 
-    first_alpn = alpn_protocols[0]
-    if not first_alpn:
-        return '00'
-
-    # FoxIO spec: if first char is non-ASCII, use '99'
-    if ord(first_alpn[0]) > 127:
-        return '99'
-
-    if len(first_alpn) == 1:
-        return first_alpn[0] + first_alpn[0]
-
-    return f"{first_alpn[0]}{first_alpn[-1]}"
+    if alpn_raw:
+        return compute_alpn_value(alpn_raw[0])
+    if alpn_protocols and alpn_protocols[0]:
+        return compute_alpn_value(
+            alpn_protocols[0].encode('latin-1', errors='replace')
+        )
+    return '00'
