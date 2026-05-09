@@ -127,6 +127,38 @@ from ja4plus import generate_ja4, generate_ja4s, generate_ja4h
 fingerprint = generate_ja4(packet)
 ```
 
+### Aggregating Processor
+
+Run every fingerprinter on each packet and get a list of results:
+
+```python
+from ja4plus import Processor
+
+p = Processor()
+for packet in packets:
+    for r in p.process_packet(packet):
+        print(r["type"], r["fingerprint"], r.get("raw"))
+
+# Use get_shard_key to bucket packets per connection
+shard_key = p.get_shard_key(packet)
+
+# Cleanup state for a finished connection
+p.cleanup_connection(src_ip, src_port, dst_ip, dst_port, "tcp")
+```
+
+JA4 and JA4S result dicts include the unhashed `raw` and
+`raw_original_order` variants — useful for human-readable output and
+fingerprint debugging.
+
+### X.509 Helpers
+
+```python
+from ja4plus import compute_ja4x_from_pem, compute_ja4x_from_der
+
+ja4x = compute_ja4x_from_pem(pem_bytes)
+ja4x = compute_ja4x_from_der(der_bytes)
+```
+
 See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter and [`docs/api_reference.md`](docs/api_reference.md) for the full API.
 
 ## Fingerprint Formats
