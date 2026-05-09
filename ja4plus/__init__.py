@@ -16,6 +16,7 @@ from ja4plus.fingerprinters.ja4t import JA4TFingerprinter
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter
 from ja4plus.fingerprinters.ja4d import JA4DFingerprinter
 from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
+from ja4plus.processor import Processor
 
 # Function-based API
 from ja4plus.fingerprinters.ja4 import generate_ja4
