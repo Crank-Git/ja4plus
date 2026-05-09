@@ -280,37 +280,59 @@ def get_raw_fingerprint(tls_info, original_order=False):
         return None
 
 class JA4Fingerprinter(BaseFingerprinter):
-    """Fingerprinter for JA4 (TLS Client Hello)."""
-    
+    """Fingerprinter for JA4 (TLS Client Hello).
+
+    In addition to the hashed JA4 fingerprint returned by ``process_packet``,
+    this fingerprinter exposes the raw (unhashed) variants on every entry in
+    ``get_fingerprints()`` and on ``last_raw`` / ``last_raw_original_order``
+    for the most recent successful parse, mirroring the Go reference's
+    FingerprintResult.Raw / RawOriginalOrder fields.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.last_raw = None
+        self.last_raw_original_order = None
+
     def process_packet(self, packet):
         """Process a packet and extract JA4 fingerprint if applicable."""
-        # First extract TLS info from the packet
         tls_info = extract_tls_info(packet)
-        
         if not tls_info:
             return None
-        
-        # Then generate JA4 from the extracted TLS info
+
         fingerprint = generate_ja4(tls_info)
-        
         if fingerprint:
-            self.add_fingerprint(fingerprint, packet)
-        
+            raw = get_raw_fingerprint(tls_info, original_order=False)
+            raw_oo = get_raw_fingerprint(tls_info, original_order=True)
+            self.last_raw = raw
+            self.last_raw_original_order = raw_oo
+            self.fingerprints.append({
+                'fingerprint': fingerprint,
+                'raw': raw,
+                'raw_original_order': raw_oo,
+                'packet': packet,
+            })
+
         return fingerprint
-        
+
     def get_raw_fingerprint(self, packet, original_order=False):
         """
         Get raw JA4 fingerprint with visible components.
-        
+
         Args:
             packet: A packet containing a TLS Client Hello
             original_order: Whether to maintain original ordering
-            
+
         Returns:
             Raw JA4 fingerprint string or None
         """
         tls_info = extract_tls_info(packet)
         if not tls_info:
             return None
-            
-        return get_raw_fingerprint(tls_info, original_order) 
+
+        return get_raw_fingerprint(tls_info, original_order)
+
+    def reset(self):
+        super().reset()
+        self.last_raw = None
+        self.last_raw_original_order = None

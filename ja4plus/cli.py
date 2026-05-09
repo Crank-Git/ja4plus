@@ -98,11 +98,21 @@ def _get_packet_source(packet):
 
 def _output_results(results, fmt, writer=None, ja4db_client=None):
     """
-    Output a list of (source, type, fingerprint) tuples in the requested format.
+    Output a list of result tuples in the requested format.
+
+    Each result is (source, fp_type, fingerprint, raw, raw_oo) where raw and
+    raw_oo are optional (None for fingerprinters that don't expose them).
     writer is only used for csv format (a csv.writer instance).
     ja4db_client is optional JA4DBClient for fingerprint identification.
     """
-    for source, fp_type, fingerprint in results:
+    for entry in results:
+        # Backward compat: accept 3-tuples too
+        if len(entry) == 3:
+            source, fp_type, fingerprint = entry
+            raw, raw_oo = None, None
+        else:
+            source, fp_type, fingerprint, raw, raw_oo = entry
+
         identified = ""
         if ja4db_client:
             match = ja4db_client.lookup(fingerprint)
@@ -111,6 +121,10 @@ def _output_results(results, fmt, writer=None, ja4db_client=None):
 
         if fmt == "json":
             obj = {"source": source, "type": fp_type, "fingerprint": fingerprint}
+            if raw is not None:
+                obj["raw"] = raw
+            if raw_oo is not None:
+                obj["raw_original_order"] = raw_oo
             if ja4db_client:
                 obj["identified_as"] = identified or None
             print(json.dumps(obj))
@@ -179,7 +193,9 @@ def cmd_analyze(args):
                     try:
                         result = fp.process_packet(packet)
                         if result:
-                            row_batch.append((source, fp_type, result))
+                            raw = getattr(fp, 'last_raw', None)
+                            raw_oo = getattr(fp, 'last_raw_original_order', None)
+                            row_batch.append((source, fp_type, result, raw, raw_oo))
                     except Exception:
                         pass
                 if row_batch:
@@ -233,7 +249,9 @@ def cmd_live(args):
             try:
                 result = fp.process_packet(packet)
                 if result:
-                    row_batch.append((source, fp_type, result))
+                    raw = getattr(fp, 'last_raw', None)
+                    raw_oo = getattr(fp, 'last_raw_original_order', None)
+                    row_batch.append((source, fp_type, result, raw, raw_oo))
             except Exception:
                 pass
         if row_batch:

@@ -29,6 +29,8 @@ class JA4SFingerprinter(BaseFingerprinter):
         super().__init__()
         # Maps "srcIP:srcPort-dstIP:dstPort" -> client DCID bytes
         self._quic_dcids = {}
+        self.last_raw = None
+        self.last_raw_original_order = None
 
     def process_packet(self, packet):
         """
@@ -70,15 +72,32 @@ class JA4SFingerprinter(BaseFingerprinter):
                     if tls_info and tls_info.get('handshake_type') == 'server_hello':
                         fingerprint = _generate_ja4s_from_tls_info(tls_info)
                         if fingerprint:
-                            self.add_fingerprint(fingerprint, packet)
+                            self._record(fingerprint, tls_info, packet)
                             return fingerprint
 
         # TCP/TLS path
-        fingerprint = generate_ja4s(packet)
+        from ja4plus.utils.tls_utils import extract_tls_info as _extract
+        tls_info = _extract(packet)
+        if not tls_info or tls_info.get('handshake_type') != 'server_hello':
+            return None
+        fingerprint = _generate_ja4s_from_tls_info(tls_info)
         if fingerprint:
-            self.add_fingerprint(fingerprint, packet)
+            self._record(fingerprint, tls_info, packet)
             return fingerprint
         return None
+
+    def _record(self, fingerprint, tls_info, packet):
+        """Append a JA4S fingerprint result with raw / raw_original_order."""
+        raw = _generate_ja4s_raw_from_tls_info(tls_info, original_order=False)
+        raw_oo = _generate_ja4s_raw_from_tls_info(tls_info, original_order=True)
+        self.last_raw = raw
+        self.last_raw_original_order = raw_oo
+        self.fingerprints.append({
+            'fingerprint': fingerprint,
+            'raw': raw,
+            'raw_original_order': raw_oo,
+            'packet': packet,
+        })
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored QUIC DCID state for the given connection."""
@@ -91,6 +110,8 @@ class JA4SFingerprinter(BaseFingerprinter):
         """Reset all state."""
         super().reset()
         self._quic_dcids = {}
+        self.last_raw = None
+        self.last_raw_original_order = None
 
 
 def _get_ip_pair(packet):
@@ -173,6 +194,54 @@ def _generate_ja4s_from_tls_info(tls_info):
 
     except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
         logger.debug(f"JA4S generation from tls_info failed: {e}")
+        return None
+
+
+def _generate_ja4s_raw_from_tls_info(tls_info, original_order=False):
+    """Generate the raw (unhashed) JA4S variant.
+
+    JA4S has only one variable-length section (extensions). For the
+    sorted form (default), extensions are emitted in numeric order; for
+    original_order, in the order they appeared. Mirrors the Go reference's
+    ComputeJA4SRaw / ComputeJA4SRawOriginalOrder.
+    """
+    try:
+        proto = 'q' if tls_info.get('is_quic') else 'd' if tls_info.get('is_dtls') else 't'
+
+        version = tls_info.get('version')
+        supported_versions = tls_info.get('supported_versions', [])
+        if supported_versions:
+            non_grease = [v for v in supported_versions if not is_grease_value(v)]
+            if non_grease:
+                version = non_grease[0]
+        version_str = _version_to_str(version)
+
+        extensions = tls_info.get('extensions', [])
+        ext_count = f"{min(len(extensions), 99):02d}"
+
+        alpn_protocols = tls_info.get('alpn_protocols', [])
+        alpn_raw = tls_info.get('alpn_raw') or []
+        if not alpn_protocols:
+            for ext_id, ext_data in tls_info.get('extension_data', {}).items():
+                if ext_id == 0x0010 and 'protocols' in ext_data and ext_data['protocols']:
+                    alpn_protocols = ext_data['protocols']
+                    break
+        alpn_value = _get_alpn_value(alpn_protocols, alpn_raw)
+        part_a = f"{proto}{version_str}{ext_count}{alpn_value}"
+
+        cipher = tls_info.get('cipher')
+        if cipher is None:
+            return None
+        cipher_str = f"{cipher:04x}"
+
+        if original_order:
+            ext_list = ','.join(f"{e:04x}" for e in extensions)
+        else:
+            ext_list = ','.join(f"{e:04x}" for e in sorted(extensions))
+
+        return f"{part_a}_{cipher_str}_{ext_list}"
+    except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
+        logger.debug(f"JA4S raw generation failed: {e}")
         return None
 
 
