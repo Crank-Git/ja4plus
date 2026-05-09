@@ -14,6 +14,8 @@ from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 from ja4plus.fingerprinters.ja4t import JA4TFingerprinter
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter
+from ja4plus.fingerprinters.ja4d import JA4DFingerprinter
+from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
 
 # Function-based API
 from ja4plus.fingerprinters.ja4 import generate_ja4
@@ -24,6 +26,8 @@ from ja4plus.fingerprinters.ja4x import generate_ja4x
 from ja4plus.fingerprinters.ja4ssh import generate_ja4ssh
 from ja4plus.fingerprinters.ja4t import generate_ja4t
 from ja4plus.fingerprinters.ja4ts import generate_ja4ts
+from ja4plus.fingerprinters.ja4d import generate_ja4d
+from ja4plus.fingerprinters.ja4d6 import generate_ja4d6
 
 __version__ = "0.4.1"
 __author__ = "ja4plus contributors"

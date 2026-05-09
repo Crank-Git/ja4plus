@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/logo.png" width="300"></p>
 
-A Python library and CLI for JA4+ network fingerprinting. Implements all eight JA4+ methods for identifying and classifying network traffic based on TLS, TCP, HTTP, SSH, and X.509 characteristics. Supports QUIC, IPv4/IPv6, and multi-segment TCP reassembly.
+A Python library and CLI for JA4+ network fingerprinting. Implements all ten JA4+ methods for identifying and classifying network traffic based on TLS, TCP, HTTP, SSH, X.509, and DHCP characteristics. Supports QUIC, IPv4/IPv6, and multi-segment TCP reassembly.
 
 JA4+ is a set of network fingerprinting standards created by [FoxIO](https://foxio.io). This library is an independent Python implementation of the published specification. For the original spec, see the [FoxIO JA4+ repository](https://github.com/FoxIO-LLC/ja4).
 
@@ -21,6 +21,8 @@ JA4+ is a set of network fingerprinting standards created by [FoxIO](https://fox
 | JA4L | TCP/QUIC | Light distance and latency estimation |
 | JA4X | X.509 | Certificate structure fingerprint from OID sequences |
 | JA4SSH | SSH | Session type classification from traffic patterns |
+| JA4D | DHCPv4 | DHCP client/server fingerprint (FoxIO PR #267/#270) |
+| JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint (FoxIO PR #267/#270) |
 
 QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS ClientHellos. IPv4 and IPv6 are both supported across all fingerprinters.
 
@@ -102,6 +104,8 @@ from ja4plus import (
     JA4LFingerprinter,     # Latency
     JA4XFingerprinter,     # X.509 Certificate
     JA4SSHFingerprinter,   # SSH
+    JA4DFingerprinter,     # DHCPv4
+    JA4D6Fingerprinter,    # DHCPv6
 )
 ```
 
@@ -137,6 +141,8 @@ See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter an
 | JA4L | `JA4L-{C\|S}={latency_us}_{ttl}` | `JA4L-S=2500_56` |
 | JA4X | `{issuer}_{subject}_{extensions}` | `a37f49ba31e2_a37f49ba31e2_dd4f1a0ef8b2` |
 | JA4SSH | `c{mode}s{mode}_c{pkts}s{pkts}_c{acks}s{acks}` | `c36s36_c51s80_c69s0` |
+| JA4D | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `disco0000in_61-55_1-3-6-42` |
+| JA4D6 | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `solct0014nn_1-6-8-25_23-24` |
 
 ## Spec Validation
 
