@@ -28,6 +28,12 @@ while it fails and fails the suite the moment it passes. A failing case the regi
 does not name fails normally. `tests/foxio_deviations.py` documents how to add an
 entry, how to remove one, and how to measure a new baseline.
 
+`tests/foxio_vector_manifest.json` names every vector the suite expects, and the number
+of cases each one carries. A vector that disappears fails the suite by name.
+`tests/foxio_manifest.py` documents how to add a vector.
+
+`tests/generate_foxio_baseline.py` writes both files from a measurement.
+
 Run with: pytest -m spec_validation -v
 """
 
@@ -44,6 +50,7 @@ from tests.conformance_index import (
     stream_identity,
 )
 from tests.foxio_deviations import load_register, lookup, occurrence_key, value_key
+from tests.foxio_manifest import compare, load_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -403,6 +410,34 @@ def test_the_suite_collects_at_least_one_vector():
     """Fail when no vector is available, because an empty suite proves nothing."""
     assert have_vectors(), "No FoxIO vector under {}".format(VECTORS_DIR)
     assert _vector_files(), "No capture and expected-output pair under {}".format(VECTORS_DIR)
+
+
+def _collected_case_counts():
+    """Return the number of test cases the suite collected for each vector."""
+    counts = {}
+    for param in _value_params():
+        counts[param.values[0].name] = counts.get(param.values[0].name, 0) + 1
+    for param in _method_params():
+        counts[param.values[0].name] = counts.get(param.values[0].name, 0) + 1
+    return counts
+
+
+@pytest.mark.spec_validation
+def test_the_collected_vector_set_equals_the_manifest():
+    """Fail when a vector is absent, is new, or carries a different number of cases.
+
+    The suite builds its cases from the files it finds, so a deleted capture takes its
+    cases away and the suite still reports green. The manifest names every vector the
+    suite expects, which makes a vector that disappears as loud as a vector that
+    mismatches. The deviation register does not close the same gap, because it names
+    only a case that fails today.
+    """
+    differences = compare(load_manifest(), _collected_case_counts())
+    assert not differences, (
+        "the vector set differs from tests/foxio_vector_manifest.json:\n{}".format(
+            "\n".join(differences)
+        )
+    )
 
 
 @pytest.mark.spec_validation
