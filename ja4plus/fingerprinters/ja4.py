@@ -6,9 +6,10 @@ import hashlib
 import logging
 from scapy.all import TCP, UDP, Raw, IP
 
-logger = logging.getLogger(__name__)
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.fingerprinters.base import BaseFingerprinter
+
+logger = logging.getLogger(__name__)
 
 
 def _is_alnum_byte(b):
@@ -341,7 +342,6 @@ class JA4Fingerprinter(BaseFingerprinter):
     def _try_quic_multi_packet(self, packet):
         """Accumulate QUIC CRYPTO fragments per DCID; return tls_info if a
         full ClientHello has been reassembled."""
-        from scapy.all import UDP
         from ja4plus.utils.quic_utils import (
             decrypt_quic_initial_crypto,
             client_hello_from_crypto_fragments,

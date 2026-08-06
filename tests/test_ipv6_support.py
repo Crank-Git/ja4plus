@@ -68,7 +68,7 @@ class TestJA4SSHIPv6(unittest.TestCase):
             / TCP(sport=12345, dport=22)
             / Raw(load=b"SSH-2.0-OpenSSH_8.9\r\n")
         )
-        result = fp.process_packet(pkt)
+        fp.process_packet(pkt)
         # Should not crash due to missing IP layer — that's the key test
 
 
@@ -82,7 +82,7 @@ class TestJA4XIPv6(unittest.TestCase):
             / TCP(sport=12345, dport=443, seq=100)
             / Raw(load=b"\x16\x03\x01\x00\x05\x0b\x00\x00\x01\x00")
         )
-        result = fp.process_packet(pkt)
+        fp.process_packet(pkt)
         # May return None (not enough data), but must not crash
 
 

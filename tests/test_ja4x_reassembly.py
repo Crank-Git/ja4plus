@@ -15,7 +15,7 @@ class TestJA4XReassembly(unittest.TestCase):
             / TCP(sport=443, dport=12345, seq=100)
             / Raw(load=data)
         )
-        result = fp.process_packet(pkt)
+        fp.process_packet(pkt)
         # May return None (not enough cert data), but should not crash
 
     def test_out_of_order_segments(self):
@@ -35,7 +35,7 @@ class TestJA4XReassembly(unittest.TestCase):
             / TCP(sport=443, dport=12345, seq=100)
             / Raw(load=part1)
         )
-        result = fp.process_packet(pkt1)
+        fp.process_packet(pkt1)
         # Should not crash; reassembly should handle ordering
 
 

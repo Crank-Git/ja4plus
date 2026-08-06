@@ -12,11 +12,12 @@ import hashlib
 import logging
 from scapy.all import IP, IPv6, TCP, Raw
 
-logger = logging.getLogger(__name__)
 from ja4plus.utils.http_utils import extract_http_info, is_http_request, parse_http_request
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
 from ja4plus.utils.packet_utils import get_ip_layer
 from ja4plus.fingerprinters.base import BaseFingerprinter
+
+logger = logging.getLogger(__name__)
 
 
 def _http_version_to_str(version):

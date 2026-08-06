@@ -280,7 +280,7 @@ def _parse_sni(data):
 
     try:
         # SNI list length (2 bytes)
-        sni_list_len = (data[0] << 8) | data[1]
+        _sni_list_len = (data[0] << 8) | data[1]
         pos = 2
 
         if pos + 3 > len(data):

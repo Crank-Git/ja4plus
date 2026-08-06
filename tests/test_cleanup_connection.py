@@ -94,7 +94,6 @@ class TestJA4HCleanup(unittest.TestCase):
 
         fp = JA4HFingerprinter()
         fp.process_packet(self._make_http_pkt())
-        stream_key = "10.0.0.1:54321-10.0.0.2:80"
         # Stream may have been processed and removed by reassembler already,
         # but cleanup should not raise regardless
         fp.cleanup_connection("10.0.0.1", 54321, "10.0.0.2", 80, "tcp")

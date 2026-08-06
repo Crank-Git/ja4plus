@@ -113,7 +113,7 @@ def test_ja4_fingerprinter_buffers_quic_fragments():
     )
 
     # First call: no full ClientHello yet
-    r1 = fp.process_packet(pkt1)
+    fp.process_packet(pkt1)
     # Second call: full ClientHello assembled (but malformed body may fail TLS parse)
     r2 = fp.process_packet(pkt2)
 

@@ -13,9 +13,9 @@ import logging
 
 from scapy.all import UDP
 
-logger = logging.getLogger(__name__)
-
 from ja4plus.fingerprinters.base import BaseFingerprinter
+
+logger = logging.getLogger(__name__)
 
 # DHCP message type (option 53) to 5-character abbreviation.
 DHCP_MESSAGE_TYPES = {

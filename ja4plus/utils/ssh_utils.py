@@ -46,7 +46,7 @@ def parse_ssh_packet(data):
         if len(data) < 5:
             return None
 
-        padding_length = data[4]
+        _padding_length = data[4]
 
         if len(data) < 6:
             return None
