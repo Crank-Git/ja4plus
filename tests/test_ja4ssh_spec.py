@@ -3,6 +3,7 @@
 When multiple packet sizes have the same modal frequency, the smallest
 value must win.
 """
+
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 
 

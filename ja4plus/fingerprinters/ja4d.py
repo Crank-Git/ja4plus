@@ -19,15 +19,15 @@ from ja4plus.fingerprinters.base import BaseFingerprinter
 
 # DHCP message type (option 53) to 5-character abbreviation.
 DHCP_MESSAGE_TYPES = {
-    1:  "disco",  # DHCPDISCOVER
-    2:  "offer",  # DHCPOFFER
-    3:  "reqst",  # DHCPREQUEST
-    4:  "decln",  # DHCPDECLINE
-    5:  "dpack",  # DHCPACK
-    6:  "dpnak",  # DHCPNAK
-    7:  "relse",  # DHCPRELEASE
-    8:  "infor",  # DHCPINFORM
-    9:  "frenw",  # DHCPFORCERENEW
+    1: "disco",  # DHCPDISCOVER
+    2: "offer",  # DHCPOFFER
+    3: "reqst",  # DHCPREQUEST
+    4: "decln",  # DHCPDECLINE
+    5: "dpack",  # DHCPACK
+    6: "dpnak",  # DHCPNAK
+    7: "relse",  # DHCPRELEASE
+    8: "infor",  # DHCPINFORM
+    9: "frenw",  # DHCPFORCERENEW
     10: "lqery",  # DHCPLEASEQUERY
     11: "lunas",  # DHCPLEASEUNASSIGNED
     12: "lunkn",  # DHCPLEASEUNKNOWN
@@ -45,7 +45,7 @@ DHCP_MESSAGE_TYPES = {
 DHCP_SKIP_OPTIONS = {0, 53, 50, 81}
 
 # DHCP magic cookie
-_DHCP_MAGIC = b'\x63\x82\x53\x63'
+_DHCP_MAGIC = b"\x63\x82\x53\x63"
 
 # UDP ports used by DHCP
 _DHCP_PORTS = {67, 68}
@@ -63,7 +63,7 @@ def build_option_list(option_codes):
         Hyphen-separated string of option codes, or '00'
     """
     parts = [str(code) for code in option_codes if code not in DHCP_SKIP_OPTIONS]
-    return '-'.join(parts) if parts else "00"
+    return "-".join(parts) if parts else "00"
 
 
 def build_param_list(params):
@@ -79,7 +79,7 @@ def build_param_list(params):
     """
     if not params:
         return "00"
-    return '-'.join(str(p) for p in params)
+    return "-".join(str(p) for p in params)
 
 
 def _parse_dhcp_options(raw_payload):
@@ -114,7 +114,7 @@ def _parse_dhcp_options(raw_payload):
 
         if opt_code == 255:  # End marker — terminate; do not record
             break
-        if opt_code == 0:    # Pad
+        if opt_code == 0:  # Pad
             continue
 
         if pos >= len(raw_payload):
@@ -122,32 +122,32 @@ def _parse_dhcp_options(raw_payload):
         opt_len = raw_payload[pos]
         pos += 1
 
-        opt_data = raw_payload[pos:pos + opt_len]
+        opt_data = raw_payload[pos : pos + opt_len]
         pos += opt_len
 
         option_codes.append(opt_code)
 
-        if opt_code == 53 and opt_len >= 1:   # Message Type
+        if opt_code == 53 and opt_len >= 1:  # Message Type
             msg_type = opt_data[0]
         elif opt_code == 57 and opt_len >= 2:  # Max Message Size
             max_msg_size = (opt_data[0] << 8) | opt_data[1]
-        elif opt_code == 50:                   # Requested IP Address
+        elif opt_code == 50:  # Requested IP Address
             has_request_ip = True
-        elif opt_code == 81:                   # Client FQDN
+        elif opt_code == 81:  # Client FQDN
             has_fqdn = True
-        elif opt_code == 55:                   # Parameter Request List
+        elif opt_code == 55:  # Parameter Request List
             param_list = list(opt_data)
 
     if msg_type == 0:
         return None
 
     return {
-        'msg_type': msg_type,
-        'max_msg_size': max_msg_size,
-        'has_request_ip': has_request_ip,
-        'has_fqdn': has_fqdn,
-        'option_codes': option_codes,
-        'param_list': param_list,
+        "msg_type": msg_type,
+        "max_msg_size": max_msg_size,
+        "has_request_ip": has_request_ip,
+        "has_fqdn": has_fqdn,
+        "option_codes": option_codes,
+        "param_list": param_list,
     }
 
 
@@ -165,7 +165,7 @@ def generate_ja4d(packet):
     if udp is None:
         return None
 
-    if (udp.sport not in _DHCP_PORTS and udp.dport not in _DHCP_PORTS):
+    if udp.sport not in _DHCP_PORTS and udp.dport not in _DHCP_PORTS:
         return None
 
     # Get raw UDP payload
@@ -174,10 +174,10 @@ def generate_ja4d(packet):
     if parsed is None:
         return None
 
-    msg_type = parsed['msg_type']
-    max_msg_size = min(parsed['max_msg_size'], 9999)
-    has_request_ip = parsed['has_request_ip']
-    has_fqdn = parsed['has_fqdn']
+    msg_type = parsed["msg_type"]
+    max_msg_size = min(parsed["max_msg_size"], 9999)
+    has_request_ip = parsed["has_request_ip"]
+    has_fqdn = parsed["has_fqdn"]
 
     # Section a
     msg_type_str = DHCP_MESSAGE_TYPES.get(msg_type, f"{msg_type:05d}")
@@ -186,10 +186,10 @@ def generate_ja4d(packet):
     section_a = f"{msg_type_str}{max_msg_size:04d}{request_ip_flag}{fqdn_flag}"
 
     # Section b
-    section_b = build_option_list(parsed['option_codes'])
+    section_b = build_option_list(parsed["option_codes"])
 
     # Section c
-    section_c = build_param_list(parsed['param_list'])
+    section_c = build_param_list(parsed["param_list"])
 
     return f"{section_a}_{section_b}_{section_c}"
 

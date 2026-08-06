@@ -3,6 +3,7 @@
 - HTTP version: HTTP/1.0 -> '10', HTTP/1.1 -> '11', HTTP/2 -> '20', HTTP/3 -> '30'
 - Cookie-VALUES hash component sorts by NAME only
 """
+
 import hashlib
 import os
 
@@ -11,22 +12,24 @@ import pytest
 from ja4plus.fingerprinters.ja4h import _generate_ja4h_from_info, _http_version_to_str
 
 
-@pytest.mark.parametrize("version,expected", [
-    ("HTTP/1.0", "10"),
-    ("HTTP/1.1", "11"),
-    ("HTTP/2",   "20"),
-    ("HTTP/2.0", "20"),
-    ("HTTP/3",   "30"),
-    ("HTTP/3.0", "30"),
-    # Defensive: empty falls back to '11' (most common)
-    ("",         "11"),
-])
+@pytest.mark.parametrize(
+    "version,expected",
+    [
+        ("HTTP/1.0", "10"),
+        ("HTTP/1.1", "11"),
+        ("HTTP/2", "20"),
+        ("HTTP/2.0", "20"),
+        ("HTTP/3", "30"),
+        ("HTTP/3.0", "30"),
+        # Defensive: empty falls back to '11' (most common)
+        ("", "11"),
+    ],
+)
 def test_http_version_mapping(version, expected):
     assert _http_version_to_str(version) == expected
 
 
-def _info(method="GET", version="HTTP/1.1", headers=None, cookies=None,
-          referer="", language=""):
+def _info(method="GET", version="HTTP/1.1", headers=None, cookies=None, referer="", language=""):
     return {
         "method": method,
         "path": "/",
@@ -61,12 +64,16 @@ def test_http_version_in_part_a_for_http11():
 
 def test_cookie_values_hash_sorts_by_name_only():
     """Same cookie names + same values, different INPUT order -> same hash."""
-    fp1 = _generate_ja4h_from_info(_info(
-        cookies={"alpha": "1", "bravo": "2", "charlie": "3"},
-    ))
-    fp2 = _generate_ja4h_from_info(_info(
-        cookies={"charlie": "3", "alpha": "1", "bravo": "2"},
-    ))
+    fp1 = _generate_ja4h_from_info(
+        _info(
+            cookies={"alpha": "1", "bravo": "2", "charlie": "3"},
+        )
+    )
+    fp2 = _generate_ja4h_from_info(
+        _info(
+            cookies={"charlie": "3", "alpha": "1", "bravo": "2"},
+        )
+    )
     assert fp1 == fp2
 
     # The sorted-by-name string is "alpha=1,bravo=2,charlie=3"
@@ -76,9 +83,11 @@ def test_cookie_values_hash_sorts_by_name_only():
 
 def test_cookie_values_hash_input_form_is_name_value_pairs_sorted_by_name():
     """Verify the exact hash input string structure."""
-    fp = _generate_ja4h_from_info(_info(
-        cookies={"zeta": "z", "alpha": "a"},
-    ))
+    fp = _generate_ja4h_from_info(
+        _info(
+            cookies={"zeta": "z", "alpha": "a"},
+        )
+    )
     expected = hashlib.sha256(b"alpha=a,zeta=z").hexdigest()[:12]
     assert fp.split("_")[-1] == expected
 
@@ -109,6 +118,4 @@ def test_http2_with_cookies_pcap_produces_20_in_part_a():
         version = fingerprint[2:4]
         # http2 captures may also yield '11' if a fallback HTTP/1.1 parse
         # happened — accept either as long as the structure is sane.
-        assert version in {"20", "11"}, (
-            f"unexpected version {version!r} in {fingerprint}"
-        )
+        assert version in {"20", "11"}, f"unexpected version {version!r} in {fingerprint}"

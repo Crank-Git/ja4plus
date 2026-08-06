@@ -29,15 +29,15 @@ from ja4plus.fingerprinters.base import BaseFingerprinter
 
 # DHCPv6 message type to 5-char abbreviation (RFC 8415 + extensions).
 DHCPV6_MESSAGE_TYPES = {
-    1:  "solct",  # SOLICIT
-    2:  "advrt",  # ADVERTISE
-    3:  "reqst",  # REQUEST
-    4:  "confm",  # CONFIRM
-    5:  "renew",  # RENEW
-    6:  "rebnd",  # REBIND
-    7:  "reply",  # REPLY
-    8:  "relse",  # RELEASE
-    9:  "decln",  # DECLINE
+    1: "solct",  # SOLICIT
+    2: "advrt",  # ADVERTISE
+    3: "reqst",  # REQUEST
+    4: "confm",  # CONFIRM
+    5: "renew",  # RENEW
+    6: "rebnd",  # REBIND
+    7: "reply",  # REPLY
+    8: "relse",  # RELEASE
+    9: "decln",  # DECLINE
     10: "recon",  # RECONFIGURE
     11: "inreq",  # INFORMATION-REQUEST
     12: "rlayf",  # RELAY-FORW
@@ -74,11 +74,11 @@ DHCPV6_MESSAGE_TYPES = {
 # starting after a fixed-size header. Option 17 (Vendor-specific Information)
 # carries enterprise-specific sub-options keyed by enterprise-number.
 _DHCPV6_NESTED_OPTIONS = {
-    3:  12,   # IA_NA:  IAID(4) + T1(4) + T2(4) = 12 bytes header
-    4:  4,    # IA_TA:  IAID(4) = 4 bytes header
-    25: 12,   # IA_PD:  IAID(4) + T1(4) + T2(4) = 12 bytes header
-    5:  24,   # IA Address (within IA_NA/IA_TA): addr(16)+pref-lt(4)+valid-lt(4) = 24
-    26: 25,   # IA Prefix (within IA_PD): pref-lt(4)+valid-lt(4)+plen(1)+prefix(16) = 25
+    3: 12,  # IA_NA:  IAID(4) + T1(4) + T2(4) = 12 bytes header
+    4: 4,  # IA_TA:  IAID(4) = 4 bytes header
+    25: 12,  # IA_PD:  IAID(4) + T1(4) + T2(4) = 12 bytes header
+    5: 24,  # IA Address (within IA_NA/IA_TA): addr(16)+pref-lt(4)+valid-lt(4) = 24
+    26: 25,  # IA Prefix (within IA_PD): pref-lt(4)+valid-lt(4)+plen(1)+prefix(16) = 25
 }
 
 
@@ -134,7 +134,7 @@ def _parse_dhcpv6_payload(payload):
         pos += 4
         if pos + opt_len > end:
             break
-        opt_data = payload[pos:pos + opt_len]
+        opt_data = payload[pos : pos + opt_len]
         pos += opt_len
 
         if opt_code == 1:  # Client Identifier — DUID is the entire data
@@ -187,8 +187,7 @@ def generate_ja4d6(packet):
         return None
 
     # DHCPv6 client port = 546, server port = 547
-    if 546 not in (int(udp.sport), int(udp.dport)) and \
-       547 not in (int(udp.sport), int(udp.dport)):
+    if 546 not in (int(udp.sport), int(udp.dport)) and 547 not in (int(udp.sport), int(udp.dport)):
         return None
 
     payload = bytes(udp.payload)

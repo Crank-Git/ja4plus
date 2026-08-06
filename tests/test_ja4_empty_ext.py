@@ -8,8 +8,9 @@ sha256(b'')[:12].hexdigest() (which is 'e3b0c44298fc').
 from ja4plus.fingerprinters.ja4 import generate_ja4
 
 
-def _client_hello_info(extensions=None, ciphers=None, alpn_protocols=None,
-                      version=0x0303, sni=None):
+def _client_hello_info(
+    extensions=None, ciphers=None, alpn_protocols=None, version=0x0303, sni=None
+):
     """Build a minimal tls_info dict that drives generate_ja4 directly."""
     return {
         "handshake_type": "client_hello",
@@ -42,7 +43,7 @@ def test_ja4_empty_extensions_yields_literal_zero_hash():
 def test_ja4_only_grease_extensions_yields_literal_zero_hash():
     """When the only extensions are GREASE values, post-filter is empty."""
     # GREASE values follow pattern 0x[0-f]a[0-f]a — e.g. 0x0a0a, 0x1a1a
-    info = _client_hello_info(extensions=[0x0a0a, 0x1a1a, 0x2a2a])
+    info = _client_hello_info(extensions=[0x0A0A, 0x1A1A, 0x2A2A])
     fp = generate_ja4(info)
     assert fp is not None
     parts = fp.split("_")

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Download FoxIO JA4+ test vectors for spec validation."""
+
 import os
 import urllib.request
 import json
@@ -16,6 +17,7 @@ PCAPS = [
     "ssh.pcapng",
     "ssh2.pcapng",
 ]
+
 
 def download():
     os.makedirs(TEST_VECTORS_DIR, exist_ok=True)
@@ -46,6 +48,7 @@ def download():
                     )
                 except Exception:
                     print(f"  Warning: No expected output found for {pcap}")
+
 
 if __name__ == "__main__":
     download()

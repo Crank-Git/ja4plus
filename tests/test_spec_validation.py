@@ -5,6 +5,7 @@ Validates ja4plus output against FoxIO's official reference test vectors.
 Download vectors first: python tests/download_test_vectors.py
 Run with: pytest -m spec_validation -v
 """
+
 import pytest
 import json
 import os
@@ -12,7 +13,7 @@ import sys
 from pathlib import Path
 
 # Add parent dir to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 
@@ -24,6 +25,7 @@ def have_vectors():
 # Attempt to download vectors if not present
 try:
     from tests.download_test_vectors import download as _download_vectors
+
     if not have_vectors():
         _download_vectors()
 except Exception:
@@ -33,6 +35,7 @@ except Exception:
 if not have_vectors():
     try:
         import importlib.util
+
         _dl_path = Path(__file__).parent / "download_test_vectors.py"
         _spec = importlib.util.spec_from_file_location("download_test_vectors", _dl_path)
         _mod = importlib.util.module_from_spec(_spec)
@@ -53,13 +56,8 @@ KNOWN_DEVIATIONS = {
     # JA4L requires per-packet arrival timestamps and TTL values that are not
     # reliably preserved in pcapng files captured offline.  ja4plus omits JA4L
     # from its fingerprinter set so these values are never produced.
-    "JA4L-C": (
-        "JA4L requires live-capture timing; not available from offline PCAPs"
-    ),
-    "JA4L-S": (
-        "JA4L requires live-capture timing; not available from offline PCAPs"
-    ),
-
+    "JA4L-C": ("JA4L requires live-capture timing; not available from offline PCAPs"),
+    "JA4L-S": ("JA4L requires live-capture timing; not available from offline PCAPs"),
     # JA4SSH uses a sliding packet-count window.  FoxIO's reference groups
     # packets by TCP stream; ja4plus currently uses a global window so the
     # per-stream values differ when multiple SSH sessions appear in one PCAP.
@@ -67,7 +65,6 @@ KNOWN_DEVIATIONS = {
         "JA4SSH stream-grouping differs: ja4plus uses a global window while "
         "FoxIO's reference groups by TCP stream"
     ),
-
     # JA4X certificate fingerprints require parsing DER-encoded certificates
     # embedded in the TLS handshake.  ja4plus extracts these only when scapy's
     # TLS layer is fully dissected; some pcapng captures lack the TLS layer
@@ -76,7 +73,6 @@ KNOWN_DEVIATIONS = {
         "JA4X certificate chain extraction depends on full TLS dissection "
         "which is not always available from pcapng captures"
     ),
-
     # JA4 extension count: in certain ClientHello packets ja4plus counts one
     # more extension than FoxIO's tshark-based reference (16 vs 15).  This
     # occurs when an extension that FoxIO's parser treats as non-countable
@@ -120,7 +116,12 @@ def _fingerprint_keys(record: dict):
         # Strip stream-index suffix (.1, .2, …) to get the base key name
         base = k.rsplit(".", 1)[0] if "." in k else k
         # Skip raw/original variants
-        if base.endswith("_r") or base.endswith("_ro") or base.endswith("_o") or base.endswith("_raw"):
+        if (
+            base.endswith("_r")
+            or base.endswith("_ro")
+            or base.endswith("_o")
+            or base.endswith("_raw")
+        ):
             continue
         result[k] = v
     return result
@@ -169,6 +170,7 @@ def _collect_ja4_fingerprints(pcap_path: Path):
 # ---------------------------------------------------------------------------
 # Helpers for per-file test parametrization
 # ---------------------------------------------------------------------------
+
 
 def _vector_params():
     """Yield (pcap_path, json_path) pairs for each available test vector."""
@@ -244,6 +246,7 @@ class TestSpecValidation:
     def test_vectors_parseable(self, pcap_path, json_path):
         """Basic sanity: PCAP can be read and expected JSON is valid."""
         from scapy.all import rdpcap
+
         packets = rdpcap(str(pcap_path))
         assert len(packets) > 0, f"No packets in {pcap_path.name}"
 

@@ -5,6 +5,7 @@ real for clients carrying many extensions, e.g. ECH grease + many ALPN
 options), the CRYPTO frame is fragmented across multiple Initial
 packets sharing the same Destination Connection ID.
 """
+
 import os
 
 import pytest
@@ -66,13 +67,19 @@ def test_ja4_fingerprinter_buffers_quic_fragments():
     fp = JA4Fingerprinter()
 
     # Stub out decryption to produce predictable fragments per datagram.
-    fake_ch_bytes = bytes([
-        # TLS handshake header: type=01, length=0x000010 (16 bytes)
-        0x01, 0x00, 0x00, 0x10,
-        # 16 bytes of opaque body (parse_tls_handshake will reject as
-        # malformed, returning None — so the test stops short of asserting
-        # a real fingerprint, but it does assert that fragments accumulate).
-    ] + [0] * 16)
+    fake_ch_bytes = bytes(
+        [
+            # TLS handshake header: type=01, length=0x000010 (16 bytes)
+            0x01,
+            0x00,
+            0x00,
+            0x10,
+            # 16 bytes of opaque body (parse_tls_handshake will reject as
+            # malformed, returning None — so the test stops short of asserting
+            # a real fingerprint, but it does assert that fragments accumulate).
+        ]
+        + [0] * 16
+    )
     half = len(fake_ch_bytes) // 2
     frag1 = (0, fake_ch_bytes[:half])
     frag2 = (half, fake_ch_bytes[half:])
@@ -93,8 +100,17 @@ def test_ja4_fingerprinter_buffers_quic_fragments():
 
     # Drive process_packet with two synthetic UDP packets.
     from scapy.all import IP, UDP, Raw
-    pkt1 = IP(src="1.1.1.1", dst="2.2.2.2") / UDP(sport=50000, dport=443) / Raw(load=b"\x80" + b"\x00" * 30)
-    pkt2 = IP(src="1.1.1.1", dst="2.2.2.2") / UDP(sport=50000, dport=443) / Raw(load=b"\x80" + b"\x00" * 30)
+
+    pkt1 = (
+        IP(src="1.1.1.1", dst="2.2.2.2")
+        / UDP(sport=50000, dport=443)
+        / Raw(load=b"\x80" + b"\x00" * 30)
+    )
+    pkt2 = (
+        IP(src="1.1.1.1", dst="2.2.2.2")
+        / UDP(sport=50000, dport=443)
+        / Raw(load=b"\x80" + b"\x00" * 30)
+    )
 
     # First call: no full ClientHello yet
     r1 = fp.process_packet(pkt1)

@@ -145,9 +145,22 @@ class TestGREASE(unittest.TestCase):
     """Test GREASE value detection across all known values."""
 
     GREASE_VALUES = [
-        0x0A0A, 0x1A1A, 0x2A2A, 0x3A3A, 0x4A4A, 0x5A5A,
-        0x6A6A, 0x7A7A, 0x8A8A, 0x9A9A, 0xAAAA, 0xBABA,
-        0xCACA, 0xDADA, 0xEAEA, 0xFAFA,
+        0x0A0A,
+        0x1A1A,
+        0x2A2A,
+        0x3A3A,
+        0x4A4A,
+        0x5A5A,
+        0x6A6A,
+        0x7A7A,
+        0x8A8A,
+        0x9A9A,
+        0xAAAA,
+        0xBABA,
+        0xCACA,
+        0xDADA,
+        0xEAEA,
+        0xFAFA,
     ]
 
     def test_all_grease_values_detected(self):
@@ -173,7 +186,6 @@ class TestGREASE(unittest.TestCase):
 # JA4 (TLS Client Hello) comprehensive tests
 # ===========================================================================
 class TestJA4Comprehensive(unittest.TestCase):
-
     def setUp(self):
         self.fp = JA4Fingerprinter()
 
@@ -332,7 +344,6 @@ class TestJA4Comprehensive(unittest.TestCase):
 # JA4S (TLS Server Hello) comprehensive tests
 # ===========================================================================
 class TestJA4SComprehensive(unittest.TestCase):
-
     def setUp(self):
         self.fp = JA4SFingerprinter()
 
@@ -347,9 +358,7 @@ class TestJA4SComprehensive(unittest.TestCase):
         self.assertEqual(parts[1], "c02f")
 
     def test_tls13_via_supported_versions(self):
-        raw = build_server_hello(
-            version=0x0303, cipher=0x1301, supported_version=0x0304
-        )
+        raw = build_server_hello(version=0x0303, cipher=0x1301, supported_version=0x0304)
         packet = IP() / TCP(sport=443, dport=12345) / Raw(load=raw)
         fp = self.fp.process_packet(packet)
         self.assertIsNotNone(fp)
@@ -388,12 +397,19 @@ class TestJA4SComprehensive(unittest.TestCase):
 # JA4H (HTTP) comprehensive tests
 # ===========================================================================
 class TestJA4HComprehensive(unittest.TestCase):
-
     def setUp(self):
         self.fp = JA4HFingerprinter()
 
-    def _make_http(self, method="GET", path="/", version="HTTP/1.1",
-                   headers=None, cookie=None, referer=None, lang=None):
+    def _make_http(
+        self,
+        method="GET",
+        path="/",
+        version="HTTP/1.1",
+        headers=None,
+        cookie=None,
+        referer=None,
+        lang=None,
+    ):
         lines = [f"{method} {path} {version}"]
         if headers:
             for k, v in headers:
@@ -500,13 +516,20 @@ class TestJA4HComprehensive(unittest.TestCase):
 # JA4T (TCP SYN) comprehensive tests
 # ===========================================================================
 class TestJA4TComprehensive(unittest.TestCase):
-
     def test_standard_linux_syn(self):
         """Standard Linux SYN packet options."""
         packet = IP() / TCP(
-            sport=54321, dport=443, flags="S", window=29200,
-            options=[("MSS", 1460), ("SAckOK", ""), ("Timestamp", (0, 0)),
-                     ("NOP", None), ("WScale", 7)],
+            sport=54321,
+            dport=443,
+            flags="S",
+            window=29200,
+            options=[
+                ("MSS", 1460),
+                ("SAckOK", ""),
+                ("Timestamp", (0, 0)),
+                ("NOP", None),
+                ("WScale", 7),
+            ],
         )
         fp = generate_ja4t(packet)
         self.assertIsNotNone(fp)
@@ -519,7 +542,10 @@ class TestJA4TComprehensive(unittest.TestCase):
     def test_option_order_preserved(self):
         """TCP options must be in original packet order (not sorted)."""
         packet = IP() / TCP(
-            sport=54321, dport=443, flags="S", window=65535,
+            sport=54321,
+            dport=443,
+            flags="S",
+            window=65535,
             options=[("NOP", None), ("MSS", 1460), ("WScale", 7)],
         )
         fp = generate_ja4t(packet)
@@ -545,7 +571,10 @@ class TestJA4TComprehensive(unittest.TestCase):
     def test_synack_rejected_by_ja4t(self):
         """SYN-ACK should be rejected by JA4T (JA4TS handles SYN-ACK)."""
         packet = IP() / TCP(
-            sport=443, dport=54321, flags="SA", window=14600,
+            sport=443,
+            dport=54321,
+            flags="SA",
+            window=14600,
             options=[("MSS", 1460)],
         )
         fp = generate_ja4t(packet)
@@ -554,7 +583,10 @@ class TestJA4TComprehensive(unittest.TestCase):
     def test_large_window(self):
         """Very large window size."""
         packet = IP() / TCP(
-            sport=54321, dport=443, flags="S", window=65535,
+            sport=54321,
+            dport=443,
+            flags="S",
+            window=65535,
             options=[("MSS", 1460), ("WScale", 14)],
         )
         fp = generate_ja4t(packet)
@@ -567,7 +599,10 @@ class TestJA4TComprehensive(unittest.TestCase):
         fpr = JA4TFingerprinter()
         for i in range(3):
             packet = IP() / TCP(
-                sport=54321 + i, dport=443, flags="S", window=65535,
+                sport=54321 + i,
+                dport=443,
+                flags="S",
+                window=65535,
                 options=[("MSS", 1460)],
             )
             fpr.process_packet(packet)
@@ -580,10 +615,12 @@ class TestJA4TComprehensive(unittest.TestCase):
 # JA4TS (TCP SYN-ACK) comprehensive tests
 # ===========================================================================
 class TestJA4TSComprehensive(unittest.TestCase):
-
     def test_synack_fingerprint(self):
         packet = IP() / TCP(
-            sport=443, dport=54321, flags="SA", window=14600,
+            sport=443,
+            dport=54321,
+            flags="SA",
+            window=14600,
             options=[("MSS", 1460), ("NOP", None), ("WScale", 0)],
         )
         fp = generate_ja4ts(packet)
@@ -596,7 +633,10 @@ class TestJA4TSComprehensive(unittest.TestCase):
     def test_syn_only_ignored(self):
         """Pure SYN (no ACK) should be ignored by JA4TS."""
         packet = IP() / TCP(
-            sport=54321, dport=443, flags="S", window=65535,
+            sport=54321,
+            dport=443,
+            flags="S",
+            window=65535,
             options=[("MSS", 1460)],
         )
         fp = generate_ja4ts(packet)
@@ -606,7 +646,10 @@ class TestJA4TSComprehensive(unittest.TestCase):
         """JA4TSFingerprinter should use BaseFingerprinter properly."""
         fpr = JA4TSFingerprinter()
         packet = IP() / TCP(
-            sport=443, dport=54321, flags="SA", window=14600,
+            sport=443,
+            dport=54321,
+            flags="SA",
+            window=14600,
             options=[("MSS", 1460)],
         )
         fpr.process_packet(packet)
@@ -618,15 +661,12 @@ class TestJA4TSComprehensive(unittest.TestCase):
 # JA4L (Latency) comprehensive tests
 # ===========================================================================
 class TestJA4LComprehensive(unittest.TestCase):
-
     def setUp(self):
         self.fp = JA4LFingerprinter()
 
     def test_handshake_produces_two_fingerprints(self):
         """Full handshake should produce server + client fingerprints."""
-        syn = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(
-            sport=54321, dport=443, flags="S"
-        )
+        syn = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(sport=54321, dport=443, flags="S")
         self.fp.process_packet(syn)
         time.sleep(0.002)
 
@@ -638,9 +678,7 @@ class TestJA4LComprehensive(unittest.TestCase):
         self.assertTrue(server_fp.startswith("JA4L-S="))
 
         time.sleep(0.002)
-        ack = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(
-            sport=54321, dport=443, flags="A"
-        )
+        ack = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(sport=54321, dport=443, flags="A")
         client_fp = self.fp.process_packet(ack)
         self.assertIsNotNone(client_fp)
         self.assertTrue(client_fp.startswith("JA4L-C="))
@@ -651,7 +689,8 @@ class TestJA4LComprehensive(unittest.TestCase):
         """JA4L format is JA4L-X=<latency_us>_<ttl>."""
         now = time.time()
         conn = {
-            "proto": "tcp", "timestamps": {"A": now - 0.010},
+            "proto": "tcp",
+            "timestamps": {"A": now - 0.010},
             "ttls": {"client": 128, "server": 64},
         }
         synack = IP(src="10.0.0.2", dst="10.0.0.1", ttl=64) / TCP(
@@ -686,7 +725,6 @@ class TestJA4LComprehensive(unittest.TestCase):
 # JA4SSH comprehensive tests
 # ===========================================================================
 class TestJA4SSHComprehensive(unittest.TestCase):
-
     def test_interpret_interactive(self):
         fp = JA4SSHFingerprinter()
         result = fp.interpret_fingerprint("c36s36_c50s50_c70s30")
@@ -721,20 +759,25 @@ class TestJA4SSHComprehensive(unittest.TestCase):
         """Test HASSH collection through packet processing."""
         fp = JA4SSHFingerprinter(packet_count=100)
         banner_c = (
-            Ether() / IP(src="10.0.0.1", dst="10.0.0.2")
+            Ether()
+            / IP(src="10.0.0.1", dst="10.0.0.2")
             / TCP(sport=52416, dport=22)
             / Raw(load=b"SSH-2.0-OpenSSH_8.2p1\r\n")
         )
         banner_s = (
-            Ether() / IP(src="10.0.0.2", dst="10.0.0.1")
+            Ether()
+            / IP(src="10.0.0.2", dst="10.0.0.1")
             / TCP(sport=22, dport=52416)
             / Raw(load=b"SSH-2.0-OpenSSH_7.6p1\r\n")
         )
         kex_c = (
-            Ether() / IP(src="10.0.0.1", dst="10.0.0.2")
+            Ether()
+            / IP(src="10.0.0.1", dst="10.0.0.2")
             / TCP(sport=52416, dport=22)
-            / Raw(load=b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAASSH_MSG_KEXINIT"
-                        b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none")
+            / Raw(
+                load=b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAASSH_MSG_KEXINIT"
+                b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none"
+            )
         )
         fp.process_packet(banner_c)
         fp.process_packet(banner_s)
@@ -748,7 +791,6 @@ class TestJA4SSHComprehensive(unittest.TestCase):
 # TLS parsing edge case tests
 # ===========================================================================
 class TestTLSParsing(unittest.TestCase):
-
     def test_empty_data(self):
         self.assertIsNone(parse_tls_handshake(b""))
 
@@ -768,9 +810,7 @@ class TestTLSParsing(unittest.TestCase):
 
     def test_client_hello_parses_sni(self):
         """Full ClientHello with SNI should extract hostname."""
-        raw = build_client_hello(
-            version=0x0303, ciphers=[0xC02F], sni_hostname="test.example.com"
-        )
+        raw = build_client_hello(version=0x0303, ciphers=[0xC02F], sni_hostname="test.example.com")
         result = parse_tls_handshake(raw)
         self.assertIsNotNone(result)
         self.assertEqual(result.get("sni"), "test.example.com")
@@ -791,9 +831,7 @@ class TestFormatConsistency(unittest.TestCase):
 
     def test_ja4_format_regex(self):
         """JA4 format: <proto><ver><sni><cc><ec><alpn>_<hash>_<hash>"""
-        raw = build_client_hello(
-            version=0x0303, ciphers=[0x1301], sni_hostname="example.com"
-        )
+        raw = build_client_hello(version=0x0303, ciphers=[0x1301], sni_hostname="example.com")
         packet = IP() / TCP(sport=12345, dport=443) / Raw(load=raw)
         fp = JA4Fingerprinter().process_packet(packet)
         self.assertRegex(fp, r"^[tdq]\d{2}[di]\d{4}[a-z0-9]{2}_[a-f0-9]{12}_[a-f0-9]{12}$")
@@ -806,7 +844,10 @@ class TestFormatConsistency(unittest.TestCase):
 
     def test_ja4t_format_regex(self):
         packet = IP() / TCP(
-            sport=54321, dport=443, flags="S", window=65535,
+            sport=54321,
+            dport=443,
+            flags="S",
+            window=65535,
             options=[("MSS", 1460), ("WScale", 7)],
         )
         fp = generate_ja4t(packet)
@@ -814,7 +855,10 @@ class TestFormatConsistency(unittest.TestCase):
 
     def test_ja4ts_format_regex(self):
         packet = IP() / TCP(
-            sport=443, dport=54321, flags="SA", window=14600,
+            sport=443,
+            dport=54321,
+            flags="SA",
+            window=14600,
             options=[("MSS", 1460)],
         )
         fp = generate_ja4ts(packet)
@@ -841,7 +885,6 @@ class TestFormatConsistency(unittest.TestCase):
 # JA4X X.509 certificate tests
 # ===========================================================================
 class TestJA4XComprehensive(unittest.TestCase):
-
     def _make_cert(self, org="Test", cn="test.com", country="US", add_extensions=True):
         from cryptography import x509
         from cryptography.x509.oid import NameOID
@@ -851,11 +894,13 @@ class TestJA4XComprehensive(unittest.TestCase):
         from cryptography.hazmat.primitives.serialization import Encoding
 
         key = rsa.generate_private_key(65537, 2048, default_backend())
-        subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-            x509.NameAttribute(NameOID.COMMON_NAME, cn),
-            x509.NameAttribute(NameOID.COUNTRY_NAME, country),
-        ])
+        subject = issuer = x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.COMMON_NAME, cn),
+                x509.NameAttribute(NameOID.COUNTRY_NAME, country),
+            ]
+        )
         now = datetime.datetime.now(datetime.timezone.utc)
         builder = (
             x509.CertificateBuilder()
@@ -908,18 +953,22 @@ class TestJA4XComprehensive(unittest.TestCase):
         cert_a = self._make_cert(org="Org A", cn="a.com")
 
         # Cert B: Org + CN + Country + State (4 OIDs - different structure)
-        subject_b = x509.Name([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Org B"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "b.com"),
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
-        ])
+        subject_b = x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Org B"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "b.com"),
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
+            ]
+        )
         builder = (
             x509.CertificateBuilder()
-            .subject_name(subject_b).issuer_name(subject_b)
+            .subject_name(subject_b)
+            .issuer_name(subject_b)
             .public_key(key.public_key())
             .serial_number(x509.random_serial_number())
-            .not_valid_before(now).not_valid_after(now + datetime.timedelta(days=365))
+            .not_valid_before(now)
+            .not_valid_after(now + datetime.timedelta(days=365))
             .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         )
         cert_b_obj = builder.sign(key, hashes.SHA256(), default_backend())

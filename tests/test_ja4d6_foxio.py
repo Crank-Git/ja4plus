@@ -3,6 +3,7 @@
 Compares ja4plus output against the canonical Wireshark dissector
 expected values stored in tests/foxio_vectors/ja4_expected/.
 """
+
 import json
 import os
 
@@ -44,9 +45,7 @@ def test_ja4d6_matches_foxio_dhcpv6_pcap():
 
     for frame, want in expected.items():
         assert frame in actual, f"missing JA4D6 for frame {frame}"
-        assert actual[frame] == want, (
-            f"frame {frame}: got {actual[frame]!r}, want {want!r}"
-        )
+        assert actual[frame] == want, f"frame {frame}: got {actual[frame]!r}, want {want!r}"
 
 
 def test_message_type_table_completeness():

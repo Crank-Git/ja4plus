@@ -17,8 +17,15 @@ from ja4plus.fingerprinters.ja4 import (
 from ja4plus.utils.tls_utils import is_grease_value
 
 
-def _build_ch(version=0x0303, ciphers=None, sni=None, alpn=None,
-              supported_versions=None, sig_algs=None, extra_exts=None):
+def _build_ch(
+    version=0x0303,
+    ciphers=None,
+    sni=None,
+    alpn=None,
+    supported_versions=None,
+    sig_algs=None,
+    extra_exts=None,
+):
     """Helper to build a TLS ClientHello record."""
     if ciphers is None:
         ciphers = [0x1301]
@@ -90,7 +97,7 @@ def _tls_info(**kwargs):
         "supported_versions": [],
         "sni": None,
         "ciphers": [0x1301],
-        "extensions": [0x000a, 0x000b],
+        "extensions": [0x000A, 0x000B],
         "alpn_protocols": [],
         "signature_algorithms": [],
     }
@@ -243,10 +250,7 @@ class TestJA4GREASEFiltering(unittest.TestCase):
 
     def test_grease_in_supported_versions_filtered(self):
         """GREASE values in supported_versions should be filtered."""
-        info = _tls_info(
-            version=0x0303,
-            supported_versions=[0x0A0A, 0x0304, 0xFAFA]
-        )
+        info = _tls_info(version=0x0303, supported_versions=[0x0A0A, 0x0304, 0xFAFA])
         fp = generate_ja4(info)
         self.assertTrue(fp.split("_")[0].startswith("t13"))
 

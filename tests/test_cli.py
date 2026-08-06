@@ -29,9 +29,11 @@ def run_cli(*argv):
     captured_err = io.StringIO()
 
     exit_code = 0
-    with patch("sys.argv", ["ja4plus"] + list(argv)), \
-         patch("sys.stdout", captured_out), \
-         patch("sys.stderr", captured_err):
+    with (
+        patch("sys.argv", ["ja4plus"] + list(argv)),
+        patch("sys.stdout", captured_out),
+        patch("sys.stderr", captured_err),
+    ):
         try:
             main()
         except SystemExit as e:
@@ -132,9 +134,9 @@ class TestVersionFlag(unittest.TestCase):
         self.assertIn("ja4plus", combined.lower())
         # Should contain a version number (digits and dots)
         import re
+
         self.assertTrue(
-            re.search(r"\d+\.\d+", combined),
-            f"No version number found in: {combined!r}"
+            re.search(r"\d+\.\d+", combined), f"No version number found in: {combined!r}"
         )
 
 
@@ -150,6 +152,7 @@ class TestInvalidTypes(unittest.TestCase):
     def test_valid_types_accepted(self):
         """All valid type names are accepted without error."""
         from ja4plus.cli import VALID_TYPES, _parse_types
+
         for t in VALID_TYPES:
             result = _parse_types(t)
             self.assertEqual(result, [t])
