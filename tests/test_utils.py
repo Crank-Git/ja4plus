@@ -34,10 +34,22 @@ class TestGREASEDetection(unittest.TestCase):
     """Exhaustive GREASE value detection tests."""
 
     GREASE_VALUES = [
-        0x0A0A, 0x1A1A, 0x2A2A, 0x3A3A,
-        0x4A4A, 0x5A5A, 0x6A6A, 0x7A7A,
-        0x8A8A, 0x9A9A, 0xAAAA, 0xBABA,
-        0xCACA, 0xDADA, 0xEAEA, 0xFAFA,
+        0x0A0A,
+        0x1A1A,
+        0x2A2A,
+        0x3A3A,
+        0x4A4A,
+        0x5A5A,
+        0x6A6A,
+        0x7A7A,
+        0x8A8A,
+        0x9A9A,
+        0xAAAA,
+        0xBABA,
+        0xCACA,
+        0xDADA,
+        0xEAEA,
+        0xFAFA,
     ]
 
     def test_all_16_grease_values(self):
@@ -121,8 +133,15 @@ class TestGREASEDetection(unittest.TestCase):
 class TestTLSParsing(unittest.TestCase):
     """Tests for TLS handshake parsing."""
 
-    def _build_client_hello(self, version=0x0303, ciphers=None, sni=None,
-                            alpn=None, supported_versions=None, sig_algs=None):
+    def _build_client_hello(
+        self,
+        version=0x0303,
+        ciphers=None,
+        sni=None,
+        alpn=None,
+        supported_versions=None,
+        sig_algs=None,
+    ):
         """Build a raw TLS ClientHello record."""
         if ciphers is None:
             ciphers = [0x1301]
@@ -396,7 +415,9 @@ class TestSSHParsing(unittest.TestCase):
 
     def test_is_ssh_kexinit_test_format(self):
         """Test format KEXINIT should be detected."""
-        data = b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA" + b"SSH_MSG_KEXINIT" + b"algo1;algo2;algo3;algo4"
+        data = (
+            b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA" + b"SSH_MSG_KEXINIT" + b"algo1;algo2;algo3;algo4"
+        )
         self.assertTrue(is_ssh_packet(data))
 
     def test_is_not_ssh(self):
@@ -416,18 +437,22 @@ class TestSSHParsing(unittest.TestCase):
 
     def test_parse_test_kexinit(self):
         """Test format KEXINIT should parse algorithm lists."""
-        data = (b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
-                b"SSH_MSG_KEXINIT"
-                b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none")
+        data = (
+            b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
+            b"SSH_MSG_KEXINIT"
+            b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none"
+        )
         result = parse_ssh_packet(data)
         self.assertIsNotNone(result)
         self.assertEqual(result["type"], "kexinit")
 
     def test_extract_hassh_from_kexinit(self):
         """HASSH should be extracted as MD5 of algorithm string."""
-        data = (b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
-                b"SSH_MSG_KEXINIT"
-                b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none")
+        data = (
+            b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
+            b"SSH_MSG_KEXINIT"
+            b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none"
+        )
         hassh = extract_hassh(data)
         self.assertIsNotNone(hassh)
         self.assertEqual(len(hassh), 32)  # MD5 hex length

@@ -12,8 +12,9 @@ from scapy.all import IP, TCP, Raw
 from ja4plus.fingerprinters.ja4h import JA4HFingerprinter, generate_ja4h
 
 
-def _make_http(method="GET", path="/", version="HTTP/1.1",
-               headers=None, cookie=None, referer=None, lang=None):
+def _make_http(
+    method="GET", path="/", version="HTTP/1.1", headers=None, cookie=None, referer=None, lang=None
+):
     """Build an HTTP request packet."""
     lines = [f"{method} {path} {version}"]
     if headers:
@@ -289,7 +290,7 @@ class TestJA4HFormat(unittest.TestCase):
         fp = generate_ja4h(packet)
         parts = fp.split("_")
         for i in range(1, 4):
-            self.assertEqual(len(parts[i]), 12, f"Part {i+1} should be 12 chars")
+            self.assertEqual(len(parts[i]), 12, f"Part {i + 1} should be 12 chars")
 
     def test_non_http_returns_none(self):
         packet = IP() / TCP(sport=12345, dport=80) / Raw(load=b"\x16\x03\x03")

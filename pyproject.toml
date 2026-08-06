@@ -60,3 +60,13 @@ ja4plus = ["data/*.csv"]
 markers = [
     "spec_validation: FoxIO reference validation tests",
 ]
+
+[tool.ruff]
+target-version = "py39"
+# The formatter reaches its smallest diff on the existing code at 100 columns.
+# A wider limit changes one more line, and a narrower limit changes 32 more.
+line-length = 100
+
+[tool.ruff.lint]
+# The default rule set, plus import order.
+select = ["E4", "E7", "E9", "F", "I"]

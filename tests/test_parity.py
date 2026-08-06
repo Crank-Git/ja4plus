@@ -32,11 +32,12 @@ def test_compute_ja4x_from_der_module_helper():
     import datetime
 
     # Generate a self-signed cert in-memory
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048,
-                                   backend=default_backend())
-    name = x509.Name([
-        x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
-    ])
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
+    name = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
+        ]
+    )
     cert = (
         x509.CertificateBuilder()
         .subject_name(name)
@@ -68,8 +69,7 @@ def test_compute_ja4x_from_pem_matches_der():
     from cryptography.hazmat.primitives import hashes
     import datetime
 
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048,
-                                   backend=default_backend())
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com")])
     cert = (
         x509.CertificateBuilder()
@@ -109,6 +109,7 @@ def test_ja4_fingerprinter_exposes_raw_and_raw_original_order():
         pytest.skip("tls-handshake.pcapng fixture missing")
 
     from scapy.all import rdpcap
+
     pkts = rdpcap(pcap)
     fingerprinted = False
     for pkt in pkts:
@@ -141,6 +142,7 @@ def test_ja4s_fingerprinter_exposes_raw_and_raw_original_order():
         pytest.skip("tls-handshake.pcapng fixture missing")
 
     from scapy.all import rdpcap
+
     pkts = rdpcap(pcap)
     fingerprinted = False
     for pkt in pkts:

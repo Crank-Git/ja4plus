@@ -69,7 +69,7 @@ class JA4SFingerprinter(BaseFingerprinter):
                 if rev_key in self._quic_dcids:
                     client_dcid = self._quic_dcids[rev_key]
                     tls_info = parse_quic_server_initial(udp_payload, client_dcid)
-                    if tls_info and tls_info.get('handshake_type') == 'server_hello':
+                    if tls_info and tls_info.get("handshake_type") == "server_hello":
                         fingerprint = _generate_ja4s_from_tls_info(tls_info)
                         if fingerprint:
                             self._record(fingerprint, tls_info, packet)
@@ -77,8 +77,9 @@ class JA4SFingerprinter(BaseFingerprinter):
 
         # TCP/TLS path
         from ja4plus.utils.tls_utils import extract_tls_info as _extract
+
         tls_info = _extract(packet)
-        if not tls_info or tls_info.get('handshake_type') != 'server_hello':
+        if not tls_info or tls_info.get("handshake_type") != "server_hello":
             return None
         fingerprint = _generate_ja4s_from_tls_info(tls_info)
         if fingerprint:
@@ -92,12 +93,14 @@ class JA4SFingerprinter(BaseFingerprinter):
         raw_oo = _generate_ja4s_raw_from_tls_info(tls_info, original_order=True)
         self.last_raw = raw
         self.last_raw_original_order = raw_oo
-        self.fingerprints.append({
-            'fingerprint': fingerprint,
-            'raw': raw,
-            'raw_original_order': raw_oo,
-            'packet': packet,
-        })
+        self.fingerprints.append(
+            {
+                "fingerprint": fingerprint,
+                "raw": raw,
+                "raw_original_order": raw_oo,
+                "packet": packet,
+            }
+        )
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored QUIC DCID state for the given connection."""
@@ -146,7 +149,7 @@ def _extract_dcid(udp_payload):
     dcid_len = udp_payload[5]
     if 6 + dcid_len > len(udp_payload):
         return None
-    return udp_payload[6:6 + dcid_len]
+    return udp_payload[6 : 6 + dcid_len]
 
 
 def _generate_ja4s_from_tls_info(tls_info):
@@ -155,40 +158,40 @@ def _generate_ja4s_from_tls_info(tls_info):
     Shared by the TCP path (via generate_ja4s) and the QUIC server path.
     """
     try:
-        proto = 'q' if tls_info.get('is_quic') else 'd' if tls_info.get('is_dtls') else 't'
+        proto = "q" if tls_info.get("is_quic") else "d" if tls_info.get("is_dtls") else "t"
 
-        version = tls_info.get('version')
-        supported_versions = tls_info.get('supported_versions', [])
+        version = tls_info.get("version")
+        supported_versions = tls_info.get("supported_versions", [])
         if supported_versions:
             non_grease = [v for v in supported_versions if not is_grease_value(v)]
             if non_grease:
                 version = non_grease[0]
 
         version_str = _version_to_str(version)
-        extensions = tls_info.get('extensions', [])
+        extensions = tls_info.get("extensions", [])
         ext_count = f"{min(len(extensions), 99):02d}"
 
-        alpn_protocols = tls_info.get('alpn_protocols', [])
-        alpn_raw = tls_info.get('alpn_raw') or []
+        alpn_protocols = tls_info.get("alpn_protocols", [])
+        alpn_raw = tls_info.get("alpn_raw") or []
         if not alpn_protocols:
-            for ext_id, ext_data in tls_info.get('extension_data', {}).items():
-                if ext_id == 0x0010 and 'protocols' in ext_data and ext_data['protocols']:
-                    alpn_protocols = ext_data['protocols']
+            for ext_id, ext_data in tls_info.get("extension_data", {}).items():
+                if ext_id == 0x0010 and "protocols" in ext_data and ext_data["protocols"]:
+                    alpn_protocols = ext_data["protocols"]
                     break
 
         alpn_value = _get_alpn_value(alpn_protocols, alpn_raw)
         part_a = f"{proto}{version_str}{ext_count}{alpn_value}"
 
-        cipher = tls_info.get('cipher')
+        cipher = tls_info.get("cipher")
         if cipher is None:
             return None
         cipher_str = f"{cipher:04x}"
 
         if extensions:
-            ext_str = ','.join([f"{e:04x}" for e in extensions])
+            ext_str = ",".join([f"{e:04x}" for e in extensions])
             extensions_hash = hashlib.sha256(ext_str.encode()).hexdigest()[:12]
         else:
-            extensions_hash = '000000000000'
+            extensions_hash = "000000000000"
 
         return f"{part_a}_{cipher_str}_{extensions_hash}"
 
@@ -206,38 +209,38 @@ def _generate_ja4s_raw_from_tls_info(tls_info, original_order=False):
     ComputeJA4SRaw / ComputeJA4SRawOriginalOrder.
     """
     try:
-        proto = 'q' if tls_info.get('is_quic') else 'd' if tls_info.get('is_dtls') else 't'
+        proto = "q" if tls_info.get("is_quic") else "d" if tls_info.get("is_dtls") else "t"
 
-        version = tls_info.get('version')
-        supported_versions = tls_info.get('supported_versions', [])
+        version = tls_info.get("version")
+        supported_versions = tls_info.get("supported_versions", [])
         if supported_versions:
             non_grease = [v for v in supported_versions if not is_grease_value(v)]
             if non_grease:
                 version = non_grease[0]
         version_str = _version_to_str(version)
 
-        extensions = tls_info.get('extensions', [])
+        extensions = tls_info.get("extensions", [])
         ext_count = f"{min(len(extensions), 99):02d}"
 
-        alpn_protocols = tls_info.get('alpn_protocols', [])
-        alpn_raw = tls_info.get('alpn_raw') or []
+        alpn_protocols = tls_info.get("alpn_protocols", [])
+        alpn_raw = tls_info.get("alpn_raw") or []
         if not alpn_protocols:
-            for ext_id, ext_data in tls_info.get('extension_data', {}).items():
-                if ext_id == 0x0010 and 'protocols' in ext_data and ext_data['protocols']:
-                    alpn_protocols = ext_data['protocols']
+            for ext_id, ext_data in tls_info.get("extension_data", {}).items():
+                if ext_id == 0x0010 and "protocols" in ext_data and ext_data["protocols"]:
+                    alpn_protocols = ext_data["protocols"]
                     break
         alpn_value = _get_alpn_value(alpn_protocols, alpn_raw)
         part_a = f"{proto}{version_str}{ext_count}{alpn_value}"
 
-        cipher = tls_info.get('cipher')
+        cipher = tls_info.get("cipher")
         if cipher is None:
             return None
         cipher_str = f"{cipher:04x}"
 
         if original_order:
-            ext_list = ','.join(f"{e:04x}" for e in extensions)
+            ext_list = ",".join(f"{e:04x}" for e in extensions)
         else:
-            ext_list = ','.join(f"{e:04x}" for e in sorted(extensions))
+            ext_list = ",".join(f"{e:04x}" for e in sorted(extensions))
 
         return f"{part_a}_{cipher_str}_{ext_list}"
     except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
@@ -256,7 +259,7 @@ def generate_ja4s(packet):
         A JA4S fingerprint string or None if not applicable
     """
     tls_info = extract_tls_info(packet)
-    if not tls_info or tls_info.get('handshake_type') != 'server_hello':
+    if not tls_info or tls_info.get("handshake_type") != "server_hello":
         return None
     return _generate_ja4s_from_tls_info(tls_info)
 
@@ -264,17 +267,17 @@ def generate_ja4s(packet):
 def _version_to_str(version):
     """Convert TLS version number to JA4 version string."""
     version_map = {
-        0x0304: '13',  # TLS 1.3
-        0x0303: '12',  # TLS 1.2
-        0x0302: '11',  # TLS 1.1
-        0x0301: '10',  # TLS 1.0
-        0x0300: 's3',  # SSL 3.0
-        0x0200: 's2',  # SSL 2.0
-        0xfeff: 'd1',  # DTLS 1.0
-        0xfefd: 'd2',  # DTLS 1.2
-        0xfefc: 'd3',  # DTLS 1.3
+        0x0304: "13",  # TLS 1.3
+        0x0303: "12",  # TLS 1.2
+        0x0302: "11",  # TLS 1.1
+        0x0301: "10",  # TLS 1.0
+        0x0300: "s3",  # SSL 3.0
+        0x0200: "s2",  # SSL 2.0
+        0xFEFF: "d1",  # DTLS 1.0
+        0xFEFD: "d2",  # DTLS 1.2
+        0xFEFC: "d3",  # DTLS 1.3
     }
-    return version_map.get(version, '00')
+    return version_map.get(version, "00")
 
 
 def _get_alpn_value(alpn_protocols, alpn_raw=None):
@@ -288,7 +291,5 @@ def _get_alpn_value(alpn_protocols, alpn_raw=None):
     if alpn_raw:
         return compute_alpn_value(alpn_raw[0])
     if alpn_protocols and alpn_protocols[0]:
-        return compute_alpn_value(
-            alpn_protocols[0].encode('latin-1', errors='replace')
-        )
-    return '00'
+        return compute_alpn_value(alpn_protocols[0].encode("latin-1", errors="replace"))
+    return "00"

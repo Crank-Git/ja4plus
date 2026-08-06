@@ -99,9 +99,19 @@ class TestCLILookupFlag:
         import json
 
         result = subprocess.run(
-            ["python", "-m", "ja4plus.cli", "--format", "json", "--lookup",
-             "analyze", "tests/data/http.cap"],
-            capture_output=True, text=True, timeout=30,
+            [
+                "python",
+                "-m",
+                "ja4plus.cli",
+                "--format",
+                "json",
+                "--lookup",
+                "analyze",
+                "tests/data/http.cap",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         if result.returncode == 0 and result.stdout.strip():
             for line in result.stdout.strip().split("\n"):
@@ -113,9 +123,10 @@ class TestCLILookupFlag:
         import json
 
         result = subprocess.run(
-            ["python", "-m", "ja4plus.cli", "--format", "json",
-             "analyze", "tests/data/http.cap"],
-            capture_output=True, text=True, timeout=30,
+            ["python", "-m", "ja4plus.cli", "--format", "json", "analyze", "tests/data/http.cap"],
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         if result.returncode == 0 and result.stdout.strip():
             for line in result.stdout.strip().split("\n"):

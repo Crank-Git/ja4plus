@@ -68,7 +68,7 @@ class TCPStreamReassembler:
                 break
 
             if len(result) > self.max_stream_bytes:
-                result = result[:self.max_stream_bytes]
+                result = result[: self.max_stream_bytes]
                 break
 
         return bytes(result)
@@ -83,6 +83,5 @@ class TCPStreamReassembler:
             return
         stream = self.streams[key]
         stream["segments"] = [
-            (seq, data) for seq, data in stream["segments"]
-            if seq + len(data) > up_to_seq
+            (seq, data) for seq, data in stream["segments"] if seq + len(data) > up_to_seq
         ]

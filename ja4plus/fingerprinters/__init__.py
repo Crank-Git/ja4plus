@@ -13,13 +13,13 @@ from .ja4ts import JA4TSFingerprinter
 from .ja4d import JA4DFingerprinter
 
 __all__ = [
-    'JA4Fingerprinter',
-    'JA4SFingerprinter',
-    'JA4HFingerprinter',
-    'JA4LFingerprinter',
-    'JA4XFingerprinter',
-    'JA4SSHFingerprinter',
-    'JA4TFingerprinter',
-    'JA4TSFingerprinter',
-    'JA4DFingerprinter',
-] 
+    "JA4Fingerprinter",
+    "JA4SFingerprinter",
+    "JA4HFingerprinter",
+    "JA4LFingerprinter",
+    "JA4XFingerprinter",
+    "JA4SSHFingerprinter",
+    "JA4TFingerprinter",
+    "JA4TSFingerprinter",
+    "JA4DFingerprinter",
+]

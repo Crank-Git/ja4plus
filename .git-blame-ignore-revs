@@ -1,0 +1,7 @@
+# Commits that changed formatting only. `git blame` skips every commit here.
+#
+# Enable the file once per clone:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: apply ruff format to the package and the test suite
+b42e38573e2ae148e69c345815c27feecd0f05b5
