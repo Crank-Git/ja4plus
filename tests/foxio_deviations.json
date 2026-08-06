@@ -139,10 +139,6 @@
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
-  "gre-sample.pcap/JA4SSH": {
-    "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
-  },
   "http-empty-useragent.pcap/0:57722/JA4H.1": {
     "issue": 35,
     "cause": "ja4plus produces no JA4H value on this stream."
@@ -481,7 +477,7 @@
   },
   "ssh-r.pcap/0:64980/JA4SSH.2": {
     "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "cause": "ja4plus produces no JA4SSH value on this stream."
   },
   "ssh-r.pcap/1:46394/JA4L-C.1": {
     "issue": 88,
@@ -493,7 +489,7 @@
   },
   "ssh-r.pcap/1:46394/JA4SSH.1": {
     "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "cause": "ja4plus produces no JA4SSH value on this stream."
   },
   "ssh-r.pcap/2:46396/JA4L-C.1": {
     "issue": 88,
@@ -507,21 +503,9 @@
     "issue": 28,
     "cause": "The produced JA4SSH value differs from the reference."
   },
-  "ssh-r.pcap/2:46396/JA4SSH.2": {
-    "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
-  "ssh-r.pcap/2:46396/JA4SSH.3": {
-    "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
-  "ssh-r.pcap/2:46396/JA4SSH.4": {
-    "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
   "ssh-r.pcap/2:46396/JA4SSH.5": {
     "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "cause": "ja4plus produces no JA4SSH value on this stream."
   },
   "ssh-r.pcap/JA4L-C": {
     "issue": 34,
@@ -529,7 +513,7 @@
   },
   "ssh-r.pcap/JA4SSH": {
     "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+    "cause": "ja4plus produces no JA4SSH fingerprint the reference holds."
   },
   "ssh-scp-1050.pcap/0:49237/JA4L-C.1": {
     "issue": 88,
@@ -540,10 +524,6 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.1": {
-    "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
-  "ssh-scp-1050.pcap/0:49237/JA4SSH.2": {
     "issue": 28,
     "cause": "The produced JA4SSH value differs from the reference."
   },
@@ -559,18 +539,6 @@
     "issue": 34,
     "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
   },
-  "ssh-scp-1050.pcap/JA4SSH": {
-    "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
-  },
-  "ssh.pcapng/0:57377/JA4SSH.1": {
-    "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
-  "ssh.pcapng/JA4SSH": {
-    "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
-  },
   "ssh2-malformed.pcap/0:61672/JA4L-C.1": {
     "issue": 88,
     "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
@@ -583,10 +551,6 @@
     "issue": 34,
     "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
   },
-  "ssh2-malformed.pcap/JA4SSH": {
-    "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
-  },
   "ssh2-moloch-crash.pcap/0:61672/JA4L-C.1": {
     "issue": 88,
     "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
@@ -598,10 +562,6 @@
   "ssh2-moloch-crash.pcap/JA4L-C": {
     "issue": 34,
     "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "ssh2-moloch-crash.pcap/JA4SSH": {
-    "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
   },
   "ssh2.pcapng/11:57374/JA4L-C.1": {
     "issue": 88,
@@ -657,7 +617,7 @@
   },
   "ssh2.pcapng/14:57377/JA4SSH.2": {
     "issue": 28,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "cause": "ja4plus produces no JA4SSH value on this stream."
   },
   "ssh2.pcapng/15:57380/JA4L-C.1": {
     "issue": 88,
@@ -717,7 +677,7 @@
   },
   "ssh2.pcapng/JA4SSH": {
     "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+    "cause": "ja4plus produces no JA4SSH fingerprint the reference holds."
   },
   "ssh2.pcapng/JA4X": {
     "issue": 78,
@@ -738,10 +698,6 @@
   "sshv1.pcap/JA4L-S": {
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
-  },
-  "sshv1.pcap/JA4SSH": {
-    "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
   },
   "tcpdump-geneve.pcap/0:51225/JA4L-C.1": {
     "issue": 88,
@@ -1002,9 +958,5 @@
   "v6.pcap/JA4L-S": {
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
-  },
-  "v6.pcap/JA4SSH": {
-    "issue": 28,
-    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
   }
 }

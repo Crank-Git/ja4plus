@@ -182,7 +182,7 @@ change, and files nothing there.
 | Remote lookup | The command-line flag `--lookup` is opt-in, but `JA4DBClient.lookup` then calls `ja4db.com` on every miss with no second opt-in. | The remote fallback is a separate opt-in. | 2 | Separate the local lookup from the remote lookup. Epic 7. |
 | Mapping file refresh | `db update` and `db info` already exist. | The same two subcommands. | — | Already at parity. Keep a test that proves it. |
 | Shard key format | `tcp:ip:port->ip:port`. | The same format. | — | Already at parity. Keep a test that proves it. |
-| JA4SSH window | Emits at `min(packet_count, 10)`. | Emits at `min(packetCount, 10)`. | 1 | Both are wrong. FoxIO specifies 200. Fix here. Epic 1. |
+| JA4SSH window | Emits at `packet_count`, which defaults to 200. | Emits at `min(packetCount, 10)`. | 1 | Fixed here by #28. The port carries the defect at `ja4ssh.go:176`. |
 | Parity test | 6 tests that assert names exist. | Not applicable. | 3 | Replace with the shared vector suite. Epic 1. |
 
 Verified against: https://github.com/Crank-Git/ja4plus-go (`types.go`,
