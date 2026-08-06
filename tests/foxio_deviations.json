@@ -472,11 +472,11 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-r.pcap/0:64980/JA4SSH.1": {
-    "issue": 28,
+    "issue": 92,
     "cause": "The produced JA4SSH value differs from the reference."
   },
   "ssh-r.pcap/0:64980/JA4SSH.2": {
-    "issue": 28,
+    "issue": 92,
     "cause": "ja4plus produces no JA4SSH value on this stream."
   },
   "ssh-r.pcap/1:46394/JA4L-C.1": {
@@ -488,7 +488,7 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-r.pcap/1:46394/JA4SSH.1": {
-    "issue": 28,
+    "issue": 92,
     "cause": "ja4plus produces no JA4SSH value on this stream."
   },
   "ssh-r.pcap/2:46396/JA4L-C.1": {
@@ -500,11 +500,11 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-r.pcap/2:46396/JA4SSH.1": {
-    "issue": 28,
+    "issue": 92,
     "cause": "The produced JA4SSH value differs from the reference."
   },
   "ssh-r.pcap/2:46396/JA4SSH.5": {
-    "issue": 28,
+    "issue": 92,
     "cause": "ja4plus produces no JA4SSH value on this stream."
   },
   "ssh-r.pcap/JA4L-C": {
@@ -512,7 +512,7 @@
     "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
   },
   "ssh-r.pcap/JA4SSH": {
-    "issue": 28,
+    "issue": 92,
     "cause": "ja4plus produces no JA4SSH fingerprint the reference holds."
   },
   "ssh-scp-1050.pcap/0:49237/JA4L-C.1": {
@@ -524,15 +524,15 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.1": {
-    "issue": 28,
+    "issue": 92,
     "cause": "The produced JA4SSH value differs from the reference."
   },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.3": {
-    "issue": 28,
+    "issue": 92,
     "cause": "The produced JA4SSH value differs from the reference."
   },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.4": {
-    "issue": 28,
+    "issue": 92,
     "cause": "The produced JA4SSH value differs from the reference."
   },
   "ssh-scp-1050.pcap/JA4L-C": {
@@ -612,11 +612,11 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh2.pcapng/14:57377/JA4SSH.1": {
-    "issue": 28,
+    "issue": 92,
     "cause": "The produced JA4SSH value differs from the reference."
   },
   "ssh2.pcapng/14:57377/JA4SSH.2": {
-    "issue": 28,
+    "issue": 92,
     "cause": "ja4plus produces no JA4SSH value on this stream."
   },
   "ssh2.pcapng/15:57380/JA4L-C.1": {
@@ -676,7 +676,7 @@
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
   "ssh2.pcapng/JA4SSH": {
-    "issue": 28,
+    "issue": 92,
     "cause": "ja4plus produces no JA4SSH fingerprint the reference holds."
   },
   "ssh2.pcapng/JA4X": {
