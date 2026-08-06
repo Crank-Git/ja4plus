@@ -32,6 +32,7 @@ class JA4SFingerprinter(BaseFingerprinter):
         self._quic_dcids = {}
         self.last_raw = None
         self.last_raw_original_order = None
+        self.last_fingerprint_original_order = None
 
     def process_packet(self, packet):
         """
@@ -92,11 +93,17 @@ class JA4SFingerprinter(BaseFingerprinter):
         """Append a JA4S fingerprint result with raw / raw_original_order."""
         raw = _generate_ja4s_raw_from_tls_info(tls_info, original_order=False)
         raw_oo = _generate_ja4s_raw_from_tls_info(tls_info, original_order=True)
+        # JA4S hashes the extensions in wire order, and the FoxIO `JA4S_r` value
+        # holds that same wire order. The original-order hashed value therefore
+        # equals the fingerprint. FoxIO publishes no `JA4S_o` key. The field
+        # exists so one caller reads one name on JA4 and on JA4S.
         self.last_raw = raw
         self.last_raw_original_order = raw_oo
+        self.last_fingerprint_original_order = fingerprint
         self.fingerprints.append(
             {
                 "fingerprint": fingerprint,
+                "fingerprint_original_order": fingerprint,
                 "raw": raw,
                 "raw_original_order": raw_oo,
                 "packet": packet,
@@ -116,6 +123,7 @@ class JA4SFingerprinter(BaseFingerprinter):
         self._quic_dcids = {}
         self.last_raw = None
         self.last_raw_original_order = None
+        self.last_fingerprint_original_order = None
 
 
 def _get_ip_pair(packet):

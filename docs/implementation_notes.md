@@ -45,6 +45,21 @@ Raw fingerprints use prefixed output: `JA4_r = {fp}` and `JA4_ro = {fp}`.
 Note the spaces around `=`. This is a display convention, not part of the
 fingerprint value itself.
 
+### The original-order hashed value
+
+`JA4_o` hashes the original-order raw value. It keeps the ciphers in wire
+order. It keeps every extension in wire order, and it holds SNI (`0x0000`) and
+ALPN (`0x0010`), which `JA4` removes. The vector
+`tests/foxio_vectors/tls12.pcap.json` gives `JA4_o.1` as
+`t13d1715h2_5b234860e130_014157ec0da2`, and that value is the hash of the
+`JA4_ro.1` fields.
+
+FoxIO publishes no `JA4S_o` key. JA4S hashes its extensions in wire order, and
+the published `JA4S_r` value holds that same wire order. The original-order
+hashed value of JA4S therefore equals the JA4S fingerprint. The
+`fingerprint_original_order` key carries it, so one caller reads one name on
+JA4 and on JA4S.
+
 ---
 
 ## JA4L - Latency
