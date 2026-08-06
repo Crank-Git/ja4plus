@@ -3,7 +3,7 @@ id: spec-conformance
 feature: Spec conformance
 epic: "Epic 1: Spec conformance"
 status: issued
-issues: [12, 27, 28, 29, 30, 31]
+issues: [12, 27, 28, 29, 30, 31, 78, 80]
 mockups: []
 ---
 

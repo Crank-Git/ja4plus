@@ -463,6 +463,11 @@ Two items blocked approval. Both are now decided.
 | 1 | 2026-08-06 | First draft, written from the Phase 1 interview and a read of the codebase at commit `5ab0252`. |
 | 2 | 2026-08-06 | Added the parity section and the divergence register after the user named the Go port. Corrected the register: `db update`, `db info`, and the three output formats already exist in `ja4plus/cli.py`. |
 | 3 | 2026-08-06 | Approved. JA4TScan confirmed out of scope. `dev` confirmed as the GitHub default branch. |
+| 4 | 2026-08-06 | Epic 0 built. #27 was moved into the Epic 0 batch, and stays a child of Epic 1, because #23 cannot gate the conformance suite against a harness that compares one expected value against every fingerprint in a capture. |
+| 5 | 2026-08-06 | The `xfail` decision on #23 was revised from five hand-written markers to a deviation register keyed by case, applied as `xfail(strict=True)`, after the measured baseline came to 263 known deviations rather than 5. |
+| 6 | 2026-08-06 | The conformance baseline was measured for the first time. It is recorded on #12. The figure of 69 of 74 vectors passing is withdrawn: it came from a harness that matched a value against every fingerprint in a capture and skipped four whole methods. |
+| 7 | 2026-08-06 | #78 opened. JA4X fails 35 cases and no issue owned the method. |
+| 8 | 2026-08-06 | #80 opened. The conformance harness never runs the JA4L fingerprinter, so 162 of the 263 registered deviations state a harness defect, not non-conformance. JA4L conformance is unmeasured until #80 lands. |
 
 ## Issue map
 
@@ -473,7 +478,7 @@ Created by `spec-to-issues` on 2026-08-06 against `Crank-Git/ja4plus`.
 | Epic | Feature file | Epic issue | Sub-issues |
 |---|---|---|---|
 | Epic 0: Foundation | `features/00-foundation.md` | #11 | #21, #22, #23, #24, #25, #26 |
-| Epic 1: Spec conformance | `features/01-spec-conformance.md` | #12 | #27, #28, #29, #30, #31 |
+| Epic 1: Spec conformance | `features/01-spec-conformance.md` | #12 | #27, #28, #29, #30, #31, #78, #80 |
 | Epic 2: Correctness audit | `features/02-correctness-audit.md` | #13 | #32, #33, #34, #35, #36, #37 |
 | Epic 3: Concurrency and resource safety | `features/03-concurrency-safety.md` | #14 | #38, #39, #40, #41, #42, #43 |
 | Epic 4: Typed public interface | `features/04-typed-api.md` | #15 | #44, #45, #46, #47, #48 |
