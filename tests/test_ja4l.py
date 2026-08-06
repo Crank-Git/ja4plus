@@ -79,7 +79,7 @@ class TestJA4L(unittest.TestCase):
 
         # Should have collected 2 fingerprints
         self.assertEqual(len(self.ja4l_fp.fingerprints), 2)
-        print(f"Collected fingerprints:")
+        print("Collected fingerprints:")
         for fp in self.ja4l_fp.fingerprints:
             print(f"  - {fp['fingerprint']}")
 

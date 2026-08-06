@@ -49,7 +49,6 @@ def test_compute_ja4x_from_der_module_helper():
         .sign(key, hashes.SHA256(), default_backend())
     )
     der = cert.public_bytes(Encoding.DER)
-    pem = cert.public_bytes(Encoding.PEM)
 
     via_helper = compute_ja4x_from_der(der)
     via_class = JA4XFingerprinter().fingerprint_certificate(der)

@@ -5,8 +5,9 @@ JA4T TCP Client Fingerprinting implementation.
 import logging
 from scapy.all import TCP, IP
 
-logger = logging.getLogger(__name__)
 from ja4plus.fingerprinters.base import BaseFingerprinter
+
+logger = logging.getLogger(__name__)
 
 
 class JA4TFingerprinter(BaseFingerprinter):

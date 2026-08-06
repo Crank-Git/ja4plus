@@ -124,7 +124,7 @@ class TestParseQuicInitial(unittest.TestCase):
         pkt += (
             b"\x00" * 50
         )  # payload (will fail decryption, but should not be rejected at type check)
-        result = parse_quic_initial(bytes(pkt))
+        parse_quic_initial(bytes(pkt))
         # Will return None (decryption fails on dummy data), but crucially
         # should NOT be rejected at the packet_type check — it should reach
         # the decryption stage. We verify by checking a v2 non-Initial IS rejected.

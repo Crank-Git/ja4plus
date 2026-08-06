@@ -6,13 +6,6 @@ Run `ja4plus --help` for usage.
 """
 
 import warnings
-
-warnings.warn(
-    "collector.py is deprecated. Use the 'ja4plus' CLI command instead.",
-    DeprecationWarning,
-    stacklevel=2,
-)
-
 import argparse
 import json
 import sys
@@ -21,8 +14,6 @@ import signal
 import logging
 from scapy.all import sniff
 
-logger = logging.getLogger(__name__)
-
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
@@ -30,6 +21,14 @@ from ja4plus.fingerprinters.ja4t import JA4TFingerprinter
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
+
+logger = logging.getLogger(__name__)
+
+warnings.warn(
+    "collector.py is deprecated. Use the 'ja4plus' CLI command instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 # Global variables for signal handling
 packet_count = 0

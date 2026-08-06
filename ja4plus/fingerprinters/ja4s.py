@@ -8,10 +8,11 @@ import struct
 
 from scapy.all import IP, IPv6, TCP, UDP, Raw
 
-logger = logging.getLogger(__name__)
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.utils.quic_utils import parse_quic_server_initial, parse_quic_initial
 from ja4plus.fingerprinters.base import BaseFingerprinter
+
+logger = logging.getLogger(__name__)
 
 
 class JA4SFingerprinter(BaseFingerprinter):

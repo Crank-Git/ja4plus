@@ -126,7 +126,10 @@ def extract_certificate_from_bytes(data, verbose=False, try_asn1=False):
                                     from cryptography import x509
                                     from cryptography.hazmat.backends import default_backend
 
-                                    cert = x509.load_der_x509_certificate(
+                                    # The call raises on a candidate that is not a
+                                    # certificate, so it is the test. The result is
+                                    # unused, because the caller wants the raw bytes.
+                                    _cert = x509.load_der_x509_certificate(
                                         candidate, default_backend()
                                     )
 
@@ -234,7 +237,7 @@ def extract_certificate_info(packet, verbose=False):
     try:
         from scapy.all import Raw, TCP
 
-        if not Raw in packet:
+        if Raw not in packet:
             return None
 
         # Less restrictive approach - try to extract certificates from any TCP packet with data
