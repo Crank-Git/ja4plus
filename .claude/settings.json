@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest:*)",
+      "Bash(pytest:*)",
+      "Bash(python -m venv:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m pip install:*)",
+      "Bash(ruff check:*)",
+      "Bash(ruff format:*)",
+      "Bash(mypy:*)",
+      "Bash(python -m build)",
+      "Bash(twine check:*)",
+      "Bash(mkdocs build:*)",
+      "Bash(mkdocs serve:*)",
+      "Bash(python tests/download_test_vectors.py:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v ruff >/dev/null 2>&1 || exit 0; case \"$CLAUDE_FILE_PATHS\" in *.py) ruff format \"$CLAUDE_FILE_PATHS\" >/dev/null 2>&1 || true ;; esac; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

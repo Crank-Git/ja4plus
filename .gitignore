@@ -8,12 +8,20 @@ dist/
 build/
 *.egg
 .omc/
-.claude/
 .gstack/
 .worktrees/
 
-# Claude Code / agent artifacts (local only)
-CLAUDE.md
+# Claude Code
+# CLAUDE.md and .claude/ are tracked in this repo: issue-flow workers run in git
+# worktrees, which contain tracked files only, so an ignored rule is invisible to them.
+.claude/settings.local.json
+.claude/worktrees/
+.claude/agent-memory-local/
+CLAUDE.local.md
+.claude.local.md
+.issue-flow.local.json
+
+# Agent artifacts (local only)
 AGENTS.md
 TODOS.md
 PYTHON_ISSUES.md

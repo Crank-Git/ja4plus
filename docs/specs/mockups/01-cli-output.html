@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ja4plus — command-line output formats</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f7f7f8;
+    --panel: #ffffff;
+    --ink: #16181d;
+    --muted: #5c6270;
+    --line: #dcdfe6;
+    --term-bg: #10131a;
+    --term-ink: #d7dce5;
+    --accent: #2f6fdd;
+    --ok: #1f8a4c;
+    --warn: #a8620a;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d0f13;
+      --panel: #14171d;
+      --ink: #e6e9ef;
+      --muted: #98a0b0;
+      --line: #262b34;
+      --term-bg: #05070a;
+      --term-ink: #d7dce5;
+      --accent: #6ea2ff;
+      --ok: #4cc47f;
+      --warn: #e0a340;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 2rem; font-size: .95rem; }
+  h2 {
+    font-size: 1.05rem; margin: 2.5rem 0 .5rem;
+    display: flex; align-items: baseline; gap: .6rem;
+  }
+  h2 .tag {
+    font: 600 .7rem/1 var(--mono);
+    letter-spacing: .06em; text-transform: uppercase;
+    padding: .3rem .45rem; border-radius: .25rem;
+    border: 1px solid var(--line); color: var(--muted);
+  }
+  h2 .tag.stable { color: var(--ok); border-color: currentColor; }
+  h2 .tag.unstable { color: var(--warn); border-color: currentColor; }
+  .note { color: var(--muted); font-size: .9rem; margin: 0 0 .75rem; }
+  .term {
+    background: var(--term-bg); color: var(--term-ink);
+    border: 1px solid var(--line); border-radius: .5rem;
+    padding: .9rem 1rem; overflow-x: auto;
+    font: 13px/1.55 var(--mono); white-space: pre;
+  }
+  .term .cmd { color: #8fd8a0; }
+  .term .cmd::before { content: "$ "; color: var(--muted); }
+  .term .err { color: #e0a340; }
+  .term .dim { color: #6b7481; }
+  .term .k { color: #7fb0ff; }
+  .term .s { color: #d9a24a; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; margin-top: .75rem; }
+  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+  td code { font: 12px/1.4 var(--mono); }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: .5rem; padding: 1rem 1.15rem; margin-top: 1rem;
+  }
+  .panel p { margin: 0; font-size: .9rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>ja4plus — command-line output formats</h1>
+  <p class="sub">Feature set <code>structured-output</code> · three formats, two contracts.</p>
+
+  <h2>Table <span class="tag unstable">no stability promise</span></h2>
+  <p class="note">For a person reading a terminal. Columns may change between releases.</p>
+  <div class="term"><span class="cmd">ja4plus analyze capture.pcap</span>
+Source                                              Type        Fingerprint
+------------------------------------------------------------------------------------------
+192.168.1.10:54321 -> 93.184.216.34:443             ja4         t13d1516h2_8daaf6152771_02713d6af862
+192.168.1.10:54321 -> 93.184.216.34:443             ja4t        64240_2-1-3-1-1-4_1460_8
+93.184.216.34:443  -> 192.168.1.10:54321            ja4s        t130200_1301_234ea6891581
+93.184.216.34:443  -> 192.168.1.10:54321            ja4x        2bab15409345_af684594efb4_000000000000
+192.168.1.22:41002 -> 10.0.0.5:22                   ja4ssh      c36s36_c76s124_c0s0
+<span class="dim">
+[ja4plus] 4812 packets, 5 fingerprints, 3 connections</span></div>
+
+  <h2>JSON Lines <span class="tag stable">schema_version 1</span></h2>
+  <p class="note">One object per line. Every field is always present; an absent value is <code>null</code>.</p>
+  <div class="term"><span class="cmd">ja4plus analyze capture.pcap --format json</span>
+{<span class="k">"schema_version"</span>:1,<span class="k">"timestamp"</span>:<span class="s">"2026-08-06T12:34:56.789012Z"</span>,<span class="k">"type"</span>:<span class="s">"ja4"</span>,<span class="k">"fingerprint"</span>:<span class="s">"t13d1516h2_8daaf6152771_02713d6af862"</span>,<span class="k">"raw"</span>:<span class="s">"t13d1516h2_002f,0035,..."</span>,<span class="k">"raw_original_order"</span>:<span class="s">"t13d1516h2_1301,1303,..."</span>,<span class="k">"src_ip"</span>:<span class="s">"192.168.1.10"</span>,<span class="k">"src_port"</span>:54321,<span class="k">"dst_ip"</span>:<span class="s">"93.184.216.34"</span>,<span class="k">"dst_port"</span>:443,<span class="k">"identified_as"</span>:null}
+{<span class="k">"schema_version"</span>:1,<span class="k">"timestamp"</span>:<span class="s">"2026-08-06T12:34:56.789012Z"</span>,<span class="k">"type"</span>:<span class="s">"ja4t"</span>,<span class="k">"fingerprint"</span>:<span class="s">"64240_2-1-3-1-1-4_1460_8"</span>,<span class="k">"raw"</span>:null,<span class="k">"raw_original_order"</span>:null,<span class="k">"src_ip"</span>:<span class="s">"192.168.1.10"</span>,<span class="k">"src_port"</span>:54321,<span class="k">"dst_ip"</span>:<span class="s">"93.184.216.34"</span>,<span class="k">"dst_port"</span>:443,<span class="k">"identified_as"</span>:null}</div>
+
+  <p class="note" style="margin-top:.9rem">With <code>--lookup</code>, only <code>identified_as</code> changes. No field appears or disappears.</p>
+  <div class="term"><span class="cmd">ja4plus analyze capture.pcap --format json --lookup | jq -c '{type,fingerprint,identified_as}'</span>
+{<span class="k">"type"</span>:<span class="s">"ja4"</span>,<span class="k">"fingerprint"</span>:<span class="s">"t13d1516h2_8daaf6152771_02713d6af862"</span>,<span class="k">"identified_as"</span>:<span class="s">"Chromium Browser"</span>}
+{<span class="k">"type"</span>:<span class="s">"ja4t"</span>,<span class="k">"fingerprint"</span>:<span class="s">"64240_2-1-3-1-1-4_1460_8"</span>,<span class="k">"identified_as"</span>:null}</div>
+
+  <h2>CSV <span class="tag stable">schema_version 1</span></h2>
+  <p class="note">Fixed column order. The header is identical whatever flags the user passed.</p>
+  <div class="term"><span class="cmd">ja4plus analyze capture.pcap --format csv</span>
+schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as
+1,2026-08-06T12:34:56.789012Z,ja4,t13d1516h2_8daaf6152771_02713d6af862,"t13d1516h2_002f,0035,...","t13d1516h2_1301,1303,...",192.168.1.10,54321,93.184.216.34,443,
+1,2026-08-06T12:34:56.789012Z,ja4t,64240_2-1-3-1-1-4_1460_8,,,192.168.1.10,54321,93.184.216.34,443,</div>
+
+  <h2>Diagnostics</h2>
+  <p class="note">Results go to standard output. Everything else goes to standard error, so a pipe stays clean.</p>
+  <div class="term"><span class="cmd">ja4plus analyze broken.pcap --format json &gt; out.jsonl</span>
+<span class="err">[ja4plus] warning: ja4x failed on packet 812: certificate length exceeds packet</span>
+<span class="err">[ja4plus] 1 fingerprinter error, 4811 packets read</span>
+<span class="cmd">ja4plus analyze capture.pcap --output out.jsonl</span>
+<span class="err">Error: out.jsonl already exists. Pass --force to overwrite.</span></div>
+
+  <h2>Field reference</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>schema_version</code></td><td>integer</td><td>Rises when a field is removed or its meaning changes.</td></tr>
+      <tr><td><code>timestamp</code></td><td>string or null</td><td>The packet timestamp, in RFC 3339 form.</td></tr>
+      <tr><td><code>type</code></td><td>string</td><td>The method name, lowercase.</td></tr>
+      <tr><td><code>fingerprint</code></td><td>string</td><td>The fingerprint. Never empty.</td></tr>
+      <tr><td><code>raw</code></td><td>string or null</td><td>The unhashed form, when the method defines one.</td></tr>
+      <tr><td><code>raw_original_order</code></td><td>string or null</td><td>The unhashed wire-order form.</td></tr>
+      <tr><td><code>src_ip</code>, <code>dst_ip</code></td><td>string</td><td>Addresses. Empty when the packet carries none.</td></tr>
+      <tr><td><code>src_port</code>, <code>dst_port</code></td><td>integer</td><td>Ports. Zero when the packet carries none.</td></tr>
+      <tr><td><code>identified_as</code></td><td>string or null</td><td>The application name from the mapping file. Null without <code>--lookup</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="panel">
+    <p><strong>This mockup is guidance, not a contract.</strong> It shows the intent of the
+    output formats and roughly what a user sees. An implementer may diverge where the
+    feature's requirements and acceptance criteria are still met. The one part that is a
+    contract is the CSV column order and the JSON field set, and those live in
+    <code>features/05-structured-output.md</code>.</p>
+  </div>
+
+</div>
+</body>
+</html>
