@@ -2,8 +2,8 @@
 id: structured-output
 feature: Structured output
 epic: "Epic 5: Structured output"
-status: planned
-issues: []
+status: issued
+issues: [16, 49, 50, 51, 52]
 mockups: [mockups/01-cli-output.html]
 ---
 

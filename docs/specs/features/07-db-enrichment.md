@@ -2,8 +2,8 @@
 id: db-enrichment
 feature: Database enrichment
 epic: "Epic 7: Database enrichment"
-status: planned
-issues: []
+status: issued
+issues: [18, 57, 58, 59, 60, 61]
 mockups: []
 ---
 

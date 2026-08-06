@@ -463,3 +463,172 @@ Two items blocked approval. Both are now decided.
 | 1 | 2026-08-06 | First draft, written from the Phase 1 interview and a read of the codebase at commit `5ab0252`. |
 | 2 | 2026-08-06 | Added the parity section and the divergence register after the user named the Go port. Corrected the register: `db update`, `db info`, and the three output formats already exist in `ja4plus/cli.py`. |
 | 3 | 2026-08-06 | Approved. JA4TScan confirmed out of scope. `dev` confirmed as the GitHub default branch. |
+
+## Issue map
+
+Created by `spec-to-issues` on 2026-08-06 against `Crank-Git/ja4plus`.
+
+### Epics
+
+| Epic | Feature file | Epic issue | Sub-issues |
+|---|---|---|---|
+| Epic 0: Foundation | `features/00-foundation.md` | #11 | #21, #22, #23, #24, #25, #26 |
+| Epic 1: Spec conformance | `features/01-spec-conformance.md` | #12 | #27, #28, #29, #30, #31 |
+| Epic 2: Correctness audit | `features/02-correctness-audit.md` | #13 | #32, #33, #34, #35, #36, #37 |
+| Epic 3: Concurrency and resource safety | `features/03-concurrency-safety.md` | #14 | #38, #39, #40, #41, #42, #43 |
+| Epic 4: Typed public interface | `features/04-typed-api.md` | #15 | #44, #45, #46, #47, #48 |
+| Epic 5: Structured output | `features/05-structured-output.md` | #16 | #49, #50, #51, #52 |
+| Epic 6: Live capture | `features/06-live-capture.md` | #17 | #53, #54, #55, #56 |
+| Epic 7: Database enrichment | `features/07-db-enrichment.md` | #18 | #57, #58, #59, #60, #61 |
+| Epic 8: Documentation | `features/08-documentation.md` | #19 | #62, #63, #64, #65, #66 |
+| Epic 9: Release | `features/09-release.md` | #20 | #67, #68, #69, #70 |
+
+### Requirements
+
+| Requirement | Issues |
+|---|---|
+| `FR-concurrency-safety-1` | #40 |
+| `FR-concurrency-safety-2` | #40 |
+| `FR-concurrency-safety-3` | #40 |
+| `FR-concurrency-safety-4` | #40 |
+| `FR-concurrency-safety-5` | #40 |
+| `FR-concurrency-safety-6` | #40 |
+| `FR-concurrency-safety-7` | #38, #39 |
+| `FR-concurrency-safety-8` | #38, #39 |
+| `FR-concurrency-safety-9` | #38 |
+| `FR-concurrency-safety-10` | #38 |
+| `FR-concurrency-safety-11` | #41 |
+| `FR-concurrency-safety-12` | #41 |
+| `FR-concurrency-safety-13` | #42 |
+| `FR-concurrency-safety-14` | #42 |
+| `FR-concurrency-safety-15` | #43 |
+| `FR-correctness-audit-1` | #32 |
+| `FR-correctness-audit-2` | #33 |
+| `FR-correctness-audit-3` | #32 |
+| `FR-correctness-audit-4` | #34 |
+| `FR-correctness-audit-5` | #34 |
+| `FR-correctness-audit-6` | #35 |
+| `FR-correctness-audit-7` | #35 |
+| `FR-correctness-audit-8` | #37 |
+| `FR-correctness-audit-9` | #37 |
+| `FR-correctness-audit-10` | #37 |
+| `FR-correctness-audit-11` | #34 |
+| `FR-correctness-audit-12` | #36 |
+| `FR-correctness-audit-13` | #37 |
+| `FR-db-enrichment-1` | #57 |
+| `FR-db-enrichment-2` | #57 |
+| `FR-db-enrichment-3` | #58 |
+| `FR-db-enrichment-4` | #58 |
+| `FR-db-enrichment-5` | #58 |
+| `FR-db-enrichment-6` | #58 |
+| `FR-db-enrichment-7` | #59 |
+| `FR-db-enrichment-8` | #59 |
+| `FR-db-enrichment-9` | #60 |
+| `FR-db-enrichment-10` | #60 |
+| `FR-db-enrichment-11` | #61 |
+| `FR-db-enrichment-12` | #61 |
+| `FR-db-enrichment-13` | #61 |
+| `FR-db-enrichment-14` | #57 |
+| `FR-db-enrichment-15` | #57 |
+| `FR-documentation-1` | #62 |
+| `FR-documentation-2` | #62 |
+| `FR-documentation-3` | #62 |
+| `FR-documentation-4` | #63 |
+| `FR-documentation-5` | #63 |
+| `FR-documentation-6` | #63 |
+| `FR-documentation-7` | #64 |
+| `FR-documentation-8` | #66 |
+| `FR-documentation-9` | #64 |
+| `FR-documentation-10` | #65 |
+| `FR-documentation-11` | #65 |
+| `FR-documentation-12` | #65 |
+| `FR-documentation-13` | #66 |
+| `FR-documentation-14` | #62 |
+| `FR-documentation-15` | #64 |
+| `FR-foundation-1` | #22 |
+| `FR-foundation-2` | #22 |
+| `FR-foundation-3` | #22 |
+| `FR-foundation-3a` | #22 |
+| `FR-foundation-4` | #23 |
+| `FR-foundation-5` | #23 |
+| `FR-foundation-6` | #23 |
+| `FR-foundation-7` | #24 |
+| `FR-foundation-8` | #24 |
+| `FR-foundation-8a` | #21 |
+| `FR-foundation-9` | #24 |
+| `FR-foundation-10` | #24 |
+| `FR-foundation-11` | #24 |
+| `FR-foundation-12` | #24 |
+| `FR-foundation-13` | #24 |
+| `FR-foundation-14` | #25 |
+| `FR-foundation-15` | #26 |
+| `FR-foundation-15a` | #26 |
+| `FR-foundation-15b` | #26 |
+| `FR-foundation-16` | #26 |
+| `FR-foundation-17` | #26 |
+| `FR-live-capture-1` | #53 |
+| `FR-live-capture-2` | #53 |
+| `FR-live-capture-3` | #53 |
+| `FR-live-capture-4` | #53 |
+| `FR-live-capture-5` | #54 |
+| `FR-live-capture-6` | #54 |
+| `FR-live-capture-7` | #54 |
+| `FR-live-capture-8` | #55 |
+| `FR-live-capture-9` | #55 |
+| `FR-live-capture-10` | #55 |
+| `FR-live-capture-11` | #56 |
+| `FR-live-capture-12` | #56 |
+| `FR-live-capture-13` | #56 |
+| `FR-live-capture-14` | #53 |
+| `FR-release-1` | #67 |
+| `FR-release-2` | #67 |
+| `FR-release-3` | #67 |
+| `FR-release-4` | #68 |
+| `FR-release-5` | #68 |
+| `FR-release-6` | #68 |
+| `FR-release-7` | #68 |
+| `FR-release-8` | #68 |
+| `FR-release-9` | #68 |
+| `FR-release-10` | #69 |
+| `FR-release-11` | #69 |
+| `FR-release-12` | #69 |
+| `FR-release-13` | #70 |
+| `FR-release-14` | #70 |
+| `FR-spec-conformance-1` | #27 |
+| `FR-spec-conformance-2` | #27 |
+| `FR-spec-conformance-3` | #27 |
+| `FR-spec-conformance-4` | #28 |
+| `FR-spec-conformance-5` | #28 |
+| `FR-spec-conformance-6` | #28 |
+| `FR-spec-conformance-7` | #29 |
+| `FR-spec-conformance-8` | #29 |
+| `FR-spec-conformance-9` | #30 |
+| `FR-spec-conformance-10` | #30 |
+| `FR-spec-conformance-11` | #31 |
+| `FR-spec-conformance-12` | #31 |
+| `FR-structured-output-1` | #49 |
+| `FR-structured-output-2` | #49 |
+| `FR-structured-output-3` | #50 |
+| `FR-structured-output-4` | #49 |
+| `FR-structured-output-5` | #49 |
+| `FR-structured-output-6` | #52 |
+| `FR-structured-output-7` | #50 |
+| `FR-structured-output-8` | #50 |
+| `FR-structured-output-9` | #52 |
+| `FR-structured-output-10` | #52 |
+| `FR-structured-output-11` | #51 |
+| `FR-structured-output-12` | #51 |
+| `FR-structured-output-13` | #50 |
+| `FR-typed-api-1` | #44 |
+| `FR-typed-api-2` | #44 |
+| `FR-typed-api-3` | #45 |
+| `FR-typed-api-4` | #45 |
+| `FR-typed-api-5` | #44 |
+| `FR-typed-api-6` | #44 |
+| `FR-typed-api-7` | #46 |
+| `FR-typed-api-8` | #46 |
+| `FR-typed-api-9` | #47 |
+| `FR-typed-api-10` | #47 |
+| `FR-typed-api-11` | #48 |
+| `FR-typed-api-12` | #47 |
+| `FR-typed-api-13` | #47 |

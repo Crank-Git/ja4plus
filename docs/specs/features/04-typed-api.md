@@ -2,8 +2,8 @@
 id: typed-api
 feature: Typed public interface
 epic: "Epic 4: Typed public interface"
-status: planned
-issues: []
+status: issued
+issues: [15, 44, 45, 46, 47, 48]
 mockups: []
 ---
 

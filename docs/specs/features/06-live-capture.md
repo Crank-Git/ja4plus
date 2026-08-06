@@ -2,8 +2,8 @@
 id: live-capture
 feature: Live capture
 epic: "Epic 6: Live capture"
-status: planned
-issues: []
+status: issued
+issues: [17, 53, 54, 55, 56]
 mockups: []
 ---
 

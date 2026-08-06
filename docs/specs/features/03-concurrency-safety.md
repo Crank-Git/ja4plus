@@ -2,8 +2,8 @@
 id: concurrency-safety
 feature: Concurrency and resource safety
 epic: "Epic 3: Concurrency and resource safety"
-status: planned
-issues: []
+status: issued
+issues: [14, 38, 39, 40, 41, 42, 43]
 mockups: []
 ---
 

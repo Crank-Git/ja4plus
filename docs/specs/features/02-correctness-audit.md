@@ -2,8 +2,8 @@
 id: correctness-audit
 feature: Correctness audit
 epic: "Epic 2: Correctness audit"
-status: planned
-issues: []
+status: issued
+issues: [13, 32, 33, 34, 35, 36, 37]
 mockups: []
 ---
 

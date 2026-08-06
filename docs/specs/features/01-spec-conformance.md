@@ -2,8 +2,8 @@
 id: spec-conformance
 feature: Spec conformance
 epic: "Epic 1: Spec conformance"
-status: planned
-issues: []
+status: issued
+issues: [12, 27, 28, 29, 30, 31]
 mockups: []
 ---
 

@@ -2,8 +2,8 @@
 id: release
 feature: Release
 epic: "Epic 9: Release"
-status: planned
-issues: []
+status: issued
+issues: [20, 67, 68, 69, 70]
 mockups: []
 ---
 
