@@ -13,6 +13,10 @@ compares one method on one stream at a time.
 A stream identity holds the address pair and the port pair, and it ignores the
 direction. The reference records the client direction and the server direction under
 one stream index, so a direction-sensitive identity would split one stream into two.
+
+A produced value reaches the index under the method the reference names. The JA4L
+fingerprinter writes its method name into the value, as `JA4L-S=21105_64`, and
+`method_and_value` reads the method name and returns the value alone.
 """
 
 import logging
@@ -24,9 +28,13 @@ logger = logging.getLogger(__name__)
 # next to the fingerprint, and they are intermediate values, not fingerprint output.
 RAW_SUFFIXES = ("_r", "_ro", "_o", "_raw")
 
-# The fingerprinters the conformance suite runs. JA4L is absent because ja4plus
-# produces no JA4L value.
-FINGERPRINTER_METHODS = ("JA4", "JA4S", "JA4H", "JA4X", "JA4SSH")
+# The methods the conformance suite reports. One fingerprinter produces one method,
+# except JA4L: the JA4L fingerprinter produces both JA4L-C and JA4L-S, and the prefix of
+# the produced value names which one.
+FINGERPRINTER_METHODS = ("JA4", "JA4S", "JA4H", "JA4X", "JA4SSH", "JA4L-C", "JA4L-S")
+
+# The protocol names a JA4L connection key starts with.
+CONNECTION_PROTOCOLS = ("tcp", "udp")
 
 
 class ReferenceStream:
@@ -89,6 +97,26 @@ def method_and_occurrence(key):
     if any(method.endswith(suffix) for suffix in RAW_SUFFIXES):
         return None
     return method, occurrence
+
+
+def method_and_value(fingerprinter, fingerprint):
+    """Return the method name and the value of one produced fingerprint.
+
+    The JA4L fingerprinter writes the method name into the value, as `JA4L-S=21105_64`.
+    The reference holds the value alone, so the comparison needs the value alone.
+
+    Args:
+        fingerprinter: The name of the fingerprinter that produced the value.
+        fingerprint: The value the fingerprinter produced.
+
+    Returns:
+        A (method, value) pair. The method is the prefix when the value carries one,
+        and the name of the fingerprinter when it does not.
+    """
+    prefix, separator, value = fingerprint.partition("=")
+    if separator and prefix.startswith("JA4"):
+        return prefix, value
+    return fingerprinter, fingerprint
 
 
 def index_expected(records):
@@ -155,6 +183,7 @@ def index_produced(pcap_path):
 
     from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
     from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
+    from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
     from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
     from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
     from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
@@ -165,6 +194,7 @@ def index_produced(pcap_path):
         "JA4H": JA4HFingerprinter(),
         "JA4X": JA4XFingerprinter(),
         "JA4SSH": JA4SSHFingerprinter(),
+        "JA4L": JA4LFingerprinter(),
     }
 
     for packet in rdpcap(str(pcap_path)):
@@ -178,8 +208,9 @@ def index_produced(pcap_path):
     for name, fingerprinter in fingerprinters.items():
         for entry in fingerprinter.get_fingerprints():
             identity = _entry_identity(entry)
+            method, value = method_and_value(name, entry["fingerprint"])
             methods = produced.setdefault(identity, {})
-            methods.setdefault(name, []).append(entry["fingerprint"])
+            methods.setdefault(method, []).append(value)
 
     return {
         identity: {name: tuple(values) for name, values in methods.items()}
@@ -203,12 +234,19 @@ def _entry_identity(entry):
 
 
 def _connection_identity(connection):
-    """Return the stream identity of a JA4SSH connection key, or None.
+    """Return the stream identity of a connection key, or None.
 
-    The key has the form `<address>:<port>-<address>:<port>`. An IPv6 address holds a
-    colon and no hyphen, so the hyphen separates the two endpoints.
+    Two fingerprinters write a connection key, and the two forms differ. JA4SSH writes
+    `<address>:<port>-<address>:<port>`, and an IPv6 address holds a colon and no
+    hyphen, so the hyphen separates the two endpoints. JA4L writes
+    `<protocol>_<address>:<port>_<address>:<port>`, and no address holds an underscore,
+    so the underscore separates the protocol name and the two endpoints.
     """
-    client, separator, server = connection.partition("-")
+    protocol, separator, endpoints = connection.partition("_")
+    if separator and protocol in CONNECTION_PROTOCOLS:
+        client, separator, server = endpoints.partition("_")
+    else:
+        client, separator, server = connection.partition("-")
     if not separator:
         return None
     client_host, _, client_port = client.rpartition(":")
