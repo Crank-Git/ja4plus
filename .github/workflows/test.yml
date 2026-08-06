@@ -4,9 +4,10 @@ name: Tests
 # lists, so a promotion to the release branch still runs every check.
 on:
   push:
-    branches: [master, dev]
+    branches: [master, dev, "issue/**"]
   pull_request:
     branches: [master, dev]
+  workflow_dispatch:
 
 env:
   # The floor starts at the measured baseline of 70.4%, rounded down to a whole percent.
