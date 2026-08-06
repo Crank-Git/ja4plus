@@ -97,10 +97,13 @@ class TestCLILookupFlag:
     def test_analyze_with_lookup_json(self):
         import subprocess
         import json
+        import sys
 
         result = subprocess.run(
             [
-                "python",
+                # The interpreter that runs the test holds the installed package. The name
+                # `python` is absent from a plain virtual environment path.
+                sys.executable,
                 "-m",
                 "ja4plus.cli",
                 "--format",
@@ -111,7 +114,9 @@ class TestCLILookupFlag:
             ],
             capture_output=True,
             text=True,
-            timeout=30,
+            # Every fingerprint the bundled database does not hold costs one remote
+            # lookup of 5 seconds. The file produces enough of them to pass 30 seconds.
+            timeout=180,
         )
         if result.returncode == 0 and result.stdout.strip():
             for line in result.stdout.strip().split("\n"):
@@ -121,9 +126,20 @@ class TestCLILookupFlag:
     def test_analyze_without_lookup_json(self):
         import subprocess
         import json
+        import sys
 
         result = subprocess.run(
-            ["python", "-m", "ja4plus.cli", "--format", "json", "analyze", "tests/data/http.cap"],
+            [
+                # The interpreter that runs the test holds the installed package. The name
+                # `python` is absent from a plain virtual environment path.
+                sys.executable,
+                "-m",
+                "ja4plus.cli",
+                "--format",
+                "json",
+                "analyze",
+                "tests/data/http.cap",
+            ],
             capture_output=True,
             text=True,
             timeout=30,
