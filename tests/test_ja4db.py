@@ -1,6 +1,5 @@
 """Tests for ja4db fingerprint lookup."""
 
-import pytest
 from unittest.mock import patch, MagicMock
 
 from ja4plus.ja4db import JA4DBClient, lookup, _load_bundled_db
