@@ -12,11 +12,12 @@ import hashlib
 import logging
 from scapy.all import IP, IPv6, TCP, Raw
 
-logger = logging.getLogger(__name__)
 from ja4plus.utils.http_utils import extract_http_info, is_http_request, parse_http_request
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
 from ja4plus.utils.packet_utils import get_ip_layer
 from ja4plus.fingerprinters.base import BaseFingerprinter
+
+logger = logging.getLogger(__name__)
 
 
 def _http_version_to_str(version):
@@ -27,20 +28,20 @@ def _http_version_to_str(version):
     to length 2 with trailing zeros so the result fits the fixed format.
     """
     if not version:
-        return '11'
-    v = version.replace('HTTP/', '').strip()
+        return "11"
+    v = version.replace("HTTP/", "").strip()
     # Normalize: HTTP/2 and HTTP/3 are version strings without the minor
     # part; map them to 20 / 30 explicitly.
-    if v == '2' or v == '2.0':
-        return '20'
-    if v == '3' or v == '3.0':
-        return '30'
-    digits = v.replace('.', '')
+    if v == "2" or v == "2.0":
+        return "20"
+    if v == "3" or v == "3.0":
+        return "30"
+    digits = v.replace(".", "")
     if len(digits) >= 2:
         return digits[:2]
     if len(digits) == 1:
-        return digits + '0'
-    return '11'
+        return digits + "0"
+    return "11"
 
 
 class JA4HFingerprinter(BaseFingerprinter):
@@ -73,7 +74,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         raw_data = bytes(packet[Raw])
 
         stream_key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
-        seq = tcp.seq if hasattr(tcp, 'seq') else 0
+        seq = tcp.seq if hasattr(tcp, "seq") else 0
 
         self.reassembler.add_segment(stream_key, seq, raw_data)
         stream_data = self.reassembler.get_stream(stream_key)
@@ -123,13 +124,14 @@ def _extract_http_info_from_bytes(data):
     Scapy packet, so it works on reassembled TCP stream data.
     """
     import re
+
     if not data:
         return None
     try:
-        text = data.decode('utf-8', errors='ignore')
+        text = data.decode("utf-8", errors="ignore")
         request_line_match = re.match(
-            r'^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)\s+(\S+)\s+(HTTP/\d+\.\d+)',
-            text
+            r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)\s+(\S+)\s+(HTTP/\d+\.\d+)",
+            text,
         )
         if not request_line_match:
             return None
@@ -140,12 +142,12 @@ def _extract_http_info_from_bytes(data):
 
         headers = {}
         header_names = []
-        lines = text.split('\r\n')
+        lines = text.split("\r\n")
 
         for line in lines[1:]:
             if not line or line.isspace():
                 break
-            header_match = re.match(r'^([^:]+):\s*(.*)$', line)
+            header_match = re.match(r"^([^:]+):\s*(.*)$", line)
             if header_match:
                 name = header_match.group(1).strip()
                 value = header_match.group(2).strip()
@@ -155,25 +157,25 @@ def _extract_http_info_from_bytes(data):
         cookies = {}
         cookie_fields = []
         cookie_values = []
-        if 'cookie' in headers:
-            for pair in headers['cookie'].split(';'):
-                if '=' in pair:
-                    k, v = pair.split('=', 1)
+        if "cookie" in headers:
+            for pair in headers["cookie"].split(";"):
+                if "=" in pair:
+                    k, v = pair.split("=", 1)
                     k, v = k.strip(), v.strip()
                     cookies[k] = v
                     cookie_fields.append(k)
                     cookie_values.append(v)
 
         return {
-            'method': method,
-            'path': path,
-            'version': version,
-            'headers': header_names,
-            'cookies': cookies,
-            'cookie_fields': cookie_fields,
-            'cookie_values': cookie_values,
-            'language': headers.get('accept-language', ''),
-            'referer': headers.get('referer', ''),
+            "method": method,
+            "path": path,
+            "version": version,
+            "headers": header_names,
+            "cookies": cookies,
+            "cookie_fields": cookie_fields,
+            "cookie_values": cookie_values,
+            "language": headers.get("accept-language", ""),
+            "referer": headers.get("referer", ""),
         }
     except (ValueError, TypeError, UnicodeDecodeError) as e:
         logger.debug(f"Could not parse HTTP from stream bytes: {e}")
@@ -182,21 +184,21 @@ def _extract_http_info_from_bytes(data):
 
 def _convert_parsed_to_extract_format(parsed):
     """Convert parse_http_request output to extract_http_info format."""
-    headers = parsed.get('headers', {})
+    headers = parsed.get("headers", {})
     header_names = list(headers.keys())
-    cookies = parsed.get('cookies', {})
+    cookies = parsed.get("cookies", {})
     cookie_fields = list(cookies.keys())
 
     return {
-        'method': parsed.get('method', ''),
-        'path': parsed.get('path', ''),
-        'version': parsed.get('version', ''),
-        'headers': header_names,
-        'cookies': cookies,
-        'cookie_fields': cookie_fields,
-        'cookie_values': list(cookies.values()),
-        'language': headers.get('accept-language', ''),
-        'referer': headers.get('referer', ''),
+        "method": parsed.get("method", ""),
+        "path": parsed.get("path", ""),
+        "version": parsed.get("version", ""),
+        "headers": header_names,
+        "cookies": cookies,
+        "cookie_fields": cookie_fields,
+        "cookie_values": list(cookies.values()),
+        "language": headers.get("accept-language", ""),
+        "referer": headers.get("referer", ""),
     }
 
 
@@ -206,50 +208,58 @@ def _generate_ja4h_from_info(http_info):
         return None
 
     try:
-        method = http_info.get('method', '').lower()
-        version_str = _http_version_to_str(http_info.get('version', ''))
+        method = http_info.get("method", "").lower()
+        version_str = _http_version_to_str(http_info.get("version", ""))
 
-        has_cookie = 'c' if http_info.get('cookie_fields', []) else 'n'
-        has_referer = 'r' if http_info.get('referer', '') else 'n'
+        has_cookie = "c" if http_info.get("cookie_fields", []) else "n"
+        has_referer = "r" if http_info.get("referer", "") else "n"
 
         header_count = 0
-        for header in http_info.get('headers', []):
-            if header.lower() not in ['cookie', 'referer']:
+        for header in http_info.get("headers", []):
+            if header.lower() not in ["cookie", "referer"]:
                 header_count += 1
         header_count = min(header_count, 99)
         header_count_str = f"{header_count:02d}"
 
-        language = http_info.get('language', '')
-        lang_code = '0000'
+        language = http_info.get("language", "")
+        lang_code = "0000"
         if language:
-            lang_clean = language.replace('-', '').replace(';', ',').lower().split(',')[0]
+            lang_clean = language.replace("-", "").replace(";", ",").lower().split(",")[0]
             lang_clean = lang_clean[:4]
-            lang_code = f"{lang_clean}{'0' * (4 - len(lang_clean))}" if lang_clean else '0000'
+            lang_code = f"{lang_clean}{'0' * (4 - len(lang_clean))}" if lang_clean else "0000"
 
         part_a = f"{method[:2]}{version_str}{has_cookie}{has_referer}{header_count_str}{lang_code}"
 
-        headers = http_info.get('headers', [])
+        headers = http_info.get("headers", [])
         filtered_headers = [
-            h for h in headers
-            if not h.startswith(':')
-            and h.lower() != 'cookie'
-            and h.lower() != 'referer'
-            and h
+            h
+            for h in headers
+            if not h.startswith(":") and h.lower() != "cookie" and h.lower() != "referer" and h
         ]
-        headers_str = ','.join(filtered_headers)
-        part_b = hashlib.sha256(headers_str.encode()).hexdigest()[:12] if headers_str else '000000000000'
+        headers_str = ",".join(filtered_headers)
+        part_b = (
+            hashlib.sha256(headers_str.encode()).hexdigest()[:12] if headers_str else "000000000000"
+        )
 
-        cookie_fields = sorted(http_info.get('cookie_fields', []))
-        cookie_fields_str = ','.join(cookie_fields)
-        part_c = hashlib.sha256(cookie_fields_str.encode()).hexdigest()[:12] if cookie_fields_str else '000000000000'
+        cookie_fields = sorted(http_info.get("cookie_fields", []))
+        cookie_fields_str = ",".join(cookie_fields)
+        part_c = (
+            hashlib.sha256(cookie_fields_str.encode()).hexdigest()[:12]
+            if cookie_fields_str
+            else "000000000000"
+        )
 
         # Cookie-VALUES hash: pairs sorted by NAME only (FoxIO PR #288).
         # We sort by key explicitly so the ordering doesn't depend on tuple
         # tie-breaking when two cookies happen to have identical names.
-        cookie_dict = http_info.get('cookies', {})
+        cookie_dict = http_info.get("cookies", {})
         sorted_cookie_pairs = sorted(cookie_dict.items(), key=lambda kv: kv[0])
-        cookie_values_str = ','.join(f"{k}={v}" for k, v in sorted_cookie_pairs)
-        part_d = hashlib.sha256(cookie_values_str.encode()).hexdigest()[:12] if cookie_values_str else '000000000000'
+        cookie_values_str = ",".join(f"{k}={v}" for k, v in sorted_cookie_pairs)
+        part_d = (
+            hashlib.sha256(cookie_values_str.encode()).hexdigest()[:12]
+            if cookie_values_str
+            else "000000000000"
+        )
 
         return f"{part_a}_{part_b}_{part_c}_{part_d}"
 

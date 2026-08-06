@@ -1,0 +1,1054 @@
+{
+  "CVE-2018-6794.pcap/JA4H": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H fingerprint the reference holds."
+  },
+  "badcurveball.pcap/0:55318/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "badcurveball.pcap/0:55318/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "badcurveball.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "badcurveball.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/0:54524/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/0:54524/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/0:54524/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "browsers-x509.pcapng/0:54524/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "browsers-x509.pcapng/1:54525/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/1:54525/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/2:54603/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/2:54603/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "browsers-x509.pcapng/JA4X": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X fingerprint the reference holds."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/JA4": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/JA4H": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H fingerprint the reference holds."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/JA4X": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X fingerprint the reference holds."
+  },
+  "gre-erspan-vxlan.pcap/0:65174/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "gre-erspan-vxlan.pcap/0:65174/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "gre-erspan-vxlan.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "gre-erspan-vxlan.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "gre-sample.pcap/0:40264/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "gre-sample.pcap/0:40264/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "gre-sample.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "gre-sample.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "gre-sample.pcap/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  },
+  "http-empty-useragent.pcap/0:57722/JA4H.1": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http-empty-useragent.pcap/0:57722/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http-empty-useragent.pcap/0:57722/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http-empty-useragent.pcap/JA4H": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H fingerprint the reference holds."
+  },
+  "http-empty-useragent.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http-empty-useragent.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http1-with-cookies.pcapng/0:61256/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http1-with-cookies.pcapng/0:61256/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http1-with-cookies.pcapng/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http1-with-cookies.pcapng/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.1": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.10": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.11": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.12": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.13": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.14": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.15": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.2": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.3": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.4": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.5": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.6": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.7": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.8": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4H.9": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "http2-with-cookies.pcapng/0:58847/JA4X.3": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "http2-with-cookies.pcapng/JA4H": {
+    "issue": 35,
+    "cause": "ja4plus produces no JA4H fingerprint the reference holds."
+  },
+  "http2-with-cookies.pcapng/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http2-with-cookies.pcapng/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "http2-with-cookies.pcapng/JA4X": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X fingerprint the reference holds."
+  },
+  "https-connect.pcap/JA4": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
+  },
+  "https-connect.pcap/JA4S": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4S fingerprint the reference does not hold."
+  },
+  "https-connect.pcap/JA4X": {
+    "issue": 78,
+    "cause": "ja4plus produces a JA4X fingerprint the reference does not hold."
+  },
+  "https3-301-get.pcap/0:62599/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "https3-301-get.pcap/0:62599/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "https3-301-get.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "https3-301-get.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ipv6.pcapng/0:64034/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ipv6.pcapng/0:64034/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ipv6.pcapng/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ipv6.pcapng/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/10:52941/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/10:52941/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/10:52941/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "latest.pcapng/10:52941/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "latest.pcapng/1:52936/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/1:52936/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/3:52937/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/3:52937/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/5:52938/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/5:52938/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/6:52939/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/6:52939/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/9:52940/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/9:52940/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/9:52940/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "latest.pcapng/9:52940/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "latest.pcapng/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "latest.pcapng/JA4X": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X fingerprint the reference holds."
+  },
+  "macos_tcp_flags.pcap/0:61311/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "macos_tcp_flags.pcap/0:61311/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "macos_tcp_flags.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "macos_tcp_flags.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "quic-tls-handshake.pcapng/JA4": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
+  },
+  "quic-with-several-tls-frames.pcapng/JA4": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
+  },
+  "socks-https-example.pcap/0:53554/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks-https-example.pcap/0:53554/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks-https-example.pcap/2:53555/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks-https-example.pcap/2:53555/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks-https-example.pcap/2:53555/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "socks-https-example.pcap/2:53555/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "socks-https-example.pcap/4:53556/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks-https-example.pcap/4:53556/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks-https-example.pcap/4:53556/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "socks-https-example.pcap/4:53556/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "socks-https-example.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks-https-example.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks-https-example.pcap/JA4X": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X fingerprint the reference holds."
+  },
+  "socks4-https.pcap/0:50606/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks4-https.pcap/0:50606/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks4-https.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "socks4-https.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/0:64980/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/0:64980/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/0:64980/JA4SSH.1": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-r.pcap/0:64980/JA4SSH.2": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-r.pcap/1:46394/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/1:46394/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/1:46394/JA4SSH.1": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-r.pcap/2:46396/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/2:46396/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/2:46396/JA4SSH.1": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-r.pcap/2:46396/JA4SSH.2": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-r.pcap/2:46396/JA4SSH.3": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-r.pcap/2:46396/JA4SSH.4": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-r.pcap/2:46396/JA4SSH.5": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-r.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-r.pcap/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  },
+  "ssh-scp-1050.pcap/0:49237/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-scp-1050.pcap/0:49237/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-scp-1050.pcap/0:49237/JA4SSH.1": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-scp-1050.pcap/0:49237/JA4SSH.2": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-scp-1050.pcap/0:49237/JA4SSH.3": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-scp-1050.pcap/0:49237/JA4SSH.4": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh-scp-1050.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-scp-1050.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh-scp-1050.pcap/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  },
+  "ssh.pcapng/0:57377/JA4SSH.1": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh.pcapng/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  },
+  "ssh2-malformed.pcap/0:61672/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2-malformed.pcap/0:61672/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2-malformed.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2-malformed.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2-malformed.pcap/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  },
+  "ssh2-moloch-crash.pcap/0:61672/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2-moloch-crash.pcap/0:61672/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2-moloch-crash.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2-moloch-crash.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2-moloch-crash.pcap/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  },
+  "ssh2.pcapng/11:57374/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/11:57374/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/11:57374/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "ssh2.pcapng/11:57374/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "ssh2.pcapng/12:57375/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/12:57375/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/12:57375/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "ssh2.pcapng/12:57375/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "ssh2.pcapng/13:57376/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/13:57376/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/14:57377/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/14:57377/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/14:57377/JA4SSH.1": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh2.pcapng/14:57377/JA4SSH.2": {
+    "issue": 28,
+    "cause": "ja4plus produces no JA4SSH value on this stream."
+  },
+  "ssh2.pcapng/15:57380/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/15:57380/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/22:57396/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/22:57396/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/33:51810/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/36:61861/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/36:61861/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/5:57368/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/5:57368/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/8:57371/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/8:57371/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/JA4": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
+  },
+  "ssh2.pcapng/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "ssh2.pcapng/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  },
+  "ssh2.pcapng/JA4X": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X fingerprint the reference holds."
+  },
+  "sshv1.pcap/0:1022/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "sshv1.pcap/0:1022/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "sshv1.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "sshv1.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "sshv1.pcap/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  },
+  "tcpdump-geneve.pcap/0:51225/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tcpdump-geneve.pcap/0:51225/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tcpdump-geneve.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tcpdump-geneve.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls-alpn-h2.pcap/0:64034/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls-alpn-h2.pcap/0:64034/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls-alpn-h2.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls-alpn-h2.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls-handshake.pcapng/34:50158/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "tls-handshake.pcapng/34:50158/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "tls-handshake.pcapng/38:50159/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-handshake.pcapng/40:50164/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "tls-handshake.pcapng/40:50164/JA4X.3": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "tls-handshake.pcapng/41:50165/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-handshake.pcapng/42:50166/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-handshake.pcapng/43:50167/JA4X.1": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "tls-handshake.pcapng/43:50167/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "tls-handshake.pcapng/44:50168/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-handshake.pcapng/45:50169/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-handshake.pcapng/46:50170/JA4X.2": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "tls-handshake.pcapng/46:50170/JA4X.3": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X value on this stream."
+  },
+  "tls-handshake.pcapng/JA4": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 fingerprint the reference holds."
+  },
+  "tls-handshake.pcapng/JA4S": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4S fingerprint the reference does not hold."
+  },
+  "tls-handshake.pcapng/JA4X": {
+    "issue": 78,
+    "cause": "ja4plus produces no JA4X fingerprint the reference holds."
+  },
+  "tls-non-ascii-alpn.pcapng/0:50112/JA4.1": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-sni.pcapng/38:50159/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-sni.pcapng/41:50165/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-sni.pcapng/42:50166/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-sni.pcapng/44:50168/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-sni.pcapng/45:50169/JA4.2": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 value on this stream."
+  },
+  "tls-sni.pcapng/JA4": {
+    "issue": 13,
+    "cause": "ja4plus produces no JA4 fingerprint the reference holds."
+  },
+  "tls3.pcapng/10:63251/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/10:63251/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/11:63252/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/11:63252/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/12:63253/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/12:63253/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/13:63254/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/13:63254/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/14:63255/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/14:63255/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/21:62481/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/21:62481/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/22:61732/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/22:61732/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/23:49791/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/23:49791/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/24:56684/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/24:56684/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/25:61884/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/28:58117/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/28:58117/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/7:63248/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/7:63248/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/8:63249/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/8:63249/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/9:63250/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/9:63250/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/JA4": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
+  },
+  "tls3.pcapng/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "tls3.pcapng/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "v6.pcap/0:1022/JA4L-C.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "v6.pcap/0:1022/JA4L-S.1": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "v6.pcap/JA4L-C": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "v6.pcap/JA4L-S": {
+    "issue": 80,
+    "cause": "The conformance harness does not run the JA4L fingerprinter."
+  },
+  "v6.pcap/JA4SSH": {
+    "issue": 28,
+    "cause": "ja4plus produces a JA4SSH fingerprint the reference does not hold."
+  }
+}

@@ -5,6 +5,7 @@ came from the lexicographically-larger IP (direction='reverse' in the
 internal conn_key). The fix: identify the client by FIRST-PACKET ordering,
 not by conn_key direction.
 """
+
 import os
 
 import pytest
@@ -26,9 +27,7 @@ def test_udp_timing_works_with_lex_smaller_client():
     fp = JA4LFingerprinter()
     # client 10.0.0.1 -> server 10.0.0.2
     fp.process_packet(_udp_packet("10.0.0.1", "10.0.0.2", 50000, 443, t=0.0))
-    result = fp.process_packet(
-        _udp_packet("10.0.0.2", "10.0.0.1", 443, 50000, t=0.001)
-    )
+    result = fp.process_packet(_udp_packet("10.0.0.2", "10.0.0.1", 443, 50000, t=0.001))
     assert result is not None
     assert result.startswith("JA4L-S=")
 
@@ -45,9 +44,7 @@ def test_udp_timing_works_with_lex_larger_client():
     fp = JA4LFingerprinter()
     # client 10.0.0.99 -> server 10.0.0.1 — client IP is lexicographically greater
     fp.process_packet(_udp_packet("10.0.0.99", "10.0.0.1", 50000, 443, t=0.0))
-    result = fp.process_packet(
-        _udp_packet("10.0.0.1", "10.0.0.99", 443, 50000, t=0.002)
-    )
+    result = fp.process_packet(_udp_packet("10.0.0.1", "10.0.0.99", 443, 50000, t=0.002))
     assert result is not None, "JA4L-S not emitted for server-direction-first conn"
     assert result.startswith("JA4L-S=")
 

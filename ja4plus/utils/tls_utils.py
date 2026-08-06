@@ -23,7 +23,7 @@ def extract_tls_info(packet):
     Returns:
         Dictionary with TLS handshake information or None if not applicable
     """
-    if hasattr(packet, 'tls_info'):
+    if hasattr(packet, "tls_info"):
         return packet.tls_info
 
     if Raw not in packet:
@@ -91,11 +91,11 @@ def _parse_client_hello(raw_data):
     version = (raw_data[9] << 8) | raw_data[10]
 
     tls_info = {
-        'handshake_type': 'client_hello',
-        'type': 'client_hello',
-        'version': version,
-        'is_quic': False,
-        'is_dtls': False,
+        "handshake_type": "client_hello",
+        "type": "client_hello",
+        "version": version,
+        "is_quic": False,
+        "is_dtls": False,
     }
 
     # Skip past record header (5) + handshake header (4) + version (2) + random (32)
@@ -120,7 +120,7 @@ def _parse_client_hello(raw_data):
         cipher = (raw_data[pos + i] << 8) | raw_data[pos + i + 1]
         ciphers.append(cipher)
 
-    tls_info['ciphers'] = ciphers
+    tls_info["ciphers"] = ciphers
     pos += cipher_suites_len
 
     # Compression methods
@@ -156,7 +156,7 @@ def _parse_client_hello(raw_data):
                 sni = _parse_sni(raw_data[ext_data_start:ext_data_end])
 
             # Parse supported_versions (0x002b)
-            elif ext_type == 0x002b:
+            elif ext_type == 0x002B:
                 supported_versions = _parse_supported_versions_client(
                     raw_data[ext_data_start:ext_data_end]
                 )
@@ -168,21 +168,21 @@ def _parse_client_hello(raw_data):
                 )
 
             # Parse signature_algorithms (0x000d)
-            elif ext_type == 0x000d:
+            elif ext_type == 0x000D:
                 signature_algorithms = _parse_signature_algorithms(
                     raw_data[ext_data_start:ext_data_end]
                 )
 
             pos = ext_data_start + ext_len
 
-    tls_info['extensions'] = extensions
-    tls_info['extension_data'] = extension_data
-    tls_info['supported_versions'] = supported_versions
-    tls_info['alpn_protocols'] = alpn_protocols
-    tls_info['alpn_raw'] = alpn_raw
-    tls_info['signature_algorithms'] = signature_algorithms
+    tls_info["extensions"] = extensions
+    tls_info["extension_data"] = extension_data
+    tls_info["supported_versions"] = supported_versions
+    tls_info["alpn_protocols"] = alpn_protocols
+    tls_info["alpn_raw"] = alpn_raw
+    tls_info["signature_algorithms"] = signature_algorithms
     if sni is not None:
-        tls_info['sni'] = sni
+        tls_info["sni"] = sni
 
     return tls_info
 
@@ -196,10 +196,10 @@ def _parse_server_hello(raw_data):
     version = (raw_data[9] << 8) | raw_data[10]
 
     tls_info = {
-        'handshake_type': 'server_hello',
-        'type': 'server_hello',
-        'version': version,
-        'is_quic': False,
+        "handshake_type": "server_hello",
+        "type": "server_hello",
+        "version": version,
+        "is_quic": False,
     }
 
     # Skip past record header (5) + handshake header (4) + version (2) + random (32)
@@ -215,7 +215,7 @@ def _parse_server_hello(raw_data):
     if pos + 2 > len(raw_data):
         return tls_info
     cipher = (raw_data[pos] << 8) | raw_data[pos + 1]
-    tls_info['cipher'] = cipher
+    tls_info["cipher"] = cipher
     pos += 2
 
     # Compression method
@@ -248,27 +248,27 @@ def _parse_server_hello(raw_data):
                 alpn_protocols, alpn_raw = _parse_alpn_with_bytes(
                     raw_data[ext_data_start:ext_data_end]
                 )
-                extension_data[0x0010] = {'protocols': alpn_protocols}
+                extension_data[0x0010] = {"protocols": alpn_protocols}
 
             # Parse supported_versions (0x002b) - server selects one version
-            elif ext_type == 0x002b:
+            elif ext_type == 0x002B:
                 if ext_len >= 2:
                     sv = (raw_data[ext_data_start] << 8) | raw_data[ext_data_start + 1]
                     supported_versions = [sv]
 
             pos = ext_data_start + ext_len
 
-    tls_info['extensions'] = extensions
-    tls_info['extension_data'] = extension_data
-    tls_info['alpn_protocols'] = alpn_protocols
-    tls_info['alpn_raw'] = alpn_raw
-    tls_info['supported_versions'] = supported_versions
+    tls_info["extensions"] = extensions
+    tls_info["extension_data"] = extension_data
+    tls_info["alpn_protocols"] = alpn_protocols
+    tls_info["alpn_raw"] = alpn_raw
+    tls_info["supported_versions"] = supported_versions
 
     # If supported_versions indicates TLS 1.3, update the version
     if supported_versions:
         non_grease = [v for v in supported_versions if not is_grease_value(v)]
         if non_grease:
-            tls_info['version'] = non_grease[0]
+            tls_info["version"] = non_grease[0]
 
     return tls_info
 
@@ -280,7 +280,7 @@ def _parse_sni(data):
 
     try:
         # SNI list length (2 bytes)
-        sni_list_len = (data[0] << 8) | data[1]
+        _sni_list_len = (data[0] << 8) | data[1]
         pos = 2
 
         if pos + 3 > len(data):
@@ -295,7 +295,7 @@ def _parse_sni(data):
         pos += 2
 
         if sni_type == 0 and pos + hostname_len <= len(data):
-            hostname = data[pos:pos + hostname_len].decode('ascii', errors='ignore')
+            hostname = data[pos : pos + hostname_len].decode("ascii", errors="ignore")
             return hostname if hostname else True
 
         return True
@@ -361,9 +361,9 @@ def _parse_alpn_with_bytes(data):
 
             if pos + proto_len > len(data):
                 break
-            raw = bytes(data[pos:pos + proto_len])
+            raw = bytes(data[pos : pos + proto_len])
             raw_protocols.append(raw)
-            protocols.append(raw.decode('ascii', errors='ignore'))
+            protocols.append(raw.decode("ascii", errors="ignore"))
             pos += proto_len
     except (ValueError, IndexError, UnicodeDecodeError) as e:
         logger.debug(f"Failed to parse ALPN: {e}")
@@ -422,6 +422,6 @@ def is_grease_value(value):
 def find_tls_extension(extensions, extension_type):
     """Find a specific TLS extension by type."""
     for ext in extensions:
-        if hasattr(ext, 'type') and ext.type == extension_type:
+        if hasattr(ext, "type") and ext.type == extension_type:
             return ext
     return None

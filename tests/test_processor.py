@@ -3,6 +3,7 @@
 Mirrors the surface area of ja4plus-go's ja4plus.Processor:
 process_packet, reset, cleanup_connection, get_shard_key.
 """
+
 import os
 
 import pytest
@@ -13,8 +14,16 @@ def test_processor_constructs_with_all_ten_fingerprinters():
 
     p = Processor()
     expected = {
-        "ja4", "ja4s", "ja4h", "ja4t", "ja4ts", "ja4l",
-        "ja4x", "ja4ssh", "ja4d", "ja4d6",
+        "ja4",
+        "ja4s",
+        "ja4h",
+        "ja4t",
+        "ja4ts",
+        "ja4l",
+        "ja4x",
+        "ja4ssh",
+        "ja4d",
+        "ja4d6",
     }
     assert set(p.fingerprinters.keys()) == expected
 
@@ -79,7 +88,8 @@ def test_processor_cleanup_connection_propagates():
     p = Processor()
     # Manually plant some state in one of the stateful fingerprinters
     p.ja4ssh.connections["1.2.3.4:22-5.6.7.8:55000"] = {
-        "client_ip": "5.6.7.8", "server_ip": "1.2.3.4",
+        "client_ip": "5.6.7.8",
+        "server_ip": "1.2.3.4",
         "ssh_packets": {"client": [], "server": []},
         "bare_acks": {"client": 0, "server": 0},
     }

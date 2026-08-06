@@ -1,0 +1,37 @@
+{
+  "forge": {
+    "type": "github",
+    "host": "github.com",
+    "owner": "Crank-Git",
+    "repo": "ja4plus"
+  },
+  "remote": "origin",
+  "branchModel": "dev-and-live",
+  "dev": "dev",
+  "live": "master",
+  "concurrency": 3,
+  "batchSize": 4,
+  "runLength": "until-backlog-empty",
+  "prGranularity": "batch",
+  "prAuthority": "autonomous",
+  "deployTarget": null,
+  "review": {
+    "when": "never",
+    "reason": "The project is a library and a command-line program. It has no web interface for a browser-driving review to exercise."
+  },
+  "practices": {
+    "tdd": true,
+    "coverage": "must-not-fall",
+    "commitStyle": "conventional",
+    "docsWithChange": true,
+    "e2e": false
+  },
+  "docsMcp": {
+    "connected": [],
+    "note": "No documentation MCP server is connected and no concrete marketplace source exists in this repository. Workers read vendor documentation with WebFetch, which .claude/rules/external-apis.md requires."
+  },
+  "notes": [
+    ".github/workflows/test.yml triggers on branches: [master] only. No workflow runs on a pull request into dev until issue #24 lands the trigger fix. Until then the PM runs the full suite on the integration branch as the batch gate.",
+    "publish.yml triggers on a published release only, so a merge to dev deploys nothing. Stage D is skipped."
+  ]
+}

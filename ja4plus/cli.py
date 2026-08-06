@@ -27,8 +27,16 @@ from ja4plus.fingerprinters.ja4d import JA4DFingerprinter
 from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
 
 VALID_TYPES = [
-    "ja4", "ja4s", "ja4h", "ja4l", "ja4t", "ja4ts", "ja4x", "ja4ssh",
-    "ja4d", "ja4d6",
+    "ja4",
+    "ja4s",
+    "ja4h",
+    "ja4l",
+    "ja4t",
+    "ja4ts",
+    "ja4x",
+    "ja4ssh",
+    "ja4d",
+    "ja4d6",
 ]
 
 ALL_FINGERPRINTERS = {
@@ -77,6 +85,7 @@ def _get_packet_source(packet):
             dst_ip = packet[IP].dst
         elif packet.haslayer(IPv6):
             from scapy.all import IPv6 as IPv6Layer
+
             src_ip = packet[IPv6Layer].src
             dst_ip = packet[IPv6Layer].dst
 
@@ -146,6 +155,7 @@ def _init_lookup(args):
         return None
     try:
         from ja4plus.ja4db import JA4DBClient
+
         return JA4DBClient()
     except Exception as e:
         print(f"Warning: could not initialize ja4db lookup: {e}", file=sys.stderr)
@@ -193,8 +203,8 @@ def cmd_analyze(args):
                     try:
                         result = fp.process_packet(packet)
                         if result:
-                            raw = getattr(fp, 'last_raw', None)
-                            raw_oo = getattr(fp, 'last_raw_original_order', None)
+                            raw = getattr(fp, "last_raw", None)
+                            raw_oo = getattr(fp, "last_raw_original_order", None)
                             row_batch.append((source, fp_type, result, raw, raw_oo))
                     except Exception:
                         pass
@@ -249,8 +259,8 @@ def cmd_live(args):
             try:
                 result = fp.process_packet(packet)
                 if result:
-                    raw = getattr(fp, 'last_raw', None)
-                    raw_oo = getattr(fp, 'last_raw_original_order', None)
+                    raw = getattr(fp, "last_raw", None)
+                    raw_oo = getattr(fp, "last_raw_original_order", None)
                     row_batch.append((source, fp_type, result, raw, raw_oo))
             except Exception:
                 pass
@@ -260,6 +270,7 @@ def cmd_live(args):
 
     try:
         from scapy.all import sniff
+
         sniff(
             prn=process_packet,
             iface=args.interface if args.interface != "any" else None,
@@ -294,6 +305,7 @@ def cmd_cert(args):
 
             cert = cx509.load_pem_x509_certificate(cert_bytes, default_backend())
             from cryptography.hazmat.primitives.serialization import Encoding
+
             cert_bytes = cert.public_bytes(Encoding.DER)
         except Exception as e:
             print(f"Error parsing PEM certificate: {e}", file=sys.stderr)
@@ -338,15 +350,17 @@ def cmd_db(args):
         print(f"Entries:  {len(db)}")
         if os.path.exists(_BUNDLED_CSV):
             import time
+
             mtime = os.path.getmtime(_BUNDLED_CSV)
             print(f"Updated:  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))}")
         print(f"Source:   {_MAPPING_URL}")
         return
 
     # db update
-    print(f"Downloading latest fingerprint database from FoxIO...")
+    print("Downloading latest fingerprint database from FoxIO...")
     try:
         import urllib.request
+
         data = urllib.request.urlopen(_MAPPING_URL, timeout=15).read().decode("utf-8")
     except Exception as e:
         print(f"Error: could not download database: {e}", file=sys.stderr)
@@ -355,12 +369,18 @@ def cmd_db(args):
     # Validate it's a real CSV with expected headers
     lines = data.strip().split("\n")
     if len(lines) < 2 or "Application" not in lines[0]:
-        print("Error: downloaded file does not look like a valid ja4plus-mapping.csv", file=sys.stderr)
+        print(
+            "Error: downloaded file does not look like a valid ja4plus-mapping.csv", file=sys.stderr
+        )
         sys.exit(1)
 
     # Count entries
     reader = csv_mod.DictReader(lines)
-    entry_count = sum(1 for row in reader if any(row.get(f, "").strip() for f in ("ja4", "ja4s", "ja4h", "ja4x", "ja4t")))
+    entry_count = sum(
+        1
+        for row in reader
+        if any(row.get(f, "").strip() for f in ("ja4", "ja4s", "ja4h", "ja4x", "ja4t"))
+    )
 
     # Write to bundled location
     os.makedirs(os.path.dirname(_BUNDLED_CSV), exist_ok=True)
@@ -375,9 +395,7 @@ def main():
         prog="ja4plus",
         description="JA4+ Network Fingerprinting Tool",
     )
-    parser.add_argument(
-        "--version", action="version", version=f"ja4plus {__version__}"
-    )
+    parser.add_argument("--version", action="version", version=f"ja4plus {__version__}")
     parser.add_argument(
         "--format",
         choices=["table", "json", "csv"],
@@ -401,31 +419,27 @@ def main():
     subparsers.required = True
 
     # analyze subcommand
-    analyze_parser = subparsers.add_parser(
-        "analyze", help="Fingerprint packets in a PCAP file"
-    )
+    analyze_parser = subparsers.add_parser("analyze", help="Fingerprint packets in a PCAP file")
     analyze_parser.add_argument("pcap_file", help="Path to the PCAP file")
 
     # live subcommand
-    live_parser = subparsers.add_parser(
-        "live", help="Live capture from a network interface"
-    )
+    live_parser = subparsers.add_parser("live", help="Live capture from a network interface")
     live_parser.add_argument("interface", help="Network interface (e.g. eth0, any)")
 
     # cert subcommand
-    cert_parser = subparsers.add_parser(
-        "cert", help="Fingerprint an X.509 certificate"
-    )
+    cert_parser = subparsers.add_parser("cert", help="Fingerprint an X.509 certificate")
     cert_parser.add_argument("cert_file", help="Path to certificate file (DER or PEM)")
 
     # db subcommand
-    db_parser = subparsers.add_parser(
-        "db", help="Manage the fingerprint identification database"
-    )
+    db_parser = subparsers.add_parser("db", help="Manage the fingerprint identification database")
     db_sub = db_parser.add_subparsers(dest="db_command", metavar="ACTION")
     db_sub.required = True
-    db_update_parser = db_sub.add_parser("update", help="Download latest fingerprint database from FoxIO")
-    db_update_parser.add_argument("--force", action="store_true", help="Update even if already up to date")
+    db_update_parser = db_sub.add_parser(
+        "update", help="Download latest fingerprint database from FoxIO"
+    )
+    db_update_parser.add_argument(
+        "--force", action="store_true", help="Update even if already up to date"
+    )
     db_sub.add_parser("info", help="Show database location and entry count")
 
     args = parser.parse_args()

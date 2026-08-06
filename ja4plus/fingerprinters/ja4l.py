@@ -10,8 +10,9 @@ import time
 import logging
 from scapy.all import IP, IPv6, TCP, UDP
 
-logger = logging.getLogger(__name__)
 from ja4plus.fingerprinters.base import BaseFingerprinter
+
+logger = logging.getLogger(__name__)
 
 
 class JA4LFingerprinter(BaseFingerprinter):
@@ -40,15 +41,16 @@ class JA4LFingerprinter(BaseFingerprinter):
             return None
 
         if TCP in packet:
-            proto = 'tcp'
+            proto = "tcp"
             sport = packet[TCP].sport
             dport = packet[TCP].dport
         else:
-            proto = 'udp'
+            proto = "udp"
             sport = packet[UDP].sport
             dport = packet[UDP].dport
 
         from ja4plus.utils.packet_utils import get_ip_layer
+
         ip_layer = get_ip_layer(packet)
         if ip_layer is None:
             return None
@@ -58,29 +60,27 @@ class JA4LFingerprinter(BaseFingerprinter):
         # Normalize connection key (ordered src/dst)
         if src_ip < dst_ip or (src_ip == dst_ip and sport < dport):
             conn_key = f"{proto}_{src_ip}:{sport}_{dst_ip}:{dport}"
-            direction = 'forward'
+            direction = "forward"
         else:
             conn_key = f"{proto}_{dst_ip}:{dport}_{src_ip}:{sport}"
-            direction = 'reverse'
+            direction = "reverse"
 
         if conn_key not in self.connections:
             self.connections[conn_key] = {
-                'proto': proto,
-                'direction': direction,
-                'conn_key': conn_key,
-                'timestamps': {},
-                'ttls': {}
+                "proto": proto,
+                "direction": direction,
+                "conn_key": conn_key,
+                "timestamps": {},
+                "ttls": {},
             }
 
         conn = self.connections[conn_key]
         fingerprint = generate_ja4l(packet, conn)
 
         if fingerprint:
-            self.fingerprints.append({
-                'fingerprint': fingerprint,
-                'packet': packet,
-                'connection': conn_key
-            })
+            self.fingerprints.append(
+                {"fingerprint": fingerprint, "packet": packet, "connection": conn_key}
+            )
             return fingerprint
 
         return None
@@ -182,21 +182,22 @@ def generate_ja4l(packet, conn=None):
         return None
 
     from ja4plus.utils.packet_utils import get_ip_layer as _get_ip, get_ttl
+
     if _get_ip(packet) is None:
         return None
 
     try:
-        if 'timestamps' not in conn:
-            conn['timestamps'] = {}
-        if 'ttls' not in conn:
-            conn['ttls'] = {}
+        if "timestamps" not in conn:
+            conn["timestamps"] = {}
+        if "ttls" not in conn:
+            conn["ttls"] = {}
 
         ttl = get_ttl(packet)
         if ttl is None:
             return None
 
         # Use pcap timestamp if available (for offline analysis), else wall clock
-        current_time = float(packet.time) if hasattr(packet, 'time') else time.time()
+        current_time = float(packet.time) if hasattr(packet, "time") else time.time()
 
         # Handle TCP protocol
         if packet.haslayer(TCP):
@@ -204,27 +205,27 @@ def generate_ja4l(packet, conn=None):
 
             # SYN packet (point A) - client initiates
             if tcp_flags & 0x02 == 0x02 and not tcp_flags & 0x10:
-                conn['timestamps']['A'] = current_time
-                conn['ttls']['client'] = ttl
+                conn["timestamps"]["A"] = current_time
+                conn["ttls"]["client"] = ttl
                 return None
 
             # SYN-ACK packet (point B) - server responds
             elif tcp_flags & 0x12 == 0x12:
-                conn['timestamps']['B'] = current_time
-                conn['ttls']['server'] = ttl
+                conn["timestamps"]["B"] = current_time
+                conn["ttls"]["server"] = ttl
 
-                if 'A' in conn['timestamps']:
+                if "A" in conn["timestamps"]:
                     # Per FoxIO spec: use raw time difference (not divided by 2)
-                    diff = conn['timestamps']['B'] - conn['timestamps']['A']
+                    diff = conn["timestamps"]["B"] - conn["timestamps"]["A"]
                     latency = max(1, int(diff * 1000000))
                     return f"JA4L-S={latency}_{ttl}"
 
             # ACK packet (point C) - client completes handshake
             elif tcp_flags & 0x10 == 0x10 and not tcp_flags & 0x02:
-                conn['timestamps']['C'] = current_time
+                conn["timestamps"]["C"] = current_time
 
-                if 'B' in conn['timestamps']:
-                    diff = conn['timestamps']['C'] - conn['timestamps']['B']
+                if "B" in conn["timestamps"]:
+                    diff = conn["timestamps"]["C"] - conn["timestamps"]["B"]
                     latency = max(1, int(diff * 1000000))
                     return f"JA4L-C={latency}_{ttl}"
 
@@ -234,8 +235,9 @@ def generate_ja4l(packet, conn=None):
         # lexicographic conn_key direction (which produced silent failures
         # for server-first capture orderings — the previous code only
         # advanced state when direction was 'forward').
-        elif packet.haslayer(UDP) and conn.get('proto') == 'udp':
+        elif packet.haslayer(UDP) and conn.get("proto") == "udp":
             from ja4plus.utils.packet_utils import get_ip_layer
+
             ip_layer = get_ip_layer(packet)
             if ip_layer is None:
                 return None
@@ -244,29 +246,28 @@ def generate_ja4l(packet, conn=None):
             dport = int(packet[UDP].dport)
 
             # Lock in the client identity on the first packet.
-            if 'client_endpoint' not in conn:
-                conn['client_endpoint'] = (src_ip, sport, dport)
-            client_ip, client_sport, client_dport = conn['client_endpoint']
-            is_client = (src_ip == client_ip and sport == client_sport
-                         and dport == client_dport)
+            if "client_endpoint" not in conn:
+                conn["client_endpoint"] = (src_ip, sport, dport)
+            client_ip, client_sport, client_dport = conn["client_endpoint"]
+            is_client = src_ip == client_ip and sport == client_sport and dport == client_dport
 
-            if 'A' not in conn['timestamps'] and is_client:
-                conn['timestamps']['A'] = current_time
-                conn['ttls']['client'] = ttl
+            if "A" not in conn["timestamps"] and is_client:
+                conn["timestamps"]["A"] = current_time
+                conn["ttls"]["client"] = ttl
 
-            elif 'A' in conn['timestamps'] and not is_client and 'B' not in conn['timestamps']:
-                conn['timestamps']['B'] = current_time
-                conn['ttls']['server'] = ttl
-                diff = conn['timestamps']['B'] - conn['timestamps']['A']
+            elif "A" in conn["timestamps"] and not is_client and "B" not in conn["timestamps"]:
+                conn["timestamps"]["B"] = current_time
+                conn["ttls"]["server"] = ttl
+                diff = conn["timestamps"]["B"] - conn["timestamps"]["A"]
                 latency = max(1, int(diff * 1000000))
                 return f"JA4L-S={latency}_{ttl}"
 
-            elif 'B' in conn['timestamps'] and is_client and 'C' not in conn['timestamps']:
-                conn['timestamps']['C'] = current_time
+            elif "B" in conn["timestamps"] and is_client and "C" not in conn["timestamps"]:
+                conn["timestamps"]["C"] = current_time
 
-            elif 'C' in conn['timestamps'] and not is_client and 'D' not in conn['timestamps']:
-                conn['timestamps']['D'] = current_time
-                diff = conn['timestamps']['D'] - conn['timestamps']['C']
+            elif "C" in conn["timestamps"] and not is_client and "D" not in conn["timestamps"]:
+                conn["timestamps"]["D"] = current_time
+                diff = conn["timestamps"]["D"] - conn["timestamps"]["C"]
                 latency = max(1, int(diff * 1000000))
                 return f"JA4L-C={latency}_{conn['ttls'].get('client', ttl)}"
 
@@ -288,17 +289,18 @@ def _src_is_client(packet, conn):
         True if the source is the client, False otherwise
     """
     from ja4plus.utils.packet_utils import get_ip_layer
+
     ip_layer = get_ip_layer(packet)
     if ip_layer is None:
         return False
 
     src_ip = ip_layer.src
 
-    if conn.get('direction') == 'forward':
-        conn_key = conn.get('conn_key', '')
-        parts = conn_key.split('_')
+    if conn.get("direction") == "forward":
+        conn_key = conn.get("conn_key", "")
+        parts = conn_key.split("_")
         if len(parts) >= 2:
-            client_part = parts[1].split(':')[0]
+            client_part = parts[1].split(":")[0]
             return src_ip == client_part
 
     return False

@@ -30,6 +30,7 @@ from ja4plus.fingerprinters.ja4ts import generate_ja4ts
 from ja4plus.fingerprinters.ja4d import generate_ja4d
 from ja4plus.fingerprinters.ja4d6 import generate_ja4d6
 
+
 def compute_ja4x_from_der(cert_der_bytes):
     """Compute the JA4X fingerprint for a DER-encoded X.509 certificate.
 

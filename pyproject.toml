@@ -8,7 +8,7 @@ version = "0.6.0"
 description = "JA4+ network fingerprinting library for TLS, TCP, HTTP, SSH, X.509, and DHCP analysis"
 readme = "README.md"
 license = {text = "BSD-3-Clause AND LicenseRef-FoxIO-1.1"}
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["ja4", "ja4plus", "fingerprinting", "tls", "tcp", "http", "ssh", "x509", "network", "security", "scapy"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -18,7 +18,6 @@ classifiers = [
     "Topic :: Security",
     "Topic :: System :: Networking :: Monitoring",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -34,7 +33,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
-    "pytest-cov>=3.0",
+    # 5.0 is the first release that requires `coverage` 7.5, which carries
+    # `coverage report --format=total`. The continuous-integration floor reads that value.
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
 ]
 lookup = [
     "requests>=2.20.0",
@@ -60,3 +63,41 @@ ja4plus = ["data/*.csv"]
 markers = [
     "spec_validation: FoxIO reference validation tests",
 ]
+
+[tool.ruff]
+target-version = "py39"
+# The formatter reaches its smallest diff on the existing code at 100 columns.
+# A wider limit changes one more line, and a narrower limit changes 32 more.
+line-length = 100
+
+[tool.ruff.lint]
+# The default rule set, plus import order.
+select = ["E4", "E7", "E9", "F", "I"]
+# Each rule below reports more than 50 findings on the existing code, so Epic 0 turns
+# it off. Epic 4, the typed public interface (#15), turns both back on.
+#
+# F401 waits on #47. That issue defines `__all__` and ships the `py.typed` marker.
+# Many of the 84 findings are re-exports in `ja4plus/__init__.py`, and a re-export
+# stops being a finding once the public interface is declared.
+#
+# Never enable I001 by hand. `tests/test_ja4.py` and `tests/test_spec_validation.py`
+# call `sys.path.insert` before their imports. Read both files before you turn the rule
+# on, and confirm that the fix keeps every import below the path insertion.
+ignore = [
+    "F401",  # 84 findings. Most are the re-exports in `ja4plus/__init__.py`.
+    "I001",  # 82 findings. Every module orders its imports by hand.
+]
+
+[tool.mypy]
+# `python_version` stays unset. `mypy` 2.x rejects the value `3.9`, so the 3.9 gate is
+# the test job for Python 3.9, not the type check.
+
+[[tool.mypy.overrides]]
+# `scapy.all` builds its namespace at import time, so mypy reads no attribute on it.
+module = ["scapy.*"]
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+# `requests` belongs to the optional `lookup` extra, and the lint job does not install it.
+module = ["requests.*"]
+ignore_missing_imports = true

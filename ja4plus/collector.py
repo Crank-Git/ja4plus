@@ -4,13 +4,8 @@ DEPRECATED: Use the `ja4plus` CLI command instead.
 This module is kept for backward compatibility and will be removed in v0.4.0.
 Run `ja4plus --help` for usage.
 """
-import warnings
-warnings.warn(
-    "collector.py is deprecated. Use the 'ja4plus' CLI command instead.",
-    DeprecationWarning,
-    stacklevel=2,
-)
 
+import warnings
 import argparse
 import json
 import sys
@@ -18,8 +13,6 @@ import time
 import signal
 import logging
 from scapy.all import sniff
-
-logger = logging.getLogger(__name__)
 
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
@@ -29,16 +22,26 @@ from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 
+logger = logging.getLogger(__name__)
+
+warnings.warn(
+    "collector.py is deprecated. Use the 'ja4plus' CLI command instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 # Global variables for signal handling
 packet_count = 0
 max_packets = 0
 start_time = 0
 timeout_seconds = 0
 
+
 def signal_handler(signum, frame):
     """Handle termination signals gracefully"""
     sys.stderr.write("Received signal, shutting down gracefully...\n")
     sys.exit(0)
+
 
 def main():
     """Main collector function"""
@@ -47,14 +50,18 @@ def main():
     parser = argparse.ArgumentParser(description="JA4+ Network Fingerprinting Collector")
     parser.add_argument("--interface", "-i", default="any", help="Network interface to capture on")
     parser.add_argument("--filter", "-f", default="tcp or udp", help="BPF filter expression")
-    parser.add_argument("--fingerprinters", default="ja4,ja4s,ja4h,ja4t,ja4ts,ja4x,ja4ssh",
-                       help="Comma-separated list of fingerprinters to enable")
-    parser.add_argument("--max-packets", type=int, default=0,
-                       help="Maximum packets to process (0 = unlimited)")
-    parser.add_argument("--timeout", type=float, default=0,
-                       help="Timeout in seconds (0 = no timeout)")
-    parser.add_argument("--output", choices=["json", "text"], default="json",
-                       help="Output format")
+    parser.add_argument(
+        "--fingerprinters",
+        default="ja4,ja4s,ja4h,ja4t,ja4ts,ja4x,ja4ssh",
+        help="Comma-separated list of fingerprinters to enable",
+    )
+    parser.add_argument(
+        "--max-packets", type=int, default=0, help="Maximum packets to process (0 = unlimited)"
+    )
+    parser.add_argument(
+        "--timeout", type=float, default=0, help="Timeout in seconds (0 = no timeout)"
+    )
+    parser.add_argument("--output", choices=["json", "text"], default="json", help="Output format")
 
     args = parser.parse_args()
 
@@ -75,7 +82,7 @@ def main():
         "ja4t": JA4TFingerprinter(),
         "ja4ts": JA4TSFingerprinter(),
         "ja4x": JA4XFingerprinter(),
-        "ja4ssh": JA4SSHFingerprinter()
+        "ja4ssh": JA4SSHFingerprinter(),
     }
 
     enabled_fps = args.fingerprinters.split(",")
@@ -107,7 +114,7 @@ def main():
 
         results = {
             "@timestamp": int(time.time() * 1000),  # Elasticsearch expects milliseconds
-            "ja4plus": {}
+            "ja4plus": {},
         }
 
         # Apply each enabled fingerprinter
@@ -145,6 +152,7 @@ def main():
 
                 # Add port information if available
                 from scapy.all import TCP, UDP
+
                 if packet.haslayer(TCP):
                     tcp_layer = packet[TCP]
                     if "source" in results:
@@ -185,20 +193,25 @@ def main():
             sys.exit(0)
 
     try:
-        sys.stderr.write(f"Starting JA4+ collection on interface '{args.interface}' with filter '{args.filter}'\n")
+        sys.stderr.write(
+            f"Starting JA4+ collection on interface '{args.interface}' with filter '{args.filter}'\n"
+        )
         sys.stderr.write(f"Enabled fingerprinters: {', '.join(fingerprinters.keys())}\n")
 
         # Start sniffing
-        sniff(prn=process_packet,
-              filter=args.filter,
-              iface=args.interface if args.interface != "any" else None,
-              store=0)
+        sniff(
+            prn=process_packet,
+            filter=args.filter,
+            iface=args.interface if args.interface != "any" else None,
+            store=0,
+        )
 
     except KeyboardInterrupt:
         sys.stderr.write("Interrupted by user\n")
     except Exception as e:
         sys.stderr.write(f"Error during packet capture: {e}\n")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

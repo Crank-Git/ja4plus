@@ -24,14 +24,14 @@ class TestJA4L(unittest.TestCase):
         # Simulate timestamps from a real handshake
         now = time.time()
         conn = {
-            'proto': 'tcp',
-            'timestamps': {
-                'A': now - 0.050,  # SYN 50ms ago
-                'B': now - 0.020,  # SYN-ACK 20ms ago
+            "proto": "tcp",
+            "timestamps": {
+                "A": now - 0.050,  # SYN 50ms ago
+                "B": now - 0.020,  # SYN-ACK 20ms ago
             },
-            'ttls': {
-                'client': 128,
-                'server': 64,
+            "ttls": {
+                "client": 128,
+                "server": 64,
             },
         }
 
@@ -46,15 +46,19 @@ class TestJA4L(unittest.TestCase):
 
         # Server should have generated from the SYN-ACK
         self.assertIsNotNone(ja4l_server, "JA4L server fingerprinting failed")
-        self.assertTrue(ja4l_server.startswith("JA4L-S="), "Server fingerprint should start with JA4L-S=")
+        self.assertTrue(
+            ja4l_server.startswith("JA4L-S="), "Server fingerprint should start with JA4L-S="
+        )
 
         # Client should have generated from the ACK
         self.assertIsNotNone(ja4l_client, "JA4L client fingerprinting failed")
-        self.assertTrue(ja4l_client.startswith("JA4L-C="), "Client fingerprint should start with JA4L-C=")
+        self.assertTrue(
+            ja4l_client.startswith("JA4L-C="), "Client fingerprint should start with JA4L-C="
+        )
 
         # Both should contain TTL
-        self.assertRegex(ja4l_server, r'JA4L-S=\d+_\d+')
-        self.assertRegex(ja4l_client, r'JA4L-C=\d+_\d+')
+        self.assertRegex(ja4l_server, r"JA4L-S=\d+_\d+")
+        self.assertRegex(ja4l_client, r"JA4L-C=\d+_\d+")
 
     def test_ja4l_fingerprinter_class(self):
         """Test the JA4LFingerprinter class processes handshake correctly."""
@@ -75,7 +79,7 @@ class TestJA4L(unittest.TestCase):
 
         # Should have collected 2 fingerprints
         self.assertEqual(len(self.ja4l_fp.fingerprints), 2)
-        print(f"Collected fingerprints:")
+        print("Collected fingerprints:")
         for fp in self.ja4l_fp.fingerprints:
             print(f"  - {fp['fingerprint']}")
 
@@ -99,7 +103,7 @@ class TestJA4L(unittest.TestCase):
     def test_ja4l_hop_count(self):
         """Test hop count estimation."""
         self.assertEqual(self.ja4l_fp.estimate_hop_count(120), 8)  # 128 - 120
-        self.assertEqual(self.ja4l_fp.estimate_hop_count(60), 4)   # 64 - 60
+        self.assertEqual(self.ja4l_fp.estimate_hop_count(60), 4)  # 64 - 60
         self.assertEqual(self.ja4l_fp.estimate_hop_count(250), 5)  # 255 - 250
 
 

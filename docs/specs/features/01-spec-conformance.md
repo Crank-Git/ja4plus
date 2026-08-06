@@ -3,7 +3,7 @@ id: spec-conformance
 feature: Spec conformance
 epic: "Epic 1: Spec conformance"
 status: issued
-issues: [12, 27, 28, 29, 30, 31]
+issues: [12, 27, 28, 29, 30, 31, 78, 80]
 mockups: []
 ---
 
@@ -114,6 +114,8 @@ This feature set has no screen. Its output is the test report.
 - Changed file `ja4plus/fingerprinters/ja4s.py`.
 - Changed file `ja4plus/fingerprinters/ja4l.py`.
 - Changed file `tests/test_spec_validation.py`.
+- New file `tests/conformance_index.py`. It groups a fingerprint by stream, by
+  method and by occurrence, so one test case compares one value.
 - Changed file `tests/test_parity.py`.
 - Changed file `docs/implementation_notes.md`.
 

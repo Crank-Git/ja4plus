@@ -4,29 +4,32 @@ Spec: if first or last byte of the first ALPN value is not ASCII alnum
 (0x30-0x39, 0x41-0x5A, 0x61-0x7A), use the first/last character of the
 hex representation of the FULL first ALPN string.
 """
+
 import pytest
 
 from ja4plus.fingerprinters.ja4 import compute_alpn_value
 
 
-@pytest.mark.parametrize("alpn_bytes,expected", [
-    # From the FoxIO PR #277 examples
-    (b"\xab",                "ab"),   # single non-alnum byte -> hex first/last
-    (b"\x20",                "20"),
-    (b"\xab\xcd",            "ad"),
-    (b"\x20\x61",            "21"),
-    (b"\x30\xab",            "3b"),   # first alnum, last not -> hex
-    (b"\x61\x20",            "60"),
-    (b"\x30\x31\xab\xcd",    "3d"),
-    (b"\x30\xab\xcd\x31",    "01"),   # both ends alnum -> bytes directly
-
-    # Additional sanity checks
-    (b"",                    "00"),   # empty -> '00'
-    (b"h",                   "hh"),   # single alnum byte -> duplicate
-    (b"h2",                  "h2"),   # standard ALPN, both ends alnum
-    (b"http/1.1",            "h1"),
-    (b"h3",                  "h3"),
-])
+@pytest.mark.parametrize(
+    "alpn_bytes,expected",
+    [
+        # From the FoxIO PR #277 examples
+        (b"\xab", "ab"),  # single non-alnum byte -> hex first/last
+        (b"\x20", "20"),
+        (b"\xab\xcd", "ad"),
+        (b"\x20\x61", "21"),
+        (b"\x30\xab", "3b"),  # first alnum, last not -> hex
+        (b"\x61\x20", "60"),
+        (b"\x30\x31\xab\xcd", "3d"),
+        (b"\x30\xab\xcd\x31", "01"),  # both ends alnum -> bytes directly
+        # Additional sanity checks
+        (b"", "00"),  # empty -> '00'
+        (b"h", "hh"),  # single alnum byte -> duplicate
+        (b"h2", "h2"),  # standard ALPN, both ends alnum
+        (b"http/1.1", "h1"),
+        (b"h3", "h3"),
+    ],
+)
 def test_compute_alpn_value(alpn_bytes, expected):
     assert compute_alpn_value(alpn_bytes) == expected
 
@@ -47,8 +50,8 @@ def test_compute_alpn_via_generate_ja4():
         "is_dtls": False,
         "ciphers": [0x1301],
         "extensions": [],
-        "alpn_protocols": [""],         # ascii decode dropped non-ascii bytes
-        "alpn_raw": [b"\x30\xab"],     # but raw bytes are preserved
+        "alpn_protocols": [""],  # ascii decode dropped non-ascii bytes
+        "alpn_raw": [b"\x30\xab"],  # but raw bytes are preserved
         "signature_algorithms": [],
         "supported_versions": [],
         "sni": None,

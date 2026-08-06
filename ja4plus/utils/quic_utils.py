@@ -35,9 +35,7 @@ def hkdf_expand_label(secret, label, context, length):
     hkdf_label = struct.pack("!H", length)
     hkdf_label += struct.pack("B", len(full_label)) + full_label
     hkdf_label += struct.pack("B", len(context)) + context
-    return HKDFExpand(
-        algorithm=hashes.SHA256(), length=length, info=hkdf_label
-    ).derive(secret)
+    return HKDFExpand(algorithm=hashes.SHA256(), length=length, info=hkdf_label).derive(secret)
 
 
 def derive_initial_secrets(dcid, version=1):
@@ -77,7 +75,7 @@ def remove_header_protection(packet_bytes, hp_key):
 
     pn_offset = _find_pn_offset(packet_bytes)
     sample_offset = pn_offset + 4
-    sample = packet_bytes[sample_offset:sample_offset + 16]
+    sample = packet_bytes[sample_offset : sample_offset + 16]
 
     cipher = Cipher(algorithms.AES(hp_key), modes.ECB())
     encryptor = cipher.encryptor()
@@ -104,8 +102,8 @@ def decrypt_initial_payload(packet_bytes, pn, pn_length, pn_offset, key, iv):
     for i in range(len(nonce)):
         nonce[i] ^= pn_bytes[i]
 
-    ad = packet_bytes[:pn_offset + pn_length]
-    ciphertext = packet_bytes[pn_offset + pn_length:]
+    ad = packet_bytes[: pn_offset + pn_length]
+    ciphertext = packet_bytes[pn_offset + pn_length :]
 
     aesgcm = AESGCM(key)
     return aesgcm.decrypt(bytes(nonce), ciphertext, ad)
@@ -149,7 +147,7 @@ def parse_crypto_frames(plaintext):
             pos += consumed
             if pos + length > len(plaintext):
                 break
-            fragments.append((offset, bytes(plaintext[pos:pos + length])))
+            fragments.append((offset, bytes(plaintext[pos : pos + length])))
             pos += length
             continue
 
@@ -206,7 +204,7 @@ def reassemble_crypto_fragments(fragments):
     total_len = max(off + len(data) for off, data in sorted_frags)
     buf = bytearray(total_len)
     for off, data in sorted_frags:
-        buf[off:off + len(data)] = data
+        buf[off : off + len(data)] = data
     return bytes(buf)
 
 
@@ -248,7 +246,7 @@ def decrypt_quic_initial_crypto(udp_payload):
     dcid_len = udp_payload[5]
     if 6 + dcid_len > len(udp_payload):
         return None, None
-    dcid = bytes(udp_payload[6:6 + dcid_len])
+    dcid = bytes(udp_payload[6 : 6 + dcid_len])
 
     quic_version = 2 if is_v2 else 1
     client_secret, _ = derive_initial_secrets(dcid, quic_version)
@@ -257,9 +255,7 @@ def decrypt_quic_initial_crypto(udp_payload):
     try:
         unprotected, pn, pn_length = remove_header_protection(udp_payload, hp_key)
         pn_offset = _find_pn_offset(udp_payload)
-        plaintext = decrypt_initial_payload(
-            unprotected, pn, pn_length, pn_offset, key, iv
-        )
+        plaintext = decrypt_initial_payload(unprotected, pn, pn_length, pn_offset, key, iv)
     except Exception as e:
         logger.debug(f"QUIC Initial decryption failed: {e}")
         return None, None
@@ -292,6 +288,7 @@ def client_hello_from_crypto_fragments(fragments):
     )
 
     from ja4plus.utils.tls_utils import parse_tls_handshake
+
     tls_info = parse_tls_handshake(fake_record)
     if tls_info:
         tls_info["is_quic"] = True
@@ -344,9 +341,7 @@ def parse_quic_server_initial(udp_payload, client_dcid):
         unprotected, pn, pn_length = remove_header_protection(udp_payload, hp_key)
         pn_offset = _find_pn_offset(udp_payload)
 
-        plaintext = decrypt_initial_payload(
-            unprotected, pn, pn_length, pn_offset, key, iv
-        )
+        plaintext = decrypt_initial_payload(unprotected, pn, pn_length, pn_offset, key, iv)
 
         server_hello_bytes = extract_crypto_frames(plaintext)
         if not server_hello_bytes:
@@ -357,13 +352,10 @@ def parse_quic_server_initial(udp_payload, client_dcid):
             return None
 
         sh_length = len(server_hello_bytes)
-        fake_record = (
-            bytes([0x16, 0x03, 0x01])
-            + struct.pack("!H", sh_length)
-            + server_hello_bytes
-        )
+        fake_record = bytes([0x16, 0x03, 0x01]) + struct.pack("!H", sh_length) + server_hello_bytes
 
         from ja4plus.utils.tls_utils import parse_tls_handshake
+
         tls_info = parse_tls_handshake(fake_record)
         if tls_info:
             tls_info["is_quic"] = True
@@ -399,7 +391,7 @@ def parse_quic_initial(udp_payload):
             return None
 
     dcid_len = udp_payload[5]
-    dcid = udp_payload[6:6 + dcid_len]
+    dcid = udp_payload[6 : 6 + dcid_len]
 
     quic_version = 2 if is_v2 else 1
     client_secret, _ = derive_initial_secrets(dcid, quic_version)
@@ -409,9 +401,7 @@ def parse_quic_initial(udp_payload):
         unprotected, pn, pn_length = remove_header_protection(udp_payload, hp_key)
         pn_offset = _find_pn_offset(udp_payload)
 
-        plaintext = decrypt_initial_payload(
-            unprotected, pn, pn_length, pn_offset, key, iv
-        )
+        plaintext = decrypt_initial_payload(unprotected, pn, pn_length, pn_offset, key, iv)
 
         client_hello_bytes = extract_crypto_frames(plaintext)
         if not client_hello_bytes:
@@ -421,13 +411,10 @@ def parse_quic_initial(udp_payload):
             return None
 
         ch_length = len(client_hello_bytes)
-        fake_record = (
-            bytes([0x16, 0x03, 0x01])
-            + struct.pack("!H", ch_length)
-            + client_hello_bytes
-        )
+        fake_record = bytes([0x16, 0x03, 0x01]) + struct.pack("!H", ch_length) + client_hello_bytes
 
         from ja4plus.utils.tls_utils import parse_tls_handshake
+
         tls_info = parse_tls_handshake(fake_record)
         if tls_info:
             tls_info["is_quic"] = True

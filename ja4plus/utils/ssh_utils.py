@@ -25,11 +25,8 @@ def parse_ssh_packet(data):
     # Check for SSH banner
     if data.startswith(b"SSH-"):
         try:
-            version_string = data.split(b"\r\n")[0].decode('utf-8', errors='ignore')
-            return {
-                "type": "version",
-                "version_string": version_string
-            }
+            version_string = data.split(b"\r\n")[0].decode("utf-8", errors="ignore")
+            return {"type": "version", "version_string": version_string}
         except (UnicodeDecodeError, AttributeError) as e:
             logger.debug(f"Failed to parse SSH banner: {e}")
             return None
@@ -37,7 +34,7 @@ def parse_ssh_packet(data):
     # Try to parse as SSH binary packet
     # SSH binary packet format: uint32 packet_length, byte padding_length, byte[n] payload
     try:
-        packet_length = struct.unpack('>I', data[:4])[0]
+        packet_length = struct.unpack(">I", data[:4])[0]
 
         # Sanity check packet length
         if packet_length < 2 or packet_length > 65536:
@@ -49,7 +46,7 @@ def parse_ssh_packet(data):
         if len(data) < 5:
             return None
 
-        padding_length = data[4]
+        _padding_length = data[4]
 
         if len(data) < 6:
             return None
@@ -87,10 +84,10 @@ def _parse_test_kexinit(data):
         if len(algorithm_parts) >= 4:
             return {
                 "type": "kexinit",
-                "kex_algorithms": algorithm_parts[0].decode('utf-8', errors='ignore'),
-                "encryption_algorithms": algorithm_parts[1].decode('utf-8', errors='ignore'),
-                "mac_algorithms": algorithm_parts[2].decode('utf-8', errors='ignore'),
-                "compression_algorithms": algorithm_parts[3].decode('utf-8', errors='ignore')
+                "kex_algorithms": algorithm_parts[0].decode("utf-8", errors="ignore"),
+                "encryption_algorithms": algorithm_parts[1].decode("utf-8", errors="ignore"),
+                "mac_algorithms": algorithm_parts[2].decode("utf-8", errors="ignore"),
+                "compression_algorithms": algorithm_parts[3].decode("utf-8", errors="ignore"),
             }
     except (IndexError, UnicodeDecodeError, AttributeError) as e:
         logger.debug(f"Failed to parse test KEXINIT: {e}")
@@ -124,12 +121,12 @@ def _parse_kexinit(data):
         for _ in range(10):
             if pos + 4 > len(data):
                 break
-            name_list_len = struct.unpack('>I', data[pos:pos + 4])[0]
+            name_list_len = struct.unpack(">I", data[pos : pos + 4])[0]
             pos += 4
 
             if pos + name_list_len > len(data):
                 break
-            name_list = data[pos:pos + name_list_len].decode('utf-8', errors='ignore')
+            name_list = data[pos : pos + name_list_len].decode("utf-8", errors="ignore")
             algorithm_lists.append(name_list)
             pos += name_list_len
 
@@ -143,7 +140,9 @@ def _parse_kexinit(data):
                 "mac_algorithms": algorithm_lists[4],
                 "mac_algorithms_s2c": algorithm_lists[5],
                 "compression_algorithms": algorithm_lists[6] if len(algorithm_lists) > 6 else "",
-                "compression_algorithms_s2c": algorithm_lists[7] if len(algorithm_lists) > 7 else "",
+                "compression_algorithms_s2c": algorithm_lists[7]
+                if len(algorithm_lists) > 7
+                else "",
             }
     except (struct.error, ValueError, IndexError, UnicodeDecodeError) as e:
         logger.debug(f"Failed to parse SSH KEXINIT: {e}")
@@ -165,16 +164,19 @@ def extract_hassh(data):
     """
     ssh_info = parse_ssh_packet(data)
 
-    if ssh_info and ssh_info.get('type') == 'kexinit':
+    if ssh_info and ssh_info.get("type") == "kexinit":
         try:
             hassh_string = (
-                ssh_info.get('kex_algorithms', '') + ';' +
-                ssh_info.get('encryption_algorithms', '') + ';' +
-                ssh_info.get('mac_algorithms', '') + ';' +
-                ssh_info.get('compression_algorithms', '')
+                ssh_info.get("kex_algorithms", "")
+                + ";"
+                + ssh_info.get("encryption_algorithms", "")
+                + ";"
+                + ssh_info.get("mac_algorithms", "")
+                + ";"
+                + ssh_info.get("compression_algorithms", "")
             )
 
-            hassh = hashlib.md5(hassh_string.encode('utf-8')).hexdigest()
+            hassh = hashlib.md5(hassh_string.encode("utf-8")).hexdigest()
             return hassh
 
         except (ValueError, TypeError, UnicodeDecodeError) as e:
@@ -208,7 +210,7 @@ def is_ssh_packet(data):
 
     # Check SSH binary packet format
     try:
-        packet_length = struct.unpack('>I', data[:4])[0]
+        packet_length = struct.unpack(">I", data[:4])[0]
 
         # SSH packets have reasonable lengths
         if 2 <= packet_length <= 65536 and len(data) >= 6:

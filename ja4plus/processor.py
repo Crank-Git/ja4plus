@@ -42,15 +42,15 @@ class Processor:
 
     # The order here drives the iteration order of process_packet()
     _SPEC = [
-        ("ja4",   JA4Fingerprinter),
-        ("ja4s",  JA4SFingerprinter),
-        ("ja4h",  JA4HFingerprinter),
-        ("ja4t",  JA4TFingerprinter),
+        ("ja4", JA4Fingerprinter),
+        ("ja4s", JA4SFingerprinter),
+        ("ja4h", JA4HFingerprinter),
+        ("ja4t", JA4TFingerprinter),
         ("ja4ts", JA4TSFingerprinter),
-        ("ja4l",  JA4LFingerprinter),
-        ("ja4x",  JA4XFingerprinter),
+        ("ja4l", JA4LFingerprinter),
+        ("ja4x", JA4XFingerprinter),
         ("ja4ssh", JA4SSHFingerprinter),
-        ("ja4d",  JA4DFingerprinter),
+        ("ja4d", JA4DFingerprinter),
         ("ja4d6", JA4D6Fingerprinter),
     ]
 
@@ -83,16 +83,18 @@ class Processor:
                 continue
             if not fingerprint:
                 continue
-            results.append({
-                "type": fp_type,
-                "fingerprint": fingerprint,
-                "raw": getattr(fp, "last_raw", None),
-                "raw_original_order": getattr(fp, "last_raw_original_order", None),
-                "src_ip": src_ip,
-                "src_port": src_port,
-                "dst_ip": dst_ip,
-                "dst_port": dst_port,
-            })
+            results.append(
+                {
+                    "type": fp_type,
+                    "fingerprint": fingerprint,
+                    "raw": getattr(fp, "last_raw", None),
+                    "raw_original_order": getattr(fp, "last_raw_original_order", None),
+                    "src_ip": src_ip,
+                    "src_port": src_port,
+                    "dst_ip": dst_ip,
+                    "dst_port": dst_port,
+                }
+            )
         return results
 
     def reset(self):
