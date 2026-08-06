@@ -1,0 +1,40 @@
+FoxIO JA4+ conformance vectors
+==============================
+
+The files in this directory are not the work of the ja4plus authors. They are
+copied without change from the FoxIO JA4+ repository, so that the conformance
+suite compares ja4plus against the reference output without network access.
+
+Upstream repository: https://github.com/FoxIO-LLC/ja4
+Upstream commit:     27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8
+
+Source paths in that repository:
+
+    pcap/<capture>                  ->  tests/foxio_vectors/<capture>
+    python/test/testdata/<capture>.json  ->  tests/foxio_vectors/<capture>.json
+
+This directory holds 37 captures and 37 expected-output files.
+
+`dtls-udp.notest.cap` is present upstream but is not copied here. It carries a
+`notest` marker and has no expected-output file, so it is not a vector.
+
+To move to a newer upstream commit, change FOXIO_COMMIT in
+tests/download_test_vectors.py and run that script. The script rewrites this
+file.
+
+License
+-------
+
+The FoxIO repository publishes two licenses, and both apply to this directory.
+
+JA4S, JA4H, JA4L, JA4LS, JA4X, JA4T, JA4TS, JA4TScan, JA4D, JA4D6, JA4SScan,
+JA4E and JA4SSH are under the FoxIO License 1.1:
+
+    https://github.com/FoxIO-LLC/ja4/blob/27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8/LICENSE
+
+JA4 itself, which is TLS client fingerprinting, is under a BSD 3-Clause license:
+
+    https://github.com/FoxIO-LLC/ja4/blob/27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8/LICENSE-JA4
+
+Copyright (c) 2026 FoxIO. The ja4plus project is not affiliated with FoxIO, LLC
+and claims no right in the FoxIO material.
