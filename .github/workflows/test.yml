@@ -2,9 +2,14 @@ name: Tests
 
 # `dev` is the default branch and every pull request targets it. `master` stays in both
 # lists, so a promotion to the release branch still runs every check.
+#
+# `workflow_dispatch` starts a run by hand. GitHub sends a push event and a pull request
+# event through the webhook path. It starts a manual run through the interface instead.
+# When GitHub throttles the webhook path, a push and a pull request create no run, and a
+# manual run is the only way to get one. See issue #85.
 on:
   push:
-    branches: [master, dev, "issue/**"]
+    branches: [master, dev]
   pull_request:
     branches: [master, dev]
   workflow_dispatch:
