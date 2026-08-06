@@ -56,15 +56,16 @@ def compute_alpn_value(first_alpn_bytes):
     return hex_str[0] + hex_str[-1]
 
 
-def generate_ja4(tls_info):
-    """
-    Generate a JA4 fingerprint from TLS Client Hello info.
+def generate_ja4(tls_info, original_order=False):
+    """Return the JA4 fingerprint of one TLS Client Hello.
 
     Args:
-        tls_info: A dictionary with TLS handshake information
+        tls_info: A dictionary with TLS handshake information.
+        original_order: True returns the `JA4_o` value, which hashes the wire
+            order. False returns the `JA4` value, which hashes the sorted order.
 
     Returns:
-        A JA4 fingerprint string or None if not applicable
+        A JA4 fingerprint string, or None when the info describes no Client Hello.
     """
     if not tls_info or tls_info.get("type") != "client_hello":
         return None
@@ -136,31 +137,33 @@ def generate_ja4(tls_info):
         # Form part_a of the fingerprint
         part_a = f"{proto}{version_str}{sni_type}{cipher_count_str}{ext_count_str}{alpn_value}"
 
-        # Generate cipher hash - sort ciphers first
+        # Generate cipher hash. The original-order form hashes the wire order.
         if ciphers:
-            sorted_ciphers = sorted(ciphers)
-            cipher_str = ",".join([f"{c:04x}" for c in sorted_ciphers])
+            hashed_ciphers = ciphers if original_order else sorted(ciphers)
+            cipher_str = ",".join([f"{c:04x}" for c in hashed_ciphers])
             cipher_hash = hashlib.sha256(cipher_str.encode()).hexdigest()[:12]
         else:
             cipher_hash = "000000000000"
 
         # Generate extension hash
-        # 1. Remove SNI (0x0000) and ALPN (0x0010) from extensions for hashing
-        filtered_extensions = [e for e in extensions if e != 0x0000 and e != 0x0010]
+        # 1. Select the extensions to hash. The sorted form removes SNI (0x0000)
+        #    and ALPN (0x0010), because both appear in part_a. The original-order
+        #    form keeps every extension, as `JA4_ro` in the FoxIO vectors shows.
+        if original_order:
+            hashed_extensions = extensions
+        else:
+            hashed_extensions = sorted(e for e in extensions if e != 0x0000 and e != 0x0010)
 
-        # 2. Sort filtered extensions
-        sorted_extensions = sorted(filtered_extensions)
-
-        # 3. Get signature algorithms in original order
+        # 2. Get signature algorithms in original order
         sig_algs = tls_info.get("signature_algorithms", [])
 
-        # 4. Form extension string - sorted extensions + underscore + sig algorithms if present
-        ext_str = ",".join([f"{e:04x}" for e in sorted_extensions])
+        # 3. Form extension string - extensions + underscore + sig algorithms if present
+        ext_str = ",".join([f"{e:04x}" for e in hashed_extensions])
         if sig_algs:
             sig_alg_str = ",".join([f"{s:04x}" for s in sig_algs])
             ext_str = f"{ext_str}_{sig_alg_str}"
 
-        # 5. Generate extension hash
+        # 4. Generate extension hash
         if ext_str:
             ext_hash = hashlib.sha256(ext_str.encode()).hexdigest()[:12]
         else:
@@ -297,12 +300,17 @@ class JA4Fingerprinter(BaseFingerprinter):
     ``get_fingerprints()`` and on ``last_raw`` / ``last_raw_original_order``
     for the most recent successful parse, mirroring the Go reference's
     FingerprintResult.Raw / RawOriginalOrder fields.
+
+    Every entry also carries ``fingerprint_original_order``, the FoxIO `JA4_o`
+    value. It is the hashed form of ``raw_original_order``, and the most recent
+    one is on ``last_fingerprint_original_order``.
     """
 
     def __init__(self):
         super().__init__()
         self.last_raw = None
         self.last_raw_original_order = None
+        self.last_fingerprint_original_order = None
         # DCID -> list[(offset, data)] for multi-datagram QUIC CRYPTO reassembly.
         # Keyed by DCID hex so packets with the same connection ID accumulate
         # together regardless of UDP 5-tuple changes.
@@ -326,11 +334,14 @@ class JA4Fingerprinter(BaseFingerprinter):
         if fingerprint:
             raw = get_raw_fingerprint(tls_info, original_order=False)
             raw_oo = get_raw_fingerprint(tls_info, original_order=True)
+            fingerprint_oo = generate_ja4(tls_info, original_order=True)
             self.last_raw = raw
             self.last_raw_original_order = raw_oo
+            self.last_fingerprint_original_order = fingerprint_oo
             self.fingerprints.append(
                 {
                     "fingerprint": fingerprint,
+                    "fingerprint_original_order": fingerprint_oo,
                     "raw": raw,
                     "raw_original_order": raw_oo,
                     "packet": packet,
@@ -381,6 +392,7 @@ class JA4Fingerprinter(BaseFingerprinter):
         super().reset()
         self.last_raw = None
         self.last_raw_original_order = None
+        self.last_fingerprint_original_order = None
         self._quic_fragments = {}
         self._quic_dcid_to_tuple = {}
 
