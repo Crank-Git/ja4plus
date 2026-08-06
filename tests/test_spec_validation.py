@@ -2,7 +2,9 @@
 FoxIO JA4+ Spec Validation Tests.
 
 Validates ja4plus output against FoxIO's official reference test vectors.
-Download vectors first: python tests/download_test_vectors.py
+The vectors are committed under tests/foxio_vectors, so this suite needs no
+network access. To move the vectors to a newer upstream commit, run
+`python tests/download_test_vectors.py` by hand.
 Run with: pytest -m spec_validation -v
 """
 
@@ -21,29 +23,6 @@ VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 def have_vectors():
     return VECTORS_DIR.exists() and any(VECTORS_DIR.glob("*.pcap*"))
 
-
-# Attempt to download vectors if not present
-try:
-    from tests.download_test_vectors import download as _download_vectors
-
-    if not have_vectors():
-        _download_vectors()
-except Exception:
-    pass
-
-# Attempt import without 'tests.' prefix (works when running from repo root)
-if not have_vectors():
-    try:
-        import importlib.util
-
-        _dl_path = Path(__file__).parent / "download_test_vectors.py"
-        _spec = importlib.util.spec_from_file_location("download_test_vectors", _dl_path)
-        _mod = importlib.util.module_from_spec(_spec)
-        _spec.loader.exec_module(_mod)
-        if not have_vectors():
-            _mod.download()
-    except Exception:
-        pass
 
 
 # ---------------------------------------------------------------------------
@@ -251,5 +230,7 @@ class TestSpecValidation:
         assert len(packets) > 0, f"No packets in {pcap_path.name}"
 
         expected = _load_expected(json_path)
+        # FoxIO ships an empty array for a capture that its Python implementation
+        # produces no fingerprint for, such as dhcp.pcapng. That file is still a
+        # valid vector, so an empty array is not a defect.
         assert isinstance(expected, list), "Expected JSON should be a list of records"
-        assert len(expected) > 0, "Expected JSON should have at least one record"

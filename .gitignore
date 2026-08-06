@@ -1,6 +1,3 @@
-# Downloaded FoxIO test vectors (not committed)
-tests/foxio_vectors/
-
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -38,3 +35,7 @@ Thumbs.db
 # Captures (not committed)
 *.pcap
 *.pcapng
+
+# The FoxIO conformance vectors are committed. The negation must follow the
+# capture patterns above, because a later rule wins.
+!tests/foxio_vectors/**
