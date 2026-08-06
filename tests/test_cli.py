@@ -55,7 +55,7 @@ class TestAnalyzePcap(unittest.TestCase):
         """--format json produces valid JSONL output."""
         out, err, code = run_cli("--format", "json", "analyze", HTTP_CAP)
         self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
-        lines = [l for l in out.strip().splitlines() if l.strip()]
+        lines = [line for line in out.strip().splitlines() if line.strip()]
         self.assertGreater(len(lines), 0, "Expected at least one JSON line")
         for line in lines:
             obj = json.loads(line)
@@ -80,7 +80,7 @@ class TestAnalyzePcap(unittest.TestCase):
         """--types ja4t restricts output to JA4T fingerprints only."""
         out, err, code = run_cli("--format", "json", "--types", "ja4t", "analyze", HTTP_CAP)
         self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
-        lines = [l for l in out.strip().splitlines() if l.strip()]
+        lines = [line for line in out.strip().splitlines() if line.strip()]
         # May be zero lines if no TCP packets match, but if there are lines they must be ja4t
         for line in lines:
             obj = json.loads(line)
@@ -112,7 +112,7 @@ class TestCertCommand(unittest.TestCase):
         """cert --format json includes type=ja4x in output."""
         out, err, code = run_cli("--format", "json", "cert", CERT_DER)
         self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
-        lines = [l for l in out.strip().splitlines() if l.strip()]
+        lines = [line for line in out.strip().splitlines() if line.strip()]
         self.assertGreater(len(lines), 0)
         obj = json.loads(lines[0])
         self.assertEqual(obj["type"], "ja4x")

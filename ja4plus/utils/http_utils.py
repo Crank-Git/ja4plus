@@ -137,7 +137,7 @@ def is_http_request(data):
 
 def extract_http_info(packet):
     """Extract HTTP information from a packet"""
-    if not Raw in packet:
+    if Raw not in packet:
         return None
 
     try:

@@ -357,7 +357,7 @@ def cmd_db(args):
         return
 
     # db update
-    print(f"Downloading latest fingerprint database from FoxIO...")
+    print("Downloading latest fingerprint database from FoxIO...")
     try:
         import urllib.request
 

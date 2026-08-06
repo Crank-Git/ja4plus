@@ -11,9 +11,10 @@ from collections import Counter
 from scapy.all import TCP, Raw, IP, IPv6
 import time
 
-logger = logging.getLogger(__name__)
 from ja4plus.utils.ssh_utils import is_ssh_packet, parse_ssh_packet, extract_hassh
 from ja4plus.fingerprinters.base import BaseFingerprinter
+
+logger = logging.getLogger(__name__)
 
 
 class JA4SSHFingerprinter(BaseFingerprinter):

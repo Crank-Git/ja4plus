@@ -7,12 +7,13 @@ import logging
 import struct
 from scapy.all import IP, IPv6, TCP, Raw
 
-logger = logging.getLogger(__name__)
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.x509_utils import oid_to_hex
 import time
+
+logger = logging.getLogger(__name__)
 
 
 def generate_ja4x(cert_info):

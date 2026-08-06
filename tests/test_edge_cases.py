@@ -59,7 +59,7 @@ class TestEmptyInputs(unittest.TestCase):
     def test_ja4t_no_ip(self):
         """Packet without IP layer - still has TCP."""
         packet = Ether() / TCP(sport=12345, dport=443, flags="S")
-        fp = generate_ja4t(packet)
+        generate_ja4t(packet)
         # Should still work since it only checks TCP layer
         # (or return None depending on implementation)
 
@@ -128,14 +128,14 @@ class TestMalformedTLS(unittest.TestCase):
         data = os.urandom(256)
         packet = IP() / TCP(sport=12345, dport=443) / Raw(load=data)
         # Should not raise, just return None
-        result = self.ja4.process_packet(packet)
+        self.ja4.process_packet(packet)
         # Either None or a result, but should not crash
 
     def test_very_large_packet(self):
         """Large payload should not hang or crash."""
         data = b"\x16\x03\x03" + b"\x00" * 5000
         packet = IP() / TCP(sport=12345, dport=443) / Raw(load=data)
-        result = self.ja4.process_packet(packet)
+        self.ja4.process_packet(packet)
         # Should not hang or crash
 
 
@@ -400,7 +400,7 @@ class TestJA4LEdgeCases(unittest.TestCase):
         synack = IP(src="10.0.0.2", dst="10.0.0.1", ttl=64) / TCP(
             sport=443, dport=54321, flags="SA"
         )
-        result = fp.process_packet(synack)
+        fp.process_packet(synack)
         # SYN-ACK without prior SYN should produce a fingerprint
         # since B timestamp is set but A may not be - depends on impl
         # Main point: no crash
