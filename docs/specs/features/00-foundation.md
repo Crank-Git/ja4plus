@@ -91,7 +91,8 @@ FR-foundation-13 — The test matrix runs Python 3.9 through 3.13.
 FR-foundation-14 — Every test that starts a Python subprocess uses
 `sys.executable`.
 
-FR-foundation-15 — The repository has a `dev` branch.
+FR-foundation-15 — The repository has a `dev` branch. The planner created it
+locally. This requirement is met once the branch exists on the remote.
 
 FR-foundation-15a — The `dev` branch is the default branch on GitHub.
 
