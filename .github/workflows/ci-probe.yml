@@ -1,0 +1,16 @@
+name: CI Probe
+
+# Temporary. Measures whether a push or a pull request creates a run at all.
+# Removed before this pull request merges.
+on:
+  push:
+    branches: ["issue/**"]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report the event
+        run: echo "event=${{ github.event_name }}"
