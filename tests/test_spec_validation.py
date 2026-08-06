@@ -22,6 +22,18 @@ The vectors are committed under `tests/foxio_vectors`, so this suite needs no ne
 access. To move the vectors to a newer upstream commit, run
 `python tests/download_test_vectors.py` by hand.
 
+`tests/foxio_deviations.json` holds the register of known deviations. A case the
+register names carries `pytest.mark.xfail(strict=True)`, so it reports as `xfailed`
+while it fails and fails the suite the moment it passes. A failing case the register
+does not name fails normally. `tests/foxio_deviations.py` documents how to add an
+entry, how to remove one, and how to measure a new baseline.
+
+`tests/foxio_vector_manifest.json` names every vector the suite expects, and the number
+of cases each one carries. A vector that disappears fails the suite by name.
+`tests/foxio_manifest.py` documents how to add a vector.
+
+`tests/generate_foxio_baseline.py` writes both files from a measurement.
+
 Run with: pytest -m spec_validation -v
 """
 
@@ -37,6 +49,8 @@ from tests.conformance_index import (
     method_and_occurrence,
     stream_identity,
 )
+from tests.foxio_deviations import load_register, lookup, occurrence_key, value_key
+from tests.foxio_manifest import compare, load_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -51,61 +65,20 @@ def have_vectors():
     return VECTORS_DIR.exists() and any(VECTORS_DIR.glob("*.pcap*"))
 
 
-# ---------------------------------------------------------------------------
-# Known deviations from FoxIO reference output.
-# Keys are method names. A test that hits a known deviation emits a pytest.skip
-# (with reason) instead of failing so CI stays green while deviations are tracked.
-# ---------------------------------------------------------------------------
-KNOWN_DEVIATIONS = {
-    # JA4L requires per-packet arrival timestamps and TTL values that are not
-    # reliably preserved in pcapng files captured offline.  ja4plus omits JA4L
-    # from its fingerprinter set so these values are never produced.
-    "JA4L-C": ("JA4L requires live-capture timing; not available from offline PCAPs"),
-    "JA4L-S": ("JA4L requires live-capture timing; not available from offline PCAPs"),
-    # JA4SSH uses a sliding packet-count window.  FoxIO's reference groups
-    # packets by TCP stream; ja4plus currently uses a global window so the
-    # per-stream values differ when multiple SSH sessions appear in one PCAP.
-    "JA4SSH": (
-        "JA4SSH stream-grouping differs: ja4plus uses a global window while "
-        "FoxIO's reference groups by TCP stream"
-    ),
-    # JA4X certificate fingerprints require parsing DER-encoded certificates
-    # embedded in the TLS handshake.  ja4plus extracts these only when scapy's
-    # TLS layer is fully dissected; some pcapng captures lack the TLS layer
-    # metadata needed for full certificate chain extraction.
-    "JA4X": (
-        "JA4X certificate chain extraction depends on full TLS dissection "
-        "which is not always available from pcapng captures"
-    ),
-    # JA4 extension count: in certain ClientHello packets ja4plus counts one
-    # more extension than FoxIO's tshark-based reference (16 vs 15).  This
-    # occurs when an extension that FoxIO's parser treats as non-countable
-    # (e.g. padding / 0x0015) is included in the raw bytes but excluded from
-    # the FoxIO reference count.  Tracked as a known counting deviation.
-    # Affects: tls-handshake.pcapng streams 38, 41, 42, 44, 45.
-    "JA4_ext_count": (
-        "JA4 extension count differs by 1 for some ClientHello packets: "
-        "ja4plus counts padding extension 0x0015 while FoxIO reference does not"
-    ),
-}
-
-# Per-PCAP/stream overrides for deviations that only apply to specific records.
-# Keys: "<pcap_name>/<stream_index>/<method>" -> deviation reason string.
-STREAM_DEVIATIONS = {
-    "tls-handshake.pcapng/38/JA4": KNOWN_DEVIATIONS["JA4_ext_count"],
-    "tls-handshake.pcapng/41/JA4": KNOWN_DEVIATIONS["JA4_ext_count"],
-    "tls-handshake.pcapng/42/JA4": KNOWN_DEVIATIONS["JA4_ext_count"],
-    "tls-handshake.pcapng/44/JA4": KNOWN_DEVIATIONS["JA4_ext_count"],
-    "tls-handshake.pcapng/45/JA4": KNOWN_DEVIATIONS["JA4_ext_count"],
-}
+# The register of known deviations. The suite reads it once, at collection.
+DEVIATIONS = load_register()
 
 
-def _deviation_reason(pcap_name, stream_index, method):
-    """Return the known-deviation reason for one method on one stream, or None."""
-    stream_key = "{}/{}/{}".format(pcap_name, stream_index, method)
-    if stream_key in STREAM_DEVIATIONS:
-        return STREAM_DEVIATIONS[stream_key]
-    return KNOWN_DEVIATIONS.get(method)
+def _deviation_marks(key):
+    """Return the marks one case carries, given its register key.
+
+    A registered case carries `xfail(strict=True)`, so it reports as `xfailed` while it
+    fails and fails the suite the moment it passes.
+    """
+    deviation = lookup(DEVIATIONS, key)
+    if deviation is None:
+        return ()
+    return (pytest.mark.xfail(reason=deviation.reason(), strict=True),)
 
 
 def _load_expected(json_path):
@@ -162,6 +135,15 @@ def _value_params():
                                 method,
                                 occurrence,
                             ),
+                            marks=_deviation_marks(
+                                value_key(
+                                    pcap_path.name,
+                                    stream.index,
+                                    stream.src_port,
+                                    method,
+                                    occurrence,
+                                )
+                            ),
                         )
                     )
     return params
@@ -182,6 +164,7 @@ def _method_params():
                     json_path,
                     method,
                     id="{}-{}".format(pcap_path.name, method),
+                    marks=_deviation_marks(occurrence_key(pcap_path.name, method)),
                 )
             )
     return params
@@ -327,10 +310,6 @@ def test_the_produced_fingerprint_equals_the_reference(
     pcap_path, stream, method, occurrence, expected
 ):
     """Compare one occurrence of one method on one stream against the reference."""
-    reason = _deviation_reason(pcap_path.name, stream.index, method)
-    if reason:
-        pytest.skip("known deviation: {}".format(reason))
-
     produced = index_produced(pcap_path).get(stream.identity, {}).get(method, ())
     if len(produced) < occurrence:
         pytest.fail(
@@ -391,10 +370,6 @@ def test_the_produced_occurrence_keys_equal_the_reference(pcap_path, json_path, 
             )
         )
 
-    reason = _deviation_reason(pcap_path.name, "*", method)
-    if reason:
-        pytest.skip("known deviation: {}".format(reason))
-
     extra = sorted(produced_keys - expected_keys)
     missing = sorted(expected_keys - produced_keys)
     if extra or missing:
@@ -435,3 +410,76 @@ def test_the_suite_collects_at_least_one_vector():
     """Fail when no vector is available, because an empty suite proves nothing."""
     assert have_vectors(), "No FoxIO vector under {}".format(VECTORS_DIR)
     assert _vector_files(), "No capture and expected-output pair under {}".format(VECTORS_DIR)
+
+
+def _collected_case_counts():
+    """Return the number of test cases the suite collected for each vector."""
+    counts = {}
+    for param in _value_params():
+        counts[param.values[0].name] = counts.get(param.values[0].name, 0) + 1
+    for param in _method_params():
+        counts[param.values[0].name] = counts.get(param.values[0].name, 0) + 1
+    return counts
+
+
+@pytest.mark.spec_validation
+def test_the_collected_vector_set_equals_the_manifest():
+    """Fail when a vector is absent, is new, or carries a different number of cases.
+
+    The suite builds its cases from the files it finds, so a deleted capture takes its
+    cases away and the suite still reports green. The manifest names every vector the
+    suite expects, which makes a vector that disappears as loud as a vector that
+    mismatches. The deviation register does not close the same gap, because it names
+    only a case that fails today.
+    """
+    differences = compare(load_manifest(), _collected_case_counts())
+    assert not differences, (
+        "the vector set differs from tests/foxio_vector_manifest.json:\n{}".format(
+            "\n".join(differences)
+        )
+    )
+
+
+@pytest.mark.spec_validation
+@pytest.mark.skipif(not have_vectors(), reason="FoxIO test vectors not downloaded")
+def test_the_register_key_of_every_case_is_unique():
+    """Fail when two cases share one register key.
+
+    One entry that matches two cases marks both, so a fix to one of them cannot report
+    itself. The register needs one key for each case.
+    """
+    keys = [
+        value_key(pcap_path.name, stream.index, stream.src_port, method, occurrence)
+        for pcap_path, stream, method, occurrence, _ in (param.values for param in _value_params())
+    ]
+    duplicates = sorted({key for key in keys if keys.count(key) > 1})
+    assert not duplicates, "two cases share one register key: {}".format(duplicates)
+
+
+@pytest.mark.spec_validation
+def test_every_register_entry_matches_a_collected_case():
+    """Fail when the register holds a key that no collected case carries.
+
+    A deleted vector drops its cases from the suite. Without this check the suite still
+    reports green, and the deviations of that vector stop being measured. An entry that
+    matches nothing is also what a landed fix leaves behind when it removes a case.
+    """
+    collected = {
+        value_key(pcap_path.name, stream.index, stream.src_port, method, occurrence)
+        for pcap_path, stream, method, occurrence, _ in (param.values for param in _value_params())
+    }
+    collected.update(
+        occurrence_key(pcap_path.name, method)
+        for pcap_path, _, method in (param.values for param in _method_params())
+    )
+    orphans = sorted(set(DEVIATIONS) - collected)
+    assert not orphans, "{} register entr(ies) match no collected case: {}".format(
+        len(orphans), orphans
+    )
+
+
+@pytest.mark.spec_validation
+def test_every_register_entry_names_an_issue():
+    """Fail when an entry names no issue, because a deviation with no owner is never fixed."""
+    for key, deviation in DEVIATIONS.items():
+        assert deviation.issue > 0, "{} names no issue".format(key)
