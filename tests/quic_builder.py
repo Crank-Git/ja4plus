@@ -99,8 +99,8 @@ def handshake_packet(payload_length=32, version=QUIC_VERSION_1):
     """Return the UDP payload of one QUIC Handshake packet.
 
     The packet carries no readable frame. A JA4L test reads the packet type only.
-    RFC 9001 Section 5.4.1 protects the low four bits of the first byte, and it leaves
-    bits 4 and 5 clear, so a reader states the packet type without any key.
+    RFC 9001 Section 5.4.1 protects the low four bits of the first byte. It leaves bits
+    4 and 5 clear, so a reader states the packet type without any key.
 
     Args:
         payload_length: The number of protected payload bytes.

@@ -505,14 +505,20 @@ discards that packet, and it reports no value at all for the flow.
 `ClientInitial`, and its first state discards a `ServerInitial`.
 
 The FoxIO Rust implementation is the only FoxIO implementation that reads a QUIC
-handshake, so it decides both cases. No FoxIO vector holds either case. Two synthetic
-captures measure them, and `tests/test_ja4l_quic_repeated_connection.py` holds the
-measurement:
+handshake, so it decides both cases. No FoxIO vector holds either case.
+`tests/build_quic_ja4l_captures.py` writes the two synthetic captures that measure
+them. The reference ran at the commit `tests/download_test_vectors.py` pins:
 
 ```
-ja4 quic_repeat.pcap     -> ja4l_c: 500_64   ja4l_s: 5000_56
-ja4 quic_mirrored.pcap   -> []
+$ ja4 quic_repeat.pcap
+  ja4l_c: 500_64
+  ja4l_s: 5000_56
+$ ja4 quic_mirrored.pcap
+[]
 ```
+
+`tests/test_ja4l_quic_repeated_connection.py` reads the same packets from the same
+builder, so the tests and the measurement cover one capture each.
 
 `ja4plus` reports the same value pair for the first capture. For the second capture it
 reports no server value, and it reports `JA4L-C=500_64` where the reference reports
