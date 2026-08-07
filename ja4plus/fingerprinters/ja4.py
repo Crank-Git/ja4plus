@@ -152,22 +152,25 @@ def generate_ja4(tls_info, original_order=False):
         # 1. Select the extensions to hash. The sorted form removes SNI (0x0000)
         #    and ALPN (0x0010), because both appear in part_a. The original-order
         #    form keeps every extension, as `JA4_ro` in the FoxIO vectors shows.
-        if original_order:
-            hashed_extensions = extensions
-        else:
-            hashed_extensions = sorted(e for e in extensions if e != 0x0000 and e != 0x0010)
+        sorted_extensions = sorted(e for e in extensions if e != 0x0000 and e != 0x0010)
+        hashed_extensions = extensions if original_order else sorted_extensions
 
         # 2. Get signature algorithms in original order
         sig_algs = tls_info.get("signature_algorithms", [])
 
         # 3. Form extension string - extensions + underscore + sig algorithms if present
         ext_str = ",".join([f"{e:04x}" for e in hashed_extensions])
+        sorted_ext_str = ",".join([f"{e:04x}" for e in sorted_extensions])
         if sig_algs:
             sig_alg_str = ",".join([f"{s:04x}" for s in sig_algs])
             ext_str = f"{ext_str}_{sig_alg_str}"
+            sorted_ext_str = f"{sorted_ext_str}_{sig_alg_str}"
 
-        # 4. Generate extension hash
-        if ext_str:
+        # 4. Generate extension hash. FoxIO reads the sorted list for the zero sentinel,
+        #    and it sets both extension hashes from that one test. A client hello that
+        #    carries SNI alone therefore gives `JA4_o` the zero sentinel, and `JA4_ro`
+        #    still shows `0000`. #132 holds the measurement.
+        if sorted_ext_str:
             ext_hash = hashlib.sha256(ext_str.encode()).hexdigest()[:12]
         else:
             ext_hash = "000000000000"
