@@ -54,6 +54,29 @@ class TestJA4LCleanup(unittest.TestCase):
         fp.cleanup_connection("10.0.0.2", 443, "10.0.0.1", 12345, "tcp")
         self.assertEqual(len(fp.connections), 0)
 
+    def test_cleanup_removes_a_tunnelled_connection_by_the_reported_address(self):
+        """A caller of a tunnelled connection holds the outer address pair.
+
+        JA4L groups a tunnelled connection under its inner address pair, so a caller
+        that names the outer pair reaches no entry without the map of the two keys.
+        """
+        from scapy.layers.inet import GRE
+
+        from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
+
+        fp = JA4LFingerprinter()
+        packet = (
+            IP(src="1.1.1.1", dst="2.2.2.2")
+            / GRE()
+            / IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=443, flags="S")
+        )
+        fp.process_packet(packet)
+        self.assertGreater(len(fp.connections), 0)
+
+        fp.cleanup_connection("1.1.1.1", 12345, "2.2.2.2", 443, "tcp")
+        self.assertEqual(len(fp.connections), 0)
+
 
 class TestJA4SSHCleanup(unittest.TestCase):
     def _make_ssh_pkt(self, src="10.0.0.1", dst="10.0.0.2", sport=54321, dport=22):

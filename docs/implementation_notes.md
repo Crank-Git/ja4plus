@@ -262,6 +262,29 @@ inner ports.
 `ja4plus/utils/tunnels.py` imports the scapy dissectors for Geneve, VXLAN and
 ERSPAN, because scapy leaves them unbound and stops at the tunnel header.
 
+### The connection key of a mirrored capture
+
+A mirror sends both directions of one session from one outer address to one
+other outer address. The outer address pair then separates no direction, and one
+key cannot hold both measurement points of the connection.
+
+`gre-erspan-vxlan.pcap` is such a capture. Every packet travels from
+`100.20.9.2` to `100.20.9.1`, and the inner session is `10.16.27.12:65174` to
+`10.16.27.131:80`. The SYN reached the key
+`tcp_100.20.9.1:80_100.20.9.2:65174`, and the SYN-ACK reached the key
+`tcp_100.20.9.1:65174_100.20.9.2:80`.
+
+`ja4plus/fingerprinters/ja4l.py` holds two keys for one connection:
+
+- The connection key groups the packets. It reads the inner address pair and the
+  inner port pair, which name both endpoints of a mirrored session.
+- The reported key names the stream. It reads the outer address pair and the
+  inner port pair, because the reference reports those. The SYN pairs the source
+  address with the source port, and a later packet does not move that pair.
+
+The expected-output file holds `JA4L-S` `997_64` and `JA4L-C` `953_64` on the
+stream `100.20.9.2:65174` to `100.20.9.1:80`. Read #101 for the measurement.
+
 ### The QUIC measurement points
 
 The reference reads four QUIC packets, and it reads the direction from port 443:
