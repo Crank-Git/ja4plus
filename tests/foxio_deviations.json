@@ -20,7 +20,7 @@
     "issue": 129
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1": {
@@ -40,7 +40,7 @@
     "issue": 35
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4H_ro": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4S": {
@@ -148,63 +148,63 @@
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.1": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.10": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.11": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.12": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.13": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.14": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.15": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.2": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.3": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.4": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.5": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.6": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.7": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.8": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.9": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4X.1": {
@@ -224,7 +224,7 @@
     "issue": 129
   },
   "http2-with-cookies.pcapng/JA4H_ro": {
-    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
   },
   "http2-with-cookies.pcapng/JA4X": {

@@ -114,11 +114,16 @@ class TestTheCommittedRegister:
 
 # Two vectors carry a Decryption Secrets Block, and the reference reads the HTTP
 # messages that the block decrypts. ja4plus reads no key material, so issue #129 owns
-# every JA4H case of those two vectors.
+# every JA4H case of those two vectors, the hashed form and the raw form alike.
 ENCRYPTED_HTTP_KEYS = (
-    ["http2-with-cookies.pcapng/JA4H"]
+    ["http2-with-cookies.pcapng/JA4H", "http2-with-cookies.pcapng/JA4H_ro"]
     + ["http2-with-cookies.pcapng/0:58847/JA4H.{}".format(count) for count in range(1, 16)]
-    + ["chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1"]
+    + ["http2-with-cookies.pcapng/0:58847/JA4H_ro.{}".format(count) for count in range(1, 16)]
+    + [
+        "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1",
+        "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1",
+        "chrome-cloudflare-quic-with-secrets.pcapng/JA4H_ro",
+    ]
 )
 
 
@@ -133,5 +138,10 @@ class TestTheEncryptedHttpDeviations:
     def test_the_entry_states_that_ja4plus_reads_no_encrypted_request(self, key):
         assert "reads no encrypted request" in load_register()[key].cause
 
-    def test_the_cleartext_http1_vector_keeps_its_own_issue(self):
-        assert load_register()["http1-with-cookies.pcapng/JA4H_ro"].issue == 131
+    def test_the_cleartext_http1_vector_carries_no_entry(self):
+        """#131 computed the JA4H raw form, so the cleartext vector matches and left.
+
+        The check exists to prove that the entries above name the encrypted vectors
+        alone. A cleartext vector that reappears here is a defect.
+        """
+        assert "http1-with-cookies.pcapng/JA4H_ro" not in load_register()
