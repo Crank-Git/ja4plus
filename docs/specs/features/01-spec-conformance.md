@@ -99,10 +99,16 @@ Length field of the long header names, and no byte behind them.
 FR-spec-conformance-25 — A reader collects at most 16384 bytes of CRYPTO frame data
 for one connection.
 
-FR-spec-conformance-26 — The conformance suite compares every raw key the FoxIO
+FR-spec-conformance-26 — JA4S emits the fingerprint of a QUIC server Initial packet
+that carries a whole ServerHello.
+
+FR-spec-conformance-27 — A QUIC server Initial packet replaces no stored client
+connection ID.
+
+FR-spec-conformance-28 — The conformance suite compares every raw key the FoxIO
 expected-output files hold, one case for each key on each stream.
 
-FR-spec-conformance-27 — A raw key that ja4plus computes no value for fails its case.
+FR-spec-conformance-29 — A raw key that ja4plus computes no value for fails its case.
 The suite reports no such key as not applicable.
 
 ## User flows
@@ -178,6 +184,17 @@ This feature set has no screen. Its output is the test report.
   the datagram fails on the tag for every coalesced packet.
 - The server Initial keys derive from the connection ID the client chose. A capture
   that holds no client Initial packet gives no QUIC `JA4L-S` value.
+- A client Initial packet and a server Initial packet carry the same long-header
+  packet type, so the port names the direction. JA4S reads the port, and JA4L reads
+  it the same way. A flow whose two ports are 443 names no server, and JA4S reads no
+  Initial packet of that flow.
+- A server Initial packet names the client with the connection ID the client chose as
+  its source. It therefore supplies no client connection ID, and it replaces no stored
+  value.
+- The reference reads no QUIC handshake in the committed vectors. JA4S produces a
+  fingerprint on nine QUIC streams that the reference holds no value for, in
+  `chrome-cloudflare-quic-with-secrets.pcapng`, `ssh2.pcapng` and `tls3.pcapng`. JA4
+  produces a fingerprint on the same nine streams, and #13 owns both.
 - A reader collects at most 16384 bytes of CRYPTO frame data for one connection. RFC
   9000 Section 16 lets a CRYPTO frame offset reach 4611686018427387903, and a
   reassembly allocates a buffer that reaches the highest offset. A sender would

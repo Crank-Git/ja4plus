@@ -26,8 +26,19 @@ The subdirectory `wireshark_expected/` holds two more expected-output files:
 The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files under
 `python/test/testdata` hold an empty array. The Wireshark dissector is the only FoxIO
 implementation that writes a reference value for the two methods.
-`docs/implementation_notes.md` records the reading. The conformance suite reads
-only the top level of this directory, so the subdirectory adds no case to it.
+`docs/implementation_notes.md` records the reading.
+
+The subdirectory `rust_expected/` holds one more expected-output file:
+
+    rust/ja4/src/snapshots/ja4__insta@quic-with-several-tls-frames.pcapng.snap
+        ->  tests/foxio_vectors/rust_expected/ja4__insta@quic-with-several-tls-frames.pcapng.snap
+
+The FoxIO Python implementation reads no ClientHello that several CRYPTO frames
+carry, so `python/test/testdata/quic-with-several-tls-frames.pcapng.json` holds an empty
+array. The FoxIO Rust implementation reads it and writes the JA4 value.
+
+The conformance suite reads only the top level of this directory, so neither
+subdirectory adds a case to it.
 
 To move to a newer upstream commit, change FOXIO_COMMIT in
 tests/download_test_vectors.py and run that script. The script rewrites this

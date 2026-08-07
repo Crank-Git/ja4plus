@@ -4,15 +4,24 @@ JA4S TLS Server Hello Fingerprinting implementation.
 
 import hashlib
 import logging
-import struct
 
-from scapy.all import IP, IPv6, TCP, UDP, Raw
+from scapy.all import IP, IPv6, UDP
 
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
-from ja4plus.utils.quic_utils import parse_quic_server_initial, parse_quic_initial
+from ja4plus.utils.quic_utils import (
+    QUIC_INITIAL,
+    initial_packet_dcid,
+    long_header_packet_type,
+    parse_quic_server_initial,
+)
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
+
+# A QUIC server listens on port 443, and the port is the only field that names the
+# direction of an Initial packet. A client Initial packet and a server Initial packet
+# carry the same long-header packet type. `ja4l.py` reads the direction the same way.
+QUIC_PORT = 443
 
 
 class JA4SFingerprinter(BaseFingerprinter):
@@ -52,30 +61,8 @@ class JA4SFingerprinter(BaseFingerprinter):
         udp = packet.getlayer(UDP)
         if udp is not None:
             udp_payload = bytes(udp.payload)
-            if udp_payload:
-                src_ip, dst_ip = _get_ip_pair(packet)
-                src_port = int(udp.sport)
-                dst_port = int(udp.dport)
-
-                fwd_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-                rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
-
-                # Check if this is a QUIC Client Initial — capture its DCID
-                if _is_quic_client_initial(udp_payload):
-                    dcid = _extract_dcid(udp_payload)
-                    if dcid is not None:
-                        self._quic_dcids[fwd_key] = dcid
-                    return None
-
-                # Try to decode as QUIC Server Initial using the stored client DCID
-                if rev_key in self._quic_dcids:
-                    client_dcid = self._quic_dcids[rev_key]
-                    tls_info = parse_quic_server_initial(udp_payload, client_dcid)
-                    if tls_info and tls_info.get("handshake_type") == "server_hello":
-                        fingerprint = _generate_ja4s_from_tls_info(tls_info)
-                        if fingerprint:
-                            self._record(fingerprint, tls_info, packet)
-                            return fingerprint
+            if udp_payload and long_header_packet_type(udp_payload) == QUIC_INITIAL:
+                return self._quic_initial(packet, udp, udp_payload)
 
         # TCP/TLS path
         from ja4plus.utils.tls_utils import extract_tls_info as _extract
@@ -88,6 +75,53 @@ class JA4SFingerprinter(BaseFingerprinter):
             self._record(fingerprint, tls_info, packet)
             return fingerprint
         return None
+
+    def _quic_initial(self, packet, udp, udp_payload):
+        """Return the JA4S value one QUIC Initial packet gives, or None.
+
+        A client Initial packet supplies the connection ID that derives the server
+        Initial keys. A server Initial packet names the client with the connection ID
+        the client chose as its source, so it supplies no client connection ID and it
+        replaces no stored value.
+
+        Args:
+            packet: The packet the caller processes.
+            udp: The UDP layer of the packet.
+            udp_payload: The bytes of the UDP payload.
+
+        Returns:
+            A JA4S fingerprint, or None. Returns None for a client Initial packet.
+            Returns None when the fingerprinter holds no client connection ID, and
+            when the packet carries no whole ServerHello.
+        """
+        src_ip, dst_ip = _get_ip_pair(packet)
+        src_port = int(udp.sport)
+        dst_port = int(udp.dport)
+        to_server = dst_port == QUIC_PORT
+        from_server = src_port == QUIC_PORT
+        # A flow that holds two port 443 values names no server, and a flow that holds
+        # none names no server either. The direction of a packet is then unknown, and
+        # every value it gives is a guess.
+        if to_server == from_server:
+            return None
+
+        if to_server:
+            dcid = initial_packet_dcid(udp_payload)
+            if dcid:
+                self._quic_dcids[f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"] = dcid
+            return None
+
+        client_dcid = self._quic_dcids.get(f"{dst_ip}:{dst_port}-{src_ip}:{src_port}")
+        if not client_dcid:
+            return None
+        tls_info = parse_quic_server_initial(udp_payload, client_dcid)
+        if not tls_info or tls_info.get("handshake_type") != "server_hello":
+            return None
+        fingerprint = _generate_ja4s_from_tls_info(tls_info)
+        if not fingerprint:
+            return None
+        self._record(fingerprint, tls_info, packet)
+        return fingerprint
 
     def _record(self, fingerprint, tls_info, packet):
         """Append a JA4S fingerprint result with raw / raw_original_order."""
@@ -133,33 +167,6 @@ def _get_ip_pair(packet):
     if ip:
         return str(ip.src), str(ip.dst)
     return "0.0.0.0", "0.0.0.0"
-
-
-def _is_quic_client_initial(udp_payload):
-    """Return True if the UDP payload looks like a QUIC v1/v2 client Initial."""
-    if len(udp_payload) < 6:
-        return False
-    first_byte = udp_payload[0]
-    if not (first_byte & 0x80):
-        return False
-    version = struct.unpack("!I", udp_payload[1:5])[0]
-    if version == 0:
-        return False
-    packet_type = (first_byte & 0x30) >> 4
-    is_v2 = version == 0x6B3343CF
-    if is_v2:
-        return packet_type == 0x01
-    return packet_type == 0x00
-
-
-def _extract_dcid(udp_payload):
-    """Extract the Destination Connection ID bytes from a QUIC long header."""
-    if len(udp_payload) < 6:
-        return None
-    dcid_len = udp_payload[5]
-    if 6 + dcid_len > len(udp_payload):
-        return None
-    return udp_payload[6 : 6 + dcid_len]
 
 
 def _generate_ja4s_from_tls_info(tls_info):

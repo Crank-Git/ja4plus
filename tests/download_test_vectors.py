@@ -21,9 +21,11 @@ FOXIO_RAW = f"https://raw.githubusercontent.com/FoxIO-LLC/ja4/{FOXIO_COMMIT}"
 PCAP_DIR = "pcap"
 EXPECTED_DIR = "python/test/testdata"
 WIRESHARK_EXPECTED_DIR = "wireshark/test/testdata"
+RUST_EXPECTED_DIR = "rust/ja4/src/snapshots"
 
 VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 WIRESHARK_DIR = VECTORS_DIR / "wireshark_expected"
+RUST_DIR = VECTORS_DIR / "rust_expected"
 
 # Every capture in the upstream `pcap/` directory that has an expected-output file.
 # `dtls-udp.notest.cap` carries a `notest` marker upstream and has no expected
@@ -76,6 +78,16 @@ WIRESHARK_CAPTURES = [
     "dhcpv6.pcap",
 ]
 
+# The FoxIO Python implementation reads no ClientHello that several CRYPTO frames carry,
+# so the expected-output file of this capture holds an empty array. The FoxIO Rust
+# implementation reads it and writes the JA4 value.
+RUST_CAPTURES = [
+    "quic-with-several-tls-frames.pcapng",
+]
+
+# The Rust implementation writes one insta snapshot for each capture, under this name.
+RUST_SNAPSHOT_NAME = "ja4__insta@{capture}.snap"
+
 NOTICE_TEMPLATE = """\
 FoxIO JA4+ conformance vectors
 ==============================
@@ -105,8 +117,19 @@ The subdirectory `wireshark_expected/` holds two more expected-output files:
 The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files under
 `{expected_dir}` hold an empty array. The Wireshark dissector is the only FoxIO
 implementation that writes a reference value for the two methods.
-`docs/implementation_notes.md` records the reading. The conformance suite reads
-only the top level of this directory, so the subdirectory adds no case to it.
+`docs/implementation_notes.md` records the reading.
+
+The subdirectory `rust_expected/` holds one more expected-output file:
+
+    {rust_dir}/ja4__insta@quic-with-several-tls-frames.pcapng.snap
+        ->  tests/foxio_vectors/rust_expected/ja4__insta@quic-with-several-tls-frames.pcapng.snap
+
+The FoxIO Python implementation reads no ClientHello that several CRYPTO frames
+carry, so `{expected_dir}/quic-with-several-tls-frames.pcapng.json` holds an empty
+array. The FoxIO Rust implementation reads it and writes the JA4 value.
+
+The conformance suite reads only the top level of this directory, so neither
+subdirectory adds a case to it.
 
 To move to a newer upstream commit, change FOXIO_COMMIT in
 tests/download_test_vectors.py and run that script. The script rewrites this
@@ -155,10 +178,11 @@ def download() -> None:
 
     Raises:
         urllib.error.URLError: A download failed.
-        ValueError: An expected-output file is not a JSON array.
+        ValueError: An expected-output file is not a JSON array, or holds no value.
     """
     VECTORS_DIR.mkdir(parents=True, exist_ok=True)
     WIRESHARK_DIR.mkdir(parents=True, exist_ok=True)
+    RUST_DIR.mkdir(parents=True, exist_ok=True)
 
     for capture in CAPTURES:
         print(f"{capture}")
@@ -185,6 +209,17 @@ def download() -> None:
             raise ValueError(f"wireshark_expected/{expected_name} is an empty array")
         (WIRESHARK_DIR / expected_name).write_bytes(expected)
 
+    for capture in RUST_CAPTURES:
+        snapshot_name = RUST_SNAPSHOT_NAME.format(capture=capture)
+        print(f"rust_expected/{snapshot_name}")
+        snapshot = _fetch(f"{FOXIO_RAW}/{RUST_EXPECTED_DIR}/{snapshot_name}")
+        # A snapshot with no `ja4:` line compares no value, and the QUIC reference test
+        # would then report a pass on nothing. That is the defect #115 closes. The test
+        # strips each line before it matches, so this check strips too.
+        if not any(line.strip().startswith(b"ja4: ") for line in snapshot.splitlines()):
+            raise ValueError(f"rust_expected/{snapshot_name} holds no JA4 value")
+        (RUST_DIR / snapshot_name).write_bytes(snapshot)
+
     (VECTORS_DIR / "NOTICE").write_text(
         NOTICE_TEMPLATE.format(
             repo=FOXIO_REPO,
@@ -192,11 +227,13 @@ def download() -> None:
             pcap_dir=PCAP_DIR,
             expected_dir=EXPECTED_DIR,
             wireshark_dir=WIRESHARK_EXPECTED_DIR,
+            rust_dir=RUST_EXPECTED_DIR,
             count=len(CAPTURES),
         )
     )
     print(f"{len(CAPTURES)} vectors written to {VECTORS_DIR}")
     print(f"{len(WIRESHARK_CAPTURES)} expected-output files written to {WIRESHARK_DIR}")
+    print(f"{len(RUST_CAPTURES)} expected-output files written to {RUST_DIR}")
 
 
 if __name__ == "__main__":
