@@ -17,9 +17,17 @@ SSH_LENGTH_FIELD_BYTES = 4
 MIN_SSH_PACKET_LENGTH = 2
 MAX_SSH_PACKET_LENGTH = 65536
 
-# The message code of SSH_MSG_NEWKEYS. RFC 4253 section 7.3 states it. Every later
-# message of the direction is encrypted, so no reader can follow the length after it.
+# The message code of SSH_MSG_NEWKEYS. RFC 4253 section 7.3 states it. The direction
+# encrypts every later message, so no reader can follow the length after it.
 SSH_MSG_NEWKEYS = 21
+
+# The offset of the message code inside the message body. The padding length takes the
+# first byte, and RFC 4253 section 6 puts the code in the second.
+SSH_MESSAGE_CODE_OFFSET = 1
+
+# The longest version line this project reads. RFC 4253 section 4.2 limits the line to
+# 255 bytes, and a longer line belongs to no SSH connection.
+MAX_SSH_BANNER_BYTES = 255
 
 # The tracker states. `banner` waits for the version line, `messages` reads the length
 # field of each message, and `opaque` holds a direction whose lengths no reader can
@@ -49,8 +57,10 @@ class SSHMessageTracker:
     def __init__(self):
         """Build the tracker of one direction, positioned before the version banner."""
         self._state = _BANNER
+        self._banner = b""
         self._length_field = b""
         self._remaining = 0
+        self._body_position = 0
         self._message_code = None
 
     def completes_message(self, payload):
@@ -81,16 +91,26 @@ class SSHMessageTracker:
         Returns:
             True when the segment holds the end of the version line. A capture that
             starts after the banner holds no message boundary, so the tracker turns
-            opaque and returns True.
+            opaque and returns True. A line above MAX_SSH_BANNER_BYTES does the same.
         """
-        if not payload.startswith(b"SSH-"):
+        # The version line spans two segments on a small maximum transmission unit, so
+        # the tracker matches the prefix of the line it holds so far.
+        self._banner += payload
+        prefix = b"SSH-"[: len(self._banner)]
+        if not self._banner.startswith(prefix):
+            self._banner = b""
             self._state = _OPAQUE
             return True
-        end = payload.find(b"\n")
+        end = self._banner.find(b"\n")
         if end < 0:
+            if len(self._banner) > MAX_SSH_BANNER_BYTES:
+                self._banner = b""
+                self._state = _OPAQUE
+                return True
             return False
+        rest = self._banner[end + 1 :]
+        self._banner = b""
         self._state = _MESSAGES
-        rest = payload[end + 1 :]
         if rest:
             self._read_messages(rest)
         return True
@@ -110,6 +130,13 @@ class SSHMessageTracker:
         while position < len(payload):
             if self._remaining > 0:
                 taken = min(self._remaining, len(payload) - position)
+                # A body that spans two segments delivers the message code late, so the
+                # tracker reads the code at the body offset and not at the segment
+                # offset.
+                code_index = SSH_MESSAGE_CODE_OFFSET - self._body_position
+                if self._message_code is None and 0 <= code_index < taken:
+                    self._message_code = payload[position + code_index]
+                self._body_position += taken
                 self._remaining -= taken
                 position += taken
                 if self._remaining == 0:
@@ -121,7 +148,7 @@ class SSHMessageTracker:
 
             needed = SSH_LENGTH_FIELD_BYTES - len(self._length_field)
             if len(payload) - position < needed:
-                # The length field spans two segments. Hold the bytes it holds so far.
+                # The length field spans two segments. Keep the bytes that arrived.
                 self._length_field += payload[position:]
                 return completed
             self._length_field += payload[position : position + needed]
@@ -136,12 +163,8 @@ class SSHMessageTracker:
                 return True
 
             self._remaining = packet_length
-            # The padding length is the first body byte, and the message code is the
-            # second. A body that starts at the end of the segment hides the code.
-            if len(payload) - position >= 2:
-                self._message_code = payload[position + 1]
-            else:
-                self._message_code = None
+            self._body_position = 0
+            self._message_code = None
         return completed
 
 

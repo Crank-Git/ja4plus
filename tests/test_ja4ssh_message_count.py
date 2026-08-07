@@ -132,6 +132,34 @@ def test_a_banner_that_spans_two_segments_completes_on_the_second():
     assert tracker.completes_message(BANNER[8:]) is True
 
 
+def test_a_banner_that_spans_two_segments_keeps_the_message_boundary():
+    tracker = SSHMessageTracker()
+    tracker.completes_message(BANNER[:8])
+    tracker.completes_message(BANNER[8:])
+    whole = message(body_length=1492, code=20)
+    assert tracker.completes_message(whole[:1448]) is False
+    assert tracker.completes_message(whole[1448:]) is True
+
+
+def test_a_banner_longer_than_the_limit_makes_the_tracker_count_every_segment():
+    tracker = SSHMessageTracker()
+    assert tracker.completes_message(b"SSH-" + b"A" * 300) is True
+    assert tracker.completes_message(b"A" * 8) is True
+
+
+def test_a_new_keys_message_that_spans_two_segments_turns_the_tracker_opaque():
+    tracker = SSHMessageTracker()
+    tracker.completes_message(BANNER)
+    new_keys = message(body_length=12, code=21)
+    # The segment ends after the length field and the padding length, so the message
+    # code arrives in the next segment.
+    assert tracker.completes_message(new_keys[:5]) is False
+    assert tracker.completes_message(new_keys[5:]) is True
+    # A tracker that still reads lengths would report False for a message this
+    # segment does not complete.
+    assert tracker.completes_message(struct.pack(">I", 1492) + b"A" * 20) is True
+
+
 def test_an_empty_segment_is_not_one_ssh_packet():
     assert SSHMessageTracker().completes_message(b"") is False
 

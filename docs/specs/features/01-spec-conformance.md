@@ -212,6 +212,8 @@ Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-
 | One SSH message spans two TCP segments. | The second segment counts as one SSH packet. The first counts as none. |
 | A capture starts after the SSH version banner. | The tracker reads no message boundary, and every segment counts as one SSH packet. |
 | A length field names a size outside 2 and 65536 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
+| The SSH version banner spans two TCP segments. | The second segment counts as one SSH packet, and the tracker keeps the message boundary. |
+| The SSH version banner is longer than 255 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
 
 ## Acceptance criteria
 

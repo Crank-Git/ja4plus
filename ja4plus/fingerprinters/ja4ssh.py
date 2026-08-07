@@ -181,7 +181,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             # Track SSH data packets. FoxIO counts the packets `tshark` labels `ssh`,
             # and `tshark` labels only the segment that completes an SSH message. A
             # segment that holds part of a message is one TCP segment, not one SSH
-            # packet, and counting it moves every later window boundary.
+            # packet. A count of that segment moves every later window boundary.
             if completes_message and (
                 is_ssh_packet(payload) or conn["client_id"] or conn["server_id"]
             ):
