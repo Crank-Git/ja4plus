@@ -1,48 +1,53 @@
-"""FoxIO reference vector validation for JA4D (PR #267 + #270).
+"""Compare the JA4D output of `ja4plus` against the FoxIO reference values.
 
-Compares ja4plus output against the canonical Wireshark dissector
-expected values stored in tests/foxio_vectors/ja4_expected/.
+The FoxIO Python implementation emits no JA4D, so `tests/foxio_vectors/dhcp.pcapng.json`
+holds an empty array. The reference values come from the FoxIO Wireshark dissector.
+`docs/implementation_notes.md` records why this method reads that file.
 """
 
 import json
-import os
+from pathlib import Path
 
-import pytest
+from scapy.all import rdpcap
 
-PCAP_PATH = "tests/foxio_vectors/pcap/dhcp.pcapng"
-EXPECTED_PATH = "tests/foxio_vectors/ja4_expected/dhcp.pcapng.ja4d.json"
+from ja4plus.fingerprinters.ja4d import generate_ja4d
 
-
-pytestmark = pytest.mark.skipif(
-    not (os.path.exists(PCAP_PATH) and os.path.exists(EXPECTED_PATH)),
-    reason="FoxIO test fixtures not available (download to tests/foxio_vectors/)",
-)
+VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
+PCAP_PATH = VECTORS_DIR / "dhcp.pcapng"
+EXPECTED_PATH = VECTORS_DIR / "wireshark_expected" / "dhcp.pcapng.json"
 
 
 def _load_expected():
-    with open(EXPECTED_PATH) as f:
-        data = json.load(f)
-    out = {}
-    for entry in data:
+    """Return the reference fingerprint of every frame the expected-output file names.
+
+    Returns:
+        A map of frame number to the `ja4.ja4d` value.
+
+    Raises:
+        FileNotFoundError: The expected-output file is absent.
+        AssertionError: The expected-output file names no frame.
+    """
+    with open(EXPECTED_PATH) as handle:
+        entries = json.load(handle)
+    expected = {}
+    for entry in entries:
         layers = entry["_source"]["layers"]
-        frame = int(layers["frame.number"][0])
-        out[frame] = layers["ja4.ja4d"][0]
-    return out
+        expected[int(layers["frame.number"][0])] = layers["ja4.ja4d"][0]
+    # An empty map compares no value, and every assertion below passes on it. This
+    # check is what stops the file from reporting a pass on nothing.
+    assert expected, "{} names no frame".format(EXPECTED_PATH)
+    return expected
 
 
 def test_ja4d_matches_foxio_dhcp_pcapng():
-    from scapy.all import rdpcap
-    from ja4plus.fingerprinters.ja4d import generate_ja4d
-
     expected = _load_expected()
-    pkts = rdpcap(PCAP_PATH)
 
     actual = {}
-    for i, pkt in enumerate(pkts, start=1):
-        fp = generate_ja4d(pkt)
-        if fp:
-            actual[i] = fp
+    for number, packet in enumerate(rdpcap(str(PCAP_PATH)), start=1):
+        fingerprint = generate_ja4d(packet)
+        if fingerprint:
+            actual[number] = fingerprint
 
-    for frame, want in expected.items():
-        assert frame in actual, f"missing JA4D for frame {frame}"
-        assert actual[frame] == want, f"frame {frame}: got {actual[frame]!r}, want {want!r}"
+    # A method that emits more fingerprints than the reference is a defect, and so is
+    # one that emits fewer. Only the whole map compares both directions.
+    assert actual == expected
