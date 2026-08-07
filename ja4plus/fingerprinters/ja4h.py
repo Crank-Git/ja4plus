@@ -50,11 +50,17 @@ class JA4HFingerprinter(BaseFingerprinter):
 
     Supports HTTP requests spanning multiple TCP segments via
     stream reassembly.
+
+    Every entry of ``get_fingerprints()`` carries ``raw_original_order``, the FoxIO
+    `JA4H_ro` value, and ``last_raw_original_order`` holds the value of the most recent
+    request. FoxIO publishes no `JA4H_r` key, so this fingerprinter computes no sorted
+    raw form: a sorted value matches no reference value and no other implementation.
     """
 
     def __init__(self):
         super().__init__()
         self.reassembler = TCPStreamReassembler(max_streams=100)
+        self.last_raw_original_order = None
 
     def process_packet(self, packet):
         """
@@ -82,9 +88,12 @@ class JA4HFingerprinter(BaseFingerprinter):
         # Try to parse HTTP from reassembled stream
         if not is_http_request(stream_data):
             # Also try the single packet (backward compat)
-            fingerprint = generate_ja4h(packet)
+            http_info = extract_http_info(packet)
+            if not http_info:
+                return None
+            fingerprint = _generate_ja4h_from_info(http_info)
             if fingerprint:
-                self.add_fingerprint(fingerprint, packet)
+                self._record(fingerprint, http_info, packet)
                 return fingerprint
             return None
 
@@ -98,15 +107,28 @@ class JA4HFingerprinter(BaseFingerprinter):
 
         fingerprint = _generate_ja4h_from_info(http_info)
         if fingerprint:
-            self.add_fingerprint(fingerprint, packet)
+            self._record(fingerprint, http_info, packet)
             self.reassembler.remove_stream(stream_key)
             return fingerprint
 
         return None
 
+    def _record(self, fingerprint, http_info, packet):
+        """Append one JA4H result, with the raw original-order form beside the hash."""
+        raw_original_order = _generate_ja4h_raw_from_info(http_info)
+        self.last_raw_original_order = raw_original_order
+        self.fingerprints.append(
+            {
+                "fingerprint": fingerprint,
+                "raw_original_order": raw_original_order,
+                "packet": packet,
+            }
+        )
+
     def reset(self):
         super().reset()
         self.reassembler = TCPStreamReassembler(max_streams=100)
+        self.last_raw_original_order = None
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove TCP stream buffer for the given connection."""
@@ -202,41 +224,68 @@ def _convert_parsed_to_extract_format(parsed):
     }
 
 
+def _ja4h_part_a(http_info):
+    """Return the first section of a JA4H fingerprint.
+
+    Args:
+        http_info: A parsed HTTP request.
+
+    Returns:
+        The 12-character section that names the method, the version, the cookie flag,
+        the referer flag, the header count and the language.
+    """
+    method = http_info.get("method", "").lower()
+    version_str = _http_version_to_str(http_info.get("version", ""))
+
+    has_cookie = "c" if http_info.get("cookie_fields", []) else "n"
+    has_referer = "r" if http_info.get("referer", "") else "n"
+
+    header_count = 0
+    for header in http_info.get("headers", []):
+        if header.lower() not in ["cookie", "referer"]:
+            header_count += 1
+    header_count = min(header_count, 99)
+    header_count_str = f"{header_count:02d}"
+
+    language = http_info.get("language", "")
+    lang_code = "0000"
+    if language:
+        lang_clean = language.replace("-", "").replace(";", ",").lower().split(",")[0]
+        lang_clean = lang_clean[:4]
+        lang_code = f"{lang_clean}{'0' * (4 - len(lang_clean))}" if lang_clean else "0000"
+
+    return f"{method[:2]}{version_str}{has_cookie}{has_referer}{header_count_str}{lang_code}"
+
+
+def _ja4h_header_names(http_info):
+    """Return the header names that the second section of a JA4H fingerprint holds.
+
+    The hashed form and the raw form read one list, so the raw form explains the hash.
+
+    Args:
+        http_info: A parsed HTTP request.
+
+    Returns:
+        The header names in wire order. The list drops the Cookie header and the Referer
+        header, because the first section already reports both, and it drops an HTTP/2
+        pseudo-header, because the reference lists none.
+    """
+    return [
+        h
+        for h in http_info.get("headers", [])
+        if h and not h.startswith(":") and h.lower() != "cookie" and h.lower() != "referer"
+    ]
+
+
 def _generate_ja4h_from_info(http_info):
     """Generate JA4H from an http_info dict."""
     if not http_info:
         return None
 
     try:
-        method = http_info.get("method", "").lower()
-        version_str = _http_version_to_str(http_info.get("version", ""))
+        part_a = _ja4h_part_a(http_info)
 
-        has_cookie = "c" if http_info.get("cookie_fields", []) else "n"
-        has_referer = "r" if http_info.get("referer", "") else "n"
-
-        header_count = 0
-        for header in http_info.get("headers", []):
-            if header.lower() not in ["cookie", "referer"]:
-                header_count += 1
-        header_count = min(header_count, 99)
-        header_count_str = f"{header_count:02d}"
-
-        language = http_info.get("language", "")
-        lang_code = "0000"
-        if language:
-            lang_clean = language.replace("-", "").replace(";", ",").lower().split(",")[0]
-            lang_clean = lang_clean[:4]
-            lang_code = f"{lang_clean}{'0' * (4 - len(lang_clean))}" if lang_clean else "0000"
-
-        part_a = f"{method[:2]}{version_str}{has_cookie}{has_referer}{header_count_str}{lang_code}"
-
-        headers = http_info.get("headers", [])
-        filtered_headers = [
-            h
-            for h in headers
-            if not h.startswith(":") and h.lower() != "cookie" and h.lower() != "referer" and h
-        ]
-        headers_str = ",".join(filtered_headers)
+        headers_str = ",".join(_ja4h_header_names(http_info))
         part_b = (
             hashlib.sha256(headers_str.encode()).hexdigest()[:12] if headers_str else "000000000000"
         )
@@ -262,6 +311,41 @@ def _generate_ja4h_from_info(http_info):
         )
 
         return f"{part_a}_{part_b}_{part_c}_{part_d}"
+
+    except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
+        logger.debug(f"Packet does not contain JA4H data: {e}")
+        return None
+
+
+def _generate_ja4h_raw_from_info(http_info):
+    """Return the JA4H raw original-order form of an http_info dict.
+
+    The form is `<part a>_<header names>_<cookie names>_<cookie pairs>`. Each list holds
+    the wire order, which is what makes the value the original-order form. A request that
+    carries no cookie ends after the header names and one underscore, as the FoxIO
+    reference writes it.
+
+    Args:
+        http_info: A parsed HTTP request.
+
+    Returns:
+        The FoxIO `JA4H_ro` value, or None when the request is unreadable.
+    """
+    if not http_info:
+        return None
+
+    try:
+        part_a = _ja4h_part_a(http_info)
+        headers_str = ",".join(_ja4h_header_names(http_info))
+        raw = f"{part_a}_{headers_str}_"
+
+        cookie_fields = http_info.get("cookie_fields", [])
+        if cookie_fields:
+            cookie_values = http_info.get("cookie_values", [])
+            pairs_str = ",".join(f"{k}={v}" for k, v in zip(cookie_fields, cookie_values))
+            raw += f"{','.join(cookie_fields)}_{pairs_str}"
+
+        return raw
 
     except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
         logger.debug(f"Packet does not contain JA4H data: {e}")

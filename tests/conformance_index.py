@@ -35,8 +35,7 @@ logger = logging.getLogger(__name__)
 # form. `JA4_o` holds a hash of the original-order fields rather than a raw form, and the
 # reference publishes it beside `JA4_ro`, so the index treats the two the same way.
 #
-# JA4H is absent because ja4plus computes no JA4H raw form. #131 owns the 89 `JA4H_ro`
-# values the reference publishes.
+# JA4H names only `JA4H_ro`, because the reference publishes no `JA4H_r` key.
 RAW_METHODS = {
     "JA4": (
         ("JA4_r", "raw"),
@@ -44,6 +43,7 @@ RAW_METHODS = {
         ("JA4_o", "fingerprint_original_order"),
     ),
     "JA4S": (("JA4S_r", "raw"),),
+    "JA4H": (("JA4H_ro", "raw_original_order"),),
 }
 
 # The methods the conformance suite reports. One fingerprinter produces one method,
