@@ -75,6 +75,10 @@ class JA4LFingerprinter(BaseFingerprinter):
         """Initialize the fingerprinter."""
         super().__init__()
         self.connections = {}
+        # A caller of `cleanup_connection` holds the address pair this fingerprinter
+        # reports, and a tunnelled connection groups under its inner address pair. This
+        # map reads the grouping key from the reported key.
+        self.grouping_keys = {}
 
     def process_packet(self, packet):
         """
@@ -131,7 +135,9 @@ class JA4LFingerprinter(BaseFingerprinter):
         # that packet, and it names the client first. The SYN carries that direction, so
         # a SYN replaces the pair the first packet of the connection gave.
         if conn.get("reported_key") is None or _opens_a_connection(port_layer, proto):
+            self.grouping_keys.pop(conn.get("reported_key"), None)
             conn["reported_key"] = _reported_key(proto, outer_layer, sport, dport)
+            self.grouping_keys[conn["reported_key"]] = conn_key
         fingerprint = generate_ja4l(packet, conn)
 
         if not fingerprint:
@@ -157,14 +163,17 @@ class JA4LFingerprinter(BaseFingerprinter):
         """Reset all fingerprints and connection tracking."""
         super().reset()
         self.connections = {}
+        self.grouping_keys = {}
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored timing state for the given connection."""
         # JA4L normalizes the key so we must try both orderings
         fwd = f"{proto}_{src_ip}:{src_port}_{dst_ip}:{dst_port}"
         rev = f"{proto}_{dst_ip}:{dst_port}_{src_ip}:{src_port}"
-        self.connections.pop(fwd, None)
-        self.connections.pop(rev, None)
+        for reported in (fwd, rev):
+            # The caller names the address pair this fingerprinter reports. A tunnelled
+            # connection groups under another key, and the map holds that key.
+            self.connections.pop(self.grouping_keys.pop(reported, reported), None)
 
     def _propagation_factor(self, ttl, propagation_factor):
         """Return the propagation factor one distance call uses.
