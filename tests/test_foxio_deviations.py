@@ -207,8 +207,8 @@ class TestTheEncryptedHttpDeviations:
 
 # The capture whose omitted stream no FoxIO implementation reads. The rule that settles
 # every other #138 entry rests on a reference that holds the value, and this one has
-# none, so the entry stays open.
-UNSETTLED_KEY = "socks4-https.pcap/JA4X"
+# none, so its cause states the decision rather than the rule.
+TUNNEL_SCAN_KEY = "socks4-https.pcap/JA4X"
 
 
 class TestTheReferenceOmitsTheStreamDeviations:
@@ -233,17 +233,17 @@ class TestTheReferenceOmitsTheStreamDeviations:
         undecided = sorted(
             key for key, deviation in self._entries().items() if not deviation.decided
         )
-        assert undecided == [UNSETTLED_KEY]
+        assert undecided == []
 
     def test_every_decided_entry_names_the_implementation_that_holds_the_value(self):
         for key, deviation in self._entries().items():
-            if key == UNSETTLED_KEY:
+            if key == TUNNEL_SCAN_KEY:
                 continue
             assert "FoxIO Rust snapshot" in deviation.cause, key
 
     def test_every_decided_entry_states_why_the_python_file_omits_the_stream(self):
         for key, deviation in self._entries().items():
-            if key == UNSETTLED_KEY:
+            if key == TUNNEL_SCAN_KEY:
                 continue
             reads_no_quic = "reads no QUIC handshake" in deviation.cause
             reads_no_tunnel = "reads no TLS on port 8080" in deviation.cause
@@ -252,15 +252,19 @@ class TestTheReferenceOmitsTheStreamDeviations:
     def test_no_settled_entry_names_the_epic(self):
         assert 13 not in {deviation.issue for deviation in load_register().values()}
 
-    def test_the_unsettled_entry_states_that_no_reference_holds_the_value(self):
+    def test_the_tunnel_scan_entry_states_the_decision_that_keeps_the_values(self):
         """The SOCKS4 tunnel is the one case the rule does not reach.
 
-        Every other entry rests on a FoxIO implementation that holds the value. No FoxIO
-        implementation holds this one, so the entry stays open and undecided.
+        Every other entry rests on a FoxIO implementation that holds the value, and no
+        FoxIO implementation holds this one. ja4plus reads the record layer without
+        regard to the tunnel protocol, and that one behaviour also produces the
+        `https-connect.pcap` values two FoxIO implementations hold. #138 keeps the
+        values, so the entry is decided.
         """
-        deviation = load_register()[UNSETTLED_KEY]
-        assert deviation.decided is False
+        deviation = load_register()[TUNNEL_SCAN_KEY]
+        assert deviation.decided is True
         assert "no FoxIO implementation holds one" in deviation.cause
+        assert "without regard to the tunnel protocol" in deviation.cause
 
 
 class TestTheOwnerReader:

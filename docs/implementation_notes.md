@@ -158,11 +158,34 @@ file omits them too, so they belong to a separate question.
 **The cost.** The conformance suite compares against the Python material, so the 33
 register entries stay. Each one is `decided`, because no fix removes it.
 
-**The one case the rule does not reach.** `socks4-https.pcap` carries TLS inside a SOCKS4
-tunnel on port 9901. No FoxIO implementation holds a JA4X value for it, and `ja4plus`
-produces three. The register entry `socks4-https.pcap/JA4X` stays open.
-
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`.
+
+### JA4X scans the record layer whatever tunnel carries it
+
+`socks4-https.pcap` carries TLS inside a SOCKS4 tunnel on port 9901. No FoxIO
+implementation holds a JA4X value for it. The Python expected-output file, the Rust
+snapshot and the Wireshark dissector all hold none, and `ja4plus` produces three values.
+That is the one case the #138 rule does not reach, because the rule rests on a reference
+that holds the value.
+
+**The reading.** `ja4plus` reads the record layer without regard to the tunnel protocol
+that carries it. One behaviour produces both readings:
+
+| Capture | Tunnel | FoxIO implementations that hold the JA4X values |
+|---|---|---|
+| `https-connect.pcap` | HTTP CONNECT, port 8080 | Rust and Wireshark, two of three |
+| `socks4-https.pcap` | SOCKS4, port 9901 | none |
+
+**The decision.** `ja4plus` keeps the three values, and the register records the
+divergence. A gate on the record-layer scan would suppress the SOCKS4 values, and it
+would risk the `https-connect.pcap` values that two FoxIO implementations hold. The cost
+of a gate falls on a case this project wins. The cost of the divergence is one register
+entry. The decision is deliberate and reversible, and it follows the form of #127 and
+#129.
+
+**The cost.** One register entry, `socks4-https.pcap/JA4X`, marked `decided`.
+
+**Location:** `tests/foxio_deviations.json`, `tests/test_foxio_deviations.py`.
 
 ### The reader walks the records of a segment
 

@@ -288,8 +288,9 @@
     "issue": 132
   },
   "socks4-https.pcap/JA4X": {
-    "cause": "ja4plus produces three JA4X values on the SOCKS4 tunnel on port 9901, and no FoxIO implementation holds one. The Python expected-output file, the Rust snapshot and the Wireshark dissector all hold none. Every other entry of #138 rests on a reference that holds the value, and this one does not. Whether ja4plus must stop reading the tunnel is a question for the user.",
-    "issue": 138
+    "cause": "ja4plus produces three JA4X values on the SOCKS4 tunnel on port 9901, and no FoxIO implementation holds one. ja4plus reads the record layer without regard to the tunnel protocol that carries it. The same behaviour produces the https-connect.pcap values that the FoxIO Rust snapshot and the Wireshark dissector both hold. #138 keeps the values, because a gate on the record-layer scan would risk the https-connect.pcap case.",
+    "issue": 138,
+    "decided": true
   },
   "ssh-r.pcap/0:64980/JA4SSH.2": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets.",
