@@ -9,7 +9,7 @@
   "branchModel": "dev-and-live",
   "dev": "dev",
   "live": "master",
-  "concurrency": 3,
+  "concurrency": 2,
   "batchSize": 4,
   "runLength": "until-backlog-empty",
   "prGranularity": "batch",
@@ -31,7 +31,9 @@
     "note": "No documentation MCP server is connected and no concrete marketplace source exists in this repository. Workers read vendor documentation with WebFetch, which .claude/rules/external-apis.md requires."
   },
   "notes": [
-    ".github/workflows/test.yml triggers on branches: [master] only. No workflow runs on a pull request into dev until issue #24 lands the trigger fix. Until then the PM runs the full suite on the integration branch as the batch gate.",
-    "publish.yml triggers on a published release only, so a merge to dev deploys nothing. Stage D is skipped."
+    ".github/workflows/test.yml triggers on push and on pull_request for branches [master, dev]. A batch pull request into dev starts a run, so provider continuous integration is the batch gate.",
+    "publish.yml triggers on a published release only, so a merge to dev deploys nothing. Stage D is skipped.",
+    "Worktree policy from session 6. The harness owns every worktree. The project manager launches a worker with isolation \"worktree\" and never calls EnterWorktree. A worker never calls EnterWorktree or ExitWorktree either, because that pin is session-scoped and every live agent shares it. The project manager stays in the repository root and names an absolute path on every git command.",
+    "The system Python holds no scapy and no cryptography. A worker builds a virtual environment before it runs any gate. .venv/ and venv/ are ignored from session 6, so the environment may live in the worktree."
   ]
 }
