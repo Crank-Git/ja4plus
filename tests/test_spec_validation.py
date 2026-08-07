@@ -288,7 +288,7 @@ class TestConformanceIndex:
         assert stream.methods["JA4_r"] == {1: "t13d1715h2_002f,0035_0005,000a_0403"}
 
     def test_the_raw_method_map_names_only_a_key_the_reference_publishes(self):
-        published = {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r"}
+        published = {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r", "JA4H_ro"}
         named = {method for pairs in RAW_METHODS.values() for method, _ in pairs}
         assert named == published
 
@@ -345,14 +345,15 @@ class TestConformanceIndex:
 def test_the_produced_index_holds_every_raw_form_ja4plus_computes():
     """Read the raw keys of one vector out of the produced index.
 
-    `tls-alpn-h2.pcap` carries one client hello and one server hello, so it exercises
-    every raw key ja4plus computes.
+    `tls-alpn-h2.pcap` carries one client hello and one server hello, and
+    `http1-with-cookies.pcapng` carries one HTTP request, so the two exercise every raw
+    key ja4plus computes.
     """
-    produced = index_produced(VECTORS_DIR / "tls-alpn-h2.pcap")
     methods = set()
-    for values in produced.values():
-        methods.update(values)
-    assert {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r"} <= methods
+    for vector in ("tls-alpn-h2.pcap", "http1-with-cookies.pcapng"):
+        for values in index_produced(VECTORS_DIR / vector).values():
+            methods.update(values)
+    assert {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r", "JA4H_ro"} <= methods
 
 
 @pytest.mark.spec_validation

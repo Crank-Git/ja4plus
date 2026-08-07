@@ -1,0 +1,61 @@
+{
+  "owners": {
+    "105": {
+      "epic": false,
+      "state": "closed",
+      "title": "Record the JA4SSH divergence on the connection the reference indexes as stream zero"
+    },
+    "129": {
+      "epic": false,
+      "state": "open",
+      "title": "Decide whether ja4plus decrypts a capture that carries TLS secrets"
+    },
+    "13": {
+      "epic": true,
+      "state": "open",
+      "title": "Epic 2: Correctness audit"
+    },
+    "131": {
+      "epic": false,
+      "state": "open",
+      "title": "Compute the JA4H raw form and compare it against JA4H_ro"
+    },
+    "132": {
+      "epic": false,
+      "state": "open",
+      "title": "Settle the JA4_o extension hash when only SNI is present"
+    },
+    "137": {
+      "epic": false,
+      "state": "open",
+      "title": "Produce the JA4 values the reference holds on tls-handshake.pcapng and tls-sni.pcapng"
+    },
+    "138": {
+      "epic": false,
+      "state": "open",
+      "title": "Settle whether ja4plus emits a fingerprint on a stream the FoxIO reference ignores"
+    },
+    "34": {
+      "epic": false,
+      "state": "open",
+      "title": "Emit one JA4L client fingerprint per connection"
+    },
+    "35": {
+      "epic": false,
+      "state": "open",
+      "title": "Build both JA4H cookie hashes from one cookie list"
+    },
+    "96": {
+      "epic": false,
+      "state": "closed",
+      "title": "Decide how JA4SSH reads the FoxIO mode field"
+    },
+    "97": {
+      "epic": false,
+      "state": "closed",
+      "title": "Emit the JA4SSH occurrence a bare ACK produces after a window closes"
+    }
+  },
+  "retrieved": "2026-08-07",
+  "source": "gh issue list --state all --limit 500 --json number,state,labels,title"
+}
