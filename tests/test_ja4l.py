@@ -99,9 +99,9 @@ class TestJA4L(unittest.TestCase):
 class TestJA4LPropagationFactor(unittest.TestCase):
     """The propagation factor follows the FoxIO hop-count table.
 
-    The table maps a hop count of 21 or fewer to 1.5, 22 to 1.6, 23 to 1.7, 24 to 1.8,
-    25 to 1.9, and 26 or more to 2.0. An initial TTL of 64 gives the hop count
-    `64 - ttl`, so each case below names the TTL that implies the hop count it tests.
+    `PROPAGATION_FACTOR_TABLE` in `ja4plus/fingerprinters/ja4l.py` holds the table. An
+    initial TTL of 64 gives the hop count `64 - ttl`, so each case below names the TTL
+    that implies the hop count it tests.
 
     Verified against https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4L.png
     (retrieved 2026-08-06).
@@ -140,7 +140,7 @@ class TestJA4LPropagationFactor(unittest.TestCase):
         self.assertAlmostEqual(distance, 1000 * 0.128 / 1.5, places=6)
 
     def test_an_explicit_propagation_factor_overrides_the_table(self):
-        """The caller's factor wins over the row the TTL selects."""
+        """The caller's factor replaces the factor the TTL selects."""
         distance = self.fingerprinter.calculate_distance(1000, ttl=34, propagation_factor=1.6)
 
         self.assertAlmostEqual(distance, 80.0, places=6)

@@ -182,9 +182,18 @@ formula is `latency_us * 0.128 / propagation_factor` for miles, and it uses `0.2
 kilometers.
 
 Pass the observed TTL, and the method reads the propagation factor from the FoxIO
-hop-count table. A hop count of 21 or fewer gives 1.5, then 1.6, 1.7, 1.8 and 1.9 for
-22, 23, 24 and 25 hops, and 26 hops or more give 2.0. A TTL above the initial TTL
-implies a negative hop count, which clamps to zero hops.
+hop-count table:
+
+| Hop count | Propagation factor |
+|---|---|
+| 21 or fewer | 1.5 |
+| 22 | 1.6 |
+| 23 | 1.7 |
+| 24 | 1.8 |
+| 25 | 1.9 |
+| 26 or more | 2.0 |
+
+A TTL above the initial TTL implies a negative hop count, which clamps to zero hops.
 
 ```python
 # The TTL 44 implies 20 hops, so the factor is 1.5.

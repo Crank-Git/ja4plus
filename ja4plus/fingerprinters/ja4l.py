@@ -55,7 +55,8 @@ MAXIMUM_PROPAGATION_FACTOR = 2.0
 # read the table.
 DEFAULT_PROPAGATION_FACTOR = 1.6
 
-# FoxIO gives the speed of light in fiber as 0.128 miles or 0.206 km per microsecond.
+# FoxIO gives the speed of light in fiber as 0.128 miles or 0.206 kilometers per
+# microsecond.
 # Verified against
 # https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4L.png
 # (retrieved 2026-08-06). The image holds both the table above and these two values.
@@ -166,10 +167,14 @@ class JA4LFingerprinter(BaseFingerprinter):
             propagation_factor: The factor the caller passed, or None.
 
         Returns:
-            The factor the caller passed, or the factor of the FoxIO table row for the
-            hop count the TTL implies, or `DEFAULT_PROPAGATION_FACTOR` when the caller
-            passes neither value. A TTL above the initial TTL implies a negative hop
-            count, which clamps to zero hops.
+            One of three values:
+
+            - The factor the caller passed.
+            - The factor of the FoxIO table row for the hop count the TTL implies.
+            - `DEFAULT_PROPAGATION_FACTOR`, when the caller passes neither value.
+
+            A TTL above the initial TTL implies a negative hop count, which clamps to
+            zero hops.
         """
         if propagation_factor is not None:
             return propagation_factor
