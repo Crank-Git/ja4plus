@@ -15,6 +15,16 @@
     "cause": "ja4plus emits more JA4L-S values than the reference holds.",
     "issue": 34
   },
+  "browsers-x509.pcapng/JA4S": {
+    "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
+    "issue": 151,
+    "decided": true
+  },
+  "browsers-x509.pcapng/JA4S_r": {
+    "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
+    "issue": 151,
+    "decided": true
+  },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
     "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
     "issue": 129
@@ -261,6 +271,16 @@
     "issue": 138,
     "decided": true
   },
+  "latest.pcapng/JA4S": {
+    "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
+    "issue": 151,
+    "decided": true
+  },
+  "latest.pcapng/JA4S_r": {
+    "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
+    "issue": 151,
+    "decided": true
+  },
   "quic-tls-handshake.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
@@ -269,6 +289,11 @@
   "quic-with-several-tls-frames.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
+    "decided": true
+  },
+  "socks4-https.pcap/JA4S": {
+    "cause": "ja4plus produces a JA4S value on the SOCKS4 tunnel on port 9901, and no FoxIO implementation holds one. ja4plus reads the record layer without regard to the tunnel protocol that carries it, which is the behaviour #138 decided to keep for the three JA4X values on the same stream. #151 made the value reachable by bounding a hello on its own length field rather than on the length of the record that carries it.",
+    "issue": 151,
     "decided": true
   },
   "socks4-https.pcap/JA4X": {
@@ -316,7 +341,7 @@
     "issue": 34
   },
   "ssh2.pcapng/JA4S": {
-    "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
+    "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. It also reads no ServerHello whose handshake record spans several TCP segments, which omits the two streams #151 names. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
     "decided": true
   },
@@ -326,7 +351,7 @@
     "issue": 97
   },
   "ssh2.pcapng/JA4S_r": {
-    "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
+    "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake, and it reads no ServerHello whose handshake record spans several TCP segments. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
     "decided": true
   },
@@ -360,12 +385,12 @@
     "issue": 34
   },
   "tls-handshake.pcapng/JA4S": {
-    "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
+    "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. It also reads no ServerHello whose handshake record spans several TCP segments, which omits the stream #151 names. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
     "decided": true
   },
   "tls-handshake.pcapng/JA4S_r": {
-    "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
+    "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake, and it reads no ServerHello whose handshake record spans several TCP segments. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
     "decided": true
   },

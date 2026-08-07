@@ -4,20 +4,21 @@
 `0xba 0xad`, and this project writes `99` for it, as the FoxIO Python implementation
 and the FoxIO Rust implementation do.
 
-#127 settled no other input. Four rules disagree, and the vector set separates none
-of them. The measurement below comes from `python/ja4.py:276-280` and from
-`rust/ja4/src/tls.rs:615-627`, both at commit
-`27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`.
+#127 settled no other input. The rules disagree, and no FoxIO vector separates them.
+#141 built `tests/foxio_vectors/alpn-condition.pcap` and ran both FoxIO
+implementations at commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` against it. The
+table below holds that measurement, and `docs/implementation_notes.md` holds the two
+commands.
 
 | Input | The prose | `python/ja4.py` | `rust/tls.rs` | `ja4plus` |
 |---|---|---|---|---|
 | `b"\\xab"` | `ab` | `99` | `90` | `99` |
 | `b"\\x20"` | `20` | `' '` | `' 0'` | `99` |
 | `b"\\xab\\xcd"` | `ad` | `99` | `99` | `99` |
-| `b"\\x20\\x61"` | `21` | `' a'` | `' a'` | `99` |
-| `b"\\x30\\xab"` | `3b` | `0\\xab` | `09` | `99` |
-| `b"\\x61\\x20"` | `60` | `'a '` | `'a '` | `99` |
-| `b"\\x30\\x31\\xab\\xcd"` | `3d` | `0\\xcd` | `09` | `99` |
+| `b"\\x20\\x61"` | `21` | `' a'` | `' a'` | `' a'` |
+| `b"\\x30\\xab"` | `3b` | `0?` | `09` | `99` |
+| `b"\\x61\\x20"` | `60` | `'a '` | `'a '` | `'a '` |
+| `b"\\x30\\x31\\xab\\xcd"` | `3d` | `0?` | `09` | `99` |
 | `b"\\x30\\xab\\xcd\\x31"` | `01` | `01` | `01` | `01` |
 | `b"\\xba\\xad"` | `bd` | `99` | `99` | `99` |
 
@@ -26,8 +27,9 @@ No single rule produces the prose value for `b"\\xab\\xcd"` and `99` for
 outside the alphanumeric ranges, so a function of the bytes cannot separate them. The
 FoxIO prose and the FoxIO vector therefore contradict each other.
 
-#141 owns the condition. Until #141 lands, a case the four rules separate carries a
-strict `xfail` that holds the FoxIO prose value.
+#141 settled the ASCII part of the condition, so `ja4plus` now passes an ASCII byte
+through. A case the two FoxIO implementations dispute keeps the value `ja4plus` wrote
+before #141. A case that only the FoxIO prose produces carries a strict `xfail`.
 """
 
 import json
@@ -58,8 +60,8 @@ def _disputed(alpn_bytes, prose_value):
         marks=pytest.mark.xfail(
             strict=True,
             reason=(
-                "#141 owns the condition. The FoxIO prose publishes this value, and no "
-                "FoxIO implementation produces it. No vector reaches this input."
+                "The FoxIO prose publishes this value, and the #141 measurement shows "
+                "that no FoxIO implementation produces it."
             ),
         ),
     )
@@ -84,8 +86,9 @@ def _disputed(alpn_bytes, prose_value):
         (b"h2", "h2"),
         (b"http/1.1", "h1"),
         (b"h3", "h3"),
-        # TODO(#141): `python/ja4.py` gives `h` and `rust/tls.rs` gives `h0`, so no
-        # FoxIO source produces `hh`. No vector holds a one-byte ALPN value.
+        # TODO(#141): the measurement confirms that `python/ja4.py` gives `h` and that
+        # `rust/tls.rs` gives `h0`, so no FoxIO source produces `hh`. The two
+        # implementations disagree, so this project holds the value it wrote before.
         (b"h", "hh"),
     ],
 )

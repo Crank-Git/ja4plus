@@ -93,18 +93,95 @@ can be compared against another tool output. The register holds no entry for thi
 and `tests/test_ja4_alpn.py` compares the produced value against the reference value.
 
 `compute_alpn_value` returns `99` when the first byte or the last byte of the first ALPN
-value falls outside `0x30-0x39`, `0x41-0x5A` and `0x61-0x7A`. `ja4s.py` reads the same
-function, so JA4 and JA4S carry one rule.
+value falls outside `0x20-0x7E`. `ja4s.py` reads the same function, so JA4 and JA4S
+carry one rule.
 
-#127 settled the value that this vector produces. It settled no other input, and #141
-owns the condition that triggers the value. Four rules fire on `0xba 0xad`, and the
-vector set holds no capture that separates them. `python/ja4.py` tests
-`ord(alpn[0]) > 127` on the value after it truncates the value to two characters.
-`rust/ja4/src/tls.rs` replaces each end character with `9` when that character is not
-ASCII, so it writes `90` where `python/ja4.py` writes `99`. `tests/test_ja4_alpn.py`
-holds the measurement of all four rules.
+#127 settled the value that this vector produces. It settled no condition, because
+every rule fires on `0xba 0xad`. #141 measured the condition against a capture it built.
+The next section holds that measurement, and it holds the part of the condition the
+measurement leaves open.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:20`, in `compute_alpn_value`.
+**Location:** `ja4plus/fingerprinters/ja4.py:36`, in `compute_alpn_value`.
+
+### The ALPN condition passes a printable ASCII byte through
+
+#141 owns the condition that makes the ALPN value read `99`. The FoxIO prose tests for
+an alphanumeric byte. The measurement contradicts the prose: both FoxIO implementations
+pass a printable ASCII byte through, whether or not that byte is alphanumeric.
+
+No FoxIO capture separates the rules, so #141 built one.
+`tests/build_alpn_condition_capture.py` writes
+`tests/foxio_vectors/alpn-condition.pcap`. Each stream carries one TLS ClientHello, and
+the two ClientHellos differ in the first ALPN value alone.
+
+**The commands.** Both ran at the pinned upstream commit
+`27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`.
+
+```
+python python/ja4.py tests/foxio_vectors/alpn-condition.pcap -J
+rust/target/release/ja4 tests/foxio_vectors/alpn-condition.pcap
+```
+
+**The measurement.** A wider probe capture reached eleven inputs. The table holds every
+one of them. `?` is the Unicode replacement character `U+FFFD`, which tshark writes for
+a byte it cannot decode.
+
+| The first ALPN value | FoxIO Python | FoxIO Rust | The two agree | `ja4plus` |
+|---|---|---|---|---|
+| `h2` | `h2` | `h2` | yes | `h2` |
+| `h\x20` | `h ` | `h ` | yes | `h ` |
+| `\x20h` | ` h` | ` h` | yes | ` h` |
+| `h\x20\x20\x32` | `h2` | `h2` | yes | `h2` |
+| `\xba\xad` | `99` | `99` | yes | `99` |
+| `h\xab` | `h?` | `h9` | no | `99` |
+| `\xabh` | `99` | `9h` | no | `99` |
+| `\x30\x31\xab\xcd` | `0?` | `09` | no | `99` |
+| `h` | `h` | `h0` | no | `hh` |
+| `\xab` | `99` | `90` | no | `99` |
+| `\x20` | ` ` | ` 0` | no | `99` |
+
+**The boundary of the range.** A second probe walked the control bytes and the top of
+ASCII. It shows that the two implementations agree inside `0x20-0x7E` and disagree
+outside it.
+
+| The first ALPN value | FoxIO Python | FoxIO Rust | The two agree |
+|---|---|---|---|
+| `h\x00` | `h` | `h0` | no |
+| `h\x01` | `h\x01` | `h1` | no |
+| `h\x0a` | `h\n` | no value | no |
+| `h\x1f` | `h\x1f` | `hf` | no |
+| `h\x20` | `h ` | `h ` | yes |
+| `h\x21` | `h!` | `h!` | yes |
+| `h\x7e` | `h~` | `h~` | yes |
+| `h\x7f` | `h\x7f` | `hf` | no |
+| `\x01h` | `\x01h` | `\h` | no |
+| `\x00\x01` | no value | `00` | no |
+
+The cause is the tshark text form. `rust/ja4/src/tls.rs` reads a control byte as the
+escape text tshark writes, so it reads `h\x1f` as the five characters `h`, `\`, `x`, `1`
+and `f`, and it writes the first and the last of them. `python/ja4.py` reads the byte.
+The one exception is `0x09`, where both write a tab. That one agreement is an accident of
+the tshark text form, not a rule, so this project does not adopt it.
+
+**What the measurement settles.** The two implementations agree on every input whose
+first byte and last byte fall inside `0x20-0x7E`. They agree on an input whose two bytes
+fall outside ASCII. `ja4plus` adopts both results. Before #141 it wrote `99` for `h\x20`
+and for `\x20h`, and it now writes `h ` and ` h`.
+
+**What the measurement leaves open.** The two implementations disagree on every byte
+outside `0x20-0x7E` that sits in a position other than the first.
+`python/ja4.py` tests `ord(alpn[0]) > 127`, so a byte above `0x7F` in the last position
+reaches the fingerprint as the replacement character. `rust/ja4/src/tls.rs` replaces each
+end character with `9` when that character falls outside ASCII. The two also disagree on
+a one-byte value, because `rust/ja4/src/tls.rs` writes `0` for the absent last character.
+
+`ja4plus` changes nothing on a case the two implementations dispute. It holds the value
+it wrote before #141, which is `99` for a byte outside ASCII and `hh` for the one-byte
+value `h`. `.claude/rules/conformance.md` states that a defect outside its two named
+shapes is a question for the user, and #141 asks it.
+
+**Location:** `ja4plus/fingerprinters/ja4.py:36`, in `compute_alpn_value`.
+`tests/test_ja4_alpn_condition.py` holds the measurement against `ja4plus`.
 
 ### The QUIC reference value comes from the FoxIO Rust implementation
 
@@ -285,7 +362,7 @@ value. #132 holds the command and the full output.
 Before #132, `ja4plus` emitted `9af15b336e6a` on these four streams. `JA4_o` now matches
 all 160 reference values, and the count was 156 of 160.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:169`.
+**Location:** `ja4plus/fingerprinters/ja4.py:193`.
 
 The JA4S section below records the `JA4S_o` reading.
 
@@ -859,3 +936,79 @@ all other non-zero versions use the v1 salt.
 
 **Integration:** `extract_tls_info` checks for QUIC on UDP packets
 before falling through to standard TLS parsing.
+
+---
+
+## A hello is bounded on its own length field, not on the record length
+
+Issue #151 asked why `ja4plus` read no ServerHello on three streams for which the FoxIO
+Rust snapshot holds a JA4S value. The three share one cause, and the cause was a defect
+in this project.
+
+### The mechanism
+
+A TLS handshake record carries one or more handshake messages. A TLS 1.2 server puts the
+ServerHello, the Certificate, the ServerKeyExchange and the ServerHelloDone in one
+record. That record is longer than one TCP segment, so the first segment holds the whole
+ServerHello and only part of the record.
+
+`parse_tls_handshake` bounded the hello on the record length field. It returned nothing
+whenever the segment held less than the record declared, so it never read a ServerHello
+that a coalesced record carries. The bound now reads the three-byte length field of the
+handshake message at offset 6, and the reader slices the buffer at the end of that
+message. The slice keeps the reader inside the hello, because the bytes that follow
+belong to the Certificate message.
+
+### The measurement
+
+The first server data packet of each stream, read with `scapy`:
+
+| Capture | Stream | Packet | Segment bytes | Record needs | ServerHello ends at byte |
+|---|---|---|---|---|---|
+| `ssh2.pcapng` | `57374 <-> 52.178.17.3:443` | 232 | 1452 | 6296 | 94 |
+| `ssh2.pcapng` | `57375 <-> 204.79.197.220:443` | 254 | 1452 | 7036 | 107 |
+| `tls-handshake.pcapng` | `50167 <-> 40.126.24.84:443` | 148 | 1460 | 3955 | 98 |
+| `browsers-x509.pcapng` | `54524 <-> 13.107.21.239:443` | 5 | 1458 | 5947 | 111 |
+| `latest.pcapng` | `52940 <-> 52.249.29.248:443` | 158 | 1452 | 7141 | 94 |
+| `latest.pcapng` | `52941 <-> 52.249.29.248:443` | 192 | 1452 | 7141 | 94 |
+| `socks4-https.pcap` | `50606 <-> 10.0.0.2:9901` | 8 | 1360 | 6776 | 90 |
+
+Every row reads the same way. The record needs more bytes than the segment carries, and
+the ServerHello ends inside the segment.
+
+### The third gap in the FoxIO Python implementation
+
+`.claude/rules/external-apis.md` named two gaps before this issue: the FoxIO Python
+implementation reads no QUIC handshake, and it reads no TLS on a port it does not know.
+This is a third gap. The FoxIO Python expected-output file omits the JA4S value of every
+stream in the table, and the FoxIO Rust snapshot holds it for six of the seven.
+
+`tls-handshake.pcapng` proves the gap on one capture. Stream `50167` runs on port 443, so
+neither of the first two gaps explains the omission, and the Rust snapshot holds
+`t120400_c030_4e8089b08790` for it.
+
+The six streams the Rust snapshot covers each produce the Rust value.
+`tests/test_foxio_rust_parity.py` holds the measurement in
+`TestTheStreamsThatCoalesceTheServerHelloRecord`. The snapshots of
+`browsers-x509.pcapng` and `latest.pcapng` join the vector set for that measurement.
+
+### The seventh stream
+
+`socks4-https.pcap` stream `50606 <-> 10.0.0.2:9901` is the one exception. The FoxIO Rust
+snapshot holds `ja4t`, `ja4l_c` and `ja4l_s` for it, and no `ja4s` and no `ja4`. No FoxIO
+implementation holds a JA4S value for the stream.
+
+`ja4plus` reads the record layer without regard to the tunnel protocol that carries it,
+which is the behaviour #138 decided to keep for the three JA4X values on the same stream.
+The register records the JA4S value under the same decision.
+
+### The register
+
+The register rises from 99 keys to 104, and the conformance suite reports 104 xfailed.
+The five new keys are `browsers-x509.pcapng/JA4S`, `browsers-x509.pcapng/JA4S_r`,
+`latest.pcapng/JA4S`, `latest.pcapng/JA4S_r` and `socks4-https.pcap/JA4S`. The existing
+`ssh2.pcapng` and `tls-handshake.pcapng` JA4S keys hold the capture, so they absorb the
+three streams #151 names, and their cause text now records the second reason.
+
+Verified against: https://www.rfc-editor.org/rfc/rfc5246#section-6.2.1 (TLS 1.2, retrieved 2026-08-07)
+Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/rust/ja4/src/snapshots (commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8)

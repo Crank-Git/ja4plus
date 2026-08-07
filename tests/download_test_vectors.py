@@ -78,13 +78,17 @@ WIRESHARK_CAPTURES = [
     "dhcpv6.pcap",
 ]
 
-# The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a port
-# it does not know. The FoxIO Rust implementation reads both, so its snapshot holds a
-# stream that the expected-output file of the same capture omits. Issue #138 settles
-# those streams, and `tests/test_foxio_rust_parity.py` holds the measurement.
+# The FoxIO Python implementation reads no QUIC handshake, it reads no TLS on a port it
+# does not know, and it reads no ServerHello whose handshake record spans several TCP
+# segments. The FoxIO Rust implementation reads all three, so its snapshot holds a
+# stream that the expected-output file of the same capture omits. Issue #138 settles the
+# first two, issue #151 settles the third, and `tests/test_foxio_rust_parity.py` holds
+# the measurement.
 RUST_CAPTURES = [
+    "browsers-x509.pcapng",
     "chrome-cloudflare-quic-with-secrets.pcapng",
     "https-connect.pcap",
+    "latest.pcapng",
     "quic-tls-handshake.pcapng",
     "quic-with-several-tls-frames.pcapng",
     "ssh2.pcapng",
@@ -100,9 +104,10 @@ NOTICE_TEMPLATE = """\
 FoxIO JA4+ conformance vectors
 ==============================
 
-The files in this directory are not the work of the ja4plus authors. They are
-copied without change from the FoxIO JA4+ repository, so that the conformance
-suite compares ja4plus against the reference output without network access.
+Almost every file in this directory is not the work of the ja4plus authors. Those
+files are copied without change from the FoxIO JA4+ repository, so that the
+conformance suite compares ja4plus against the reference output without network
+access. The section `Captures the ja4plus authors built` names the exception.
 
 Upstream repository: {repo}
 Upstream commit:     {commit}
@@ -136,13 +141,29 @@ for each of these captures:
 
 {rust_captures}
 
-The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a
-port it does not know. The FoxIO Rust implementation reads both, so each snapshot
-above holds a stream that `{expected_dir}/<capture>.json` omits. Issue #138 settles
-those streams, and `tests/test_foxio_rust_parity.py` holds the measurement.
+The FoxIO Python implementation reads no QUIC handshake, it reads no TLS on a port
+it does not know, and it reads no ServerHello whose handshake record spans several
+TCP segments. The FoxIO Rust implementation reads all three, so each snapshot above
+holds a stream that `{expected_dir}/<capture>.json` omits. Issue #138 settles the
+first two gaps, issue #151 settles the third, and `tests/test_foxio_rust_parity.py`
+holds the measurement.
 
 The conformance suite reads only the top level of this directory, so neither
 subdirectory adds a case to it.
+
+Captures the ja4plus authors built
+----------------------------------
+
+`alpn-condition.pcap` is not FoxIO material. The ja4plus authors built it for #141,
+and `tests/build_alpn_condition_capture.py` writes it. The FoxIO vector set holds no
+capture that separates the JA4 ALPN rules, so #141 built one.
+
+`alpn-condition.pcap.json` holds a measurement, not a copy. It records what the FoxIO
+Python implementation writes for the capture at the commit above. The FoxIO Rust
+implementation writes the same two JA4 values. `docs/implementation_notes.md` holds
+both commands and their output.
+
+This script does not write these two files, and it does not delete them.
 
 To move to a newer upstream commit, change FOXIO_COMMIT in
 tests/download_test_vectors.py and run that script. The script rewrites this
