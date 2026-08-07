@@ -8,9 +8,10 @@ test here does that.
 
 No test builds, runs or imports the port. The gate is the shared vector set.
 
-Verified against:
-https://github.com/FoxIO-LLC/ja4/blob/27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8/python/test/testdata/tls-alpn-h2.pcap.json
-(retrieved 2026-08-07).
+Every expected value comes from `tests/foxio_vectors/tls-alpn-h2.pcap.json`.
+`tests/foxio_vectors/NOTICE` records that file as a copy of
+`python/test/testdata/tls-alpn-h2.pcap.json` at FoxIO commit
+27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8.
 """
 
 import io
@@ -81,8 +82,13 @@ def fingerprints_of_capture(fingerprinter):
     return fingerprinter.get_fingerprints()
 
 
-def test_the_command_line_program_reports_the_reference_values_for_every_type_name():
-    """Every type name reaches a fingerprinter, and two methods give the reference value."""
+def test_the_command_line_program_accepts_every_type_name_and_reports_two_reference_values():
+    """The program accepts the ten type names, and JA4 and JA4S give the reference value.
+
+    The vector carries TLS alone, so `ja4h`, `ja4ssh`, `ja4d` and `ja4d6` produce nothing
+    on it. The program rejects an unknown type name with the exit code 1, so an exit code
+    of 0 proves that it accepts all ten names.
+    """
     expected = reference_stream()
     out, err, code = run_cli("--format", "json", "--types", TYPE_NAMES, "analyze", VECTOR_CAPTURE)
     assert code == 0, err
@@ -96,6 +102,11 @@ def test_the_command_line_program_reports_the_reference_values_for_every_type_na
 
     assert expected["JA4.1"] in produced["ja4"]
     assert expected["JA4S"] in produced["ja4s"]
+
+    # The exit code above proves that the program accepts the ten names only while the
+    # program still rejects a name outside the list.
+    _, _, unknown_code = run_cli("--types", "ja4nope", "analyze", VECTOR_CAPTURE)
+    assert unknown_code == 1
 
 
 def test_the_ja4_raw_forms_match_the_reference():
@@ -132,9 +143,10 @@ def test_the_ja4s_original_order_raw_form_matches_the_reference():
     # owns that difference.
     assert entry["raw_original_order"] == expected["JA4S_r"]
     assert fingerprinter.last_raw_original_order == expected["JA4S_r"]
-    # FoxIO publishes no `JA4S_o` key, so no vector validates this value.
+    # FoxIO publishes no `JA4S_o` key, so no vector validates this value. JA4S hashes the
+    # extensions in wire order, so the original-order hash equals the fingerprint.
     # `docs/implementation_notes.md` records the reading.
-    assert entry["fingerprint_original_order"] == expected["JA4S"]
+    assert entry["fingerprint_original_order"] == entry["fingerprint"]
 
 
 def test_the_ja4x_helpers_produce_the_reference_value():

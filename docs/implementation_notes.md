@@ -103,10 +103,17 @@ no reference value settles a question the image leaves open.
 
 ### The option list holds six option kinds
 
-`ja4plus` maps six TCP option kinds to their IANA numbers: 0 for EOL, 1 for NOP, 2 for
-MSS, 3 for Window Scale, 4 for SACK Permitted, and 8 for Timestamp. It drops an option
-kind outside those six, and it writes no number for that kind. A packet that carries no
-option of the six gives the value `0`.
+`ja4plus` maps six TCP option kinds to their IANA numbers.
+
+- 0 for EOL
+- 1 for NOP
+- 2 for MSS
+- 3 for Window Scale
+- 4 for SACK Permitted
+- 8 for Timestamp
+
+`ja4plus` drops an option kind outside those six, and it writes no number for that kind.
+A packet that carries no option of the six gives the value `0`.
 
 The list keeps the wire order. `ja4plus` never sorts it.
 
@@ -127,7 +134,7 @@ either method.
 expected-output path that this repository does not hold, so both files skip on every run.
 #109 owns that gap.
 
-### The readings of JA4D
+### How ja4plus reads JA4D
 
 The form is `{type}{size}{ip}{fqdn}_{options}_{parameters}`. `ja4plus` reads it as
 follows. The comment at `ja4plus/fingerprinters/ja4d.py:42` names two FoxIO pull
@@ -146,9 +153,9 @@ requests, 267 and 270, as the source of the skip set. No vector confirms the rea
 
 **Location:** `ja4plus/fingerprinters/ja4d.py:45` and `ja4plus/fingerprinters/ja4d.py:183`.
 
-### The readings of JA4D6
+### How ja4plus reads JA4D6
 
-The form matches JA4D, and three fields differ.
+The form matches JA4D, and five readings differ. The message type alone is unchanged.
 
 - The size is the byte length of the DUID inside option 1, as four decimal digits.
   `ja4plus` caps it at 9999, and it writes `0000` when the option is absent.
