@@ -99,6 +99,12 @@ Length field of the long header names, and no byte behind them.
 FR-spec-conformance-25 — A reader collects at most 16384 bytes of CRYPTO frame data
 for one connection.
 
+FR-spec-conformance-26 — The conformance suite compares every raw key the FoxIO
+expected-output files hold, one case for each key on each stream.
+
+FR-spec-conformance-27 — A raw key that ja4plus computes no value for fails its case.
+The suite reports no such key as not applicable.
+
 ## User flows
 
 **A maintainer fixes a failing method.**
