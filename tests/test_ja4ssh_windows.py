@@ -10,10 +10,13 @@ closes.
    not bare ACKs.
 2. The ACK of the TCP handshake is a bare ACK, and it arrives before the first SSH
    packet of the connection. FoxIO counts it.
-3. A connection that closes emits no value for the window it holds open. #92 owns the
-   condition FoxIO applies, which the vectors do not settle.
+3. A connection that closes emits the window it holds open, and an empty window emits
+   nothing.
 
-The FoxIO reference states rule 1 and rule 2 in `python/ja4ssh.py`.
+The FoxIO reference states rule 1 and rule 2 in `python/ja4ssh.py`. It states rule 3
+above `finalize_ja4ssh` in `python/ja4.py`: `If the SSH connection is not terminated or
+the last sample is less than 200 the finalize function just cleans up and prints the
+last JA4SSH hash`.
 
 Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4ssh.py
 (retrieved 2026-08-06).
@@ -123,19 +126,64 @@ def test_a_bare_ack_alone_emits_no_fingerprint():
 # ---------------------------------------------------------------------------
 
 
-def test_a_connection_that_closes_emits_no_partial_window():
-    """FoxIO holds no JA4SSH value for `gre-sample.pcap`, `sshv1.pcap` and `v6.pcap`.
-    Each of those captures holds one SSH connection that carries a banner, data packets
-    and a FIN packet, and each fills no window. A rule that emits the open window on a
-    FIN packet gives all three a value the reference does not hold. #92 owns the
-    condition FoxIO applies."""
+def test_the_connection_close_emits_the_open_window():
     fingerprinter = JA4SSHFingerprinter()
     handshake(fingerprinter)
     for index in range(11):
         assert fingerprinter.process_packet(ssh_packet(to_server=index % 2 == 0)) is None
+    assert fingerprinter.process_packet(_tcp(True, "FA")) == "c36s36_c6s5_c1s0"
+    assert len(fingerprinter.get_fingerprints()) == 1
+
+
+def test_the_connection_close_emits_the_window_that_follows_a_full_window():
+    fingerprinter = JA4SSHFingerprinter()
+    handshake(fingerprinter)
+    fill_window(fingerprinter)
+    for index in range(4):
+        fingerprinter.process_packet(ssh_packet(to_server=index % 2 == 0))
+    assert fingerprinter.process_packet(_tcp(True, "FA")) == "c36s36_c2s2_c0s0"
+    values = [entry["fingerprint"] for entry in fingerprinter.get_fingerprints()]
+    assert values == ["c36s36_c100s100_c1s0", "c36s36_c2s2_c0s0"]
+
+
+def test_the_connection_close_emits_nothing_when_the_open_window_holds_no_ssh_packet():
+    fingerprinter = JA4SSHFingerprinter()
+    handshake(fingerprinter)
+    fill_window(fingerprinter)
     assert fingerprinter.process_packet(_tcp(True, "FA")) is None
+    assert len(fingerprinter.get_fingerprints()) == 1
+
+
+def test_two_fin_packets_emit_one_fingerprint():
+    """Both endpoints close the connection. The second FIN packet finds an empty
+    window, and an empty window emits nothing."""
+    fingerprinter = JA4SSHFingerprinter()
+    handshake(fingerprinter)
+    for index in range(11):
+        fingerprinter.process_packet(ssh_packet(to_server=index % 2 == 0))
+    assert fingerprinter.process_packet(_tcp(True, "FA")) == "c36s36_c6s5_c1s0"
     assert fingerprinter.process_packet(_tcp(False, "FA")) is None
+    assert len(fingerprinter.get_fingerprints()) == 1
+
+
+def test_a_fin_packet_on_an_unknown_connection_emits_nothing():
+    fingerprinter = JA4SSHFingerprinter()
+    assert fingerprinter.process_packet(_tcp(True, "FA")) is None
     assert fingerprinter.get_fingerprints() == []
+
+
+def test_a_connection_the_reference_indexes_as_stream_zero_emits_its_open_window():
+    """`finalize_ja4ssh` guards with `if stream:`, and the stream index 0 is false in
+    Python, so the reference emits no trailing window for the connection it indexes as
+    stream 0. `gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` each hold their SSH
+    connection at that index. The stream index describes the position of a connection
+    in a capture and not the connection, so ja4plus emits the window. #105 records the
+    divergence."""
+    fingerprinter = JA4SSHFingerprinter()
+    handshake(fingerprinter)
+    for index in range(8):
+        fingerprinter.process_packet(ssh_packet(to_server=index % 2 == 0))
+    assert fingerprinter.process_packet(_tcp(True, "FA")) == "c36s36_c4s4_c1s0"
 
 
 # ---------------------------------------------------------------------------

@@ -29,6 +29,11 @@ SSH_PORT = 22
 # `0x0010`, so a SYN+ACK, a FIN+ACK and a RST+ACK never reach the bare-ACK counter.
 ACK_FLAG = 0x10
 
+# A connection closes with a packet that carries the FIN flag and the ACK flag. FoxIO
+# runs `finalize_ja4ssh` on such a packet, which emits the window the connection holds
+# open.
+FIN_FLAG = 0x01
+
 
 class JA4SSHFingerprinter(BaseFingerprinter):
     """
@@ -179,10 +184,17 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         # ACK does not advance the window.
         total_packets = len(conn["ssh_packets"]["client"]) + len(conn["ssh_packets"]["server"])
 
-        if total_packets < self.packet_count:
-            return None
+        if total_packets >= self.packet_count:
+            return self._close_window(conn_key)
 
-        return self._close_window(conn_key)
+        # A connection that closes emits the window it holds open. FoxIO states the
+        # rule above `finalize_ja4ssh`: `If the SSH connection is not terminated or the
+        # last sample is less than 200 the finalize function just cleans up and prints
+        # the last JA4SSH hash`.
+        if int(tcp.flags) & FIN_FLAG and int(tcp.flags) & ACK_FLAG:
+            return self._close_window(conn_key)
+
+        return None
 
     def _close_window(self, conn_key):
         """Emit the open window of one connection, and start a new window.
@@ -191,9 +203,14 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             conn_key: The connection key of the window.
 
         Returns:
-            The JA4SSH fingerprint.
+            The JA4SSH fingerprint, or None when the window holds no SSH packet. An
+            empty window emits nothing, because the second FIN packet of a close finds
+            the window the first FIN packet emptied.
         """
         conn = self.connections[conn_key]
+        if not conn["ssh_packets"]["client"] and not conn["ssh_packets"]["server"]:
+            return None
+
         fingerprint = self._generate_ja4ssh(conn_key)
 
         self.fingerprints.append(
