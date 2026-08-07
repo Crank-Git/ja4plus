@@ -14,7 +14,7 @@ import struct
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from ja4plus.utils.quic_utils import derive_initial_secrets, derive_key_iv_hp
+from ja4plus.utils.quic_utils import QUIC_HANDSHAKE, derive_initial_secrets, derive_key_iv_hp
 
 # The QUIC version 1 number, which RFC 9000 Section 15 gives as 0x00000001.
 QUIC_VERSION_1 = 1
@@ -93,6 +93,28 @@ def client_initial(dcid, version=QUIC_VERSION_1):
     header += encode_varint(len(payload) + 1)
     header += b"\x00"  # The packet number.
     return header + payload
+
+
+def handshake_packet(payload_length=32, version=QUIC_VERSION_1):
+    """Return the UDP payload of one QUIC Handshake packet.
+
+    The packet carries no readable frame. A JA4L test reads the packet type only.
+    RFC 9001 Section 5.4.1 protects the low four bits of the first byte, and it leaves
+    bits 4 and 5 clear, so a reader states the packet type without any key.
+
+    Args:
+        payload_length: The number of protected payload bytes.
+        version: The QUIC version number.
+
+    Returns:
+        The bytes of the UDP payload.
+    """
+    header = bytes([0xC0 | (QUIC_HANDSHAKE << 4)]) + struct.pack("!I", version)
+    header += b"\x00"  # An empty destination connection ID.
+    header += b"\x00"  # An empty source connection ID.
+    header += encode_varint(payload_length + 1)
+    header += b"\x00"  # The packet number.
+    return header + b"\x00" * payload_length
 
 
 def server_initial(client_dcid, plaintext, packet_number=0, version=QUIC_VERSION_1, trailer=b""):
