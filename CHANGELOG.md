@@ -21,6 +21,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The QUIC CRYPTO fragment buffer of JA4 holds a limit** (#122).
+  `reassemble_crypto_fragments` allocated a buffer that reached the highest fragment
+  offset, and RFC 9000 Section 16 lets a CRYPTO frame offset reach
+  4611686018427387903. A client Initial packet derives its keys from the connection
+  ID the same packet carries in cleartext, so one UDP datagram from a sender who
+  holds no connection reached the allocation. One fragment of one byte at offset
+  `2**28` allocated 256 MiB, and offset `2**40` names 1024 GiB. The reader now drops
+  a fragment that ends past `MAXIMUM_CRYPTO_BUFFER_BYTES`, which is 16384 and comes
+  from the RFC 8446 Section 5.1 cap on a TLS record plaintext. The JA4 client path
+  collects through `collect_crypto_fragments`, which #102 already shipped, so the
+  per-connection list is bounded too. The fragment table of `JA4Fingerprinter` gains
+  a maximum entry count of 1000 connections and a maximum age of 30 seconds, which
+  the packet clock measures. No fingerprint changed.
+
 - **JA4S tells a QUIC server Initial packet from a client one** (#118). `ja4plus`
   read every QUIC Initial packet as a client Initial packet, because the two carry
   the same long-header packet type. It stored the connection ID of the server packet
