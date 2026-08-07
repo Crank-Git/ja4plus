@@ -721,7 +721,8 @@ FAILED tests/test_spec_validation.py::test_the_produced_occurrence_keys_equal_th
 80 failed, 1295 passed, 149 skipped, 980 deselected, 117 xfailed
 ```
 
-A JA4L value is therefore gated per side, and not on all four measurement points.
+The fingerprinter therefore gates a JA4L value per side, and not on all four
+measurement points.
 
 ### The return value of a partial client point
 

@@ -1,10 +1,10 @@
-"""The JA4L return path measured against the stored list.
+"""The JA4L return path reports more client values than the stored list holds.
 
 `process_packet` returns a client value for every packet that moves the client
 measurement point. The stored list holds one client value for one connection, because
 a later point replaces the value the fingerprinter already stored. The reference reports
-one client value for one connection, so the stored list is correct and the return path
-reports the same value more than once.
+one client value for one connection. The stored list is therefore correct, and the
+return path reports the same value more than once.
 
 `tests/conformance_index.py` reads the stored list, so the conformance suite measures
 the correct value. No case there reads the return value of `process_packet`, and the
