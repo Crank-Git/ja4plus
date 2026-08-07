@@ -128,21 +128,22 @@ The list keeps the wire order. `ja4plus` never sorts it.
 The FoxIO Python implementation emits no JA4D and no JA4D6, so the expected-output file
 of each DHCP capture holds an empty array. `tests/foxio_vectors/dhcp.pcapng.json` and
 `tests/foxio_vectors/dhcpv6.pcap.json` each hold `[]`. The FoxIO Rust implementation
-emits neither method either, and both of its snapshots hold `[]`.
+emits neither method. Both of its snapshots hold `[]`.
 
 The FoxIO Wireshark dissector does write a reference value for both methods.
 `tests/foxio_vectors/wireshark_expected/` holds a copy of the two files, taken without
 change from `wireshark/test/testdata/` at the pinned upstream commit.
 
 `.claude/rules/external-apis.md` states that the files under `wireshark/test/testdata/`
-are not the authority, because one of them holds an empty array where the Python file of
-the same name holds four fingerprints. These two methods are the reverse case, and the
+are not the authority. `wireshark/test/testdata/tls12.pcap.json` holds an empty array
+where the Python file of the same name holds four fingerprints. These two methods are the
+reverse case, and the
 Wireshark file is the only FoxIO reference output for them. The FoxIO Zeek baseline
 `zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` holds the same four JA4D values, which is a
 second FoxIO implementation that agrees. No second FoxIO implementation emits JA4D6.
 
-`ja4plus` matches every one of the ten reference values, and it emits no fingerprint the
-reference does not hold.
+`ja4plus` matches every one of the ten reference values, and every fingerprint it emits
+appears in the reference.
 
 | Capture | Frame | Reference value |
 |---|---|---|
@@ -157,8 +158,8 @@ reference does not hold.
 | `dhcpv6.pcap` | 11 | `relse0014nn_1-2-6-8-25-26_23-24` |
 | `dhcpv6.pcap` | 12 | `reply0014nn_1-2-13_00` |
 
-The conformance suite reads only the top level of `tests/foxio_vectors/`, so the two
-files add no case to it and no entry to the deviation register.
+The conformance suite reads only the top level of `tests/foxio_vectors/`. The two files
+add no case to that suite and no entry to the deviation register.
 `tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py` compare them, and both run in
 the unit suite. #109 closed the gap.
 

@@ -37,8 +37,8 @@ def _load_expected():
     for entry in entries:
         layers = entry["_source"]["layers"]
         expected[int(layers["frame.number"][0])] = layers["ja4.ja4d"][0]
-    # An empty map compares no value, and every assertion below passes on it. This
-    # check is what stops the file from reporting a pass on nothing.
+    # An empty map compares no value, and every assertion below passes on it. Without
+    # this check, the file would report a pass on nothing.
     assert expected, "{} names no frame".format(EXPECTED_PATH)
     return expected
 
