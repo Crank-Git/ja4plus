@@ -123,9 +123,69 @@ value.
 carries the authority. The conformance suite reads only the top level of
 `tests/foxio_vectors/`, so the file adds no case to that suite and no entry to the
 deviation register. The register entry `quic-with-several-tls-frames.pcapng/JA4` records
-the difference against the Python material, and #128 owns its cause.
+the difference against the Python material, and #138 owns its cause.
 
 **Location:** `tests/test_quic_multipacket.py`.
+
+### The FoxIO Python implementation omits a stream the Rust implementation holds
+
+The capture above is not one exception. The same gap covers eight captures, and #138
+settles all of them with one rule.
+
+**The rule.** The FoxIO Python implementation reads no QUIC handshake, and it reads no
+TLS on a port it does not know. The FoxIO Rust implementation reads both. Where the two
+disagree on whether a stream carries a value, the Rust snapshot decides. A value that one
+implementation holds and another omits is a gap in the implementation that omits it.
+
+**The measurement.** `tests/test_foxio_rust_parity.py` holds it.
+
+| Measurement | Count |
+|---|---|
+| QUIC fingerprints in every `python/test/testdata/` file | 0 |
+| TCP fingerprints in the same files | 808 |
+| Streams the Python file omits and the Rust snapshot holds | 85 |
+| Streams where `ja4plus` produces the exact Rust value | 82 |
+| Streams where `ja4plus` produces a value the Rust snapshot contradicts | 0 |
+
+`ja4plus` never emits a value that the FoxIO Rust implementation contradicts. On
+`https-connect.pcap` the Wireshark dissector corroborates the Rust snapshot, so two of
+the three FoxIO implementations hold the values `ja4plus` produces.
+
+The remaining three streams run the other way: `ja4plus` produces nothing where the Rust
+snapshot holds a JA4S value. All three carry TLS over TCP on port 443, and the Python
+file omits them too, so they belong to a separate question.
+
+**The cost.** The conformance suite compares against the Python material, so the 33
+register entries stay. Each one is `decided`, because no fix removes it.
+
+**Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`.
+
+### JA4X scans the record layer whatever tunnel carries it
+
+`socks4-https.pcap` carries TLS inside a SOCKS4 tunnel on port 9901. No FoxIO
+implementation holds a JA4X value for it. The Python expected-output file, the Rust
+snapshot and the Wireshark dissector all hold none, and `ja4plus` produces three values.
+That is the one case the #138 rule does not reach, because the rule rests on a reference
+that holds the value.
+
+**The reading.** `ja4plus` reads the record layer without regard to the tunnel protocol
+that carries it. One behaviour produces both readings:
+
+| Capture | Tunnel | FoxIO implementations that hold the JA4X values |
+|---|---|---|
+| `https-connect.pcap` | HTTP CONNECT, port 8080 | Rust and Wireshark, two of three |
+| `socks4-https.pcap` | SOCKS4, port 9901 | none |
+
+**The decision.** `ja4plus` keeps the three values, and the register records the
+divergence. A gate on the record-layer scan would suppress the SOCKS4 values, and it
+would risk the `https-connect.pcap` values that two FoxIO implementations hold. The cost
+of a gate falls on a case this project wins. The cost of the divergence is one register
+entry. The decision is deliberate and reversible, and it follows the form of #127 and
+#129.
+
+**The cost.** One register entry, `socks4-https.pcap/JA4X`, marked `decided`.
+
+**Location:** `tests/foxio_deviations.json`, `tests/test_foxio_deviations.py`.
 
 ### The reader walks the records of a segment
 
