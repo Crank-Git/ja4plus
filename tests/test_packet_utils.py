@@ -56,5 +56,22 @@ class TestGetTTL(unittest.TestCase):
         self.assertIsNone(get_ttl(pkt))
 
 
+class TestPacketSeconds(unittest.TestCase):
+    def test_returns_the_capture_timestamp_in_seconds(self):
+        from ja4plus.utils.packet_utils import packet_seconds
+
+        pkt = IP() / TCP() / Raw(load=b"a")
+        # A capture time from 2001, far from the wall clock.
+        pkt.time = 1000000000.0
+        self.assertEqual(packet_seconds(pkt), 1000000000.0)
+
+    def test_returns_none_when_the_packet_carries_no_time(self):
+        from ja4plus.utils.packet_utils import packet_seconds
+
+        # A caller that receives None ages no state table, so a missing packet time
+        # never falls back to the wall clock.
+        self.assertIsNone(packet_seconds(object()))
+
+
 if __name__ == "__main__":
     unittest.main()

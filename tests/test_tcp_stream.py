@@ -282,5 +282,97 @@ class TestTCPStreamReassembler(unittest.TestCase):
         self.assertLessEqual(len(result), 10)
 
 
+# The reassembler holds no clock of its own, so a test states the packet time itself.
+# This value is the capture time of a packet from 2001, far from the wall clock. A
+# reassembler that reads the wall clock therefore gives a different answer.
+OLD_CAPTURE_TIME = 1000000000.0
+
+
+class TestTCPStreamMaximumAge(unittest.TestCase):
+    """Tests for the maximum age of one stream of the reassembler."""
+
+    def test_removes_a_stream_that_receives_no_segment_for_the_maximum_age(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_age=100)
+        r.add_segment("s1", seq=0, data=b"a", timestamp=OLD_CAPTURE_TIME)
+        # The second packet arrives 101 packet seconds later, which passes the age.
+        r.add_segment("s2", seq=0, data=b"b", timestamp=OLD_CAPTURE_TIME + 101)
+        self.assertNotIn("s1", r.streams)
+        self.assertIn("s2", r.streams)
+
+    def test_keeps_a_stream_that_receives_a_segment_inside_the_maximum_age(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_age=100)
+        r.add_segment("s1", seq=0, data=b"a", timestamp=OLD_CAPTURE_TIME)
+        r.add_segment("s1", seq=1, data=b"b", timestamp=OLD_CAPTURE_TIME + 99)
+        r.add_segment("s2", seq=0, data=b"c", timestamp=OLD_CAPTURE_TIME + 100)
+        self.assertIn("s1", r.streams)
+        self.assertEqual(r.get_stream("s1"), b"ab")
+
+    def test_the_module_reads_no_wall_clock(self):
+        import ja4plus.utils.tcp_stream as tcp_stream
+
+        # A capture file replays faster than real time. A wall clock would evict state
+        # the capture still needs, so the module imports no clock to read.
+        self.assertFalse(hasattr(tcp_stream, "time"))
+        self.assertFalse(hasattr(tcp_stream, "datetime"))
+
+    def test_the_packet_clock_alone_ages_a_stream(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_age=100)
+        # Both packets carry a capture time from 2001. The wall clock passes it by
+        # decades, so a reassembler that reads the wall clock removes this stream.
+        r.add_segment("s1", seq=0, data=b"a", timestamp=OLD_CAPTURE_TIME)
+        r.add_segment("s1", seq=1, data=b"b", timestamp=OLD_CAPTURE_TIME + 1)
+        self.assertIn("s1", r.streams)
+        self.assertEqual(r.get_stream("s1"), b"ab")
+
+    def test_an_age_eviction_accepts_the_same_segment_again(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_age=100)
+        r.add_segment("s1", seq=100, data=b"hello", timestamp=OLD_CAPTURE_TIME)
+        r.add_segment("s2", seq=0, data=b"x", timestamp=OLD_CAPTURE_TIME + 101)
+        # The set of seen segments leaves with the stream. A set that stays makes the
+        # reassembler drop this segment as a duplicate.
+        r.add_segment("s1", seq=100, data=b"hello", timestamp=OLD_CAPTURE_TIME + 102)
+        self.assertEqual(r.get_stream("s1"), b"hello")
+        self.assertEqual(r.streams["s1"]["bytes"], 5)
+        self.assertEqual(len(r.streams["s1"]["segments"]), 1)
+
+    def test_a_refused_segment_holds_the_stream_against_the_maximum_age(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_age=100, max_stream_bytes=1)
+        r.add_segment("s1", seq=0, data=b"a", timestamp=OLD_CAPTURE_TIME)
+        # The byte cap refuses this segment. The stream still sends, so the age of the
+        # stream follows the segment the reassembler refused.
+        r.add_segment("s1", seq=1, data=b"bb", timestamp=OLD_CAPTURE_TIME + 90)
+        r.add_segment("s2", seq=0, data=b"c", timestamp=OLD_CAPTURE_TIME + 150)
+        self.assertIn("s1", r.streams)
+
+    def test_a_stream_without_a_packet_time_stays(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_age=100)
+        # A caller that states no packet time gives the reassembler no age to read.
+        r.add_segment("s1", seq=0, data=b"a")
+        r.add_segment("s2", seq=0, data=b"b", timestamp=OLD_CAPTURE_TIME)
+        r.add_segment("s3", seq=0, data=b"c", timestamp=OLD_CAPTURE_TIME + 10000)
+        self.assertIn("s1", r.streams)
+
+    def test_the_default_maximum_age_passes_the_longest_gap_of_the_vectors(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        # `ssh-r.pcap` holds the longest gap between two segments of one stream across
+        # `tests/foxio_vectors/`, at 320.714503 seconds. The default sits above it, so
+        # no eviction reaches a stream a fingerprinter still reads.
+        r = TCPStreamReassembler()
+        self.assertGreater(r.max_stream_age, 320.714503)
+
+
 if __name__ == "__main__":
     unittest.main()

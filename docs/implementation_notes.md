@@ -1058,6 +1058,56 @@ the keys the reassembler no longer holds once it passes `max_streams` entries, t
 **Location:** `ja4plus/utils/tcp_stream.py`, `ja4plus/utils/http_utils.py`,
 `ja4plus/fingerprinters/ja4h.py`. #33 built it, and it absorbed #103.
 
+### One stream holds a maximum age
+
+`CLAUDE.md` states that a state table has a maximum entry count and a maximum age. #33
+built the entry count and the two per-stream caps. No field held a timestamp, so a
+connection that sent one segment and then stopped held its slot until 100 further
+connections pushed it out.
+
+A stream entry now carries `last_seen`, the packet timestamp of its most recent segment.
+`add_segment` removes every stream that receives no segment for `max_stream_age` seconds.
+The removal drops the whole entry, so the segment list, the set of seen segments and the
+stored byte count leave together. A partial removal would leave a `(seq, length)` pair in
+the set, and `add_segment` would then drop that segment as a duplicate when the sender
+re-sends it.
+
+The age reads the packet timestamp, never the wall clock. `ja4plus/utils/tcp_stream.py`
+imports no clock, and the caller states the timestamp. `packet_seconds` in
+`ja4plus/utils/packet_utils.py` reads `packet.time` and returns None when the packet
+carries none. A stream whose `last_seen` is None never ages out, so a mixed clock evicts
+nothing.
+
+The age follows every segment the stream receives, not the segments the reassembler
+stores. A stream at its byte cap still sends, and an age that ignored a refused segment
+would evict a stream that is busy.
+
+**The default is 600 seconds, and the vectors measure the bound.** The longest gap
+between two segments of one stream across `tests/foxio_vectors/` is 320.714503 seconds,
+on `ssh-r.pcap`, stream `192.168.1.169:64980-192.168.1.197:22`. The measurement reads
+every capture with `rdpcap`, keys each TCP segment the way `ja4h.py` keys a stream, and
+records the widest gap between two packet timestamps of one key. The second reading is
+`http1.pcapng` at 60.042404 seconds. The default sits above the widest gap.
+
+No reference value moves. The conformance suite reports 1375 passed, 146 skipped and 120
+xfailed before the change and after it. A 300-second age gives the same three counts,
+because the one stream above 300 seconds is SSH traffic that JA4H and JA4X read nothing
+from.
+
+**The bound is safe because of what today's fingerprinters read, not because the bound is
+inherently safe.** JA4H and JA4X read the head of a stream, the way the #33 byte cap is
+safe. A later issue that reads further into a stream, or that adds a vector with a wider
+gap, must measure this age again.
+
+`docs/specs/features/03-concurrency-safety.md` states a 300-second default maximum age
+for a state table. That feature set is not built, and its other defaults do not describe
+this reassembler: it states 10000 entries where `max_streams` is 100 for JA4H and 50 for
+JA4X. #170 records the divergence and leaves the feature file for the issue that builds
+it.
+
+**Location:** `ja4plus/utils/tcp_stream.py`, `ja4plus/utils/packet_utils.py`,
+`ja4plus/fingerprinters/ja4h.py`, `ja4plus/fingerprinters/ja4x.py`. #170 built it.
+
 ---
 
 ## JA4H - HTTP

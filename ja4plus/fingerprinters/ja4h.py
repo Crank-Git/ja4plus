@@ -20,7 +20,7 @@ from ja4plus.utils.http_utils import (
     parse_http_request,
 )
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
-from ja4plus.utils.packet_utils import get_ip_layer
+from ja4plus.utils.packet_utils import get_ip_layer, packet_seconds
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         stream_key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
         seq = tcp.seq if hasattr(tcp, "seq") else 0
 
-        self.reassembler.add_segment(stream_key, seq, raw_data)
+        self.reassembler.add_segment(stream_key, seq, raw_data, packet_seconds(packet))
         stream_data = self.reassembler.get_stream(stream_key)
 
         # Try to parse HTTP from reassembled stream
