@@ -68,8 +68,8 @@ class TCPStreamReassembler:
     def _ordered_segments(self, stream):
         """Return the segments of a stream in sequence order, earliest first.
 
-        The order holds across a wrap of the 32-bit sequence number. The method finds
-        the earliest sequence number, then sorts on the distance from it.
+        The order holds across a wrap of the 32-bit sequence number. The order depends
+        only on the sequence numbers, never on the order the capture delivered them.
 
         Args:
             stream: A stream entry from `self.streams`.
@@ -81,12 +81,24 @@ class TCPStreamReassembler:
         if not segments:
             return []
 
-        first = segments[0][0]
-        for seq, _ in segments:
-            if _seq_before(seq, first):
-                first = seq
+        by_seq = sorted(segments, key=lambda s: s[0])
+        if len(by_seq) == 1:
+            return by_seq
 
-        return sorted(segments, key=lambda s: (s[0] - first) & _SEQ_MASK)
+        # A stream occupies one arc of the sequence space, and one step between two
+        # neighbours closes that arc. The widest step is that one, so the segment after
+        # it holds the first byte. A comparison of each segment against a running
+        # earliest value gives a different answer for a different arrival order,
+        # because the comparison is not transitive once the segments span the space.
+        start = 0
+        widest = (by_seq[0][0] - by_seq[-1][0]) & _SEQ_MASK
+        for i in range(1, len(by_seq)):
+            step = by_seq[i][0] - by_seq[i - 1][0]
+            if step > widest:
+                widest = step
+                start = i
+
+        return by_seq[start:] + by_seq[:start]
 
     def get_stream(self, key):
         """Reassemble and return contiguous stream data from base_seq.

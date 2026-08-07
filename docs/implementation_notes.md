@@ -905,13 +905,22 @@ numbers puts every segment after the wrap point before every segment before it, 
 connection that crosses the boundary reassembles backwards.
 
 `_seq_before` orders two sequence numbers on the difference between them, as RFC 1982
-does. `_ordered_segments` finds the earliest sequence number of the stream, then sorts
-on the distance from it. `get_stream` and `base_seq` both read that order, so the gap
-test, the overlap arithmetic and the reported base all hold across the wrap.
+does. `get_stream` reads it for the gap test and the overlap arithmetic, so both hold
+across the wrap.
 
-The method needs every sequence number of one stream to lie within 2**31 of the others.
-`max_stream_bytes` bounds a stream at 1048576 bytes by default, which meets that
-condition with a wide margin.
+`_ordered_segments` gives the segment order. A stream occupies one arc of the sequence
+space, and one step between two neighbours closes that arc. The method sorts the
+segments on the raw number, finds the widest step, and starts the stream at the segment
+after it. `get_stream` and `base_seq` both read that order.
+
+A comparison of each segment against a running earliest value looks equivalent and is
+not. `_seq_before` stops being transitive once the segments span more than half the
+sequence space, so that form returns a different first segment for a different arrival
+order. Nothing bounds the spread of the stored sequence numbers today, because
+`max_stream_bytes` bounds the reassembled output and not the stored segments. Row 3 of
+the audit register holds that defect. The widest-step reading depends only on the
+sequence numbers, so the reassembled bytes never depend on the order the capture
+delivered the segments.
 
 `add_segment` detects a duplicate against a set of `(seq, length)` pairs. The earlier
 scan of every stored segment cost the square of the segment count: 10000 segments took

@@ -160,6 +160,23 @@ class TestTCPStreamReassembler(unittest.TestCase):
         # The threshold sits between the two readings, clear of the noise of either.
         self.assertLess(elapsed(20000), elapsed(5000) * 8)
 
+    def test_the_segment_order_does_not_depend_on_the_arrival_order(self):
+        import itertools
+
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        # The three sequence numbers spread across the whole sequence space, so no
+        # 2**31 window holds them. A fingerprint that moved with the arrival order
+        # would describe the capture file rather than the connection.
+        spread = [(0x00000000, b"a"), (0x60000000, b"b"), (0xC0000000, b"c")]
+        bases = set()
+        for arrival in itertools.permutations(spread):
+            r = TCPStreamReassembler()
+            for seq, data in arrival:
+                r.add_segment("stream1", seq=seq, data=data)
+            bases.add(r.base_seq("stream1"))
+        self.assertEqual(len(bases), 1)
+
     def test_a_trimmed_segment_reassembles_when_it_arrives_again(self):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
