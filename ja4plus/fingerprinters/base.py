@@ -4,6 +4,8 @@ Base fingerprinter class for JA4+ fingerprinters.
 
 import logging
 
+from ja4plus.utils.packet_utils import packet_endpoints
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,14 +30,20 @@ class BaseFingerprinter:
         raise NotImplementedError("Subclasses must implement this method.")
 
     def add_fingerprint(self, fingerprint, packet):
-        """
-        Add a fingerprint to the collection.
+        """Add a fingerprint to the collection.
+
+        The entry holds the address pair and the port pair of the packet, and it never
+        holds the packet. A monitor runs for weeks, and a stored packet holds every
+        packet the monitor ever fingerprinted.
 
         Args:
-            fingerprint: The extracted fingerprint
-            packet: The packet that generated this fingerprint
+            fingerprint: The extracted fingerprint.
+            packet: The packet that produced this fingerprint. The method reads the
+                endpoints of the packet and drops the reference when it returns.
         """
-        self.fingerprints.append({"fingerprint": fingerprint, "packet": packet})
+        entry = {"fingerprint": fingerprint}
+        entry.update(packet_endpoints(packet))
+        self.fingerprints.append(entry)
 
     def get_fingerprints(self):
         """Return all collected fingerprints."""

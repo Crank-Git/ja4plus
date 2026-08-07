@@ -113,13 +113,14 @@ def display_results(fingerprinters):
                                               key=lambda x: x[1], reverse=True)):
                 if i < 10:  # Show top 10
                     if name in ['JA4T', 'JA4TS']:
-                        example_packet = next(fp for fp in fingerprints 
-                                           if fp['fingerprint'] == value)['packet']
-                        if hasattr(example_packet, 'haslayer') and example_packet.haslayer('TCP'):
-                            flags = example_packet['TCP'].flags
-                            window = example_packet['TCP'].window
-                            print(f"  {i+1}. {value} ({count} occurrences) - TCP Flags: {flags}, Window: {window}")
-                            continue
+                        # An entry holds the endpoints of its packet and never the
+                        # packet, so the display names the stream. The JA4T value
+                        # already carries the TCP window and the TCP options.
+                        example = next(fp for fp in fingerprints
+                                       if fp['fingerprint'] == value)
+                        stream = f"{example['src']}:{example['srcport']} -> {example['dst']}:{example['dstport']}"
+                        print(f"  {i+1}. {value} ({count} occurrences) - {stream}")
+                        continue
                     print(f"  {i+1}. {value} ({count} occurrences)")
                 
             if len(fp_values) > 10:
