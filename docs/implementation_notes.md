@@ -244,6 +244,49 @@ ALPN (`0x0010`), which `JA4` removes. The vector
 `t13d1715h2_5b234860e130_014157ec0da2`, and that value is the hash of the
 `JA4_ro.1` fields.
 
+### The zero marker reads the sorted extension list
+
+One rule overrides the paragraph above. FoxIO tests the **sorted** extension list for the
+zero marker, and it sets **both** extension hashes from that one test. A client hello
+whose only extensions are SNI and ALPN therefore gives `JA4_o` the extension hash
+`000000000000`, and `JA4_ro` still shows the extension in wire order.
+
+`technical_details/JA4.md` states the rule, and it names one field:
+
+> If there are no extensions in the sorted extensions list, then the value of JA4_c is
+> set to `000000000000`
+
+The specification describes `JA4_o` by example alone. It states no separate rule for the
+original-order extension hash, so the reference applies the one published rule to both
+renderings.
+
+**The vector.** `tests/foxio_vectors/https3-301-get.pcap.json` stream 0, source port
+62599. The client hello carries SNI as its only extension.
+
+```
+JA4.1    = t10d230100_6a57a6f57151_000000000000
+JA4_o.1  = t10d230100_ce175d585f73_000000000000
+JA4_ro.1 = t10d230100_0039,...,00ff_0000
+```
+
+`tests/foxio_vectors/socks-https-example.pcap.json` holds the same reading on streams 0,
+2 and 4.
+
+**The measurement.** A probe on `python/ja4.py` at the pinned commit
+`27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` reads both strings and the guard:
+
+```
+PROBE stream=0 sorted_extensions='' original_extensions='0000' guard=bool(sorted_extensions)=False sha_encode(original_extensions)=9af15b336e6a
+```
+
+The reference computes `sha256('0000')[:12] = 9af15b336e6a`, and then it discards that
+value. #132 holds the command and the full output.
+
+Before #132, `ja4plus` emitted `9af15b336e6a` on these four streams. `JA4_o` now matches
+all 160 reference values, and the count was 156 of 160.
+
+**Location:** `ja4plus/fingerprinters/ja4.py:169`.
+
 The JA4S section below records the `JA4S_o` reading.
 
 ---
