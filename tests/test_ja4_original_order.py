@@ -18,10 +18,22 @@ JA4_PCAP = "tests/foxio_vectors/tls12.pcap"
 JA4_EXPECTED = "tests/foxio_vectors/tls12.pcap.json"
 JA4S_PCAP = "tests/foxio_vectors/latest.pcapng"
 JA4S_EXPECTED = "tests/foxio_vectors/latest.pcapng.json"
+SNI_ONLY_PCAP = "tests/foxio_vectors/https3-301-get.pcap"
+SNI_ONLY_EXPECTED = "tests/foxio_vectors/https3-301-get.pcap.json"
 
 
 pytestmark = pytest.mark.skipif(
-    not all(os.path.exists(path) for path in (JA4_PCAP, JA4_EXPECTED, JA4S_PCAP, JA4S_EXPECTED)),
+    not all(
+        os.path.exists(path)
+        for path in (
+            JA4_PCAP,
+            JA4_EXPECTED,
+            JA4S_PCAP,
+            JA4S_EXPECTED,
+            SNI_ONLY_PCAP,
+            SNI_ONLY_EXPECTED,
+        )
+    ),
     reason="FoxIO vectors not available (download to tests/foxio_vectors/)",
 )
 
@@ -76,6 +88,34 @@ def test_ja4_original_order_value_hashes_the_original_order_raw_value():
         _hash12(f"{extensions}_{signature_algorithms}"),
     )
     assert entries[0]["fingerprint_original_order"] == expected
+
+
+def test_ja4_gives_the_zero_sentinel_when_sni_is_the_only_extension():
+    """The vector `https3-301-get.pcap` names the value the reference computes.
+
+    The client hello carries SNI as its only extension. The sorted extension list is
+    therefore empty, and FoxIO sets both extension hashes to the zero sentinel. #132
+    holds the measurement.
+    """
+    from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
+
+    entries = _run(JA4Fingerprinter(), SNI_ONLY_PCAP)
+
+    assert len(entries) == 1
+    expected = _first_expected(SNI_ONLY_EXPECTED, "JA4_o.1")
+    assert expected == "t10d230100_ce175d585f73_000000000000"
+    assert entries[0]["fingerprint_original_order"] == expected
+
+
+def test_ja4_keeps_sni_in_the_raw_value_when_sni_is_the_only_extension():
+    """FoxIO zeroes the `JA4_o` hash and still shows `0000` in `JA4_ro`."""
+    from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
+
+    entries = _run(JA4Fingerprinter(), SNI_ONLY_PCAP)
+
+    expected = _first_expected(SNI_ONLY_EXPECTED, "JA4_ro.1")
+    assert expected.endswith("_0000")
+    assert entries[0]["raw_original_order"] == expected
 
 
 def test_ja4_reset_clears_the_original_order_value():

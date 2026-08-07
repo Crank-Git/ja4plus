@@ -261,10 +261,6 @@
     "issue": 138,
     "decided": true
   },
-  "https3-301-get.pcap/0:62599/JA4_o.1": {
-    "cause": "The client hello carries SNI as its only extension, and the reference gives 000000000000 as the JA4_o extension hash.",
-    "issue": 132
-  },
   "quic-tls-handshake.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
@@ -274,18 +270,6 @@
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
     "decided": true
-  },
-  "socks-https-example.pcap/0:53554/JA4_o.1": {
-    "cause": "The client hello carries SNI as its only extension, and the reference gives 000000000000 as the JA4_o extension hash.",
-    "issue": 132
-  },
-  "socks-https-example.pcap/2:53555/JA4_o.1": {
-    "cause": "The client hello carries SNI as its only extension, and the reference gives 000000000000 as the JA4_o extension hash.",
-    "issue": 132
-  },
-  "socks-https-example.pcap/4:53556/JA4_o.1": {
-    "cause": "The client hello carries SNI as its only extension, and the reference gives 000000000000 as the JA4_o extension hash.",
-    "issue": 132
   },
   "socks4-https.pcap/JA4X": {
     "cause": "ja4plus produces three JA4X values on the SOCKS4 tunnel on port 9901, and no FoxIO implementation holds one. ja4plus reads the record layer without regard to the tunnel protocol that carries it. The same behaviour produces the https-connect.pcap values that the FoxIO Rust snapshot and the Wireshark dissector both hold. #138 keeps the values, because a gate on the record-layer scan would risk the https-connect.pcap case.",

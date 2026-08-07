@@ -244,6 +244,49 @@ ALPN (`0x0010`), which `JA4` removes. The vector
 `t13d1715h2_5b234860e130_014157ec0da2`, and that value is the hash of the
 `JA4_ro.1` fields.
 
+### The zero sentinel reads the sorted extension list
+
+One rule overrides the paragraph above. FoxIO tests the **sorted** extension list for the
+zero sentinel, and it sets **both** extension hashes from that one test. A client hello
+whose only extensions are SNI and ALPN therefore gives `JA4_o` the zero sentinel.
+`JA4_ro` still shows the extension in wire order.
+
+`technical_details/JA4.md` states the rule, and it names one field:
+
+> If there are no extensions in the sorted extensions list, then the value of JA4_c is
+> set to `000000000000`
+
+The specification describes `JA4_o` by example alone. It states no separate rule for the
+original-order extension hash, so the reference applies the one published rule to both
+renderings.
+
+**The vector.** `tests/foxio_vectors/https3-301-get.pcap.json` stream 0, source port
+62599. The client hello carries SNI as its only extension.
+
+```
+JA4.1    = t10d230100_6a57a6f57151_000000000000
+JA4_o.1  = t10d230100_ce175d585f73_000000000000
+JA4_ro.1 = t10d230100_0039,...,00ff_0000
+```
+
+`tests/foxio_vectors/socks-https-example.pcap.json` holds the same reading on streams 0,
+2 and 4.
+
+**The measurement.** A probe on `python/ja4.py` at the pinned commit
+`27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` reads both strings and the guard:
+
+```
+PROBE stream=0 sorted_extensions='' original_extensions='0000' guard=bool(sorted_extensions)=False sha_encode(original_extensions)=9af15b336e6a
+```
+
+The reference computes `sha256('0000')[:12] = 9af15b336e6a`, and then it discards that
+value. #132 holds the command and the full output.
+
+Before #132, `ja4plus` emitted `9af15b336e6a` on these four streams. `JA4_o` now matches
+all 160 reference values, and the count was 156 of 160.
+
+**Location:** `ja4plus/fingerprinters/ja4.py:169`.
+
 The JA4S section below records the `JA4S_o` reading.
 
 ---
@@ -490,6 +533,39 @@ The reference reads four QUIC packets, and it reads the direction from port 443:
 
 `JA4L-S` is half the time from `A` to `B`, and `JA4L-C` is half the time from `C`
 to `D`.
+
+### The QUIC measurement points never restart
+
+A client repeats a QUIC handshake over one address pair and port pair. The reference
+reads the first handshake, and it reports one value pair for the whole flow. It reads
+no later handshake.
+
+A server Initial packet arrives before its client Initial packet. The reference
+discards that packet, and it reports no value at all for the flow.
+
+`rust/ja4/src/time/udp.rs` states the mechanism. The state machine holds a terminal
+`Done` state that ignores every later packet. Its `Handshake` state discards a later
+`ClientInitial`, and its first state discards a `ServerInitial`.
+
+The FoxIO Rust implementation is the only FoxIO implementation that reads a QUIC
+handshake, so it decides both cases. No FoxIO vector holds either case.
+`tests/build_quic_ja4l_captures.py` writes the two synthetic captures that measure
+them. The reference ran at the commit `tests/download_test_vectors.py` pins:
+
+```
+$ ja4 quic_repeat.pcap
+  ja4l_c: 500_64
+  ja4l_s: 5000_56
+$ ja4 quic_mirrored.pcap
+[]
+```
+
+`tests/test_ja4l_quic_repeated_connection.py` reads the same packets from the same
+builder, so the tests and the measurement cover one capture each.
+
+`ja4plus` reports the same value pair for the first capture. For the second capture it
+reports no server value, and it reports `JA4L-C=500_64` where the reference reports
+nothing. #123 carries that open reading.
 
 ### A time of one second or more
 

@@ -195,10 +195,21 @@ This feature set has no screen. Its output is the test report.
 - A server Initial packet names the client with the connection ID the client chose as
   its source. It therefore supplies no client connection ID, and it replaces no stored
   value.
-- The reference reads no QUIC handshake in the committed vectors. JA4S produces a
-  fingerprint on nine QUIC streams that the reference holds no value for, in
+- The FoxIO Python implementation reads no QUIC handshake in the committed vectors.
+  JA4S produces a fingerprint on nine QUIC streams that it holds no value for, in
   `chrome-cloudflare-quic-with-secrets.pcapng`, `ssh2.pcapng` and `tls3.pcapng`. JA4
-  produces a fingerprint on the same nine streams, and #13 owns both.
+  produces a fingerprint on the same nine streams, and #138 owns both.
+- The FoxIO Rust snapshot decides a stream that the FoxIO Python expected-output
+  file omits. The unit is the stream, not the file. The FoxIO Python implementation
+  reads no QUIC handshake, and it reads no TLS on a port it does not know. The FoxIO
+  Rust implementation reads both. Where both hold a value for one method on one
+  stream, `python/test/testdata/` decides.
+- JA4X reads the record layer without regard to the tunnel protocol that carries it.
+  `socks4-https.pcap` produces three JA4X values on the SOCKS4 tunnel on port 9901,
+  and no FoxIO implementation holds one. The same behaviour produces the
+  `https-connect.pcap` values that the FoxIO Rust snapshot and the Wireshark
+  dissector both hold. #138 holds the decision, and the register records the
+  divergence.
 - A reader collects at most 16384 bytes of CRYPTO frame data for one connection. RFC
   9000 Section 16 lets a CRYPTO frame offset reach 4611686018427387903, and a
   reassembly allocates a buffer that reaches the highest offset. A sender would
@@ -248,6 +259,12 @@ This feature set has no screen. Its output is the test report.
   decrypts, so a test states the JA4L server point without a capture file.
 - New file `tests/test_quic_server_initial.py`.
 - New file `tests/test_ja4l_quic_server_hello.py`.
+- New file `tests/test_foxio_rust_parity.py`. It compares the `ja4plus` output of one
+  stream against the FoxIO Rust snapshot of that stream.
+- New directory `tests/foxio_vectors/rust_expected/`. It holds the FoxIO Rust
+  snapshots the parity test reads, copied from the pinned upstream commit.
+- Changed file `tests/foxio_deviations.json`. Every entry that names #138 is
+  `decided`.
 
 ## Interfaces
 
@@ -378,6 +395,8 @@ https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
 | A capture starts after the client Initial packet. | The connection carries no `JA4L-S` value, because the server keys derive from the client connection ID. |
 | A server repeats a fragment that completes no ServerHello. | The fragment buffer of the connection stops at 16384 bytes. |
 | A CRYPTO frame names an offset of 2**40. | The reader drops the fragment and allocates no buffer. |
+| The FoxIO Python expected-output file omits a stream that the FoxIO Rust snapshot holds. | The Rust snapshot decides the value, and the register records the divergence. |
+| No FoxIO implementation holds a value for a stream that `ja4plus` produces one for. | The rule above does not reach the stream, and a person decides the case. |
 
 ## Acceptance criteria
 
