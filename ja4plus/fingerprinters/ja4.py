@@ -13,31 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 def _is_alnum_byte(b):
-    """ASCII alphanumeric per FoxIO PR #277: 0-9, A-Z, a-z."""
+    """Return True when the byte is an ASCII alphanumeric: 0-9, A-Z, a-z."""
     return (0x30 <= b <= 0x39) or (0x41 <= b <= 0x5A) or (0x61 <= b <= 0x7A)
 
 
 def compute_alpn_value(first_alpn_bytes):
-    """Compute the JA4 ALPN value per FoxIO spec PR #277.
+    """Return the two-character ALPN value that JA4 and JA4S carry.
 
-    Rules:
-        - empty / None: '00'
-        - both first and last byte ASCII alphanumeric: those two bytes as chars
-          (single-byte ALPN duplicates the byte, e.g. 'h' -> 'hh')
-        - either end non-alphanumeric: first and last char of HEX representation
-          of the FULL first ALPN string (lowercase)
+    The value is `00` for an absent ALPN extension. The value is the first byte and
+    the last byte when both bytes are ASCII alphanumeric. A one-byte value repeats
+    that byte. The value is `99` in every other case.
 
-    Examples:
-        b'\\xab'         -> 'ab'
-        b'\\x20'         -> '20'
-        b'\\xab\\xcd'    -> 'ad'
-        b'\\x20\\x61'    -> '21'
-        b'\\x30\\xab'    -> '3b'  (first alnum, last not -> hex)
-        b'\\x61\\x20'    -> '60'
-        b'\\x30\\x31\\xab\\xcd' -> '3d'
-        b'\\x30\\xab\\xcd\\x31' -> '01'  (both ends alnum -> bytes directly)
-        b'h2'            -> 'h2'
-        b'h'             -> 'hh'
+    Args:
+        first_alpn_bytes: The bytes of the first ALPN value, or None.
+
+    Returns:
+        A two-character string.
     """
     if not first_alpn_bytes:
         return "00"
@@ -51,9 +42,10 @@ def compute_alpn_value(first_alpn_bytes):
             return ch + ch
         return chr(first) + chr(last)
 
-    # Non-alphanumeric at either end: use hex of full first ALPN value.
-    hex_str = first_alpn_bytes.hex()  # always lowercase
-    return hex_str[0] + hex_str[-1]
+    # #127: the FoxIO prose gives the first and the last character of the hex form. The
+    # FoxIO Python implementation and the FoxIO Rust implementation give `99`, and the
+    # vector `tls-non-ascii-alpn.pcapng` holds `99`. This project follows the vector.
+    return "99"
 
 
 def generate_ja4(tls_info, original_order=False):

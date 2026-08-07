@@ -1,8 +1,8 @@
-"""JA4 ALPN value handling per FoxIO PR #277.
+"""The JA4 ALPN value.
 
-Spec: if first or last byte of the first ALPN value is not ASCII alnum
-(0x30-0x39, 0x41-0x5A, 0x61-0x7A), use the first/last character of the
-hex representation of the FULL first ALPN string.
+The FoxIO prose gives the first and the last character of the hex form. The FoxIO
+Python implementation and the FoxIO Rust implementation give `99`. #127 settled that
+this project follows the two implementations.
 """
 
 import json
@@ -20,19 +20,19 @@ EXPECTED_PATH = VECTORS_DIR / "tls-non-ascii-alpn.pcapng.json"
 @pytest.mark.parametrize(
     "alpn_bytes,expected",
     [
-        # From the FoxIO PR #277 examples
-        (b"\xab", "ab"),  # single non-alnum byte -> hex first/last
-        (b"\x20", "20"),
-        (b"\xab\xcd", "ad"),
-        (b"\x20\x61", "21"),
-        (b"\x30\xab", "3b"),  # first alnum, last not -> hex
-        (b"\x61\x20", "60"),
-        (b"\x30\x31\xab\xcd", "3d"),
-        (b"\x30\xab\xcd\x31", "01"),  # both ends alnum -> bytes directly
-        # Additional sanity checks
-        (b"", "00"),  # empty -> '00'
-        (b"h", "hh"),  # single alnum byte -> duplicate
-        (b"h2", "h2"),  # standard ALPN, both ends alnum
+        # The first byte, the last byte, or both fall outside the alphanumeric ranges.
+        (b"\xab", "99"),
+        (b"\x20", "99"),
+        (b"\xab\xcd", "99"),
+        (b"\x20\x61", "99"),
+        (b"\x30\xab", "99"),
+        (b"\x61\x20", "99"),
+        (b"\x30\x31\xab\xcd", "99"),
+        # Both ends are alphanumeric, so the two bytes pass through.
+        (b"\x30\xab\xcd\x31", "01"),
+        (b"", "00"),
+        (b"h", "hh"),
+        (b"h2", "h2"),
         (b"http/1.1", "h1"),
         (b"h3", "h3"),
     ],
@@ -46,7 +46,7 @@ def test_compute_alpn_value_none_returns_00():
 
 
 def test_compute_alpn_via_generate_ja4():
-    """End-to-end: a tls_info dict with non-ascii alpn_raw produces hex ALPN."""
+    """A tls_info dictionary with a non-alphanumeric ALPN byte produces `99`."""
     from ja4plus.fingerprinters.ja4 import generate_ja4
 
     info = {
@@ -67,8 +67,8 @@ def test_compute_alpn_via_generate_ja4():
     assert fp is not None
     # part_a: t12i0100<alpn>
     part_a = fp.split("_")[0]
-    # ALPN bytes \x30\xab -> first alnum '0', last not -> hex '30ab' -> "3b"
-    assert part_a.endswith("3b"), f"got {part_a!r}"
+    # The last byte 0xab falls outside the alphanumeric ranges, so the value is `99`.
+    assert part_a.endswith("99"), f"got {part_a!r}"
 
 
 def _reference_ja4():
@@ -124,13 +124,6 @@ def test_the_foxio_capture_carries_a_first_alpn_value_that_is_not_ascii():
     assert client_hellos[0]["alpn_protocols"] == ["", "http/1.1"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "issue #127: the FoxIO prose gives the hex characters `bd`, and two FoxIO "
-        "implementations give `99`."
-    ),
-)
 def test_the_foxio_capture_produces_the_reference_ja4_value():
     """`tls-non-ascii-alpn.pcapng` produces the JA4 value the FoxIO reference holds."""
     assert _produced_ja4() == [_reference_ja4()]

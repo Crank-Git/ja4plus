@@ -755,22 +755,6 @@
     "cause": "ja4plus produces no JA4_ro fingerprint the reference holds.",
     "issue": 13
   },
-  "tls-non-ascii-alpn.pcapng/0:50112/JA4.1": {
-    "cause": "The produced JA4 value differs from the reference.",
-    "issue": 13
-  },
-  "tls-non-ascii-alpn.pcapng/0:50112/JA4_o.1": {
-    "cause": "The produced JA4_o value differs from the reference.",
-    "issue": 13
-  },
-  "tls-non-ascii-alpn.pcapng/0:50112/JA4_r.1": {
-    "cause": "The produced JA4_r value differs from the reference.",
-    "issue": 13
-  },
-  "tls-non-ascii-alpn.pcapng/0:50112/JA4_ro.1": {
-    "cause": "The produced JA4_ro value differs from the reference.",
-    "issue": 13
-  },
   "tls-sni.pcapng/38:50159/JA4.2": {
     "cause": "ja4plus produces no JA4 value on this stream.",
     "issue": 13
