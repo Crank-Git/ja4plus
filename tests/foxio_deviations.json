@@ -24,8 +24,8 @@
     "issue": 34
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1": {
     "cause": "ja4plus computes no JA4H raw form.",
@@ -332,64 +332,64 @@
     "issue": 131
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.1": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.10": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.11": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.12": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.13": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.14": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.15": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.2": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.3": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.4": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.5": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.6": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.7": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.8": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.9": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.1": {
     "cause": "ja4plus computes no JA4H raw form.",
@@ -464,8 +464,8 @@
     "issue": 78
   },
   "http2-with-cookies.pcapng/JA4H": {
-    "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
-    "issue": 35
+    "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/JA4H_ro": {
     "cause": "ja4plus computes no JA4H raw form.",

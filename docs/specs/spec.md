@@ -80,6 +80,8 @@ that user, because comparison is the only thing a fingerprint is for.
 | Initial packet | noun | One QUIC packet whose long-header type is Initial. RFC 9000 Section 17.2 gives the layout. | first packet, opening packet |
 | connection ID | noun | The QUIC identifier that names one endpoint of a connection. The Initial keys derive from the one the client chooses. | CID, connection identifier, DCID |
 | Retry packet | noun | One QUIC packet that asks the client to send its Initial packet again with another connection ID. RFC 9000 Section 17.2.5 gives the layout. | retry, redirect |
+| key material | noun | One secret that decrypts recorded traffic, such as a TLS session key. | secret, key log, session keys |
+| Decryption Secrets Block | noun | The pcapng block that carries key material inside a capture file. | DSB, secrets block, key log block |
 
 ## Goals
 
@@ -109,6 +111,11 @@ that user, because comparison is the only thing a fingerprint is for.
 - Wire-speed performance is out of scope. The project measures throughput and
   reports it, but sets no throughput target for version 1.0.0.
 - An asynchronous interface is out of scope. The library stays synchronous.
+- Decryption is out of scope. `ja4plus` reads no key material and reads no Decryption
+  Secrets Block. It decrypts no TLS record and no QUIC 1-RTT packet. Traffic that a
+  capture carries only in encrypted form therefore produces no fingerprint, even when
+  the same capture file carries the key material that decrypts it. #129 holds the
+  decision, and the decision is reversible.
 
 ## Users & personas
 
@@ -272,7 +279,11 @@ handler and sets no level. The command-line program configures logging.
 
 **Security posture.** The library performs no network request unless the caller
 opts in. Feature set `db-enrichment` makes the `ja4db.com` lookup opt-in, because a
-fingerprint sent to a third party discloses traffic the operator observed.
+fingerprint sent to a third party discloses traffic the operator observed. The library
+also reads no key material, because a program that reads a key log file reads the plain
+text of the traffic the operator captured. That capability is larger than fingerprint
+production, and this project does not take it. The `Non-goals` section states what the
+limitation removes.
 
 **Performance.** The project measures packets per second on a fixed capture and
 records the number in the pull request. Version 1.0.0 sets no target. A change that
@@ -503,6 +514,8 @@ Two items blocked approval. Both are now decided.
 | 24 | 2026-08-07 | #121 landed and the conformance suite compares a raw form for the first time. `tests/conformance_index.py` dropped every key that ends with `_r`, `_ro`, `_o` or `_raw`, so 653 reference values reached no test. The register rises from 67 entries to 220, measured against `epic/12-spec-conformance` at `03c7c02`, and no hashed-form case changed state. `JA4S_r` matches all 84 values, which confirms the #108 measurement. `JA4_r` and `JA4_ro` each match 149 of 160, and every failure sits on a stream whose `JA4` value fails too, so #13 owns all 22. `JA4_o` matches 145 of 160. `JA4H_ro` matches 0 of 89, because `ja4plus` computes no JA4H raw form. Two issues opened. #131 owns the 89 `JA4H_ro` values and the 11 occurrence-key cases with them. #132 owns four `JA4_o` values whose client hello carries SNI as its only extension: the reference gives `000000000000` as the extension hash, and `ja4plus` hashes the original-order extension list, which is the rule that matches the other 156 values. `tests/generate_foxio_baseline.py` now keeps the entry the committed register holds for a key that still fails, because a cause read from a failure message states the symptom and #78, #96, #97 and #105 hold mechanisms a person wrote. |
 
 | 25 | 2026-08-07 | Epic 1 batch 5 ships #119, #118, #115 and #121. **The register rises from 67 entries to 226, and the rise is the point.** 153 entries record a raw form that no test had ever compared, and 3 record the JA4S occurrence keys that #118 exposed. #115 removed the last skip from the unit suite: three tests named a fixture path this repository does not hold, one now compares a committed FoxIO Rust snapshot and passes, and two carry a strict `xfail` naming #127 and #129. #121 found that `tests/generate_foxio_baseline.py` overwrote every cause on each run, so running it would have destroyed 19 hand-written causes, including the ten that record the declined FoxIO defects. Four issues opened from the measurement: #131, `ja4plus` computes no JA4H raw form, so all 89 `JA4H_ro` values fail; #128, 18 register entries state a cause the evidence does not support; #132, four `JA4_o` values whose client hello carries SNI as its only extension; #127, the FoxIO prose and two FoxIO implementations disagree on the JA4 ALPN value for a non-ASCII first byte. #13 grew from 21 entries to 73 and now owns one question: does `ja4plus` emit a fingerprint on a QUIC stream the reference ignores, or does the reference miss it. |
+
+| 26 | 2026-08-07 | #129 settled decryption. `ja4plus` reads no key material, it reads no Decryption Secrets Block, it decrypts no TLS record, and it decrypts no QUIC 1-RTT packet. The reason is a security boundary: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production. The decision is reversible. `Non-goals` states the limitation and `Cross-cutting concerns` states the reason. 17 JA4H register entries move from #35 to #129, and they hold the cause the JA4X entries of the same two captures already state. The 17 are `http2-with-cookies.pcapng/JA4H`, the 15 value cases of `http2-with-cookies.pcapng` stream 58847, and `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1`. `http1-with-cookies.pcapng` carries no secrets block and holds two cleartext HTTP messages, so #35 keeps it. No fingerprinter changed and no vector changed state. |
 
 ## Issue map
 
