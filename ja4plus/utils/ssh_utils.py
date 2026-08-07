@@ -44,6 +44,28 @@ MAX_PENDING_SEGMENTS = 32
 # fill. One TCP window of maximum-size segments stays below this bound.
 MAX_PENDING_BYTES = 65536
 
+# The size of the TCP sequence space. RFC 793 section 3.3 states that a sequence number
+# is 32 bits, and that it wraps.
+SEQ_SPACE = 1 << 32
+
+
+def _offset(seq, base):
+    """Return the signed distance from the base sequence number to the sequence number.
+
+    A sequence number wraps at 2**32, so a plain comparison reads a wrapped number as a
+    number far behind the base. This function reads the distance in the shorter
+    direction around the sequence space.
+
+    Args:
+        seq: The sequence number to measure.
+        base: The sequence number to measure from.
+
+    Returns:
+        A number in the range -2**31 to 2**31 - 1. The number is positive when the
+        sequence number follows the base.
+    """
+    return ((seq - base + (SEQ_SPACE // 2)) % SEQ_SPACE) - (SEQ_SPACE // 2)
+
 
 class SSHMessageTracker:
     """Report whether one TCP segment completes an SSH message.
@@ -99,7 +121,7 @@ class SSHMessageTracker:
             # An opaque direction follows no message boundary, so the order of the
             # segments changes nothing. Every segment is one SSH packet.
             return [len(payload)]
-        if seq > self._next_seq:
+        if _offset(seq, self._next_seq) > 0:
             return self._hold(payload, seq)
 
         counted = self._read_segment(payload, seq)
@@ -124,13 +146,13 @@ class SSHMessageTracker:
             when the direction already sent every byte of the segment, and when the
             segment holds no message end.
         """
-        if seq + len(payload) <= self._next_seq:
-            return []
         # A retransmission repeats the bytes the tracker already read, so the tracker
         # reads only the part of the segment that follows them.
-        overlap = self._next_seq - seq
+        overlap = -_offset(seq, self._next_seq)
+        if overlap >= len(payload):
+            return []
         completed = self.completes_message(payload[overlap:])
-        self._next_seq = seq + len(payload)
+        self._next_seq = (seq + len(payload)) % SEQ_SPACE
         return [len(payload)] if completed else []
 
     def _hold(self, payload, seq):
@@ -165,8 +187,8 @@ class SSHMessageTracker:
             The payload and the sequence number of that segment, or None when the
             buffer holds no such segment.
         """
-        for seq in sorted(self._pending):
-            if seq <= self._next_seq:
+        for seq in sorted(self._pending, key=lambda held: _offset(held, self._next_seq)):
+            if _offset(seq, self._next_seq) <= 0:
                 payload = self._pending.pop(seq)
                 self._pending_bytes -= len(payload)
                 return payload, seq

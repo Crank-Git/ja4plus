@@ -31,6 +31,7 @@ from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 from ja4plus.utils.ssh_utils import (
     MAX_PENDING_BYTES,
     MAX_PENDING_SEGMENTS,
+    SEQ_SPACE,
     SSHMessageTracker,
 )
 
@@ -258,6 +259,39 @@ def test_a_segment_that_repeats_part_of_the_stream_is_read_once():
     # The tracker reads the eight new bytes, which complete no message.
     assert tracker.add_segment(whole[:18], 22) == []
     assert tracker.add_segment(whole[18:], 40) == [len(whole) - 18]
+
+
+def test_an_out_of_order_segment_that_follows_the_wrap_point_is_held():
+    tracker = SSHMessageTracker()
+    # The banner ends ten bytes before the sequence space wraps.
+    start = SEQ_SPACE - len(BANNER) - 10
+    tracker.add_segment(BANNER, start)
+    whole = message(body_length=1492, code=20)
+    first = (start + len(BANNER)) % SEQ_SPACE
+    second = (first + 1448) % SEQ_SPACE
+    assert second < 1448
+
+    # The segment that completes the message arrives first, and it starts after the
+    # wrap point. A tracker that compares the raw numbers reads it as a segment far
+    # behind the next sequence number, and it drops it.
+    assert tracker.add_segment(whole[1448:], second) == []
+    assert tracker.add_segment(whole[:1448], first) == [48]
+
+
+def test_a_retransmission_that_precedes_the_wrap_point_is_dropped():
+    tracker = SSHMessageTracker()
+    start = SEQ_SPACE - len(BANNER) - 10
+    tracker.add_segment(BANNER, start)
+    whole = message(body_length=1492, code=20)
+    first = (start + len(BANNER)) % SEQ_SPACE
+    tracker.add_segment(whole[:1448], first)
+    tracker.add_segment(whole[1448:], (first + 1448) % SEQ_SPACE)
+
+    # The direction sends the pre-wrap segment again. A tracker that compares the raw
+    # numbers reads it as a segment far ahead of the next sequence number, and it holds
+    # it until the buffer reaches its bound.
+    assert tracker.add_segment(whole[:1448], first) == []
+    assert tracker._pending == {}
 
 
 def test_a_gap_that_never_fills_makes_the_tracker_count_every_segment():

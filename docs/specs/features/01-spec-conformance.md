@@ -369,6 +369,7 @@ https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
 | An SSH segment arrives before its predecessor. | The tracker holds it, and it counts when the predecessor fills the gap. |
 | A segment repeats part of the stream and holds new bytes after it. | The tracker reads the new bytes alone. |
 | A gap in an SSH direction never fills. | The held segments stop at 32 segments or 65536 bytes, and every later segment counts as one SSH packet. |
+| The sequence number of an SSH direction wraps at 2**32. | The tracker measures the distance in the shorter direction around the sequence space, and it reads the direction without a break. |
 | A server sends an Initial packet that holds an ACK frame, then one that holds the ServerHello. | `JA4L-S` measures to the second packet. |
 | A server splits the ServerHello across two Initial packets. | `JA4L-S` measures to the packet that carries the last fragment. |
 | A server coalesces a Handshake packet behind its Initial packet. | The reader decrypts the Initial packet and reads its ServerHello. |
