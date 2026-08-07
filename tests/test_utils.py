@@ -292,44 +292,49 @@ class TestTLSParsing(unittest.TestCase):
     def test_parse_server_hello_rejects_a_truncated_hello_message(self):
         """The reader returns None when the segment cuts the ServerHello itself.
 
-        The bound moves from the record length to the handshake message length. A
-        message the segment cuts holds no cipher and no extension list, so the reader
-        returns nothing rather than a value it guessed.
+        The record here holds every byte it declares, so a bound on the record length
+        reads the message and reports the fields it found before the cut. The message
+        declares 38 bytes and the record carries 28, so the reader returns nothing.
         """
         sh = bytearray()
         sh += (0x0303).to_bytes(2, "big")
         sh += b"\x00" * 32
-        sh += b"\x00"
-        sh += (0xC02F).to_bytes(2, "big")
-        sh += b"\x00"
+        sh += b"\x00"  # Session ID len
+        sh += (0xC02F).to_bytes(2, "big")  # Cipher
+        sh += b"\x00"  # Compression
 
-        handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)
-        record = b"\x16\x03\x03" + (6291).to_bytes(2, "big") + handshake[:-10]
+        # The message names its full length, and the record carries 10 bytes fewer.
+        handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)[:-10]
+        record = b"\x16\x03\x03" + len(handshake).to_bytes(2, "big") + handshake
 
         self.assertIsNone(parse_tls_handshake(record))
 
-    def test_parse_server_hello_reads_no_byte_after_the_hello_message(self):
-        """The reader bounds the ServerHello on its own length field.
+    def test_parse_server_hello_reads_no_extension_after_the_hello_message(self):
+        """The reader bounds the extension list on the length of the hello.
 
-        The extension list of the ServerHello declares more bytes than the message
-        holds. The bytes that follow belong to the Certificate message, and a reader
-        that walks into them reports an extension the server never sent.
+        The extension list declares 16 bytes and the ServerHello carries 8. The bytes
+        that follow belong to the next handshake message of the same record, and a
+        reader that walks into them reports an extension the server never sent.
         """
         sh = bytearray()
         sh += (0x0303).to_bytes(2, "big")
         sh += b"\x00" * 32
-        sh += b"\x00"
-        sh += (0xC02F).to_bytes(2, "big")
-        sh += b"\x00"
-        # One extension, 0x0000 bytes long, followed by a declared length that runs
-        # past the end of the message.
-        sh += (8).to_bytes(2, "big")
-        sh += b"\x00\x2b\x00\x02\x03\x04"
-        sh += b"\x00\x10"
+        sh += b"\x00"  # Session ID len
+        sh += (0xC02F).to_bytes(2, "big")  # Cipher
+        sh += b"\x00"  # Compression
+        sh += (16).to_bytes(2, "big")  # The declared extension-list length.
+        sh += b"\x00\x2b\x00\x04\x03\x04\x03\x03"  # The one extension it carries.
 
         handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)
-        # The Certificate message follows in the same record, and the segment holds it.
-        record = b"\x16\x03\x03" + (6291).to_bytes(2, "big") + handshake + b"\x0b" + b"\x11" * 64
+        # The next handshake message of the record reads as extension 0x0010 to a
+        # reader that passes the end of the hello.
+        trailer = b"\x00\x10\x00\x02\x68\x32\x00\x00"
+        record = (
+            b"\x16\x03\x03"
+            + (len(handshake) + len(trailer)).to_bytes(2, "big")
+            + handshake
+            + trailer
+        )
 
         result = parse_tls_handshake(record)
         self.assertIsNotNone(result)
