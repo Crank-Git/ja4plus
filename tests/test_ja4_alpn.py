@@ -83,8 +83,8 @@ def _reference_ja4():
     """
     with open(EXPECTED_PATH) as handle:
         entries = json.load(handle)
-    # An empty file compares no value, and the assertion below passes on it. #115 exists
-    # to remove a test that reports a pass on nothing.
+    # An empty file holds no reference value. This check names that cause, because the
+    # index below raises IndexError instead.
     assert entries, "{} names no stream".format(EXPECTED_PATH)
     return entries[0]["JA4.1"]
 

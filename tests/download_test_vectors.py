@@ -214,8 +214,9 @@ def download() -> None:
         print(f"rust_expected/{snapshot_name}")
         snapshot = _fetch(f"{FOXIO_RAW}/{RUST_EXPECTED_DIR}/{snapshot_name}")
         # A snapshot with no `ja4:` line compares no value, and the QUIC reference test
-        # would then report a pass on nothing. That is the defect #115 closes.
-        if b"\n  ja4: " not in snapshot:
+        # would then report a pass on nothing. That is the defect #115 closes. The test
+        # strips each line before it matches, so this check strips too.
+        if not any(line.strip().startswith(b"ja4: ") for line in snapshot.splitlines()):
             raise ValueError(f"rust_expected/{snapshot_name} holds no JA4 value")
         (RUST_DIR / snapshot_name).write_bytes(snapshot)
 

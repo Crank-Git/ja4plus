@@ -150,8 +150,8 @@ def _reference_ja4():
         stripped = line.strip()
         if stripped.startswith("ja4: "):
             values.append(stripped[len("ja4: ") :])
-    # An empty list compares no value, and the assertion below passes on it. #115 exists
-    # to remove a test that reports a pass on nothing.
+    # Without this check, an empty list compares equal to an empty produced list, and the
+    # caller reports a pass on nothing. #115 exists to remove that defect.
     assert values, "{} holds no JA4 value".format(EXPECTED_PATH)
     return values
 

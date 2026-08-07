@@ -60,7 +60,7 @@ Only the two ALPN characters differ. The register entry
 `tests/test_ja4_alpn.py` holds the unit case. Both name the difference until #127 settles
 it.
 
-**Location:** `ja4plus/fingerprinters/ja4.py`, in `compute_alpn_value`.
+**Location:** `ja4plus/fingerprinters/ja4.py:20`, in `compute_alpn_value`.
 
 ### The QUIC reference value comes from the FoxIO Rust implementation
 
