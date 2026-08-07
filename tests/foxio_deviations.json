@@ -15,6 +15,86 @@
     "cause": "ja4plus emits more JA4L-S values than the reference holds.",
     "issue": 34
   },
+  "alpn-condition.pcap/2:44403/JA4.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/2:44403/JA4_o.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/2:44403/JA4_r.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/2:44403/JA4_ro.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/4:44405/JA4.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0x1F, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x1F. FoxIO Rust writes hf, because rust/ja4/src/tls.rs reads the tshark escape text as the five characters h, backslash, x, 1 and f, and it keeps the first and the last. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/4:44405/JA4_o.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0x1F, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x1F. FoxIO Rust writes hf, because rust/ja4/src/tls.rs reads the tshark escape text as the five characters h, backslash, x, 1 and f, and it keeps the first and the last. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/4:44405/JA4_r.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0x1F, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x1F. FoxIO Rust writes hf, because rust/ja4/src/tls.rs reads the tshark escape text as the five characters h, backslash, x, 1 and f, and it keeps the first and the last. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/4:44405/JA4_ro.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0x1F, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x1F. FoxIO Rust writes hf, because rust/ja4/src/tls.rs reads the tshark escape text as the five characters h, backslash, x, 1 and f, and it keeps the first and the last. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/5:44406/JA4.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0x0A, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x0A. FoxIO Rust writes no value at all for this stream. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/5:44406/JA4_o.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0x0A, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x0A. FoxIO Rust writes no value at all for this stream. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/5:44406/JA4_r.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0x0A, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x0A. FoxIO Rust writes no value at all for this stream. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/5:44406/JA4_ro.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the two bytes 0x68 0x0A, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x0A. FoxIO Rust writes no value at all for this stream. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/6:44407/JA4.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/6:44407/JA4_o.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/6:44407/JA4_r.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
+  "alpn-condition.pcap/6:44407/JA4_ro.1": {
+    "issue": 162,
+    "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays: no FoxIO vector separates the rules, and CLAUDE.md rule 1 forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "decided": true
+  },
   "browsers-x509.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 151,
