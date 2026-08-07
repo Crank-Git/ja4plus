@@ -78,8 +78,11 @@ def parse_http_request(data):
 
             headers[header_name] = header_value
 
-        # Extract cookies
+        # Extract cookies. The two lists hold the wire order and keep every occurrence
+        # of a repeated cookie name, which the dictionary drops. #35 records the defect.
         cookies = {}
+        cookie_fields = []
+        cookie_values = []
         if "cookie" in headers:
             cookie_str = headers["cookie"]
             cookie_pairs = cookie_str.split(";")
@@ -90,6 +93,8 @@ def parse_http_request(data):
                         cookie_name = cookie_parts[0].strip()
                         cookie_value = cookie_parts[1].strip()
                         cookies[cookie_name] = cookie_value
+                        cookie_fields.append(cookie_name)
+                        cookie_values.append(cookie_value)
 
         return {
             "method": method,
@@ -97,6 +102,8 @@ def parse_http_request(data):
             "version": version,
             "headers": headers,
             "cookies": cookies,
+            "cookie_fields": cookie_fields,
+            "cookie_values": cookie_values,
         }
     except (ValueError, TypeError, UnicodeDecodeError) as e:
         logger.debug(f"Not an HTTP request: {e}")
@@ -170,9 +177,11 @@ def extract_http_info(packet):
     try:
         data = bytes(packet[Raw]).decode("utf-8", errors="ignore")
 
-        # Check if this is an HTTP request
+        # Check if this is an HTTP request. The minor version is optional, because a
+        # request line reads `HTTP/2` and `HTTP/3` without one. #35 records the defect.
         request_line_match = re.match(
-            r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)\s+(\S+)\s+(HTTP/\d+\.\d+)",
+            r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)"
+            r"\s+(\S+)\s+(HTTP/\d+(?:\.\d+)?)",
             data,
         )
         if not request_line_match:
