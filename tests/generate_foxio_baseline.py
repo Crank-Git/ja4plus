@@ -21,6 +21,10 @@ breaks one:
 It overwrites both files. Read the difference before you commit it. A method this
 program does not know an issue for stops the run, because an entry with no issue number
 is not allowed.
+
+A key the committed register already holds keeps its committed entry. A cause this
+program reads from a failure message states the symptom, and a person states the
+mechanism. A key that stops failing still disappears.
 """
 
 import json
@@ -36,6 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from tests.foxio_deviations import (  # noqa: E402 - the path insert must run first
     IGNORE_VARIABLE,
     REGISTER_PATH,
+    load_register,
     occurrence_key,
     value_key,
 )
@@ -46,13 +51,33 @@ from tests.foxio_manifest import MANIFEST_PATH  # noqa: E402 - the path insert m
 # #28 fixed the JA4SSH window, and it owns no case now. Every JA4SSH case that
 # remains sits on a capture that holds more than one window. A capture of one window
 # conforms, and a capture of several does not. #92 owns them.
+#
+# A raw method carries the issue of its hashed method, because the raw form and the hash
+# read the same fields. #121 measured it: every `JA4_r`, `JA4_ro` and `JA4S_r` failure
+# sits on a stream whose hashed value fails too.
 OWNING_ISSUES = {
     "JA4": 13,
     "JA4S": 13,
     "JA4H": 35,
     "JA4SSH": 92,
     "JA4X": 78,
+    "JA4_r": 13,
+    "JA4_ro": 13,
+    "JA4_o": 13,
+    "JA4S_r": 13,
+    "JA4H_ro": 131,
 }
+
+# #131 owns every `JA4H_ro` case, because ja4plus computes no JA4H raw form. The generic
+# cause reads as a count defect, and the real cause is an absent value.
+JA4H_RAW_ISSUE = 131
+
+# #132 owns the four `JA4_o` values whose client hello carries SNI as its only extension.
+# The reference gives `000000000000` as the extension hash, and ja4plus hashes the
+# original-order extension list. The pattern matches the reference value, not the
+# produced value, so a later change of the produced value keeps the entry.
+JA4_O_EMPTY_EXTENSION_ISSUE = 132
+EMPTY_EXTENSION_HASH = re.compile(r"expected='[^']*_000000000000'")
 
 # JA4L holds defects of two kinds, so one issue does not own every JA4L case. #80 landed
 # the harness change that measures them, and #80 owns none of them. #30 changes
@@ -186,6 +211,17 @@ def _entry(method, message, occurrence_form):
     """Return one register entry, or raise KeyError when no issue owns the method."""
     if method.startswith("JA4L"):
         return _ja4l_entry(method, message, occurrence_form)
+    if method == "JA4H_ro":
+        return {
+            "issue": JA4H_RAW_ISSUE,
+            "cause": "ja4plus computes no JA4H raw form.",
+        }
+    if method == "JA4_o" and not occurrence_form and EMPTY_EXTENSION_HASH.search(message):
+        return {
+            "issue": JA4_O_EMPTY_EXTENSION_ISSUE,
+            "cause": "The client hello carries SNI as its only extension, and the reference "
+            "gives 000000000000 as the JA4_o extension hash.",
+        }
     return {
         "issue": OWNING_ISSUES[method],
         "cause": _cause(method, message, occurrence_form),
@@ -214,11 +250,24 @@ def _manifest(collector):
     return {vector: counts[vector] for vector in sorted(counts)}
 
 
-def _register(collector):
+def _register(collector, committed):
     """Return the register entries and the failures that are not conformance cases.
 
     A structural test, such as the manifest check, carries no method parameter. It is
     not a registrable case, so this program reports it instead of recording it.
+
+    A key the committed register already holds keeps its committed entry. A cause this
+    program reads from a failure message states the symptom, and a person states the
+    mechanism. #78, #96, #97 and #105 hold mechanisms no failure message carries, and a
+    mechanical rewrite would destroy them. A key that stops failing still disappears.
+
+    Args:
+        collector: The collector that ran the suite.
+        committed: The register the repository holds today.
+
+    Returns:
+        A (register, other) pair. The register maps each key to its entry, sorted by
+        key. `other` names each failure that is not a conformance case.
     """
     register = {}
     other = []
@@ -234,20 +283,27 @@ def _register(collector):
         if "occurrence" in params:
             stream = params["stream"]
             key = value_key(vector, stream.index, stream.src_port, method, params["occurrence"])
-            register[key] = _entry(method, message, occurrence_form=False)
+            occurrence_form = False
         else:
             key = occurrence_key(vector, method)
-            register[key] = _entry(method, message, occurrence_form=True)
+            occurrence_form = True
+        held = committed.get(key)
+        if held is None:
+            register[key] = _entry(method, message, occurrence_form)
+        else:
+            register[key] = {"issue": held.issue, "cause": held.cause}
     return {key: register[key] for key in sorted(register)}, other
 
 
 def main():
+    # Read the committed register before the run overwrites it.
+    committed = load_register()
     os.environ[IGNORE_VARIABLE] = "1"
     collector = _CaseCollector()
     pytest.main([SUITE, "-m", "spec_validation", "-q", "-p", "no:randomly"], plugins=[collector])
 
     manifest = _manifest(collector)
-    register, other = _register(collector)
+    register, other = _register(collector, committed)
     _write(MANIFEST_PATH, manifest)
     _write(REGISTER_PATH, register)
     print("wrote {} vectors to {}".format(len(manifest), MANIFEST_PATH))
