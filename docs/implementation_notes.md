@@ -123,22 +123,53 @@ The list keeps the wire order. `ja4plus` never sorts it.
 
 ## JA4D and JA4D6 - DHCP
 
-### No FoxIO vector validates JA4D or JA4D6
+### The reference values come from the FoxIO Wireshark dissector
 
-FoxIO publishes `dhcp.pcapng` and `dhcpv6.pcap`, and the expected-output file of each one
-holds an empty array. `tests/foxio_vectors/dhcp.pcapng.json` and
-`tests/foxio_vectors/dhcpv6.pcap.json` each hold `[]`. No reference value validates
-either method.
+The FoxIO Python implementation emits no JA4D and no JA4D6, so the expected-output file
+of each DHCP capture holds an empty array. `tests/foxio_vectors/dhcp.pcapng.json` and
+`tests/foxio_vectors/dhcpv6.pcap.json` each hold `[]`. The FoxIO Rust implementation
+emits neither method either, and both of its snapshots hold `[]`.
 
-`tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py` name a capture path and an
-expected-output path that this repository does not hold, so both files skip on every run.
-#109 owns that gap.
+The FoxIO Wireshark dissector does write a reference value for both methods.
+`tests/foxio_vectors/wireshark_expected/` holds a copy of the two files, taken without
+change from `wireshark/test/testdata/` at the pinned upstream commit.
+
+`.claude/rules/external-apis.md` states that the files under `wireshark/test/testdata/`
+are not the authority, because one of them holds an empty array where the Python file of
+the same name holds four fingerprints. These two methods are the reverse case, and the
+Wireshark file is the only FoxIO reference output for them. The FoxIO Zeek baseline
+`zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` holds the same four JA4D values, which is a
+second FoxIO implementation that agrees. No second FoxIO implementation emits JA4D6.
+
+`ja4plus` matches every one of the ten reference values, and it emits no fingerprint the
+reference does not hold.
+
+| Capture | Frame | Reference value |
+|---|---|---|
+| `dhcp.pcapng` | 1 | `disco0000in_61-55_1-3-6-42` |
+| `dhcp.pcapng` | 2 | `offer0000nn_1-58-59-51-54_00` |
+| `dhcp.pcapng` | 3 | `reqst0000in_61-54-55_1-3-6-42` |
+| `dhcp.pcapng` | 4 | `dpack0000nn_58-59-51-54-1_00` |
+| `dhcpv6.pcap` | 2 | `solct0014nn_1-6-8-25_23-24` |
+| `dhcpv6.pcap` | 5 | `advrt0014nn_25-26-1-2_00` |
+| `dhcpv6.pcap` | 7 | `reqst0014nn_1-2-6-8-25-26_23-24` |
+| `dhcpv6.pcap` | 8 | `reply0014nn_25-26-1-2_00` |
+| `dhcpv6.pcap` | 11 | `relse0014nn_1-2-6-8-25-26_23-24` |
+| `dhcpv6.pcap` | 12 | `reply0014nn_1-2-13_00` |
+
+The conformance suite reads only the top level of `tests/foxio_vectors/`, so the two
+files add no case to it and no entry to the deviation register.
+`tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py` compare them, and both run in
+the unit suite. #109 closed the gap.
+
+**Location:** `tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py`.
 
 ### How ja4plus reads JA4D
 
 The form is `{type}{size}{ip}{fqdn}_{options}_{parameters}`. `ja4plus` reads it as
 follows. The comment at `ja4plus/fingerprinters/ja4d.py:42` names two FoxIO pull
-requests, 267 and 270, as the source of the skip set. No vector confirms the reading.
+requests, 267 and 270, as the source of the skip set. The four reference values of
+`dhcp.pcapng` confirm the reading.
 
 - The type is a five-character abbreviation of the DHCP message type. An unknown type
   gives the five-digit decimal value of the code.
