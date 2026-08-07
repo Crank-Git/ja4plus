@@ -56,6 +56,8 @@ LATEST_HTTP = "tcp_172.16.225.48:52939_23.43.242.57:80"
 EMPTY_USERAGENT = "tcp_::1:9200_::1:57722"
 GRE_SAMPLE = "tcp_172.27.1.66:40264_66.59.109.137:22"
 SSH2_QUIC = "udp_142.251.41.46:443_172.16.225.48:61861"
+CLOUDFLARE_QUIC = "udp_2001:db8:1::1:50280_2606:4700:10::6816:826:443"
+TLS3_QUIC = "udp_104.21.234.234:443_192.168.1.169:61884"
 
 
 @pytest.mark.skipif(
@@ -96,6 +98,21 @@ class TestJA4LAgainstTheFoxIOVectors:
         produced = values_on("ssh2.pcapng", SSH2_QUIC)
         assert "JA4L-S=5389_57" in produced
         assert "JA4L-C=169_128" in produced
+
+    def test_the_quic_server_point_skips_an_initial_packet_that_carries_no_server_hello(self):
+        # chrome-cloudflare-quic-with-secrets.pcapng stream 0, port 50280. The server
+        # sends an Initial packet at +18569 us that holds an ACK frame, and a second
+        # one at +21981 us that holds the whole ServerHello. The reference reads the
+        # second one.
+        assert "JA4L-S=10990_56" in values_on(
+            "chrome-cloudflare-quic-with-secrets.pcapng", CLOUDFLARE_QUIC
+        )
+
+    def test_the_quic_server_point_reads_the_second_initial_packet_of_a_short_handshake(self):
+        # tls3.pcapng stream 25, port 61884. The server sends an Initial packet at
+        # +6102 us that holds an ACK frame, and a second one at +7166 us that holds
+        # the whole ServerHello.
+        assert "JA4L-S=3583_57" in values_on("tls3.pcapng", TLS3_QUIC)
 
     def test_the_fingerprinter_emits_one_client_value_for_one_connection(self):
         produced = values_on("badcurveball.pcap", BADCURVEBALL)
