@@ -17,6 +17,27 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ssh-scp-1050.pcap` and `ssh2.pcapng` now equal the reference on their first
   window. `ssh.pcapng` holds no bare ACK, and it stays at `c36s36_c76s124_c0s0`.
 
+- **JA4SSH emits the window a connection holds open when it closes** (#92). A
+  connection that carries fewer than 200 SSH packets produced no fingerprint at
+  all, and a connection that closed part way through a window lost those packets.
+  `ja4plus` now emits that window on a packet that carries the FIN flag and the ACK
+  flag, which is the rule `python/ja4.py` states above `finalize_ja4ssh`. An empty
+  window emits nothing. `ssh-r.pcap` now produces the occurrence keys the reference
+  holds on all three of its streams.
+
+### Divergence from the FoxIO reference
+
+- **JA4SSH declines three results of the reference** (#96, #97, #105). Each one
+  describes the capture and not the connection, so it cannot be compared against
+  the output of another tool. The reference reads its mode field from the packet
+  lengths of every connection in the capture, because `dict(ja4sh_stats)` shares
+  one payload list (#96). It writes an extra occurrence from a window of zero SSH
+  packets whenever a bare ACK follows a window boundary (#97). It emits no trailing
+  window for the connection it holds at stream index 0, because `finalize_ja4ssh`
+  guards with `if stream:` (#105). `ja4plus` reads the window alone, emits a value
+  only for a window that holds SSH packets, and emits the trailing window for every
+  connection that closes. `docs/implementation_notes.md` holds the measurement.
+
 - **A loopback capture that carries IPv6 now reads the same way on every host**
   (#94). A capture whose link type is `DLT_NULL` starts each frame with the
   address family value of the host that captured it. That value is 24 on NetBSD

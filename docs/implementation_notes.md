@@ -121,38 +121,50 @@ Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4ssh.py
 on the first SSH packet, so it dropped the ACK of the TCP handshake. It also read
 the ACK flag alone, so it counted a SYN+ACK, a FIN+ACK and a RST+ACK as bare ACKs.
 
-### The remainder of a stream
+### The window a connection holds open
 
-The reference emits the packets that remain on some connections and not on others,
-and the vectors do not settle the condition. On `ssh-r.pcap` stream 1 the reference
-holds `c64s64_c6s5_c4s5`, which counts 11 SSH packets. `gre-sample.pcap`,
-`sshv1.pcap` and `v6.pcap` each hold one SSH connection of the same shape, with a
-banner, data packets and a FIN packet, and the reference holds no JA4SSH value for
-any of them.
+A connection that closes emits the window it holds open. `python/ja4.py` states the
+rule above `finalize_ja4ssh`: `If the SSH connection is not terminated or the last
+sample is less than 200 the finalize function just cleans up and prints the last
+JA4SSH hash`. That function runs on a packet that carries the FIN flag and the ACK
+flag. An empty window emits nothing, so the second FIN packet of a close finds the
+window the first FIN packet emptied and adds no value.
 
-`python/ja4.py` runs `finalize_ja4ssh` on a packet that carries the FIN flag and
-the ACK flag, and that function acts only when `entry['protos']` ends with `:ssh`.
-Every FIN+ACK packet of these captures carries no payload, so the condition depends
-on a `tshark` protocol label that a capture file alone does not give. ja4plus emits
-no value for a window a connection holds open, because a rule that emits one gives
-`gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` a value the reference does not hold.
-#92 owns the question.
+`ssh-r.pcap` confirms the reading. Stream 1 holds 11 SSH packets and one
+occurrence, `c64s64_c6s5_c4s5`. Stream 2 holds 931 SSH packets, four full windows,
+and a fifth occurrence of 131 packets. `ssh-scp-1050.pcap` and `ssh2.pcapng` carry
+no FIN packet, and each keeps its full windows alone.
 
-### Two defects of the reference
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4.py
+(retrieved 2026-08-06).
 
-The reference produces two JA4SSH results that a simulation of `python/ja4ssh.py`
-reproduces, and that describe no property of the connection.
+### Three defects of the reference
 
-`dict(ja4sh_stats)` copies the dictionary and not the two lists inside it, so every
-window on every connection shares one `client_payloads` list and one
-`server_payloads` list. The mode field therefore reads the packet lengths of every
-connection the tool has seen. `ssh-r.pcap` stream 2 window 1 reports `c64s64`, and
-the packets of that window read `c76s76`. #96 owns the decision.
+`ja4plus` declines to reproduce three results of the reference. Each one describes
+the capture and not the connection, so a user cannot compare it against the output
+of another tool. The measurement ran `python/ja4.py` at the pinned commit against
+`tshark` 4.6.7.
 
-`(entry['count'] % ssh_sample_count) == 0` stays true for every bare ACK that
-follows a window boundary, so each of those packets writes the next occurrence key
-from a window that holds no SSH packet. `ssh-r.pcap` stream 0 holds `JA4SSH.2`
-equal to `c64s64_c0s0_c0s1`. #97 owns the decision.
+**The mode field reads the whole capture.** `dict(ja4sh_stats)` copies the
+dictionary and not the two lists inside it, so every window on every connection
+shares one `client_payloads` list and one `server_payloads` list. `ssh-r.pcap`
+stream 2 window 1 reports `c64s64`, and the packets of that window read `c76s76`.
+`ja4plus` reads the lengths of the window. #96 records the decision.
+
+**A bare ACK writes another occurrence.** `(entry['count'] % ssh_sample_count) == 0`
+stays true for every bare ACK that follows a window boundary, so each of those
+packets writes the next occurrence key from a window that holds no SSH packet.
+`ssh-r.pcap` stream 0 holds `JA4SSH.2` equal to `c64s64_c0s0_c0s1`. `ja4plus` emits
+a value only for a window that holds SSH packets. #97 records the decision.
+
+**The stream index 0 is false.** `finalize_ja4ssh` guards with `if stream:`, so the
+reference emits no trailing window for the connection it holds at index 0.
+`gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` each hold their SSH connection at that
+index, and the reference holds no JA4SSH value for any of them. The same run, with
+that guard read as `if stream is not None:` and nothing else changed, emits
+`c24s23_c4s4_c5s4` for `gre-sample.pcap` and `c20s12_c18s23_c10s1` for `sshv1.pcap`.
+`ja4plus` emits the window for every connection that closes. #105 records the
+decision.
 
 ### The TCP segment
 

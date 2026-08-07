@@ -183,6 +183,7 @@ change, and files nothing there.
 | Mapping file refresh | `db update` and `db info` already exist. | The same two subcommands. | — | Already at parity. Keep a test that proves it. |
 | Shard key format | `tcp:ip:port->ip:port`. | The same format. | — | Already at parity. Keep a test that proves it. |
 | JA4SSH window | Emits at `packet_count`, which defaults to 200. | Emits at `min(packetCount, 10)`. | 1 | Fixed here by #28. The port carries the defect at `ja4ssh.go:176`. |
+| JA4SSH results the reference produces and this project declines | Reads the mode field from the window alone, emits a value only for a window that holds SSH packets, and emits the trailing window for every connection that closes. | Not measured. | 1 | Three defects of the FoxIO reference produce output that describes the capture and not the connection, so rule 1 does not settle them and a person decided each one. #96, #97 and #105 hold the decision and the measurement. The port must adopt all three, or the two implementations disagree on JA4SSH. |
 | Parity test | 6 tests that assert names exist. | Not applicable. | 3 | Replace with the shared vector suite. Epic 1. |
 
 Verified against: https://github.com/Crank-Git/ja4plus-go (`types.go`,
