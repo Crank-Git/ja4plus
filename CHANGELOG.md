@@ -125,6 +125,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   now produces exactly one JA4SSH fingerprint, `c36s36_c76s124_c0s0`, which
   equals the reference.
 
+### Removed
+
+- **The private helper `_src_is_client` leaves `ja4plus/fingerprinters/ja4l.py`**
+  (#119). The helper read the outer address of a packet with `get_ip_layer`, and
+  it compared that address against the address the connection key holds. #101
+  made the JA4L connection key hold the inner address pair, so the two addresses
+  are never equal for a tunnelled packet. No caller reads the helper, so no
+  fingerprint changes. `FR-correctness-audit-11` asks for the removal.
+
 ## [0.6.0] - 2026-05
 
 Major spec-compliance update against the May 2026 FoxIO JA4+ spec
