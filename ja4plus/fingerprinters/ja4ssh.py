@@ -157,8 +157,11 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             direction = "client" if is_client_to_server else "server"
 
             # The tracker follows the message boundary, so it reads every payload
-            # segment of the direction, not only the segments the window counts.
-            completes_message = conn["message_tracker"][direction].completes_message(payload)
+            # segment of the direction, not only the segments the window counts. It
+            # reads the sequence number too, because a retransmission repeats bytes the
+            # tracker already read, and an out-of-order segment arrives before the
+            # segment it follows.
+            completed = conn["message_tracker"][direction].add_segment(payload, int(tcp.seq))
 
             # Extract SSH banner
             if payload.startswith(b"SSH-"):
@@ -182,10 +185,8 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             # and `tshark` labels only the segment that completes an SSH message. A
             # segment that holds part of a message is one TCP segment, not one SSH
             # packet. A count of that segment moves every later window boundary.
-            if completes_message and (
-                is_ssh_packet(payload) or conn["client_id"] or conn["server_id"]
-            ):
-                conn["ssh_packets"][direction].append(len(payload))
+            if completed and (is_ssh_packet(payload) or conn["client_id"] or conn["server_id"]):
+                conn["ssh_packets"][direction].extend(completed)
 
         elif is_bare_ack:
             if is_client_to_server:
