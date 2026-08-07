@@ -30,6 +30,13 @@ from ja4plus.fingerprinters.ja4ts import generate_ja4ts
 from ja4plus.fingerprinters.ja4d import generate_ja4d
 from ja4plus.fingerprinters.ja4d6 import generate_ja4d6
 
+from ja4plus.utils.loopback import bind_loopback_ipv6
+
+# scapy binds one loopback address family value, the value of the reading host. Without
+# this call a loopback capture that carries IPv6 produces fingerprints on Darwin and
+# none on Linux. Issue #94 records the measurement.
+bind_loopback_ipv6()
+
 
 def compute_ja4x_from_der(cert_der_bytes):
     """Compute the JA4X fingerprint for a DER-encoded X.509 certificate.
