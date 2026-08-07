@@ -5,14 +5,16 @@
 implementations at the commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` ran against
 it. `docs/implementation_notes.md` holds the commands and the full table.
 
-The measurement settles one rule: a byte that is ASCII reaches the value without a
+The measurement settles one rule: a printable ASCII byte reaches the value without a
 change, and the alphanumeric test the FoxIO prose states is not the condition. Both
-FoxIO implementations agree on every input whose first byte and last byte are ASCII,
-and they agree on an input whose two bytes are outside ASCII.
+FoxIO implementations agree on every input whose first byte and last byte fall inside
+`0x20-0x7E`, and they agree on an input whose two bytes fall outside ASCII.
 
-The measurement settles no rule for a value that holds a byte outside ASCII in any
-position other than the first. The FoxIO Python implementation and the FoxIO Rust
-implementation disagree there, so `ja4plus` keeps `99` and #141 asks the user.
+The measurement settles no rule outside that range. The FoxIO Rust implementation reads
+a control byte as the tshark escape text, so it reads `h\\x1f` as five characters and
+writes `hf`. The FoxIO Python implementation reads the byte. The two also disagree on a
+byte above `0x7E` and on a one-byte value. `ja4plus` keeps `99` there, and #141 asks the
+user.
 """
 
 import json
@@ -40,10 +42,34 @@ EXPECTED_PATH = VECTORS_DIR / "alpn-condition.pcap.json"
         # Both FoxIO implementations write `99`, and `tls-non-ascii-alpn.pcapng` holds
         # this input.
         (b"\xba\xad", "99"),
+        # The two ends of the printable range. Both FoxIO implementations write these.
+        (b"h\x21", "h!"),
+        (b"h\x7e", "h~"),
     ],
 )
-def test_an_ascii_byte_reaches_the_alpn_value_without_a_change(alpn_bytes, expected):
+def test_a_printable_ascii_byte_reaches_the_alpn_value_without_a_change(alpn_bytes, expected):
     assert compute_alpn_value(alpn_bytes) == expected
+
+
+@pytest.mark.parametrize(
+    "alpn_bytes",
+    [
+        b"h\x00",  # FoxIO Python writes `h`. FoxIO Rust writes `h0`.
+        b"h\x01",  # FoxIO Python writes `h\x01`. FoxIO Rust writes `h1`.
+        b"h\x0a",  # FoxIO Python writes `h\n`. FoxIO Rust writes no value.
+        b"h\x1f",  # FoxIO Python writes `h\x1f`. FoxIO Rust writes `hf`.
+        b"h\x7f",  # FoxIO Python writes `h\x7f`. FoxIO Rust writes `hf`.
+        b"\x01h",  # FoxIO Python writes `\x01h`. FoxIO Rust writes `\h`.
+        b"\x00\x01",  # FoxIO Python writes no value. FoxIO Rust writes `00`.
+    ],
+)
+def test_a_control_byte_keeps_the_value_99_while_the_references_disagree(alpn_bytes):
+    """The FoxIO Rust implementation reads a control byte as the tshark escape text.
+
+    The two implementations therefore disagree on every control byte, so `ja4plus`
+    changes nothing here. `docs/implementation_notes.md` holds the measurement.
+    """
+    assert compute_alpn_value(alpn_bytes) == "99"
 
 
 @pytest.mark.parametrize(

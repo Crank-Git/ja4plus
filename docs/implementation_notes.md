@@ -93,8 +93,8 @@ can be compared against another tool output. The register holds no entry for thi
 and `tests/test_ja4_alpn.py` compares the produced value against the reference value.
 
 `compute_alpn_value` returns `99` when the first byte or the last byte of the first ALPN
-value falls outside ASCII. `ja4s.py` reads the same function, so JA4 and JA4S carry one
-rule.
+value falls outside `0x20-0x7E`. `ja4s.py` reads the same function, so JA4 and JA4S
+carry one rule.
 
 #127 settled the value that this vector produces. It settled no condition, because
 every rule fires on `0xba 0xad`. #141 measured the condition against a capture it built.
@@ -103,11 +103,11 @@ measurement leaves open.
 
 **Location:** `ja4plus/fingerprinters/ja4.py:31`, in `compute_alpn_value`.
 
-### The ALPN condition passes an ASCII byte through
+### The ALPN condition passes a printable ASCII byte through
 
 #141 owns the condition that makes the ALPN value read `99`. The FoxIO prose tests for
 an alphanumeric byte. The measurement contradicts the prose: both FoxIO implementations
-pass an ASCII byte through, whether or not that byte is alphanumeric.
+pass a printable ASCII byte through, whether or not that byte is alphanumeric.
 
 No FoxIO capture separates the rules, so #141 built one.
 `tests/build_alpn_condition_capture.py` writes
@@ -140,14 +140,37 @@ a byte it cannot decode.
 | `\xab` | `99` | `90` | no | `99` |
 | `\x20` | ` ` | ` 0` | no | `99` |
 
-**What the measurement settles.** The two implementations agree on every input whose
-first byte and last byte are ASCII. They agree on an input whose two bytes fall outside
-ASCII. `ja4plus` adopts both results. Before #141 it wrote `99` for `h\x20` and for
-`\x20h`, and it now writes `h ` and ` h`.
+**The boundary of the range.** A second probe walked the control bytes and the top of
+ASCII. It shows that the two implementations agree inside `0x20-0x7E` and disagree
+outside it.
 
-**What the measurement leaves open.** The two implementations disagree on every input
-that holds a byte outside ASCII in a position other than the first.
-`python/ja4.py` tests `ord(alpn[0]) > 127`, so a byte outside ASCII in the last position
+| The first ALPN value | FoxIO Python | FoxIO Rust | The two agree |
+|---|---|---|---|
+| `h\x00` | `h` | `h0` | no |
+| `h\x01` | `h\x01` | `h1` | no |
+| `h\x0a` | `h\n` | no value | no |
+| `h\x1f` | `h\x1f` | `hf` | no |
+| `h\x20` | `h ` | `h ` | yes |
+| `h\x21` | `h!` | `h!` | yes |
+| `h\x7e` | `h~` | `h~` | yes |
+| `h\x7f` | `h\x7f` | `hf` | no |
+| `\x01h` | `\x01h` | `\h` | no |
+| `\x00\x01` | no value | `00` | no |
+
+The cause is the tshark text form. `rust/ja4/src/tls.rs` reads a control byte as the
+escape text tshark writes, so it reads `h\x1f` as the five characters `h`, `\`, `x`, `1`
+and `f`, and it writes the first and the last of them. `python/ja4.py` reads the byte.
+The one exception is `0x09`, where both write a tab. That one agreement is an accident of
+the tshark text form, not a rule, so this project does not adopt it.
+
+**What the measurement settles.** The two implementations agree on every input whose
+first byte and last byte fall inside `0x20-0x7E`. They agree on an input whose two bytes
+fall outside ASCII. `ja4plus` adopts both results. Before #141 it wrote `99` for `h\x20`
+and for `\x20h`, and it now writes `h ` and ` h`.
+
+**What the measurement leaves open.** The two implementations disagree on every byte
+outside `0x20-0x7E` that sits in a position other than the first.
+`python/ja4.py` tests `ord(alpn[0]) > 127`, so a byte above `0x7F` in the last position
 reaches the fingerprint as the replacement character. `rust/ja4/src/tls.rs` replaces each
 end character with `9` when that character falls outside ASCII. The two also disagree on
 a one-byte value, because `rust/ja4/src/tls.rs` writes `0` for the absent last character.

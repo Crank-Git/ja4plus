@@ -28,17 +28,18 @@ def _is_alnum_byte(b):
     return (0x30 <= b <= 0x39) or (0x41 <= b <= 0x5A) or (0x61 <= b <= 0x7A)
 
 
-def _is_ascii_byte(b):
-    """Return True when the byte is ASCII: 0x00-0x7F."""
-    return b <= 0x7F
+def _is_printable_ascii_byte(b):
+    """Return True when the byte is printable ASCII: 0x20-0x7E."""
+    return 0x20 <= b <= 0x7E
 
 
 def compute_alpn_value(first_alpn_bytes):
     """Return the two-character ALPN value that JA4 and JA4S carry.
 
     The value is `00` for an absent ALPN extension. The value is the first byte and
-    the last byte when both bytes are ASCII. A one-byte value repeats that byte when
-    the byte is ASCII alphanumeric. The value is `99` in every other case.
+    the last byte when both bytes are printable ASCII, which is `0x20-0x7E`. A one-byte
+    value repeats that byte when the byte is ASCII alphanumeric. The value is `99` in
+    every other case.
 
     Args:
         first_alpn_bytes: The bytes of the first ALPN value, or None.
@@ -62,18 +63,23 @@ def compute_alpn_value(first_alpn_bytes):
         return "99"
 
     # #141: the FoxIO prose tests for an alphanumeric byte, and the measurement
-    # contradicts it. Both FoxIO implementations pass an ASCII byte through, so
+    # contradicts it. Both FoxIO implementations pass a printable ASCII byte through, so
     # `h\x20` reads `h ` and not `99`. `tests/foxio_vectors/alpn-condition.pcap` holds
     # the measurement.
-    if _is_ascii_byte(first) and _is_ascii_byte(last):
+    #
+    # The range stops at `0x7E`, because the two implementations agree only inside it.
+    # The FoxIO Rust implementation reads a control byte as the tshark escape text, so
+    # it reads `h\x1f` as five characters and writes `hf`.
+    if _is_printable_ascii_byte(first) and _is_printable_ascii_byte(last):
         return chr(first) + chr(last)
 
     # #127: the FoxIO prose gives the first and the last character of the hex form. The
     # FoxIO Python implementation and the FoxIO Rust implementation give `99`, and the
     # vector `tls-non-ascii-alpn.pcapng` holds `99`. This project follows the vector.
     #
-    # #141: the two implementations disagree when a byte outside ASCII sits anywhere
-    # other than the first position. This project holds `99` until the user decides.
+    # #141: the two implementations disagree on every byte outside `0x20-0x7E` that
+    # sits in a position other than the first. This project holds `99` until the user
+    # decides.
     return "99"
 
 
