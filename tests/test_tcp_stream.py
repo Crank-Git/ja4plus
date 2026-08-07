@@ -195,6 +195,71 @@ class TestTCPStreamReassembler(unittest.TestCase):
         r.trim_stream("stream1", 100)
         self.assertEqual(r.get_stream("stream1"), b"")
 
+    def test_a_stream_holds_no_more_than_the_byte_cap(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_bytes=100)
+        key = "stream1"
+        for i in range(200):
+            r.add_segment(key, seq=i * 10, data=b"a" * 10)
+        stored = sum(len(data) for _, data in r.streams[key]["segments"])
+        self.assertLessEqual(stored, 100)
+
+    def test_a_stream_holds_no_more_than_the_segment_cap(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_segments=8)
+        key = "stream1"
+        for i in range(200):
+            r.add_segment(key, seq=i, data=b"a")
+        self.assertLessEqual(len(r.streams[key]["segments"]), 8)
+
+    def test_one_hundred_thousand_one_byte_segments_stay_inside_the_segment_cap(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler()
+        key = "stream1"
+        for i in range(100000):
+            r.add_segment(key, seq=i, data=b"a")
+        self.assertLessEqual(len(r.streams[key]["segments"]), r.max_stream_segments)
+
+    def test_a_refused_segment_reassembles_when_the_stream_has_room_again(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler(max_stream_segments=2)
+        key = "stream1"
+        r.add_segment(key, seq=100, data=b"he")
+        r.add_segment(key, seq=102, data=b"ll")
+        # The cap refuses this segment, so the set of seen segments must not hold it.
+        r.add_segment(key, seq=104, data=b"o!")
+        r.trim_stream(key, 102)
+        r.add_segment(key, seq=104, data=b"o!")
+        self.assertEqual(r.get_stream(key), b"llo!")
+
+    def test_a_trim_across_the_sequence_wrap_removes_the_earlier_segment(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler()
+        key = "stream1"
+        r.add_segment(key, seq=WRAP_SEQ, data=b"abcd")
+        r.add_segment(key, seq=2, data=b"efgh")
+        # The first segment ends at sequence number 2, so the trim removes it and keeps
+        # the second. A comparison of the raw numbers keeps both.
+        r.trim_stream(key, 2)
+        self.assertEqual(r.get_stream(key), b"efgh")
+
+    def test_a_trim_lowers_the_stored_byte_count_of_the_stream(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler()
+        key = "stream1"
+        r.add_segment(key, seq=100, data=b"hello")
+        self.assertEqual(r.streams[key]["bytes"], 5)
+        # A stored byte count that a trim leaves high refuses a later segment for room
+        # the stream no longer uses.
+        r.trim_stream(key, 105)
+        self.assertEqual(r.streams[key]["bytes"], 0)
+
     def test_max_streams_cleanup(self):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
@@ -212,7 +277,9 @@ class TestTCPStreamReassembler(unittest.TestCase):
         key = "stream1"
         r.add_segment(key, seq=0, data=b"a" * 20)
         result = r.get_stream(key)
-        self.assertLessEqual(len(result), 20)
+        # An earlier form of this test compared against 20, which the reassembler met
+        # before the cap existed. The cap is 10, so the comparison names 10.
+        self.assertLessEqual(len(result), 10)
 
 
 if __name__ == "__main__":

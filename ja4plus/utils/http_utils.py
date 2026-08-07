@@ -103,6 +103,19 @@ def parse_http_request(data):
         return None
 
 
+HTTP_METHOD_TOKENS = (
+    b"GET ",
+    b"POST ",
+    b"PUT ",
+    b"DELETE ",
+    b"HEAD ",
+    b"OPTIONS ",
+    b"PATCH ",
+    b"CONNECT ",
+    b"TRACE ",
+)
+
+
 def is_http_request(data):
     """
     Check if the data appears to be an HTTP request.
@@ -113,23 +126,37 @@ def is_http_request(data):
     Returns:
         True if the data appears to be an HTTP request, False otherwise
     """
-    http_methods = [
-        b"GET ",
-        b"POST ",
-        b"PUT ",
-        b"DELETE ",
-        b"HEAD ",
-        b"OPTIONS ",
-        b"PATCH ",
-        b"CONNECT ",
-        b"TRACE ",
-    ]
-
     if isinstance(data, str):
         data = data.encode("utf-8", errors="ignore")
 
-    for method in http_methods:
+    for method in HTTP_METHOD_TOKENS:
         if data.startswith(method):
+            return True
+
+    return False
+
+
+def can_become_http_request(data):
+    """Report whether a later byte can make the buffer an HTTP request.
+
+    A caller holds a buffer that grows one TCP segment at a time. The buffer is the
+    start of an HTTP request while it is a prefix of a method token.
+
+    Args:
+        data: The bytes the buffer holds, or the same text as a string.
+
+    Returns:
+        True when the buffer is an HTTP request, or when it is the start of one. False
+        when no later byte can make it one.
+    """
+    if isinstance(data, str):
+        data = data.encode("utf-8", errors="ignore")
+
+    if not data:
+        return True
+
+    for method in HTTP_METHOD_TOKENS:
+        if data.startswith(method) or method.startswith(data):
             return True
 
     return False
