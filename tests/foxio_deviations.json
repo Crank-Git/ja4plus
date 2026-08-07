@@ -1,19 +1,11 @@
 {
-  "CVE-2018-6794.pcap/0:8089/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "CVE-2018-6794.pcap/1:8089/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
   "CVE-2018-6794.pcap/JA4H": {
     "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
     "issue": 35
   },
   "CVE-2018-6794.pcap/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
+    "issue": 35
   },
   "CVE-2018-6794.pcap/JA4L-C": {
     "cause": "ja4plus emits more JA4L-C values than the reference holds.",
@@ -28,8 +20,8 @@
     "issue": 129
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1": {
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate.",
@@ -48,8 +40,8 @@
     "issue": 35
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4S": {
     "cause": "ja4plus produces a JA4S fingerprint the reference does not hold. The reference reads no QUIC handshake on the stream whose source port is 50280, and the JA4 entry of this vector names the same stream.",
@@ -84,252 +76,16 @@
     "issue": 35
   },
   "http-empty-useragent.pcap/0:57722/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "ja4plus produces no JA4H value on this stream.",
+    "issue": 35
   },
   "http-empty-useragent.pcap/JA4H": {
     "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
     "issue": 35
   },
   "http-empty-useragent.pcap/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1-with-cookies.pcapng/0:61256/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1-with-cookies.pcapng/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/0:48456/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/10:45050/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/11:48466/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/12:48468/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/13:45052/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/14:48470/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/15:45054/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/16:48472/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/18:48476/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/19:45056/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/1:45042/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/20:48478/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/21:48480/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/22:38660/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/23:41355/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/24:39698/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/25:44238/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/26:44239/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/27:44240/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/28:44241/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/29:44242/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/2:48458/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/30:44243/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/31:44244/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/32:44245/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/33:44250/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/34:44251/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/35:44252/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/36:44253/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/37:44254/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/38:44255/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/39:44256/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/3:45044/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/40:44257/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/41:45058/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/42:48482/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/43:48484/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/44:48486/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/45:45060/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/46:40978/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/47:60164/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/48:60180/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/49:60186/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/4:56404/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/4:56404/JA4H_ro.2": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/50:60200/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/51:45062/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/52:60204/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/53:60220/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/54:60222/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/55:60230/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/5:48460/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/6:45046/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/7:48462/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/8:45048/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/9:48464/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "http1.pcapng/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
+    "issue": 35
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.1": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",
@@ -392,64 +148,64 @@
     "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.10": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.11": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.12": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.13": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.14": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.15": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.2": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.3": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.4": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.5": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.6": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.7": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.8": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.9": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/0:58847/JA4X.1": {
     "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate.",
@@ -468,24 +224,16 @@
     "issue": 129
   },
   "http2-with-cookies.pcapng/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
+    "cause": "the reference decrypts the capture with the secrets it carries, and ja4plus reads no encrypted request.",
+    "issue": 129
   },
   "http2-with-cookies.pcapng/JA4X": {
     "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate.",
     "issue": 78
   },
-  "https-connect.pcap/0:54723/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
   "https-connect.pcap/JA4": {
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold.",
     "issue": 13
-  },
-  "https-connect.pcap/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
   },
   "https-connect.pcap/JA4L-C": {
     "cause": "ja4plus emits more JA4L-C values than the reference holds.",
@@ -507,14 +255,6 @@
     "cause": "The client hello carries SNI as its only extension, and the reference gives 000000000000 as the JA4_o extension hash.",
     "issue": 132
   },
-  "latest.pcapng/6:52939/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "latest.pcapng/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
   "quic-tls-handshake.pcapng/JA4": {
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold.",
     "issue": 13
@@ -522,42 +262,6 @@
   "quic-with-several-tls-frames.pcapng/JA4": {
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold.",
     "issue": 13
-  },
-  "single-packets.pcap/0:49677/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "single-packets.pcap/1:49654/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "single-packets.pcap/2:49683/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "single-packets.pcap/3:49708/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "single-packets.pcap/4:49735/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "single-packets.pcap/5:49733/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "single-packets.pcap/6:49743/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "single-packets.pcap/7:49738/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "single-packets.pcap/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
   },
   "socks-https-example.pcap/0:53554/JA4_o.1": {
     "cause": "The client hello carries SNI as its only extension, and the reference gives 000000000000 as the JA4_o extension hash.",
@@ -599,21 +303,9 @@
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets.",
     "issue": 97
   },
-  "ssh2.pcapng/15:57380/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
-  "ssh2.pcapng/22:57396/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
   "ssh2.pcapng/JA4": {
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold.",
     "issue": 13
-  },
-  "ssh2.pcapng/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
   },
   "ssh2.pcapng/JA4L-S": {
     "cause": "ja4plus emits more JA4L-S values than the reference holds.",
@@ -867,17 +559,9 @@
     "cause": "ja4plus produces no JA4_ro fingerprint the reference holds.",
     "issue": 13
   },
-  "tls3.pcapng/8:63249/JA4H_ro.1": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
-  },
   "tls3.pcapng/JA4": {
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold.",
     "issue": 13
-  },
-  "tls3.pcapng/JA4H_ro": {
-    "cause": "ja4plus computes no JA4H raw form.",
-    "issue": 131
   },
   "tls3.pcapng/JA4S": {
     "cause": "ja4plus produces a JA4S fingerprint the reference does not hold. The reference reads no QUIC handshake on the six streams the JA4 entry of this vector names.",
