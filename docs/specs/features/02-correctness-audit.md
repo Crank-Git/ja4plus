@@ -105,7 +105,7 @@ the rule the fix must satisfy.
 | 7 | `ja4plus/fingerprinters/ja4h.py:163` | `cookies[k] = v` drops a repeated cookie name, while `cookie_fields` keeps it. The cookie-name hash and the cookie-value hash then describe different cookie sets. | Build both hashes from one ordered list of pairs. |
 | 8 | `ja4plus/fingerprinters/ja4h.py:131` | The request-line pattern requires `HTTP/<digit>.<digit>`. A request line that reads `HTTP/2` never matches, although `_http_version_to_str` handles `2`. | Accept an optional minor version. |
 | 9 | `ja4plus/fingerprinters/ja4h.py:82` | When the buffer is not an HTTP request, the segment stays in the reassembler forever. | Remove the stream when the buffer cannot become an HTTP request. |
-| 10 | `ja4plus/fingerprinters/ja4.py:268` | The `if original_order:` branch and its `else:` branch build the same string. | Remove the branch, or make the two differ. |
+| 10 | `ja4plus/fingerprinters/ja4.py:292` | The `if original_order:` branch and its `else:` branch build the same string. | Remove the branch, or make the two differ. |
 | 11 | `ja4plus/fingerprinters/base.py:38` | `add_fingerprint` stores the packet object. A monitor holds every packet it ever fingerprinted. | Store what the result needs. Never store the packet. |
 | 12 | `ja4plus/fingerprinters/ja4ssh.py:80` | On a non-standard port, the lower port number decides which side is the server. Two ephemeral ports make this arbitrary. | Decide from the first SSH banner, and fall back to the port. |
 | 13 | `ja4plus/collector.py:33` | The module holds mutable state in module-level variables. It is deprecated and states removal at version 0.4.0. The project is at 0.6.0. | Remove the module in Epic 4. |

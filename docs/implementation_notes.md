@@ -101,7 +101,7 @@ every rule fires on `0xba 0xad`. #141 measured the condition against a capture i
 The next section holds that measurement, and it holds the part of the condition the
 measurement leaves open.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:31`, in `compute_alpn_value`.
+**Location:** `ja4plus/fingerprinters/ja4.py:36`, in `compute_alpn_value`.
 
 ### The ALPN condition passes a printable ASCII byte through
 
@@ -362,7 +362,7 @@ value. #132 holds the command and the full output.
 Before #132, `ja4plus` emitted `9af15b336e6a` on these four streams. `JA4_o` now matches
 all 160 reference values, and the count was 156 of 160.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:169`.
+**Location:** `ja4plus/fingerprinters/ja4.py:193`.
 
 The JA4S section below records the `JA4S_o` reading.
 
