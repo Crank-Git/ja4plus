@@ -6,6 +6,19 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **JA4H computes its raw form** (#131). FoxIO publishes one raw key for JA4H,
+  `JA4H_ro`, and `ja4plus` computed none, so 89 reference values reached no
+  comparison. Every JA4H result now carries `raw_original_order`, and the
+  fingerprinter carries `last_raw_original_order`, so the processor and the
+  command-line program report the value the way they report `JA4_ro`. The form is
+  `<part a>_<header names>_<cookie names>_<cookie pairs>`, and every list holds the
+  wire order. A request that carries no cookie ends after the header names and one
+  underscore. 79 of the 89 values now match. The other ten sit on a stream whose
+  hashed JA4H value fails too, and #129 and #35 own them. No hashed fingerprint
+  changed.
+
 ### Fixed
 
 - **JA4S tells a QUIC server Initial packet from a client one** (#118). `ja4plus`

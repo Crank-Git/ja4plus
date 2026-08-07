@@ -23,7 +23,7 @@ about another method, so each row below names its own evidence. The counts come 
 |---|---|---|---|
 | JA4 | `JA4_r`, `JA4_ro` | `JA4_r` sorts the ciphers and the extensions. It holds the signature algorithms in wire order. `JA4_ro` holds every list in wire order. | 160 `JA4_r` values. 156 of them carry a signature-algorithm section, and all 156 hold the ciphers and the extensions in numeric order and the signature algorithms in an order that is not numeric. The other four carry no extension and no signature algorithm. No `JA4_ro` value equals its `JA4_r` value. |
 | JA4S | `JA4S_r` | The extensions stay in wire order. JA4S sorts no list. | 84 `JA4S_r` values. 35 of them hold the extensions in an order that is not numeric order, and `badcurveball.pcap.json` gives `t1205h1_c02b_0000,ff01,000b,0023,0010`. No file carries a `JA4S_ro` key. |
-| JA4H | `JA4H_ro` | Not measured. | 89 `JA4H_ro` values, and no `JA4H_r` value. `ja4plus` computes no JA4H raw form, so all 89 fail. #131 owns them. |
+| JA4H | `JA4H_ro` | Every list holds the wire order. `JA4H_ro` holds the header names, the cookie names and the cookie name-and-value pairs as the request carries them. | 89 `JA4H_ro` values, and no `JA4H_r` value. `http1-with-cookies.pcapng.json` gives `yummy_cookie,tasty_cookie`, which is not sorted order, and the hashed form of the same request sorts the two names. 79 of the 89 values match after #131. |
 | JA4X, JA4SSH, JA4L, JA4T, JA4TS, JA4D, JA4D6 | None | Not applicable. | No expected-output file carries a raw key for these methods. |
 
 **Location:** `ja4plus/fingerprinters/ja4.py`, `ja4plus/fingerprinters/ja4s.py`.
@@ -47,6 +47,16 @@ already reports a count defect, and the raw comparison adds a value comparison.
 | `JA4_o` | 160 | 145 | 15 | #13 for 11, #132 for 4 |
 | `JA4S_r` | 84 | 84 | 0 | None |
 | `JA4H_ro` | 89 | 0 | 89 | #131 |
+
+#131 landed the JA4H raw form. The second measurement, on `epic/12-spec-conformance`:
+
+| Raw key | Values | Match | Differ | Owner of the failures |
+|---|---|---|---|---|
+| `JA4H_ro` | 89 | 79 | 10 | #129 for 9, #35 for 1 |
+
+The ten failures sit on a stream whose hashed `JA4H` value fails too. Nine of them are the
+two captures that carry a Decryption Secrets Block, and `ja4plus` decrypts nothing. The
+last one is `http-empty-useragent.pcap`, which produces no JA4H value at all.
 
 `JA4_o` holds a hash of the original-order fields rather than a raw form. The reference
 publishes it beside `JA4_ro`, so the suite compares it the same way.
@@ -610,6 +620,30 @@ which could corrupt streams with out-of-order TCP segments.
 ---
 
 ## JA4H - HTTP
+
+### The raw form holds the wire order
+
+FoxIO publishes one raw key for JA4H, `JA4H_ro`, and no `JA4H_r` key. `ja4plus` therefore
+computes one JA4H raw form. A sorted raw form matches no reference value and no other
+implementation, so the fingerprinter emits none.
+
+The form is `<part a>_<header names>_<cookie names>_<cookie pairs>`. A request that
+carries no cookie ends after the header names and one underscore, as
+`http1.pcapng.json` writes it:
+
+```
+po11nn050000_Host,Accept,User-Agent,Content-Type,Content-Length_
+ge11cr04da00_Host,User-Agent,Accept,Accept-Language_yummy_cookie,tasty_cookie_yummy_cookie=choco,tasty_cookie=strawberry
+```
+
+The header list drops the Cookie header, the Referer header and an HTTP/2
+pseudo-header, because the first section already reports the first two and the reference
+lists no pseudo-header. The hashed form and the raw form read one header list, so the raw
+form explains the hash.
+
+**Vector:** `http1-with-cookies.pcapng` and the 56 values of `http1.pcapng`.
+
+**Location:** `ja4plus/fingerprinters/ja4h.py`.
 
 ### TCP reassembly
 
