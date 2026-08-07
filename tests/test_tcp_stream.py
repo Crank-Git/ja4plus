@@ -120,8 +120,9 @@ class TestTCPStreamReassembler(unittest.TestCase):
 
         r = TCPStreamReassembler()
         key = "stream1"
+        # The first segment puts "d" at sequence number 1, and the second repeats it.
         r.add_segment(key, seq=WRAP_SEQ, data=b"abcd")
-        r.add_segment(key, seq=1, data=b"cdef")
+        r.add_segment(key, seq=1, data=b"def")
         self.assertEqual(r.get_stream(key), b"abcdef")
 
     def test_the_base_sequence_across_the_sequence_wrap_names_the_first_byte(self):
@@ -158,6 +159,24 @@ class TestTCPStreamReassembler(unittest.TestCase):
         # the segments costs sixteen times the time. A constant-cost check costs four.
         # The threshold sits between the two readings, clear of the noise of either.
         self.assertLess(elapsed(20000), elapsed(5000) * 8)
+
+    def test_a_trimmed_segment_reassembles_when_it_arrives_again(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler()
+        key = "stream1"
+        r.add_segment(key, seq=100, data=b"hello")
+        r.trim_stream(key, 105)
+        self.assertEqual(r.get_stream(key), b"")
+        r.add_segment(key, seq=100, data=b"hello")
+        self.assertEqual(r.get_stream(key), b"hello")
+
+    def test_a_trim_of_an_unknown_stream_does_nothing(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler()
+        r.trim_stream("stream1", 100)
+        self.assertEqual(r.get_stream("stream1"), b"")
 
     def test_max_streams_cleanup(self):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler

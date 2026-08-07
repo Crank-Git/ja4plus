@@ -96,10 +96,10 @@ the rule the fix must satisfy.
 
 | # | Location | What is wrong | Rule for the fix |
 |---|---|---|---|
-| 1 | `ja4plus/utils/tcp_stream.py:53` | `sorted(...)` orders raw sequence numbers. A sequence number is 32 bits and wraps. A connection that crosses the boundary reassembles in the wrong order. | Compare with modular arithmetic. |
-| 2 | `ja4plus/utils/tcp_stream.py:37` | The duplicate check scans every stored segment for each new segment. Cost grows with the square of the segment count. | Use a set of `(seq, length)` pairs. |
+| 1 | `ja4plus/utils/tcp_stream.py:53` | `sorted(...)` orders raw sequence numbers. A sequence number is 32 bits and wraps. A connection that crosses the boundary reassembles in the wrong order. | Compare with modular arithmetic. #32 built it. |
+| 2 | `ja4plus/utils/tcp_stream.py:37` | The duplicate check scans every stored segment for each new segment. Cost grows with the square of the segment count. | Use a set of `(seq, length)` pairs. #32 built it. |
 | 3 | `ja4plus/utils/tcp_stream.py:41` | `max_stream_bytes` limits the reassembled output, not the stored segments. A sender that emits many distinct small segments grows one stream without bound. | Cap the stored bytes per stream, not only the output. |
-| 4 | `ja4plus/utils/tcp_stream.py:33` | `base_seq` is stored and never read. | Remove it, or use it. |
+| 4 | `ja4plus/utils/tcp_stream.py:33` | `base_seq` is stored and never read. | Remove it, or use it. #32 removed the stored value. The `base_seq` method stays, because `ja4x.py` reads it. |
 | 5 | `ja4plus/fingerprinters/ja4l.py:223` | The client branch matches every ACK without a SYN flag. Each later ACK overwrites timestamp `C` and emits another client fingerprint with a larger latency. | Emit one client value for one connection. `FR-spec-conformance-19` gives the measurement point, and #88 built it. |
 | 6 | `ja4plus/fingerprinters/ja4l.py:279` | `_src_is_client` is never called. | Remove it. |
 | 7 | `ja4plus/fingerprinters/ja4h.py:163` | `cookies[k] = v` drops a repeated cookie name, while `cookie_fields` keeps it. The cookie-name hash and the cookie-value hash then describe different cookie sets. | Build both hashes from one ordered list of pairs. |
@@ -137,7 +137,7 @@ Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/pcap (retrieved
 
 | Case | What happens |
 |---|---|
-| A TCP segment arrives with a sequence number below the stored base, because the number wrapped. | The reassembler places it after the stored segments. |
+| A TCP segment arrives with a sequence number below the stored base, because the number wrapped. | The reassembler places it after the stored segments, in sequence order. |
 | A sender emits 100000 distinct one-byte segments on one connection. | The reassembler holds no more than the per-stream byte cap. |
 | A TLS record declares a length larger than the packet. | The parser returns nothing. |
 | An extension list declares more extensions than the packet carries. | The parser returns nothing. |
