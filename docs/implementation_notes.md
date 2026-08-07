@@ -23,10 +23,33 @@ about another method, so each row below names its own evidence. The counts come 
 |---|---|---|---|
 | JA4 | `JA4_r`, `JA4_ro` | `JA4_r` sorts the ciphers and the extensions. It holds the signature algorithms in wire order. `JA4_ro` holds every list in wire order. | 160 `JA4_r` values. 156 of them carry a signature-algorithm section, and all 156 hold the ciphers and the extensions in numeric order and the signature algorithms in an order that is not numeric. The other four carry no extension and no signature algorithm. No `JA4_ro` value equals its `JA4_r` value. |
 | JA4S | `JA4S_r` | The extensions stay in wire order. JA4S sorts no list. | 84 `JA4S_r` values. 35 of them hold the extensions in an order that is not numeric order, and `badcurveball.pcap.json` gives `t1205h1_c02b_0000,ff01,000b,0023,0010`. No file carries a `JA4S_ro` key. |
-| JA4H | `JA4H_ro` | Not measured. | 89 `JA4H_ro` values, and no `JA4H_r` value. `ja4plus` exposes no JA4H raw form, so no reading is needed yet. |
+| JA4H | `JA4H_ro` | Not measured. | 89 `JA4H_ro` values, and no `JA4H_r` value. `ja4plus` computes no JA4H raw form, so all 89 fail. #131 owns them. |
 | JA4X, JA4SSH, JA4L, JA4T, JA4TS, JA4D, JA4D6 | None | Not applicable. | No expected-output file carries a raw key for these methods. |
 
 **Location:** `ja4plus/fingerprinters/ja4.py`, `ja4plus/fingerprinters/ja4s.py`.
+
+### The conformance suite compares every raw key
+
+Before #121, `tests/conformance_index.py` dropped every key that ends with `_r`, `_ro`,
+`_o` or `_raw`, so no raw form reached a comparison. `RAW_METHODS` in that module now
+names each raw key the reference publishes and the produced key that holds the value.
+
+The reference publishes a raw key on exactly the stream where it publishes the hashed
+key, on all 37 vectors. The occurrence-key comparison of the hashed method therefore
+already reports a count defect, and the raw comparison adds a value comparison.
+
+#121 measured the first result on `epic/12-spec-conformance` at `03c7c02`:
+
+| Raw key | Values | Match | Differ | Owner of the failures |
+|---|---|---|---|---|
+| `JA4_r` | 160 | 149 | 11 | #13, on the same 11 streams as `JA4` |
+| `JA4_ro` | 160 | 149 | 11 | #13, on the same 11 streams as `JA4` |
+| `JA4_o` | 160 | 145 | 15 | #13 for 11, #132 for 4 |
+| `JA4S_r` | 84 | 84 | 0 | None |
+| `JA4H_ro` | 89 | 0 | 89 | #131 |
+
+`JA4_o` holds a hash of the original-order fields rather than a raw form. The reference
+publishes it beside `JA4_ro`, so the suite compares it the same way.
 
 ---
 

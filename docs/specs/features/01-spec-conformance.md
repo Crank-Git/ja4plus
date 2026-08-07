@@ -105,6 +105,12 @@ that carries a whole ServerHello.
 FR-spec-conformance-27 — A QUIC server Initial packet replaces no stored client
 connection ID.
 
+FR-spec-conformance-28 — The conformance suite compares every raw key the FoxIO
+expected-output files hold, one case for each key on each stream.
+
+FR-spec-conformance-29 — A raw key that ja4plus computes no value for fails its case.
+The suite reports no such key as not applicable.
+
 ## User flows
 
 **A maintainer fixes a failing method.**
