@@ -45,6 +45,36 @@ method name plus an occurrence counter.
 method that emits more fingerprints than the reference is a defect, and so is one that
 emits fewer.
 
+## When the FoxIO reference holds a defect
+
+The FoxIO reference decides behaviour. It does not decide behaviour that the reference
+itself produces by accident.
+
+**A defect is proven, never asserted.** Instrument the FoxIO implementation at the pinned
+commit, or measure the vector directly, and put the command and its output in the issue.
+A reading of the source alone is not proof.
+
+**`ja4plus` declines a proven defect when reproducing it would do either of these.**
+
+1. Make a fingerprint depend on something other than the connection: the composition of
+   the capture, the order the capture is read, or the position of the connection in the
+   file.
+2. Make `ja4plus` emit a fingerprint that describes no traffic.
+
+A fingerprint exists so that one tool's output can be compared against another tool's
+output. A value that changes with the file it was read from cannot be compared, and a
+value that describes nothing cannot be read.
+
+**A declined defect is recorded, never hidden.** Open an issue that states the mechanism
+and the evidence, close it as a documented divergence, and point every affected register
+entry at it. The cost goes in the issue: how many cases stay unmatched, and in which
+direction.
+
+**A defect outside those two shapes is a question for the user.** Do not extend this rule
+by analogy.
+
+Decided on 2026-08-07. #96, #97 and #105 are the first three.
+
 ## When the FoxIO material is ambiguous
 
 Seven of the twelve methods are published as images. When an image does not settle a
