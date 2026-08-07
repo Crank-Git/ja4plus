@@ -241,15 +241,14 @@ def index_produced(pcap_path):
 def _entry_identity(entry):
     """Return the stream identity of one fingerprint entry, or None.
 
-    A stateless fingerprinter holds the packet that produced the value. JA4SSH holds
-    the connection key of the window instead.
+    A stateless fingerprinter holds the endpoints of the packet that produced the
+    value. JA4SSH holds the connection key of the window instead.
     """
     connection = entry.get("connection")
     if connection:
         return _connection_identity(connection)
-    packet = entry.get("packet")
-    if packet is not None:
-        return _packet_identity(packet)
+    if entry.get("src") is not None and entry.get("srcport") is not None:
+        return stream_identity(entry["src"], entry["srcport"], entry["dst"], entry["dstport"])
     return None
 
 
@@ -274,33 +273,3 @@ def _connection_identity(connection):
     if not client_host or not server_host:
         return None
     return stream_identity(client_host, client_port, server_host, server_port)
-
-
-def _packet_identity(packet):
-    """Return the stream identity of a packet, or None.
-
-    Reads the innermost address layer and the innermost port layer, because a tunnelled
-    capture holds an outer header that the reference does not describe.
-    """
-    from scapy.layers.inet import IP, TCP, UDP
-    from scapy.layers.inet6 import IPv6
-
-    address_layer = _innermost(packet, (IP, IPv6))
-    port_layer = _innermost(packet, (TCP, UDP))
-    if address_layer is None or port_layer is None:
-        return None
-    return stream_identity(address_layer.src, port_layer.sport, address_layer.dst, port_layer.dport)
-
-
-def _innermost(packet, layer_classes):
-    """Return the innermost layer of the packet that has one of the classes, or None."""
-    found = None
-    for layer_class in layer_classes:
-        index = 0
-        while True:
-            layer = packet.getlayer(layer_class, nb=index + 1)
-            if layer is None:
-                break
-            found = layer
-            index += 1
-    return found

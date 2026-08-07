@@ -18,6 +18,7 @@ from ja4plus.utils.ssh_utils import (
     extract_hassh,
 )
 from ja4plus.fingerprinters.base import BaseFingerprinter
+from ja4plus.utils.packet_utils import accepts_a_connection, opens_a_connection
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,11 @@ ACK_FLAG = 0x10
 # open.
 FIN_FLAG = 0x01
 
+# A monitor reads a SYN for every TCP connection on the wire, and few of those carry
+# SSH. The handshake table therefore holds a maximum entry count, and it drops the
+# oldest half when it fills.
+MAX_HANDSHAKE_CONNECTIONS = 1000
+
 
 class JA4SSHFingerprinter(BaseFingerprinter):
     """
@@ -59,6 +65,10 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         self.connections = {}
         self.packet_count = packet_count
         self.hassh_fingerprints = []
+        # The endpoint pair of one connection -> the client endpoint the TCP handshake
+        # names. The handshake arrives before any SSH data, and the connection entry
+        # does not exist yet, so the answer waits here until the first SSH packet.
+        self._handshake_clients = {}
 
     def process_packet(self, packet):
         """
@@ -90,31 +100,25 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         src_port = tcp.sport
         dst_port = tcp.dport
 
-        # Determine client/server based on SSH port (22) if available, otherwise use connection direction
         ssh_port = SSH_PORT
-        if dst_port == ssh_port:
-            client_ip, server_ip = src_ip, dst_ip
-            client_port, server_port = src_port, dst_port
-            is_client_to_server = True
-        elif src_port == ssh_port:
-            client_ip, server_ip = dst_ip, src_ip
-            client_port, server_port = dst_port, src_port
-            is_client_to_server = False
-        else:
-            # SSH on non-standard port - lower port is typically the server
-            if dst_port < src_port:
-                # dst has the lower port -> dst is server, src is client
-                client_ip, server_ip = src_ip, dst_ip
-                client_port, server_port = src_port, dst_port
-                is_client_to_server = True
-            else:
-                # src has the lower port -> src is server, dst is client
-                client_ip, server_ip = dst_ip, src_ip
-                client_port, server_port = dst_port, src_port
-                is_client_to_server = False
+
+        # The handshake names the two endpoints, and it arrives before any SSH data.
+        # The record happens before the guard below returns, because a SYN on a
+        # non-standard port carries no SSH data and creates no connection.
+        self._record_handshake(tcp, src_ip, src_port, dst_ip, dst_port)
+
+        client_ip, client_port, server_ip, server_port, decided_by = self._decide_endpoints(
+            src_ip, src_port, dst_ip, dst_port
+        )
 
         # Connection key for tracking
         conn_key = f"{client_ip}:{client_port}-{server_ip}:{server_port}"
+        # An eviction from the handshake table would otherwise move the decision, and
+        # the connection would split into two entries. The connection that already
+        # exists keeps the endpoints it started with.
+        reversed_key = f"{server_ip}:{server_port}-{client_ip}:{client_port}"
+        if conn_key not in self.connections and reversed_key in self.connections:
+            conn_key = reversed_key
 
         # A bare ACK carries the ACK flag alone and no payload. FoxIO counts one only
         # when the TCP flags equal 0x0010, which excludes a SYN+ACK, a FIN+ACK and a
@@ -135,7 +139,10 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         if conn_key not in self.connections:
             self.connections[conn_key] = {
                 "client_ip": client_ip,
+                "client_port": client_port,
                 "server_ip": server_ip,
+                "server_port": server_port,
+                "server_decided_by": decided_by,
                 "ssh_packets": {"client": [], "server": []},
                 "message_tracker": {
                     "client": SSHMessageTracker(),
@@ -150,6 +157,11 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             }
 
         conn = self.connections[conn_key]
+
+        # The connection holds the endpoints it started with, so the direction of this
+        # packet reads from the connection and not from a fresh decision. A handshake
+        # that arrives late would otherwise count one packet in the wrong direction.
+        is_client_to_server = (src_ip, src_port) == (conn["client_ip"], conn["client_port"])
 
         # Check for SSH version banner
         if packet.haslayer(Raw):
@@ -211,6 +223,108 @@ class JA4SSHFingerprinter(BaseFingerprinter):
 
         return None
 
+    @staticmethod
+    def _endpoint_pair_key(src_ip, src_port, dst_ip, dst_port):
+        """Return the key that names one connection in either direction.
+
+        Args:
+            src_ip: The source address of the packet.
+            src_port: The source port of the packet.
+            dst_ip: The destination address of the packet.
+            dst_port: The destination port of the packet.
+
+        Returns:
+            One string. The two directions of one connection give one key.
+        """
+        first, second = sorted(((src_ip, src_port), (dst_ip, dst_port)))
+        return f"{first[0]}:{first[1]}-{second[0]}:{second[1]}"
+
+    def _record_handshake(self, tcp, src_ip, src_port, dst_ip, dst_port):
+        """Record the client endpoint that the TCP handshake of one connection names.
+
+        The SYN sender is the client. The SYN+ACK sender is the server, so its
+        destination is the client. A capture that starts after the SYN still holds the
+        SYN+ACK.
+
+        The method records nothing when one endpoint uses port 22, because the port
+        decides that connection and the table would hold an entry nothing reads.
+
+        Args:
+            tcp: The TCP layer of the packet.
+            src_ip: The source address of the packet.
+            src_port: The source port of the packet.
+            dst_ip: The destination address of the packet.
+            dst_port: The destination port of the packet.
+        """
+        if SSH_PORT in (src_port, dst_port):
+            return
+        if opens_a_connection(tcp, "tcp"):
+            client = (src_ip, src_port)
+        elif accepts_a_connection(tcp, "tcp"):
+            client = (dst_ip, dst_port)
+        else:
+            return
+        key = self._endpoint_pair_key(src_ip, src_port, dst_ip, dst_port)
+        if key not in self._handshake_clients:
+            self._evict_handshake_clients()
+        self._handshake_clients[key] = client
+
+    def _evict_handshake_clients(self):
+        """Drop the oldest half of the handshake table when the table is full.
+
+        A monitor reads a SYN for every TCP connection on the wire. A dictionary keeps
+        its insertion order, so the oldest entry comes first.
+        """
+        if len(self._handshake_clients) < MAX_HANDSHAKE_CONNECTIONS:
+            return
+        oldest = list(self._handshake_clients)[: MAX_HANDSHAKE_CONNECTIONS // 2]
+        for key in oldest:
+            del self._handshake_clients[key]
+
+    def _decide_endpoints(self, src_ip, src_port, dst_ip, dst_port):
+        """Return the client endpoint, the server endpoint, and how the two were decided.
+
+        Three rules decide, in this order:
+
+        1. An endpoint on port 22 is the server. FoxIO tracks a connection for JA4SSH
+           only when one endpoint uses that port.
+        2. The TCP handshake names the client, because the SYN sender opens the
+           connection.
+        3. The lower port is the server. The result is a guess, because two ephemeral
+           ports carry no meaning.
+
+        The first SSH banner decides nothing. RFC 4253 section 4.2 has both endpoints
+        send an identification string, and a client that does not wait sends first. The
+        banner arrives from the client in 4 of the 11 streams of `tests/foxio_vectors/`
+        whose SYN names a side.
+
+        Args:
+            src_ip: The source address of the packet.
+            src_port: The source port of the packet.
+            dst_ip: The destination address of the packet.
+            dst_port: The destination port of the packet.
+
+        Returns:
+            A tuple of the client address, the client port, the server address, the
+            server port, and one of `port`, `handshake` or `guess`.
+        """
+        if dst_port == SSH_PORT:
+            return src_ip, src_port, dst_ip, dst_port, "port"
+        if src_port == SSH_PORT:
+            return dst_ip, dst_port, src_ip, src_port, "port"
+
+        client = self._handshake_clients.get(
+            self._endpoint_pair_key(src_ip, src_port, dst_ip, dst_port)
+        )
+        if client == (src_ip, src_port):
+            return src_ip, src_port, dst_ip, dst_port, "handshake"
+        if client == (dst_ip, dst_port):
+            return dst_ip, dst_port, src_ip, src_port, "handshake"
+
+        if dst_port < src_port:
+            return src_ip, src_port, dst_ip, dst_port, "guess"
+        return dst_ip, dst_port, src_ip, src_port, "guess"
+
     def _close_window(self, conn_key):
         """Emit the open window of one connection, and start a new window.
 
@@ -231,7 +345,14 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         fingerprint = self._generate_ja4ssh(conn_key)
 
         self.fingerprints.append(
-            {"fingerprint": fingerprint, "connection": conn_key, "timestamp": time.time()}
+            {
+                "fingerprint": fingerprint,
+                "connection": conn_key,
+                "timestamp": time.time(),
+                # A consumer reads a measured side and a guessed side differently, so
+                # the source of the decision reaches the result.
+                "server_decided_by": conn["server_decided_by"],
+            }
         )
 
         conn["ssh_packets"]["client"] = []
@@ -320,6 +441,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         super().reset()
         self.hassh_fingerprints = []
         self.connections = {}
+        self._handshake_clients = {}
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored SSH session state for the given connection."""
@@ -328,6 +450,11 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
         self.connections.pop(fwd, None)
         self.connections.pop(rev, None)
+        # The handshake table outlives the connection otherwise, because the processor
+        # evicts a connection that a later packet of the same endpoint pair rebuilds.
+        self._handshake_clients.pop(
+            self._endpoint_pair_key(src_ip, src_port, dst_ip, dst_port), None
+        )
 
     def interpret_fingerprint(self, fingerprint):
         """
@@ -391,7 +518,12 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 },
             }
 
-        except Exception as e:
+        # A malformed fingerprint produces one of these three errors. `AttributeError`
+        # names a value that is not a string, `IndexError` names a part that holds no
+        # server field, and `ValueError` names a field that holds no number. A wider
+        # handler would report a defect inside this project as a malformed fingerprint,
+        # and the caller would read a wrong answer instead of a stack trace.
+        except (AttributeError, IndexError, ValueError) as e:
             return {"error": f"Failed to interpret: {str(e)}"}
 
     def lookup_hassh(self, hassh_value):

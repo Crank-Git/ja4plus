@@ -21,6 +21,7 @@ from scapy.all import IP, IPv6, TCP, UDP
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.http_utils import is_http_request
+from ja4plus.utils.packet_utils import opens_a_connection, packet_endpoints
 from ja4plus.utils.quic_utils import (
     QUIC_HANDSHAKE,
     QUIC_INITIAL,
@@ -32,6 +33,10 @@ from ja4plus.utils.quic_utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+# JA4SSH reads the same handshake to name the client of a connection. One reader keeps
+# the two from naming two different clients for one connection.
+_opens_a_connection = opens_a_connection
 
 # FoxIO reports one-way latency, so it halves every measured round-trip time. The
 # JA4L material states "One-way TCP latency in us", and every vector holds half of
@@ -150,17 +155,18 @@ class JA4LFingerprinter(BaseFingerprinter):
         # The reference holds one client value for one connection and overwrites it
         # while the measurement point moves. A later packet therefore replaces the
         # value this fingerprinter already reported, and it adds no second value.
+        endpoints = packet_endpoints(packet)
         if fingerprint.startswith("JA4L-C="):
             index = conn.get("client_entry")
             if index is not None:
                 self.fingerprints[index]["fingerprint"] = fingerprint
-                self.fingerprints[index]["packet"] = packet
+                self.fingerprints[index].update(endpoints)
                 return fingerprint
             conn["client_entry"] = len(self.fingerprints)
 
-        self.fingerprints.append(
-            {"fingerprint": fingerprint, "packet": packet, "connection": conn["reported_key"]}
-        )
+        entry = {"fingerprint": fingerprint, "connection": conn["reported_key"]}
+        entry.update(endpoints)
+        self.fingerprints.append(entry)
         return fingerprint
 
     def reset(self):
@@ -267,22 +273,6 @@ class JA4LFingerprinter(BaseFingerprinter):
             return 128 - ttl
         else:
             return 255 - ttl
-
-
-def _opens_a_connection(port_layer, proto):
-    """Report whether the packet is a TCP SYN that carries no acknowledgement.
-
-    Args:
-        port_layer: The TCP layer or the UDP layer of the packet.
-        proto: The protocol name of the connection, `tcp` or `udp`.
-
-    Returns:
-        True when the packet opens a TCP connection, and False otherwise.
-    """
-    if proto != "tcp":
-        return False
-    flags = int(port_layer.flags)
-    return bool(flags & 0x02) and not bool(flags & 0x10)
 
 
 def _reported_key(proto, outer_layer, sport, dport):

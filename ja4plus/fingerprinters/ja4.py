@@ -8,6 +8,7 @@ import time
 from scapy.all import TCP, UDP, Raw, IP
 
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
+from ja4plus.utils.packet_utils import packet_endpoints
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -306,12 +307,11 @@ def get_raw_fingerprint(tls_info, original_order=False):
         sig_algs = tls_info.get("signature_algorithms", [])
         sig_alg_list = ",".join([f"{s:04x}" for s in sig_algs])
 
-        # Final format
+        # Final format. FoxIO holds the signature algorithms in wire order for both
+        # `JA4_r` and `JA4_o`, so `original_order` selects nothing here. The cipher list
+        # and the extension list above carry the whole difference between the two.
         if sig_algs:
-            if original_order:
-                raw_ja4 = f"{part_a}_{cipher_list}_{ext_list}_{sig_alg_list}"
-            else:
-                raw_ja4 = f"{part_a}_{cipher_list}_{ext_list}_{sig_alg_list}"
+            raw_ja4 = f"{part_a}_{cipher_list}_{ext_list}_{sig_alg_list}"
         else:
             raw_ja4 = f"{part_a}_{cipher_list}_{ext_list}"
 
@@ -370,15 +370,14 @@ class JA4Fingerprinter(BaseFingerprinter):
             self.last_raw = raw
             self.last_raw_original_order = raw_oo
             self.last_fingerprint_original_order = fingerprint_oo
-            self.fingerprints.append(
-                {
-                    "fingerprint": fingerprint,
-                    "fingerprint_original_order": fingerprint_oo,
-                    "raw": raw,
-                    "raw_original_order": raw_oo,
-                    "packet": packet,
-                }
-            )
+            entry = {
+                "fingerprint": fingerprint,
+                "fingerprint_original_order": fingerprint_oo,
+                "raw": raw,
+                "raw_original_order": raw_oo,
+            }
+            entry.update(packet_endpoints(packet))
+            self.fingerprints.append(entry)
 
         return fingerprint
 
