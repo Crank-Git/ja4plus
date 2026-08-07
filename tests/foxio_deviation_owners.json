@@ -35,6 +35,11 @@
       "state": "open",
       "title": "Read the JA4S ServerHello on three streams the FoxIO Rust implementation holds a value for"
     },
+    "162": {
+      "epic": false,
+      "state": "open",
+      "title": "Record the settled JA4 ALPN readings and measure the divergence"
+    },
     "34": {
       "epic": false,
       "state": "open",

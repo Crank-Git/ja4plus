@@ -4,19 +4,36 @@
 `tls-non-ascii-alpn.pcapng` holds the first ALPN value `0xba 0xad`, and every rule
 fires on it. #141 owns the condition, and it needs an input the rules separate.
 
-This capture supplies two such inputs. It is synthetic, and it is not FoxIO material.
-`tests/foxio_vectors/NOTICE` records that. Its expected-output file holds a
-measurement of the FoxIO Python implementation at the pinned upstream commit, and the
-FoxIO Rust implementation produces the same two values.
+This capture supplies seven such inputs. It is synthetic, and it is not FoxIO
+material. `tests/foxio_vectors/NOTICE` records that. Its expected-output file holds a
+measurement of the FoxIO Python implementation at the pinned upstream commit.
 
-| Stream | The first ALPN value | What it separates |
-|---|---|---|
-| 0 | `h\\x20` | The last byte is ASCII and it is not alphanumeric |
-| 1 | `\\x20h` | The first byte is ASCII and it is not alphanumeric |
+Streams 0 and 1 are the agreed inputs #141 measured. Both FoxIO implementations write
+the two bytes through on both of them. The FoxIO prose writes the hex form, and
+`ja4plus` wrote `99` before #141, so the three rules disagree on both streams.
 
-Both FoxIO implementations write the two bytes through on both streams. The FoxIO
-prose writes the hex form, and `ja4plus` wrote `99` before #141. The three rules
-therefore disagree on both streams.
+Streams 2 to 6 are the disputed inputs #162 records. The two FoxIO implementations
+disagree with each other on every one of them, so no measurement settles the value.
+`CLAUDE.md` rule 1 forbids a move that no vector requires. The user decided on
+2026-08-07 that the `ja4plus` values stay. The capture carries the inputs, so the suite
+runs the divergence as a comparison. No reader has to find it in an issue comment.
+
+| Stream | The first ALPN value | FoxIO Python | FoxIO Rust | `ja4plus` |
+|---|---|---|---|---|
+| 0 | `h\\x20` | `h ` | `h ` | `h ` |
+| 1 | `\\x20h` | ` h` | ` h` | ` h` |
+| 2 | `h\\xab` | `h\\ufffd` | `h9` | `99` |
+| 3 | `\\xabh` | `99` | `9h` | `99` |
+| 4 | `h\\x1f` | `h\\x1f` | `hf` | `99` |
+| 5 | `h\\x0a` | `h\\n` | no value | `99` |
+| 6 | `h` | `h` | `h0` | `hh` |
+
+Stream 3 is the one disputed input where `ja4plus` matches the FoxIO Python value, so
+it holds no register entry: it conforms. It stays in the capture because the dispute
+is real and a later change of the condition would move it.
+
+`docs/implementation_notes.md` holds both measurement tables and the commands that
+produced them.
 
 Each stream carries one TLS ClientHello and nothing else. The capture holds no TCP
 handshake, because a SYN packet adds a JA4T value and a JA4L value to the comparison,
@@ -67,9 +84,17 @@ FIRST_CLIENT_PORT = 44401
 # repeats it, because a rule that reads the wrong ALPN value shows up against it.
 SECOND_ALPN = b"http/1.1"
 
-# Each stream carries one of these as the first ALPN value. The docstring holds the
-# table of what each one separates.
-ALPN_CASES = (b"h\x20", b"\x20h")
+# Each stream carries one of these as the first ALPN value, in this order. The
+# docstring holds the table of what each one separates and what each source writes.
+ALPN_CASES = (
+    b"h\x20",
+    b"\x20h",
+    b"h\xab",
+    b"\xabh",
+    b"h\x1f",
+    b"h\x0a",
+    b"h",
+)
 
 CIPHERS = (0x1301, 0x1302, 0x1303)
 SNI_HOSTNAME = b"example.com"
