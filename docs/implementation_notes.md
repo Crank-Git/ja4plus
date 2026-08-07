@@ -10,6 +10,26 @@ vector that supports the reading, or it states that no FoxIO material validates 
 
 ---
 
+## The raw forms
+
+### Each method holds its own sort rule
+
+A raw form is the unhashed form of a fingerprint. One method sorts a list in its raw
+form, and another method holds the wire order. The rule of one method proves nothing
+about another method, so each row below names its own evidence. The counts come from the
+37 committed vectors under `tests/foxio_vectors/`.
+
+| Method | Raw keys FoxIO publishes | Sort rule | Evidence |
+|---|---|---|---|
+| JA4 | `JA4_r`, `JA4_ro` | `JA4_r` sorts the ciphers and the extensions. It holds the signature algorithms in wire order. `JA4_ro` holds every list in wire order. | 160 `JA4_r` values. 156 of them carry a signature-algorithm section, and all 156 hold the ciphers and the extensions in numeric order and the signature algorithms in an order that is not numeric. The other four carry no extension and no signature algorithm. No `JA4_ro` value equals its `JA4_r` value. |
+| JA4S | `JA4S_r` | The extensions stay in wire order. JA4S sorts no list. | 84 `JA4S_r` values. 35 of them hold the extensions in an order that is not numeric order, and `badcurveball.pcap.json` gives `t1205h1_c02b_0000,ff01,000b,0023,0010`. No file carries a `JA4S_ro` key. |
+| JA4H | `JA4H_ro` | Not measured. | 89 `JA4H_ro` values, and no `JA4H_r` value. `ja4plus` exposes no JA4H raw form, so no reading is needed yet. |
+| JA4X, JA4SSH, JA4L, JA4T, JA4TS, JA4D, JA4D6 | None | Not applicable. | No expected-output file carries a raw key for these methods. |
+
+**Location:** `ja4plus/fingerprinters/ja4.py`, `ja4plus/fingerprinters/ja4s.py`.
+
+---
+
 ## JA4 - TLS Client Hello
 
 ### ALPN non-ASCII handling
@@ -71,9 +91,17 @@ order. `tls-alpn-h2.pcap.json` gives `JA4S_r` as `t1204h2_cca9_0000,ff01,000b,00
 That order is not numeric order, so it is wire order.
 
 The JA4S fingerprint hashes the extensions in wire order, and it equals the reference
-`JA4S` value `t1204h2_cca9_1428ce7b4018`. The `raw_original_order` key holds the wire
-order, and it equals the reference `JA4S_r`. The `raw` key sorts the extensions, so it
-does not equal `JA4S_r`. #108 owns that difference.
+`JA4S` value `t1204h2_cca9_1428ce7b4018`.
+
+FoxIO publishes `JA4S_r` and no `JA4S_ro`, because JA4S sorts no list. A JA4S result
+therefore holds one raw value under two keys: `raw` and `raw_original_order` are equal,
+and both equal the reference `JA4S_r`. Before #108, the `raw` key sorted the extensions,
+and it matched 49 of the 84 reference values.
+
+The port at `Crank-Git/ja4plus-go` publishes the two key names as the `Raw` and
+`RawOriginalOrder` fields of its result struct, and `ja4plus` keeps both names under
+parity rule 2. Its `ja4s.go` computes no raw value, so parity rule 1 decides the value,
+and FoxIO holds the wire order.
 
 ### The original-order hashed value has no reference
 
@@ -89,7 +117,7 @@ and on JA4S.
 **No FoxIO material validates this value, in either direction.** The `docs/specs/spec.md`
 changelog records it at round 11.
 
-**Location:** `ja4plus/fingerprinters/ja4s.py:102`.
+**Location:** `ja4plus/fingerprinters/ja4s.py:103`.
 
 ---
 

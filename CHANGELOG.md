@@ -8,6 +8,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **BREAKING — the JA4S raw form holds the extensions in wire order** (#108). The
+  `raw` key of a JA4S result sorted the extensions into numeric order, and the
+  FoxIO `JA4S_r` value holds them in the order the ServerHello carries them. A
+  caller who stored the `raw` value of a JA4S result before this release gets a
+  different string now, and it matched 49 of the 84 `JA4S_r` values the committed
+  vectors hold. FoxIO publishes `JA4S_r` and no `JA4S_ro`, because JA4S sorts no
+  list, so `raw` and `raw_original_order` now hold one value on every JA4S result.
+  `badcurveball.pcap` reports `t1205h1_c02b_0000,ff01,000b,0023,0010` where it
+  reported `t1205h1_c02b_0000,000b,0010,0023,ff01`. The JA4S fingerprint is
+  unchanged, because it already hashed the extensions in wire order. JA4 is
+  unchanged: `JA4_r` sorts the ciphers and the extensions, and `JA4_ro` holds
+  the wire order. `docs/implementation_notes.md` records the sort rule of each
+  method and the evidence for it.
+
 - **BREAKING — JA4SSH counts an SSH message, not a TCP segment** (#98). `ja4plus`
   counted one SSH packet for every TCP segment that carried a payload. The FoxIO
   reference counts the packets `tshark` labels `ssh`, and `tshark` labels only the
