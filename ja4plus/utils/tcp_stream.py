@@ -31,6 +31,13 @@ def _seq_before(a, b):
     return ((a - b) & _SEQ_MASK) > _SEQ_HALF
 
 
+# The largest stream of the FoxIO vectors holds 1336 segments without a byte cap, and
+# 788 with one, both in `http2-with-cookies.pcapng`. This cap sits three times above the
+# larger reading, so no vector reaches it. The byte cap alone leaves a sender of one-byte
+# segments a million entries in the segment list, so this cap carries the second bound.
+DEFAULT_MAX_STREAM_SEGMENTS = 4096
+
+
 class TCPStreamReassembler:
     """Reassembles TCP streams using sequence numbers.
 
@@ -38,20 +45,36 @@ class TCPStreamReassembler:
     Evicts oldest streams when max_streams is exceeded.
     """
 
-    def __init__(self, max_streams=100, max_stream_bytes=1048576):
+    def __init__(
+        self,
+        max_streams=100,
+        max_stream_bytes=1048576,
+        max_stream_segments=DEFAULT_MAX_STREAM_SEGMENTS,
+    ):
         self.streams = OrderedDict()
         self.max_streams = max_streams
         self.max_stream_bytes = max_stream_bytes
+        self.max_stream_segments = max_stream_segments
 
     def add_segment(self, key, seq, data):
-        """Add a TCP segment to a stream."""
+        """Add a TCP segment to a stream.
+
+        The stream refuses the segment once it holds `max_stream_bytes` bytes, or
+        `max_stream_segments` segments. A refused segment leaves no trace, so the stream
+        accepts it again after a trim frees the room.
+
+        Args:
+            key: The stream key.
+            seq: The 32-bit TCP sequence number of the first byte of the segment.
+            data: The payload bytes of the segment.
+        """
         if not data:
             return
 
         if key not in self.streams:
             if len(self.streams) >= self.max_streams:
                 self.streams.popitem(last=False)
-            self.streams[key] = {"segments": [], "seen": set()}
+            self.streams[key] = {"segments": [], "seen": set(), "bytes": 0}
 
         stream = self.streams[key]
 
@@ -61,8 +84,18 @@ class TCPStreamReassembler:
         if fingerprint in stream["seen"]:
             return
 
+        # `get_stream` bounds the bytes it returns, and nothing bounded the bytes the
+        # stream stores. A sender of many small segments then grows one stream without a
+        # limit. The stream keeps the bytes it holds, because `get_stream` reads the
+        # earliest of them and a fingerprinter reads the earliest of those.
+        if stream["bytes"] + len(data) > self.max_stream_bytes:
+            return
+        if len(stream["segments"]) >= self.max_stream_segments:
+            return
+
         stream["seen"].add(fingerprint)
         stream["segments"].append((seq, data))
+        stream["bytes"] += len(data)
         self.streams.move_to_end(key)
 
     def _ordered_segments(self, stream):
@@ -128,10 +161,8 @@ class TCPStreamReassembler:
             else:
                 break
 
-            if len(result) > self.max_stream_bytes:
-                result = result[: self.max_stream_bytes]
-                break
-
+        # `add_segment` bounds the bytes the stream stores, and the result never holds
+        # more than the stream stores, so this method needs no bound of its own.
         return bytes(result)
 
     def base_seq(self, key):
@@ -161,13 +192,27 @@ class TCPStreamReassembler:
         self.streams.pop(key, None)
 
     def trim_stream(self, key, up_to_seq):
-        """Remove segments before up_to_seq to free memory."""
+        """Remove the segments that end at or before up_to_seq, to free memory.
+
+        The comparison holds across a wrap of the 32-bit sequence number, the way
+        `get_stream` orders its segments.
+
+        Args:
+            key: The stream key.
+            up_to_seq: An absolute 32-bit sequence number, never a byte offset. A byte
+                offset removes no segment for a realistic initial sequence number.
+        """
         if key not in self.streams:
             return
         stream = self.streams[key]
         stream["segments"] = [
-            (seq, data) for seq, data in stream["segments"] if seq + len(data) > up_to_seq
+            (seq, data)
+            for seq, data in stream["segments"]
+            if _seq_before(up_to_seq, (seq + len(data)) & _SEQ_MASK)
         ]
         # `add_segment` reads this set to detect a duplicate. A trimmed segment that
         # stays in the set makes `add_segment` drop that segment when it arrives again.
         stream["seen"] = {(seq, len(data)) for seq, data in stream["segments"]}
+        # `add_segment` reads this count against the byte cap. A count that the trim
+        # leaves high refuses a later segment for room the stream no longer uses.
+        stream["bytes"] = sum(len(data) for _, data in stream["segments"])

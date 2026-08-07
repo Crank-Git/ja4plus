@@ -916,9 +916,8 @@ after it. `get_stream` and `base_seq` both read that order.
 A comparison of each segment against a running earliest value looks equivalent and is
 not. `_seq_before` stops being transitive once the segments span more than half the
 sequence space, so that form returns a different first segment for a different arrival
-order. Nothing bounds the spread of the stored sequence numbers today, because
-`max_stream_bytes` bounds the reassembled output and not the stored segments. Row 3 of
-the audit register holds that defect. The widest-step reading depends only on the
+order. `max_stream_bytes` now bounds the stored segments, so the spread of the stored
+sequence numbers stays inside one arc. The widest-step reading depends only on the
 sequence numbers, so the reassembled bytes never depend on the order the capture
 delivered the segments.
 
@@ -927,6 +926,54 @@ scan of every stored segment cost the square of the segment count: 10000 segment
 0.451 s, and 20000 took 1.765 s. The set gives 0.0019 s and 0.004 s.
 
 **Location:** `ja4plus/utils/tcp_stream.py`. #32 built it.
+
+### One stream holds a bounded number of bytes and segments
+
+`max_stream_bytes` bounded the bytes `get_stream` returns, and nothing bounded the bytes
+the stream stores. A sender of many distinct small segments grew one stream without a
+limit. `add_segment` now refuses a segment once the stream holds `max_stream_bytes`
+bytes, and once it holds `max_stream_segments` segments. A refused segment enters no
+state, so the stream accepts it again after a trim frees the room.
+
+The byte cap alone leaves a sender of one-byte segments a million entries in the segment
+list, so the segment cap carries the second bound. The default is 4096. The largest
+stream of the FoxIO vectors holds 1336 segments and 1853328 bytes, both in
+`http2-with-cookies.pcapng`. The measurement runs `Processor` over every capture under
+`tests/foxio_vectors/` and reads the stored segments after each call to `add_segment`.
+
+The byte cap cuts that one vector stream at 1048576 bytes, and no reference value moves.
+`get_stream` already truncated its result at `max_stream_bytes`, so no fingerprinter ever
+read the bytes beyond the cap. The conformance suite reports 1375 passed, 146 skipped and
+120 xfailed before the change and after it.
+
+`get_stream` no longer truncates its result. The stream stores no more than
+`max_stream_bytes`, and the result never holds more than the stream stores.
+
+`trim_stream` compared raw sequence numbers, which holds the defect #32 removed from
+`get_stream`. It now reads `_seq_before`. It takes an absolute sequence number, never a
+byte offset. #78 removed its one call site, because that call passed a byte offset and
+removed no segment for a realistic initial sequence number.
+
+`ja4h.py` left a buffer that is not an HTTP request in the reassembler for the life of
+the capture. It now removes the stream when no later byte can make the buffer an HTTP
+request. `can_become_http_request` reads the buffer against the HTTP method tokens and
+keeps a buffer that is a prefix of one, because a request line spans two segments.
+
+The removal waits one packet. A segment that arrives out of order puts the middle of a
+request at the start of the buffer, and that buffer starts no HTTP request. A removal on
+that packet drops the segment, and the request never reassembles when the head arrives.
+The head lowers the base sequence number, so `_drop_an_unusable_stream` removes the
+stream only on a packet that leaves the base sequence number where the previous packet
+left it. The measurement: the tail of `GET /index.html HTTP/1.1` arrives at sequence
+number 126 and the head at 100. A removal on the first packet gives `None` for both
+packets. The one-packet wait gives a fingerprint on the second.
+
+`self.unusable_base` holds one base sequence number for each stream that waits. It drops
+the keys the reassembler no longer holds once it passes `max_streams` entries, the way
+`ja4x.py` prunes `scan_offsets`.
+
+**Location:** `ja4plus/utils/tcp_stream.py`, `ja4plus/utils/http_utils.py`,
+`ja4plus/fingerprinters/ja4h.py`. #33 built it, and it absorbed #103.
 
 ---
 

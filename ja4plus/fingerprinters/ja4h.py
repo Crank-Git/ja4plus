@@ -12,7 +12,12 @@ import hashlib
 import logging
 from scapy.all import IP, IPv6, TCP, Raw
 
-from ja4plus.utils.http_utils import extract_http_info, is_http_request, parse_http_request
+from ja4plus.utils.http_utils import (
+    can_become_http_request,
+    extract_http_info,
+    is_http_request,
+    parse_http_request,
+)
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
 from ja4plus.utils.packet_utils import get_ip_layer
 from ja4plus.fingerprinters.base import BaseFingerprinter
@@ -61,6 +66,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         super().__init__()
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
+        self.unusable_base = {}
 
     def process_packet(self, packet):
         """
@@ -87,6 +93,7 @@ class JA4HFingerprinter(BaseFingerprinter):
 
         # Try to parse HTTP from reassembled stream
         if not is_http_request(stream_data):
+            self._drop_an_unusable_stream(stream_key, stream_data)
             # Also try the single packet (backward compat)
             http_info = extract_http_info(packet)
             if not http_info:
@@ -113,6 +120,44 @@ class JA4HFingerprinter(BaseFingerprinter):
 
         return None
 
+    def _drop_an_unusable_stream(self, stream_key, stream_data):
+        """Remove a stream whose buffer no later segment turns into an HTTP request.
+
+        A segment that arrives out of order puts the middle of a request at the start of
+        the buffer, and that buffer starts no HTTP request. The missing head lowers the
+        base sequence number when it arrives, so the removal waits for one further packet
+        that leaves the base sequence number where it was.
+
+        Args:
+            stream_key: The key of the stream in the reassembler.
+            stream_data: The contiguous bytes of the stream.
+        """
+        if stream_key not in self.reassembler.streams:
+            return
+
+        if can_become_http_request(stream_data):
+            self.unusable_base.pop(stream_key, None)
+            return
+
+        base = self.reassembler.base_seq(stream_key)
+        if stream_key in self.unusable_base and self.unusable_base[stream_key] == base:
+            # Nothing else reads this buffer. A buffer that stays holds memory for the
+            # life of the capture.
+            self.reassembler.remove_stream(stream_key)
+            self.unusable_base.pop(stream_key, None)
+            return
+
+        self.unusable_base[stream_key] = base
+        if len(self.unusable_base) > self.reassembler.max_streams:
+            # The reassembler evicts a stream on its own. A base sequence number that
+            # names an evicted stream is state that nothing reads again, and a flood of
+            # streams would otherwise grow the table without a limit.
+            self.unusable_base = {
+                key: value
+                for key, value in self.unusable_base.items()
+                if key in self.reassembler.streams
+            }
+
     def _record(self, fingerprint, http_info, packet):
         """Append one JA4H result, with the raw original-order form beside the hash."""
         raw_original_order = _generate_ja4h_raw_from_info(http_info)
@@ -129,6 +174,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         super().reset()
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
+        self.unusable_base = {}
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove TCP stream buffer for the given connection."""
@@ -137,6 +183,8 @@ class JA4HFingerprinter(BaseFingerprinter):
         # Also try reverse direction
         rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
         self.reassembler.remove_stream(rev_key)
+        self.unusable_base.pop(stream_key, None)
+        self.unusable_base.pop(rev_key, None)
 
 
 def _extract_http_info_from_bytes(data):

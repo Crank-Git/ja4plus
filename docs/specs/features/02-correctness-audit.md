@@ -98,13 +98,13 @@ the rule the fix must satisfy.
 |---|---|---|---|
 | 1 | `ja4plus/utils/tcp_stream.py:53` | `sorted(...)` orders raw sequence numbers. A sequence number is 32 bits and wraps. A connection that crosses the boundary reassembles in the wrong order. | Compare with modular arithmetic. #32 built it. |
 | 2 | `ja4plus/utils/tcp_stream.py:37` | The duplicate check scans every stored segment for each new segment. Cost grows with the square of the segment count. | Use a set of `(seq, length)` pairs. #32 built it. |
-| 3 | `ja4plus/utils/tcp_stream.py:41` | `max_stream_bytes` limits the reassembled output, not the stored segments. A sender that emits many distinct small segments grows one stream without bound. | Cap the stored bytes per stream, not only the output. |
+| 3 | `ja4plus/utils/tcp_stream.py:41` | `max_stream_bytes` limits the reassembled output, not the stored segments. A sender that emits many distinct small segments grows one stream without bound. | Cap the stored bytes per stream, not only the output. #33 built it, with a segment cap beside the byte cap. |
 | 4 | `ja4plus/utils/tcp_stream.py:33` | `base_seq` is stored and never read. | Remove it, or use it. #32 removed the stored value. The `base_seq` method stays, because `ja4x.py` reads it. |
 | 5 | `ja4plus/fingerprinters/ja4l.py:223` | The client branch matches every ACK without a SYN flag. Each later ACK overwrites timestamp `C` and emits another client fingerprint with a larger latency. | Emit one client value for one connection. `FR-spec-conformance-19` gives the measurement point, and #88 built it. |
 | 6 | `ja4plus/fingerprinters/ja4l.py:279` | `_src_is_client` is never called. | Remove it. |
 | 7 | `ja4plus/fingerprinters/ja4h.py:163` | `cookies[k] = v` drops a repeated cookie name, while `cookie_fields` keeps it. The cookie-name hash and the cookie-value hash then describe different cookie sets. | Build both hashes from one ordered list of pairs. |
 | 8 | `ja4plus/fingerprinters/ja4h.py:131` | The request-line pattern requires `HTTP/<digit>.<digit>`. A request line that reads `HTTP/2` never matches, although `_http_version_to_str` handles `2`. | Accept an optional minor version. |
-| 9 | `ja4plus/fingerprinters/ja4h.py:82` | When the buffer is not an HTTP request, the segment stays in the reassembler forever. | Remove the stream when the buffer cannot become an HTTP request. |
+| 9 | `ja4plus/fingerprinters/ja4h.py:82` | When the buffer is not an HTTP request, the segment stays in the reassembler forever. | Remove the stream when the buffer cannot become an HTTP request. #33 built it. |
 | 10 | `ja4plus/fingerprinters/ja4.py:292` | The `if original_order:` branch and its `else:` branch build the same string. | Remove the branch, or make the two differ. |
 | 11 | `ja4plus/fingerprinters/base.py:38` | `add_fingerprint` stores the packet object. A monitor holds every packet it ever fingerprinted. | Store what the result needs. Never store the packet. |
 | 12 | `ja4plus/fingerprinters/ja4ssh.py:80` | On a non-standard port, the lower port number decides which side is the server. Two ephemeral ports make this arbitrary. | Decide from the first SSH banner, and fall back to the port. |
@@ -138,7 +138,8 @@ Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/pcap (retrieved
 | Case | What happens |
 |---|---|
 | A TCP segment arrives with a sequence number below the stored base, because the number wrapped. | The reassembler places it after the stored segments, in sequence order. |
-| A sender emits 100000 distinct one-byte segments on one connection. | The reassembler holds no more than the per-stream byte cap. |
+| A sender emits 100000 distinct one-byte segments on one connection. | The reassembler holds no more than the per-stream byte cap, and no more than the per-stream segment cap. |
+| A buffer holds bytes that no HTTP request line starts with. | JA4H removes the stream from the reassembler. |
 | A TLS record declares a length larger than the packet. | The parser returns nothing. |
 | An extension list declares more extensions than the packet carries. | The parser returns nothing. |
 | An HTTP request repeats a cookie name with two values. | Both hashes describe both occurrences. |
