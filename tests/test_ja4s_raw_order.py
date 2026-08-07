@@ -83,6 +83,7 @@ def test_every_reference_raw_value_appears_in_the_raw_key_of_a_result():
     difference at `tls-handshake.pcapng/JA4S` under #13.
     """
     checked = 0
+    vectors = 0
     for name in sorted(os.listdir(VECTOR_DIR)):
         if not name.endswith(".json"):
             continue
@@ -97,6 +98,9 @@ def test_every_reference_raw_value_appears_in_the_raw_key_of_a_result():
         produced = {result["raw"] for result in ja4s_results(capture_path)}
         assert expected <= produced, name
         checked += len(expected)
-    # The 37 committed vectors hold 84 `JA4S_r` values. A drop in this count means a
-    # vector left the set, and the test then proves less than it claims.
-    assert checked == 84
+        vectors += 1
+    # Fourteen committed vectors hold a `JA4S_r` key, and they hold 29 distinct values.
+    # A drop in either count means a vector left the set, and the test then proves less
+    # than it claims.
+    assert vectors == 14
+    assert checked == 29

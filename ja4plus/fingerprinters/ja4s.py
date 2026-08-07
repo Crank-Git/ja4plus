@@ -91,21 +91,22 @@ class JA4SFingerprinter(BaseFingerprinter):
 
     def _record(self, fingerprint, tls_info, packet):
         """Append a JA4S fingerprint result with raw / raw_original_order."""
-        raw = _generate_ja4s_raw_from_tls_info(tls_info, original_order=False)
-        raw_oo = _generate_ja4s_raw_from_tls_info(tls_info, original_order=True)
-        # JA4S hashes the extensions in wire order, and the FoxIO `JA4S_r` value
-        # holds that same wire order. The original-order hashed value therefore
-        # equals the fingerprint. FoxIO publishes no `JA4S_o` key. The field
-        # exists so one caller reads one name on JA4 and on JA4S.
+        raw = _generate_ja4s_raw_from_tls_info(tls_info)
+        # JA4S sorts no list, so one raw value serves both keys. FoxIO publishes
+        # `JA4S_r` and no `JA4S_ro`, and `JA4S_r` holds the wire order. A sorted
+        # `raw` value matches no reference value and no other implementation.
         self.last_raw = raw
-        self.last_raw_original_order = raw_oo
+        self.last_raw_original_order = raw
+        # JA4S hashes the extensions in wire order, so the original-order hashed
+        # value equals the fingerprint. FoxIO publishes no `JA4S_o` key. The field
+        # exists so one caller reads one name on JA4 and on JA4S.
         self.last_fingerprint_original_order = fingerprint
         self.fingerprints.append(
             {
                 "fingerprint": fingerprint,
                 "fingerprint_original_order": fingerprint,
                 "raw": raw,
-                "raw_original_order": raw_oo,
+                "raw_original_order": raw,
                 "packet": packet,
             }
         )
@@ -209,13 +210,18 @@ def _generate_ja4s_from_tls_info(tls_info):
         return None
 
 
-def _generate_ja4s_raw_from_tls_info(tls_info, original_order=False):
-    """Generate the raw (unhashed) JA4S variant.
+def _generate_ja4s_raw_from_tls_info(tls_info):
+    """Return the raw JA4S value of an already-parsed tls_info dict.
 
-    JA4S has only one variable-length section (extensions). For the
-    sorted form (default), extensions are emitted in numeric order; for
-    original_order, in the order they appeared. Mirrors the Go reference's
-    ComputeJA4SRaw / ComputeJA4SRawOriginalOrder.
+    JA4S has one variable-length section, which holds the extensions. The section holds
+    the extensions in the order the ServerHello carries them, because the FoxIO `JA4S_r`
+    value holds that order.
+
+    Args:
+        tls_info: The parsed ServerHello fields.
+
+    Returns:
+        The raw JA4S value, or None when the ServerHello names no cipher.
     """
     try:
         proto = "q" if tls_info.get("is_quic") else "d" if tls_info.get("is_dtls") else "t"
@@ -246,10 +252,7 @@ def _generate_ja4s_raw_from_tls_info(tls_info, original_order=False):
             return None
         cipher_str = f"{cipher:04x}"
 
-        if original_order:
-            ext_list = ",".join(f"{e:04x}" for e in extensions)
-        else:
-            ext_list = ",".join(f"{e:04x}" for e in sorted(extensions))
+        ext_list = ",".join(f"{e:04x}" for e in extensions)
 
         return f"{part_a}_{cipher_str}_{ext_list}"
     except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
