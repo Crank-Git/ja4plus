@@ -180,6 +180,24 @@ def test_the_handshake_table_forgets_a_connection_the_processor_cleans_up():
     assert fingerprinter._handshake_clients == {}
 
 
+@pytest.mark.parametrize(
+    ("description", "flags"),
+    [("a SYN and a RST", "SR"), ("a SYN, an ACK and a RST", "SAR")],
+    ids=["a SYN and a RST", "a SYN, an ACK and a RST"],
+)
+def test_a_packet_that_carries_the_rst_flag_names_no_endpoint(description, flags):
+    """A packet that carries the RST flag opens no connection and accepts none.
+
+    Every packet is hostile input. A sender that sets the SYN flag and the RST flag
+    together would otherwise name the client of a connection it never opened, and the
+    next connection on that endpoint pair would read the planted name.
+    """
+    fingerprinter = JA4SSHFingerprinter(packet_count=1)
+    hostile = IP(src=SERVER[0], dst=CLIENT[0]) / TCP(sport=SERVER[1], dport=CLIENT[1], flags=flags)
+    fingerprinter.process_packet(hostile)
+    assert fingerprinter._handshake_clients == {}, f"{description} named an endpoint"
+
+
 def test_one_reader_of_the_tcp_handshake_serves_both_fingerprinters():
     """JA4L and JA4SSH read the TCP handshake through one function.
 

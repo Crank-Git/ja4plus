@@ -10,6 +10,11 @@ from ja4plus.utils.tunnels import innermost_layer
 SYN_FLAG = 0x02
 HANDSHAKE_ACK_FLAG = 0x10
 
+# A packet that carries the RST flag opens no connection and accepts none, whatever
+# other flag it carries. Every packet is hostile input, and a sender that sets SYN and
+# RST together would otherwise name the client of a connection it never opened.
+RST_FLAG = 0x04
+
 
 def opens_a_connection(port_layer, proto):
     """Report whether the packet is a TCP SYN that carries no acknowledgement.
@@ -26,6 +31,8 @@ def opens_a_connection(port_layer, proto):
     if proto != "tcp":
         return False
     flags = int(port_layer.flags)
+    if flags & RST_FLAG:
+        return False
     return bool(flags & SYN_FLAG) and not bool(flags & HANDSHAKE_ACK_FLAG)
 
 
@@ -45,6 +52,8 @@ def accepts_a_connection(port_layer, proto):
     if proto != "tcp":
         return False
     flags = int(port_layer.flags)
+    if flags & RST_FLAG:
+        return False
     return bool(flags & SYN_FLAG) and bool(flags & HANDSHAKE_ACK_FLAG)
 
 
