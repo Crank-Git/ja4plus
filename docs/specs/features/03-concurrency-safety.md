@@ -114,15 +114,67 @@ This feature set has no screen. The processor reports its own statistics.
 - Eviction by age uses the packet timestamp when the packet carries one, and the
   wall clock otherwise. A capture file replays faster than real time, and a wall
   clock would evict entries that the capture still needs.
-- The default maximum entry count is 10000 per state table.
-- The default maximum age is 300 seconds.
-- An eviction pass runs at most once per 1000 packets, so that eviction cost stays
-  proportional to traffic.
+- The default maximum age is 600 seconds. A measurement sets it. The longest gap
+  between two segments of one connection across `tests/foxio_vectors/` is
+  320.714503 seconds. It sits in `ssh-r.pcap`, on the connection between
+  `192.168.1.169:64980` and `192.168.1.197:22`. A second reading over every packet
+  of that connection, rather than the segments that carry payload, is 320.336760
+  seconds. Both readings are above 300.
+- `TCPStreamReassembler` keys a stream by direction, and `add_segment` refuses a
+  segment that carries no payload. The 320.714503 reading uses both conditions, so it
+  is the reading that governs the default.
+- The value 300 stood in this file until #170 measured the vectors. Nothing breaks at
+  300 either, because the one connection above 300 seconds carries SSH traffic, and
+  JA4H and JA4X read nothing from it. No comparison ever read the number, so the wrong
+  value survived. #179 corrects it.
+- Epic 3 target: the default maximum entry count is 10000 per state table. No state
+  table holds that count today.
+- Epic 3 target: an eviction pass runs at most once per 1000 packets, so that the
+  eviction cost stays proportional to the traffic. Every eviction pass runs on each
+  packet today.
 - `thread_safe=False` is a promise the caller makes, not a mode the library checks.
   The documentation states that a caller who breaks the promise gets undefined
   results.
 - `cleanup_connection` stays. It is the caller's way to evict early, and the port
   has the same method.
+
+## State bounds the code holds today
+
+This feature set is unbuilt. The table below records what the code holds, so that a
+reader does not read a target as a description. #179 measured it against the code.
+
+| State table | Maximum entry count | Maximum age |
+|---|---|---|
+| `TCPStreamReassembler.streams`, built by JA4H | 100 | 600 seconds |
+| `TCPStreamReassembler.streams`, built by JA4X | 50 | 600 seconds |
+| `JA4Fingerprinter._quic_fragments` | 1000 | 30 seconds |
+| `JA4SFingerprinter._quic_server_crypto` | 1000 | 30 seconds |
+| `JA4XFingerprinter.processed_certs` | 1000 | none |
+| `JA4SFingerprinter._quic_dcids` | none | none |
+| `JA4LFingerprinter.connections` | none | none |
+| `JA4SSHFingerprinter.connections` | none | none |
+| `JA4DBClient._cache` | none | none |
+| `BaseFingerprinter.fingerprints` | none | none |
+
+`TCPStreamReassembler` carries two more per-stream bounds: `max_stream_bytes` is
+1048576, and `max_stream_segments` is 4096.
+
+A row that reads `none` relies on the caller to call `cleanup_connection`.
+FR-concurrency-safety-7 and FR-concurrency-safety-8 own that gap, and Epic 3 closes it.
+
+`BaseFingerprinter.fingerprints` holds one result per fingerprint, not per-connection
+data, so the `## Terms` table does not name it a state table. It appears above because
+it grows without a limit, and Goal 3 covers it.
+
+This file states four more targets that the code does not hold today:
+
+- `Processor.__init__` accepts no argument. The `thread_safe`, `max_connections` and
+  `max_connection_age` arguments are targets.
+- The library holds no lock. `threading` reaches no module under `ja4plus/`.
+- No class reports a state table entry count, and no class counts an eviction.
+  `Processor.stats` is a target.
+- `JA4DBClient` builds no client once for every thread, and its lookup cache holds no
+  maximum entry count.
 
 ## Data touched
 
@@ -135,17 +187,22 @@ This feature set has no screen. The processor reports its own statistics.
 
 ## Interfaces
 
+Epic 3 builds this interface. `Processor.__init__` accepts no argument today.
+
 ```python
 class Processor:
     def __init__(
         self,
         thread_safe: bool = True,
         max_connections: int = 10_000,
-        max_connection_age: float = 300.0,
+        max_connection_age: float = 600.0,
     ) -> None: ...
 
     def stats(self) -> dict[str, ProcessorStats]: ...
 ```
+
+`max_connection_age` defaults to 600.0, which matches `DEFAULT_MAX_STREAM_AGE` in
+`ja4plus/utils/tcp_stream.py`. One project holds one maximum age.
 
 `ProcessorStats` reports the entry count, the eviction count, and the packet count
 for one method.
