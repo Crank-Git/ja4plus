@@ -15,6 +15,26 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# A TLS record header holds the content type, two version bytes, and a two-byte length.
+TLS_RECORD_HEADER_LENGTH = 5
+TLS_HANDSHAKE_CONTENT_TYPE = 0x16
+# Every TLS version the record layer names carries the major version 3. The check
+# rejects a byte pair that encrypted payload holds by chance.
+TLS_RECORD_MAJOR_VERSION = 0x03
+# A TLS handshake message header holds the message type and a three-byte length.
+TLS_HANDSHAKE_HEADER_LENGTH = 4
+TLS_CERTIFICATE_MESSAGE_TYPE = 0x0B
+# A certificate entry and a certificate list each carry a three-byte length.
+CERTIFICATE_LENGTH_BYTES = 3
+# The scan reads at most this many bytes of one stream. A stream grows without a limit,
+# and the scan runs again on every packet of the stream.
+MAX_SCAN_BYTES = 200000
+# A length above this size is a field the packet lies about, not a certificate.
+MAX_CERTIFICATE_BYTES = 200000
+# The maximum number of certificates the fingerprinter remembers. The entry key names
+# the stream, so a capture of many streams needs more entries than a capture of one.
+MAX_PROCESSED_CERTS = 1000
+
 
 def generate_ja4x(cert_info):
     """
@@ -70,14 +90,19 @@ class JA4XFingerprinter(BaseFingerprinter):
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
         self.processed_certs = set()
+        self.scan_offsets = {}
         self.last_cleanup = time.time()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
-        """Remove TCP stream buffer for the given connection."""
+        """Remove the stream buffer and the certificate state of the connection."""
         stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
         self.reassembler.remove_stream(stream_key)
         rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
         self.reassembler.remove_stream(rev_key)
+        closed = (stream_key, rev_key)
+        self.processed_certs = {key for key in self.processed_certs if key[0] not in closed}
+        for key in closed:
+            self.scan_offsets.pop(key, None)
 
     def process_packet(self, packet):
         """Process a packet and extract JA4X fingerprint if applicable."""
@@ -108,122 +133,201 @@ class JA4XFingerprinter(BaseFingerprinter):
 
         current_time = time.time()
         if current_time - self.last_cleanup > 30:
-            if len(self.processed_certs) > 1000:
-                self.processed_certs = set(list(self.processed_certs)[-500:])
+            if len(self.processed_certs) > MAX_PROCESSED_CERTS:
+                self.processed_certs = set(
+                    list(self.processed_certs)[-(MAX_PROCESSED_CERTS // 2) :]
+                )
+            # The reassembler evicts a stream on its own, and a scan offset that names
+            # an evicted stream is state that nothing reads again.
+            self.scan_offsets = {
+                key: offset
+                for key, offset in self.scan_offsets.items()
+                if key in self.reassembler.streams
+            }
             self.last_cleanup = current_time
 
         return fingerprint
 
     def _find_certificates_in_stream_data(self, stream_id, stream_data, packet):
-        """Find and process certificate messages in a TCP stream."""
-        result = None
+        """Return the last JA4X value the stream yields, or None.
 
+        The scan reads the TLS record layer, then the handshake messages inside it. One
+        record carries more than one handshake message, and one handshake message spans
+        more than one record, so a scan that reads only the first message of a record
+        misses the Certificate message that follows a ServerHello.
+
+        The scan resumes where the last packet of the stream left it. The contiguous
+        bytes of a stream only grow, so a byte the scan already read never changes. A
+        scan that starts at zero on every packet costs the square of the stream length,
+        and one TLS 1.3 stream of the vectors then takes 18 seconds.
+
+        Args:
+            stream_id: The key of the stream in the reassembler.
+            stream_data: The contiguous bytes of the stream.
+            packet: The packet that completed the stream data.
+
+        Returns:
+            The last JA4X value the scan produced, or None.
+        """
+        result = None
         if not stream_data:
             return None
 
-        i = 0
-        # Set a reasonable maximum search length to avoid hanging
-        max_search = min(len(stream_data), 200000)  # 200KB search limit
+        limit = min(len(stream_data), MAX_SCAN_BYTES)
+        offset = self.scan_offsets.get(stream_id, 0)
+        while offset + TLS_RECORD_HEADER_LENGTH <= limit:
+            handshake, next_offset, truncated = self._read_handshake_run(stream_data, offset, limit)
+            for message in self._certificate_messages(handshake or b""):
+                fingerprint = self._read_certificate_message(stream_id, message, packet)
+                if fingerprint:
+                    result = fingerprint
+            if truncated:
+                # A later packet completes the record, and a handshake message spans two
+                # records, so the next scan reads this run again from its start.
+                break
+            if handshake is None:
+                # A proxy writes its own handshake before the TLS record layer starts,
+                # so the stream does not always start on a record boundary.
+                offset += 1
+                continue
+            offset = next_offset
 
-        # Look for TLS records with certificate messages
-        while i < max_search - 10:
-            # Check for TLS handshake record
-            if stream_data[i] == 0x16:  # TLS Handshake
-                # Make sure we have enough data for the record header
-                if i + 5 < len(stream_data):
-                    record_length = (stream_data[i + 3] << 8) | stream_data[i + 4]
-
-                    # Sanity check the record length
-                    if record_length < 4 or record_length > 65535:
-                        i += 1
-                        continue
-
-                    # Check if we have the complete record
-                    if i + 5 + record_length <= len(stream_data):
-                        # Check if this is a certificate message
-                        if i + 5 < len(stream_data) and stream_data[i + 5] == 0x0B:
-                            # We found a certificate message, extract it
-                            try:
-                                cert_data = self._extract_certificate(
-                                    stream_data[i : i + 5 + record_length]
-                                )
-
-                                if cert_data:
-                                    for cert_bytes in cert_data:
-                                        # Use hash of cert to avoid duplicates
-                                        cert_hash = hashlib.sha256(cert_bytes).hexdigest()
-
-                                        if cert_hash not in self.processed_certs:
-                                            try:
-                                                fingerprint = self.fingerprint_certificate(
-                                                    cert_bytes
-                                                )
-                                                if fingerprint:
-                                                    result = fingerprint
-                                                    self.add_fingerprint(fingerprint, packet)
-                                                    self.processed_certs.add(cert_hash)
-                                            except (ValueError, TypeError, Exception) as e:
-                                                logger.warning(f"Certificate error: {e}")
-                            except (ValueError, IndexError, struct.error) as e:
-                                logger.debug(f"Certificate extraction failed: {e}")
-
-                        # Move past this record
-                        i += 5 + record_length
-                        continue
-
-            # Move to next byte
-            i += 1
-
-        # Trim the stream if we've processed a significant amount
-        if i > 1000:
-            self.reassembler.trim_stream(stream_id, i)
-
+        self.scan_offsets[stream_id] = offset
         return result
 
-    def _extract_certificate(self, data):
-        """Extract certificate data from a TLS Certificate message."""
+    def _read_handshake_run(self, stream_data, offset, limit):
+        """Return the handshake bytes of the records that start at the offset.
+
+        The run holds the payload of every complete handshake record that follows the
+        offset without a gap. A handshake message spans two records, so the reader joins
+        the records before it reads the messages.
+
+        Args:
+            stream_data: The contiguous bytes of the stream.
+            offset: The offset the run starts at.
+            limit: The offset the scan stops at.
+
+        Returns:
+            A (handshake bytes, next offset, truncated) triple. The bytes are None when
+            the offset holds no complete handshake record, and the next offset is then
+            the offset. The truncated flag is True when the run stops at a record header
+            whose body the stream does not hold yet.
+        """
+        handshake = bytearray()
+        position = offset
+        truncated = False
+        while position + TLS_RECORD_HEADER_LENGTH <= limit:
+            if stream_data[position] != TLS_HANDSHAKE_CONTENT_TYPE:
+                break
+            if stream_data[position + 1] != TLS_RECORD_MAJOR_VERSION:
+                break
+            length = (stream_data[position + 3] << 8) | stream_data[position + 4]
+            end = position + TLS_RECORD_HEADER_LENGTH + length
+            if length == 0:
+                break
+            if end > limit:
+                truncated = True
+                break
+            handshake.extend(stream_data[position + TLS_RECORD_HEADER_LENGTH : end])
+            position = end
+
+        if not handshake:
+            return None, offset, truncated
+        return bytes(handshake), position, truncated
+
+    def _certificate_messages(self, handshake):
+        """Return the body of every Certificate message in the handshake bytes.
+
+        Args:
+            handshake: The joined payload of one run of handshake records.
+
+        Returns:
+            A list of message bodies. The body starts at the certificate list length.
+        """
+        messages = []
+        position = 0
+        while position + TLS_HANDSHAKE_HEADER_LENGTH <= len(handshake):
+            message_type = handshake[position]
+            length = int.from_bytes(
+                handshake[position + 1 : position + TLS_HANDSHAKE_HEADER_LENGTH], "big"
+            )
+            end = position + TLS_HANDSHAKE_HEADER_LENGTH + length
+            if end > len(handshake):
+                break
+            if message_type == TLS_CERTIFICATE_MESSAGE_TYPE:
+                messages.append(handshake[position + TLS_HANDSHAKE_HEADER_LENGTH : end])
+            position = end
+        return messages
+
+    def _read_certificate_message(self, stream_id, message, packet):
+        """Return the last JA4X value of one Certificate message, or None.
+
+        FoxIO computes one JA4X value for each certificate on each stream, and its
+        implementation holds no cache. The key names the stream, because a key that
+        names only the certificate drops the value of every stream after the first that
+        carries the same chain.
+
+        Args:
+            stream_id: The key of the stream in the reassembler.
+            message: The body of one Certificate message.
+            packet: The packet that completed the stream data.
+
+        Returns:
+            The last JA4X value the message produced, or None.
+        """
+        result = None
+        for cert_bytes in self._certificates_in_message(message):
+            key = (stream_id, hashlib.sha256(cert_bytes).hexdigest())
+            if key in self.processed_certs:
+                continue
+            self.processed_certs.add(key)
+            fingerprint = self.fingerprint_certificate(cert_bytes)
+            if fingerprint:
+                result = fingerprint
+                self.add_fingerprint(fingerprint, packet)
+        return result
+
+    def _certificates_in_message(self, message):
+        """Return the certificates of one Certificate message body.
+
+        The reader trusts no length field it read from the packet. A length that runs
+        past the message ends the read, and the reader returns the certificates it
+        already holds.
+
+        Args:
+            message: The body of one Certificate message, from the list length on.
+
+        Returns:
+            A list of certificates in DER form. The list is empty when the message
+            carries no complete certificate.
+        """
         try:
-            # Skip record header (5 bytes) and handshake header (4 bytes)
-            pos = 9
+            if len(message) < CERTIFICATE_LENGTH_BYTES:
+                return []
 
-            # Check if we have enough data
-            if len(data) < pos + 3:
-                return None
-
-            # Get certificates list length (3 bytes)
-            certs_len = (data[pos] << 16) | (data[pos + 1] << 8) | data[pos + 2]
-            pos += 3
-
-            if certs_len <= 0 or certs_len > len(data) - pos:
-                return None
+            position = CERTIFICATE_LENGTH_BYTES
+            list_length = int.from_bytes(message[:CERTIFICATE_LENGTH_BYTES], "big")
+            end = position + list_length
+            if list_length <= 0 or end > len(message):
+                return []
 
             certificates = []
-            end_pos = pos + certs_len
-
-            # Extract individual certificates
-            while pos < end_pos - 3:  # Need at least 3 bytes for length
-                # Each certificate is preceded by a 3-byte length
-                cert_len = (data[pos] << 16) | (data[pos + 1] << 8) | data[pos + 2]
-                pos += 3
-
-                # Sanity check certificate length - be more lenient
-                if cert_len <= 0 or cert_len > 200000:  # 200KB max cert size (increased)
+            while position + CERTIFICATE_LENGTH_BYTES <= end:
+                length = int.from_bytes(
+                    message[position : position + CERTIFICATE_LENGTH_BYTES], "big"
+                )
+                position += CERTIFICATE_LENGTH_BYTES
+                if length <= 0 or length > MAX_CERTIFICATE_BYTES:
                     break
-
-                # Make sure we have the complete certificate
-                if pos + cert_len > len(data):
+                if position + length > end:
                     break
-
-                # Extract the certificate data - ensure this is bytes
-                cert_data = bytes(data[pos : pos + cert_len])
-                certificates.append(cert_data)
-
-                pos += cert_len
+                certificates.append(bytes(message[position : position + length]))
+                position += length
 
             return certificates
         except (ValueError, IndexError, struct.error) as e:
-            logger.debug(f"Failed to extract certificate from TLS record: {e}")
-            return None
+            logger.debug(f"Failed to read the certificates of a TLS message: {e}")
+            return []
 
     def get_cert_details(self, cert):
         """
@@ -302,4 +406,5 @@ class JA4XFingerprinter(BaseFingerprinter):
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
         self.processed_certs = set()
+        self.scan_offsets = {}
         self.last_cleanup = time.time()
