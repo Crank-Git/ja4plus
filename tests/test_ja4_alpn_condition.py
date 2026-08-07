@@ -72,6 +72,16 @@ def test_a_control_byte_keeps_the_value_99_while_the_references_disagree(alpn_by
     assert compute_alpn_value(alpn_bytes) == "99"
 
 
+def test_the_tab_byte_keeps_the_value_99_although_the_references_agree():
+    """`0x09` is the one byte outside `0x20-0x7E` where both FoxIO sources write a tab.
+
+    That agreement is an accident of the tshark text form and not a rule, because `0x0A`
+    beside it makes the FoxIO Rust implementation write no value. #141 declines it and
+    asks the user, so this project holds the value it wrote before #141.
+    """
+    assert compute_alpn_value(b"h\x09") == "99"
+
+
 @pytest.mark.parametrize(
     "alpn_bytes",
     [
