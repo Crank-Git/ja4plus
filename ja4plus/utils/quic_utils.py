@@ -69,6 +69,37 @@ def _find_pn_offset(packet_bytes):
     return pos
 
 
+def find_initial_packet_end(packet_bytes):
+    """Return the offset one byte past the QUIC Initial packet, or None.
+
+    A datagram carries more than one QUIC packet. A server coalesces an Initial packet
+    and a Handshake packet into one datagram, and the Length field of the Initial header
+    states where the Initial packet stops. AES-GCM authenticates the exact ciphertext,
+    so a decryption that reads past the Length field fails with an invalid tag.
+
+    Args:
+        packet_bytes: The datagram, as bytes, starting at the QUIC long header.
+
+    Returns:
+        The offset one byte past the Initial packet, or None when the header is
+        malformed or the datagram is shorter than the Length field states.
+    """
+    try:
+        pos = 5
+        pos += 1 + packet_bytes[pos]
+        pos += 1 + packet_bytes[pos]
+        token_len, consumed = _decode_varint(packet_bytes[pos:])
+        pos += consumed + token_len
+        length, consumed = _decode_varint(packet_bytes[pos:])
+        pos += consumed
+    except IndexError:
+        return None
+    end = pos + length
+    if end > len(packet_bytes):
+        return None
+    return end
+
+
 def remove_header_protection(packet_bytes, hp_key):
     """Remove QUIC header protection to reveal the real packet number."""
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -332,6 +363,13 @@ def parse_quic_server_initial(udp_payload, client_dcid):
         if packet_type != 0x00:
             return None
         quic_version = 1
+
+    # A server coalesces its Initial packet with a Handshake packet in one datagram, so
+    # read the Length field and stop the ciphertext where the Initial packet stops.
+    end = find_initial_packet_end(udp_payload)
+    if end is None:
+        return None
+    udp_payload = udp_payload[:end]
 
     # Derive server keys using the CLIENT's original DCID
     _, server_secret = derive_initial_secrets(bytes(client_dcid), quic_version)
