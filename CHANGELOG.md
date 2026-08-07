@@ -8,6 +8,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **BREAKING — JA4SSH counts a bare ACK the way FoxIO counts one** (#92). A bare
+  ACK carries the ACK flag alone and no payload. `ja4plus` read the ACK flag
+  alone, so it counted a SYN+ACK, a FIN+ACK and a RST+ACK as bare ACKs. It also
+  created its state table entry on the first SSH packet, so it dropped the ACK
+  that completes the TCP handshake. The two ACK counts of a JA4SSH fingerprint
+  therefore change on any connection that carries a bare ACK. `ssh-r.pcap`,
+  `ssh-scp-1050.pcap` and `ssh2.pcapng` now equal the reference on their first
+  window. `ssh.pcapng` holds no bare ACK, and it stays at `c36s36_c76s124_c0s0`.
+
 - **A loopback capture that carries IPv6 now reads the same way on every host**
   (#94). A capture whose link type is `DLT_NULL` starts each frame with the
   address family value of the host that captured it. That value is 24 on NetBSD
