@@ -24,7 +24,10 @@ from ja4plus.utils.http_utils import is_http_request
 from ja4plus.utils.quic_utils import (
     QUIC_HANDSHAKE,
     QUIC_INITIAL,
+    decrypt_quic_server_initial_crypto,
+    initial_packet_dcid,
     long_header_packet_type,
+    server_hello_is_complete,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,6 +44,11 @@ QUIC_PORT = 443
 # A TCP sequence number and acknowledgement number are 32 bits wide, so a relative
 # number needs this mask.
 SEQUENCE_MASK = 0xFFFFFFFF
+
+# A server sends the ServerHello in one or two Initial packets, and a ServerHello is
+# under 200 bytes. This limit stops a server that sends Initial packets without a
+# ServerHello from growing the buffer of one connection without a limit.
+MAXIMUM_SERVER_CRYPTO_BYTES = 16384
 
 # FoxIO gives the propagation factor as a table keyed on the hop count. Each pair
 # holds the highest hop count of one row and the factor of that row. A longer path
@@ -392,10 +400,78 @@ def _tcp_ja4l(packet, conn, ip_layer, ttl, now):
     return "JA4L-C={}_{}".format(_one_way_latency(timestamps["B"], timestamps["C"]), ttls["client"])
 
 
+def _quic_client_initial(conn, udp_payload, ttl, now):
+    """Record the client measurement point of a QUIC connection.
+
+    The function also stores the destination connection ID, because the server Initial
+    keys derive from it. A Retry makes the client send another connection ID, so the
+    latest client Initial packet supplies the value.
+
+    Args:
+        conn: The connection state.
+        udp_payload: The bytes of the UDP payload.
+        ttl: The TTL of the packet.
+        now: The timestamp of the packet, in microseconds.
+
+    Returns:
+        None. A client Initial packet completes no JA4L value.
+    """
+    dcid = initial_packet_dcid(udp_payload)
+    if dcid:
+        conn["quic_dcid"] = dcid
+    if "A" in conn["timestamps"]:
+        return None
+    conn["timestamps"]["A"] = now
+    conn["ttls"]["client"] = ttl
+    return None
+
+
+def _quic_server_initial(conn, udp_payload, ttl, now):
+    """Return the JA4L server value this QUIC server Initial packet gives, or None.
+
+    The reference records the server measurement point on the Initial packet that
+    completes the ServerHello. A server that splits the ServerHello across two Initial
+    packets therefore gives the timestamp of the second one. `python/ja4.py` reads the
+    point where `packet_type` is `0` and `tls.handshake.type` is `2`.
+
+    Args:
+        conn: The connection state.
+        udp_payload: The bytes of the UDP payload.
+        ttl: The TTL of the packet.
+        now: The timestamp of the packet, in microseconds.
+
+    Returns:
+        A `JA4L-S=` value, or None while the ServerHello is incomplete. Returns None
+        when the packet does not decrypt, because the fingerprinter then cannot tell
+        which Initial packet carries the ServerHello.
+    """
+    timestamps = conn["timestamps"]
+    if "A" not in timestamps or "B" in timestamps:
+        return None
+    client_dcid = conn.get("quic_dcid")
+    if not client_dcid:
+        return None
+    fragments = decrypt_quic_server_initial_crypto(udp_payload, client_dcid)
+    if not fragments:
+        return None
+
+    collected = conn.setdefault("server_crypto", [])
+    if sum(len(data) for _, data in collected) < MAXIMUM_SERVER_CRYPTO_BYTES:
+        collected.extend(fragments)
+    if not server_hello_is_complete(collected):
+        return None
+
+    conn.pop("server_crypto", None)
+    timestamps["B"] = now
+    conn["ttls"]["server"] = ttl
+    return "JA4L-S={}_{}".format(_one_way_latency(timestamps["A"], timestamps["B"]), ttl)
+
+
 def _quic_ja4l(packet, conn, ttl, now):
     """Return the JA4L value this QUIC packet gives, or None."""
     udp_layer = packet[UDP]
-    packet_type = long_header_packet_type(bytes(udp_layer.payload))
+    udp_payload = bytes(udp_layer.payload)
+    packet_type = long_header_packet_type(udp_payload)
     if packet_type is None:
         return None
     to_server = int(udp_layer.dport) == QUIC_PORT
@@ -408,15 +484,10 @@ def _quic_ja4l(packet, conn, ttl, now):
     ttls = conn["ttls"]
 
     if packet_type == QUIC_INITIAL:
-        if to_server and "A" not in timestamps:
-            timestamps["A"] = now
-            ttls["client"] = ttl
-        elif from_server and "A" in timestamps and "B" not in timestamps:
-            timestamps["B"] = now
-            ttls["server"] = ttl
-            return "JA4L-S={}_{}".format(
-                _one_way_latency(timestamps["A"], timestamps["B"]), ttls["server"]
-            )
+        if to_server:
+            return _quic_client_initial(conn, udp_payload, ttl, now)
+        if from_server:
+            return _quic_server_initial(conn, udp_payload, ttl, now)
         return None
 
     if packet_type != QUIC_HANDSHAKE:
