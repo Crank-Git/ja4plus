@@ -1058,6 +1058,61 @@ the keys the reassembler no longer holds once it passes `max_streams` entries, t
 **Location:** `ja4plus/utils/tcp_stream.py`, `ja4plus/utils/http_utils.py`,
 `ja4plus/fingerprinters/ja4h.py`. #33 built it, and it absorbed #103.
 
+### One stream holds a maximum age
+
+`CLAUDE.md` states that a state table has a maximum entry count and a maximum age. #33
+built the entry count and the two per-stream caps. No field held a timestamp, so a
+connection that sent one segment and then stopped held its slot until 100 further
+connections pushed it out.
+
+A stream entry now carries `last_seen`, the packet timestamp of its most recent segment.
+`add_segment` removes every stream that receives no segment for `max_stream_age` seconds.
+The removal drops the whole entry, so the segment list, the set of seen segments and the
+stored byte count leave together. A partial removal would leave a `(seq, length)` pair in
+the set, and `add_segment` would then drop that segment as a duplicate when the sender
+re-sends it.
+
+The age reads the packet timestamp, never the wall clock. `ja4plus/utils/tcp_stream.py`
+imports no clock, and the caller states the timestamp. `packet_seconds` in
+`ja4plus/utils/packet_utils.py` reads `packet.time` and returns None when the packet
+carries none. A stream whose `last_seen` is None never ages out, so a mixed clock evicts
+nothing.
+
+The age follows every segment the stream receives, not the segments the reassembler
+stores. A stream at its byte cap still sends, and an age that ignored a refused segment
+would evict a stream that is busy.
+
+**The default is 600 seconds, and the vectors measure the bound.** The longest gap
+between two segments of one stream across `tests/foxio_vectors/` is 320.714503 seconds,
+on `ssh-r.pcap`, stream `192.168.1.169:64980-192.168.1.197:22`. The measurement reads
+every capture with `rdpcap`, keys each TCP segment the way `ja4h.py` keys a stream, and
+records the widest gap between two packet timestamps of one key. The second reading is
+`http1.pcapng` at 60.042404 seconds. The default sits above the widest gap.
+
+`test_the_default_maximum_age_passes_the_longest_gap_of_the_vectors` runs that scan. It
+reads the captures rather than a stored number, so a vector with a wider gap fails it.
+An earlier form compared 600 against the literal 320.714503, and that form passes
+whatever the vectors hold. The scan costs 1.1 seconds.
+
+No reference value moves. The conformance suite reports 1375 passed, 146 skipped and 120
+xfailed before the change and after it. A 300-second age gives the same three counts,
+because the one stream above 300 seconds is SSH traffic that JA4H and JA4X read nothing
+from.
+
+**The bound is safe because of what today's fingerprinters read, not because the bound is
+inherently safe.** JA4H and JA4X read the head of a stream, the way the #33 byte cap is
+safe. A later issue that reads further into a stream, or that adds a vector with a wider
+gap, must measure this age again.
+
+`docs/specs/features/03-concurrency-safety.md` states a 300-second default maximum age
+for a state table. That feature set is not built, and its other defaults do not describe
+this reassembler: it states 10000 entries where `max_streams` is 100 for JA4H and 50 for
+JA4X. #170 records the divergence and leaves the feature file for the issue that builds
+it.
+
+**Location:** `ja4plus/utils/tcp_stream.py`, `ja4plus/utils/packet_utils.py`,
+`ja4plus/fingerprinters/ja4h.py`, `ja4plus/fingerprinters/ja4x.py`. #170 built it.
+
 ---
 
 ## JA4H - HTTP
@@ -1085,6 +1140,57 @@ form explains the hash.
 **Vector:** `http1-with-cookies.pcapng` and the 56 values of `http1.pcapng`.
 
 **Location:** `ja4plus/fingerprinters/ja4h.py`.
+
+### Both cookie hashes read one ordered cookie list
+
+HTTP permits a repeated cookie name. `ja4plus` keeps every occurrence, and the
+cookie-name hash, the cookie-value hash and the raw form read one list of pairs. An
+earlier form built the cookie-value hash from a dictionary, which kept the last value of
+a repeated name, so the two hashes described different cookie sets.
+
+No FoxIO vector carries a repeated cookie name, so the FoxIO Python implementation
+settles the reading. It collects the pairs into a list, and it sorts that list on the
+cookie name alone:
+
+```python
+sorted_pairs = sorted(cookie_pairs, key=lambda p: p[0])
+x['cookie_fields'] = [pair[0] for pair in sorted_pairs]
+x['cookie_values'] = [pair[1] for pair in sorted_pairs]
+```
+
+The sort is stable, so two cookies that carry one name keep their wire order. `ja4plus`
+sorts the same way. The 82 JA4H values that the vector set produces do not change.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4h.py (retrieved
+2026-08-07)
+
+**Vector:** none carries a repeated cookie name. `tests/test_ja4h_cookie_list.py` holds
+the tests.
+
+**Location:** `ja4plus/fingerprinters/ja4h.py`.
+
+### The request line carries an optional minor version
+
+A request line reads `GET / HTTP/2`, and HTTP/2 and HTTP/3 name no minor version. The
+request-line pattern accepts a version token that names major version 2 or 3 without a
+minor version for that reason. An earlier pattern required `HTTP/\d+\.\d+`, so the
+parser read no HTTP/2 request line, although `_http_version_to_str` maps `2` to the
+version code `20`.
+
+The pattern ends the version token on a space, a tab or a line terminator. A token such
+as `HTTP/11` names no HTTP version, and a pattern that reads it as `HTTP/1` reports the
+version code `11`. `GET / HTTP/11` and `GET / HTTP/1.1` then carry one fingerprint, and
+a fingerprint that describes malformed traffic as ordinary traffic is worse than no
+fingerprint. `ja4plus` reads no fingerprint from `HTTP/11`, `HTTP/1` or `HTTP/23`.
+
+`ja4plus/utils/http_utils.py` holds the pattern as `REQUEST_LINE_PATTERN`. The stream
+path and the packet path read that one name, so the two report one version for one
+request line.
+
+**Vector:** `http2-with-cookies.pcapng` holds 15 HTTP/2 requests inside TLS records, and
+`ja4plus` decrypts none of them. #129 records that deviation.
+
+**Location:** `ja4plus/fingerprinters/ja4h.py` and `ja4plus/utils/http_utils.py`.
 
 ### TCP reassembly
 

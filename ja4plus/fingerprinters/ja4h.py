@@ -13,13 +13,14 @@ import logging
 from scapy.all import IP, IPv6, TCP, Raw
 
 from ja4plus.utils.http_utils import (
+    REQUEST_LINE_PATTERN,
     can_become_http_request,
     extract_http_info,
     is_http_request,
     parse_http_request,
 )
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
-from ja4plus.utils.packet_utils import get_ip_layer
+from ja4plus.utils.packet_utils import get_ip_layer, packet_seconds
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         stream_key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
         seq = tcp.seq if hasattr(tcp, "seq") else 0
 
-        self.reassembler.add_segment(stream_key, seq, raw_data)
+        self.reassembler.add_segment(stream_key, seq, raw_data, packet_seconds(packet))
         stream_data = self.reassembler.get_stream(stream_key)
 
         # Try to parse HTTP from reassembled stream
@@ -199,10 +200,9 @@ def _extract_http_info_from_bytes(data):
         return None
     try:
         text = data.decode("utf-8", errors="ignore")
-        request_line_match = re.match(
-            r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)\s+(\S+)\s+(HTTP/\d+\.\d+)",
-            text,
-        )
+        # The stream path and the packet path read one pattern, so the two report one
+        # version for one request line.
+        request_line_match = re.match(REQUEST_LINE_PATTERN, text)
         if not request_line_match:
             return None
 
@@ -257,7 +257,6 @@ def _convert_parsed_to_extract_format(parsed):
     headers = parsed.get("headers", {})
     header_names = list(headers.keys())
     cookies = parsed.get("cookies", {})
-    cookie_fields = list(cookies.keys())
 
     return {
         "method": parsed.get("method", ""),
@@ -265,8 +264,10 @@ def _convert_parsed_to_extract_format(parsed):
         "version": parsed.get("version", ""),
         "headers": header_names,
         "cookies": cookies,
-        "cookie_fields": cookie_fields,
-        "cookie_values": list(cookies.values()),
+        # The keys of the dictionary drop a repeated cookie name. The parser reports the
+        # two lists for that reason. #35 records the defect.
+        "cookie_fields": parsed.get("cookie_fields", []),
+        "cookie_values": parsed.get("cookie_values", []),
         "language": headers.get("accept-language", ""),
         "referer": headers.get("referer", ""),
     }
@@ -325,6 +326,24 @@ def _ja4h_header_names(http_info):
     ]
 
 
+def _ja4h_cookie_pairs(http_info):
+    """Return the cookies of a request as one ordered list of pairs.
+
+    Every section that reports a cookie reads this list, so the cookie-name hash, the
+    cookie-value hash and the raw form describe one cookie set.
+
+    Args:
+        http_info: A parsed HTTP request.
+
+    Returns:
+        The `(name, value)` pairs in wire order. A repeated cookie name holds one pair
+        for each occurrence, because HTTP permits a repeated cookie name.
+    """
+    names = http_info.get("cookie_fields", [])
+    values = http_info.get("cookie_values", [])
+    return list(zip(names, values))
+
+
 def _generate_ja4h_from_info(http_info):
     """Generate JA4H from an http_info dict."""
     if not http_info:
@@ -338,19 +357,21 @@ def _generate_ja4h_from_info(http_info):
             hashlib.sha256(headers_str.encode()).hexdigest()[:12] if headers_str else "000000000000"
         )
 
-        cookie_fields = sorted(http_info.get("cookie_fields", []))
-        cookie_fields_str = ",".join(cookie_fields)
+        # Part c and part d read one list of pairs. A dictionary drops a repeated cookie
+        # name, which HTTP permits, and the two hashes then describe different cookie
+        # sets. #35 records the defect.
+        cookie_pairs = _ja4h_cookie_pairs(http_info)
+
+        cookie_fields_str = ",".join(sorted(name for name, _ in cookie_pairs))
         part_c = (
             hashlib.sha256(cookie_fields_str.encode()).hexdigest()[:12]
             if cookie_fields_str
             else "000000000000"
         )
 
-        # Cookie-VALUES hash: pairs sorted by NAME only (FoxIO PR #288).
-        # We sort by key explicitly so the ordering doesn't depend on tuple
-        # tie-breaking when two cookies happen to have identical names.
-        cookie_dict = http_info.get("cookies", {})
-        sorted_cookie_pairs = sorted(cookie_dict.items(), key=lambda kv: kv[0])
+        # Cookie-VALUES hash: pairs sorted by NAME only (FoxIO PR #288). The sort is
+        # stable, so two cookies that carry one name keep their wire order.
+        sorted_cookie_pairs = sorted(cookie_pairs, key=lambda pair: pair[0])
         cookie_values_str = ",".join(f"{k}={v}" for k, v in sorted_cookie_pairs)
         part_d = (
             hashlib.sha256(cookie_values_str.encode()).hexdigest()[:12]
@@ -387,11 +408,11 @@ def _generate_ja4h_raw_from_info(http_info):
         headers_str = ",".join(_ja4h_header_names(http_info))
         raw = f"{part_a}_{headers_str}_"
 
-        cookie_fields = http_info.get("cookie_fields", [])
-        if cookie_fields:
-            cookie_values = http_info.get("cookie_values", [])
-            pairs_str = ",".join(f"{k}={v}" for k, v in zip(cookie_fields, cookie_values))
-            raw += f"{','.join(cookie_fields)}_{pairs_str}"
+        cookie_pairs = _ja4h_cookie_pairs(http_info)
+        if cookie_pairs:
+            names_str = ",".join(name for name, _ in cookie_pairs)
+            pairs_str = ",".join(f"{k}={v}" for k, v in cookie_pairs)
+            raw += f"{names_str}_{pairs_str}"
 
         return raw
 

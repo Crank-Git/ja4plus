@@ -111,7 +111,7 @@ class JA4XFingerprinter(BaseFingerprinter):
             return None
 
         try:
-            from ja4plus.utils.packet_utils import get_ip_layer
+            from ja4plus.utils.packet_utils import get_ip_layer, packet_seconds
 
             ip_layer = get_ip_layer(packet)
             if ip_layer is None:
@@ -127,7 +127,7 @@ class JA4XFingerprinter(BaseFingerprinter):
         raw_data = bytes(packet[Raw])
         seq = packet[TCP].seq if hasattr(packet[TCP], "seq") else 0
 
-        self.reassembler.add_segment(stream_id, seq, raw_data)
+        self.reassembler.add_segment(stream_id, seq, raw_data, packet_seconds(packet))
         stream_data = self.reassembler.get_stream(stream_id)
 
         fingerprint = self._find_certificates_in_stream_data(stream_id, stream_data, packet)

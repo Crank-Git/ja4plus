@@ -185,8 +185,8 @@ result = generate_ja4(packet)
 
 | Class/Function | Description |
 |----------------|-------------|
-| `TCPStreamReassembler(max_streams, max_stream_bytes)` | Sequence-aware TCP stream reassembly |
-| `.add_segment(key, seq, data)` | Add a TCP segment |
+| `TCPStreamReassembler(max_streams, max_stream_bytes, max_stream_segments, max_stream_age)` | Sequence-aware TCP stream reassembly |
+| `.add_segment(key, seq, data, timestamp)` | Add a TCP segment. `timestamp` is the packet time in seconds, and it ages the stream |
 | `.get_stream(key)` | Get reassembled contiguous bytes |
 | `.remove_stream(key)` | Remove a tracked stream |
 
@@ -196,6 +196,7 @@ result = generate_ja4(packet)
 |----------|-------------|
 | `get_ip_layer(packet)` | Return IP or IPv6 layer, or None |
 | `get_ttl(packet)` | Return TTL (IPv4) or Hop Limit (IPv6), or None |
+| `packet_seconds(packet)` | Return the capture timestamp in seconds, or None |
 
 ## CLI Module
 
