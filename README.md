@@ -150,6 +150,12 @@ JA4 and JA4S result dicts include the unhashed `raw` and
 `raw_original_order` variants — useful for human-readable output and
 fingerprint debugging.
 
+A JA4 result holds two different raw values. `raw` is the FoxIO `JA4_r` value,
+which sorts the ciphers and the extensions. `raw_original_order` is the FoxIO
+`JA4_ro` value, which holds every list in wire order. A JA4S result holds one
+raw value under both keys, because JA4S sorts no list. That value is the FoxIO
+`JA4S_r` value, and it holds the extensions in wire order.
+
 The same dicts include `fingerprint_original_order`, the FoxIO `JA4_o` value.
 It is the hashed form of `raw_original_order`, and its relationship to
 `fingerprint` matches the relationship of `raw_original_order` to `raw`. The
