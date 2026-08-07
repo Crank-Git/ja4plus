@@ -152,7 +152,7 @@ class TestJA4LAgainstTheFoxIOVectors:
         # when the key format changes. Read #156 for the measurement.
         assert sorted(values_of("ssh2.pcapng")) == SSH2_CONNECTIONS
 
-    def test_the_quic_stream_that_holds_no_client_point_reports_the_server_value_alone(self):
+    def test_a_quic_connection_with_no_client_point_reports_the_server_value_alone(self):
         # ssh2.pcapng stream 33 carries a client Initial packet and a server Initial
         # packet, and the server sends no Handshake packet the capture holds alone. The
         # reference reports JA4L-S 16192_57 and no JA4L-C.

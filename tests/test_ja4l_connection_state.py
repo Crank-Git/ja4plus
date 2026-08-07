@@ -133,8 +133,8 @@ def test_a_syn_ack_with_no_client_packet_reports_the_server_value_alone():
     server value, and the client value needs point `C` as well. A rule that held the
     server value back until the client point arrived would drop this value.
 
-    Two committed vectors prove the split on the QUIC form. `ssh2.pcapng` stream 33 and
-    `tls3.pcapng` stream 25 each hold a `JA4L-S` and no `JA4L-C` in the expected-output
-    file.
+    Two committed vectors prove the split on the QUIC form. The connection at
+    `ssh2.pcapng` stream 33 and the connection at `tls3.pcapng` stream 25 each hold a
+    `JA4L-S` and no `JA4L-C` in the expected-output file.
     """
     assert _values([_client("S", 0, 0, 0.000), _server("SA", 0, 1, 0.001)]) == ["JA4L-S=500_64"]

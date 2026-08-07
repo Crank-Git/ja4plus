@@ -701,17 +701,17 @@ Four readings measure the rule. #156 holds the commands and the counts.
   expected-output file names none of them, and `ja4plus` produces no value for any of
   them.
 - No committed vector holds a TCP connection that carries a SYN-ACK and no client
-  measurement point. Every TCP stream that holds a reference `JA4L-S` also holds a
+  measurement point. Every TCP connection that holds a reference `JA4L-S` also holds a
   reference `JA4L-C`.
 - `ssh2.pcapng` stream 33 and `tls3.pcapng` stream 25 are QUIC connections whose server
   sends no Handshake packet that the capture holds alone. The expected-output file holds
-  `JA4L-S` `16192_57` and `3583_57`, and it holds no `JA4L-C` on either stream. The two
-  streams prove that the reference completes a server value without a client value.
+  `JA4L-S` `16192_57` and `3583_57`, and it holds no `JA4L-C` on either one. The two
+  connections prove that the reference completes a server value without a client value.
 - `quic_mirrored.pcap` holds a server Initial packet that leads its client Initial
   packet. The reference reports no value, so the QUIC client value needs point `B`.
 
 A rule that held `JA4L-S` back until the client point arrived breaks 80 conformance
-cases that pass today, and it deletes the two `JA4L-S` values above.
+cases that pass today. It also deletes the two `JA4L-S` values above.
 
 ### The return value of a partial client point
 
@@ -720,13 +720,13 @@ and the stored list holds one value for the connection. Across the committed vec
 the stored list holds 60 client values and the return path reports 105.
 
 The two paths disagree because the reference reads the last packet that carries both
-relative numbers, and a reader knows which packet is last only when the connection
-ends. #156 measured three candidate end-of-connection points against the 60 values:
+relative numbers. A reader knows which packet is last only when the connection ends.
+#156 measured three candidate end-of-connection points against the 60 values:
 
 | The end-of-connection point | Client values it reports |
 |---|---|
 | A FIN or a RST after the final client point | 26, and it loses 34 |
-| The four measurement points completing | 105, which is the behaviour today |
+| Every measurement point read | 105, which is the behaviour today |
 | A read of the stored list at the end of the capture | 60, and it loses none |
 
 Only the last point reproduces the reference, and 34 of the 60 connections never close

@@ -542,8 +542,9 @@ def _quic_ja4l(packet, conn, ttl, now):
 
     # The client value needs the server Initial point, exactly as the TCP client value
     # needs the SYN-ACK. The reference discards a server Initial packet that leads its
-    # client Initial packet, so its state machine never reaches the state that reads a
-    # Handshake packet. `quic_mirrored.pcap` measures it, and #156 records the reading.
+    # client Initial packet. Its state machine therefore never reaches the state that
+    # reads a Handshake packet. `quic_mirrored.pcap` measures it, and #156 holds the
+    # reading.
     if "B" not in timestamps:
         return None
 
