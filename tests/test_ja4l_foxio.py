@@ -4,13 +4,14 @@ Each test names one vector, one stream and the value the FoxIO expected-output f
 holds. The vectors live under `tests/foxio_vectors`, and `tests/foxio_vectors/NOTICE`
 names the upstream commit.
 
-The reference computes a JA4L value from four measurement points:
+The reference computes a TCP JA4L value from three measurement points:
 
 - `A` is the first TCP SYN, and it carries the client TTL.
 - `B` is the first TCP SYN-ACK, and it carries the server TTL.
 - `C` is the last TCP packet that carries the relative sequence number 1 and the
   relative acknowledgement number 1, and that holds no complete HTTP request.
-- The QUIC form reads the Initial packets and the Handshake packets instead.
+
+The QUIC form reads the Initial packets and the Handshake packets instead.
 
 `JA4L-S` is half the time from `A` to `B`. `JA4L-C` is half the time from `B` to `C`.
 """
@@ -33,7 +34,7 @@ def values_of(capture_name):
 
     Returns:
         A map of connection key to the list of values, in the order the fingerprinter
-        produced them.
+        emitted them.
     """
     fingerprinter = JA4LFingerprinter()
     for packet in rdpcap(str(VECTORS_DIR / capture_name)):
@@ -96,7 +97,7 @@ class TestJA4LAgainstTheFoxIOVectors:
         assert "JA4L-S=5389_57" in produced
         assert "JA4L-C=169_128" in produced
 
-    def test_the_fingerprinter_produces_one_client_value_for_one_connection(self):
+    def test_the_fingerprinter_emits_one_client_value_for_one_connection(self):
         produced = values_on("badcurveball.pcap", BADCURVEBALL)
         client_values = [value for value in produced if value.startswith("JA4L-C=")]
         assert client_values == ["JA4L-C=2181_64"]

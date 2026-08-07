@@ -85,9 +85,8 @@ microsecond.
 FoxIO publishes JA4L as an image, so the expected-output files decide the
 measurement point. `python/ja4.py` in the FoxIO repository records the client
 point on every TCP packet that carries the relative sequence number `1` and the
-relative acknowledgement number `1`, and it keeps the last one. That is the bare
-ACK of the handshake first, and then the first packet of the application
-handshake.
+relative acknowledgement number `1`. It keeps the last one. That is the bare ACK
+of the handshake first, and then the first packet of the application handshake.
 
 `browsers-x509.pcapng` stream 0 proves it. The SYN-ACK is at `+0.003815s`, the
 bare ACK at `+0.003927s` and the Client Hello at `+0.004371s`. The reference
@@ -99,8 +98,8 @@ on the bare ACK the server sends.
 ### A complete HTTP request does not move the client point
 
 The FoxIO program keeps the timestamps of a packet under the protocol the tshark
-dissector reports, and it holds a separate cache for `http` and `http2`. A packet
-that carries a whole HTTP request therefore never moves the client point, and a
+dissector reports. It holds a separate state table for `http` and for `http2`. A
+packet that carries a whole HTTP request therefore never moves the client point. A
 packet that carries the first part of a request does move it.
 
 Two vectors prove both halves:
@@ -113,12 +112,13 @@ Two vectors prove both halves:
 
 `ja4plus` reads the request line and the blank line that ends the header block.
 
-### The address layer of a tunnelled capture
+### The address layer of a tunneled capture
 
 The reference reads the address and the TTL of the outer layer, and the port of
-the inner layer. `gre-sample.pcap` carries a session between `10.16.27.12` and
-`10.16.27.131` inside a GRE tunnel between `172.27.1.66` and `66.59.109.137`, and
-the expected-output file names the tunnel addresses with the inner ports.
+the inner layer. `gre-sample.pcap` carries a connection between `10.16.27.12`
+and `10.16.27.131` inside a GRE tunnel between `172.27.1.66` and
+`66.59.109.137`. The expected-output file names the tunnel addresses with the
+inner ports.
 
 `ja4plus/utils/tunnels.py` imports the scapy dissectors for Geneve, VXLAN and
 ERSPAN, because scapy leaves them unbound and stops at the tunnel header.

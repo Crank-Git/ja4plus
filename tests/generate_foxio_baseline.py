@@ -60,10 +60,10 @@ OWNING_ISSUES = {
 # either.
 #
 # #34 owns the multiplicity defect on both sides: how many JA4L values one connection
-# emits. #88 halved every latency and moved the client measurement point, and that fix
-# also removed the JA4L values ja4plus produced on a UDP flow that carries no QUIC. The
-# cases that remain are streams the reference holds no JA4L value for, and one repeated
-# SYN-ACK.
+# emits. #88 halved every latency and moved the client measurement point. That fix also
+# removed the JA4L values ja4plus emitted on a UDP flow that carries no QUIC. The cases
+# that remain sit on a connection the reference holds no JA4L value for, and on one
+# repeated SYN-ACK.
 JA4L_MULTIPLICITY_ISSUE = 34
 
 # #101 owns the mirrored capture. `gre-erspan-vxlan.pcap` carries both directions of one
@@ -139,7 +139,7 @@ def _ja4l_entry(method, message, occurrence_form):
     mirrored_capture = {
         "issue": JA4L_MIRRORED_CAPTURE_ISSUE,
         "cause": "ja4plus groups the two directions of this mirrored capture as two "
-        "connections, so it produces no {} value.".format(method),
+        "connections, so it emits no {} value.".format(method),
     }
 
     if occurrence_form:

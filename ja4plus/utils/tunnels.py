@@ -2,7 +2,7 @@
 
 `scapy.all` binds the common protocols, and it leaves Geneve, VXLAN and ERSPAN to a
 separate import. Without that import scapy stops at the tunnel header, so a
-fingerprinter reads no TCP layer and produces nothing for a mirrored capture.
+fingerprinter reads no TCP layer and emits nothing for a mirrored capture.
 `tcpdump-geneve.pcap` and `gre-erspan-vxlan.pcap` are two such vectors.
 
 A scapy dissector binds itself to a port or a protocol number at import time, so one

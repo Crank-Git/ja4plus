@@ -53,19 +53,19 @@
   },
   "gre-erspan-vxlan.pcap/0:65174/JA4L-C.1": {
     "issue": 101,
-    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it produces no JA4L-C value."
+    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-C value."
   },
   "gre-erspan-vxlan.pcap/0:65174/JA4L-S.1": {
     "issue": 101,
-    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it produces no JA4L-S value."
+    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-S value."
   },
   "gre-erspan-vxlan.pcap/JA4L-C": {
     "issue": 101,
-    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it produces no JA4L-C value."
+    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-C value."
   },
   "gre-erspan-vxlan.pcap/JA4L-S": {
     "issue": 101,
-    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it produces no JA4L-S value."
+    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-S value."
   },
   "http-empty-useragent.pcap/0:57722/JA4H.1": {
     "issue": 35,

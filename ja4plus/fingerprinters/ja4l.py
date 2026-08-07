@@ -5,7 +5,7 @@ reader estimates the distance between the client and the server. The TCP form re
 the handshake. The QUIC form reads the Initial packets and the Handshake packets.
 Format: `JA4L-C=<latency_us>_<ttl>` and `JA4L-S=<latency_us>_<ttl>`.
 
-The reference holds four measurement points on a TCP connection:
+The reference holds three measurement points on a TCP connection:
 
 - `A` is the first SYN, and it carries the client TTL.
 - `B` is the first SYN-ACK, and it carries the server TTL.
@@ -275,27 +275,54 @@ def _holds_a_complete_http_request(payload):
     return b"\r\n\r\n" in payload or b"\n\n" in payload
 
 
+def _restart_connection(conn):
+    """Drop every measurement point of one connection.
+
+    A later connection reuses the endpoints of a closed one, and the reference counts
+    the two separately. Without this call the later connection reads the measurement
+    points of the earlier one. It also replaces the client value the fingerprinter
+    already reported.
+    """
+    conn["timestamps"] = {}
+    conn["ttls"] = {}
+    conn["isns"] = {}
+    conn.pop("client_entry", None)
+
+
 def _tcp_ja4l(packet, conn, ip_layer, ttl, now):
-    """Return the JA4L value one TCP packet produces, or None."""
+    """Return the JA4L value this TCP packet gives, or None."""
     tcp_layer = packet[TCP]
     flags = int(tcp_layer.flags)
     syn = bool(flags & 0x02)
     ack = bool(flags & 0x10)
     source = (ip_layer.src, int(tcp_layer.sport))
     target = (ip_layer.dst, int(tcp_layer.dport))
+    sequence = int(tcp_layer.seq)
+
+    if syn and not ack:
+        # A SYN that carries another initial sequence number opens another connection
+        # on the same endpoints.
+        if "A" in conn["timestamps"] and conn["isns"].get(source) != sequence:
+            _restart_connection(conn)
+        conn["isns"][source] = sequence
+        if "A" in conn["timestamps"]:
+            return None
+        conn["timestamps"]["A"] = now
+        conn["ttls"]["client"] = ttl
+        if "B" not in conn["timestamps"]:
+            return None
+        # A reordered capture holds the SYN-ACK before the SYN. This packet is then
+        # the last one that reaches both points of the server value.
+        return "JA4L-S={}_{}".format(
+            _one_way_latency(conn["timestamps"]["A"], conn["timestamps"]["B"]),
+            conn["ttls"]["server"],
+        )
+
     timestamps = conn["timestamps"]
     ttls = conn["ttls"]
 
-    if syn:
-        conn.setdefault("isns", {})[source] = int(tcp_layer.seq)
-
-    if syn and not ack:
-        if "A" not in timestamps:
-            timestamps["A"] = now
-            ttls["client"] = ttl
-        return None
-
     if syn and ack:
+        conn["isns"][source] = sequence
         if "B" not in timestamps:
             timestamps["B"] = now
             ttls["server"] = ttl
@@ -321,13 +348,17 @@ def _tcp_ja4l(packet, conn, ip_layer, ttl, now):
 
 
 def _quic_ja4l(packet, conn, ttl, now):
-    """Return the JA4L value one QUIC packet produces, or None."""
+    """Return the JA4L value this QUIC packet gives, or None."""
     udp_layer = packet[UDP]
     packet_type = long_header_packet_type(bytes(udp_layer.payload))
     if packet_type is None:
         return None
     to_server = int(udp_layer.dport) == QUIC_PORT
     from_server = int(udp_layer.sport) == QUIC_PORT
+    # A flow whose two ports are 443 names no server, so the direction of a packet is
+    # unknown and every value it gives is a guess.
+    if to_server and from_server:
+        return None
     timestamps = conn["timestamps"]
     ttls = conn["ttls"]
 
@@ -361,7 +392,7 @@ def _quic_ja4l(packet, conn, ttl, now):
 
 
 def generate_ja4l(packet, conn=None):
-    """Return the JA4L value one packet produces, or None.
+    """Return the JA4L value this packet gives, or None.
 
     The function reads the measurement points of the connection from `conn` and
     writes the point this packet supplies back into it.

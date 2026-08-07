@@ -72,9 +72,26 @@ def test_the_client_value_measures_the_two_handshake_packets():
 
 
 def test_the_fingerprinter_reports_nothing_for_a_udp_flow_that_carries_no_quic():
-    """A UDP flow that carries no QUIC long header produces no JA4L value."""
+    """The fingerprinter emits no value for a UDP flow that carries no QUIC long header."""
     fingerprinter = JA4LFingerprinter()
     packet = IP(src="10.0.0.1", dst="10.0.0.2") / UDP(sport=50000, dport=53) / Raw(load=b"\x00")
     packet.time = 0.0
     assert fingerprinter.process_packet(packet) is None
+    assert fingerprinter.get_fingerprints() == []
+
+
+def test_the_fingerprinter_reports_nothing_when_both_ports_are_443():
+    """The fingerprinter emits no value for a flow whose two ports are 443.
+
+    Port 443 names the server, so a flow that carries it on both endpoints names
+    neither one. A value read from such a flow states a direction nothing proves.
+    """
+    fingerprinter = JA4LFingerprinter()
+    fingerprinter.process_packet(
+        _quic_packet("10.0.0.1", "10.0.0.2", 443, 443, QUIC_INITIAL, t=0.0)
+    )
+    result = fingerprinter.process_packet(
+        _quic_packet("10.0.0.1", "10.0.0.2", 443, 443, QUIC_INITIAL, t=0.025)
+    )
+    assert result is None
     assert fingerprinter.get_fingerprints() == []
