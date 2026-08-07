@@ -21,6 +21,14 @@ logger = logging.getLogger(__name__)
 # produces a fingerprint that no reference implementation matches.
 DEFAULT_PACKET_COUNT = 200
 
+# The port FoxIO reads a bare ACK on. `python/ja4.py` tracks a connection for JA4SSH
+# only when one endpoint uses this port.
+SSH_PORT = 22
+
+# A bare ACK carries the ACK flag alone. FoxIO counts one only when the TCP flags equal
+# `0x0010`, so a SYN+ACK, a FIN+ACK and a RST+ACK never reach the bare-ACK counter.
+ACK_FLAG = 0x10
+
 
 class JA4SSHFingerprinter(BaseFingerprinter):
     """
@@ -73,7 +81,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         dst_port = tcp.dport
 
         # Determine client/server based on SSH port (22) if available, otherwise use connection direction
-        ssh_port = 22
+        ssh_port = SSH_PORT
         if dst_port == ssh_port:
             client_ip, server_ip = src_ip, dst_ip
             client_port, server_port = src_port, dst_port
@@ -98,8 +106,19 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         # Connection key for tracking
         conn_key = f"{client_ip}:{client_port}-{server_ip}:{server_port}"
 
+        # A bare ACK carries the ACK flag alone and no payload. FoxIO counts one only
+        # when the TCP flags equal 0x0010, which excludes a SYN+ACK, a FIN+ACK and a
+        # RST+ACK.
+        is_bare_ack = int(tcp.flags) == ACK_FLAG and not packet.haslayer(Raw)
+
+        # The ACK of the TCP handshake is a bare ACK, and it arrives before the first
+        # SSH packet. FoxIO counts it, so the state table needs the connection before
+        # any SSH data reaches it. `ssh-r.pcap`, `ssh-scp-1050.pcap` and `ssh2.pcapng`
+        # each report one more client ACK than a state table built on SSH data alone.
+        opens_on_ssh_port = is_bare_ack and ssh_port in (src_port, dst_port)
+
         # Skip packets that aren't SSH data AND don't belong to a known SSH connection
-        if not has_ssh_data and conn_key not in self.connections:
+        if not has_ssh_data and not opens_on_ssh_port and conn_key not in self.connections:
             return None
 
         # Initialize connection if needed
@@ -149,58 +168,44 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 else:
                     conn["ssh_packets"]["server"].append(packet_size)
 
-        # Track ACK packets (no data) - but only for connections that have shown SSH activity
-        elif tcp.flags & 0x10 == 0x10 and not packet.haslayer(Raw):  # ACK flag set, no payload
-            # Only track ACKs if we've seen SSH data in this connection
-            if (
-                conn["client_id"]
-                or conn["server_id"]
-                or len(conn["ssh_packets"]["client"]) > 0
-                or len(conn["ssh_packets"]["server"]) > 0
-            ):
-                if is_client_to_server:
-                    conn["bare_acks"]["client"] += 1
-                else:
-                    conn["bare_acks"]["server"] += 1
+        elif is_bare_ack:
+            if is_client_to_server:
+                conn["bare_acks"]["client"] += 1
+            else:
+                conn["bare_acks"]["server"] += 1
 
         # The window counts the SSH packets of both directions. The FoxIO image lists
         # the SSH packet counts and the bare ACK counts as separate fields, so a bare
         # ACK does not advance the window.
         total_packets = len(conn["ssh_packets"]["client"]) + len(conn["ssh_packets"]["server"])
 
-        if total_packets >= self.packet_count:
-            # Calculate most common packet sizes
-            client_sizes = conn["ssh_packets"]["client"]
-            server_sizes = conn["ssh_packets"]["server"]
+        if total_packets < self.packet_count:
+            return None
 
-            client_mode = self._mode(client_sizes) if client_sizes else 0
-            server_mode = self._mode(server_sizes) if server_sizes else 0
+        return self._close_window(conn_key)
 
-            # Count SSH packets per direction (raw counts per FoxIO spec)
-            client_ssh_count = len(client_sizes)
-            server_ssh_count = len(server_sizes)
+    def _close_window(self, conn_key):
+        """Emit the open window of one connection, and start a new window.
 
-            # Count ACK packets per direction (raw counts per FoxIO spec)
-            client_ack_count = conn["bare_acks"]["client"]
-            server_ack_count = conn["bare_acks"]["server"]
+        Args:
+            conn_key: The connection key of the window.
 
-            # Generate the JA4SSH fingerprint using raw counts (not percentages)
-            fingerprint = f"c{client_mode}s{server_mode}_c{client_ssh_count}s{server_ssh_count}_c{client_ack_count}s{server_ack_count}"
+        Returns:
+            The JA4SSH fingerprint.
+        """
+        conn = self.connections[conn_key]
+        fingerprint = self._generate_ja4ssh(conn_key)
 
-            # Store the fingerprint
-            self.fingerprints.append(
-                {"fingerprint": fingerprint, "connection": conn_key, "timestamp": time.time()}
-            )
+        self.fingerprints.append(
+            {"fingerprint": fingerprint, "connection": conn_key, "timestamp": time.time()}
+        )
 
-            # Reset counters for next window
-            conn["ssh_packets"]["client"] = []
-            conn["ssh_packets"]["server"] = []
-            conn["bare_acks"]["client"] = 0
-            conn["bare_acks"]["server"] = 0
+        conn["ssh_packets"]["client"] = []
+        conn["ssh_packets"]["server"] = []
+        conn["bare_acks"]["client"] = 0
+        conn["bare_acks"]["server"] = 0
 
-            return fingerprint
-
-        return None
+        return fingerprint
 
     def _generate_ja4ssh(self, conn_key):
         """Generate JA4SSH fingerprint for a connection."""
