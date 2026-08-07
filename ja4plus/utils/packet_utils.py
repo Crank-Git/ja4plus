@@ -1,6 +1,38 @@
 """Packet utility helpers for IPv4/IPv6 support."""
 
-from scapy.all import IP, IPv6
+from scapy.all import IP, IPv6, TCP, UDP
+
+from ja4plus.utils.tunnels import innermost_layer
+
+ENDPOINT_FIELDS = ("src", "dst", "srcport", "dstport")
+
+
+def packet_endpoints(packet):
+    """Return the address pair and the port pair of one packet.
+
+    A fingerprint result carries these four fields instead of the packet that produced
+    it. A monitor runs for weeks, and a stored packet holds the whole capture in
+    memory.
+
+    The values name the innermost address layer and the innermost port layer. A tunnel
+    carries an outer header that the reference does not describe, so an outer address
+    would group a value under a stream the reference does not hold.
+
+    Args:
+        packet: A network packet.
+
+    Returns:
+        A dictionary with the keys `src`, `dst`, `srcport` and `dstport`. A value is
+        None when the packet carries no layer that holds it.
+    """
+    address_layer = innermost_layer(packet, (IP, IPv6))
+    port_layer = innermost_layer(packet, (TCP, UDP))
+    return {
+        "src": getattr(address_layer, "src", None),
+        "dst": getattr(address_layer, "dst", None),
+        "srcport": getattr(port_layer, "sport", None),
+        "dstport": getattr(port_layer, "dport", None),
+    }
 
 
 def get_ip_layer(packet):

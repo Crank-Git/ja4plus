@@ -20,7 +20,7 @@ from ja4plus.utils.http_utils import (
     parse_http_request,
 )
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
-from ja4plus.utils.packet_utils import get_ip_layer, packet_seconds
+from ja4plus.utils.packet_utils import get_ip_layer, packet_endpoints, packet_seconds
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -163,13 +163,12 @@ class JA4HFingerprinter(BaseFingerprinter):
         """Append one JA4H result, with the raw original-order form beside the hash."""
         raw_original_order = _generate_ja4h_raw_from_info(http_info)
         self.last_raw_original_order = raw_original_order
-        self.fingerprints.append(
-            {
-                "fingerprint": fingerprint,
-                "raw_original_order": raw_original_order,
-                "packet": packet,
-            }
-        )
+        entry = {
+            "fingerprint": fingerprint,
+            "raw_original_order": raw_original_order,
+        }
+        entry.update(packet_endpoints(packet))
+        self.fingerprints.append(entry)
 
     def reset(self):
         super().reset()

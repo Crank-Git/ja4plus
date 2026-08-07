@@ -12,6 +12,28 @@ All fingerprinters inherit from `BaseFingerprinter` and share a common interface
 | `get_fingerprints()` | `list[dict]` | Returns all collected fingerprints as `{"fingerprint": str, ...}` dicts. |
 | `reset()` | `None` | Clears all collected fingerprints and internal state. |
 
+#### The fields of one entry
+
+Every entry holds the key `fingerprint`. An entry that one packet produced also holds
+these four fields. A method adds its own keys beside them, such as `raw` on JA4.
+
+| Field | Type | Description |
+|--------|--------|-------------|
+| `src` | `str` | The source address of the packet. |
+| `dst` | `str` | The destination address of the packet. |
+| `srcport` | `int` | The source port of the packet. |
+| `dstport` | `int` | The destination port of the packet. |
+
+A tunnelled packet reports the innermost address layer and the innermost port layer,
+because the reference describes the inner stream.
+
+No entry holds the packet object. A monitor runs for weeks, and a stored packet holds
+every packet the monitor ever fingerprinted. A caller that needs the packet reads it
+inside its own `process_packet` call.
+
+JA4SSH reports a window of many packets rather than one packet, so its entry holds the
+key `connection` instead of these four fields. JA4L holds both.
+
 ### JA4Fingerprinter
 
 TLS Client Hello fingerprinting.

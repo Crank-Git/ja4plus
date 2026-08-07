@@ -18,6 +18,7 @@ from ja4plus.utils.quic_utils import (
     reassemble_crypto_fragments,
     server_hello_is_complete,
 )
+from ja4plus.utils.packet_utils import packet_endpoints
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.fingerprinters.ja4 import (
     MAX_QUIC_FRAGMENT_AGE_SECONDS,
@@ -200,15 +201,14 @@ class JA4SFingerprinter(BaseFingerprinter):
         # value equals the fingerprint. FoxIO publishes no `JA4S_o` key. The field
         # exists so one caller reads one name on JA4 and on JA4S.
         self.last_fingerprint_original_order = fingerprint
-        self.fingerprints.append(
-            {
-                "fingerprint": fingerprint,
-                "fingerprint_original_order": fingerprint,
-                "raw": raw,
-                "raw_original_order": raw,
-                "packet": packet,
-            }
-        )
+        entry = {
+            "fingerprint": fingerprint,
+            "fingerprint_original_order": fingerprint,
+            "raw": raw,
+            "raw_original_order": raw,
+        }
+        entry.update(packet_endpoints(packet))
+        self.fingerprints.append(entry)
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored QUIC DCID state for the given connection."""

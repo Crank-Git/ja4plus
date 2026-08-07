@@ -21,6 +21,7 @@ from scapy.all import IP, IPv6, TCP, UDP
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.http_utils import is_http_request
+from ja4plus.utils.packet_utils import packet_endpoints
 from ja4plus.utils.quic_utils import (
     QUIC_HANDSHAKE,
     QUIC_INITIAL,
@@ -150,17 +151,18 @@ class JA4LFingerprinter(BaseFingerprinter):
         # The reference holds one client value for one connection and overwrites it
         # while the measurement point moves. A later packet therefore replaces the
         # value this fingerprinter already reported, and it adds no second value.
+        endpoints = packet_endpoints(packet)
         if fingerprint.startswith("JA4L-C="):
             index = conn.get("client_entry")
             if index is not None:
                 self.fingerprints[index]["fingerprint"] = fingerprint
-                self.fingerprints[index]["packet"] = packet
+                self.fingerprints[index].update(endpoints)
                 return fingerprint
             conn["client_entry"] = len(self.fingerprints)
 
-        self.fingerprints.append(
-            {"fingerprint": fingerprint, "packet": packet, "connection": conn["reported_key"]}
-        )
+        entry = {"fingerprint": fingerprint, "connection": conn["reported_key"]}
+        entry.update(endpoints)
+        self.fingerprints.append(entry)
         return fingerprint
 
     def reset(self):

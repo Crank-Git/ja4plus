@@ -105,11 +105,11 @@ the rule the fix must satisfy.
 | 7 | `ja4plus/fingerprinters/ja4h.py:163` | `cookies[k] = v` drops a repeated cookie name, while `cookie_fields` keeps it. The cookie-name hash and the cookie-value hash then describe different cookie sets. | Build both hashes from one ordered list of pairs. #35 built it. |
 | 8 | `ja4plus/fingerprinters/ja4h.py:131` | The request-line pattern requires `HTTP/<digit>.<digit>`. A request line that reads `HTTP/2` never matches, although `_http_version_to_str` handles `2`. | Accept an optional minor version. #35 built it. |
 | 9 | `ja4plus/fingerprinters/ja4h.py:82` | When the buffer is not an HTTP request, the segment stays in the reassembler forever. | Remove the stream when the buffer cannot become an HTTP request. #33 built it. |
-| 10 | `ja4plus/fingerprinters/ja4.py:292` | The `if original_order:` branch and its `else:` branch build the same string. | Remove the branch, or make the two differ. |
-| 11 | `ja4plus/fingerprinters/base.py:38` | `add_fingerprint` stores the packet object. A monitor holds every packet it ever fingerprinted. | Store what the result needs. Never store the packet. |
+| 10 | `ja4plus/fingerprinters/ja4.py:292` | The `if original_order:` branch and its `else:` branch build the same string. | Remove the branch, or make the two differ. #36 removed the branch that builds the signature-algorithm form. The cipher branch and the extension branch stay, because the two arms differ. |
+| 11 | `ja4plus/fingerprinters/base.py:38` | `add_fingerprint` stores the packet object. A monitor holds every packet it ever fingerprinted. | Store what the result needs. Never store the packet. #36 built it. An entry now holds `src`, `dst`, `srcport` and `dstport`. |
 | 12 | `ja4plus/fingerprinters/ja4ssh.py:80` | On a non-standard port, the lower port number decides which side is the server. Two ephemeral ports make this arbitrary. | Decide from the first SSH banner, and fall back to the port. |
 | 13 | `ja4plus/collector.py:33` | The module holds mutable state in module-level variables. It is deprecated and states removal at version 0.4.0. The project is at 0.6.0. | Remove the module in Epic 4. |
-| 14 | `ja4plus/fingerprinters/ja4ssh.py:354` | `interpret_fingerprint` catches every exception and returns an error dictionary. | Catch the parse errors it expects. |
+| 14 | `ja4plus/fingerprinters/ja4ssh.py:354` | `interpret_fingerprint` catches every exception and returns an error dictionary. | Catch the parse errors it expects. #36 built it. The handler now names `AttributeError`, `IndexError` and `ValueError`. |
 
 ## Data touched
 
@@ -164,7 +164,9 @@ Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/pcap (retrieved
 - [ ] Every FoxIO capture named in `Interfaces` produces no exception.
 - [ ] A truncated copy of every FoxIO capture produces no exception.
 - [ ] `rtk git grep -n "_src_is_client" ja4plus/` reports nothing.
-- [ ] No fingerprinter stores a packet object after `process_packet` returns.
+- [x] No fingerprinter stores a packet object after `process_packet` returns.
+      `tests/test_no_retained_packets.py` walks each fingerprinter and reports every
+      path that reaches a packet. #36 built it.
 
 ## Out of scope
 

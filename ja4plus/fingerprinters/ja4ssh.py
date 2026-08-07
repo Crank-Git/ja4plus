@@ -391,7 +391,12 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 },
             }
 
-        except Exception as e:
+        # A malformed fingerprint produces one of these three errors. `AttributeError`
+        # names a value that is not a string, `IndexError` names a part that holds no
+        # server field, and `ValueError` names a field that holds no number. A wider
+        # handler would report a defect inside this project as a malformed fingerprint,
+        # and the caller would read a wrong answer instead of a stack trace.
+        except (AttributeError, IndexError, ValueError) as e:
             return {"error": f"Failed to interpret: {str(e)}"}
 
     def lookup_hassh(self, hassh_value):
