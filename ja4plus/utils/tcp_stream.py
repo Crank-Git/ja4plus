@@ -69,7 +69,7 @@ class TCPStreamReassembler:
         self.max_stream_age = max_stream_age
 
     def _evict_aged_streams(self, now):
-        """Remove every stream that received no segment for `max_stream_age` seconds.
+        """Remove every stream that receives no segment for `max_stream_age` seconds.
 
         The removal drops the whole entry, so the segment list, the set of seen
         segments and the stored byte count leave together. A partial removal would make
