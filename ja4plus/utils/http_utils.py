@@ -8,6 +8,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# The version token holds a minor version, or it names major version 2 or 3, which carry
+# no minor version. A token such as `HTTP/11` names no HTTP version, and a pattern that
+# reads it as `HTTP/1` reports the version code of `HTTP/1.1`. The two requests then
+# carry one fingerprint. The lookahead ends the token for that reason. #35 records both
+# defects.
+REQUEST_LINE_PATTERN = (
+    r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)"
+    r"\s+(\S+)\s+(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
+)
+
 
 def parse_http_request(data):
     """
@@ -78,8 +88,11 @@ def parse_http_request(data):
 
             headers[header_name] = header_value
 
-        # Extract cookies
+        # Extract cookies. The two lists hold the wire order and keep every occurrence
+        # of a repeated cookie name, which the dictionary drops. #35 records the defect.
         cookies = {}
+        cookie_fields = []
+        cookie_values = []
         if "cookie" in headers:
             cookie_str = headers["cookie"]
             cookie_pairs = cookie_str.split(";")
@@ -90,6 +103,8 @@ def parse_http_request(data):
                         cookie_name = cookie_parts[0].strip()
                         cookie_value = cookie_parts[1].strip()
                         cookies[cookie_name] = cookie_value
+                        cookie_fields.append(cookie_name)
+                        cookie_values.append(cookie_value)
 
         return {
             "method": method,
@@ -97,6 +112,8 @@ def parse_http_request(data):
             "version": version,
             "headers": headers,
             "cookies": cookies,
+            "cookie_fields": cookie_fields,
+            "cookie_values": cookie_values,
         }
     except (ValueError, TypeError, UnicodeDecodeError) as e:
         logger.debug(f"Not an HTTP request: {e}")
@@ -171,10 +188,7 @@ def extract_http_info(packet):
         data = bytes(packet[Raw]).decode("utf-8", errors="ignore")
 
         # Check if this is an HTTP request
-        request_line_match = re.match(
-            r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)\s+(\S+)\s+(HTTP/\d+\.\d+)",
-            data,
-        )
+        request_line_match = re.match(REQUEST_LINE_PATTERN, data)
         if not request_line_match:
             return None
 
