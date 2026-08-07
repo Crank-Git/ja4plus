@@ -4,36 +4,6 @@ from scapy.all import IP, IPv6, TCP, UDP
 
 from ja4plus.utils.tunnels import innermost_layer
 
-ENDPOINT_FIELDS = ("src", "dst", "srcport", "dstport")
-
-
-def packet_endpoints(packet):
-    """Return the address pair and the port pair of one packet.
-
-    A fingerprint result carries these four fields instead of the packet that produced
-    it. A monitor runs for weeks, and a stored packet holds the whole capture in
-    memory.
-
-    The values name the innermost address layer and the innermost port layer. A tunnel
-    carries an outer header that the reference does not describe, so an outer address
-    would group a value under a stream the reference does not hold.
-
-    Args:
-        packet: A network packet.
-
-    Returns:
-        A dictionary with the keys `src`, `dst`, `srcport` and `dstport`. A value is
-        None when the packet carries no layer that holds it.
-    """
-    address_layer = innermost_layer(packet, (IP, IPv6))
-    port_layer = innermost_layer(packet, (TCP, UDP))
-    return {
-        "src": getattr(address_layer, "src", None),
-        "dst": getattr(address_layer, "dst", None),
-        "srcport": getattr(port_layer, "sport", None),
-        "dstport": getattr(port_layer, "dport", None),
-    }
-
 
 def get_ip_layer(packet):
     """Return the IP layer (v4 or v6) from a packet, or None.
@@ -45,6 +15,44 @@ def get_ip_layer(packet):
     if IPv6 in packet:
         return packet[IPv6]
     return None
+
+
+def packet_endpoints(packet):
+    """Return the address pair and the port pair of one packet.
+
+    A fingerprint result carries these four fields instead of the packet that produced
+    it. A monitor runs for weeks, and a stored packet holds the whole capture in
+    memory.
+
+    The address pair names the outer address layer, and the port pair names the
+    innermost port layer. The reference reports one tunnelled connection that way.
+    `gre-sample.pcap`, `gre-erspan-vxlan.pcap` and `tcpdump-geneve.pcap` each carry an
+    inner address that the reference never reports, and each carries an outer port that
+    the reference never reports.
+
+    | Capture | Reference address pair | Reference port pair |
+    |---|---|---|
+    | `gre-sample.pcap` | `172.27.1.66` and `66.59.109.137`, the outer pair | 40264 and 22, the inner pair |
+    | `gre-erspan-vxlan.pcap` | `100.20.9.2` and `100.20.9.1`, the outer pair | 65174 and 80, the inner pair |
+    | `tcpdump-geneve.pcap` | `20.0.0.2` and `20.0.0.1`, the outer pair | 51225 and 22, the inner pair |
+
+    `_reported_key` in `ja4plus/fingerprinters/ja4l.py` reads the same two layers.
+
+    Args:
+        packet: A network packet.
+
+    Returns:
+        A dictionary with the keys `src`, `dst`, `srcport` and `dstport`. A value is
+        None when the packet carries no layer that holds it.
+    """
+    address_layer = get_ip_layer(packet)
+    port_layer = innermost_layer(packet, (TCP, UDP))
+    return {
+        "src": getattr(address_layer, "src", None),
+        "dst": getattr(address_layer, "dst", None),
+        "srcport": getattr(port_layer, "sport", None),
+        "dstport": getattr(port_layer, "dport", None),
+    }
 
 
 def packet_seconds(packet):

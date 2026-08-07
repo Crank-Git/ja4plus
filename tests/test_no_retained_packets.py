@@ -9,6 +9,7 @@ test that asserts "no packet is retained" passes when nothing was stored at all,
 count guards the assertion against a result that is true for the wrong reason.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -144,26 +145,65 @@ def test_an_entry_carries_the_endpoints_of_the_packet_that_produced_it(
         assert entry["dst"], f"{method} entry holds an empty dst"
 
 
-def test_the_endpoint_fields_report_the_innermost_layers_of_a_tunnelled_packet():
-    """A tunnelled packet reports the innermost address pair and port pair.
+def test_an_entry_names_the_endpoints_the_reference_names():
+    """The endpoint fields of a JA4 entry equal the endpoints the reference records.
 
-    `tests/conformance_index.py` groups a value by the innermost layers of the packet
-    it came from. The endpoint fields replace that packet, so they must name the same
-    layers. An outer address would move a value to a stream the reference does not
-    hold.
+    The reference file names the source endpoint and the destination endpoint of the
+    stream that produced the value. A test that reads only the presence of the four
+    fields passes when the fingerprinter swaps the source and the destination, so this
+    case reads the four values against the reference.
     """
-    from scapy.layers.inet import IP, TCP
+    reference = json.loads((VECTORS / "tls12.pcap.json").read_text())[0]
+    entries = run_capture(JA4Fingerprinter, "tls12.pcap").get_fingerprints()
+    assert len(entries) == 1, f"tls12.pcap produced {len(entries)} JA4 values"
+    entry = entries[0]
+    assert entry["src"] == reference["src"]
+    assert entry["dst"] == reference["dst"]
+    assert str(entry["srcport"]) == reference["srcport"]
+    assert str(entry["dstport"]) == reference["dstport"]
 
+
+TUNNELLED_CAPTURES = ["gre-sample.pcap", "gre-erspan-vxlan.pcap", "tcpdump-geneve.pcap"]
+
+
+@pytest.mark.parametrize("capture_name", TUNNELLED_CAPTURES)
+def test_a_tunnelled_packet_reports_the_endpoints_the_reference_reports(capture_name):
+    """A tunnelled packet reports the outer address pair and the inner port pair.
+
+    A tunnel carries two address layers and it can carry two port layers. The reference
+    reports the outer address pair, and it reports the inner port pair. An inner
+    address or an outer port would name a stream the reference does not hold.
+    """
     from ja4plus.utils.packet_utils import packet_endpoints
 
-    tunnelled = (
-        IP(src="10.0.0.1", dst="10.0.0.2")
-        / IP(src="192.0.2.1", dst="192.0.2.2")
-        / TCP(sport=1234, dport=443)
+    reference = json.loads((VECTORS / f"{capture_name}.json").read_text())[0]
+    expected = stream_key(
+        reference["src"], reference["srcport"], reference["dst"], reference["dstport"]
     )
-    assert packet_endpoints(tunnelled) == {
-        "src": "192.0.2.1",
-        "dst": "192.0.2.2",
-        "srcport": 1234,
-        "dstport": 443,
-    }
+    reported = set()
+    for packet in rdpcap(str(VECTORS / capture_name)):
+        endpoints = packet_endpoints(packet)
+        if endpoints["src"] is None or endpoints["srcport"] is None:
+            continue
+        reported.add(
+            stream_key(
+                endpoints["src"], endpoints["srcport"], endpoints["dst"], endpoints["dstport"]
+            )
+        )
+    assert expected in reported, f"{capture_name} reports {sorted(reported)}, not {expected}"
+
+
+def stream_key(src, src_port, dst, dst_port):
+    """Return the direction-free identity of one stream.
+
+    Args:
+        src: The source address.
+        src_port: The source port, as a string or an integer.
+        dst: The destination address.
+        dst_port: The destination port, as a string or an integer.
+
+    Returns:
+        A sorted pair of (address, port) pairs. One direction gives the identity of the
+        other direction.
+    """
+    return tuple(sorted(((str(src), str(src_port)), (str(dst), str(dst_port)))))

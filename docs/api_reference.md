@@ -24,8 +24,8 @@ these four fields. A method adds its own keys beside them, such as `raw` on JA4.
 | `srcport` | `int` | The source port of the packet. |
 | `dstport` | `int` | The destination port of the packet. |
 
-A tunnelled packet reports the innermost address layer and the innermost port layer,
-because the reference describes the inner stream.
+A tunnelled packet reports the outer address layer and the innermost port layer,
+because the reference reports one tunnelled connection that way.
 
 No entry holds the packet object. A monitor runs for weeks, and a stored packet holds
 every packet the monitor ever fingerprinted. A caller that needs the packet reads it
