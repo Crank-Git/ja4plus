@@ -5,11 +5,16 @@
 """
 
 import hashlib
-import os
+import json
+from pathlib import Path
 
 import pytest
 
 from ja4plus.fingerprinters.ja4h import _generate_ja4h_from_info, _http_version_to_str
+
+VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
+CAPTURE_PATH = VECTORS_DIR / "http2-with-cookies.pcapng"
+EXPECTED_PATH = VECTORS_DIR / "http2-with-cookies.pcapng.json"
 
 
 @pytest.mark.parametrize(
@@ -92,30 +97,69 @@ def test_cookie_values_hash_input_form_is_name_value_pairs_sorted_by_name():
     assert fp.split("_")[-1] == expected
 
 
-@pytest.mark.skipif(
-    not os.path.exists("tests/foxio_vectors/pcap/http2-with-cookies.pcapng"),
-    reason="FoxIO http2-with-cookies fixture missing",
-)
-def test_http2_with_cookies_pcap_produces_20_in_part_a():
-    """Real pcap sanity check for HTTP/2 version mapping."""
+def _reference_ja4h():
+    """Return every JA4H value the FoxIO expected-output file holds, in file order.
+
+    Returns:
+        The list of `JA4H` values.
+
+    Raises:
+        FileNotFoundError: The expected-output file is absent.
+        AssertionError: The expected-output file holds no JA4H value.
+    """
+    with open(EXPECTED_PATH) as handle:
+        entries = json.load(handle)
+    values = [entry["JA4H"] for entry in entries if "JA4H" in entry]
+    # Without this check, an empty list compares equal to an empty produced list, and the
+    # caller reports a pass on nothing. #115 exists to remove that defect.
+    assert values, "{} holds no JA4H value".format(EXPECTED_PATH)
+    return values
+
+
+def _produced_ja4h():
+    """Return every JA4H value the fingerprinter produces from the FoxIO capture."""
     from scapy.all import rdpcap
+
     from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
 
-    pkts = rdpcap("tests/foxio_vectors/pcap/http2-with-cookies.pcapng")
-    fp = JA4HFingerprinter()
-    seen = []
-    for pkt in pkts:
-        result = fp.process_packet(pkt)
-        if result:
-            seen.append(result)
+    fingerprinter = JA4HFingerprinter()
+    produced = []
+    for packet in rdpcap(str(CAPTURE_PATH)):
+        fingerprint = fingerprinter.process_packet(packet)
+        if fingerprint:
+            produced.append(fingerprint)
+    return produced
 
-    # Some HTTP/2 captures don't reassemble cleanly with our HTTP/1-style
-    # parser; we tolerate zero results but if any are produced, version
-    # must be '20'.
-    for fingerprint in seen:
-        # Part A: <method><ver><cookie><ref><cnt><lang> = e.g. 'ge2010...'
-        # method = 2 chars, version = 2 chars
-        version = fingerprint[2:4]
-        # http2 captures may also yield '11' if a fallback HTTP/1.1 parse
-        # happened — accept either as long as the structure is sane.
-        assert version in {"20", "11"}, f"unexpected version {version!r} in {fingerprint}"
+
+def test_every_reference_value_of_the_foxio_capture_carries_the_version_code_20():
+    """The FoxIO reference reads `20` as the version code of every request in the capture."""
+    assert [value[2:4] for value in _reference_ja4h()] == ["20"] * 15
+
+
+def test_the_foxio_capture_carries_no_cleartext_http_request():
+    """Every HTTP request of `http2-with-cookies.pcapng` is inside a TLS record.
+
+    The capture carries a Decryption Secrets Block, and the FoxIO reference reads the 15
+    requests because it decrypts them. This test names the reason the comparison below
+    fails, so that a reader does not look for the cause in the JA4H parser.
+    """
+    from scapy.all import Raw, rdpcap
+
+    request_lines = []
+    for packet in rdpcap(str(CAPTURE_PATH)):
+        if packet.haslayer(Raw) and bytes(packet[Raw].load)[:4] in (b"GET ", b"POST", b"HTTP"):
+            request_lines.append(bytes(packet[Raw].load)[:16])
+
+    assert request_lines == []
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "issue #129: the reference decrypts the capture with the secrets it carries, and "
+        "ja4plus reads no encrypted request."
+    ),
+)
+def test_the_foxio_capture_produces_the_reference_ja4h_values():
+    """`http2-with-cookies.pcapng` produces the JA4H values the FoxIO reference holds."""
+    assert _produced_ja4h() == _reference_ja4h()
