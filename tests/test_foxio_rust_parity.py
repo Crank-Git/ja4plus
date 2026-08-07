@@ -31,14 +31,41 @@ RUST_SNAPSHOT_NAME = "ja4__insta@{capture}.snap"
 # Each one holds at least one stream that the FoxIO Python file omits and the FoxIO Rust
 # snapshot holds.
 DIVERGENT_CAPTURES = (
+    "browsers-x509.pcapng",
     "chrome-cloudflare-quic-with-secrets.pcapng",
     "https-connect.pcap",
+    "latest.pcapng",
     "quic-tls-handshake.pcapng",
     "quic-with-several-tls-frames.pcapng",
     "ssh2.pcapng",
     "tls-handshake.pcapng",
     "tls-sni.pcapng",
     "tls3.pcapng",
+)
+
+# The streams on which the server coalesces the ServerHello, the Certificate and the
+# ServerHelloDone into one handshake record that spans several TCP segments. The FoxIO
+# Python file omits the JA4S value of every one, and the FoxIO Rust snapshot holds it.
+# Issue #151 names the first three, and the one reader change settles all six.
+COALESCED_RECORD_STREAMS = (
+    ("ssh2.pcapng", "172.16.225.48", "57374", "52.178.17.3", "t120300_c030_09f674154ab3"),
+    ("ssh2.pcapng", "172.16.225.48", "57375", "204.79.197.220", "t1205h2_c030_015e35fdd027"),
+    (
+        "tls-handshake.pcapng",
+        "192.168.1.168",
+        "50167",
+        "40.126.24.84",
+        "t120400_c030_4e8089b08790",
+    ),
+    (
+        "browsers-x509.pcapng",
+        "172.27.7.31",
+        "54524",
+        "13.107.21.239",
+        "t1206h2_c030_044dc9b3196d",
+    ),
+    ("latest.pcapng", "172.16.225.48", "52940", "52.249.29.248", "t120300_c030_09f674154ab3"),
+    ("latest.pcapng", "172.16.225.48", "52941", "52.249.29.248", "t120300_c030_09f674154ab3"),
 )
 
 # The method name the reference uses, beside the field name the Rust snapshot writes.
@@ -210,6 +237,53 @@ class TestTheRustImplementationHoldsWhatJa4plusProduces:
                 )
         assert not mismatches, "\n".join(mismatches)
         assert matched, "the vectors hold no QUIC stream the FoxIO Python file omits"
+
+
+@pytest.mark.spec_validation
+class TestTheStreamsThatCoalesceTheServerHelloRecord:
+    """Measure each JA4S stream whose ServerHello record spans several TCP segments.
+
+    The class above lets a stream on which ja4plus emits nothing pass, so it reports a
+    pass on a comparison it never makes. These streams were exactly that case. Each
+    check here names one stream and one value, so a later regression names itself.
+    """
+
+    @pytest.mark.parametrize(
+        "capture,client,client_port,server,rust_value",
+        COALESCED_RECORD_STREAMS,
+        ids=[
+            "{}:{}".format(capture, client_port)
+            for capture, _, client_port, _, _ in COALESCED_RECORD_STREAMS
+        ],
+    )
+    def test_the_stream_produces_the_foxio_rust_ja4s_value(
+        self, capture, client, client_port, server, rust_value
+    ):
+        """ja4plus produces the JA4S value the FoxIO Rust snapshot holds."""
+        identity = stream_identity(client, client_port, server, "443")
+        produced = index_produced(VECTORS_DIR / capture)
+        assert produced.get(identity, {}).get("JA4S", ()) == (rust_value,)
+
+    @pytest.mark.parametrize(
+        "capture,client,client_port,server,rust_value",
+        COALESCED_RECORD_STREAMS,
+        ids=[
+            "{}:{}".format(capture, client_port)
+            for capture, _, client_port, _, _ in COALESCED_RECORD_STREAMS
+        ],
+    )
+    def test_the_foxio_python_file_omits_the_stream(
+        self, capture, client, client_port, server, rust_value
+    ):
+        """The stream earns its place here only while the FoxIO Python file omits it.
+
+        A vector refresh that adds a JA4S value for the stream makes the Rust snapshot
+        the second reference, not the first. This check fails then, and it names the
+        stream that changed.
+        """
+        identity = stream_identity(client, client_port, server, "443")
+        python = read_python_methods(VECTORS_DIR / "{}.json".format(capture))
+        assert "JA4S" not in python.get(identity, set())
 
 
 @pytest.mark.spec_validation

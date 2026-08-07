@@ -61,11 +61,12 @@ streams and omits six, and the Rust snapshot holds all thirteen. Where the Pytho
 holds no value for a stream and the Rust snapshot holds one, the Rust snapshot decides.
 Where both carry a value for one method on one stream, `python/test/testdata/` decides.
 
-The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a port it
-does not know. Those two gaps produce every case. `tests/foxio_vectors/rust_expected/`
-holds a copy of the eight snapshots that cover them, and
-`tests/test_foxio_rust_parity.py` measures the match. #138 records the reading, and
-`docs/implementation_notes.md` holds the table.
+The FoxIO Python implementation has three gaps. It reads no QUIC handshake, it reads no
+TLS on a port it does not know, and it reads no ServerHello whose handshake record spans
+several TCP segments. Those three gaps produce every case.
+`tests/foxio_vectors/rust_expected/` holds a copy of the ten snapshots that cover them,
+and `tests/test_foxio_rust_parity.py` measures the match. #138 records the first two
+readings, #151 records the third, and `docs/implementation_notes.md` holds both tables.
 
 Read this rule at stream granularity. An earlier form read "only where the Python file
 holds an empty array", and that form covered one capture of the eight.

@@ -859,3 +859,79 @@ all other non-zero versions use the v1 salt.
 
 **Integration:** `extract_tls_info` checks for QUIC on UDP packets
 before falling through to standard TLS parsing.
+
+---
+
+## A hello is bounded on its own length field, not on the record length
+
+Issue #151 asked why `ja4plus` read no ServerHello on three streams for which the FoxIO
+Rust snapshot holds a JA4S value. The three share one cause, and the cause was a defect
+in this project.
+
+### The mechanism
+
+A TLS handshake record carries one or more handshake messages. A TLS 1.2 server puts the
+ServerHello, the Certificate, the ServerKeyExchange and the ServerHelloDone in one
+record. That record is longer than one TCP segment, so the first segment holds the whole
+ServerHello and only part of the record.
+
+`parse_tls_handshake` bounded the hello on the record length field. It returned nothing
+whenever the segment held less than the record declared, so it never read a ServerHello
+that a coalesced record carries. The bound now reads the three-byte length field of the
+handshake message at offset 6, and the reader slices the buffer at the end of that
+message. The slice keeps the reader inside the hello, because the bytes that follow
+belong to the Certificate message.
+
+### The measurement
+
+The first server data packet of each stream, read with `scapy`:
+
+| Capture | Stream | Packet | Segment bytes | Record needs | ServerHello ends at byte |
+|---|---|---|---|---|---|
+| `ssh2.pcapng` | `57374 <-> 52.178.17.3:443` | 232 | 1452 | 6296 | 94 |
+| `ssh2.pcapng` | `57375 <-> 204.79.197.220:443` | 254 | 1452 | 7036 | 107 |
+| `tls-handshake.pcapng` | `50167 <-> 40.126.24.84:443` | 148 | 1460 | 3955 | 98 |
+| `browsers-x509.pcapng` | `54524 <-> 13.107.21.239:443` | 5 | 1458 | 5947 | 111 |
+| `latest.pcapng` | `52940 <-> 52.249.29.248:443` | 158 | 1452 | 7141 | 94 |
+| `latest.pcapng` | `52941 <-> 52.249.29.248:443` | 192 | 1452 | 7141 | 94 |
+| `socks4-https.pcap` | `50606 <-> 10.0.0.2:9901` | 8 | 1360 | 6776 | 90 |
+
+Every row reads the same way. The record needs more bytes than the segment carries, and
+the ServerHello ends inside the segment.
+
+### The third gap in the FoxIO Python implementation
+
+`.claude/rules/external-apis.md` named two gaps before this issue: the FoxIO Python
+implementation reads no QUIC handshake, and it reads no TLS on a port it does not know.
+This is a third gap. The FoxIO Python expected-output file omits the JA4S value of every
+stream in the table, and the FoxIO Rust snapshot holds it for six of the seven.
+
+`tls-handshake.pcapng` proves the gap on one capture. Stream `50167` runs on port 443, so
+neither of the first two gaps explains the omission, and the Rust snapshot holds
+`t120400_c030_4e8089b08790` for it.
+
+The six streams the Rust snapshot covers each produce the Rust value.
+`tests/test_foxio_rust_parity.py` holds the measurement in
+`TestTheStreamsThatCoalesceTheServerHelloRecord`. The snapshots of
+`browsers-x509.pcapng` and `latest.pcapng` join the vector set for that measurement.
+
+### The seventh stream
+
+`socks4-https.pcap` stream `50606 <-> 10.0.0.2:9901` is the one exception. The FoxIO Rust
+snapshot holds `ja4t`, `ja4l_c` and `ja4l_s` for it, and no `ja4s` and no `ja4`. No FoxIO
+implementation holds a JA4S value for the stream.
+
+`ja4plus` reads the record layer without regard to the tunnel protocol that carries it,
+which is the behaviour #138 decided to keep for the three JA4X values on the same stream.
+The register records the JA4S value under the same decision.
+
+### The register
+
+The register rises from 99 keys to 104, and the conformance suite reports 104 xfailed.
+The five new keys are `browsers-x509.pcapng/JA4S`, `browsers-x509.pcapng/JA4S_r`,
+`latest.pcapng/JA4S`, `latest.pcapng/JA4S_r` and `socks4-https.pcap/JA4S`. The existing
+`ssh2.pcapng` and `tls-handshake.pcapng` JA4S keys hold the capture, so they absorb the
+three streams #151 names, and their cause text now records the second reason.
+
+Verified against: https://www.rfc-editor.org/rfc/rfc5246#section-6.2.1 (TLS 1.2, retrieved 2026-08-07)
+Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/rust/ja4/src/snapshots (commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8)

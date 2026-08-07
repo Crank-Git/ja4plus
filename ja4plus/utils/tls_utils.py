@@ -66,15 +66,25 @@ def parse_tls_handshake(raw_data):
         record_type = raw_data[offset]
         record_length = (raw_data[offset + 3] << 8) | raw_data[offset + 4]
 
-        if record_type == 0x16 and offset + 6 <= len(raw_data):  # 0x16 = Handshake
+        if record_type == 0x16 and offset + 9 <= len(raw_data):  # 0x16 = Handshake
             handshake_type = raw_data[offset + 5]
 
             if handshake_type in (1, 2):
-                # A truncated record holds no complete hello.
-                if offset + 5 + record_length > len(raw_data):
+                # A handshake record carries one or more handshake messages, so the
+                # record length bounds the group and not the hello. A TLS 1.2 server
+                # coalesces the ServerHello, the Certificate and the ServerHelloDone
+                # into one record that spans several TCP segments, and issue #151 names
+                # the three FoxIO streams the record bound rejected.
+                handshake_length = int.from_bytes(raw_data[offset + 6 : offset + 9], "big")
+                end = offset + 9 + handshake_length
+                # A hello the segment cuts holds no cipher and no extension list.
+                if end > len(raw_data):
                     return None
 
-                record = raw_data[offset:]
+                # The slice stops at the end of the hello, because the bytes that follow
+                # belong to the next handshake message. A reader that walks into them
+                # reports an extension the peer never sent.
+                record = raw_data[offset:end]
                 if handshake_type == 1:
                     return _parse_client_hello(record)
                 return _parse_server_hello(record)
