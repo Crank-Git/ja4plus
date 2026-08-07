@@ -92,6 +92,24 @@ def test_a_repeated_syn_that_carries_the_same_number_changes_nothing():
     assert values == ["JA4L-S=1000_64", "JA4L-C=500_128"]
 
 
+def test_a_connection_of_100_bare_acks_stores_one_client_value():
+    """The stored list holds one client value for one connection.
+
+    A bare ACK carries the relative sequence number 1 and the relative acknowledgement
+    number 1, so every one of the 100 ACKs moves the client measurement point. The
+    reference holds one client value for one connection, so the later point replaces the
+    value the fingerprinter already stored.
+    """
+    packets = [_client("S", 0, 0, 0.000), _server("SA", 0, 1, 0.001)]
+    for index in range(100):
+        packets.append(_client("A", 1, 1, 0.002 + index * 0.001))
+    client_values = [value for value in _values(packets) if value.startswith("JA4L-C=")]
+    # The reference measures to the last packet that holds both relative numbers, which
+    # is the 100th ACK at 0.101s. `browsers-x509.pcapng` stream 0 proves the rule: the
+    # reference value 278_128 comes from the Client Hello, and the bare ACK gives 56.
+    assert client_values == ["JA4L-C=50000_128"]
+
+
 def test_a_capture_that_starts_after_the_handshake_reports_nothing():
     """The fingerprinter needs the SYN, so a capture without one gives no value."""
     assert _values([_client("A", 1, 1, 0.000), _client("PA", 1, 1, 0.001, b"hello")]) == []
