@@ -40,6 +40,22 @@ A fix that lands makes the case pass, and the strict marker turns that pass into
 failure that names the case. Delete the entry in the same change that lands the fix.
 Never delete an entry to make a red suite green.
 
+## How to refresh the owner list
+
+`tests/foxio_deviation_owners.json` records the state of every issue the register names.
+`TestTheRegisterOwners` reads it and rejects an owner that no worker can act on: an epic,
+or a closed issue that no decision record explains. The register named the epic #13 for
+five batches, and no test caught it.
+
+The file is checked in, so the unit suite reaches no network. Refresh it with:
+
+```bash
+gh issue list --state all --limit 500 --json number,state,labels,title
+```
+
+An entry whose owner the file does not hold fails the test. Add the owner, or point the
+entry at an issue the file already holds.
+
 ## How to measure a new baseline
 
 Set `JA4PLUS_IGNORE_DEVIATIONS=1` and run the suite. The lookup returns nothing, so
@@ -57,6 +73,8 @@ logger = logging.getLogger(__name__)
 
 REGISTER_PATH = Path(__file__).parent / "foxio_deviations.json"
 
+OWNERS_PATH = Path(__file__).parent / "foxio_deviation_owners.json"
+
 # The suite reads this variable to measure a new baseline. It disables the lookup, so
 # every registered case fails and the failure list names every deviation.
 IGNORE_VARIABLE = "JA4PLUS_IGNORE_DEVIATIONS"
@@ -68,10 +86,13 @@ class Deviation(NamedTuple):
     Attributes:
         issue: The number of the issue that fixes the deviation.
         cause: One line that states the cause.
+        decided: True when the issue is a decision record. A decided deviation is
+            permanent, so its issue is closed and no fix removes the entry.
     """
 
     issue: int
     cause: str
+    decided: bool = False
 
     def reason(self):
         """Return the `xfail` reason that names the issue and the cause."""
@@ -140,7 +161,57 @@ def _read_entry(key, entry):
     cause = entry.get("cause")
     if not isinstance(cause, str) or not cause.strip():
         raise ValueError("deviation {}: the entry states no cause".format(key))
-    return Deviation(issue=issue, cause=cause)
+    decided = entry.get("decided", False)
+    if not isinstance(decided, bool):
+        raise ValueError("deviation {}: the decided field is not true or false".format(key))
+    return Deviation(issue=issue, cause=cause, decided=decided)
+
+
+class Owner(NamedTuple):
+    """The recorded state of one issue the register names.
+
+    Attributes:
+        number: The issue number.
+        state: The issue state, `open` or `closed`.
+        epic: True when the issue carries the `type:epic` label.
+        title: The issue title, which names the owner for a reader.
+    """
+
+    number: int
+    state: str
+    epic: bool
+    title: str
+
+
+def load_owners(path=OWNERS_PATH):
+    """Return the recorded state of every issue the register names.
+
+    The file is checked in, so no test reaches the network. The module docstring holds
+    the command that refreshes it.
+
+    Args:
+        path: The path of the owner file. Defaults to the committed file.
+
+    Returns:
+        A map of issue number to Owner.
+
+    Raises:
+        ValueError: An owner names a state the file does not allow.
+    """
+    with open(path) as handle:
+        document = json.load(handle)
+    owners = {}
+    for number, entry in document["owners"].items():
+        state = entry.get("state")
+        if state not in ("open", "closed"):
+            raise ValueError("owner {}: the state is not open or closed".format(number))
+        owners[int(number)] = Owner(
+            number=int(number),
+            state=state,
+            epic=bool(entry.get("epic", False)),
+            title=entry.get("title", ""),
+        )
+    return owners
 
 
 def lookup(register, key):
