@@ -117,11 +117,57 @@ should be server. Fixed by swapping the assignment.
 
 ## JA4X - X.509 Certificates
 
+### The scan reads the record layer, then the handshake messages
+
+FoxIO publishes JA4X as an image, so the expected-output files decide. One TLS
+record carries more than one handshake message, and one handshake message spans
+more than one record. A scan that reads only the first handshake message of a
+record misses the Certificate message that follows a ServerHello in the same
+record. `latest.pcapng` stream 9 holds one 7136-byte record that carries both
+messages, and the reference holds
+`a373a9f83c6b_2bab15409345_0f2217ba412e` for it.
+
+The scan therefore joins the payload of every complete handshake record that
+follows without a gap, then reads the handshake messages of the joined bytes.
+The stream does not always start on a record boundary, because a proxy writes
+its own handshake first, so the scan looks for the boundary one byte at a time.
+`socks-https-example.pcap` supports the reading.
+
+### One value for each certificate on each stream
+
+`python/ja4x.py` of the FoxIO repository states "JA4X does not use any caching
+from common.py", and it computes one JA4X value for each certificate of the
+stream it reads. The key of the processed certificate set names the stream and
+the certificate. A key that named only the certificate dropped the value of
+every stream after the first that carried the same chain, which is what
+`socks-https-example.pcap` streams 2 and 4 exposed.
+
+Verified against
+`https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4x.py` (retrieved
+2026-08-06).
+
 ### Certificate deduplication cleanup
 
 The processed certificate set is pruned when it exceeds 1000 entries,
 keeping the most recent 500. This is a memory management strategy,
 not a hard limit on unique certificates.
+
+### Two reasons a JA4X value stays absent
+
+The reference reads the TLS dissection of `tshark`, and two of its abilities
+have no counterpart here.
+
+- `tshark` decrypts a TLS 1.3 handshake with the secrets a capture carries.
+  `http2-with-cookies.pcapng` and `chrome-cloudflare-quic-with-secrets.pcapng`
+  hold a decryption secrets block with a `SERVER_HANDSHAKE_TRAFFIC_SECRET`
+  entry, and the certificate of both reaches the wire encrypted. `ja4plus`
+  decrypts nothing, so it reads no certificate there.
+- `tshark` dissects TLS on the ports its dissector table names. It reads the
+  tunnel of `socks-https-example.pcap` on port 1080 and holds a JA4X value, and
+  it reads no TLS on port 8080 of `https-connect.pcap` or on port 9901 of
+  `socks4-https.pcap`. `ja4plus` reads the record layer by content, so it holds
+  a JA4X value on all three. The deviation register records the two cases where
+  `ja4plus` holds a value the reference does not.
 
 ### TCP reassembly
 
