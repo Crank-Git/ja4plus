@@ -4,17 +4,25 @@ JA4S TLS Server Hello Fingerprinting implementation.
 
 import hashlib
 import logging
+import time
 
 from scapy.all import IP, IPv6, UDP
 
-from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
+from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value, parse_tls_handshake
 from ja4plus.utils.quic_utils import (
     QUIC_INITIAL,
+    collect_crypto_fragments,
+    decrypt_quic_server_initial_crypto,
     initial_packet_dcid,
     long_header_packet_type,
-    parse_quic_server_initial,
+    reassemble_crypto_fragments,
+    server_hello_is_complete,
 )
 from ja4plus.fingerprinters.base import BaseFingerprinter
+from ja4plus.fingerprinters.ja4 import (
+    MAX_QUIC_FRAGMENT_AGE_SECONDS,
+    MAX_QUIC_FRAGMENT_CONNECTIONS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +30,9 @@ logger = logging.getLogger(__name__)
 # direction of an Initial packet. A client Initial packet and a server Initial packet
 # carry the same long-header packet type. `ja4l.py` reads the direction the same way.
 QUIC_PORT = 443
+
+# A TLS record carries a 16-bit length field, so a longer message reaches no reader.
+MAXIMUM_TLS_RECORD_BYTES = 0xFFFF
 
 
 class JA4SFingerprinter(BaseFingerprinter):
@@ -39,6 +50,13 @@ class JA4SFingerprinter(BaseFingerprinter):
         super().__init__()
         # Maps "srcIP:srcPort-dstIP:dstPort" -> client DCID bytes
         self._quic_dcids = {}
+        # Maps the same connection key -> the CRYPTO fragments the server sent. RFC 9000
+        # Section 12.2 lets a server split the ServerHello across two Initial packets,
+        # and neither packet then holds the whole message.
+        self._quic_server_crypto = {}
+        # Maps the same connection key -> the time of the last packet that added a
+        # fragment.
+        self._quic_server_crypto_seen = {}
         self.last_raw = None
         self.last_raw_original_order = None
         self.last_fingerprint_original_order = None
@@ -84,6 +102,10 @@ class JA4SFingerprinter(BaseFingerprinter):
         the client chose as its source, so it supplies no client connection ID and it
         replaces no stored value.
 
+        The fingerprinter collects the CRYPTO fragments of the server Initial packets of
+        one connection, because a server splits the ServerHello across two Initial
+        packets. It reads the message on the packet that completes it.
+
         Args:
             packet: The packet the caller processes.
             udp: The UDP layer of the packet.
@@ -92,7 +114,7 @@ class JA4SFingerprinter(BaseFingerprinter):
         Returns:
             A JA4S fingerprint, or None. Returns None for a client Initial packet.
             Returns None when the fingerprinter holds no client connection ID, and
-            when the packet carries no whole ServerHello.
+            while the collected fragments hold no whole ServerHello.
         """
         src_ip, dst_ip = _get_ip_pair(packet)
         src_port = int(udp.sport)
@@ -111,10 +133,28 @@ class JA4SFingerprinter(BaseFingerprinter):
                 self._quic_dcids[f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"] = dcid
             return None
 
-        client_dcid = self._quic_dcids.get(f"{dst_ip}:{dst_port}-{src_ip}:{src_port}")
+        connection_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+        client_dcid = self._quic_dcids.get(connection_key)
         if not client_dcid:
             return None
-        tls_info = parse_quic_server_initial(udp_payload, client_dcid)
+        fragments = decrypt_quic_server_initial_crypto(udp_payload, client_dcid)
+        if not fragments:
+            return None
+
+        collected = collect_crypto_fragments(
+            self._quic_server_crypto.setdefault(connection_key, []), fragments
+        )
+        # `ja4.py` reads the packet clock the same way. A capture file replays faster
+        # than real time, so a wall clock would evict state the capture still needs.
+        seconds = float(packet.time) if hasattr(packet, "time") else time.time()
+        self._quic_server_crypto_seen[connection_key] = seconds
+        self._evict_quic_server_crypto(seconds)
+        if not server_hello_is_complete(collected):
+            return None
+
+        tls_info = _server_hello_from_crypto_fragments(collected)
+        # The ServerHello is whole, so the fingerprinter holds the fragments no longer.
+        self._drop_quic_server_crypto(connection_key)
         if not tls_info or tls_info.get("handshake_type") != "server_hello":
             return None
         fingerprint = _generate_ja4s_from_tls_info(tls_info)
@@ -122,6 +162,31 @@ class JA4SFingerprinter(BaseFingerprinter):
             return None
         self._record(fingerprint, tls_info, packet)
         return fingerprint
+
+    def _drop_quic_server_crypto(self, connection_key):
+        """Drop every fragment table entry one connection holds."""
+        self._quic_server_crypto.pop(connection_key, None)
+        self._quic_server_crypto_seen.pop(connection_key, None)
+
+    def _evict_quic_server_crypto(self, now):
+        """Drop the connections that passed the maximum age, then the oldest half.
+
+        The eviction runs on each packet, because a run that a wall clock gates lets the
+        table grow without a limit between two runs. `ja4._evict_quic_fragments` states
+        the same reason, and both tables share the two limits.
+
+        Args:
+            now: The time of the packet that is being processed, in seconds.
+        """
+        for connection_key, seen in list(self._quic_server_crypto_seen.items()):
+            if now - seen > MAX_QUIC_FRAGMENT_AGE_SECONDS:
+                self._drop_quic_server_crypto(connection_key)
+        if len(self._quic_server_crypto) <= MAX_QUIC_FRAGMENT_CONNECTIONS:
+            return
+        # A dict keeps its insertion order, so the oldest entry comes first.
+        oldest = list(self._quic_server_crypto)[: MAX_QUIC_FRAGMENT_CONNECTIONS // 2]
+        for connection_key in oldest:
+            self._drop_quic_server_crypto(connection_key)
 
     def _record(self, fingerprint, tls_info, packet):
         """Append a JA4S fingerprint result with raw / raw_original_order."""
@@ -151,14 +216,47 @@ class JA4SFingerprinter(BaseFingerprinter):
         rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
         self._quic_dcids.pop(fwd, None)
         self._quic_dcids.pop(rev, None)
+        self._drop_quic_server_crypto(fwd)
+        self._drop_quic_server_crypto(rev)
 
     def reset(self):
         """Reset all state."""
         super().reset()
         self._quic_dcids = {}
+        self._quic_server_crypto = {}
+        self._quic_server_crypto_seen = {}
         self.last_raw = None
         self.last_raw_original_order = None
         self.last_fingerprint_original_order = None
+
+
+def _server_hello_from_crypto_fragments(fragments):
+    """Return the ServerHello fields the collected CRYPTO fragments hold, or None.
+
+    `quic_utils.parse_quic_server_initial` reads a ServerHello that one Initial packet
+    carries. A ServerHello that two Initial packets split reaches no such payload, so
+    this function reads the collected fragments of the connection instead.
+
+    Args:
+        fragments: The (offset, data) pairs the fingerprinter collected.
+
+    Returns:
+        The parsed ServerHello fields, or None when the bytes hold no ServerHello that
+        the reader parses.
+    """
+    server_hello_bytes = reassemble_crypto_fragments(fragments)
+    if not server_hello_bytes or server_hello_bytes[0] != 0x02:
+        return None
+    if len(server_hello_bytes) > MAXIMUM_TLS_RECORD_BYTES:
+        return None
+
+    record = (
+        bytes([0x16, 0x03, 0x01]) + len(server_hello_bytes).to_bytes(2, "big") + server_hello_bytes
+    )
+    tls_info = parse_tls_handshake(record)
+    if tls_info:
+        tls_info["is_quic"] = True
+    return tls_info
 
 
 def _get_ip_pair(packet):
