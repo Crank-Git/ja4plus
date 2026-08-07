@@ -98,10 +98,10 @@ therefore holds one raw value under two keys: `raw` and `raw_original_order` are
 and both equal the reference `JA4S_r`. Before #108, the `raw` key sorted the extensions,
 and it matched 49 of the 84 reference values.
 
-The port at `Crank-Git/ja4plus-go` publishes the two key names as the `Raw` and
-`RawOriginalOrder` fields of its result struct, and `ja4plus` keeps both names under
-parity rule 2. Its `ja4s.go` computes no raw value, so parity rule 1 decides the value,
-and FoxIO holds the wire order.
+The port at `Crank-Git/ja4plus-go` holds the two key names on its result struct, as the
+`Raw` field and the `RawOriginalOrder` field. `ja4plus` keeps both names under parity
+rule 2. The `ja4s.go` file of the port computes no raw value, so parity rule 1 decides
+the value, and FoxIO holds the wire order.
 
 ### The original-order hashed value has no reference
 

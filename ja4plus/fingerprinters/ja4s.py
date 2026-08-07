@@ -221,7 +221,8 @@ def _generate_ja4s_raw_from_tls_info(tls_info):
         tls_info: The parsed ServerHello fields.
 
     Returns:
-        The raw JA4S value, or None when the ServerHello names no cipher.
+        The raw JA4S value. Returns None when the ServerHello names no cipher.
+        Returns None when a parsed field holds a value this function cannot read.
     """
     try:
         proto = "q" if tls_info.get("is_quic") else "d" if tls_info.get("is_dtls") else "t"
