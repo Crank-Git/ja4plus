@@ -8,6 +8,142 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# The SSH transport layer frames a message as a four-byte length field and that many
+# further bytes. RFC 4253 section 6 states it, and the length excludes the field.
+SSH_LENGTH_FIELD_BYTES = 4
+
+# The smallest and the largest length field this project follows. `is_ssh_packet` reads
+# the same bounds, and a length outside them belongs to no SSH message.
+MIN_SSH_PACKET_LENGTH = 2
+MAX_SSH_PACKET_LENGTH = 65536
+
+# The message code of SSH_MSG_NEWKEYS. RFC 4253 section 7.3 states it. Every later
+# message of the direction is encrypted, so no reader can follow the length after it.
+SSH_MSG_NEWKEYS = 21
+
+# The tracker states. `banner` waits for the version line, `messages` reads the length
+# field of each message, and `opaque` holds a direction whose lengths no reader can
+# follow.
+_BANNER = "banner"
+_MESSAGES = "messages"
+_OPAQUE = "opaque"
+
+
+class SSHMessageTracker:
+    """Report whether one TCP segment completes an SSH message.
+
+    The FoxIO reference counts the packets `tshark` labels `ssh`. `tshark` reassembles
+    an SSH message that spans two TCP segments, and it labels only the segment that
+    completes the message. One tracker follows one direction of one connection, and it
+    reproduces that boundary.
+
+    The tracker reads the length field only while the direction sends plaintext. Before
+    the version banner, and after SSH_MSG_NEWKEYS, it reports every segment as one SSH
+    packet, because neither phase carries a length a reader can trust.
+
+    A caller passes every payload segment of the direction, in the order the direction
+    sent it. A segment the caller holds back moves the tracker off the message
+    boundary.
+    """
+
+    def __init__(self):
+        """Build the tracker of one direction, positioned before the version banner."""
+        self._state = _BANNER
+        self._length_field = b""
+        self._remaining = 0
+        self._message_code = None
+
+    def completes_message(self, payload):
+        """Return True when at least one SSH message ends in this segment.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+
+        Returns:
+            True when the reference counts this segment as one SSH packet. Returns
+            False for an empty segment, and False for a segment that holds part of a
+            message and no message end.
+        """
+        if not payload:
+            return False
+        if self._state == _OPAQUE:
+            return True
+        if self._state == _BANNER:
+            return self._read_banner(payload)
+        return self._read_messages(payload)
+
+    def _read_banner(self, payload):
+        """Return True when the version line ends in this segment.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+
+        Returns:
+            True when the segment holds the end of the version line. A capture that
+            starts after the banner holds no message boundary, so the tracker turns
+            opaque and returns True.
+        """
+        if not payload.startswith(b"SSH-"):
+            self._state = _OPAQUE
+            return True
+        end = payload.find(b"\n")
+        if end < 0:
+            return False
+        self._state = _MESSAGES
+        rest = payload[end + 1 :]
+        if rest:
+            self._read_messages(rest)
+        return True
+
+    def _read_messages(self, payload):
+        """Return True when at least one message ends in this segment.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+
+        Returns:
+            True when a message end falls inside the segment. A length field this
+            parser cannot trust turns the tracker opaque and returns True.
+        """
+        completed = False
+        position = 0
+        while position < len(payload):
+            if self._remaining > 0:
+                taken = min(self._remaining, len(payload) - position)
+                self._remaining -= taken
+                position += taken
+                if self._remaining == 0:
+                    completed = True
+                    if self._message_code == SSH_MSG_NEWKEYS:
+                        self._state = _OPAQUE
+                        return True
+                continue
+
+            needed = SSH_LENGTH_FIELD_BYTES - len(self._length_field)
+            if len(payload) - position < needed:
+                # The length field spans two segments. Hold the bytes it holds so far.
+                self._length_field += payload[position:]
+                return completed
+            self._length_field += payload[position : position + needed]
+            position += needed
+            packet_length = struct.unpack(">I", self._length_field)[0]
+            self._length_field = b""
+
+            if not MIN_SSH_PACKET_LENGTH <= packet_length <= MAX_SSH_PACKET_LENGTH:
+                # Every packet is hostile input. A length this parser cannot trust ends
+                # the walk, and the tracker counts every later segment.
+                self._state = _OPAQUE
+                return True
+
+            self._remaining = packet_length
+            # The padding length is the first body byte, and the message code is the
+            # second. A body that starts at the end of the segment hides the code.
+            if len(payload) - position >= 2:
+                self._message_code = payload[position + 1]
+            else:
+                self._message_code = None
+        return completed
+
 
 def parse_ssh_packet(data):
     """

@@ -234,12 +234,43 @@ that guard read as `if stream is not None:` and nothing else changed, emits
 `ja4plus` emits the window for every connection that closes. #105 records the
 decision.
 
-### The TCP segment
+### The SSH message, not the TCP segment
 
-ja4plus counts one SSH packet for every TCP segment that carries a payload, and
-the reference counts the packets `tshark` labels `ssh`. `tshark` labels the segment
-that completes an SSH message and not the earlier segment, so the two disagree by
-one packet for each message that spans two segments. #98 owns the defect.
+The reference counts the packets `tshark` labels `ssh`. `update_ssh_entry` reads
+`has_ssh = ('ssh' in x['protos'])`, and `x['protos']` is the `frame.protocols`
+field of `tshark -T ek`. `tshark` reassembles an SSH message that spans two TCP
+segments. It labels the segment that completes the message, and it labels the
+earlier segment `tcp`.
+
+`tshark` 4.6.7 proves it on `ssh-r.pcap` stream 2:
+
+```
+$ tshark -r tests/foxio_vectors/ssh-r.pcap -Y "tcp.stream==2 && tcp.len>0" \
+    -T fields -e frame.number -e tcp.srcport -e tcp.len -e frame.protocols \
+    -e tcp.segment -e tcp.reassembled.length
+395	46396	21	eth:ethertype:ip:tcp:ssh
+397	22	21	eth:ethertype:ip:tcp:ssh
+399	46396	1448	eth:ethertype:ip:tcp
+400	46396	48	eth:ethertype:ip:tcp:ssh	399,400	1496
+```
+
+Frame 399 and frame 400 carry one KEXINIT message of 1496 bytes. The reference
+counts one packet for frame 400 and none for frame 399, and it records the payload
+length of frame 400 alone. `SSHMessageTracker` reproduces that boundary.
+
+The boundary is readable only while the direction sends plaintext. The tracker
+follows the four-byte length field of each message, and it counts every segment
+after `SSH_MSG_NEWKEYS`, because an encrypted message carries no length a reader
+can trust. A capture that starts after the version banner holds no boundary, so the
+tracker counts every segment there too.
+
+The same command counts the segments each vector holds outside a message end. Only
+`ssh-r.pcap` holds one on a stream with an expected value: stream 1 holds one and
+stream 2 holds one. `ssh.pcapng`, `ssh-scp-1050.pcap`, `ssh2.pcapng` and `ssh-r.pcap`
+stream 0 hold none, and their values do not change.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4ssh.py
+(retrieved 2026-08-06).
 
 ### Direction detection on non-standard ports
 

@@ -11,7 +11,12 @@ from collections import Counter
 from scapy.all import TCP, Raw, IP, IPv6
 import time
 
-from ja4plus.utils.ssh_utils import is_ssh_packet, parse_ssh_packet, extract_hassh
+from ja4plus.utils.ssh_utils import (
+    SSHMessageTracker,
+    is_ssh_packet,
+    parse_ssh_packet,
+    extract_hassh,
+)
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -132,6 +137,10 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 "client_ip": client_ip,
                 "server_ip": server_ip,
                 "ssh_packets": {"client": [], "server": []},
+                "message_tracker": {
+                    "client": SSHMessageTracker(),
+                    "server": SSHMessageTracker(),
+                },
                 "bare_acks": {"client": 0, "server": 0},
                 "hassh": None,
                 "hasshServer": None,
@@ -145,6 +154,11 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         # Check for SSH version banner
         if packet.haslayer(Raw):
             payload = bytes(packet[Raw])
+            direction = "client" if is_client_to_server else "server"
+
+            # The tracker follows the message boundary, so it reads every payload
+            # segment of the direction, not only the segments the window counts.
+            completes_message = conn["message_tracker"][direction].completes_message(payload)
 
             # Extract SSH banner
             if payload.startswith(b"SSH-"):
@@ -164,14 +178,14 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                     else:
                         conn["hasshServer"] = hassh_value
 
-            # Track SSH data packets
-            if is_ssh_packet(payload) or conn["client_id"] or conn["server_id"]:
-                packet_size = len(payload)
-
-                if is_client_to_server:
-                    conn["ssh_packets"]["client"].append(packet_size)
-                else:
-                    conn["ssh_packets"]["server"].append(packet_size)
+            # Track SSH data packets. FoxIO counts the packets `tshark` labels `ssh`,
+            # and `tshark` labels only the segment that completes an SSH message. A
+            # segment that holds part of a message is one TCP segment, not one SSH
+            # packet, and counting it moves every later window boundary.
+            if completes_message and (
+                is_ssh_packet(payload) or conn["client_id"] or conn["server_id"]
+            ):
+                conn["ssh_packets"][direction].append(len(payload))
 
         elif is_bare_ack:
             if is_client_to_server:
