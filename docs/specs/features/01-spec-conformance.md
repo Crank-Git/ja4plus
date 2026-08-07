@@ -68,16 +68,18 @@ every host.
 
 FR-spec-conformance-15 — JA4L halves every round-trip time it measures.
 
-FR-spec-conformance-16 — `JA4L-S` measures from the first SYN to the first SYN-ACK.
+FR-spec-conformance-16 — On a TCP connection, `JA4L-S` measures from the first SYN to
+the first SYN-ACK.
 
-FR-spec-conformance-17 — The client measurement point is the last packet that carries
-the relative sequence number 1 and the relative acknowledgement number 1.
+FR-spec-conformance-17 — On a TCP connection, the client measurement point is the last
+packet that carries the relative sequence number 1 and the relative acknowledgement
+number 1.
 
-FR-spec-conformance-18 — `JA4L-C` measures from the first SYN-ACK to the client
-measurement point.
+FR-spec-conformance-18 — On a TCP connection, `JA4L-C` measures from the first SYN-ACK
+to the client measurement point.
 
-FR-spec-conformance-19 — A packet that holds a whole HTTP request moves no
-measurement point.
+FR-spec-conformance-19 — On a TCP connection, a packet that holds a whole HTTP request
+moves no measurement point.
 
 ## User flows
 
@@ -122,16 +124,21 @@ This feature set has no screen. Its output is the test report.
   hops or more.
 - JA4L reports one-way latency. FoxIO halves the time between the two measurement
   points of a value, and it truncates the result toward zero.
-- The client measurement point starts at the bare ACK of the handshake. The first
-  packet of the application handshake then moves it. Either endpoint sends that
-  packet. `http1-with-cookies.pcapng` stream 0 puts the point on a bare ACK the
+- The client measurement point starts at the bare ACK of the handshake. A later
+  packet that meets `FR-spec-conformance-17` moves the point. Either endpoint sends
+  that packet. `http1-with-cookies.pcapng` stream 0 puts the point on a bare ACK the
   server sends, and its expected `JA4L-C` is `20_64`.
-- A packet that holds a whole HTTP request moves no measurement point. The reference
-  reads that packet as HTTP, and the HTTP dissector holds its timestamps in a
-  separate cache. `latest.pcapng` stream 6 sends one complete `GET` request, and its
-  expected `JA4L-C` is `32_128`, which is the bare ACK.
-- `docs/implementation_notes.md` records the reading of the JA4L image that these
-  rules come from.
+- A packet that holds a whole HTTP request moves no measurement point.
+  `latest.pcapng` stream 6 sends one complete `GET` request, and its expected
+  `JA4L-C` is `32_128`, which is the bare ACK. `docs/implementation_notes.md` states
+  the mechanism the project infers: the reference reads that packet as HTTP, and it
+  holds the timestamps of each protocol in a separate table. The vectors prove the
+  behaviour. They do not prove the mechanism.
+- `FR-spec-conformance-16` to `FR-spec-conformance-19` describe the TCP form of
+  JA4L. `FR-spec-conformance-15` applies to both forms. The QUIC form reads the
+  Initial packets and the Handshake packets, and #102 owns its server measurement
+  point.
+- `docs/implementation_notes.md` states how the project reads the JA4L image.
 - `JA4_o` is the hashed form of the original-order raw value. `JA4_ro` is that raw
   value unhashed. The relationship between them matches the relationship between
   `JA4` and `JA4_r`.
@@ -181,14 +188,15 @@ and `>=26` to `2.0`. It gives the speed of light in fiber as `0.128 miles or 0.2
 km per µs`.
 
 The JA4L image names the value it reports, verbatim: `One-way TCP latency in us`.
-That name states the halving. The image names no measurement point, so the
-expected-output files decide both points.
+That name states that JA4L halves the time it measures. The image names no
+measurement point, so the expected-output files decide both points.
 
 Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/technical_details
 (retrieved 2026-08-06).
 
-Stream 0 of `browsers-x509.pcapng` proves the halving and the client measurement
-point. These are its first four packets.
+Stream 0 of `browsers-x509.pcapng` proves both rules. It proves that JA4L halves the
+time it measures, and it proves the client measurement point. These are its first
+four packets.
 
 | Offset from the SYN | Packet | TTL |
 |---|---|---|
@@ -198,9 +206,9 @@ point. These are its first four packets.
 | `0.004371` | Client Hello, 517 payload bytes | 128 |
 
 The expected `JA4L-S` is `1907_112`, and `3815 / 2 = 1907`. The expected `JA4L-C` is
-`278_128`, and `(4371 - 3815) / 2 = 278`. Measured to the bare ACK the client value
-is 56, and measured without the halving it is 556. No expected value holds either
-number.
+`278_128`, and `(4371 - 3815) / 2 = 278`. Measured to the bare ACK, the client value
+is 56. Measured before JA4L halves it, the value is 556. No expected value holds
+either number.
 
 Verified against:
 https://github.com/FoxIO-LLC/ja4/blob/main/python/test/testdata/browsers-x509.pcapng.json
