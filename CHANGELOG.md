@@ -8,6 +8,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **BREAKING — JA4L reports the one-way latency and the measurement point the
+  FoxIO vectors hold** (#88). The fingerprinter reported the whole round-trip
+  time, and it measured the client value to the bare ACK of the handshake. The
+  FoxIO material states `One-way TCP latency in us`, and the vectors hold half of
+  the measured time. The client value now measures to the last packet that
+  carries the relative sequence number 1 and the relative acknowledgement number
+  1, and one connection now carries one `JA4L-C` value. The QUIC form now reads
+  the Initial packets and the Handshake packets on port 443, and a UDP flow that
+  carries no QUIC long header produces no value. `ja4plus` also imports the scapy
+  Geneve, VXLAN and ERSPAN dissectors, so a mirrored capture reads its inner TCP
+  layer. Every JA4L value a caller stored before this release differs from the
+  value this release produces. 108 of the 114 registered JA4L value deviations
+  now conform, and #101 and #102 own the six that remain.
+
 - **BREAKING — JA4SSH counts a bare ACK the way FoxIO counts one** (#92). A bare
   ACK carries the ACK flag alone and no payload. `ja4plus` read the ACK flag
   alone, so it counted a SYN+ACK, a FIN+ACK and a RST+ACK as bare ACKs. It also

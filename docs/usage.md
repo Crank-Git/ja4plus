@@ -148,7 +148,12 @@ Same format as JA4T, but extracted from the server's SYN-ACK packet.
 
 Measures network latency from TCP handshake timing. Estimates light distance between client and server.
 
-**Format:** `{latency_microseconds}_{ttl}`
+The latency is one way, so it is half the time the capture shows. `JA4L-S` measures
+the SYN to the SYN-ACK. `JA4L-C` measures the SYN-ACK to the first packet the
+application handshake sends.
+
+**Format:** `JA4L-S={latency_microseconds}_{ttl}` and
+`JA4L-C={latency_microseconds}_{ttl}`
 
 ```python
 from ja4plus import JA4LFingerprinter
@@ -159,7 +164,7 @@ fp = JA4LFingerprinter()
 for packet in handshake_packets:
     result = fp.process_packet(packet)
     if result:
-        print(result)  # e.g., "2500_56"
+        print(result)  # e.g., "JA4L-S=2500_56"
 ```
 
 **TTL-based OS hints:**
