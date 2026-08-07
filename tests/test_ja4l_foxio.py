@@ -55,6 +55,7 @@ BROWSERS_X509 = "tcp_13.107.21.239:443_172.27.7.31:54524"
 LATEST_HTTP = "tcp_172.16.225.48:52939_23.43.242.57:80"
 EMPTY_USERAGENT = "tcp_::1:9200_::1:57722"
 GRE_SAMPLE = "tcp_172.27.1.66:40264_66.59.109.137:22"
+GRE_ERSPAN_VXLAN = "tcp_100.20.9.1:80_100.20.9.2:65174"
 SSH2_QUIC = "udp_142.251.41.46:443_172.16.225.48:61861"
 
 
@@ -89,6 +90,19 @@ class TestJA4LAgainstTheFoxIOVectors:
         produced = values_on("gre-sample.pcap", GRE_SAMPLE)
         assert "JA4L-S=22952_236" in produced
         assert "JA4L-C=26150_255" in produced
+
+    def test_the_fingerprinter_groups_a_mirrored_capture_by_its_inner_connection(self):
+        # gre-erspan-vxlan.pcap is an ERSPAN mirror. Every packet travels from
+        # 100.20.9.2 to 100.20.9.1, so the outer address pair names no direction. The
+        # inner session 10.16.27.12:65174 to 10.16.27.131:80 names both directions.
+        produced = values_on("gre-erspan-vxlan.pcap", GRE_ERSPAN_VXLAN)
+        assert "JA4L-S=997_64" in produced
+        assert "JA4L-C=953_64" in produced
+
+    def test_the_mirrored_capture_holds_one_connection(self):
+        # The reference holds one stream for this capture. Two connection keys mean the
+        # fingerprinter split the two directions of one session.
+        assert list(values_of("gre-erspan-vxlan.pcap")) == [GRE_ERSPAN_VXLAN]
 
     def test_the_quic_form_reads_the_initial_and_the_handshake_packets(self):
         # ssh2.pcapng stream 36 is QUIC. JA4L-S measures the two Initial packets, and

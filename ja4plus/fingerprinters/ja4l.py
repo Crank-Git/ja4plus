@@ -89,22 +89,23 @@ class JA4LFingerprinter(BaseFingerprinter):
         if (IP not in packet and IPv6 not in packet) or (TCP not in packet and UDP not in packet):
             return None
 
-        if TCP in packet:
-            proto = "tcp"
-            sport = packet[TCP].sport
-            dport = packet[TCP].dport
-        else:
-            proto = "udp"
-            sport = packet[UDP].sport
-            dport = packet[UDP].dport
-
         from ja4plus.utils.packet_utils import get_ip_layer
+        from ja4plus.utils.tunnels import innermost_layer
 
-        ip_layer = get_ip_layer(packet)
-        if ip_layer is None:
+        port_layer = innermost_layer(packet, (TCP, UDP))
+        outer_layer = get_ip_layer(packet)
+        if port_layer is None or outer_layer is None:
             return None
-        src_ip = ip_layer.src
-        dst_ip = ip_layer.dst
+        proto = "tcp" if isinstance(port_layer, TCP) else "udp"
+        sport = int(port_layer.sport)
+        dport = int(port_layer.dport)
+
+        # The reference reports the outer address pair, and it groups by the inner one.
+        # A mirror sends both directions of one session from one outer address to one
+        # other outer address, so the outer pair separates no direction there.
+        inner_layer = innermost_layer(packet, (IP, IPv6)) or outer_layer
+        src_ip = inner_layer.src
+        dst_ip = inner_layer.dst
 
         # Normalize connection key (ordered src/dst)
         if src_ip < dst_ip or (src_ip == dst_ip and sport < dport):
@@ -119,12 +120,18 @@ class JA4LFingerprinter(BaseFingerprinter):
                 "proto": proto,
                 "direction": direction,
                 "conn_key": conn_key,
+                "reported_key": None,
                 "timestamps": {},
                 "ttls": {},
                 "isns": {},
             }
 
         conn = self.connections[conn_key]
+        # The reference pairs the source address of a packet with the source port of
+        # that packet, and it names the client first. The SYN carries that direction, so
+        # a SYN replaces the pair the first packet of the connection gave.
+        if conn.get("reported_key") is None or _opens_a_connection(port_layer, proto):
+            conn["reported_key"] = _reported_key(proto, outer_layer, sport, dport)
         fingerprint = generate_ja4l(packet, conn)
 
         if not fingerprint:
@@ -142,7 +149,7 @@ class JA4LFingerprinter(BaseFingerprinter):
             conn["client_entry"] = len(self.fingerprints)
 
         self.fingerprints.append(
-            {"fingerprint": fingerprint, "packet": packet, "connection": conn_key}
+            {"fingerprint": fingerprint, "packet": packet, "connection": conn["reported_key"]}
         )
         return fingerprint
 
@@ -247,6 +254,43 @@ class JA4LFingerprinter(BaseFingerprinter):
             return 128 - ttl
         else:
             return 255 - ttl
+
+
+def _opens_a_connection(port_layer, proto):
+    """Report whether the packet is a TCP SYN that carries no acknowledgement.
+
+    Args:
+        port_layer: The TCP layer or the UDP layer of the packet.
+        proto: The protocol name of the connection, `tcp` or `udp`.
+
+    Returns:
+        True when the packet opens a TCP connection, and False otherwise.
+    """
+    if proto != "tcp":
+        return False
+    flags = int(port_layer.flags)
+    return bool(flags & 0x02) and not bool(flags & 0x10)
+
+
+def _reported_key(proto, outer_layer, sport, dport):
+    """Return the connection key the reference reports for one connection.
+
+    The reference reports the outer address pair and the inner port pair. It pairs the
+    source address of one packet with the source port of that packet.
+
+    Args:
+        proto: The protocol name of the connection, `tcp` or `udp`.
+        outer_layer: The outer address layer of the packet.
+        sport: The inner source port of the packet.
+        dport: The inner destination port of the packet.
+
+    Returns:
+        A key of the form `<protocol>_<address>:<port>_<address>:<port>`. The two
+        endpoints are in sorted order, so both directions of one connection give one
+        key.
+    """
+    first, second = sorted(((outer_layer.src, sport), (outer_layer.dst, dport)))
+    return "{}_{}:{}_{}:{}".format(proto, first[0], first[1], second[0], second[1])
 
 
 def _packet_microseconds(packet):
@@ -454,8 +498,13 @@ def generate_ja4l(packet, conn=None):
         return None
 
     from ja4plus.utils.packet_utils import get_ip_layer, get_ttl
+    from ja4plus.utils.tunnels import innermost_layer
 
-    ip_layer = get_ip_layer(packet)
+    # The measurement points belong to the two inner endpoints. A mirror carries both
+    # directions of one session under one outer address pair, so the outer address
+    # names no endpoint there. The TTL still comes from the outer layer, because the
+    # reference reports that value.
+    ip_layer = innermost_layer(packet, (IP, IPv6)) or get_ip_layer(packet)
     if ip_layer is None:
         return None
 

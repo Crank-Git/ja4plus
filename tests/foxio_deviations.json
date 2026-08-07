@@ -39,22 +39,6 @@
     "issue": 78,
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
-  "gre-erspan-vxlan.pcap/0:65174/JA4L-C.1": {
-    "issue": 101,
-    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-C value."
-  },
-  "gre-erspan-vxlan.pcap/0:65174/JA4L-S.1": {
-    "issue": 101,
-    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-S value."
-  },
-  "gre-erspan-vxlan.pcap/JA4L-C": {
-    "issue": 101,
-    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-C value."
-  },
-  "gre-erspan-vxlan.pcap/JA4L-S": {
-    "issue": 101,
-    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-S value."
-  },
   "gre-sample.pcap/JA4SSH": {
     "issue": 105,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes."

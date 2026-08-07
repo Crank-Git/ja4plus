@@ -1,4 +1,4 @@
-"""Registration of the scapy tunnel dissectors this project needs.
+"""The scapy tunnel dissectors this project needs, and the reader of an inner layer.
 
 `scapy.all` binds the common protocols, and it leaves Geneve, VXLAN and ERSPAN to a
 separate import. Without that import scapy stops at the tunnel header, so a
@@ -15,6 +15,8 @@ result as before the import.
 """
 
 import logging
+
+from scapy.packet import NoPayload
 
 logger = logging.getLogger(__name__)
 
@@ -39,3 +41,26 @@ def register_tunnel_dissectors():
             continue
         loaded.append(name)
     return tuple(loaded)
+
+
+def innermost_layer(packet, layer_classes):
+    """Return the deepest layer of one packet that has one of the classes, or None.
+
+    A tunnel carries a second address layer and a second port layer inside the first
+    one. A mirror sends both directions of one session from one outer address to one
+    other outer address, so only the inner layer separates the two directions.
+
+    Args:
+        packet: A network packet.
+        layer_classes: A tuple of scapy layer classes to look for.
+
+    Returns:
+        The deepest layer with one of the classes, or None when the packet holds none.
+    """
+    found = None
+    layer = packet
+    while not isinstance(layer, NoPayload):
+        if isinstance(layer, layer_classes):
+            found = layer
+        layer = layer.payload
+    return found
