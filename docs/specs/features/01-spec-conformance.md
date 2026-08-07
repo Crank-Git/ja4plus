@@ -372,6 +372,7 @@ https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
 | The sequence number of an SSH direction wraps at 2**32. | The tracker measures the distance in the shorter direction around the sequence space, and it reads the direction without a break. |
 | A server sends an Initial packet that holds an ACK frame, then one that holds the ServerHello. | `JA4L-S` measures to the second packet. |
 | A server splits the ServerHello across two Initial packets. | `JA4L-S` measures to the packet that carries the last fragment. |
+| A server splits the ServerHello across two Initial packets. | `JA4S` reads the message on the packet that completes it, and it emits one value. |
 | A server coalesces a Handshake packet behind its Initial packet. | The reader decrypts the Initial packet and reads its ServerHello. |
 | A QUIC server Initial packet does not decrypt. | The connection carries no `JA4L-S` value. |
 | A capture starts after the client Initial packet. | The connection carries no `JA4L-S` value, because the server keys derive from the client connection ID. |
