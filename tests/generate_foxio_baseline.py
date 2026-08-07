@@ -24,10 +24,10 @@ is not allowed.
 
 The register run merges. A key the committed register already holds keeps its stored
 entry, with every field and in the field order the file holds. A cause this program
-reads from a failure message states the symptom, and a person states the mechanism, and
-the `decided` field records that a person settled the deviation. This program writes a
-new entry only for a deviation the register does not hold. A key that stops failing
-still disappears.
+reads from a failure message states the symptom, and a person states the mechanism. The
+`decided` field records that a person settled the deviation. This program writes a new
+entry only for a deviation the register does not hold. A key that stops failing still
+disappears.
 
 A run that measures the deviations the register already holds therefore changes no byte
 of `tests/foxio_deviations.json`.
@@ -290,7 +290,7 @@ def _register(collector, committed):
     cause this program reads from a failure message states the symptom, and a person
     states the mechanism. #78, #96, #97 and #105 hold mechanisms no failure message
     carries, and a mechanical rewrite would destroy them. The `decided` field records
-    that a person settled the deviation, and this program measures no such field, so a
+    that a person settled the deviation. This program measures no such field, so a
     rewrite of a stored entry would delete it. A key that stops failing still disappears.
 
     Args:

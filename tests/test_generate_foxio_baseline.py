@@ -259,8 +259,8 @@ def _collector_for(keys):
 class TestTheCommittedRegisterAfterARun:
     """Check that a run which finds the same deviations changes no committed byte.
 
-    The generator is the documented way to add a vector. A run that rewrites an entry
-    it did not measure destroys the `decided` field a person set, and it buries the one
+    The generator is the documented way to add a vector. A run that rewrites an entry it
+    did not measure destroys the `decided` field a person set. It also buries the one
     real change under a diff of every entry.
     """
 
