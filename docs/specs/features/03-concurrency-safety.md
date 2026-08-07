@@ -159,10 +159,14 @@ reader does not read a target as a description. #179 measured it against the cod
 `TCPStreamReassembler` carries two more per-stream bounds: `max_stream_bytes` is
 1048576, and `max_stream_segments` is 4096.
 
-A state table that states `none` relies on the caller to call `cleanup_connection`.
+A row that reads `none` relies on the caller to call `cleanup_connection`.
 FR-concurrency-safety-7 and FR-concurrency-safety-8 own that gap, and Epic 3 closes it.
 
-The Epic 3 targets this file states, and which the code does not hold today:
+`BaseFingerprinter.fingerprints` holds one result per fingerprint, not per-connection
+data, so the `## Terms` table does not name it a state table. It appears above because
+it grows without a limit, and Goal 3 covers it.
+
+This file states four more targets that the code does not hold today:
 
 - `Processor.__init__` accepts no argument. The `thread_safe`, `max_connections` and
   `max_connection_age` arguments are targets.
