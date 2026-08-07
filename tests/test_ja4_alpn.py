@@ -1,8 +1,33 @@
 """The JA4 ALPN value.
 
-The FoxIO prose gives the first and the last character of the hex form. The FoxIO
-Python implementation and the FoxIO Rust implementation give `99`. #127 settled that
-this project follows the two implementations.
+#127 settled one input. `tls-non-ascii-alpn.pcapng` holds the first ALPN value
+`0xba 0xad`, and this project writes `99` for it, as the FoxIO Python implementation
+and the FoxIO Rust implementation do.
+
+#127 settled no other input. Four rules disagree, and the vector set separates none
+of them. The measurement below comes from `python/ja4.py:276-280` and from
+`rust/ja4/src/tls.rs:615-627`, both at commit
+`27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`.
+
+| Input | The prose | `python/ja4.py` | `rust/tls.rs` | `ja4plus` |
+|---|---|---|---|---|
+| `b"\\xab"` | `ab` | `99` | `90` | `99` |
+| `b"\\x20"` | `20` | `' '` | `' 0'` | `99` |
+| `b"\\xab\\xcd"` | `ad` | `99` | `99` | `99` |
+| `b"\\x20\\x61"` | `21` | `' a'` | `' a'` | `99` |
+| `b"\\x30\\xab"` | `3b` | `0\\xab` | `09` | `99` |
+| `b"\\x61\\x20"` | `60` | `'a '` | `'a '` | `99` |
+| `b"\\x30\\x31\\xab\\xcd"` | `3d` | `0\\xcd` | `09` | `99` |
+| `b"\\x30\\xab\\xcd\\x31"` | `01` | `01` | `01` | `01` |
+| `b"\\xba\\xad"` | `bd` | `99` | `99` | `99` |
+
+No single rule produces the prose value for `b"\\xab\\xcd"` and `99` for
+`b"\\xba\\xad"`. The two inputs hold two bytes each, and both bytes of each fall
+outside the alphanumeric ranges, so a function of the bytes cannot separate them. The
+FoxIO prose and the FoxIO vector therefore contradict each other.
+
+#141 owns the condition. Until #141 lands, a case the four rules separate carries a
+strict `xfail` that holds the FoxIO prose value.
 """
 
 import json
@@ -17,28 +42,60 @@ CAPTURE_PATH = VECTORS_DIR / "tls-non-ascii-alpn.pcapng"
 EXPECTED_PATH = VECTORS_DIR / "tls-non-ascii-alpn.pcapng.json"
 
 
+def _disputed(alpn_bytes, prose_value):
+    """Return a parameter that holds the FoxIO prose value and expects a failure.
+
+    Args:
+        alpn_bytes: The bytes of the first ALPN value.
+        prose_value: The value the FoxIO PR #277 examples publish.
+
+    Returns:
+        A `pytest.param` that carries a strict `xfail`.
+    """
+    return pytest.param(
+        alpn_bytes,
+        prose_value,
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "#141 owns the condition. The FoxIO prose publishes this value, and no "
+                "FoxIO implementation produces it. No vector reaches this input."
+            ),
+        ),
+    )
+
+
 @pytest.mark.parametrize(
     "alpn_bytes,expected",
     [
-        # The first byte, the last byte, or both fall outside the alphanumeric ranges.
-        (b"\xab", "99"),
-        (b"\x20", "99"),
-        (b"\xab\xcd", "99"),
-        (b"\x20\x61", "99"),
-        (b"\x30\xab", "99"),
-        (b"\x61\x20", "99"),
-        (b"\x30\x31\xab\xcd", "99"),
-        # Both ends are alphanumeric, so the two bytes pass through.
+        # The FoxIO PR #277 examples. The four rules disagree on all seven, the vector
+        # set reaches none of them, and the module docstring holds the measurement.
+        _disputed(b"\xab", "ab"),
+        _disputed(b"\x20", "20"),
+        _disputed(b"\xab\xcd", "ad"),
+        _disputed(b"\x20\x61", "21"),
+        _disputed(b"\x30\xab", "3b"),
+        _disputed(b"\x61\x20", "60"),
+        _disputed(b"\x30\x31\xab\xcd", "3d"),
+        # The eighth PR #277 example. Every FoxIO source and this project agree.
         (b"\x30\xab\xcd\x31", "01"),
+        # `python/ja4.py`, `rust/tls.rs` and this project agree on these four.
         (b"", "00"),
-        (b"h", "hh"),
         (b"h2", "h2"),
         (b"http/1.1", "h1"),
         (b"h3", "h3"),
+        # TODO(#141): `python/ja4.py` gives `h` and `rust/tls.rs` gives `h0`, so no
+        # FoxIO source produces `hh`. No vector holds a one-byte ALPN value.
+        (b"h", "hh"),
     ],
 )
 def test_compute_alpn_value(alpn_bytes, expected):
     assert compute_alpn_value(alpn_bytes) == expected
+
+
+def test_the_pcap_vector_alpn_value_is_99():
+    """The first ALPN value `0xba 0xad` produces `99`, which two FoxIO sources give."""
+    assert compute_alpn_value(b"\xba\xad") == "99"
 
 
 def test_compute_alpn_value_none_returns_00():
@@ -46,7 +103,7 @@ def test_compute_alpn_value_none_returns_00():
 
 
 def test_compute_alpn_via_generate_ja4():
-    """A tls_info dictionary with a non-alphanumeric ALPN byte produces `99`."""
+    """A tls_info dictionary that holds the vector ALPN bytes produces `99`."""
     from ja4plus.fingerprinters.ja4 import generate_ja4
 
     info = {
@@ -58,7 +115,7 @@ def test_compute_alpn_via_generate_ja4():
         "ciphers": [0x1301],
         "extensions": [],
         "alpn_protocols": [""],  # ascii decode dropped non-ascii bytes
-        "alpn_raw": [b"\x30\xab"],  # but raw bytes are preserved
+        "alpn_raw": [b"\xba\xad"],  # but raw bytes are preserved
         "signature_algorithms": [],
         "supported_versions": [],
         "sni": None,
@@ -67,7 +124,8 @@ def test_compute_alpn_via_generate_ja4():
     assert fp is not None
     # part_a: t12i0100<alpn>
     part_a = fp.split("_")[0]
-    # The last byte 0xab falls outside the alphanumeric ranges, so the value is `99`.
+    # The vector `tls-non-ascii-alpn.pcapng` holds these two bytes, and the FoxIO
+    # Python implementation and the FoxIO Rust implementation both give `99`.
     assert part_a.endswith("99"), f"got {part_a!r}"
 
 

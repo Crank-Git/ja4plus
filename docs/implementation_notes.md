@@ -57,14 +57,13 @@ publishes it beside `JA4_ro`, so the suite compares it the same way.
 
 ### The ALPN value of a first byte that is not ASCII
 
-`ja4plus` follows the FoxIO prose here, and the FoxIO implementations disagree with it.
-#127 owns the decision. This section records the measurement, not a reading that the
-project has settled.
+`ja4plus` writes `99`. It follows the two FoxIO implementations, and the FoxIO prose
+describes a different value. The user settled the reading on 2026-08-07 on #127.
 
 The FoxIO specification states the rule: "If the first or last byte of the first ALPN is
 not an ASCII alphanumeric character (meaning not `0x30-0x39`, `0x41-0x5A`, or
 `0x61-0x7A`), then we print the first and last characters of the hex representation of
-the first ALPN instead." `compute_alpn_value` applies that rule.
+the first ALPN instead." The prose therefore describes the hex characters.
 
 The FoxIO Python implementation applies a different rule. `python/ja4.py` writes `'99'`
 when the first byte has `ord() > 127`. The FoxIO Rust implementation writes the same
@@ -75,13 +74,25 @@ value is the two bytes `0xba 0xad`.
 
 | Source | JA4 value |
 |---|---|
-| `ja4plus` | `t13d1516bd_8daaf6152771_e5627efa2ab1` |
-| FoxIO Python and FoxIO Rust | `t13d151699_8daaf6152771_e5627efa2ab1` |
+| The FoxIO prose | `t13d1516bd_8daaf6152771_e5627efa2ab1` |
+| FoxIO Python, FoxIO Rust and `ja4plus` | `t13d151699_8daaf6152771_e5627efa2ab1` |
 
-Only the two ALPN characters differ. The register entry
-`tls-non-ascii-alpn.pcapng/0:50112/JA4.1` holds the conformance case, and
-`tests/test_ja4_alpn.py` holds the unit case. Both name the difference until #127 settles
-it.
+Only the two ALPN characters differ. `ja4plus` follows the two implementations, because
+a FoxIO vector holds the value, and because a fingerprint exists so that one tool output
+can be compared against another tool output. The register holds no entry for this vector,
+and `tests/test_ja4_alpn.py` compares the produced value against the reference value.
+
+`compute_alpn_value` returns `99` when the first byte or the last byte of the first ALPN
+value falls outside `0x30-0x39`, `0x41-0x5A` and `0x61-0x7A`. `ja4s.py` reads the same
+function, so JA4 and JA4S carry one rule.
+
+#127 settled the value that this vector produces. It settled no other input, and #141
+owns the condition that triggers the value. Four rules fire on `0xba 0xad`, and the
+vector set holds no capture that separates them. `python/ja4.py` tests
+`ord(alpn[0]) > 127` on the value after it truncates the value to two characters.
+`rust/ja4/src/tls.rs` replaces each end character with `9` when that character is not
+ASCII, so it writes `90` where `python/ja4.py` writes `99`. `tests/test_ja4_alpn.py`
+holds the measurement of all four rules.
 
 **Location:** `ja4plus/fingerprinters/ja4.py:20`, in `compute_alpn_value`.
 
