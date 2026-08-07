@@ -99,7 +99,9 @@ def run_fingerprinters(packets):
         for method, fingerprinter in processor.fingerprinters.items():
             try:
                 fingerprint = fingerprinter.process_packet(packet)
-            except Exception as error:  # noqa: BLE001 — the suite reports every raise.
+            # The harness catches every exception, because it measures whether one
+            # happened. A fingerprinter still catches only the errors it expects.
+            except Exception as error:
                 failures.append(f"{method} raised on packet {index}: {error!r}")
                 continue
             if fingerprint:
