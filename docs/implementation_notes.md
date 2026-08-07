@@ -127,6 +127,28 @@ the difference against the Python material, and #128 owns its cause.
 
 **Location:** `tests/test_quic_multipacket.py`.
 
+### The reader walks the records of a segment
+
+A TLS 1.3 client that receives a HelloRetryRequest sends a second ClientHello. The
+compatibility-mode ChangeCipherSpec record precedes that hello in the same TCP segment,
+so the first byte of the segment is `0x14` and not `0x16`.
+
+`parse_tls_handshake` read the first record of the segment alone, so it returned `None`
+on that segment and the second hello reached no fingerprinter. `tls-handshake.pcapng`
+and `tls-sni.pcapng` each hold five such streams, and the reference holds a `JA4.2` value
+for every one of them.
+
+The reader now walks the records of the segment, and it parses the first record whose
+content type is `0x16` and whose handshake type is 1 or 2. The per-record length comes
+from the packet, so the walk bounds every read on the real buffer length, always
+advances, and returns `None` on a length that overruns the buffer.
+
+No segment of these captures holds two ClientHellos, so the first handshake record of a
+segment is sufficient.
+
+**Location:** `ja4plus/utils/tls_utils.py:46`, in `parse_tls_handshake`.
+`tests/test_ja4_hello_retry.py` holds the measurement. #137 owns the change.
+
 ### Version mapping (beyond TLS 1.0-1.3)
 
 The spec only mentions TLS 1.0 through 1.3. The implementation also maps:

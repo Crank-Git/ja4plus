@@ -348,89 +348,9 @@
     "decided": true,
     "issue": 105
   },
-  "tls-handshake.pcapng/38:50159/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/38:50159/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/38:50159/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/38:50159/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/41:50165/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/41:50165/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/41:50165/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/41:50165/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/42:50166/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/42:50166/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/42:50166/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/42:50166/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/44:50168/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/44:50168/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/44:50168/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/44:50168/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/45:50169/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/45:50169/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/45:50169/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-handshake.pcapng/45:50169/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
   "tls-handshake.pcapng/JA4": {
-    "cause": "ja4plus produces no JA4 fingerprint the reference holds. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
+    "cause": "ja4plus produces a JA4 fingerprint on 20 streams the reference does not hold. ja4plus produces every JA4 value the reference holds. Whether the FoxIO reference omits the 20 values, or ja4plus reads a packet it must not, is unsettled.",
+    "issue": 138
   },
   "tls-handshake.pcapng/JA4L-S": {
     "cause": "ja4plus emits more JA4L-S values than the reference holds.",
@@ -445,112 +365,32 @@
     "issue": 138
   },
   "tls-handshake.pcapng/JA4_o": {
-    "cause": "ja4plus produces no JA4_o fingerprint the reference holds. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
+    "cause": "ja4plus produces a JA4_o fingerprint on 20 streams the reference does not hold. ja4plus produces every JA4_o value the reference holds. Whether the FoxIO reference omits the 20 values, or ja4plus reads a packet it must not, is unsettled.",
+    "issue": 138
   },
   "tls-handshake.pcapng/JA4_r": {
-    "cause": "ja4plus produces no JA4_r fingerprint the reference holds. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
+    "cause": "ja4plus produces a JA4_r fingerprint on 20 streams the reference does not hold. ja4plus produces every JA4_r value the reference holds. Whether the FoxIO reference omits the 20 values, or ja4plus reads a packet it must not, is unsettled.",
+    "issue": 138
   },
   "tls-handshake.pcapng/JA4_ro": {
-    "cause": "ja4plus produces no JA4_ro fingerprint the reference holds. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/38:50159/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/38:50159/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/38:50159/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/38:50159/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/41:50165/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/41:50165/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/41:50165/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/41:50165/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/42:50166/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/42:50166/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/42:50166/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/42:50166/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/44:50168/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/44:50168/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/44:50168/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/44:50168/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/45:50169/JA4.2": {
-    "cause": "ja4plus produces no JA4 value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/45:50169/JA4_o.2": {
-    "cause": "ja4plus produces no JA4_o value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/45:50169/JA4_r.2": {
-    "cause": "ja4plus produces no JA4_r value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
-  },
-  "tls-sni.pcapng/45:50169/JA4_ro.2": {
-    "cause": "ja4plus produces no JA4_ro value on this stream. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
+    "cause": "ja4plus produces a JA4_ro fingerprint on 20 streams the reference does not hold. ja4plus produces every JA4_ro value the reference holds. Whether the FoxIO reference omits the 20 values, or ja4plus reads a packet it must not, is unsettled.",
+    "issue": 138
   },
   "tls-sni.pcapng/JA4": {
-    "cause": "ja4plus produces no JA4 fingerprint the reference holds. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
+    "cause": "ja4plus produces a JA4 fingerprint on 20 streams the reference does not hold. ja4plus produces every JA4 value the reference holds. Whether the FoxIO reference omits the 20 values, or ja4plus reads a packet it must not, is unsettled.",
+    "issue": 138
   },
   "tls-sni.pcapng/JA4_o": {
-    "cause": "ja4plus produces no JA4_o fingerprint the reference holds. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
+    "cause": "ja4plus produces a JA4_o fingerprint on 20 streams the reference does not hold. ja4plus produces every JA4_o value the reference holds. Whether the FoxIO reference omits the 20 values, or ja4plus reads a packet it must not, is unsettled.",
+    "issue": 138
   },
   "tls-sni.pcapng/JA4_r": {
-    "cause": "ja4plus produces no JA4_r fingerprint the reference holds. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
+    "cause": "ja4plus produces a JA4_r fingerprint on 20 streams the reference does not hold. ja4plus produces every JA4_r value the reference holds. Whether the FoxIO reference omits the 20 values, or ja4plus reads a packet it must not, is unsettled.",
+    "issue": 138
   },
   "tls-sni.pcapng/JA4_ro": {
-    "cause": "ja4plus produces no JA4_ro fingerprint the reference holds. Which packet the JA4 reader never reaches is unknown. A measurement must name it before a fingerprinter changes.",
-    "issue": 137
+    "cause": "ja4plus produces a JA4_ro fingerprint on 20 streams the reference does not hold. ja4plus produces every JA4_ro value the reference holds. Whether the FoxIO reference omits the 20 values, or ja4plus reads a packet it must not, is unsettled.",
+    "issue": 138
   },
   "tls3.pcapng/JA4": {
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold. Whether the FoxIO reference omits the value, or ja4plus reads a packet it must not, is unsettled.",
