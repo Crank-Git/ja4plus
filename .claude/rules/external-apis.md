@@ -26,7 +26,7 @@ Code inside this repository is different. Read the code.
 | Interface | Version pinned | Documentation |
 |---|---|---|
 | FoxIO JA4+ specification | Upstream default branch, commit dated 2026-07-21 | https://github.com/FoxIO-LLC/ja4/tree/main/technical_details |
-| FoxIO test vectors | `pcap/` and `python/test/testdata/` at the pinned commit | https://github.com/FoxIO-LLC/ja4/tree/main/python/test/testdata |
+| FoxIO test vectors | `pcap/`, `python/test/testdata/`, `wireshark/test/testdata/` and `rust/ja4/src/snapshots/` at the pinned commit | https://github.com/FoxIO-LLC/ja4/tree/main/python/test/testdata |
 | FoxIO mapping file | `ja4plus-mapping.csv` at the pinned commit | https://github.com/FoxIO-LLC/ja4/blob/main/ja4plus-mapping.csv |
 | `ja4db.com` lookup | No published version | `https://ja4db.com/api/read/<fingerprint>` |
 | `scapy` | 2.4 or later | https://scapy.readthedocs.io/ |
@@ -54,6 +54,14 @@ is the only FoxIO implementation that writes a reference value for the two metho
 `tests/foxio_vectors/wireshark_expected/` holds a copy of its two files. The Zeek
 baseline `zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` holds the same four JA4D values.
 `docs/implementation_notes.md` records the reading.
+
+**A snapshot under `rust/ja4/src/snapshots/` decides only where the Python file holds an
+empty array.** `python/test/testdata/quic-with-several-tls-frames.pcapng.json` holds
+`[]`, because the FoxIO Python implementation reads no ClientHello that several CRYPTO
+frames carry. The FoxIO Rust implementation reads it and writes the JA4 value.
+`tests/foxio_vectors/rust_expected/` holds a copy of that snapshot.
+`docs/implementation_notes.md` records the reading. Where both directories carry a value
+for a method, `python/test/testdata/` decides.
 
 **JA4D6 rests on one source.** No FoxIO implementation other than the Wireshark
 dissector writes a JA4D6 value, so nothing corroborates its six values the way the

@@ -17,6 +17,11 @@ one stream index, so a direction-sensitive identity would split one stream into 
 A produced value reaches the index under the method the reference names. The JA4L
 fingerprinter writes its method name into the value, as `JA4L-S=21105_64`, and
 `method_and_value` reads the method name and returns the value alone.
+
+A raw key, such as `JA4_r`, names its own method. The index holds it beside the hashed
+form, and the suite compares it the same way. A raw form exists so that a person can
+read what produced a hash, and a raw form no case reads is a value this project never
+compares.
 """
 
 import logging
@@ -24,9 +29,22 @@ from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
-# The suffixes of a raw form and an original-order form. The reference holds these
-# next to the fingerprint, and they are intermediate values, not fingerprint output.
-RAW_SUFFIXES = ("_r", "_ro", "_o", "_raw")
+# The raw keys the reference publishes, per fingerprinter. Each pair names the reference
+# method and the key of the produced entry that holds the value. A raw form no case reads
+# is a value this project never compares, so the index carries these beside the hashed
+# form. `JA4_o` holds a hash of the original-order fields rather than a raw form, and the
+# reference publishes it beside `JA4_ro`, so the index treats the two the same way.
+#
+# JA4H is absent because ja4plus computes no JA4H raw form. #131 owns the 89 `JA4H_ro`
+# values the reference publishes.
+RAW_METHODS = {
+    "JA4": (
+        ("JA4_r", "raw"),
+        ("JA4_ro", "raw_original_order"),
+        ("JA4_o", "fingerprint_original_order"),
+    ),
+    "JA4S": (("JA4S_r", "raw"),),
+}
 
 # The methods the conformance suite reports. One fingerprinter produces one method,
 # except JA4L: the JA4L fingerprinter produces both JA4L-C and JA4L-S, and the prefix of
@@ -84,8 +102,8 @@ def method_and_occurrence(key):
 
     Returns:
         A (method, occurrence) pair. The occurrence is None when the key carries no
-        counter. Returns None when the key names no method, or when it names a raw
-        form or an original-order form.
+        counter. A raw key, such as `JA4_r`, gives its own method name. Returns None
+        when the key names no method.
     """
     head, _, tail = key.rpartition(".")
     if head and tail.isdigit():
@@ -93,8 +111,6 @@ def method_and_occurrence(key):
     else:
         method, occurrence = key, None
     if not method.startswith("JA4"):
-        return None
-    if any(method.endswith(suffix) for suffix in RAW_SUFFIXES):
         return None
     return method, occurrence
 
@@ -175,9 +191,9 @@ def index_produced(pcap_path):
 
     Returns:
         A map of stream identity to a map of method name to a tuple of values. The
-        tuple holds the values in the order the fingerprinter produced them. A
-        fingerprint whose stream the suite cannot identify is held under the identity
-        None.
+        tuple holds the values in the order the fingerprinter produced them. The map
+        holds one name for each raw key `RAW_METHODS` names. A fingerprint whose stream
+        the suite cannot identify is held under the identity None.
     """
     from scapy.all import rdpcap
 
@@ -211,6 +227,10 @@ def index_produced(pcap_path):
             method, value = method_and_value(name, entry["fingerprint"])
             methods = produced.setdefault(identity, {})
             methods.setdefault(method, []).append(value)
+            for raw_method, entry_key in RAW_METHODS.get(name, ()):
+                raw_value = entry.get(entry_key)
+                if raw_value is not None:
+                    methods.setdefault(raw_method, []).append(raw_value)
 
     return {
         identity: {name: tuple(values) for name, values in methods.items()}
