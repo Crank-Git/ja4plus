@@ -10,6 +10,26 @@ vector that supports the reading, or it states that no FoxIO material validates 
 
 ---
 
+## The raw forms
+
+### Each method holds its own sort rule
+
+A raw form is the unhashed form of a fingerprint. One method sorts a list in its raw
+form, and another method holds the wire order. The rule of one method proves nothing
+about another method, so each row below names its own evidence. The counts come from the
+37 committed vectors under `tests/foxio_vectors/`.
+
+| Method | Raw keys FoxIO publishes | Sort rule | Evidence |
+|---|---|---|---|
+| JA4 | `JA4_r`, `JA4_ro` | `JA4_r` sorts the ciphers and the extensions. It holds the signature algorithms in wire order. `JA4_ro` holds every list in wire order. | 160 `JA4_r` values. 156 of them carry a signature-algorithm section, and all 156 hold the ciphers and the extensions in numeric order and the signature algorithms in an order that is not numeric. The other four carry no extension and no signature algorithm. No `JA4_ro` value equals its `JA4_r` value. |
+| JA4S | `JA4S_r` | The extensions stay in wire order. JA4S sorts no list. | 84 `JA4S_r` values. 35 of them hold the extensions in an order that is not numeric order, and `badcurveball.pcap.json` gives `t1205h1_c02b_0000,ff01,000b,0023,0010`. No file carries a `JA4S_ro` key. |
+| JA4H | `JA4H_ro` | Not measured. | 89 `JA4H_ro` values, and no `JA4H_r` value. `ja4plus` exposes no JA4H raw form, so no reading is needed yet. |
+| JA4X, JA4SSH, JA4L, JA4T, JA4TS, JA4D, JA4D6 | None | Not applicable. | No expected-output file carries a raw key for these methods. |
+
+**Location:** `ja4plus/fingerprinters/ja4.py`, `ja4plus/fingerprinters/ja4s.py`.
+
+---
+
 ## JA4 - TLS Client Hello
 
 ### ALPN non-ASCII handling
@@ -71,9 +91,17 @@ order. `tls-alpn-h2.pcap.json` gives `JA4S_r` as `t1204h2_cca9_0000,ff01,000b,00
 That order is not numeric order, so it is wire order.
 
 The JA4S fingerprint hashes the extensions in wire order, and it equals the reference
-`JA4S` value `t1204h2_cca9_1428ce7b4018`. The `raw_original_order` key holds the wire
-order, and it equals the reference `JA4S_r`. The `raw` key sorts the extensions, so it
-does not equal `JA4S_r`. #108 owns that difference.
+`JA4S` value `t1204h2_cca9_1428ce7b4018`.
+
+FoxIO publishes `JA4S_r` and no `JA4S_ro`, because JA4S sorts no list. A JA4S result
+therefore holds one raw value under two keys: `raw` and `raw_original_order` are equal,
+and both equal the reference `JA4S_r`. Before #108, the `raw` key sorted the extensions,
+and it matched 49 of the 84 reference values.
+
+The port at `Crank-Git/ja4plus-go` holds the two key names on its result struct, as the
+`Raw` field and the `RawOriginalOrder` field. `ja4plus` keeps both names under parity
+rule 2. The `ja4s.go` file of the port computes no raw value, so parity rule 1 decides
+the value, and FoxIO holds the wire order.
 
 ### The original-order hashed value has no reference
 
@@ -89,7 +117,7 @@ and on JA4S.
 **No FoxIO material validates this value, in either direction.** The `docs/specs/spec.md`
 changelog records it at round 11.
 
-**Location:** `ja4plus/fingerprinters/ja4s.py:102`.
+**Location:** `ja4plus/fingerprinters/ja4s.py:103`.
 
 ---
 
@@ -123,22 +151,54 @@ The list keeps the wire order. `ja4plus` never sorts it.
 
 ## JA4D and JA4D6 - DHCP
 
-### No FoxIO vector validates JA4D or JA4D6
+### The reference values come from the FoxIO Wireshark dissector
 
-FoxIO publishes `dhcp.pcapng` and `dhcpv6.pcap`, and the expected-output file of each one
-holds an empty array. `tests/foxio_vectors/dhcp.pcapng.json` and
-`tests/foxio_vectors/dhcpv6.pcap.json` each hold `[]`. No reference value validates
-either method.
+The FoxIO Python implementation emits no JA4D and no JA4D6, so the expected-output file
+of each DHCP capture holds an empty array. `tests/foxio_vectors/dhcp.pcapng.json` and
+`tests/foxio_vectors/dhcpv6.pcap.json` each hold `[]`. The FoxIO Rust implementation
+emits neither method. Both of its snapshots hold `[]`.
 
-`tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py` name a capture path and an
-expected-output path that this repository does not hold, so both files skip on every run.
-#109 owns that gap.
+The FoxIO Wireshark dissector does write a reference value for both methods.
+`tests/foxio_vectors/wireshark_expected/` holds a copy of the two files, taken without
+change from `wireshark/test/testdata/` at the pinned upstream commit.
+
+`.claude/rules/external-apis.md` states that the files under `wireshark/test/testdata/`
+are not the authority. `wireshark/test/testdata/tls12.pcap.json` holds an empty array
+where the Python file of the same name holds four fingerprints. These two methods are the
+reverse case, and the
+Wireshark file is the only FoxIO reference output for them. The FoxIO Zeek baseline
+`zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` holds the same four JA4D values, which is a
+second FoxIO implementation that agrees. No second FoxIO implementation emits JA4D6.
+
+`ja4plus` matches every one of the ten reference values, and every fingerprint it emits
+appears in the reference.
+
+| Capture | Frame | Reference value |
+|---|---|---|
+| `dhcp.pcapng` | 1 | `disco0000in_61-55_1-3-6-42` |
+| `dhcp.pcapng` | 2 | `offer0000nn_1-58-59-51-54_00` |
+| `dhcp.pcapng` | 3 | `reqst0000in_61-54-55_1-3-6-42` |
+| `dhcp.pcapng` | 4 | `dpack0000nn_58-59-51-54-1_00` |
+| `dhcpv6.pcap` | 2 | `solct0014nn_1-6-8-25_23-24` |
+| `dhcpv6.pcap` | 5 | `advrt0014nn_25-26-1-2_00` |
+| `dhcpv6.pcap` | 7 | `reqst0014nn_1-2-6-8-25-26_23-24` |
+| `dhcpv6.pcap` | 8 | `reply0014nn_25-26-1-2_00` |
+| `dhcpv6.pcap` | 11 | `relse0014nn_1-2-6-8-25-26_23-24` |
+| `dhcpv6.pcap` | 12 | `reply0014nn_1-2-13_00` |
+
+The conformance suite reads only the top level of `tests/foxio_vectors/`. The two files
+add no case to that suite and no entry to the deviation register.
+`tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py` compare them, and both run in
+the unit suite. #109 closed the gap.
+
+**Location:** `tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py`.
 
 ### How ja4plus reads JA4D
 
 The form is `{type}{size}{ip}{fqdn}_{options}_{parameters}`. `ja4plus` reads it as
 follows. The comment at `ja4plus/fingerprinters/ja4d.py:42` names two FoxIO pull
-requests, 267 and 270, as the source of the skip set. No vector confirms the reading.
+requests, 267 and 270, as the source of the skip set. The four reference values of
+`dhcp.pcapng` confirm the reading.
 
 - The type is a five-character abbreviation of the DHCP message type. An unknown type
   gives the five-digit decimal value of the code.
@@ -229,6 +289,29 @@ inner ports.
 
 `ja4plus/utils/tunnels.py` imports the scapy dissectors for Geneve, VXLAN and
 ERSPAN, because scapy leaves them unbound and stops at the tunnel header.
+
+### The connection key of a mirrored capture
+
+A mirror sends both directions of one session from one outer address to one
+other outer address. The outer address pair then separates no direction, and one
+key cannot hold both measurement points of the connection.
+
+`gre-erspan-vxlan.pcap` is such a capture. Every packet travels from
+`100.20.9.2` to `100.20.9.1`, and the inner session is `10.16.27.12:65174` to
+`10.16.27.131:80`. The SYN reached the key
+`tcp_100.20.9.1:80_100.20.9.2:65174`, and the SYN-ACK reached the key
+`tcp_100.20.9.1:65174_100.20.9.2:80`.
+
+`ja4plus/fingerprinters/ja4l.py` holds two keys for one connection:
+
+- The connection key groups the packets. It reads the inner address pair and the
+  inner port pair, which name both endpoints of a mirrored session.
+- The reported key names the stream. It reads the outer address pair and the
+  inner port pair, because the reference reports those. The SYN pairs the source
+  address with the source port, and a later packet does not move that pair.
+
+The expected-output file holds `JA4L-S` `997_64` and `JA4L-C` `953_64` on the
+stream `100.20.9.2:65174` to `100.20.9.1:80`. Read #101 for the measurement.
 
 ### The QUIC measurement points
 

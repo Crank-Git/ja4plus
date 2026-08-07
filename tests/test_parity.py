@@ -127,8 +127,8 @@ def test_the_ja4_raw_forms_match_the_reference():
     assert fingerprinter.last_raw_original_order == expected["JA4_ro.1"]
 
 
-def test_the_ja4s_original_order_raw_form_matches_the_reference():
-    """The JA4S original-order raw form holds the extensions in the reference order."""
+def test_the_ja4s_raw_forms_match_the_reference():
+    """Both JA4S raw keys hold the extensions in the reference order."""
     from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 
     expected = reference_stream()
@@ -138,10 +138,11 @@ def test_the_ja4s_original_order_raw_form_matches_the_reference():
 
     entry = entries[0]
     assert entry["fingerprint"] == expected["JA4S"]
-    # The reference `JA4S_r` holds the extensions in wire order, and `raw_original_order`
-    # holds that same order. `raw` sorts them, so it does not match the reference. #108
-    # owns that difference.
+    # The reference `JA4S_r` holds the extensions in wire order. JA4S sorts no list, so
+    # both raw keys hold that one value. #108 records the reading.
+    assert entry["raw"] == expected["JA4S_r"]
     assert entry["raw_original_order"] == expected["JA4S_r"]
+    assert fingerprinter.last_raw == expected["JA4S_r"]
     assert fingerprinter.last_raw_original_order == expected["JA4S_r"]
     # FoxIO publishes no `JA4S_o` key, so no vector validates this value. JA4S hashes the
     # extensions in wire order, so the original-order hash equals the fingerprint.

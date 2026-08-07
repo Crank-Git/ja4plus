@@ -1,0 +1,86 @@
+[
+  {
+    "_index": "packets-2015-01-02",
+    "_score": null,
+    "_source": {
+      "layers": {
+        "frame.number": [
+          "2"
+        ],
+        "ja4.ja4d": [
+          "solct0014nn_1-6-8-25_23-24"
+        ]
+      }
+    }
+  },
+  {
+    "_index": "packets-2015-01-02",
+    "_score": null,
+    "_source": {
+      "layers": {
+        "frame.number": [
+          "5"
+        ],
+        "ja4.ja4d": [
+          "advrt0014nn_25-26-1-2_00"
+        ]
+      }
+    }
+  },
+  {
+    "_index": "packets-2015-01-02",
+    "_score": null,
+    "_source": {
+      "layers": {
+        "frame.number": [
+          "7"
+        ],
+        "ja4.ja4d": [
+          "reqst0014nn_1-2-6-8-25-26_23-24"
+        ]
+      }
+    }
+  },
+  {
+    "_index": "packets-2015-01-02",
+    "_score": null,
+    "_source": {
+      "layers": {
+        "frame.number": [
+          "8"
+        ],
+        "ja4.ja4d": [
+          "reply0014nn_25-26-1-2_00"
+        ]
+      }
+    }
+  },
+  {
+    "_index": "packets-2015-01-02",
+    "_score": null,
+    "_source": {
+      "layers": {
+        "frame.number": [
+          "11"
+        ],
+        "ja4.ja4d": [
+          "relse0014nn_1-2-6-8-25-26_23-24"
+        ]
+      }
+    }
+  },
+  {
+    "_index": "packets-2015-01-02",
+    "_score": null,
+    "_source": {
+      "layers": {
+        "frame.number": [
+          "12"
+        ],
+        "ja4.ja4d": [
+          "reply0014nn_1-2-13_00"
+        ]
+      }
+    }
+  }
+]

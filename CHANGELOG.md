@@ -8,6 +8,45 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **BREAKING — the JA4S raw form holds the extensions in wire order** (#108). The
+  `raw` key of a JA4S result sorted the extensions into numeric order. The FoxIO
+  `JA4S_r` value holds them in the order the ServerHello carries them. A
+  caller who stored the `raw` value of a JA4S result before this release gets a
+  different string now. The old value matched 49 of the 84 `JA4S_r` values the
+  committed vectors hold. FoxIO publishes `JA4S_r` and no `JA4S_ro`, because JA4S
+  sorts no list. Both `raw` and `raw_original_order` now hold one value.
+  `badcurveball.pcap` reports `t1205h1_c02b_0000,ff01,000b,0023,0010` where it
+  reported `t1205h1_c02b_0000,000b,0010,0023,ff01`. The JA4S fingerprint is
+  unchanged, because it already hashed the extensions in wire order. JA4 is
+  unchanged: `JA4_r` sorts the ciphers and the extensions, and `JA4_ro` holds
+  the wire order. `docs/implementation_notes.md` records the sort rule of each
+  method and the evidence for it.
+
+- **BREAKING — the JA4L QUIC server point reads the Initial packet that completes
+  the ServerHello** (#102). `ja4plus` read the first server Initial packet, and the
+  reference reads the Initial packet whose TLS handshake type is `2`. A server sends
+  an Initial packet that holds an ACK frame first, so the two points differ. The
+  cause was one line: `decrypt_initial_payload` read the ciphertext to the end of the
+  UDP datagram, and the AEAD tag of an Initial packet covers only the bytes the
+  Length field names. Every server Initial packet therefore failed the tag.
+  `ja4plus/utils/quic_utils.py` gains four functions:
+
+  - `_initial_packet_end` bounds the ciphertext by the Length field.
+  - `decrypt_quic_server_initial_crypto` returns the CRYPTO fragments of one server
+    Initial packet.
+  - `server_hello_is_complete` reports whether the collected fragments hold a whole
+    ServerHello.
+  - `collect_crypto_fragments` stops a buffer at 16384 bytes. RFC 9000 Section 16
+    lets a CRYPTO frame offset reach 4611686018427387903, and a reassembly allocates
+    a buffer that reaches the highest offset.
+
+  A QUIC connection whose server Initial packets do not decrypt now emits no
+  `JA4L-S` value, as the reference does.
+  `chrome-cloudflare-quic-with-secrets.pcapng` stream
+  50280 now reports `10990_56` where it reported `9285_56`, and `tls3.pcapng` stream
+  61884 reports `3583_57` where it reported `3051_57`. The register falls from 73
+  entries to 71. No other vector changed.
+
 - **BREAKING — JA4SSH counts an SSH message, not a TCP segment** (#98). `ja4plus`
   counted one SSH packet for every TCP segment that carried a payload. The FoxIO
   reference counts the packets `tshark` labels `ssh`, and `tshark` labels only the

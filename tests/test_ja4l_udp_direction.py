@@ -10,16 +10,39 @@ from scapy.all import IP, UDP, Raw
 
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
 from ja4plus.utils.quic_utils import QUIC_HANDSHAKE, QUIC_INITIAL
+from tests.quic_builder import client_initial, crypto_frame, server_hello, server_initial
 
 # A QUIC version 1 long header: the first byte, the version, and a zero-length
 # destination connection identifier. RFC 9000 Section 17.2 gives the layout.
 QUIC_VERSION_1 = b"\x00\x00\x00\x01"
 
+# The reference reads the server measurement point from the Initial packet that
+# completes the ServerHello, so a server Initial packet here has to decrypt.
+CLIENT_DCID = bytes.fromhex("203f9e9f68698274")
+
+
+def _quic_payload(dport, packet_type):
+    """Return the UDP payload of one QUIC packet of the type.
+
+    Args:
+        dport: The destination port. Port 443 names the server, so a packet that
+            carries it goes to the server.
+        packet_type: `QUIC_INITIAL` or `QUIC_HANDSHAKE`.
+
+    Returns:
+        The bytes of the UDP payload. An Initial packet the server sends carries a
+        whole ServerHello, and every other packet carries a long header only.
+    """
+    if packet_type == QUIC_INITIAL:
+        if dport == 443:
+            return client_initial(CLIENT_DCID)
+        return server_initial(CLIENT_DCID, crypto_frame(0, server_hello()))
+    return bytes([0xC0 | (packet_type << 4)]) + QUIC_VERSION_1 + b"\x00" * 16
+
 
 def _quic_packet(src_ip, dst_ip, sport, dport, packet_type, t=0.0):
     """Build a UDP packet that carries one QUIC long header."""
-    first_byte = bytes([0xC0 | (packet_type << 4)])
-    payload = first_byte + QUIC_VERSION_1 + b"\x00" * 16
+    payload = _quic_payload(dport, packet_type)
     packet = IP(src=src_ip, dst=dst_ip) / UDP(sport=sport, dport=dport) / Raw(load=payload)
     packet.time = t
     return packet

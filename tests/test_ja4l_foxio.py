@@ -55,7 +55,10 @@ BROWSERS_X509 = "tcp_13.107.21.239:443_172.27.7.31:54524"
 LATEST_HTTP = "tcp_172.16.225.48:52939_23.43.242.57:80"
 EMPTY_USERAGENT = "tcp_::1:9200_::1:57722"
 GRE_SAMPLE = "tcp_172.27.1.66:40264_66.59.109.137:22"
+GRE_ERSPAN_VXLAN = "tcp_100.20.9.1:80_100.20.9.2:65174"
 SSH2_QUIC = "udp_142.251.41.46:443_172.16.225.48:61861"
+CLOUDFLARE_QUIC = "udp_2001:db8:1::1:50280_2606:4700:10::6816:826:443"
+TLS3_QUIC = "udp_104.21.234.234:443_192.168.1.169:61884"
 
 
 @pytest.mark.skipif(
@@ -90,12 +93,40 @@ class TestJA4LAgainstTheFoxIOVectors:
         assert "JA4L-S=22952_236" in produced
         assert "JA4L-C=26150_255" in produced
 
+    def test_the_fingerprinter_groups_a_mirrored_capture_by_its_inner_connection(self):
+        # gre-erspan-vxlan.pcap is an ERSPAN mirror. Every packet travels from
+        # 100.20.9.2 to 100.20.9.1, so the outer address pair names no direction. The
+        # inner session 10.16.27.12:65174 to 10.16.27.131:80 names both directions.
+        produced = values_on("gre-erspan-vxlan.pcap", GRE_ERSPAN_VXLAN)
+        assert "JA4L-S=997_64" in produced
+        assert "JA4L-C=953_64" in produced
+
+    def test_the_mirrored_capture_holds_one_connection(self):
+        # The reference holds one stream for this capture. Two connection keys mean the
+        # fingerprinter split the two directions of one session.
+        assert list(values_of("gre-erspan-vxlan.pcap")) == [GRE_ERSPAN_VXLAN]
+
     def test_the_quic_form_reads_the_initial_and_the_handshake_packets(self):
         # ssh2.pcapng stream 36 is QUIC. JA4L-S measures the two Initial packets, and
         # JA4L-C measures the last server Handshake packet to the first client one.
         produced = values_on("ssh2.pcapng", SSH2_QUIC)
         assert "JA4L-S=5389_57" in produced
         assert "JA4L-C=169_128" in produced
+
+    def test_the_quic_server_point_skips_an_initial_packet_that_carries_no_server_hello(self):
+        # chrome-cloudflare-quic-with-secrets.pcapng stream 0, port 50280. The server
+        # sends an Initial packet at +18569 us that holds an ACK frame, and a second
+        # one at +21981 us that holds the whole ServerHello. The reference reads the
+        # second one.
+        assert "JA4L-S=10990_56" in values_on(
+            "chrome-cloudflare-quic-with-secrets.pcapng", CLOUDFLARE_QUIC
+        )
+
+    def test_the_quic_server_point_reads_the_second_initial_packet_of_a_short_handshake(self):
+        # tls3.pcapng stream 25, port 61884. The server sends an Initial packet at
+        # +6102 us that holds an ACK frame, and a second one at +7166 us that holds
+        # the whole ServerHello.
+        assert "JA4L-S=3583_57" in values_on("tls3.pcapng", TLS3_QUIC)
 
     def test_the_fingerprinter_emits_one_client_value_for_one_connection(self):
         produced = values_on("badcurveball.pcap", BADCURVEBALL)
