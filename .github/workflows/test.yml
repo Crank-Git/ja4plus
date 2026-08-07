@@ -96,9 +96,12 @@ jobs:
           path: test-results.xml
 
   fuzz:
-    # `FR-correctness-audit-13`. The malformed-input suite runs on every pull request.
-    # The `test` job reads `tests/` and covers this suite too. This job names it
-    # separately, so a red malformed-input case is visible without a log search.
+    # `FR-correctness-audit-13`. The malformed-input suite runs on each pull request
+    # the `on:` block above accepts. This job names the suite, so a red
+    # malformed-input case is visible without a log search.
+    #
+    # This job runs one Python version. The `test` job reads `tests/`, so it runs this
+    # suite on every version of the matrix and on macOS.
     #
     # The suite cuts each committed capture at test time. Never commit a generated
     # capture: a committed copy stops following the capture it came from.
