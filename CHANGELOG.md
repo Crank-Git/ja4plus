@@ -8,6 +8,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **JA4S tells a QUIC server Initial packet from a client one** (#118). `ja4plus`
+  read every QUIC Initial packet as a client Initial packet, because the two carry
+  the same long-header packet type. It stored the connection ID of the server packet
+  under the reverse connection key and returned, so it never read the ServerHello.
+  A server Initial packet names the client with the connection ID the client chose
+  as its source, so the stored value was empty. JA4S now reads the port to tell the
+  two apart, as JA4L does, and a server Initial packet replaces no stored client
+  connection ID. `chrome-cloudflare-quic-with-secrets.pcapng` stream 50280 now
+  reports `q130200_1301_234ea6891581`, and `ssh2.pcapng` and `tls3.pcapng` report a
+  JA4S value on eight more QUIC streams. No JA4S value on any other stream changed.
+  The FoxIO reference reads no QUIC handshake in the committed vectors, so it holds
+  no value for those nine streams. It holds no JA4 value for the same nine streams,
+  and #13 already owns that divergence for JA4. The register rises from 67 entries
+  to 70.
+
 - **BREAKING — the JA4S raw form holds the extensions in wire order** (#108). The
   `raw` key of a JA4S result sorted the extensions into numeric order. The FoxIO
   `JA4S_r` value holds them in the order the ServerHello carries them. A
