@@ -6,8 +6,9 @@ cause and a false owner on hundreds of entries. These tests check the reading.
 """
 
 from tests.generate_foxio_baseline import (
+    JA4L_MIRRORED_CAPTURE_ISSUE,
     JA4L_MULTIPLICITY_ISSUE,
-    JA4L_VALUE_ISSUE,
+    JA4L_QUIC_SERVER_POINT_ISSUE,
     _entry,
     _failure_line,
 )
@@ -39,35 +40,16 @@ class TestTheFailureLineReader:
 class TestTheJA4LOwner:
     """Check that each JA4L defect shape names the issue that fixes it."""
 
-    def test_a_latency_of_twice_the_reference_names_the_value_issue(self):
+    def test_a_server_latency_of_another_amount_names_the_quic_server_point(self):
         entry = _entry(
             "JA4L-S",
-            "Failed: v.pcap s JA4L-S.1: expected='781_238' produced='1562_238'",
+            "Failed: v.pcapng s JA4L-S.1: expected='10990_56' produced='9285_56'",
             occurrence_form=False,
         )
-        assert entry["issue"] == JA4L_VALUE_ISSUE
+        assert entry["issue"] == JA4L_QUIC_SERVER_POINT_ISSUE
         assert entry["cause"] == (
-            "ja4plus reports the round-trip time, and the reference holds half of it."
-        )
-
-    def test_a_truncated_latency_of_twice_the_reference_names_the_value_issue(self):
-        entry = _entry(
-            "JA4L-S",
-            "Failed: v.pcap s JA4L-S.1: expected='210_64' produced='421_64'",
-            occurrence_form=False,
-        )
-        assert entry["issue"] == JA4L_VALUE_ISSUE
-        assert "half of it" in entry["cause"]
-
-    def test_a_client_latency_of_another_amount_names_the_measurement_point(self):
-        entry = _entry(
-            "JA4L-C",
-            "Failed: v.pcap s JA4L-C.1: expected='278_128' produced='111_128'",
-            occurrence_form=False,
-        )
-        assert entry["issue"] == JA4L_VALUE_ISSUE
-        assert entry["cause"] == (
-            "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
+            "ja4plus reads the first server Initial packet, and the reference reads the "
+            "Initial packet that completes the ServerHello."
         )
 
     def test_an_extra_client_occurrence_key_names_the_multiplicity_issue(self):
@@ -77,7 +59,7 @@ class TestTheJA4LOwner:
             occurrence_form=True,
         )
         assert entry["issue"] == JA4L_MULTIPLICITY_ISSUE
-        assert entry["cause"] == "ja4plus emits one JA4L-C value for every ACK on the connection."
+        assert entry["cause"] == "ja4plus emits more JA4L-C values than the reference holds."
 
     def test_an_extra_server_occurrence_key_names_the_multiplicity_issue(self):
         entry = _entry(
@@ -88,24 +70,24 @@ class TestTheJA4LOwner:
         assert entry["issue"] == JA4L_MULTIPLICITY_ISSUE
         assert entry["cause"] == "ja4plus emits more JA4L-S values than the reference holds."
 
-    def test_a_missing_occurrence_key_names_the_multiplicity_issue(self):
+    def test_a_missing_occurrence_key_names_the_mirrored_capture(self):
         entry = _entry(
             "JA4L-S",
             "Failed: v.pcap JA4L-S: 0 extra occurrence key(s) []; 1 missing occurrence key(s) []",
             occurrence_form=True,
         )
-        assert entry["issue"] == JA4L_MULTIPLICITY_ISSUE
-        assert "tunnel payload" in entry["cause"]
+        assert entry["issue"] == JA4L_MIRRORED_CAPTURE_ISSUE
+        assert "mirrored capture" in entry["cause"]
 
-    def test_a_produced_none_names_the_tunnel_capture(self):
+    def test_a_produced_none_names_the_mirrored_capture(self):
         entry = _entry(
             "JA4L-C",
             "Failed: v.pcap s JA4L-C.1: expected='953_64' produced=<none>, JA4L-C "
             "produced 0 value(s) on this stream",
             occurrence_form=False,
         )
-        assert entry["issue"] == JA4L_VALUE_ISSUE
-        assert "tunnel payload" in entry["cause"]
+        assert entry["issue"] == JA4L_MIRRORED_CAPTURE_ISSUE
+        assert "mirrored capture" in entry["cause"]
 
 
 class TestTheOwnerOfAnotherMethod:

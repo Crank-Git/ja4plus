@@ -5,71 +5,19 @@
   },
   "CVE-2018-6794.pcap/JA4L-C": {
     "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
+    "cause": "ja4plus emits more JA4L-C values than the reference holds."
   },
   "CVE-2018-6794.pcap/JA4L-S": {
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
-  "badcurveball.pcap/0:55318/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "badcurveball.pcap/0:55318/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "badcurveball.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "browsers-x509.pcapng/0:54524/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "browsers-x509.pcapng/0:54524/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "browsers-x509.pcapng/1:54525/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "browsers-x509.pcapng/1:54525/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "browsers-x509.pcapng/2:54603/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "browsers-x509.pcapng/2:54603/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "browsers-x509.pcapng/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1": {
-    "issue": 88,
-    "cause": "The produced JA4L-S value differs from the reference by another amount."
+    "issue": 102,
+    "cause": "ja4plus reads the first server Initial packet, and the reference reads the Initial packet that completes the ServerHello."
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
     "issue": 35,
     "cause": "ja4plus produces no JA4H value on this stream."
-  },
-  "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1": {
     "issue": 78,
@@ -87,45 +35,25 @@
     "issue": 35,
     "cause": "ja4plus produces no JA4H fingerprint the reference holds."
   },
-  "chrome-cloudflare-quic-with-secrets.pcapng/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4X": {
     "issue": 78,
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
   "gre-erspan-vxlan.pcap/0:65174/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus does not decode the tunnel payload of this capture, so it reads no TCP layer and produces no JA4L-C value on this stream."
+    "issue": 101,
+    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-C value."
   },
   "gre-erspan-vxlan.pcap/0:65174/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus does not decode the tunnel payload of this capture, so it reads no TCP layer and produces no JA4L-S value on this stream."
+    "issue": 101,
+    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-S value."
   },
   "gre-erspan-vxlan.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus does not decode the tunnel payload of this capture, so it reads no TCP layer and produces no JA4L-C value."
+    "issue": 101,
+    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-C value."
   },
   "gre-erspan-vxlan.pcap/JA4L-S": {
-    "issue": 34,
-    "cause": "ja4plus does not decode the tunnel payload of this capture, so it reads no TCP layer and produces no JA4L-S value."
-  },
-  "gre-sample.pcap/0:40264/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "gre-sample.pcap/0:40264/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "gre-sample.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "gre-sample.pcap/JA4L-S": {
-    "issue": 34,
-    "cause": "ja4plus emits more JA4L-S values than the reference holds."
+    "issue": 101,
+    "cause": "ja4plus groups the two directions of this mirrored capture as two connections, so it emits no JA4L-S value."
   },
   "gre-sample.pcap/JA4SSH": {
     "issue": 105,
@@ -135,33 +63,9 @@
     "issue": 35,
     "cause": "ja4plus produces no JA4H value on this stream."
   },
-  "http-empty-useragent.pcap/0:57722/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "http-empty-useragent.pcap/0:57722/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
   "http-empty-useragent.pcap/JA4H": {
     "issue": 35,
     "cause": "ja4plus produces no JA4H fingerprint the reference holds."
-  },
-  "http-empty-useragent.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "http1-with-cookies.pcapng/0:61256/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "http1-with-cookies.pcapng/0:61256/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "http1-with-cookies.pcapng/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.1": {
     "issue": 35,
@@ -223,14 +127,6 @@
     "issue": 35,
     "cause": "ja4plus produces no JA4H value on this stream."
   },
-  "http2-with-cookies.pcapng/0:58847/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "http2-with-cookies.pcapng/0:58847/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
   "http2-with-cookies.pcapng/0:58847/JA4X.1": {
     "issue": 78,
     "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
@@ -247,10 +143,6 @@
     "issue": 35,
     "cause": "ja4plus produces no JA4H fingerprint the reference holds."
   },
-  "http2-with-cookies.pcapng/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
   "http2-with-cookies.pcapng/JA4X": {
     "issue": 78,
     "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
@@ -261,7 +153,7 @@
   },
   "https-connect.pcap/JA4L-C": {
     "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
+    "cause": "ja4plus emits more JA4L-C values than the reference holds."
   },
   "https-connect.pcap/JA4L-S": {
     "issue": 34,
@@ -275,98 +167,6 @@
     "issue": 78,
     "cause": "The reference reads no TLS on port 8080, and ja4plus reads the certificate of the tunnel from the record layer."
   },
-  "https3-301-get.pcap/0:62599/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "https3-301-get.pcap/0:62599/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "https3-301-get.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "ipv6.pcapng/0:64034/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ipv6.pcapng/0:64034/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ipv6.pcapng/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "latest.pcapng/10:52941/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "latest.pcapng/10:52941/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "latest.pcapng/1:52936/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "latest.pcapng/1:52936/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "latest.pcapng/3:52937/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "latest.pcapng/3:52937/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "latest.pcapng/5:52938/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "latest.pcapng/5:52938/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "latest.pcapng/6:52939/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "latest.pcapng/6:52939/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "latest.pcapng/9:52940/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "latest.pcapng/9:52940/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "latest.pcapng/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "latest.pcapng/JA4L-S": {
-    "issue": 34,
-    "cause": "ja4plus emits more JA4L-S values than the reference holds."
-  },
-  "macos_tcp_flags.pcap/0:61311/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "macos_tcp_flags.pcap/0:61311/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "macos_tcp_flags.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
   "quic-tls-handshake.pcapng/JA4": {
     "issue": 13,
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
@@ -375,81 +175,17 @@
     "issue": 13,
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
   },
-  "socks-https-example.pcap/0:53554/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "socks-https-example.pcap/0:53554/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "socks-https-example.pcap/2:53555/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "socks-https-example.pcap/2:53555/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "socks-https-example.pcap/4:53556/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "socks-https-example.pcap/4:53556/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "socks-https-example.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "socks4-https.pcap/0:50606/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "socks4-https.pcap/0:50606/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "socks4-https.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
   "socks4-https.pcap/JA4X": {
     "issue": 78,
     "cause": "The reference reads no TLS on port 9901, and ja4plus reads the certificate of the tunnel from the record layer."
-  },
-  "ssh-r.pcap/0:64980/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh-r.pcap/0:64980/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-r.pcap/0:64980/JA4SSH.2": {
     "issue": 97,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets."
   },
-  "ssh-r.pcap/1:46394/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh-r.pcap/1:46394/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
   "ssh-r.pcap/1:46394/JA4SSH.1": {
     "issue": 96,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window. The packet count differs too: ja4plus counts one SSH packet for each TCP segment, and tshark labels only the segment that completes an SSH message. #98 owns the count."
-  },
-  "ssh-r.pcap/2:46396/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh-r.pcap/2:46396/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-r.pcap/2:46396/JA4SSH.1": {
     "issue": 96,
@@ -459,18 +195,6 @@
     "issue": 98,
     "cause": "ja4plus counts one SSH packet for each TCP segment, and tshark labels only the segment that completes an SSH message. #98 owns the count."
   },
-  "ssh-r.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "ssh-scp-1050.pcap/0:49237/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh-scp-1050.pcap/0:49237/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.3": {
     "issue": 96,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window."
@@ -479,121 +203,13 @@
     "issue": 96,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window."
   },
-  "ssh-scp-1050.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "ssh2-malformed.pcap/0:61672/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2-malformed.pcap/0:61672/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2-malformed.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "ssh2-moloch-crash.pcap/0:61672/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2-moloch-crash.pcap/0:61672/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2-moloch-crash.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "ssh2.pcapng/11:57374/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2.pcapng/11:57374/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/12:57375/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2.pcapng/12:57375/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/13:57376/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2.pcapng/13:57376/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/14:57377/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2.pcapng/14:57377/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
   "ssh2.pcapng/14:57377/JA4SSH.2": {
     "issue": 97,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets."
   },
-  "ssh2.pcapng/15:57380/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/15:57380/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/22:57396/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/22:57396/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/33:51810/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/36:61861/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2.pcapng/36:61861/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/5:57368/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2.pcapng/5:57368/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "ssh2.pcapng/8:57371/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "ssh2.pcapng/8:57371/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
   "ssh2.pcapng/JA4": {
     "issue": 13,
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
-  },
-  "ssh2.pcapng/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
   },
   "ssh2.pcapng/JA4L-S": {
     "issue": 34,
@@ -603,53 +219,9 @@
     "issue": 97,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets."
   },
-  "sshv1.pcap/0:1022/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "sshv1.pcap/0:1022/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "sshv1.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "sshv1.pcap/JA4L-S": {
-    "issue": 34,
-    "cause": "ja4plus emits more JA4L-S values than the reference holds."
-  },
   "sshv1.pcap/JA4SSH": {
     "issue": 105,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes."
-  },
-  "tcpdump-geneve.pcap/0:51225/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus does not decode the tunnel payload of this capture, so it reads no TCP layer and produces no JA4L-C value on this stream."
-  },
-  "tcpdump-geneve.pcap/0:51225/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus does not decode the tunnel payload of this capture, so it reads no TCP layer and produces no JA4L-S value on this stream."
-  },
-  "tcpdump-geneve.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus does not decode the tunnel payload of this capture, so it reads no TCP layer and produces no JA4L-C value."
-  },
-  "tcpdump-geneve.pcap/JA4L-S": {
-    "issue": 34,
-    "cause": "ja4plus does not decode the tunnel payload of this capture, so it reads no TCP layer and produces no JA4L-S value."
-  },
-  "tls-alpn-h2.pcap/0:64034/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls-alpn-h2.pcap/0:64034/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls-alpn-h2.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
   },
   "tls-handshake.pcapng/38:50159/JA4.2": {
     "issue": 13,
@@ -711,141 +283,13 @@
     "issue": 13,
     "cause": "ja4plus produces no JA4 fingerprint the reference holds."
   },
-  "tls3.pcapng/10:63251/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/10:63251/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/11:63252/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/11:63252/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/12:63253/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/12:63253/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/13:63254/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/13:63254/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/14:63255/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/14:63255/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/21:62481/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/21:62481/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/22:61732/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/22:61732/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/23:49791/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/23:49791/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/24:56684/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/24:56684/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
   "tls3.pcapng/25:61884/JA4L-S.1": {
-    "issue": 88,
-    "cause": "The produced JA4L-S value differs from the reference by another amount."
-  },
-  "tls3.pcapng/28:58117/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/28:58117/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/7:63248/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/7:63248/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/8:63249/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/8:63249/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "tls3.pcapng/9:63250/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "tls3.pcapng/9:63250/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
+    "issue": 102,
+    "cause": "ja4plus reads the first server Initial packet, and the reference reads the Initial packet that completes the ServerHello."
   },
   "tls3.pcapng/JA4": {
     "issue": 13,
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
-  },
-  "tls3.pcapng/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "tls3.pcapng/JA4L-S": {
-    "issue": 34,
-    "cause": "ja4plus emits more JA4L-S values than the reference holds."
-  },
-  "v6.pcap/0:1022/JA4L-C.1": {
-    "issue": 88,
-    "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the round-trip time."
-  },
-  "v6.pcap/0:1022/JA4L-S.1": {
-    "issue": 88,
-    "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
-  },
-  "v6.pcap/JA4L-C": {
-    "issue": 34,
-    "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "v6.pcap/JA4L-S": {
-    "issue": 34,
-    "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
   "v6.pcap/JA4SSH": {
     "issue": 105,

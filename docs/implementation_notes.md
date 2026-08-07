@@ -70,10 +70,78 @@ JA4L fingerprints include a direction prefix:
 `JA4L-S={latency_us}_{ttl}` and `JA4L-C={latency_us}_{ttl}`.
 The spec describes `{latency_microseconds}_{ttl}` without a prefix.
 
-### Latency is raw time difference, not RTT/2
+### The latency is half the measured time
 
-The latency value is the raw time difference between handshake points,
-not the round-trip time divided by 2.
+`technical_details/JA4L.png` states `One-way TCP latency in us`, and every FoxIO
+vector holds half the time the capture shows. `badcurveball.pcap` stream 0 sends
+the SYN at `+0.000000s` and the SYN-ACK at `+0.001563s`, and the reference
+`JA4L-S` is `781_238`.
+
+The division truncates toward zero, and it produces `0` for a difference of one
+microsecond.
+
+### The client measurement point
+
+FoxIO publishes JA4L as an image, so the expected-output files decide the
+measurement point. `python/ja4.py` in the FoxIO repository records the client
+point on every TCP packet that carries the relative sequence number `1` and the
+relative acknowledgement number `1`. It keeps the last one. That is the bare ACK
+of the handshake first, and then the first packet of the application handshake.
+
+`browsers-x509.pcapng` stream 0 proves it. The SYN-ACK is at `+0.003815s`, the
+bare ACK at `+0.003927s` and the Client Hello at `+0.004371s`. The reference
+`JA4L-C` is `278_128`, and `(4371 - 3815) / 2 = 278`.
+
+The point moves in either direction. `http1-with-cookies.pcapng` stream 0 puts it
+on the bare ACK the server sends.
+
+### A complete HTTP request does not move the client point
+
+The FoxIO program keeps the timestamps of a packet under the protocol the tshark
+dissector reports. It holds a separate state table for `http` and for `http2`. A
+packet that carries a whole HTTP request therefore never moves the client point. A
+packet that carries the first part of a request does move it.
+
+Two vectors prove both halves:
+
+- `latest.pcapng` stream 6 sends one complete `GET` request. The reference
+  `JA4L-C` is `32_128`, which is the bare ACK.
+- `http-empty-useragent.pcap` sends the request line, the header and the blank
+  line in three packets. The reference `JA4L-C` is `177863_64`, which is the
+  request line.
+
+`ja4plus` reads the request line and the blank line that ends the header block.
+
+### The address layer of a tunneled capture
+
+The reference reads the address and the TTL of the outer layer, and the port of
+the inner layer. `gre-sample.pcap` carries a connection between `10.16.27.12`
+and `10.16.27.131` inside a GRE tunnel between `172.27.1.66` and
+`66.59.109.137`. The expected-output file names the tunnel addresses with the
+inner ports.
+
+`ja4plus/utils/tunnels.py` imports the scapy dissectors for Geneve, VXLAN and
+ERSPAN, because scapy leaves them unbound and stops at the tunnel header.
+
+### The QUIC measurement points
+
+The reference reads four QUIC packets, and it reads the direction from port 443:
+
+- `A` is the client Initial packet.
+- `B` is the server Initial packet.
+- `C` is the last server Handshake packet before the client answers.
+- `D` is the first client Handshake packet.
+
+`JA4L-S` is half the time from `A` to `B`, and `JA4L-C` is half the time from `C`
+to `D`.
+
+### A time of one second or more
+
+The FoxIO program reads the difference of two timestamps as a `timedelta`, and it
+takes the `microseconds` attribute, which holds the part below one second. A
+handshake of 1.2 seconds therefore gives 100000, not 600000. No FoxIO vector
+holds a difference of one second or more, so `ja4plus` divides the whole
+difference and no vector separates the two readings.
 
 ---
 
