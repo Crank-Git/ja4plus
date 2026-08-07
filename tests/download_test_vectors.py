@@ -20,8 +20,10 @@ FOXIO_RAW = f"https://raw.githubusercontent.com/FoxIO-LLC/ja4/{FOXIO_COMMIT}"
 
 PCAP_DIR = "pcap"
 EXPECTED_DIR = "python/test/testdata"
+WIRESHARK_EXPECTED_DIR = "wireshark/test/testdata"
 
 VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
+WIRESHARK_DIR = VECTORS_DIR / "wireshark_expected"
 
 # Every capture in the upstream `pcap/` directory that has an expected-output file.
 # `dtls-udp.notest.cap` carries a `notest` marker upstream and has no expected
@@ -66,6 +68,14 @@ CAPTURES = [
     "v6.pcap",
 ]
 
+# The FoxIO Python implementation emits no JA4D and no JA4D6, so the expected-output
+# file of each DHCP capture holds an empty array. The Wireshark dissector is the only
+# FoxIO implementation that writes a reference value for the two methods.
+WIRESHARK_CAPTURES = [
+    "dhcp.pcapng",
+    "dhcpv6.pcap",
+]
+
 NOTICE_TEMPLATE = """\
 FoxIO JA4+ conformance vectors
 ==============================
@@ -86,6 +96,17 @@ This directory holds {count} captures and {count} expected-output files.
 
 `dtls-udp.notest.cap` is present upstream but is not copied here. It carries a
 `notest` marker and has no expected-output file, so it is not a vector.
+
+The subdirectory `wireshark_expected/` holds two more expected-output files:
+
+    {wireshark_dir}/dhcp.pcapng.json  ->  tests/foxio_vectors/wireshark_expected/dhcp.pcapng.json
+    {wireshark_dir}/dhcpv6.pcap.json  ->  tests/foxio_vectors/wireshark_expected/dhcpv6.pcap.json
+
+The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files under
+`{expected_dir}` hold an empty array. The Wireshark dissector is the only FoxIO
+implementation that writes a reference value for the two methods.
+`docs/implementation_notes.md` records the reading. The conformance suite reads
+only the top level of this directory, so the subdirectory adds no case to it.
 
 To move to a newer upstream commit, change FOXIO_COMMIT in
 tests/download_test_vectors.py and run that script. The script rewrites this
@@ -137,6 +158,7 @@ def download() -> None:
         ValueError: An expected-output file is not a JSON array.
     """
     VECTORS_DIR.mkdir(parents=True, exist_ok=True)
+    WIRESHARK_DIR.mkdir(parents=True, exist_ok=True)
 
     for capture in CAPTURES:
         print(f"{capture}")
@@ -150,16 +172,31 @@ def download() -> None:
             raise ValueError(f"{expected_name} is not a JSON array")
         (VECTORS_DIR / expected_name).write_bytes(expected)
 
+    for capture in WIRESHARK_CAPTURES:
+        expected_name = f"{capture}.json"
+        print(f"wireshark_expected/{expected_name}")
+        expected = _fetch(f"{FOXIO_RAW}/{WIRESHARK_EXPECTED_DIR}/{expected_name}")
+        entries = json.loads(expected)
+        if not isinstance(entries, list):
+            raise ValueError(f"{expected_name} is not a JSON array")
+        # An empty file compares no value, and the JA4D reference test would then
+        # report a pass on nothing. That is the defect #109 closes.
+        if not entries:
+            raise ValueError(f"wireshark_expected/{expected_name} is an empty array")
+        (WIRESHARK_DIR / expected_name).write_bytes(expected)
+
     (VECTORS_DIR / "NOTICE").write_text(
         NOTICE_TEMPLATE.format(
             repo=FOXIO_REPO,
             commit=FOXIO_COMMIT,
             pcap_dir=PCAP_DIR,
             expected_dir=EXPECTED_DIR,
+            wireshark_dir=WIRESHARK_EXPECTED_DIR,
             count=len(CAPTURES),
         )
     )
     print(f"{len(CAPTURES)} vectors written to {VECTORS_DIR}")
+    print(f"{len(WIRESHARK_CAPTURES)} expected-output files written to {WIRESHARK_DIR}")
 
 
 if __name__ == "__main__":

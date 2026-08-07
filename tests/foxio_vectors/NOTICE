@@ -18,6 +18,17 @@ This directory holds 37 captures and 37 expected-output files.
 `dtls-udp.notest.cap` is present upstream but is not copied here. It carries a
 `notest` marker and has no expected-output file, so it is not a vector.
 
+The subdirectory `wireshark_expected/` holds two more expected-output files:
+
+    wireshark/test/testdata/dhcp.pcapng.json  ->  tests/foxio_vectors/wireshark_expected/dhcp.pcapng.json
+    wireshark/test/testdata/dhcpv6.pcap.json  ->  tests/foxio_vectors/wireshark_expected/dhcpv6.pcap.json
+
+The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files under
+`python/test/testdata` hold an empty array. The Wireshark dissector is the only FoxIO
+implementation that writes a reference value for the two methods.
+`docs/implementation_notes.md` records the reading. The conformance suite reads
+only the top level of this directory, so the subdirectory adds no case to it.
+
 To move to a newer upstream commit, change FOXIO_COMMIT in
 tests/download_test_vectors.py and run that script. The script rewrites this
 file.
