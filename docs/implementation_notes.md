@@ -710,8 +710,18 @@ Four readings measure the rule. #156 holds the commands and the counts.
 - `quic_mirrored.pcap` holds a server Initial packet that leads its client Initial
   packet. The reference reports no value, so the QUIC client value needs point `B`.
 
-A rule that held `JA4L-S` back until the client point arrived breaks 80 conformance
-cases that pass today. It also deletes the two `JA4L-S` values above.
+The body of #156 states a different rule: a JA4L value exists only when the
+fingerprinter reads all four measurement points. That rule is wrong, and the vectors
+reject it. A rule that held `JA4L-S` back until the client point arrived breaks 80
+conformance cases that pass today. It also deletes the two `JA4L-S` values above.
+
+```
+$ pytest tests/ -m spec_validation -q
+FAILED tests/test_spec_validation.py::test_the_produced_occurrence_keys_equal_the_reference[v6.pcap-JA4L-S]
+80 failed, 1295 passed, 149 skipped, 980 deselected, 117 xfailed
+```
+
+A JA4L value is therefore gated per side, and not on all four measurement points.
 
 ### The return value of a partial client point
 
@@ -734,7 +744,22 @@ inside their capture. `macos_tcp_flags.pcap` holds no FIN packet and no RST pack
 all, and `tls3.pcapng` holds 2 FIN packets against 13 client values.
 
 `ja4plus` reads the stored list, so the conformance suite measures the correct value.
-#156 carries the open reading on the return path.
+The user decided on 2026-08-07 to record the divergence and to leave the return path as
+it is. The `Divergence register` of `docs/specs/spec.md` holds the row, and the decision
+is reversible.
+
+`tests/foxio_deviations.json` holds no entry for the divergence. The conformance harness
+reads the stored list, and the stored list is correct, so every case passes. A strict
+entry therefore reports `XPASS(strict)` and fails the suite. A probe entry for
+`latest.pcapng/JA4L-C` proves it:
+
+```
+[XPASS(strict)] issue #156: Probe: the return path reports 11 client values and the stored list holds 6.
+FAILED tests/test_spec_validation.py::test_the_produced_occurrence_keys_equal_the_reference[latest.pcapng-JA4L-C]
+```
+
+`tests/test_ja4l_return_path.py` carries the divergence instead. It holds the returned
+count and the stored count of every committed vector, so it fails when either one moves.
 
 ### A time of one second or more
 
