@@ -1,9 +1,10 @@
 FoxIO JA4+ conformance vectors
 ==============================
 
-The files in this directory are not the work of the ja4plus authors. They are
-copied without change from the FoxIO JA4+ repository, so that the conformance
-suite compares ja4plus against the reference output without network access.
+Almost every file in this directory is not the work of the ja4plus authors. Those
+files are copied without change from the FoxIO JA4+ repository, so that the
+conformance suite compares ja4plus against the reference output without network
+access. The section `Captures the ja4plus authors built` names the exception.
 
 Upstream repository: https://github.com/FoxIO-LLC/ja4
 Upstream commit:     27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8
@@ -51,6 +52,20 @@ those streams, and `tests/test_foxio_rust_parity.py` holds the measurement.
 
 The conformance suite reads only the top level of this directory, so neither
 subdirectory adds a case to it.
+
+Captures the ja4plus authors built
+----------------------------------
+
+`alpn-condition.pcap` is not FoxIO material. The ja4plus authors built it for #141,
+and `tests/build_alpn_condition_capture.py` writes it. The FoxIO vector set holds no
+capture that separates the JA4 ALPN rules, so #141 built one.
+
+`alpn-condition.pcap.json` holds a measurement, not a copy. It records what the FoxIO
+Python implementation writes for the capture at the commit above. The FoxIO Rust
+implementation writes the same two JA4 values. `docs/implementation_notes.md` holds
+both commands and their output.
+
+This script does not write these two files, and it does not delete them.
 
 To move to a newer upstream commit, change FOXIO_COMMIT in
 tests/download_test_vectors.py and run that script. The script rewrites this

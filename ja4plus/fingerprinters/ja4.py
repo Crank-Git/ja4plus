@@ -28,12 +28,17 @@ def _is_alnum_byte(b):
     return (0x30 <= b <= 0x39) or (0x41 <= b <= 0x5A) or (0x61 <= b <= 0x7A)
 
 
+def _is_ascii_byte(b):
+    """Return True when the byte is ASCII: 0x00-0x7F."""
+    return b <= 0x7F
+
+
 def compute_alpn_value(first_alpn_bytes):
     """Return the two-character ALPN value that JA4 and JA4S carry.
 
     The value is `00` for an absent ALPN extension. The value is the first byte and
-    the last byte when both bytes are ASCII alphanumeric. A one-byte value repeats
-    that byte. The value is `99` in every other case.
+    the last byte when both bytes are ASCII. A one-byte value repeats that byte when
+    the byte is ASCII alphanumeric. The value is `99` in every other case.
 
     Args:
         first_alpn_bytes: The bytes of the first ALPN value, or None.
@@ -47,15 +52,28 @@ def compute_alpn_value(first_alpn_bytes):
     first = first_alpn_bytes[0]
     last = first_alpn_bytes[-1]
 
-    if _is_alnum_byte(first) and _is_alnum_byte(last):
-        if len(first_alpn_bytes) == 1:
+    # #141: the two FoxIO implementations disagree on a one-byte value. `python/ja4.py`
+    # writes one character and `rust/tls.rs` writes the byte and `0`. No measurement
+    # settles the case, so this project holds the value it wrote before #141.
+    if len(first_alpn_bytes) == 1:
+        if _is_alnum_byte(first):
             ch = chr(first)
             return ch + ch
+        return "99"
+
+    # #141: the FoxIO prose tests for an alphanumeric byte, and the measurement
+    # contradicts it. Both FoxIO implementations pass an ASCII byte through, so
+    # `h\x20` reads `h ` and not `99`. `tests/foxio_vectors/alpn-condition.pcap` holds
+    # the measurement.
+    if _is_ascii_byte(first) and _is_ascii_byte(last):
         return chr(first) + chr(last)
 
     # #127: the FoxIO prose gives the first and the last character of the hex form. The
     # FoxIO Python implementation and the FoxIO Rust implementation give `99`, and the
     # vector `tls-non-ascii-alpn.pcapng` holds `99`. This project follows the vector.
+    #
+    # #141: the two implementations disagree when a byte outside ASCII sits anywhere
+    # other than the first position. This project holds `99` until the user decides.
     return "99"
 
 

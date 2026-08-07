@@ -93,18 +93,72 @@ can be compared against another tool output. The register holds no entry for thi
 and `tests/test_ja4_alpn.py` compares the produced value against the reference value.
 
 `compute_alpn_value` returns `99` when the first byte or the last byte of the first ALPN
-value falls outside `0x30-0x39`, `0x41-0x5A` and `0x61-0x7A`. `ja4s.py` reads the same
-function, so JA4 and JA4S carry one rule.
+value falls outside ASCII. `ja4s.py` reads the same function, so JA4 and JA4S carry one
+rule.
 
-#127 settled the value that this vector produces. It settled no other input, and #141
-owns the condition that triggers the value. Four rules fire on `0xba 0xad`, and the
-vector set holds no capture that separates them. `python/ja4.py` tests
-`ord(alpn[0]) > 127` on the value after it truncates the value to two characters.
-`rust/ja4/src/tls.rs` replaces each end character with `9` when that character is not
-ASCII, so it writes `90` where `python/ja4.py` writes `99`. `tests/test_ja4_alpn.py`
-holds the measurement of all four rules.
+#127 settled the value that this vector produces. It settled no condition, because
+every rule fires on `0xba 0xad`. #141 measured the condition against a capture it built.
+The next section holds that measurement, and it holds the part of the condition the
+measurement leaves open.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:20`, in `compute_alpn_value`.
+**Location:** `ja4plus/fingerprinters/ja4.py:31`, in `compute_alpn_value`.
+
+### The ALPN condition passes an ASCII byte through
+
+#141 owns the condition that makes the ALPN value read `99`. The FoxIO prose tests for
+an alphanumeric byte. The measurement contradicts the prose: both FoxIO implementations
+pass an ASCII byte through, whether or not that byte is alphanumeric.
+
+No FoxIO capture separates the rules, so #141 built one.
+`tests/build_alpn_condition_capture.py` writes
+`tests/foxio_vectors/alpn-condition.pcap`. Each stream carries one TLS ClientHello, and
+the two ClientHellos differ in the first ALPN value alone.
+
+**The commands.** Both ran at the pinned upstream commit
+`27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`.
+
+```
+python python/ja4.py tests/foxio_vectors/alpn-condition.pcap -J
+rust/target/release/ja4 tests/foxio_vectors/alpn-condition.pcap
+```
+
+**The measurement.** A wider probe capture reached eleven inputs. The table holds every
+one of them. `?` is the Unicode replacement character `U+FFFD`, which tshark writes for
+a byte it cannot decode.
+
+| The first ALPN value | FoxIO Python | FoxIO Rust | The two agree | `ja4plus` |
+|---|---|---|---|---|
+| `h2` | `h2` | `h2` | yes | `h2` |
+| `h\x20` | `h ` | `h ` | yes | `h ` |
+| `\x20h` | ` h` | ` h` | yes | ` h` |
+| `h\x20\x20\x32` | `h2` | `h2` | yes | `h2` |
+| `\xba\xad` | `99` | `99` | yes | `99` |
+| `h\xab` | `h?` | `h9` | no | `99` |
+| `\xabh` | `99` | `9h` | no | `99` |
+| `\x30\x31\xab\xcd` | `0?` | `09` | no | `99` |
+| `h` | `h` | `h0` | no | `hh` |
+| `\xab` | `99` | `90` | no | `99` |
+| `\x20` | ` ` | ` 0` | no | `99` |
+
+**What the measurement settles.** The two implementations agree on every input whose
+first byte and last byte are ASCII. They agree on an input whose two bytes fall outside
+ASCII. `ja4plus` adopts both results. Before #141 it wrote `99` for `h\x20` and for
+`\x20h`, and it now writes `h ` and ` h`.
+
+**What the measurement leaves open.** The two implementations disagree on every input
+that holds a byte outside ASCII in a position other than the first.
+`python/ja4.py` tests `ord(alpn[0]) > 127`, so a byte outside ASCII in the last position
+reaches the fingerprint as the replacement character. `rust/ja4/src/tls.rs` replaces each
+end character with `9` when that character falls outside ASCII. The two also disagree on
+a one-byte value, because `rust/ja4/src/tls.rs` writes `0` for the absent last character.
+
+`ja4plus` changes nothing on a case the two implementations dispute. It holds the value
+it wrote before #141, which is `99` for a byte outside ASCII and `hh` for the one-byte
+value `h`. `.claude/rules/conformance.md` states that a defect outside its two named
+shapes is a question for the user, and #141 asks it.
+
+**Location:** `ja4plus/fingerprinters/ja4.py:36`, in `compute_alpn_value`.
+`tests/test_ja4_alpn_condition.py` holds the measurement against `ja4plus`.
 
 ### The QUIC reference value comes from the FoxIO Rust implementation
 
