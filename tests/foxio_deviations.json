@@ -31,6 +31,10 @@
     "issue": 35,
     "cause": "ja4plus produces no JA4H fingerprint the reference holds."
   },
+  "chrome-cloudflare-quic-with-secrets.pcapng/JA4S": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4S fingerprint the reference does not hold. The reference reads no QUIC handshake on the stream whose source port is 50280, and the JA4 entry of this vector names the same stream."
+  },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4X": {
     "issue": 78,
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
@@ -191,6 +195,10 @@
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
+  "ssh2.pcapng/JA4S": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4S fingerprint the reference does not hold. The reference reads no QUIC handshake on stream 33 and on stream 36, and the JA4 entry of this vector names the same two streams."
+  },
   "ssh2.pcapng/JA4SSH": {
     "issue": 97,
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets."
@@ -262,6 +270,10 @@
   "tls3.pcapng/JA4": {
     "issue": 13,
     "cause": "ja4plus produces a JA4 fingerprint the reference does not hold."
+  },
+  "tls3.pcapng/JA4S": {
+    "issue": 13,
+    "cause": "ja4plus produces a JA4S fingerprint the reference does not hold. The reference reads no QUIC handshake on the six streams the JA4 entry of this vector names."
   },
   "v6.pcap/JA4SSH": {
     "issue": 105,
