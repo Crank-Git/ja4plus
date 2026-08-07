@@ -18,8 +18,8 @@ byte above `0x7E` and on a one-byte value.
 #162 records the user decision of 2026-08-07: the values outside the range stay as they
 are. The capture now carries the disputed inputs as well as the agreed ones, so the
 divergence is a comparison that runs. `STREAMS` holds the measured value of both FoxIO
-implementations and the produced value, one row per stream, and the tests below compare
-all three against the capture and against the expected-output file.
+implementations and the produced value, one row per stream. The tests below compare all
+three against the capture and against the expected-output file.
 """
 
 import json
@@ -67,7 +67,7 @@ class Stream(NamedTuple):
 
 # The streams of `alpn-condition.pcap`, in wire order. The first two are the agreed
 # inputs #141 measured. The rest are the disputed inputs #162 records, and their values
-# come from the two tables of `docs/implementation_notes.md`. No value here is derived.
+# come from the two tables of `docs/implementation_notes.md`. Nothing here derives a value.
 STREAMS = (
     Stream(b"h\x20", "h ", "h ", "h "),
     Stream(b"\x20h", " h", " h", " h"),
@@ -89,9 +89,9 @@ def _stream_id(index):
 def alpn_characters(fingerprint):
     """Return the ALPN characters of one JA4 value or one JA4 raw value.
 
-    The characters sit between the eight-character prefix and the first underscore. The
-    field is read by position and not by length, because the FoxIO Python implementation
-    writes one character for a one-byte ALPN value.
+    The characters sit between the eight-character prefix and the first underscore. This
+    function reads the field by position, not by length, because the FoxIO Python
+    implementation writes one character for a one-byte ALPN value.
 
     Args:
         fingerprint: One JA4, JA4_r, JA4_o or JA4_ro value.
@@ -253,8 +253,8 @@ def test_every_stream_differs_from_the_others_in_the_alpn_characters_alone():
 def test_the_produced_value_matches_neither_foxio_implementation(index):
     """Each disputed stream produces a value that neither FoxIO implementation holds.
 
-    The produced value comes from the capture and the FoxIO Python value comes from the
-    expected-output file, so this comparison reads two artifacts and not one table.
+    The produced value comes from the capture. The FoxIO Python value comes from the
+    expected-output file. This comparison therefore reads two artifacts, not one table.
     """
     stream = STREAMS[index]
     produced = alpn_characters(produced_ja4_values()[index])

@@ -205,11 +205,12 @@ value there. A strict `xfail` on a case that passes fails the suite, so that str
 no register entry. The other four streams hold four entries each, one per method, and
 each cause states the measured output of both implementations.
 
-**How the expected-output file was built.** The ALPN characters come from the two tables
-above, and no value is re-derived. The rest of each fingerprint is copied from stream 0,
-because the seven client hellos carry the same ciphers and the same extensions, so the
-JA4 prefix and both hashes are invariant. `alpn-condition.pcap.json` is therefore a
-measurement in its variable field and a copy in its invariant field.
+**How the build writes the expected-output file.** The ALPN characters come from the two
+tables above, and the build re-derives no value. The build copies the rest of each
+fingerprint from stream 0. The seven client hellos carry the same ciphers and the same
+extensions, so the JA4 prefix and both hashes are invariant.
+`alpn-condition.pcap.json` therefore holds a measurement in its variable field and a copy
+in its invariant field.
 `test_every_stream_differs_from_the_others_in_the_alpn_characters_alone` proves the
 invariance.
 

@@ -13,10 +13,10 @@ the two bytes through on both of them. The FoxIO prose writes the hex form, and
 `ja4plus` wrote `99` before #141, so the three rules disagree on both streams.
 
 Streams 2 to 6 are the disputed inputs #162 records. The two FoxIO implementations
-disagree with each other on every one of them, so no measurement settles the value and
-`CLAUDE.md` rule 1 forbids a move. The user decided on 2026-08-07 that the `ja4plus`
-values stay. The capture carries the inputs so that the divergence is a comparison the
-suite runs, and not a comparison a reader has to find in an issue comment.
+disagree with each other on every one of them, so no measurement settles the value.
+`CLAUDE.md` rule 1 forbids a move that no vector requires. The user decided on
+2026-08-07 that the `ja4plus` values stay. The capture carries the inputs, so the suite
+runs the divergence as a comparison. No reader has to find it in an issue comment.
 
 | Stream | The first ALPN value | FoxIO Python | FoxIO Rust | `ja4plus` |
 |---|---|---|---|---|
