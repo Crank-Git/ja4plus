@@ -36,6 +36,14 @@ _BANNER = "banner"
 _MESSAGES = "messages"
 _OPAQUE = "opaque"
 
+# The largest number of segments the tracker holds while it waits for a gap to fill. A
+# direction that loses a segment never fills the gap, so the buffer needs a bound.
+MAX_PENDING_SEGMENTS = 32
+
+# The largest number of payload bytes the tracker holds while it waits for a gap to
+# fill. One TCP window of maximum-size segments stays below this bound.
+MAX_PENDING_BYTES = 65536
+
 
 class SSHMessageTracker:
     """Report whether one TCP segment completes an SSH message.
@@ -49,9 +57,9 @@ class SSHMessageTracker:
     the version banner, and after SSH_MSG_NEWKEYS, it reports every segment as one SSH
     packet, because neither phase carries a length a reader can trust.
 
-    A caller passes every payload segment of the direction, in the order the direction
-    sent it. A segment the caller holds back moves the tracker off the message
-    boundary.
+    A caller passes every payload segment of the direction through `add_segment`, which
+    reads the segments in sequence order. A caller that holds no sequence number calls
+    `completes_message`, which reads the segments in the order they arrive.
     """
 
     def __init__(self):
@@ -62,6 +70,112 @@ class SSHMessageTracker:
         self._remaining = 0
         self._body_position = 0
         self._message_code = None
+        self._next_seq = None
+        self._pending = {}
+        self._pending_bytes = 0
+
+    def add_segment(self, payload, seq):
+        """Return the lengths of the segments that complete an SSH message.
+
+        The tracker reads the payload of the direction in sequence order. It drops a
+        segment the direction already sent, and it holds a segment that arrives before
+        its predecessor until the predecessor arrives.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+            seq: The TCP sequence number of the first payload byte.
+
+        Returns:
+            A list of segment lengths, in sequence order. The list holds one entry for
+            each segment the reference counts as one SSH packet. A duplicate segment
+            produces an empty list. A segment that arrives before its predecessor
+            produces an empty list until the predecessor arrives.
+        """
+        if not payload:
+            return []
+        if self._next_seq is None:
+            self._next_seq = seq
+        if self._state == _OPAQUE:
+            # An opaque direction follows no message boundary, so the order of the
+            # segments changes nothing. Every segment is one SSH packet.
+            return [len(payload)]
+        if seq > self._next_seq:
+            return self._hold(payload, seq)
+
+        counted = self._read_segment(payload, seq)
+        while self._state != _OPAQUE:
+            ready = self._take_ready()
+            if ready is None:
+                break
+            counted.extend(self._read_segment(*ready))
+        if self._state == _OPAQUE:
+            self._release()
+        return counted
+
+    def _read_segment(self, payload, seq):
+        """Return the length of the segment when it completes an SSH message.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+            seq: The TCP sequence number of the first payload byte.
+
+        Returns:
+            A list that holds the segment length, or an empty list. The list is empty
+            when the direction already sent every byte of the segment, and when the
+            segment holds no message end.
+        """
+        if seq + len(payload) <= self._next_seq:
+            return []
+        # A retransmission repeats the bytes the tracker already read, so the tracker
+        # reads only the part of the segment that follows them.
+        overlap = self._next_seq - seq
+        completed = self.completes_message(payload[overlap:])
+        self._next_seq = seq + len(payload)
+        return [len(payload)] if completed else []
+
+    def _hold(self, payload, seq):
+        """Hold a segment that arrives before its predecessor.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+            seq: The TCP sequence number of the first payload byte.
+
+        Returns:
+            An empty list, or the segment length when the buffer reaches its bound. A
+            gap that never fills turns the tracker opaque, and an opaque tracker counts
+            every segment.
+        """
+        held = self._pending.get(seq)
+        if held is not None:
+            if len(held) >= len(payload):
+                return []
+            self._pending_bytes -= len(held)
+        self._pending[seq] = payload
+        self._pending_bytes += len(payload)
+        if len(self._pending) > MAX_PENDING_SEGMENTS or self._pending_bytes > MAX_PENDING_BYTES:
+            self._state = _OPAQUE
+            self._release()
+            return [len(payload)]
+        return []
+
+    def _take_ready(self):
+        """Return the held segment that starts at or before the next sequence number.
+
+        Returns:
+            The payload and the sequence number of that segment, or None when the
+            buffer holds no such segment.
+        """
+        for seq in sorted(self._pending):
+            if seq <= self._next_seq:
+                payload = self._pending.pop(seq)
+                self._pending_bytes -= len(payload)
+                return payload, seq
+        return None
+
+    def _release(self):
+        """Drop every held segment."""
+        self._pending.clear()
+        self._pending_bytes = 0
 
     def completes_message(self, payload):
         """Return True when at least one SSH message ends in this segment.

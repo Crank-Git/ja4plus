@@ -156,6 +156,10 @@ This feature set has no screen. Its output is the test report.
 - The SSH message boundary is readable only while the direction sends plaintext.
   Before the version banner, and after `SSH_MSG_NEWKEYS`, JA4SSH counts every
   segment that carries a payload.
+- JA4SSH reads the payload of a direction in sequence order. The tracker drops a
+  segment the direction already sent, and it holds a segment that arrives before
+  its predecessor. The counted segment is the one that completes the message in
+  sequence order, not the one that arrives last.
 - The JA4L propagation factor follows the hop count. The table is 1.5 for 21 hops
   or fewer, then 1.6, 1.7, 1.8 and 1.9 for 22, 23, 24 and 25 hops, and 2.0 for 26
   hops or more.
@@ -232,6 +236,10 @@ This feature set has no screen. Its output is the test report.
 - Changed file `ja4plus/utils/ssh_utils.py`. It holds `SSHMessageTracker`, which
   reports whether one TCP segment completes an SSH message.
 - New file `tests/test_ja4ssh_message_count.py`.
+- New file `tests/build_ssh_retransmission.py`. It builds the capture that holds
+  one retransmitted SSH segment. No FoxIO vector holds one. `.gitignore` holds no
+  capture other than the FoxIO vectors, so the test writes the file and reads it
+  back.
 - Changed file `ja4plus/utils/quic_utils.py`. It holds `_initial_packet_end`, which
   bounds an Initial packet by its Length field, and
   `decrypt_quic_server_initial_crypto`, which returns the CRYPTO fragments of one
@@ -357,6 +365,10 @@ https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
 | A length field names a size outside 2 and 65536 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
 | The SSH version banner spans two TCP segments. | The second segment counts as one SSH packet, and the tracker keeps the message boundary. |
 | The SSH version banner is longer than 255 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
+| A direction sends the same SSH segment twice. | The tracker reads the segment once, and the retransmission counts as none. |
+| An SSH segment arrives before its predecessor. | The tracker holds it, and it counts when the predecessor fills the gap. |
+| A segment repeats part of the stream and holds new bytes after it. | The tracker reads the new bytes alone. |
+| A gap in an SSH direction never fills. | The held segments stop at 32 segments or 65536 bytes, and every later segment counts as one SSH packet. |
 | A server sends an Initial packet that holds an ACK frame, then one that holds the ServerHello. | `JA4L-S` measures to the second packet. |
 | A server splits the ServerHello across two Initial packets. | `JA4L-S` measures to the packet that carries the last fragment. |
 | A server coalesces a Handshake packet behind its Initial packet. | The reader decrypts the Initial packet and reads its ServerHello. |
