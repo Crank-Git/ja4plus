@@ -87,6 +87,15 @@ to the client measurement point.
 FR-spec-conformance-21 — On a TCP connection, a packet that holds a whole HTTP request
 moves no measurement point.
 
+FR-spec-conformance-22 — On a QUIC connection, the server measurement point is the
+Initial packet that completes the ServerHello.
+
+FR-spec-conformance-23 — On a QUIC connection, an Initial packet the fingerprinter
+cannot decrypt supplies no measurement point.
+
+FR-spec-conformance-24 — A reader of a QUIC Initial packet decrypts the bytes the
+Length field of the long header names, and no byte behind them.
+
 ## User flows
 
 **A maintainer fixes a failing method.**
@@ -149,8 +158,17 @@ This feature set has no screen. Its output is the test report.
   behaviour. They do not prove the mechanism.
 - `FR-spec-conformance-18` to `FR-spec-conformance-21` describe the TCP form of
   JA4L. `FR-spec-conformance-17` applies to both forms. The QUIC form reads the
-  Initial packets and the Handshake packets, and #102 owns its server measurement
-  point.
+  Initial packets and the Handshake packets.
+- The QUIC server measurement point is the Initial packet that completes the
+  ServerHello. A server sends an Initial packet that holds an ACK frame before it
+  sends the ServerHello, and that packet moves no point. The reference reads the
+  point where `packet_type` is `0` and the TLS handshake type is `2`.
+- A reader of a QUIC Initial packet decrypts the bytes the Length field names. RFC
+  9000 Section 12.2 lets a sender coalesce several QUIC packets in one datagram, and
+  the AEAD tag covers the bytes of one packet. A reader that decrypts to the end of
+  the datagram fails on the tag for every coalesced packet.
+- The server Initial keys derive from the connection ID the client chose, so a
+  capture that holds no client Initial packet gives no QUIC `JA4L-S` value.
 - `docs/implementation_notes.md` states how the project reads the JA4L image.
 - `JA4_o` is the hashed form of the original-order raw value. `JA4_ro` is that raw
   value unhashed. The relationship between them matches the relationship between
@@ -184,6 +202,14 @@ This feature set has no screen. Its output is the test report.
 - Changed file `ja4plus/utils/ssh_utils.py`. It holds `SSHMessageTracker`, which
   reports whether one TCP segment completes an SSH message.
 - New file `tests/test_ja4ssh_message_count.py`.
+- Changed file `ja4plus/utils/quic_utils.py`. It holds `_initial_packet_end`, which
+  bounds an Initial packet by its Length field, and
+  `decrypt_quic_server_initial_crypto`, which returns the CRYPTO fragments of one
+  server Initial packet.
+- New file `tests/quic_builder.py`. It builds a QUIC server Initial packet that
+  decrypts, so a test states the JA4L server point without a capture file.
+- New file `tests/test_quic_server_initial.py`.
+- New file `tests/test_ja4l_quic_server_hello.py`.
 
 ## Interfaces
 
@@ -252,6 +278,37 @@ alone. That value is 10 on Linux.
 Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-724`
 (scapy 2.7.0).
 
+`python/ja4.py` records the QUIC server measurement point with this test, verbatim:
+
+```python
+if x['packet_type'] == '0' and 'type' in x and x['type'] == '2':
+    cache_update(x, 'B', x['timestamp'], STREAM)
+    cache_update(x, 'server_ttl', x['ttl'], STREAM)
+```
+
+The value `0` is the Initial packet type, and the value `2` is the ServerHello
+handshake type.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4.py
+(retrieved 2026-08-07).
+
+RFC 9000 Section 12.2 states, verbatim: `Initial (Section 17.2.2), 0-RTT (Section
+17.2.3), and Handshake (Section 17.2.4) packets contain a Length field that
+determines the end of the packet.` It also states: `Using the Length field, a sender
+can coalesce multiple QUIC packets into one UDP datagram.`
+
+RFC 9000 Section 17.2 defines the field, verbatim: `Length: This is the length of the
+remainder of the packet (that is, the Packet Number and Payload fields) in bytes,
+encoded as a variable-length integer (Section 16).`
+
+RFC 9001 Section 5.3 names the AEAD plaintext, verbatim: `The payload of the QUIC
+packet, as described in [QUIC-TRANSPORT].` The Length field therefore bounds the
+ciphertext, and a reader that decrypts every byte behind the packet number fails the
+AEAD tag for every coalesced packet.
+
+Verified against: https://www.rfc-editor.org/rfc/rfc9000.txt and
+https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
+
 ## Edge cases & failures
 
 | Case | What happens |
@@ -270,6 +327,12 @@ Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-
 | A length field names a size outside 2 and 65536 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
 | The SSH version banner spans two TCP segments. | The second segment counts as one SSH packet, and the tracker keeps the message boundary. |
 | The SSH version banner is longer than 255 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
+| A server sends an Initial packet that holds an ACK frame, then one that holds the ServerHello. | `JA4L-S` measures to the second packet. |
+| A server splits the ServerHello across two Initial packets. | `JA4L-S` measures to the packet that carries the last fragment. |
+| A server coalesces a Handshake packet behind its Initial packet. | The reader decrypts the Initial packet and reads its ServerHello. |
+| A QUIC server Initial packet does not decrypt. | The connection carries no `JA4L-S` value. |
+| A capture starts after the client Initial packet. | The connection carries no `JA4L-S` value, because the server keys derive from the client connection ID. |
+| A server sends Initial packets that hold no ServerHello. | The fragment buffer of the connection stops at 16384 bytes. |
 
 ## Acceptance criteria
 
@@ -298,6 +361,9 @@ Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-
       as IPv6.
 - [ ] `ipv6.pcapng` produces the JA4 value `t12d4605h2_85626a9a5f7f_aaf95bb78ec9`
       on Linux and on macOS.
+- [ ] `chrome-cloudflare-quic-with-secrets.pcapng` produces `JA4L-S=10990_56` on
+      stream 0, port 50280.
+- [ ] `tls3.pcapng` produces `JA4L-S=3583_57` on stream 25, port 61884.
 
 ## Out of scope
 
