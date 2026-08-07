@@ -10,7 +10,9 @@ from pathlib import Path
 
 VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 CAPTURE_PATH = VECTORS_DIR / "quic-with-several-tls-frames.pcapng"
-EXPECTED_PATH = VECTORS_DIR / "rust_expected" / "ja4__insta@quic-with-several-tls-frames.pcapng.snap"
+EXPECTED_PATH = (
+    VECTORS_DIR / "rust_expected" / "ja4__insta@quic-with-several-tls-frames.pcapng.snap"
+)
 
 
 def test_reassemble_crypto_fragments_basic():

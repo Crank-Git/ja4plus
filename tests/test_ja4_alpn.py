@@ -124,6 +124,13 @@ def test_the_foxio_capture_carries_a_first_alpn_value_that_is_not_ascii():
     assert client_hellos[0]["alpn_protocols"] == ["", "http/1.1"]
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "issue #127: the FoxIO prose gives the hex characters `bd`, and two FoxIO "
+        "implementations give `99`."
+    ),
+)
 def test_the_foxio_capture_produces_the_reference_ja4_value():
     """`tls-non-ascii-alpn.pcapng` produces the JA4 value the FoxIO reference holds."""
     assert _produced_ja4() == [_reference_ja4()]

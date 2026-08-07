@@ -136,6 +136,30 @@ def test_every_reference_value_of_the_foxio_capture_carries_the_version_code_20(
     assert [value[2:4] for value in _reference_ja4h()] == ["20"] * 15
 
 
+def test_the_foxio_capture_carries_no_cleartext_http_request():
+    """Every HTTP request of `http2-with-cookies.pcapng` is inside a TLS record.
+
+    The capture carries a Decryption Secrets Block, and the FoxIO reference reads the 15
+    requests because it decrypts them. This test names the reason the comparison below
+    fails, so that a reader does not look for the cause in the JA4H parser.
+    """
+    from scapy.all import Raw, rdpcap
+
+    request_lines = []
+    for packet in rdpcap(str(CAPTURE_PATH)):
+        if packet.haslayer(Raw) and bytes(packet[Raw].load)[:4] in (b"GET ", b"POST", b"HTTP"):
+            request_lines.append(bytes(packet[Raw].load)[:16])
+
+    assert request_lines == []
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "issue #129: the reference decrypts the capture with the secrets it carries, and "
+        "ja4plus reads no encrypted request."
+    ),
+)
 def test_the_foxio_capture_produces_the_reference_ja4h_values():
     """`http2-with-cookies.pcapng` produces the JA4H values the FoxIO reference holds."""
     assert _produced_ja4h() == _reference_ja4h()

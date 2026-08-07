@@ -32,16 +32,56 @@ about another method, so each row below names its own evidence. The counts come 
 
 ## JA4 - TLS Client Hello
 
-### ALPN non-ASCII handling
+### The ALPN value of a first byte that is not ASCII
 
-When the first byte of the first ALPN protocol has `ord() > 127`, the ALPN
-field is set to `'99'` rather than the hex representation of the byte.
+`ja4plus` follows the FoxIO prose here, and the FoxIO implementations disagree with it.
+#127 owns the decision. This section records the measurement, not a reading that the
+project has settled.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:90`
+The FoxIO specification states the rule: "If the first or last byte of the first ALPN is
+not an ASCII alphanumeric character (meaning not `0x30-0x39`, `0x41-0x5A`, or
+`0x61-0x7A`), then we print the first and last characters of the hex representation of
+the first ALPN instead." `compute_alpn_value` applies that rule.
 
-**Rationale:** Simplifies output to a fixed 2-char field. The spec says
-"hex representation of the byte" but `'99'` is used as an unambiguous
-sentinel for non-ASCII protocols.
+The FoxIO Python implementation applies a different rule. `python/ja4.py` writes `'99'`
+when the first byte has `ord() > 127`. The FoxIO Rust implementation writes the same
+value.
+
+`tests/foxio_vectors/tls-non-ascii-alpn.pcapng` measures the difference. Its first ALPN
+value is the two bytes `0xba 0xad`.
+
+| Source | JA4 value |
+|---|---|
+| `ja4plus` | `t13d1516bd_8daaf6152771_e5627efa2ab1` |
+| FoxIO Python and FoxIO Rust | `t13d151699_8daaf6152771_e5627efa2ab1` |
+
+Only the two ALPN characters differ. The register entry
+`tls-non-ascii-alpn.pcapng/0:50112/JA4.1` holds the conformance case, and
+`tests/test_ja4_alpn.py` holds the unit case. Both name the difference until #127 settles
+it.
+
+**Location:** `ja4plus/fingerprinters/ja4.py`, in `compute_alpn_value`.
+
+### The QUIC reference value comes from the FoxIO Rust implementation
+
+`tests/foxio_vectors/quic-with-several-tls-frames.pcapng` holds one QUIC Initial packet.
+That packet carries the ClientHello in several CRYPTO frames. The FoxIO Python
+implementation reads no ClientHello from it, so
+`tests/foxio_vectors/quic-with-several-tls-frames.pcapng.json` holds `[]`.
+
+The FoxIO Rust implementation reads it and writes
+`ja4: q13d0310h3_55b375c5d22e_cd85d2d88918`.
+`tests/foxio_vectors/rust_expected/` holds a copy of that snapshot, taken without change
+from `rust/ja4/src/snapshots/` at the pinned upstream commit. `ja4plus` produces the same
+value.
+
+`.claude/rules/external-apis.md` records when a snapshot under `rust/ja4/src/snapshots/`
+carries the authority. The conformance suite reads only the top level of
+`tests/foxio_vectors/`, so the file adds no case to that suite and no entry to the
+deviation register. The register entry `quic-with-several-tls-frames.pcapng/JA4` records
+the difference against the Python material, and #128 owns its cause.
+
+**Location:** `tests/test_quic_multipacket.py`.
 
 ### Version mapping (beyond TLS 1.0-1.3)
 
