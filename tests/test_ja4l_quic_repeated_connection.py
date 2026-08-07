@@ -61,19 +61,16 @@ def test_a_repeated_quic_handshake_reports_one_value_pair():
     assert _read(packets) == ["JA4L-S=5000_56", "JA4L-C=500_64"]
 
 
-def test_a_leading_server_initial_packet_gives_no_server_value():
-    """The fingerprinter completes no server value from a server Initial packet that leads.
+def test_a_leading_server_initial_packet_gives_no_value():
+    """The fingerprinter reports no value for a server Initial packet that leads.
 
-    The reference reports no value at all for this capture, so it holds no server
-    value. A server point taken from the leading packet would report a latency the
-    reference does not report.
+    The reference reports no value at all for this capture. It discards the leading
+    server Initial packet, so it reaches neither the server point nor the client point.
 
-    The client value below is a known divergence, and #123 carries it. The reference
-    reports a value pair only when it collects all four measurement points, and
-    `ja4plus` reports each value as it reads it. This test states the divergence so
-    that a change to it stays deliberate.
+    #123 measured the reference and left the client value as a divergence. #156 closes
+    it. The QUIC client value needs the server Initial point, exactly as the TCP client
+    value needs the SYN-ACK.
     """
     values = _read(mirrored_round(FIRST_DCID, 2000.0))
 
-    assert [value for value in values if value.startswith("JA4L-S=")] == []
-    assert values == ["JA4L-C=500_64"]
+    assert values == []

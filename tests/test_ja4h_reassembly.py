@@ -39,6 +39,76 @@ class TestJA4HReassembly(unittest.TestCase):
             "Multi-segment HTTP should produce fingerprint",
         )
 
+    def test_a_buffer_that_cannot_become_an_http_request_leaves_the_reassembler(self):
+        fp = JA4HFingerprinter()
+        # A TLS record starts with 0x16, which no HTTP request line starts with.
+        first = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=443, seq=100)
+            / Raw(load=b"\x16\x03\x01\x00\x2c" + b"\x00" * 44)
+        )
+        second = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=443, seq=149)
+            / Raw(load=b"\x00" * 20)
+        )
+        fp.process_packet(first)
+        fp.process_packet(second)
+        self.assertEqual(fp.reassembler.streams, {})
+
+    def test_a_reordered_request_head_still_produces_a_fingerprint(self):
+        fp = JA4HFingerprinter()
+        head = b"GET /index.html HTTP/1.1\r\n"
+        tail = b"Host: example.com\r\nAccept: text/html\r\n\r\n"
+        # The tail arrives first, so the buffer starts in the middle of the request line
+        # and no HTTP request line starts with those bytes.
+        tail_packet = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=80, seq=100 + len(head))
+            / Raw(load=tail)
+        )
+        head_packet = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=80, seq=100)
+            / Raw(load=head)
+        )
+        self.assertIsNone(fp.process_packet(tail_packet))
+        self.assertIsNotNone(fp.process_packet(head_packet))
+
+    def test_the_table_of_waiting_streams_stays_inside_the_stream_cap(self):
+        fp = JA4HFingerprinter()
+        # Each connection sends one segment that starts no HTTP request, so each one
+        # makes an entry that waits for a second packet that never arrives.
+        for port in range(1024, 1024 + 300):
+            pkt = (
+                IP(src="10.0.0.1", dst="10.0.0.2")
+                / TCP(sport=port, dport=443, seq=100)
+                / Raw(load=b"\x16\x03\x01\x00\x2c")
+            )
+            fp.process_packet(pkt)
+        self.assertLessEqual(len(fp.unusable_base), fp.reassembler.max_streams)
+
+    def test_a_partial_method_name_stays_in_the_reassembler(self):
+        fp = JA4HFingerprinter()
+        pkt = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=80, seq=100)
+            / Raw(load=b"GE")
+        )
+        fp.process_packet(pkt)
+        self.assertIn("10.0.0.1:12345-10.0.0.2:80", fp.reassembler.streams)
+
+    def test_a_request_that_spans_two_segments_stays_in_the_reassembler(self):
+        fp = JA4HFingerprinter()
+        part1 = b"GET /index.html HTTP/1.1\r\nHost: example.com\r\n"
+        pkt = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=80, seq=100)
+            / Raw(load=part1)
+        )
+        fp.process_packet(pkt)
+        self.assertIn("10.0.0.1:12345-10.0.0.2:80", fp.reassembler.streams)
+
 
 if __name__ == "__main__":
     unittest.main()

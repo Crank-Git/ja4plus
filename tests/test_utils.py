@@ -15,6 +15,7 @@ from ja4plus.utils.tls_utils import (
     parse_tls_handshake,
 )
 from ja4plus.utils.http_utils import (
+    can_become_http_request,
     parse_http_request,
     is_http_request,
     extract_http_info,
@@ -429,6 +430,23 @@ class TestHTTPParsing(unittest.TestCase):
         """is_http_request should handle string input."""
         self.assertTrue(is_http_request("GET / HTTP/1.1"))
         self.assertFalse(is_http_request("not http"))
+
+    def test_a_partial_method_name_can_become_an_http_request(self):
+        self.assertTrue(can_become_http_request(b"GE"))
+        self.assertTrue(can_become_http_request(b"OPTION"))
+
+    def test_an_empty_buffer_can_become_an_http_request(self):
+        self.assertTrue(can_become_http_request(b""))
+
+    def test_a_complete_http_request_can_become_an_http_request(self):
+        self.assertTrue(can_become_http_request(b"GET / HTTP/1.1\r\n"))
+
+    def test_a_tls_record_cannot_become_an_http_request(self):
+        self.assertFalse(can_become_http_request(b"\x16\x03\x03"))
+
+    def test_a_string_buffer_can_become_an_http_request(self):
+        self.assertTrue(can_become_http_request("GET"))
+        self.assertFalse(can_become_http_request("not http"))
 
     def test_parse_empty_data(self):
         """Empty data should return None."""

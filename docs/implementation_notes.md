@@ -675,9 +675,92 @@ $ ja4 quic_mirrored.pcap
 `tests/test_ja4l_quic_repeated_connection.py` reads the same packets from the same
 builder, so the tests and the measurement cover one capture each.
 
-`ja4plus` reports the same value pair for the first capture. For the second capture it
-reports no server value, and it reports `JA4L-C=500_64` where the reference reports
-nothing. #123 carries that open reading.
+`ja4plus` reports the same value pair for the first capture, and no value for the second
+one. #123 measured the reference and left the client value of the second capture as an
+open reading. #156 closes it, and the section below states the rule.
+
+### When a JA4L value exists
+
+The reference gates the server value and the client value apart, and it gates each one
+on its own measurement points. It does not hold one value back until it reads every
+point of the connection. The rule binds both transports:
+
+| Value | Transport | The points it needs |
+|---|---|---|
+| `JA4L-S` | TCP | `A`, the first SYN, and `B`, the first SYN-ACK. |
+| `JA4L-C` | TCP | `B`, and `C`, the last packet that carries both relative numbers. |
+| `JA4L-S` | QUIC | `A`, the client Initial packet, and `B`, the server Initial packet. |
+| `JA4L-C` | QUIC | `B`, `C`, the last server Handshake packet, and `D`, the first client one. |
+
+A capture that cuts a connection short therefore gives the values whose points it
+holds, and no other value.
+
+Four readings measure the rule. #156 holds the commands and the counts.
+
+- `ssh2.pcapng` holds 11 TCP connections that carry a SYN and no SYN-ACK. Its
+  expected-output file names none of them, and `ja4plus` produces no value for any of
+  them.
+- No committed vector holds a TCP connection that carries a SYN-ACK and no client
+  measurement point. Every TCP connection that holds a reference `JA4L-S` also holds a
+  reference `JA4L-C`.
+- `ssh2.pcapng` stream 33 and `tls3.pcapng` stream 25 are QUIC connections whose server
+  sends no Handshake packet that the capture holds alone. The expected-output file holds
+  `JA4L-S` `16192_57` and `3583_57`, and it holds no `JA4L-C` on either one. The two
+  connections prove that the reference completes a server value without a client value.
+- `quic_mirrored.pcap` holds a server Initial packet that leads its client Initial
+  packet. The reference reports no value, so the QUIC client value needs point `B`.
+
+The body of #156 states a different rule: a JA4L value exists only when the
+fingerprinter reads all four measurement points. That rule is wrong, and the vectors
+reject it. A rule that held `JA4L-S` back until the client point arrived breaks 80
+conformance cases that pass today. It also deletes the two `JA4L-S` values above.
+
+```
+$ pytest tests/ -m spec_validation -q
+FAILED tests/test_spec_validation.py::test_the_produced_occurrence_keys_equal_the_reference[v6.pcap-JA4L-S]
+80 failed, 1295 passed, 149 skipped, 980 deselected, 117 xfailed
+```
+
+The fingerprinter therefore gates a JA4L value per side, and not on all four
+measurement points.
+
+### The return value of a partial client point
+
+`process_packet` returns the client value once for every packet that moves point `C`,
+and the stored list holds one value for the connection. Across the committed vectors
+the stored list holds 60 client values and the return path reports 105.
+
+The two paths disagree because the reference reads the last packet that carries both
+relative numbers. A reader knows which packet is last only when the connection ends.
+#156 measured three candidate end-of-connection points against the 60 values:
+
+| The end-of-connection point | Client values it reports |
+|---|---|
+| A FIN or a RST after the final client point | 26, and it loses 34 |
+| Every measurement point read | 105, which is the behaviour today |
+| A read of the stored list at the end of the capture | 60, and it loses none |
+
+Only the last point reproduces the reference, and 34 of the 60 connections never close
+inside their capture. `macos_tcp_flags.pcap` holds no FIN packet and no RST packet at
+all, and `tls3.pcapng` holds 2 FIN packets against 13 client values.
+
+`ja4plus` reads the stored list, so the conformance suite measures the correct value.
+The user decided on 2026-08-07 to record the divergence and to leave the return path as
+it is. The `Divergence register` of `docs/specs/spec.md` holds the row, and the decision
+is reversible.
+
+`tests/foxio_deviations.json` holds no entry for the divergence. The conformance harness
+reads the stored list, and the stored list is correct, so every case passes. A strict
+entry therefore reports `XPASS(strict)` and fails the suite. A probe entry for
+`latest.pcapng/JA4L-C` proves it:
+
+```
+[XPASS(strict)] issue #156: Probe: the return path reports 11 client values and the stored list holds 6.
+FAILED tests/test_spec_validation.py::test_the_produced_occurrence_keys_equal_the_reference[latest.pcapng-JA4L-C]
+```
+
+`tests/test_ja4l_return_path.py` carries the divergence instead. It holds the returned
+count and the stored count of every committed vector, so it fails when either one moves.
 
 ### A time of one second or more
 
@@ -897,6 +980,83 @@ have no counterpart here.
 **Fixed in v0.4.0:** Stream reassembly now uses TCP sequence numbers
 for correct ordering. Prior versions appended data in arrival order,
 which could corrupt streams with out-of-order TCP segments.
+
+### The order holds across a sequence wrap
+
+A TCP sequence number is 32 bits and wraps back to zero. An order that compares the raw
+numbers puts every segment after the wrap point before every segment before it, so a
+connection that crosses the boundary reassembles backwards.
+
+`_seq_before` orders two sequence numbers on the difference between them, as RFC 1982
+does. `get_stream` reads it for the gap test and the overlap arithmetic, so both hold
+across the wrap.
+
+`_ordered_segments` gives the segment order. A stream occupies one arc of the sequence
+space, and one step between two neighbours closes that arc. The method sorts the
+segments on the raw number, finds the widest step, and starts the stream at the segment
+after it. `get_stream` and `base_seq` both read that order.
+
+A comparison of each segment against a running earliest value looks equivalent and is
+not. `_seq_before` stops being transitive once the segments span more than half the
+sequence space, so that form returns a different first segment for a different arrival
+order. `max_stream_bytes` now bounds the stored segments, so the spread of the stored
+sequence numbers stays inside one arc. The widest-step reading depends only on the
+sequence numbers, so the reassembled bytes never depend on the order the capture
+delivered the segments.
+
+`add_segment` detects a duplicate against a set of `(seq, length)` pairs. The earlier
+scan of every stored segment cost the square of the segment count: 10000 segments took
+0.451 s, and 20000 took 1.765 s. The set gives 0.0019 s and 0.004 s.
+
+**Location:** `ja4plus/utils/tcp_stream.py`. #32 built it.
+
+### One stream holds a bounded number of bytes and segments
+
+`max_stream_bytes` bounded the bytes `get_stream` returns, and nothing bounded the bytes
+the stream stores. A sender of many distinct small segments grew one stream without a
+limit. `add_segment` now refuses a segment once the stream holds `max_stream_bytes`
+bytes, and once it holds `max_stream_segments` segments. A refused segment enters no
+state, so the stream accepts it again after a trim frees the room.
+
+The byte cap alone leaves a sender of one-byte segments a million entries in the segment
+list, so the segment cap carries the second bound. The default is 4096. The largest
+stream of the FoxIO vectors holds 1336 segments and 1853328 bytes, both in
+`http2-with-cookies.pcapng`. The measurement runs `Processor` over every capture under
+`tests/foxio_vectors/` and reads the stored segments after each call to `add_segment`.
+
+The byte cap cuts that one vector stream at 1048576 bytes, and no reference value moves.
+`get_stream` already truncated its result at `max_stream_bytes`, so no fingerprinter ever
+read the bytes beyond the cap. The conformance suite reports 1375 passed, 146 skipped and
+120 xfailed before the change and after it.
+
+`get_stream` no longer truncates its result. The stream stores no more than
+`max_stream_bytes`, and the result never holds more than the stream stores.
+
+`trim_stream` compared raw sequence numbers, which holds the defect #32 removed from
+`get_stream`. It now reads `_seq_before`. It takes an absolute sequence number, never a
+byte offset. #78 removed its one call site, because that call passed a byte offset and
+removed no segment for a realistic initial sequence number.
+
+`ja4h.py` left a buffer that is not an HTTP request in the reassembler for the life of
+the capture. It now removes the stream when no later byte can make the buffer an HTTP
+request. `can_become_http_request` reads the buffer against the HTTP method tokens and
+keeps a buffer that is a prefix of one, because a request line spans two segments.
+
+The removal waits one packet. A segment that arrives out of order puts the middle of a
+request at the start of the buffer, and that buffer starts no HTTP request. A removal on
+that packet drops the segment, and the request never reassembles when the head arrives.
+The head lowers the base sequence number, so `_drop_an_unusable_stream` removes the
+stream only on a packet that leaves the base sequence number where the previous packet
+left it. The measurement: the tail of `GET /index.html HTTP/1.1` arrives at sequence
+number 126 and the head at 100. A removal on the first packet gives `None` for both
+packets. The one-packet wait gives a fingerprint on the second.
+
+`self.unusable_base` holds one base sequence number for each stream that waits. It drops
+the keys the reassembler no longer holds once it passes `max_streams` entries, the way
+`ja4x.py` prunes `scan_offsets`.
+
+**Location:** `ja4plus/utils/tcp_stream.py`, `ja4plus/utils/http_utils.py`,
+`ja4plus/fingerprinters/ja4h.py`. #33 built it, and it absorbed #103.
 
 ---
 

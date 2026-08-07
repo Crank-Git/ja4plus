@@ -59,6 +59,22 @@ GRE_ERSPAN_VXLAN = "tcp_100.20.9.1:80_100.20.9.2:65174"
 SSH2_QUIC = "udp_142.251.41.46:443_172.16.225.48:61861"
 CLOUDFLARE_QUIC = "udp_2001:db8:1::1:50280_2606:4700:10::6816:826:443"
 TLS3_QUIC = "udp_104.21.234.234:443_192.168.1.169:61884"
+SSH2_QUIC_SERVER_ONLY = "udp_142.251.32.74:443_172.16.225.48:51810"
+
+# Every connection of `ssh2.pcapng` that produces a JA4L value. The capture also holds
+# 11 connections that carry a SYN and no SYN-ACK, and this list names none of them.
+SSH2_CONNECTIONS = [
+    "tcp_146.112.255.155:443_172.16.225.48:57368",
+    "tcp_172.16.225.48:57371_34.248.242.11:443",
+    "tcp_172.16.225.48:57374_52.178.17.3:443",
+    "tcp_172.16.225.48:57375_204.79.197.220:443",
+    "tcp_172.16.225.48:57376_52.86.25.233:443",
+    "tcp_172.16.225.48:57377_54.160.114.75:22",
+    "tcp_172.16.225.48:57380_184.150.157.177:80",
+    "tcp_172.16.225.48:57396_184.150.157.177:80",
+    "udp_142.251.32.74:443_172.16.225.48:51810",
+    "udp_142.251.41.46:443_172.16.225.48:61861",
+]
 
 
 @pytest.mark.skipif(
@@ -127,6 +143,20 @@ class TestJA4LAgainstTheFoxIOVectors:
         # +6102 us that holds an ACK frame, and a second one at +7166 us that holds
         # the whole ServerHello.
         assert "JA4L-S=3583_57" in values_on("tls3.pcapng", TLS3_QUIC)
+
+    def test_a_cut_short_connection_of_ssh2_produces_no_value(self):
+        # ssh2.pcapng holds 11 TCP connections that carry a SYN and no SYN-ACK, such as
+        # 172.16.225.48:57360 to 192.168.1.13:80 and 10.244.39.47:5000 to
+        # 172.16.225.48:57361. The expected-output file names none of them. This case
+        # states the whole key set, because an absence test that names one key passes
+        # when the key format changes. Read #156 for the measurement.
+        assert sorted(values_of("ssh2.pcapng")) == SSH2_CONNECTIONS
+
+    def test_a_quic_connection_with_no_client_point_reports_the_server_value_alone(self):
+        # ssh2.pcapng stream 33 carries a client Initial packet and a server Initial
+        # packet, and the server sends no Handshake packet the capture holds alone. The
+        # reference reports JA4L-S 16192_57 and no JA4L-C.
+        assert values_on("ssh2.pcapng", SSH2_QUIC_SERVER_ONLY) == ["JA4L-S=16192_57"]
 
     def test_the_fingerprinter_emits_one_client_value_for_one_connection(self):
         produced = values_on("badcurveball.pcap", BADCURVEBALL)
