@@ -4,6 +4,10 @@ Behaviors in the Python ja4plus library that are not documented in the
 FoxIO JA4+ specification. The Go implementation MUST match these behaviors
 to produce identical fingerprints.
 
+FoxIO publishes seven of the twelve methods as an image. Where an image leaves a question
+open, the expected-output file decides, and the reading goes here. An entry names the
+vector that supports the reading, or it states that no FoxIO material validates it.
+
 ---
 
 ## JA4 - TLS Client Hello
@@ -54,11 +58,114 @@ ALPN (`0x0010`), which `JA4` removes. The vector
 `t13d1715h2_5b234860e130_014157ec0da2`, and that value is the hash of the
 `JA4_ro.1` fields.
 
-FoxIO publishes no `JA4S_o` key. JA4S hashes its extensions in wire order, and
-the published `JA4S_r` value holds that same wire order. The original-order
-hashed value of JA4S therefore equals the JA4S fingerprint. The
-`fingerprint_original_order` key carries it, so one caller reads one name on
-JA4 and on JA4S.
+The JA4S section below records the `JA4S_o` reading.
+
+---
+
+## JA4S - TLS Server Hello
+
+### The raw form holds the extensions in wire order
+
+FoxIO publishes JA4S as an image, so the expected-output file decides the extension
+order. `tls-alpn-h2.pcap.json` gives `JA4S_r` as `t1204h2_cca9_0000,ff01,000b,0010`.
+That order is not numeric order, so it is wire order.
+
+The JA4S fingerprint hashes the extensions in wire order, and it equals the reference
+`JA4S` value `t1204h2_cca9_1428ce7b4018`. The `raw_original_order` key holds the wire
+order, and it equals the reference `JA4S_r`. The `raw` key sorts the extensions, so it
+does not equal `JA4S_r`. #108 owns that difference.
+
+### The original-order hashed value has no reference
+
+No FoxIO expected-output file carries a `JA4S_o` key. The 37 files hold `JA4`, `JA4_r`,
+`JA4_o`, `JA4_ro`, `JA4S`, `JA4S_r`, `JA4H`, `JA4H_ro`, `JA4X`, `JA4SSH`, `JA4L-C` and
+`JA4L-S`, and no other method key.
+
+`ja4plus` derives the value from the reading above. JA4S hashes its extensions in wire
+order, so the original-order hash of JA4S equals the JA4S fingerprint. The
+`fingerprint_original_order` key carries that value, so one caller reads one name on JA4
+and on JA4S.
+
+**No FoxIO material validates this value, in either direction.** The `docs/specs/spec.md`
+changelog records it at round 11.
+
+**Location:** `ja4plus/fingerprinters/ja4s.py:102`.
+
+---
+
+## JA4T and JA4TS - TCP
+
+### No FoxIO vector validates JA4T or JA4TS
+
+No expected-output file of the 37 carries a `JA4T` key or a `JA4TS` key, and the vector
+set holds many TCP handshakes. The image is the only FoxIO material for both methods, and
+no reference value settles a question the image leaves open.
+
+### The option list holds six option kinds
+
+`ja4plus` maps six TCP option kinds to their IANA numbers.
+
+- 0 for EOL
+- 1 for NOP
+- 2 for MSS
+- 3 for Window Scale
+- 4 for SACK Permitted
+- 8 for Timestamp
+
+`ja4plus` drops an option kind outside those six, and it writes no number for that kind.
+A packet that carries no option of the six gives the value `0`.
+
+The list keeps the wire order. `ja4plus` never sorts it.
+
+**Location:** `ja4plus/fingerprinters/ja4t.py:67` and `ja4plus/fingerprinters/ja4ts.py:68`.
+
+---
+
+## JA4D and JA4D6 - DHCP
+
+### No FoxIO vector validates JA4D or JA4D6
+
+FoxIO publishes `dhcp.pcapng` and `dhcpv6.pcap`, and the expected-output file of each one
+holds an empty array. `tests/foxio_vectors/dhcp.pcapng.json` and
+`tests/foxio_vectors/dhcpv6.pcap.json` each hold `[]`. No reference value validates
+either method.
+
+`tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py` name a capture path and an
+expected-output path that this repository does not hold, so both files skip on every run.
+#109 owns that gap.
+
+### How ja4plus reads JA4D
+
+The form is `{type}{size}{ip}{fqdn}_{options}_{parameters}`. `ja4plus` reads it as
+follows. The comment at `ja4plus/fingerprinters/ja4d.py:42` names two FoxIO pull
+requests, 267 and 270, as the source of the skip set. No vector confirms the reading.
+
+- The type is a five-character abbreviation of the DHCP message type. An unknown type
+  gives the five-digit decimal value of the code.
+- The size is the maximum message size of option 57, as four decimal digits. `ja4plus`
+  caps it at 9999, and it writes `0000` when the option is absent.
+- The `ip` character is `i` when option 50 is present, and `n` when it is absent.
+- The `fqdn` character is `d` when option 81 is present, and `n` when it is absent.
+- The option list holds the option codes in wire order. It drops 0, 50, 53 and 81. The
+  end marker 255 stops the read and never reaches the list. An empty list gives `00`.
+- The parameter list holds the contents of option 55 in wire order. An empty list gives
+  `00`.
+
+**Location:** `ja4plus/fingerprinters/ja4d.py:45` and `ja4plus/fingerprinters/ja4d.py:183`.
+
+### How ja4plus reads JA4D6
+
+The form matches JA4D, and five readings differ. The message type alone is unchanged.
+
+- The size is the byte length of the DUID inside option 1, as four decimal digits.
+  `ja4plus` caps it at 9999, and it writes `0000` when the option is absent.
+- The `ip` character reads option 4, which is IA_TA. The `fqdn` character reads option
+  39.
+- The option list holds every option code in presence order, and it drops none. The list
+  holds the codes nested inside IA_NA, IA_TA, IA_PD, IA Address and IA Prefix. The
+  parameter list holds the contents of option 6.
+
+**Location:** `ja4plus/fingerprinters/ja4d6.py:76` and `ja4plus/fingerprinters/ja4d6.py:202`.
 
 ---
 
