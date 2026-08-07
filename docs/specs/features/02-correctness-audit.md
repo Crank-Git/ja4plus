@@ -3,7 +3,7 @@ id: correctness-audit
 feature: Correctness audit
 epic: "Epic 2: Correctness audit"
 status: issued
-issues: [13, 32, 33, 34, 35, 36, 37]
+issues: [13, 32, 33, 34, 35, 36, 37, 89]
 mockups: []
 ---
 
@@ -38,8 +38,12 @@ scanning every stored segment.
 
 FR-correctness-audit-4 — JA4L emits one client fingerprint per TCP connection.
 
-FR-correctness-audit-5 — JA4L emits the client fingerprint from the ACK that
-completes the handshake.
+FR-correctness-audit-5 — The project withdraws this requirement. It stated that JA4L
+emits the client fingerprint from the ACK that completes the handshake, and
+`browsers-x509.pcapng` contradicts that. `features/01-spec-conformance.md` holds the
+JA4L measurement points as `FR-spec-conformance-17` to `FR-spec-conformance-21`. #88
+built them, and #89 withdrew this requirement. The number stays, because four issues
+quote the numbers below it.
 
 FR-correctness-audit-6 — JA4H builds both cookie hashes from the same list of
 cookies.
@@ -96,7 +100,7 @@ the rule the fix must satisfy.
 | 2 | `ja4plus/utils/tcp_stream.py:37` | The duplicate check scans every stored segment for each new segment. Cost grows with the square of the segment count. | Use a set of `(seq, length)` pairs. |
 | 3 | `ja4plus/utils/tcp_stream.py:41` | `max_stream_bytes` limits the reassembled output, not the stored segments. A sender that emits many distinct small segments grows one stream without bound. | Cap the stored bytes per stream, not only the output. |
 | 4 | `ja4plus/utils/tcp_stream.py:33` | `base_seq` is stored and never read. | Remove it, or use it. |
-| 5 | `ja4plus/fingerprinters/ja4l.py:223` | The client branch matches every ACK without a SYN flag, not only the third packet of the handshake. Each later ACK overwrites timestamp `C` and emits another client fingerprint with a larger latency. | Emit once, from the first ACK after the SYN-ACK. |
+| 5 | `ja4plus/fingerprinters/ja4l.py:223` | The client branch matches every ACK without a SYN flag. Each later ACK overwrites timestamp `C` and emits another client fingerprint with a larger latency. | Emit one client value for one connection. `FR-spec-conformance-19` gives the measurement point, and #88 built it. |
 | 6 | `ja4plus/fingerprinters/ja4l.py:279` | `_src_is_client` is never called. | Remove it. |
 | 7 | `ja4plus/fingerprinters/ja4h.py:163` | `cookies[k] = v` drops a repeated cookie name, while `cookie_fields` keeps it. The cookie-name hash and the cookie-value hash then describe different cookie sets. | Build both hashes from one ordered list of pairs. |
 | 8 | `ja4plus/fingerprinters/ja4h.py:131` | The request-line pattern requires `HTTP/<digit>.<digit>`. A request line that reads `HTTP/2` never matches, although `_http_version_to_str` handles `2`. | Accept an optional minor version. |

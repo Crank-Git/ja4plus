@@ -76,6 +76,7 @@ that user, because comparison is the only thing a fingerprint is for.
 | parity | noun | The state where this project and the port expose the same interface and emit the same fingerprint. | alignment, sync, consistency |
 | hop count | noun | The count of routers a packet crossed, read as the initial TTL minus the observed TTL. | hop distance, TTL delta |
 | propagation factor | noun | The JA4L divisor that the FoxIO hop-count table gives for one hop count. | propagation delay, terrain factor |
+| measurement point | noun | One packet timestamp that a JA4L value measures from or to. | anchor, marker, reference point |
 
 ## Goals
 
@@ -487,6 +488,7 @@ Two items blocked approval. Both are now decided.
 | 16 | 2026-08-07 | #88 landed and the JA4L values conform. FoxIO reports one-way latency, so it halves every measured round-trip time, and `JA4L-C` measures to the client's first data packet after the SYN-ACK. The comment at `ja4l.py:218` stated the opposite and is deleted. The register falls from 213 entries to 74, and JA4L conformance failures fall from 151 to 12. #34 shrank as a side effect, from 37 occurrence-key entries to 6, and it is re-scoped before it is scheduled. #101 opened: `gre-erspan-vxlan.pcap` mirrors both directions of the inner connection from one outer address pair, so the SYN and the SYN-ACK reach two different connection keys. #102 opened: `ja4plus` reads the first server Initial packet of a QUIC connection, and the reference reads the Initial packet that completes the ServerHello. |
 | 17 | 2026-08-07 | Epic 1 batch 2 ships #78, #92 and #88. #30 was a member and never started; it moves to batch 3, because no fingerprint value reads `calculate_distance` and holding the batch for it delays a register that falls from 240 entries to 74. |
 | 18 | 2026-08-07 | #98 landed and JA4SSH counts an SSH message, not a TCP segment. `tshark` proved the boundary: `frame.protocols` of `ssh-r.pcap` frame 399 is `eth:ethertype:ip:tcp`, and frame 400 carries `eth:ethertype:ip:tcp:ssh` with `tcp.segment` `399,400`. `ja4plus/utils/ssh_utils.py` gains `SSHMessageTracker`, which follows the four-byte length field of each plaintext message and turns opaque after `SSH_MSG_NEWKEYS`. Two vectors hold such a message: `ssh-r.pcap` stream 1 holds one, and `ssh-r.pcap` stream 2 holds one. All five windows of stream 2 now hold the reference packet counts, and the register falls from 74 entries to 73. The remaining JA4SSH entries are #96 with 4, #97 with 3 and #105 with 3. No vector that conformed before changed: `ssh.pcapng`, `ssh-scp-1050.pcap`, `ssh2.pcapng` and `ssh-r.pcap` stream 0 hold their values. |
+| 19 | 2026-08-07 | #89 landed and the JA4L measurement points move to `features/01-spec-conformance.md`. `FR-correctness-audit-5` claimed that JA4L emits the client fingerprint from the ACK that completes the handshake. Stream 0 of `browsers-x509.pcapng` contradicts it. The SYN-ACK is at `+0.003815s`, the bare ACK at `+0.003927s`, and the Client Hello at `+0.004371s`. The reference `JA4L-C` is `278_128`, and `(4371 - 3815) / 2 = 278`. The project withdraws `FR-correctness-audit-5` and keeps its number, because #34, #35, #36 and #37 quote the numbers below it. `FR-spec-conformance-17` to `FR-spec-conformance-21` replace it, and #88 built them. `FR-spec-conformance-18` to `FR-spec-conformance-21` describe the TCP form of JA4L, because the QUIC form reads no SYN and no relative sequence number. Row 5 of the audit register drops the measurement point and keeps the multiplicity defect. #34 now owns multiplicity alone, and its acceptance criterion that quoted the old requirement is withdrawn. #34 also shrank from 37 register entries to 6 after #88. |
 
 ## Issue map
 
@@ -530,7 +532,7 @@ Created by `spec-to-issues` on 2026-08-06 against `Crank-Git/ja4plus`.
 | `FR-correctness-audit-2` | #33 |
 | `FR-correctness-audit-3` | #32 |
 | `FR-correctness-audit-4` | #34 |
-| `FR-correctness-audit-5` | #34 |
+| `FR-correctness-audit-5` | #89 withdrew it |
 | `FR-correctness-audit-6` | #35 |
 | `FR-correctness-audit-7` | #35 |
 | `FR-correctness-audit-8` | #37 |
@@ -630,6 +632,11 @@ Created by `spec-to-issues` on 2026-08-06 against `Crank-Git/ja4plus`.
 | `FR-spec-conformance-10` | #30 |
 | `FR-spec-conformance-11` | #31 |
 | `FR-spec-conformance-12` | #31 |
+| `FR-spec-conformance-17` | #88 |
+| `FR-spec-conformance-18` | #88 |
+| `FR-spec-conformance-19` | #88 |
+| `FR-spec-conformance-20` | #88 |
+| `FR-spec-conformance-21` | #88 |
 | `FR-structured-output-1` | #49 |
 | `FR-structured-output-2` | #49 |
 | `FR-structured-output-3` | #50 |
