@@ -471,13 +471,9 @@
     "issue": 88,
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
-  "ssh-r.pcap/0:64980/JA4SSH.1": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
   "ssh-r.pcap/0:64980/JA4SSH.2": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH value on this stream."
+    "issue": 97,
+    "cause": "FoxIO writes this occurrence from a bare ACK that follows the window boundary, and ja4plus emits one value for each full window."
   },
   "ssh-r.pcap/1:46394/JA4L-C.1": {
     "issue": 88,
@@ -489,7 +485,7 @@
   },
   "ssh-r.pcap/1:46394/JA4SSH.1": {
     "issue": 92,
-    "cause": "ja4plus produces no JA4SSH value on this stream."
+    "cause": "The connection fills no window, and ja4plus emits no value for the window it holds open."
   },
   "ssh-r.pcap/2:46396/JA4L-C.1": {
     "issue": 88,
@@ -500,12 +496,12 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-r.pcap/2:46396/JA4SSH.1": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "issue": 96,
+    "cause": "The reference mode field reads the packet lengths of every connection, and ja4plus reads the lengths of the window."
   },
   "ssh-r.pcap/2:46396/JA4SSH.5": {
     "issue": 92,
-    "cause": "ja4plus produces no JA4SSH value on this stream."
+    "cause": "The connection closes with a window open, and ja4plus emits no value for that window."
   },
   "ssh-r.pcap/JA4L-C": {
     "issue": 34,
@@ -513,7 +509,7 @@
   },
   "ssh-r.pcap/JA4SSH": {
     "issue": 92,
-    "cause": "ja4plus produces no JA4SSH fingerprint the reference holds."
+    "cause": "ja4plus emits no value for a window that a connection holds open when it closes."
   },
   "ssh-scp-1050.pcap/0:49237/JA4L-C.1": {
     "issue": 88,
@@ -523,17 +519,13 @@
     "issue": 88,
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
-  "ssh-scp-1050.pcap/0:49237/JA4SSH.1": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.3": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "issue": 96,
+    "cause": "The reference mode field reads the packet lengths of every connection, and ja4plus reads the lengths of the window."
   },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.4": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "issue": 96,
+    "cause": "The reference mode field reads the packet lengths of every connection, and ja4plus reads the lengths of the window."
   },
   "ssh-scp-1050.pcap/JA4L-C": {
     "issue": 34,
@@ -611,13 +603,9 @@
     "issue": 88,
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
-  "ssh2.pcapng/14:57377/JA4SSH.1": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
   "ssh2.pcapng/14:57377/JA4SSH.2": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH value on this stream."
+    "issue": 97,
+    "cause": "FoxIO writes this occurrence from a bare ACK that follows the window boundary, and ja4plus emits one value for each full window."
   },
   "ssh2.pcapng/15:57380/JA4L-C.1": {
     "issue": 88,
@@ -676,8 +664,8 @@
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
   "ssh2.pcapng/JA4SSH": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH fingerprint the reference holds."
+    "issue": 97,
+    "cause": "FoxIO writes a second occurrence from a bare ACK that follows the window boundary, and ja4plus emits one value for each full window."
   },
   "ssh2.pcapng/JA4X": {
     "issue": 78,
