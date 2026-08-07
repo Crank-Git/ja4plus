@@ -110,5 +110,36 @@ class TestJA4HReassembly(unittest.TestCase):
         self.assertIn("10.0.0.1:12345-10.0.0.2:80", fp.reassembler.streams)
 
 
+class TestJA4HStreamAge(unittest.TestCase):
+    """Tests that JA4H states the packet time to the reassembler."""
+
+    # A capture time from 2001, far from the wall clock.
+    OLD_CAPTURE_TIME = 1000000000.0
+
+    def _partial_request(self, sport, seconds):
+        """Return one packet that starts an HTTP request and completes no header."""
+        packet = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=sport, dport=80, seq=100)
+            / Raw(load=b"GET /index.html HTTP/1.1\r\nHost: exam")
+        )
+        packet.time = seconds
+        return packet
+
+    def test_the_stream_holds_the_packet_time_of_its_most_recent_segment(self):
+        fp = JA4HFingerprinter()
+        fp.process_packet(self._partial_request(12345, self.OLD_CAPTURE_TIME))
+        key = "10.0.0.1:12345-10.0.0.2:80"
+        self.assertEqual(fp.reassembler.streams[key]["last_seen"], self.OLD_CAPTURE_TIME)
+
+    def test_a_stream_that_passes_the_maximum_age_leaves_the_reassembler(self):
+        fp = JA4HFingerprinter()
+        fp.reassembler.max_stream_age = 100
+        fp.process_packet(self._partial_request(12345, self.OLD_CAPTURE_TIME))
+        fp.process_packet(self._partial_request(12346, self.OLD_CAPTURE_TIME + 101))
+        self.assertNotIn("10.0.0.1:12345-10.0.0.2:80", fp.reassembler.streams)
+        self.assertIn("10.0.0.1:12346-10.0.0.2:80", fp.reassembler.streams)
+
+
 if __name__ == "__main__":
     unittest.main()

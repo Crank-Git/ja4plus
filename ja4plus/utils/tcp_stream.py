@@ -37,12 +37,22 @@ def _seq_before(a, b):
 # segments a million entries in the segment list, so this cap carries the second bound.
 DEFAULT_MAX_STREAM_SEGMENTS = 4096
 
+# The maximum age of one stream, in seconds. `ssh-r.pcap` holds the longest gap between
+# two segments of one stream across `tests/foxio_vectors/`, at 320.714503 seconds. This
+# age sits above that gap, so no eviction reaches a vector stream.
+DEFAULT_MAX_STREAM_AGE = 600
+
 
 class TCPStreamReassembler:
     """Reassembles TCP streams using sequence numbers.
 
     Handles out-of-order segments, duplicates, and overlaps.
     Evicts oldest streams when max_streams is exceeded.
+
+    A stream also leaves the reassembler once it receives no segment for
+    `max_stream_age` seconds. The age reads the packet timestamp the caller states, and
+    this module imports no clock. A capture file replays faster than real time, so a
+    wall clock would evict state the capture still needs.
     """
 
     def __init__(
@@ -50,13 +60,31 @@ class TCPStreamReassembler:
         max_streams=100,
         max_stream_bytes=1048576,
         max_stream_segments=DEFAULT_MAX_STREAM_SEGMENTS,
+        max_stream_age=DEFAULT_MAX_STREAM_AGE,
     ):
         self.streams = OrderedDict()
         self.max_streams = max_streams
         self.max_stream_bytes = max_stream_bytes
         self.max_stream_segments = max_stream_segments
+        self.max_stream_age = max_stream_age
 
-    def add_segment(self, key, seq, data):
+    def _evict_aged_streams(self, now):
+        """Remove every stream that receives no segment for `max_stream_age` seconds.
+
+        The removal drops the whole entry, so the segment list, the set of seen
+        segments and the stored byte count leave together. A partial removal would make
+        `add_segment` drop a later segment as a duplicate.
+
+        Args:
+            now: The packet timestamp of the current segment, in seconds.
+        """
+        # `max_streams` bounds this scan at 100 entries, so the cost per packet is flat.
+        for key, stream in list(self.streams.items()):
+            last_seen = stream["last_seen"]
+            if last_seen is not None and now - last_seen > self.max_stream_age:
+                del self.streams[key]
+
+    def add_segment(self, key, seq, data, timestamp=None):
         """Add a TCP segment to a stream.
 
         The stream refuses the segment once it holds `max_stream_bytes` bytes, or
@@ -67,16 +95,27 @@ class TCPStreamReassembler:
             key: The stream key.
             seq: The 32-bit TCP sequence number of the first byte of the segment.
             data: The payload bytes of the segment.
+            timestamp: The packet timestamp of the segment, in seconds. A caller that
+                states None gives the reassembler no age to read, and the age evicts no
+                stream of that reassembler.
         """
         if not data:
             return
 
+        if timestamp is not None:
+            self._evict_aged_streams(timestamp)
+
         if key not in self.streams:
             if len(self.streams) >= self.max_streams:
                 self.streams.popitem(last=False)
-            self.streams[key] = {"segments": [], "seen": set(), "bytes": 0}
+            self.streams[key] = {"segments": [], "seen": set(), "bytes": 0, "last_seen": None}
 
         stream = self.streams[key]
+
+        # The stream still sends while a cap refuses its segments, so the age follows
+        # every segment the stream receives, not the segments the reassembler stores.
+        if timestamp is not None:
+            stream["last_seen"] = timestamp
 
         # A scan of every stored segment costs the square of the segment count. A
         # retransmission-heavy stream reaches thousands of segments.
