@@ -90,11 +90,11 @@ def test_ja4_original_order_value_hashes_the_original_order_raw_value():
     assert entries[0]["fingerprint_original_order"] == expected
 
 
-def test_ja4_gives_the_zero_marker_when_sni_is_the_only_extension():
+def test_ja4_gives_the_zero_sentinel_when_sni_is_the_only_extension():
     """The vector `https3-301-get.pcap` names the value the reference computes.
 
     The client hello carries SNI as its only extension. The sorted extension list is
-    therefore empty, and FoxIO sets both extension hashes to the zero marker. #132
+    therefore empty, and FoxIO sets both extension hashes to the zero sentinel. #132
     holds the measurement.
     """
     from ja4plus.fingerprinters.ja4 import JA4Fingerprinter

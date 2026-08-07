@@ -244,12 +244,12 @@ ALPN (`0x0010`), which `JA4` removes. The vector
 `t13d1715h2_5b234860e130_014157ec0da2`, and that value is the hash of the
 `JA4_ro.1` fields.
 
-### The zero marker reads the sorted extension list
+### The zero sentinel reads the sorted extension list
 
 One rule overrides the paragraph above. FoxIO tests the **sorted** extension list for the
-zero marker, and it sets **both** extension hashes from that one test. A client hello
-whose only extensions are SNI and ALPN therefore gives `JA4_o` the extension hash
-`000000000000`, and `JA4_ro` still shows the extension in wire order.
+zero sentinel, and it sets **both** extension hashes from that one test. A client hello
+whose only extensions are SNI and ALPN therefore gives `JA4_o` the zero sentinel.
+`JA4_ro` still shows the extension in wire order.
 
 `technical_details/JA4.md` states the rule, and it names one field:
 

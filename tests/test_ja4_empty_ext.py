@@ -63,11 +63,11 @@ def test_ja4_only_sni_and_alpn_extensions_yields_literal_zero_hash():
 
 
 def test_ja4_original_order_yields_the_zero_hash_when_only_sni_is_present():
-    """The original-order hash reads the sorted list for the zero marker.
+    """The original-order hash reads the sorted list for the zero sentinel.
 
     FoxIO tests the sorted extension list, and it sets both extension hashes from that
     one test. SNI alone leaves the sorted list empty, so `JA4_o` carries the zero
-    marker. #132 holds the measurement.
+    sentinel. #132 holds the measurement.
     """
     info = _client_hello_info(extensions=[0x0000], sni="www.github.com")
     fp = generate_ja4(info, original_order=True)

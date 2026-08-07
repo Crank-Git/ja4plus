@@ -166,9 +166,9 @@ def generate_ja4(tls_info, original_order=False):
             ext_str = f"{ext_str}_{sig_alg_str}"
             sorted_ext_str = f"{sorted_ext_str}_{sig_alg_str}"
 
-        # 4. Generate extension hash. FoxIO reads the sorted list for the zero marker,
+        # 4. Generate extension hash. FoxIO reads the sorted list for the zero sentinel,
         #    and it sets both extension hashes from that one test. A client hello that
-        #    carries SNI alone therefore gives `JA4_o` the zero marker, while `JA4_ro`
+        #    carries SNI alone therefore gives `JA4_o` the zero sentinel, and `JA4_ro`
         #    still shows `0000`. #132 holds the measurement.
         if sorted_ext_str:
             ext_hash = hashlib.sha256(ext_str.encode()).hexdigest()[:12]
