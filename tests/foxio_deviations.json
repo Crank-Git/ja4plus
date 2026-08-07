@@ -11,10 +11,6 @@
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
-  "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1": {
-    "issue": 102,
-    "cause": "ja4plus reads the first server Initial packet, and the reference reads the Initial packet that completes the ServerHello."
-  },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
     "issue": 35,
     "cause": "ja4plus produces no JA4H value on this stream."
@@ -262,10 +258,6 @@
   "tls-sni.pcapng/JA4": {
     "issue": 13,
     "cause": "ja4plus produces no JA4 fingerprint the reference holds."
-  },
-  "tls3.pcapng/25:61884/JA4L-S.1": {
-    "issue": 102,
-    "cause": "ja4plus reads the first server Initial packet, and the reference reads the Initial packet that completes the ServerHello."
   },
   "tls3.pcapng/JA4": {
     "issue": 13,
