@@ -98,6 +98,19 @@ def test_the_packet_path_reads_a_request_line_without_a_minor_version():
     assert fingerprint[2:4] == "20"
 
 
+def test_a_request_line_that_names_no_version_produces_no_fingerprint():
+    """A malformed version token produces no fingerprint, not a fingerprint that collides.
+
+    `HTTP/11` names no HTTP version. The parser that reads it as `HTTP/1` reports the
+    version code `11`, which is the code of `HTTP/1.1`, and the two requests then carry
+    one fingerprint. A request the parser cannot read produces nothing.
+    """
+    for request_line in ("GET / HTTP/11", "GET / HTTP/1", "GET / HTTP/23", "GET / HTTP/"):
+        data = _request(request_line)
+        assert _extract_http_info_from_bytes(data) is None, request_line
+        assert generate_ja4h(_packet(data)) is None, request_line
+
+
 def test_a_request_line_with_a_minor_version_keeps_its_version_code():
     """The request line `GET / HTTP/1.1` still produces the version code 11."""
     assert generate_ja4h(_packet(_request("GET / HTTP/1.1")))[2:4] == "11"

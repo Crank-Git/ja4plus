@@ -1117,9 +1117,20 @@ the tests.
 ### The request line carries an optional minor version
 
 A request line reads `GET / HTTP/2`, and HTTP/2 and HTTP/3 name no minor version. The
-request-line pattern accepts the minor version as optional for that reason. An earlier
-pattern required `HTTP/\d+\.\d+`, so the parser read no HTTP/2 request line, although
-`_http_version_to_str` maps `2` to the version code `20`.
+request-line pattern accepts a version token that names major version 2 or 3 without a
+minor version for that reason. An earlier pattern required `HTTP/\d+\.\d+`, so the
+parser read no HTTP/2 request line, although `_http_version_to_str` maps `2` to the
+version code `20`.
+
+The pattern ends the version token on a space, a tab or a line terminator. A token such
+as `HTTP/11` names no HTTP version, and a pattern that reads it as `HTTP/1` reports the
+version code `11`. `GET / HTTP/11` and `GET / HTTP/1.1` then carry one fingerprint, and
+a fingerprint that describes malformed traffic as ordinary traffic is worse than no
+fingerprint. `ja4plus` reads no fingerprint from `HTTP/11`, `HTTP/1` or `HTTP/23`.
+
+`ja4plus/utils/http_utils.py` holds the pattern as `REQUEST_LINE_PATTERN`. The stream
+path and the packet path read that one name, so the two report one version for one
+request line.
 
 **Vector:** `http2-with-cookies.pcapng` holds 15 HTTP/2 requests inside TLS records, and
 `ja4plus` decrypts none of them. #129 records that deviation.

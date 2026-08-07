@@ -13,6 +13,7 @@ import logging
 from scapy.all import IP, IPv6, TCP, Raw
 
 from ja4plus.utils.http_utils import (
+    REQUEST_LINE_PATTERN,
     can_become_http_request,
     extract_http_info,
     is_http_request,
@@ -199,13 +200,9 @@ def _extract_http_info_from_bytes(data):
         return None
     try:
         text = data.decode("utf-8", errors="ignore")
-        # The minor version is optional, because a request line reads `HTTP/2` and
-        # `HTTP/3` without one. #35 records the defect.
-        request_line_match = re.match(
-            r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)"
-            r"\s+(\S+)\s+(HTTP/\d+(?:\.\d+)?)",
-            text,
-        )
+        # The stream path and the packet path read one pattern, so the two report one
+        # version for one request line.
+        request_line_match = re.match(REQUEST_LINE_PATTERN, text)
         if not request_line_match:
             return None
 

@@ -8,6 +8,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# The version token holds a minor version, or it names major version 2 or 3, which carry
+# no minor version. A token such as `HTTP/11` names no HTTP version, and a pattern that
+# reads it as `HTTP/1` reports the version code of `HTTP/1.1`. The two requests then
+# carry one fingerprint. The lookahead ends the token for that reason. #35 records both
+# defects.
+REQUEST_LINE_PATTERN = (
+    r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)"
+    r"\s+(\S+)\s+(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
+)
+
 
 def parse_http_request(data):
     """
@@ -177,13 +187,8 @@ def extract_http_info(packet):
     try:
         data = bytes(packet[Raw]).decode("utf-8", errors="ignore")
 
-        # Check if this is an HTTP request. The minor version is optional, because a
-        # request line reads `HTTP/2` and `HTTP/3` without one. #35 records the defect.
-        request_line_match = re.match(
-            r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)"
-            r"\s+(\S+)\s+(HTTP/\d+(?:\.\d+)?)",
-            data,
-        )
+        # Check if this is an HTTP request
+        request_line_match = re.match(REQUEST_LINE_PATTERN, data)
         if not request_line_match:
             return None
 
