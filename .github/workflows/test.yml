@@ -95,6 +95,40 @@ jobs:
           name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
           path: test-results.xml
 
+  fuzz:
+    # `FR-correctness-audit-13`. The malformed-input suite runs on every pull request.
+    # The `test` job reads `tests/` and covers this suite too. This job names it
+    # separately, so a red malformed-input case is visible without a log search.
+    #
+    # The suite cuts each committed capture at test time. Never commit a generated
+    # capture: a committed copy stops following the capture it came from.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run the malformed-input suite
+        run: |
+          python -m pytest tests/fuzz/ -v --tb=short \
+            --junitxml=fuzz-results.xml
+
+      - name: Upload the malformed-input results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: fuzz-results
+          path: fuzz-results.xml
+
   conformance:
     # `FR-foundation-4`. The vectors are committed under `tests/foxio_vectors`, so this
     # job reads no network. Never add a step that runs `tests/download_test_vectors.py`:
