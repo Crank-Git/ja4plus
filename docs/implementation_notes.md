@@ -70,10 +70,78 @@ JA4L fingerprints include a direction prefix:
 `JA4L-S={latency_us}_{ttl}` and `JA4L-C={latency_us}_{ttl}`.
 The spec describes `{latency_microseconds}_{ttl}` without a prefix.
 
-### Latency is raw time difference, not RTT/2
+### The latency is half the measured time
 
-The latency value is the raw time difference between handshake points,
-not the round-trip time divided by 2.
+`technical_details/JA4L.png` states `One-way TCP latency in us`, and every FoxIO
+vector holds half the time the capture shows. `badcurveball.pcap` stream 0 sends
+the SYN at `+0.000000s` and the SYN-ACK at `+0.001563s`, and the reference
+`JA4L-S` is `781_238`.
+
+The division truncates toward zero, and it produces `0` for a difference of one
+microsecond.
+
+### The client measurement point
+
+FoxIO publishes JA4L as an image, so the expected-output files decide the
+measurement point. `python/ja4.py` in the FoxIO repository records the client
+point on every TCP packet that carries the relative sequence number `1` and the
+relative acknowledgement number `1`. It keeps the last one. That is the bare ACK
+of the handshake first, and then the first packet of the application handshake.
+
+`browsers-x509.pcapng` stream 0 proves it. The SYN-ACK is at `+0.003815s`, the
+bare ACK at `+0.003927s` and the Client Hello at `+0.004371s`. The reference
+`JA4L-C` is `278_128`, and `(4371 - 3815) / 2 = 278`.
+
+The point moves in either direction. `http1-with-cookies.pcapng` stream 0 puts it
+on the bare ACK the server sends.
+
+### A complete HTTP request does not move the client point
+
+The FoxIO program keeps the timestamps of a packet under the protocol the tshark
+dissector reports. It holds a separate state table for `http` and for `http2`. A
+packet that carries a whole HTTP request therefore never moves the client point. A
+packet that carries the first part of a request does move it.
+
+Two vectors prove both halves:
+
+- `latest.pcapng` stream 6 sends one complete `GET` request. The reference
+  `JA4L-C` is `32_128`, which is the bare ACK.
+- `http-empty-useragent.pcap` sends the request line, the header and the blank
+  line in three packets. The reference `JA4L-C` is `177863_64`, which is the
+  request line.
+
+`ja4plus` reads the request line and the blank line that ends the header block.
+
+### The address layer of a tunneled capture
+
+The reference reads the address and the TTL of the outer layer, and the port of
+the inner layer. `gre-sample.pcap` carries a connection between `10.16.27.12`
+and `10.16.27.131` inside a GRE tunnel between `172.27.1.66` and
+`66.59.109.137`. The expected-output file names the tunnel addresses with the
+inner ports.
+
+`ja4plus/utils/tunnels.py` imports the scapy dissectors for Geneve, VXLAN and
+ERSPAN, because scapy leaves them unbound and stops at the tunnel header.
+
+### The QUIC measurement points
+
+The reference reads four QUIC packets, and it reads the direction from port 443:
+
+- `A` is the client Initial packet.
+- `B` is the server Initial packet.
+- `C` is the last server Handshake packet before the client answers.
+- `D` is the first client Handshake packet.
+
+`JA4L-S` is half the time from `A` to `B`, and `JA4L-C` is half the time from `C`
+to `D`.
+
+### A time of one second or more
+
+The FoxIO program reads the difference of two timestamps as a `timedelta`, and it
+takes the `microseconds` attribute, which holds the part below one second. A
+handshake of 1.2 seconds therefore gives 100000, not 600000. No FoxIO vector
+holds a difference of one second or more, so `ja4plus` divides the whole
+difference and no vector separates the two readings.
 
 ---
 
@@ -100,12 +168,78 @@ Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/technical_details
 it. A capture of 10 SSH packets produced a fingerprint that no reference
 implementation matches.
 
-### The remainder of a stream
+### The bare ACK
 
-The reference emits the packets that remain when a stream ends. On `ssh-r.pcap`
-stream 1 the reference holds `c64s64_c6s5_c4s5`, which counts 11 SSH packets.
-ja4plus emits no such fingerprint, because it holds no end-of-capture step. The
-deviation register records the cases.
+A bare ACK is one packet that carries the ACK flag alone and no payload. FoxIO
+counts one only when the TCP flags equal `0x0010`, so a SYN+ACK, a FIN+ACK and a
+RST+ACK never reach the bare-ACK counter.
+
+The ACK that completes the TCP handshake is a bare ACK, and it arrives before the
+first SSH packet of the connection. FoxIO counts it, because `python/ja4.py` holds
+a state table entry for every packet whose source port or destination port is 22.
+Four vectors confirm the reading. `ssh-r.pcap`, `ssh-scp-1050.pcap` and
+`ssh2.pcapng` each hold one bare client ACK before the first SSH packet, and each
+reference value reports one more client ACK than a state table built on SSH data
+alone. `ssh.pcapng` holds no bare ACK, and its value is unchanged.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4ssh.py
+(retrieved 2026-08-06).
+
+**BUG (fixed by #92):** Before #92 the fingerprinter created a state table entry
+on the first SSH packet, so it dropped the ACK of the TCP handshake. It also read
+the ACK flag alone, so it counted a SYN+ACK, a FIN+ACK and a RST+ACK as bare ACKs.
+
+### The window a connection holds open
+
+A connection that closes emits the window it holds open. `python/ja4.py` states the
+rule above `finalize_ja4ssh`: `If the SSH connection is not terminated or the last
+sample is less than 200 the finalize function just cleans up and prints the last
+JA4SSH hash`. That function runs on a packet that carries the FIN flag and the ACK
+flag. An empty window emits nothing, so the second FIN packet of a close finds the
+window the first FIN packet emptied and adds no value.
+
+`ssh-r.pcap` confirms the reading. Stream 1 holds 11 SSH packets and one
+occurrence, `c64s64_c6s5_c4s5`. Stream 2 holds 931 SSH packets, four full windows,
+and a fifth occurrence of 131 packets. `ssh-scp-1050.pcap` and `ssh2.pcapng` carry
+no FIN packet, and each keeps its full windows alone.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4.py
+(retrieved 2026-08-06).
+
+### Three defects of the reference
+
+`ja4plus` declines to reproduce three results of the reference. Each one describes
+the capture and not the connection, so a user cannot compare it against the output
+of another tool. The measurement ran `python/ja4.py` at the pinned commit against
+`tshark` 4.6.7.
+
+**The mode field reads the whole capture.** `dict(ja4sh_stats)` copies the
+dictionary and not the two lists inside it, so every window on every connection
+shares one `client_payloads` list and one `server_payloads` list. `ssh-r.pcap`
+stream 2 window 1 reports `c64s64`, and the packets of that window read `c76s76`.
+`ja4plus` reads the lengths of the window. #96 records the decision.
+
+**A bare ACK writes another occurrence.** `(entry['count'] % ssh_sample_count) == 0`
+stays true for every bare ACK that follows a window boundary, so each of those
+packets writes the next occurrence key from a window that holds no SSH packet.
+`ssh-r.pcap` stream 0 holds `JA4SSH.2` equal to `c64s64_c0s0_c0s1`. `ja4plus` emits
+a value only for a window that holds SSH packets. #97 records the decision.
+
+**The stream index 0 is false.** `finalize_ja4ssh` guards with `if stream:`, so the
+reference emits no trailing window for the connection it holds at index 0.
+`gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` each hold their SSH connection at that
+index, and the reference holds no JA4SSH value for any of them. The same run, with
+that guard read as `if stream is not None:` and nothing else changed, emits
+`c24s23_c4s4_c5s4` for `gre-sample.pcap` and `c20s12_c18s23_c10s1` for `sshv1.pcap`.
+`ja4plus` emits the window for every connection that closes. #105 records the
+decision.
+
+### The TCP segment
+
+ja4plus counts one SSH packet for every TCP segment that carries a payload, and
+the reference counts the packets `tshark` labels `ssh`. `tshark` labels the segment
+that completes an SSH message and not the earlier segment, so the two disagree by
+one packet for each message that spans two segments. #98 owns the defect.
 
 ### Direction detection on non-standard ports
 
@@ -117,11 +251,71 @@ should be server. Fixed by swapping the assignment.
 
 ## JA4X - X.509 Certificates
 
+### The scan reads the record layer, then the handshake messages
+
+FoxIO publishes JA4X as an image, so the expected-output files decide. One TLS
+record carries more than one handshake message, and one handshake message spans
+more than one record. A scan that reads only the first handshake message of a
+record misses the Certificate message that follows a ServerHello in the same
+record. `latest.pcapng` stream 9 holds one 7136-byte record that carries both
+messages, and the reference holds
+`a373a9f83c6b_2bab15409345_0f2217ba412e` for it.
+
+The scan therefore joins the payload of every complete handshake record that
+follows without a gap, then reads the handshake messages of the joined bytes.
+A proxy writes its own handshake first. The stream does not always start on a
+record boundary, so the scan looks for the boundary one byte at a time.
+`socks-https-example.pcap` supports this reading.
+
+### One value for each certificate on each stream
+
+`python/ja4x.py` of the FoxIO repository states "JA4X does not use any caching
+from common.py", and it computes one JA4X value for each certificate of the
+stream it reads. The key of the processed certificate set names the stream and
+the certificate. A key that named only the certificate dropped the value of
+every stream after the first that carried the same chain.
+`socks-https-example.pcap` streams 2 and 4 exposed that defect.
+
+Verified against
+`https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4x.py` (retrieved
+2026-08-06).
+
 ### Certificate deduplication cleanup
 
-The processed certificate set is pruned when it exceeds 1000 entries,
-keeping the most recent 500. This is a memory management strategy,
-not a hard limit on unique certificates.
+The processed certificate table holds 1000 entries. When the table is full, the
+fingerprinter drops the oldest 500. This is a memory management strategy, not a
+hard limit on unique certificates.
+
+The eviction runs on each new entry. A wall clock gated it before, and a capture
+replays faster than real time, so the table grew without a limit between two
+runs of a gated eviction.
+
+### The scan offset of a stream
+
+The scan of one stream resumes where the last packet of the stream left it. A
+scan that starts at zero on every packet costs the square of the stream length,
+and `http2-with-cookies.pcapng` then takes 18 seconds.
+
+The offset is stored with the sequence number the reassembled bytes start at. A
+segment that arrives late lowers that number and moves every offset, so the scan
+starts at zero again when the two numbers differ.
+
+### Two reasons a JA4X value stays absent
+
+The reference reads the TLS dissection of `tshark`, and two of its abilities
+have no counterpart here.
+
+- `tshark` decrypts a TLS 1.3 handshake with the secrets a capture carries.
+  `http2-with-cookies.pcapng` and `chrome-cloudflare-quic-with-secrets.pcapng`
+  hold a decryption secrets block with a `SERVER_HANDSHAKE_TRAFFIC_SECRET`
+  entry, and the certificate of both reaches the wire encrypted. `ja4plus`
+  decrypts nothing, so it reads no certificate there.
+- `tshark` dissects TLS on the ports its dissector table names. It reads the
+  tunnel of `socks-https-example.pcap` on port 1080 and holds a JA4X value. It
+  reads no TLS on port 8080 of `https-connect.pcap`, and it reads none on port
+  9901 of `socks4-https.pcap`. `ja4plus` reads the record layer by content, so
+  it holds a JA4X value on all three. The deviation register records the two
+  cases where `ja4plus` holds a value the reference does not.
 
 ### TCP reassembly
 

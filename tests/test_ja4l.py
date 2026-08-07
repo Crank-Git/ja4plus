@@ -8,49 +8,38 @@ class TestJA4L(unittest.TestCase):
     def setUp(self):
         self.ja4l_fp = JA4LFingerprinter()
 
-        # Create test packets for a TCP handshake
+        # Create test packets for a TCP handshake. The client measurement point needs
+        # the relative sequence number 1 and the relative acknowledgement number 1, so
+        # the packets carry the sequence numbers a real handshake carries.
         self.syn_packet = IP(src="192.168.1.100", dst="93.184.216.34", ttl=128) / TCP(
-            sport=54321, dport=443, flags="S"
+            sport=54321, dport=443, flags="S", seq=0
         )
         self.synack_packet = IP(src="93.184.216.34", dst="192.168.1.100", ttl=64) / TCP(
-            sport=443, dport=54321, flags="SA"
+            sport=443, dport=54321, flags="SA", seq=0, ack=1
         )
         self.ack_packet = IP(src="192.168.1.100", dst="93.184.216.34", ttl=128) / TCP(
-            sport=54321, dport=443, flags="A"
+            sport=54321, dport=443, flags="A", seq=1, ack=1
         )
 
     def test_ja4l_direct_generation(self):
-        """Test JA4L with direct conn dict providing timestamps."""
-        # Simulate timestamps from a real handshake
-        now = time.time()
+        """Test JA4L with a conn dict the caller supplies."""
         conn = {
             "proto": "tcp",
-            "timestamps": {
-                "A": now - 0.050,  # SYN 50ms ago
-                "B": now - 0.020,  # SYN-ACK 20ms ago
-            },
-            "ttls": {
-                "client": 128,
-                "server": 64,
-            },
+            "timestamps": {},
+            "ttls": {},
+            "isns": {},
         }
 
-        # SYN-ACK generates server fingerprint - but only if timestamps A exists
-        # and we're processing a SYN-ACK packet
+        # The SYN records the client point, and the SYN-ACK reports the server value.
+        self.assertIsNone(generate_ja4l(self.syn_packet, conn))
         ja4l_server = generate_ja4l(self.synack_packet, conn)
-        print(f"JA4L Server fingerprint: {ja4l_server}")
-
-        # ACK generates client fingerprint
         ja4l_client = generate_ja4l(self.ack_packet, conn)
-        print(f"JA4L Client fingerprint: {ja4l_client}")
 
-        # Server should have generated from the SYN-ACK
         self.assertIsNotNone(ja4l_server, "JA4L server fingerprinting failed")
         self.assertTrue(
             ja4l_server.startswith("JA4L-S="), "Server fingerprint should start with JA4L-S="
         )
 
-        # Client should have generated from the ACK
         self.assertIsNotNone(ja4l_client, "JA4L client fingerprinting failed")
         self.assertTrue(
             ja4l_client.startswith("JA4L-C="), "Client fingerprint should start with JA4L-C="

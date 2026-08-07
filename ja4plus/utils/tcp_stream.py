@@ -73,6 +73,25 @@ class TCPStreamReassembler:
 
         return bytes(result)
 
+    def base_seq(self, key):
+        """Return the sequence number the reassembled stream starts at, or None.
+
+        `get_stream` starts at the lowest sequence number the stream holds, and a
+        segment that arrives late lowers it. A caller that remembers an offset into the
+        reassembled bytes needs this value to know that every offset moved.
+
+        Args:
+            key: The stream key.
+
+        Returns:
+            The lowest sequence number the stream holds, or None when it holds no
+            segment.
+        """
+        stream = self.streams.get(key)
+        if not stream or not stream["segments"]:
+            return None
+        return min(seq for seq, _ in stream["segments"])
+
     def remove_stream(self, key):
         """Remove a stream from tracking."""
         self.streams.pop(key, None)

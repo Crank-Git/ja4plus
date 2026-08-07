@@ -666,19 +666,25 @@ class TestJA4LComprehensive(unittest.TestCase):
 
     def test_handshake_produces_two_fingerprints(self):
         """Full handshake should produce server + client fingerprints."""
-        syn = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(sport=54321, dport=443, flags="S")
+        syn = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(
+            sport=54321, dport=443, flags="S", seq=0
+        )
         self.fp.process_packet(syn)
         time.sleep(0.002)
 
         synack = IP(src="10.0.0.2", dst="10.0.0.1", ttl=64) / TCP(
-            sport=443, dport=54321, flags="SA"
+            sport=443, dport=54321, flags="SA", seq=0, ack=1
         )
         server_fp = self.fp.process_packet(synack)
         self.assertIsNotNone(server_fp)
         self.assertTrue(server_fp.startswith("JA4L-S="))
 
         time.sleep(0.002)
-        ack = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(sport=54321, dport=443, flags="A")
+        # The client measurement point needs the relative sequence number 1 and the
+        # relative acknowledgement number 1, which the ACK of a handshake carries.
+        ack = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(
+            sport=54321, dport=443, flags="A", seq=1, ack=1
+        )
         client_fp = self.fp.process_packet(ack)
         self.assertIsNotNone(client_fp)
         self.assertTrue(client_fp.startswith("JA4L-C="))
