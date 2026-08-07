@@ -113,3 +113,28 @@ def test_a_connection_of_100_bare_acks_stores_one_client_value():
 def test_a_capture_that_starts_after_the_handshake_reports_nothing():
     """The fingerprinter needs the SYN, so a capture without one gives no value."""
     assert _values([_client("A", 1, 1, 0.000), _client("PA", 1, 1, 0.001, b"hello")]) == []
+
+
+def test_a_syn_with_no_syn_ack_reports_no_value():
+    """A connection that never answers the SYN gives no value on either direction.
+
+    The reference reads point `B` from the SYN-ACK. Point `B` ends the server value and
+    starts the client value, so a connection without a SYN-ACK reaches neither one.
+    `ssh2.pcapng` holds 11 such connections, and its expected-output file names none of
+    them. Read #156 for the measurement.
+    """
+    assert _values([_client("S", 0, 0, 0.000), _client("S", 0, 0, 1.000)]) == []
+
+
+def test_a_syn_ack_with_no_client_packet_reports_the_server_value_alone():
+    """A connection that stops after the SYN-ACK still gives the server value.
+
+    The reference gates the two values apart. Point `A` and point `B` complete the
+    server value, and the client value needs point `C` as well. A rule that held the
+    server value back until the client point arrived would drop this value.
+
+    Two committed vectors prove the split on the QUIC form. `ssh2.pcapng` stream 33 and
+    `tls3.pcapng` stream 25 each hold a `JA4L-S` and no `JA4L-C` in the expected-output
+    file.
+    """
+    assert _values([_client("S", 0, 0, 0.000), _server("SA", 0, 1, 0.001)]) == ["JA4L-S=500_64"]
