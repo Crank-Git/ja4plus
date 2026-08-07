@@ -601,32 +601,3 @@ def generate_ja4l(packet, conn=None):
     except (ValueError, TypeError, IndexError, AttributeError) as e:
         logger.debug(f"Packet does not contain JA4L data: {e}")
         return None
-
-
-def _src_is_client(packet, conn):
-    """
-    Determine if the source of the packet is the client side.
-
-    Args:
-        packet: The packet to analyze
-        conn: Connection tracking information
-
-    Returns:
-        True if the source is the client, False otherwise
-    """
-    from ja4plus.utils.packet_utils import get_ip_layer
-
-    ip_layer = get_ip_layer(packet)
-    if ip_layer is None:
-        return False
-
-    src_ip = ip_layer.src
-
-    if conn.get("direction") == "forward":
-        conn_key = conn.get("conn_key", "")
-        parts = conn_key.split("_")
-        if len(parts) >= 2:
-            client_part = parts[1].split(":")[0]
-            return src_ip == client_part
-
-    return False
