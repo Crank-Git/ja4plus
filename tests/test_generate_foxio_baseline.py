@@ -5,9 +5,10 @@ the owning issue from the failure message, so a defect in that reading puts a fa
 cause and a false owner on hundreds of entries. These tests check the reading.
 """
 
+import json
 from types import SimpleNamespace
 
-from tests.foxio_deviations import Deviation
+from tests.foxio_deviations import REGISTER_PATH
 from tests.generate_foxio_baseline import (
     JA4_O_EMPTY_EXTENSION_ISSUE,
     JA4H_RAW_ISSUE,
@@ -17,6 +18,7 @@ from tests.generate_foxio_baseline import (
     _entry,
     _failure_line,
     _register,
+    _write,
 )
 
 # pytest prints the source of the test above the failure line. The source holds the
@@ -186,7 +188,7 @@ class TestTheCommittedEntry:
         )
 
     def test_a_committed_entry_survives_the_regeneration(self):
-        committed = {"v.pcap/0:443/JA4X.1": Deviation(issue=78, cause="The reference decrypts.")}
+        committed = {"v.pcap/0:443/JA4X.1": {"issue": 78, "cause": "The reference decrypts."}}
         register, _ = _register(self._collector(), committed)
         assert register["v.pcap/0:443/JA4X.1"] == {
             "issue": 78,
@@ -199,3 +201,79 @@ class TestTheCommittedEntry:
             "issue": 78,
             "cause": "The produced JA4X value differs from the reference.",
         }
+
+    def test_a_committed_entry_keeps_the_decided_field(self):
+        entry = {"cause": "The reference decrypts.", "decided": True, "issue": 78}
+        register, _ = _register(self._collector(), {"v.pcap/0:443/JA4X.1": entry})
+        assert register["v.pcap/0:443/JA4X.1"] == entry
+
+    def test_a_committed_entry_keeps_the_order_of_its_fields(self):
+        entry = {"cause": "The reference decrypts.", "decided": True, "issue": 78}
+        register, _ = _register(self._collector(), {"v.pcap/0:443/JA4X.1": entry})
+        assert list(register["v.pcap/0:443/JA4X.1"]) == ["cause", "decided", "issue"]
+
+    def test_a_key_that_stops_failing_leaves_the_register(self):
+        committed = {
+            "v.pcap/0:443/JA4X.1": {"issue": 78, "cause": "The reference decrypts."},
+            "gone.pcap/0:443/JA4X.1": {"issue": 78, "cause": "A fix landed."},
+        }
+        register, _ = _register(self._collector(), committed)
+        assert "gone.pcap/0:443/JA4X.1" not in register
+
+
+def _collector_for(keys):
+    """Return a collector that reports one failed case for each register key.
+
+    The generator reads the parameters of a case, not its key, so a test that starts
+    from a key must rebuild the parameters that produce it.
+
+    Args:
+        keys: The register keys, in either of the two key forms.
+
+    Returns:
+        A collector that carries one failure for each key.
+    """
+    failures = []
+    params = {}
+    for key in keys:
+        parts = key.split("/")
+        if len(parts) == 3:
+            vector, stream, tail = parts
+            index, port = stream.split(":")
+            method, occurrence = tail.rsplit(".", 1)
+            case = {
+                "method": method,
+                "pcap_path": SimpleNamespace(name=vector),
+                "stream": SimpleNamespace(index=index, src_port=port),
+                "occurrence": int(occurrence),
+            }
+        else:
+            vector, method = parts
+            case = {"method": method, "pcap_path": SimpleNamespace(name=vector)}
+        nodeid = "tests/test_spec_validation.py::test_case[{}]".format(key)
+        params[nodeid] = SimpleNamespace(params=case)
+        failures.append((nodeid, "E           Failed: {}".format(key)))
+    return SimpleNamespace(failures=failures, params=params)
+
+
+class TestTheCommittedRegisterAfterARun:
+    """Check that a run which finds the same deviations changes no committed byte.
+
+    The generator is the documented way to add a vector. A run that rewrites an entry
+    it did not measure destroys the `decided` field a person set, and it buries the one
+    real change under a diff of every entry.
+    """
+
+    def test_a_run_that_finds_the_same_deviations_writes_the_same_bytes(self, tmp_path):
+        committed = json.loads(REGISTER_PATH.read_text())
+        register, other = _register(_collector_for(committed), committed)
+        written = tmp_path / "foxio_deviations.json"
+        _write(written, register)
+        assert written.read_text() == REGISTER_PATH.read_text()
+        assert other == []
+
+    def test_the_run_keeps_every_decided_entry(self, tmp_path):
+        committed = json.loads(REGISTER_PATH.read_text())
+        decided = [key for key, entry in committed.items() if entry.get("decided")]
+        register, _ = _register(_collector_for(committed), committed)
+        assert [key for key, entry in register.items() if entry.get("decided")] == decided

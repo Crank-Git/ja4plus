@@ -22,9 +22,15 @@ It overwrites both files. Read the difference before you commit it. A method thi
 program does not know an issue for stops the run, because an entry with no issue number
 is not allowed.
 
-A key the committed register already holds keeps its committed entry. A cause this
-program reads from a failure message states the symptom, and a person states the
-mechanism. A key that stops failing still disappears.
+The register run merges. A key the committed register already holds keeps its stored
+entry, with every field and in the field order the file holds. A cause this program
+reads from a failure message states the symptom, and a person states the mechanism, and
+the `decided` field records that a person settled the deviation. This program writes a
+new entry only for a deviation the register does not hold. A key that stops failing
+still disappears.
+
+A run that measures the deviations the register already holds therefore changes no byte
+of `tests/foxio_deviations.json`.
 """
 
 import json
@@ -250,20 +256,46 @@ def _manifest(collector):
     return {vector: counts[vector] for vector in sorted(counts)}
 
 
+def _committed(path=REGISTER_PATH):
+    """Return the committed register as the file writes it.
+
+    A key that still fails keeps its stored entry, so the entry must arrive with every
+    field and in the field order the file holds. A parsed entry carries neither: the
+    Deviation class names three fields, and it states no order.
+
+    Args:
+        path: The path of the register file. Defaults to the committed register.
+
+    Returns:
+        A map of key to the stored entry. An absent file gives an empty map.
+
+    Raises:
+        ValueError: An entry names no issue, or states no cause, or is not a table.
+    """
+    # The reader rejects a malformed entry, and this program refuses to write over one.
+    load_register(path)
+    if not Path(path).exists():
+        return {}
+    with open(path) as handle:
+        return json.load(handle)
+
+
 def _register(collector, committed):
     """Return the register entries and the failures that are not conformance cases.
 
     A structural test, such as the manifest check, carries no method parameter. It is
     not a registrable case, so this program reports it instead of recording it.
 
-    A key the committed register already holds keeps its committed entry. A cause this
-    program reads from a failure message states the symptom, and a person states the
-    mechanism. #78, #96, #97 and #105 hold mechanisms no failure message carries, and a
-    mechanical rewrite would destroy them. A key that stops failing still disappears.
+    A key the committed register already holds keeps its stored entry, byte for byte. A
+    cause this program reads from a failure message states the symptom, and a person
+    states the mechanism. #78, #96, #97 and #105 hold mechanisms no failure message
+    carries, and a mechanical rewrite would destroy them. The `decided` field records
+    that a person settled the deviation, and this program measures no such field, so a
+    rewrite of a stored entry would delete it. A key that stops failing still disappears.
 
     Args:
         collector: The collector that ran the suite.
-        committed: The register the repository holds today.
+        committed: The stored register, as `_committed` returns it.
 
     Returns:
         A (register, other) pair. The register maps each key to its entry, sorted by
@@ -288,16 +320,13 @@ def _register(collector, committed):
             key = occurrence_key(vector, method)
             occurrence_form = True
         held = committed.get(key)
-        if held is None:
-            register[key] = _entry(method, message, occurrence_form)
-        else:
-            register[key] = {"issue": held.issue, "cause": held.cause}
+        register[key] = _entry(method, message, occurrence_form) if held is None else held
     return {key: register[key] for key in sorted(register)}, other
 
 
 def main():
     # Read the committed register before the run overwrites it.
-    committed = load_register()
+    committed = _committed()
     os.environ[IGNORE_VARIABLE] = "1"
     collector = _CaseCollector()
     pytest.main([SUITE, "-m", "spec_validation", "-q", "-p", "no:randomly"], plugins=[collector])

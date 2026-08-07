@@ -15,10 +15,11 @@ today, so a deleted vector that passes leaves nothing behind to notice.
 ## How to add a vector
 
 1. Put the capture and its expected-output file under `tests/foxio_vectors/`.
-2. Run `python tests/generate_foxio_baseline.py`. It rewrites the manifest and the
-   register from the vectors it finds.
+2. Run `python tests/generate_foxio_baseline.py`. It rewrites the manifest from the
+   vectors it finds, and it merges the measurement into the register.
 3. Read the difference. The manifest gains one line, and the register gains one entry
-   for each case the new vector fails.
+   for each case the new vector fails. An entry the register already holds keeps every
+   field, so the `decided` field of a settled deviation survives the run.
 
 A vector is a two-file change on purpose. A capture that arrives without a manifest
 line, or leaves without one, fails the suite.
