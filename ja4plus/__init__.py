@@ -31,11 +31,16 @@ from ja4plus.fingerprinters.ja4d import generate_ja4d
 from ja4plus.fingerprinters.ja4d6 import generate_ja4d6
 
 from ja4plus.utils.loopback import bind_loopback_ipv6
+from ja4plus.utils.tunnels import register_tunnel_dissectors
 
 # scapy binds one loopback address family value, the value of the reading host. Without
 # this call a loopback capture that carries IPv6 produces fingerprints on Darwin and
 # none on Linux. Issue #94 records the measurement.
 bind_loopback_ipv6()
+
+# scapy leaves Geneve, VXLAN and ERSPAN unbound. Without this call a fingerprinter
+# reads no TCP layer of a mirrored capture, such as `tcpdump-geneve.pcap`.
+register_tunnel_dissectors()
 
 
 def compute_ja4x_from_der(cert_der_bytes):

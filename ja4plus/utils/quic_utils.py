@@ -18,6 +18,49 @@ logger = logging.getLogger(__name__)
 QUIC_V1_SALT = bytes.fromhex("38762cf7f55934b34d179ae6a4c80cadccbb7f0a")
 QUIC_V2_SALT = bytes.fromhex("0dede3def700a6db819381be6e269dcbf9bd2ed9")
 
+QUIC_V2_VERSION = 0x6B3343CF
+
+# The long-header packet types of QUIC version 1 (RFC 9000 Section 17.2).
+QUIC_INITIAL = 0
+QUIC_ZERO_RTT = 1
+QUIC_HANDSHAKE = 2
+QUIC_RETRY = 3
+
+# QUIC version 2 gives the same four types different codes (RFC 9369 Section 3.2).
+# This table reads a version 2 code and returns the version 1 code, so that a caller
+# compares one number for both versions.
+_VERSION_2_PACKET_TYPES = {
+    1: QUIC_INITIAL,
+    2: QUIC_ZERO_RTT,
+    3: QUIC_HANDSHAKE,
+    0: QUIC_RETRY,
+}
+
+
+def long_header_packet_type(udp_payload):
+    """Return the long-header packet type of a QUIC datagram, or None.
+
+    Args:
+        udp_payload: The bytes of the UDP payload.
+
+    Returns:
+        `QUIC_INITIAL`, `QUIC_ZERO_RTT`, `QUIC_HANDSHAKE` or `QUIC_RETRY`. Returns
+        None when the datagram is too short, when it holds a short header, or when it
+        holds a version negotiation packet.
+    """
+    if len(udp_payload) < 5:
+        return None
+    first_byte = udp_payload[0]
+    if not first_byte & 0x80:
+        return None
+    version = struct.unpack("!I", udp_payload[1:5])[0]
+    if version == 0:
+        return None
+    packet_type = (first_byte & 0x30) >> 4
+    if version == QUIC_V2_VERSION:
+        return _VERSION_2_PACKET_TYPES.get(packet_type)
+    return packet_type
+
 
 def _decode_varint(data):
     """Decode a QUIC variable-length integer (RFC 9000 Section 16)."""

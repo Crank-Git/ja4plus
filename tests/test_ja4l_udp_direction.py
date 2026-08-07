@@ -1,89 +1,80 @@
-"""JA4L UDP/QUIC direction-independence test.
+"""JA4L QUIC direction tests.
 
-Previously the UDP/QUIC timing path silently failed when the first packet
-came from the lexicographically-larger IP (direction='reverse' in the
-internal conn_key). The fix: identify the client by FIRST-PACKET ordering,
-not by conn_key direction.
+The QUIC form reads the direction of a flow from port 443, as the reference does. The
+lexicographic order of the two addresses decides the internal connection key, and it
+must not decide which endpoint is the client. An earlier defect made the timing path
+report nothing when the client address sorted after the server address.
 """
 
-import os
+from scapy.all import IP, UDP, Raw
 
-import pytest
+from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
+from ja4plus.utils.quic_utils import QUIC_HANDSHAKE, QUIC_INITIAL
 
-
-def _udp_packet(src_ip, dst_ip, sport, dport, payload=b"\x00", t=0.0):
-    """Build a synthetic UDP packet with a pcap timestamp."""
-    from scapy.all import IP, UDP, Raw
-
-    pkt = IP(src=src_ip, dst=dst_ip) / UDP(sport=sport, dport=dport) / Raw(load=payload)
-    pkt.time = t
-    return pkt
+# A QUIC version 1 long header: the first byte, the version, and a zero-length
+# destination connection identifier. RFC 9000 Section 17.2 gives the layout.
+QUIC_VERSION_1 = b"\x00\x00\x00\x01"
 
 
-def test_udp_timing_works_with_lex_smaller_client():
-    """Client IP < server IP — direction='forward' in old logic. Sanity check."""
-    from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
-
-    fp = JA4LFingerprinter()
-    # client 10.0.0.1 -> server 10.0.0.2
-    fp.process_packet(_udp_packet("10.0.0.1", "10.0.0.2", 50000, 443, t=0.0))
-    result = fp.process_packet(_udp_packet("10.0.0.2", "10.0.0.1", 443, 50000, t=0.001))
-    assert result is not None
-    assert result.startswith("JA4L-S=")
+def _quic_packet(src_ip, dst_ip, sport, dport, packet_type, t=0.0):
+    """Build a UDP packet that carries one QUIC long header."""
+    first_byte = bytes([0xC0 | (packet_type << 4)])
+    payload = first_byte + QUIC_VERSION_1 + b"\x00" * 16
+    packet = IP(src=src_ip, dst=dst_ip) / UDP(sport=sport, dport=dport) / Raw(load=payload)
+    packet.time = t
+    return packet
 
 
-def test_udp_timing_works_with_lex_larger_client():
-    """Client IP > server IP — direction='reverse' in old logic.
-
-    BEFORE the fix this returned None forever (no timestamps recorded).
-    AFTER the fix the first-packet sender is treated as the client, and a
-    JA4L-S fingerprint is emitted on the response.
-    """
-    from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
-
-    fp = JA4LFingerprinter()
-    # client 10.0.0.99 -> server 10.0.0.1 — client IP is lexicographically greater
-    fp.process_packet(_udp_packet("10.0.0.99", "10.0.0.1", 50000, 443, t=0.0))
-    result = fp.process_packet(_udp_packet("10.0.0.1", "10.0.0.99", 443, 50000, t=0.002))
-    assert result is not None, "JA4L-S not emitted for server-direction-first conn"
-    assert result.startswith("JA4L-S=")
+def test_the_server_value_appears_when_the_client_address_sorts_first():
+    """The fingerprinter reports the server value for a client address that sorts first."""
+    fingerprinter = JA4LFingerprinter()
+    fingerprinter.process_packet(
+        _quic_packet("10.0.0.1", "10.0.0.2", 50000, 443, QUIC_INITIAL, t=0.0)
+    )
+    result = fingerprinter.process_packet(
+        _quic_packet("10.0.0.2", "10.0.0.1", 443, 50000, QUIC_INITIAL, t=0.001)
+    )
+    assert result == "JA4L-S=500_64"
 
 
-def test_udp_timing_full_round_trip_emits_jal_c():
-    """Three-packet exchange — A (client) / B (server) / C (client) / D (server)
-    produces both -S and -C fingerprints regardless of IP ordering."""
-    from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
-
-    fp = JA4LFingerprinter()
-    # Use a high-IP client to exercise the previously-broken path
-    a = fp.process_packet(_udp_packet("192.168.1.50", "10.0.0.1", 50000, 443, t=0.0))
-    s = fp.process_packet(_udp_packet("10.0.0.1", "192.168.1.50", 443, 50000, t=0.002))
-    c = fp.process_packet(_udp_packet("192.168.1.50", "10.0.0.1", 50000, 443, t=0.004))
-    d = fp.process_packet(_udp_packet("10.0.0.1", "192.168.1.50", 443, 50000, t=0.006))
-
-    assert a is None
-    assert s is not None and s.startswith("JA4L-S="), s
-    assert c is None
-    assert d is not None and d.startswith("JA4L-C="), d
+def test_the_server_value_appears_when_the_client_address_sorts_last():
+    """The fingerprinter reports the server value for a client address that sorts last."""
+    fingerprinter = JA4LFingerprinter()
+    fingerprinter.process_packet(
+        _quic_packet("10.0.0.99", "10.0.0.1", 50000, 443, QUIC_INITIAL, t=0.0)
+    )
+    result = fingerprinter.process_packet(
+        _quic_packet("10.0.0.1", "10.0.0.99", 443, 50000, QUIC_INITIAL, t=0.002)
+    )
+    assert result == "JA4L-S=1000_64"
 
 
-@pytest.mark.skipif(
-    not os.path.exists("tests/foxio_vectors/pcap/chrome-cloudflare-quic-with-secrets.pcapng"),
-    reason="Chrome-Cloudflare QUIC fixture missing",
-)
-def test_quic_real_pcap_emits_both_directions():
-    from scapy.all import rdpcap
-    from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
+def test_the_client_value_measures_the_two_handshake_packets():
+    """The client value measures the last server Handshake packet to the first client one."""
+    fingerprinter = JA4LFingerprinter()
+    initial_client = fingerprinter.process_packet(
+        _quic_packet("192.168.1.50", "10.0.0.1", 50000, 443, QUIC_INITIAL, t=0.0)
+    )
+    initial_server = fingerprinter.process_packet(
+        _quic_packet("10.0.0.1", "192.168.1.50", 443, 50000, QUIC_INITIAL, t=0.002)
+    )
+    handshake_server = fingerprinter.process_packet(
+        _quic_packet("10.0.0.1", "192.168.1.50", 443, 50000, QUIC_HANDSHAKE, t=0.004)
+    )
+    handshake_client = fingerprinter.process_packet(
+        _quic_packet("192.168.1.50", "10.0.0.1", 50000, 443, QUIC_HANDSHAKE, t=0.006)
+    )
 
-    fp = JA4LFingerprinter()
-    pkts = rdpcap("tests/foxio_vectors/pcap/chrome-cloudflare-quic-with-secrets.pcapng")
-    seen = []
-    for pkt in pkts:
-        result = fp.process_packet(pkt)
-        if result:
-            seen.append(result)
+    assert initial_client is None
+    assert initial_server == "JA4L-S=1000_64"
+    assert handshake_server is None
+    assert handshake_client == "JA4L-C=1000_64"
 
-    # We don't pin exact latencies, but at least one of each direction should
-    # appear if the conversation is bidirectional QUIC.
-    has_s = any(s.startswith("JA4L-S=") for s in seen)
-    assert has_s, f"no JA4L-S in {seen}"
+
+def test_the_fingerprinter_reports_nothing_for_a_udp_flow_that_carries_no_quic():
+    """A UDP flow that carries no QUIC long header produces no JA4L value."""
+    fingerprinter = JA4LFingerprinter()
+    packet = IP(src="10.0.0.1", dst="10.0.0.2") / UDP(sport=50000, dport=53) / Raw(load=b"\x00")
+    packet.time = 0.0
+    assert fingerprinter.process_packet(packet) is None
+    assert fingerprinter.get_fingerprints() == []

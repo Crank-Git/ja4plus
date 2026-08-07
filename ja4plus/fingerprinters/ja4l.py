@@ -1,9 +1,18 @@
-"""
-JA4L Light Distance/Location Fingerprinting implementation.
+"""JA4L light distance fingerprints.
 
-JA4L measures the latency between client and server by analyzing
-TCP handshake timing, allowing for physical distance estimation.
-Format: JA4L-C=<latency_us>_<ttl> and JA4L-S=<latency_us>_<ttl>
+JA4L reports the one-way latency of a connection and the observed TTL, so that a
+reader estimates the distance between the client and the server. The TCP form reads
+the handshake. The QUIC form reads the Initial packets and the Handshake packets.
+Format: `JA4L-C=<latency_us>_<ttl>` and `JA4L-S=<latency_us>_<ttl>`.
+
+The reference holds four measurement points on a TCP connection:
+
+- `A` is the first SYN, and it carries the client TTL.
+- `B` is the first SYN-ACK, and it carries the server TTL.
+- `C` is the last packet that carries the relative sequence number 1 and the relative
+  acknowledgement number 1, and that holds no complete HTTP request.
+
+`JA4L-S` is half the time from `A` to `B`. `JA4L-C` is half the time from `B` to `C`.
 """
 
 import time
@@ -11,8 +20,27 @@ import logging
 from scapy.all import IP, IPv6, TCP, UDP
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
+from ja4plus.utils.http_utils import is_http_request
+from ja4plus.utils.quic_utils import (
+    QUIC_HANDSHAKE,
+    QUIC_INITIAL,
+    long_header_packet_type,
+)
 
 logger = logging.getLogger(__name__)
+
+# FoxIO reports one-way latency, so it halves every measured round-trip time. The
+# JA4L material states "One-way TCP latency in us", and every vector holds half of
+# the time the capture shows.
+LATENCY_DIVISOR = 2
+
+# The reference reads the direction of a QUIC flow from this port. A QUIC flow on
+# another port carries no JA4L value, because neither endpoint is then the server.
+QUIC_PORT = 443
+
+# A TCP sequence number and acknowledgement number are 32 bits wide, so a relative
+# number needs this mask.
+SEQUENCE_MASK = 0xFFFFFFFF
 
 
 class JA4LFingerprinter(BaseFingerprinter):
@@ -72,18 +100,30 @@ class JA4LFingerprinter(BaseFingerprinter):
                 "conn_key": conn_key,
                 "timestamps": {},
                 "ttls": {},
+                "isns": {},
             }
 
         conn = self.connections[conn_key]
         fingerprint = generate_ja4l(packet, conn)
 
-        if fingerprint:
-            self.fingerprints.append(
-                {"fingerprint": fingerprint, "packet": packet, "connection": conn_key}
-            )
-            return fingerprint
+        if not fingerprint:
+            return None
 
-        return None
+        # The reference holds one client value for one connection and overwrites it
+        # while the measurement point moves. A later packet therefore replaces the
+        # value this fingerprinter already reported, and it adds no second value.
+        if fingerprint.startswith("JA4L-C="):
+            index = conn.get("client_entry")
+            if index is not None:
+                self.fingerprints[index]["fingerprint"] = fingerprint
+                self.fingerprints[index]["packet"] = packet
+                return fingerprint
+            conn["client_entry"] = len(self.fingerprints)
+
+        self.fingerprints.append(
+            {"fingerprint": fingerprint, "packet": packet, "connection": conn_key}
+        )
+        return fingerprint
 
     def reset(self):
         """Reset all fingerprints and connection tracking."""
@@ -164,113 +204,200 @@ class JA4LFingerprinter(BaseFingerprinter):
             return 255 - ttl
 
 
-def generate_ja4l(packet, conn=None):
-    """
-    Generate JA4L latency fingerprint based on packet timing.
-
-    Uses the TCP 3-way handshake or QUIC handshake to measure one-way latency.
-    Time is measured in microseconds.
+def _packet_microseconds(packet):
+    """Return the timestamp of one packet, in microseconds.
 
     Args:
-        packet: A network packet
-        conn: Connection tracking object with timestamps dict
+        packet: A network packet.
 
     Returns:
-        JA4L fingerprint string if successful, None otherwise
+        The capture timestamp when the packet carries one, and the wall clock when it
+        does not. A capture file replays faster than real time, so an offline read
+        needs the capture timestamp.
+    """
+    seconds = float(packet.time) if hasattr(packet, "time") else time.time()
+    return int(round(seconds * 1000000))
+
+
+def _one_way_latency(start, end):
+    """Return the one-way latency between two timestamps, in microseconds.
+
+    Args:
+        start: The earlier timestamp, in microseconds.
+        end: The later timestamp, in microseconds.
+
+    Returns:
+        Half the time between the two timestamps, truncated toward zero.
+    """
+    return int((end - start) / LATENCY_DIVISOR)
+
+
+def _relative_numbers(conn, source, target, tcp_layer):
+    """Return the relative sequence number and acknowledgement number of one packet.
+
+    Args:
+        conn: The connection state.
+        source: The (address, port) pair of the sender.
+        target: The (address, port) pair of the receiver.
+        tcp_layer: The TCP layer of the packet.
+
+    Returns:
+        A (sequence, acknowledgement) pair, counted from the initial sequence number
+        of each endpoint. Returns None when the capture holds no SYN for one endpoint,
+        because a relative number needs that initial sequence number.
+    """
+    initial = conn.get("isns", {})
+    if source not in initial or target not in initial:
+        return None
+    sequence = (int(tcp_layer.seq) - initial[source]) & SEQUENCE_MASK
+    acknowledgement = (int(tcp_layer.ack) - initial[target]) & SEQUENCE_MASK
+    return sequence, acknowledgement
+
+
+def _holds_a_complete_http_request(payload):
+    """Report whether the payload holds an HTTP request with its whole header block.
+
+    The reference keeps the timestamps of a packet under the protocol its dissector
+    reports. A packet that holds a whole HTTP request reaches a separate cache, so it
+    never moves the client measurement point. A packet that holds the first part of a
+    request reaches the same cache as any other TCP packet, and it does move the
+    point. `http-empty-useragent.pcap` and `latest.pcapng` prove both halves.
+
+    Args:
+        payload: The TCP payload bytes.
+
+    Returns:
+        True when the payload starts an HTTP request and holds the blank line that
+        ends the header block.
+    """
+    if not is_http_request(payload):
+        return False
+    return b"\r\n\r\n" in payload or b"\n\n" in payload
+
+
+def _tcp_ja4l(packet, conn, ip_layer, ttl, now):
+    """Return the JA4L value one TCP packet produces, or None."""
+    tcp_layer = packet[TCP]
+    flags = int(tcp_layer.flags)
+    syn = bool(flags & 0x02)
+    ack = bool(flags & 0x10)
+    source = (ip_layer.src, int(tcp_layer.sport))
+    target = (ip_layer.dst, int(tcp_layer.dport))
+    timestamps = conn["timestamps"]
+    ttls = conn["ttls"]
+
+    if syn:
+        conn.setdefault("isns", {})[source] = int(tcp_layer.seq)
+
+    if syn and not ack:
+        if "A" not in timestamps:
+            timestamps["A"] = now
+            ttls["client"] = ttl
+        return None
+
+    if syn and ack:
+        if "B" not in timestamps:
+            timestamps["B"] = now
+            ttls["server"] = ttl
+        if "A" not in timestamps:
+            return None
+        return "JA4L-S={}_{}".format(
+            _one_way_latency(timestamps["A"], timestamps["B"]), ttls["server"]
+        )
+
+    if not ack or "B" not in timestamps or "client" not in ttls:
+        return None
+
+    # The reference moves the client measurement point to every packet that starts
+    # the payload of its sender and acknowledges no payload. That is the bare ACK of
+    # the handshake first, and then the first packet of the application handshake.
+    if _relative_numbers(conn, source, target, tcp_layer) != (1, 1):
+        return None
+    if _holds_a_complete_http_request(bytes(tcp_layer.payload)):
+        return None
+
+    timestamps["C"] = now
+    return "JA4L-C={}_{}".format(_one_way_latency(timestamps["B"], timestamps["C"]), ttls["client"])
+
+
+def _quic_ja4l(packet, conn, ttl, now):
+    """Return the JA4L value one QUIC packet produces, or None."""
+    udp_layer = packet[UDP]
+    packet_type = long_header_packet_type(bytes(udp_layer.payload))
+    if packet_type is None:
+        return None
+    to_server = int(udp_layer.dport) == QUIC_PORT
+    from_server = int(udp_layer.sport) == QUIC_PORT
+    timestamps = conn["timestamps"]
+    ttls = conn["ttls"]
+
+    if packet_type == QUIC_INITIAL:
+        if to_server and "A" not in timestamps:
+            timestamps["A"] = now
+            ttls["client"] = ttl
+        elif from_server and "A" in timestamps and "B" not in timestamps:
+            timestamps["B"] = now
+            ttls["server"] = ttl
+            return "JA4L-S={}_{}".format(
+                _one_way_latency(timestamps["A"], timestamps["B"]), ttls["server"]
+            )
+        return None
+
+    if packet_type != QUIC_HANDSHAKE:
+        return None
+
+    # The server sends one to five Handshake packets. The client measurement starts
+    # at the last of them, so this point moves until the client answers.
+    if from_server and "D" not in timestamps:
+        timestamps["C"] = now
+        return None
+
+    if to_server and "C" in timestamps and "D" not in timestamps:
+        timestamps["D"] = now
+        return "JA4L-C={}_{}".format(
+            _one_way_latency(timestamps["C"], timestamps["D"]), ttls.get("client", ttl)
+        )
+    return None
+
+
+def generate_ja4l(packet, conn=None):
+    """Return the JA4L value one packet produces, or None.
+
+    The function reads the measurement points of the connection from `conn` and
+    writes the point this packet supplies back into it.
+
+    Args:
+        packet: A network packet.
+        conn: The connection state, which holds `timestamps`, `ttls` and `isns`.
+
+    Returns:
+        A `JA4L-S=` value, a `JA4L-C=` value, or None when the packet supplies no
+        value. Returns None for a packet this fingerprinter cannot read.
     """
     if not conn:
         return None
 
-    from ja4plus.utils.packet_utils import get_ip_layer as _get_ip, get_ttl
+    from ja4plus.utils.packet_utils import get_ip_layer, get_ttl
 
-    if _get_ip(packet) is None:
+    ip_layer = get_ip_layer(packet)
+    if ip_layer is None:
         return None
 
     try:
-        if "timestamps" not in conn:
-            conn["timestamps"] = {}
-        if "ttls" not in conn:
-            conn["ttls"] = {}
+        conn.setdefault("timestamps", {})
+        conn.setdefault("ttls", {})
+        conn.setdefault("isns", {})
 
         ttl = get_ttl(packet)
         if ttl is None:
             return None
 
-        # Use pcap timestamp if available (for offline analysis), else wall clock
-        current_time = float(packet.time) if hasattr(packet, "time") else time.time()
+        now = _packet_microseconds(packet)
 
-        # Handle TCP protocol
         if packet.haslayer(TCP):
-            tcp_flags = packet[TCP].flags
-
-            # SYN packet (point A) - client initiates
-            if tcp_flags & 0x02 == 0x02 and not tcp_flags & 0x10:
-                conn["timestamps"]["A"] = current_time
-                conn["ttls"]["client"] = ttl
-                return None
-
-            # SYN-ACK packet (point B) - server responds
-            elif tcp_flags & 0x12 == 0x12:
-                conn["timestamps"]["B"] = current_time
-                conn["ttls"]["server"] = ttl
-
-                if "A" in conn["timestamps"]:
-                    # Per FoxIO spec: use raw time difference (not divided by 2)
-                    diff = conn["timestamps"]["B"] - conn["timestamps"]["A"]
-                    latency = max(1, int(diff * 1000000))
-                    return f"JA4L-S={latency}_{ttl}"
-
-            # ACK packet (point C) - client completes handshake
-            elif tcp_flags & 0x10 == 0x10 and not tcp_flags & 0x02:
-                conn["timestamps"]["C"] = current_time
-
-                if "B" in conn["timestamps"]:
-                    diff = conn["timestamps"]["C"] - conn["timestamps"]["B"]
-                    latency = max(1, int(diff * 1000000))
-                    return f"JA4L-C={latency}_{ttl}"
-
-        # Handle QUIC (UDP) protocol.
-        # Per FoxIO spec, the first UDP packet seen on a flow defines the
-        # client; the response defines the server. We don't depend on the
-        # lexicographic conn_key direction (which produced silent failures
-        # for server-first capture orderings — the previous code only
-        # advanced state when direction was 'forward').
-        elif packet.haslayer(UDP) and conn.get("proto") == "udp":
-            from ja4plus.utils.packet_utils import get_ip_layer
-
-            ip_layer = get_ip_layer(packet)
-            if ip_layer is None:
-                return None
-            src_ip = ip_layer.src
-            sport = int(packet[UDP].sport)
-            dport = int(packet[UDP].dport)
-
-            # Lock in the client identity on the first packet.
-            if "client_endpoint" not in conn:
-                conn["client_endpoint"] = (src_ip, sport, dport)
-            client_ip, client_sport, client_dport = conn["client_endpoint"]
-            is_client = src_ip == client_ip and sport == client_sport and dport == client_dport
-
-            if "A" not in conn["timestamps"] and is_client:
-                conn["timestamps"]["A"] = current_time
-                conn["ttls"]["client"] = ttl
-
-            elif "A" in conn["timestamps"] and not is_client and "B" not in conn["timestamps"]:
-                conn["timestamps"]["B"] = current_time
-                conn["ttls"]["server"] = ttl
-                diff = conn["timestamps"]["B"] - conn["timestamps"]["A"]
-                latency = max(1, int(diff * 1000000))
-                return f"JA4L-S={latency}_{ttl}"
-
-            elif "B" in conn["timestamps"] and is_client and "C" not in conn["timestamps"]:
-                conn["timestamps"]["C"] = current_time
-
-            elif "C" in conn["timestamps"] and not is_client and "D" not in conn["timestamps"]:
-                conn["timestamps"]["D"] = current_time
-                diff = conn["timestamps"]["D"] - conn["timestamps"]["C"]
-                latency = max(1, int(diff * 1000000))
-                return f"JA4L-C={latency}_{conn['ttls'].get('client', ttl)}"
-
+            return _tcp_ja4l(packet, conn, ip_layer, ttl, now)
+        if packet.haslayer(UDP) and conn.get("proto") == "udp":
+            return _quic_ja4l(packet, conn, ttl, now)
         return None
     except (ValueError, TypeError, IndexError, AttributeError) as e:
         logger.debug(f"Packet does not contain JA4L data: {e}")
