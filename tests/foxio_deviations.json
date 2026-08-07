@@ -127,6 +127,10 @@
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
+  "gre-sample.pcap/JA4SSH": {
+    "issue": 105,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes."
+  },
   "http-empty-useragent.pcap/0:57722/JA4H.1": {
     "issue": 35,
     "cause": "ja4plus produces no JA4H value on this stream."
@@ -423,13 +427,9 @@
     "issue": 88,
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
-  "ssh-r.pcap/0:64980/JA4SSH.1": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
   "ssh-r.pcap/0:64980/JA4SSH.2": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH value on this stream."
+    "issue": 97,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets."
   },
   "ssh-r.pcap/1:46394/JA4L-C.1": {
     "issue": 88,
@@ -440,8 +440,8 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-r.pcap/1:46394/JA4SSH.1": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH value on this stream."
+    "issue": 96,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window. The packet count differs too: ja4plus counts one SSH packet for each TCP segment, and tshark labels only the segment that completes an SSH message. #98 owns the count."
   },
   "ssh-r.pcap/2:46396/JA4L-C.1": {
     "issue": 88,
@@ -452,20 +452,16 @@
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
   "ssh-r.pcap/2:46396/JA4SSH.1": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "issue": 96,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window."
   },
   "ssh-r.pcap/2:46396/JA4SSH.5": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH value on this stream."
+    "issue": 98,
+    "cause": "ja4plus counts one SSH packet for each TCP segment, and tshark labels only the segment that completes an SSH message. #98 owns the count."
   },
   "ssh-r.pcap/JA4L-C": {
     "issue": 34,
     "cause": "ja4plus emits one JA4L-C value for every ACK on the connection."
-  },
-  "ssh-r.pcap/JA4SSH": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH fingerprint the reference holds."
   },
   "ssh-scp-1050.pcap/0:49237/JA4L-C.1": {
     "issue": 88,
@@ -475,17 +471,13 @@
     "issue": 88,
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
-  "ssh-scp-1050.pcap/0:49237/JA4SSH.1": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.3": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "issue": 96,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window."
   },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.4": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
+    "issue": 96,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window."
   },
   "ssh-scp-1050.pcap/JA4L-C": {
     "issue": 34,
@@ -547,13 +539,9 @@
     "issue": 88,
     "cause": "ja4plus reports the round-trip time, and the reference holds half of it."
   },
-  "ssh2.pcapng/14:57377/JA4SSH.1": {
-    "issue": 92,
-    "cause": "The produced JA4SSH value differs from the reference."
-  },
   "ssh2.pcapng/14:57377/JA4SSH.2": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH value on this stream."
+    "issue": 97,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets."
   },
   "ssh2.pcapng/15:57380/JA4L-C.1": {
     "issue": 88,
@@ -612,8 +600,8 @@
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
   },
   "ssh2.pcapng/JA4SSH": {
-    "issue": 92,
-    "cause": "ja4plus produces no JA4SSH fingerprint the reference holds."
+    "issue": 97,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets."
   },
   "sshv1.pcap/0:1022/JA4L-C.1": {
     "issue": 88,
@@ -630,6 +618,10 @@
   "sshv1.pcap/JA4L-S": {
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
+  },
+  "sshv1.pcap/JA4SSH": {
+    "issue": 105,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes."
   },
   "tcpdump-geneve.pcap/0:51225/JA4L-C.1": {
     "issue": 88,
@@ -854,5 +846,9 @@
   "v6.pcap/JA4L-S": {
     "issue": 34,
     "cause": "ja4plus emits more JA4L-S values than the reference holds."
+  },
+  "v6.pcap/JA4SSH": {
+    "issue": 105,
+    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes."
   }
 }
