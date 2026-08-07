@@ -33,13 +33,13 @@ def encode_varint(value):
     """Return the QUIC variable-length form of one number.
 
     Args:
-        value: A number from 0 to 1073741823.
+        value: A number from 0 to 4611686018427387903.
 
     Returns:
         The encoded bytes. RFC 9000 Section 16 gives the four forms.
 
     Raises:
-        ValueError: The number needs more than four bytes.
+        ValueError: The number needs more than eight bytes.
     """
     if value < 0x40:
         return bytes([value])
@@ -47,7 +47,9 @@ def encode_varint(value):
         return struct.pack("!H", value | 0x4000)
     if value < 0x40000000:
         return struct.pack("!I", value | 0x80000000)
-    raise ValueError("the builder encodes no number above 1073741823")
+    if value < 0x4000000000000000:
+        return struct.pack("!Q", value | 0xC000000000000000)
+    raise ValueError("the builder encodes no number above 4611686018427387903")
 
 
 def crypto_frame(offset, data):

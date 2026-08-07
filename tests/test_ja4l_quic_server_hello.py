@@ -120,6 +120,39 @@ def test_the_fingerprinter_reports_no_server_value_when_the_initial_packet_does_
     assert fingerprinter.get_fingerprints() == []
 
 
+def test_the_fingerprinter_drops_a_crypto_fragment_that_names_a_huge_offset():
+    """The fingerprinter reads no fragment whose offset reaches past the buffer limit.
+
+    A CRYPTO frame offset is a 62-bit number, and a reassembly allocates a buffer that
+    reaches the highest offset. A server that names an offset of 2**40 would make the
+    fingerprinter allocate a terabyte inside `process_packet`.
+    """
+    fingerprinter = JA4LFingerprinter()
+    fingerprinter.process_packet(_to_server(client_initial(CLIENT_DCID), 0.0))
+    result = fingerprinter.process_packet(
+        _from_server(server_initial(CLIENT_DCID, crypto_frame(2**40, server_hello())), 0.010)
+    )
+
+    assert result is None
+    assert fingerprinter.connections[next(iter(fingerprinter.connections))]["server_crypto"] == []
+
+
+def test_the_fingerprinter_reads_the_server_hello_after_it_drops_a_huge_offset():
+    """The fingerprinter still reads a later Initial packet that carries the ServerHello."""
+    fingerprinter = JA4LFingerprinter()
+    fingerprinter.process_packet(_to_server(client_initial(CLIENT_DCID), 0.0))
+    fingerprinter.process_packet(
+        _from_server(server_initial(CLIENT_DCID, crypto_frame(2**40, b"\x02\x00\x00\x01x")), 0.010)
+    )
+    result = fingerprinter.process_packet(
+        _from_server(
+            server_initial(CLIENT_DCID, crypto_frame(0, server_hello()), packet_number=1), 0.020
+        )
+    )
+
+    assert result == "JA4L-S=10000_64"
+
+
 def test_the_fingerprinter_reports_no_server_value_when_the_client_sends_no_initial_packet():
     """The fingerprinter emits no server value without the client connection ID.
 

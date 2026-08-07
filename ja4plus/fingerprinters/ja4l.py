@@ -456,8 +456,18 @@ def _quic_server_initial(conn, udp_payload, ttl, now):
         return None
 
     collected = conn.setdefault("server_crypto", [])
-    if sum(len(data) for _, data in collected) < MAXIMUM_SERVER_CRYPTO_BYTES:
-        collected.extend(fragments)
+    collected_bytes = sum(len(data) for _, data in collected)
+    for offset, data in fragments:
+        # A CRYPTO frame offset is a 62-bit number, and a reassembly allocates a
+        # buffer that reaches the highest offset. A ServerHello is under 200 bytes,
+        # so a fragment above this limit describes no ServerHello, and it names a
+        # buffer size that a hostile server chooses.
+        if offset + len(data) > MAXIMUM_SERVER_CRYPTO_BYTES:
+            continue
+        if collected_bytes >= MAXIMUM_SERVER_CRYPTO_BYTES:
+            break
+        collected.append((offset, data))
+        collected_bytes += len(data)
     if not server_hello_is_complete(collected):
         return None
 
