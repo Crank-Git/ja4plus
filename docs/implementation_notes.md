@@ -100,12 +100,66 @@ Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/technical_details
 it. A capture of 10 SSH packets produced a fingerprint that no reference
 implementation matches.
 
+### The bare ACK
+
+A bare ACK is one packet that carries the ACK flag alone and no payload. FoxIO
+counts one only when the TCP flags equal `0x0010`, so a SYN+ACK, a FIN+ACK and a
+RST+ACK never reach the bare-ACK counter.
+
+The ACK that completes the TCP handshake is a bare ACK, and it arrives before the
+first SSH packet of the connection. FoxIO counts it, because `python/ja4.py` holds
+a state table entry for every packet whose source port or destination port is 22.
+Four vectors confirm the reading. `ssh-r.pcap`, `ssh-scp-1050.pcap` and
+`ssh2.pcapng` each hold one bare client ACK before the first SSH packet, and each
+reference value reports one more client ACK than a state table built on SSH data
+alone. `ssh.pcapng` holds no bare ACK, and its value is unchanged.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4ssh.py
+(retrieved 2026-08-06).
+
+**BUG (fixed by #92):** Before #92 the fingerprinter created a state table entry
+on the first SSH packet, so it dropped the ACK of the TCP handshake. It also read
+the ACK flag alone, so it counted a SYN+ACK, a FIN+ACK and a RST+ACK as bare ACKs.
+
 ### The remainder of a stream
 
-The reference emits the packets that remain when a stream ends. On `ssh-r.pcap`
-stream 1 the reference holds `c64s64_c6s5_c4s5`, which counts 11 SSH packets.
-ja4plus emits no such fingerprint, because it holds no end-of-capture step. The
-deviation register records the cases.
+The reference emits the packets that remain on some connections and not on others,
+and the vectors do not settle the condition. On `ssh-r.pcap` stream 1 the reference
+holds `c64s64_c6s5_c4s5`, which counts 11 SSH packets. `gre-sample.pcap`,
+`sshv1.pcap` and `v6.pcap` each hold one SSH connection of the same shape, with a
+banner, data packets and a FIN packet, and the reference holds no JA4SSH value for
+any of them.
+
+`python/ja4.py` runs `finalize_ja4ssh` on a packet that carries the FIN flag and
+the ACK flag, and that function acts only when `entry['protos']` ends with `:ssh`.
+Every FIN+ACK packet of these captures carries no payload, so the condition depends
+on a `tshark` protocol label that a capture file alone does not give. ja4plus emits
+no value for a window a connection holds open, because a rule that emits one gives
+`gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` a value the reference does not hold.
+#92 owns the question.
+
+### Two defects of the reference
+
+The reference produces two JA4SSH results that a simulation of `python/ja4ssh.py`
+reproduces, and that describe no property of the connection.
+
+`dict(ja4sh_stats)` copies the dictionary and not the two lists inside it, so every
+window on every connection shares one `client_payloads` list and one
+`server_payloads` list. The mode field therefore reads the packet lengths of every
+connection the tool has seen. `ssh-r.pcap` stream 2 window 1 reports `c64s64`, and
+the packets of that window read `c76s76`. #96 owns the decision.
+
+`(entry['count'] % ssh_sample_count) == 0` stays true for every bare ACK that
+follows a window boundary, so each of those packets writes the next occurrence key
+from a window that holds no SSH packet. `ssh-r.pcap` stream 0 holds `JA4SSH.2`
+equal to `c64s64_c0s0_c0s1`. #97 owns the decision.
+
+### The TCP segment
+
+ja4plus counts one SSH packet for every TCP segment that carries a payload, and
+the reference counts the packets `tshark` labels `ssh`. `tshark` labels the segment
+that completes an SSH message and not the earlier segment, so the two disagree by
+one packet for each message that spans two segments. #98 owns the defect.
 
 ### Direction detection on non-standard ports
 
