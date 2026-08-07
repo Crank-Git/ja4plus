@@ -210,9 +210,7 @@ def test_the_capture_produces_the_alpn_characters_the_table_records():
     """The produced JA4 value of each stream carries the ALPN characters of its row."""
     produced = produced_ja4_values()
 
-    assert [alpn_characters(value) for value in produced] == [
-        stream.produced for stream in STREAMS
-    ]
+    assert [alpn_characters(value) for value in produced] == [stream.produced for stream in STREAMS]
 
 
 def test_the_expected_file_holds_the_foxio_python_alpn_characters():
@@ -278,9 +276,7 @@ def test_the_agreed_streams_produce_the_reference_value():
     entries = load_expected()
 
     agreed = [index for index in range(len(STREAMS)) if index not in DISPUTED_STREAMS]
-    assert [produced[index] for index in agreed] == [
-        entries[index]["JA4.1"] for index in agreed
-    ]
+    assert [produced[index] for index in agreed] == [entries[index]["JA4.1"] for index in agreed]
 
 
 @pytest.mark.parametrize("index", DISPUTED_STREAMS, ids=_stream_id)

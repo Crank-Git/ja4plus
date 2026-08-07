@@ -180,8 +180,42 @@ it wrote before #141, which is `99` for a byte outside ASCII and `hh` for the on
 value `h`. `.claude/rules/conformance.md` states that a defect outside its two named
 shapes is a question for the user, and #141 asks it.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:36`, in `compute_alpn_value`.
-`tests/test_ja4_alpn_condition.py` holds the measurement against `ja4plus`.
+**What the user settled.** On 2026-08-07 the user decided that both values stay. #162
+records the decision. `docs/specs/spec.md` § Divergence register holds one row for the
+disputed-byte reading and one row for the one-byte reading, and both decisions are
+reversible.
+
+**How the divergence became a comparison.** #141 left the disputed inputs out of every
+capture, so the conformance suite was green because it made no comparison. #162 adds
+them. `tests/build_alpn_condition_capture.py` writes seven streams, and the table in its
+docstring names what each one holds.
+
+| Stream | The first ALPN value | FoxIO Python | FoxIO Rust | `ja4plus` | Register entry |
+|---|---|---|---|---|---|
+| 0 | `h\x20` | `h ` | `h ` | `h ` | no, it conforms |
+| 1 | `\x20h` | ` h` | ` h` | ` h` | no, it conforms |
+| 2 | `h\xab` | `h?` | `h9` | `99` | yes |
+| 3 | `\xabh` | `99` | `9h` | `99` | no, it conforms |
+| 4 | `h\x1f` | `h\x1f` | `hf` | `99` | yes |
+| 5 | `h\x0a` | `h\n` | no value | `99` | yes |
+| 6 | `h` | `h` | `h0` | `hh` | yes |
+
+Stream 3 is disputed and it still conforms, because `ja4plus` writes the FoxIO Python
+value there. A strict `xfail` on a case that passes fails the suite, so that stream holds
+no register entry. The other four streams hold four entries each, one per method, and
+each cause states the measured output of both implementations.
+
+**How the expected-output file was built.** The ALPN characters come from the two tables
+above, and no value is re-derived. The rest of each fingerprint is copied from stream 0,
+because the seven client hellos carry the same ciphers and the same extensions, so the
+JA4 prefix and both hashes are invariant. `alpn-condition.pcap.json` is therefore a
+measurement in its variable field and a copy in its invariant field.
+`test_every_stream_differs_from_the_others_in_the_alpn_characters_alone` proves the
+invariance.
+
+**Location:** `ja4plus/fingerprinters/ja4.py:36`, in `compute_alpn_value`. #162 changed
+no line of it. `tests/test_ja4_alpn_condition.py` holds the measurement against
+`ja4plus`.
 
 ### The QUIC reference value comes from the FoxIO Rust implementation
 
