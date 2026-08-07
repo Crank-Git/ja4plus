@@ -8,7 +8,8 @@ value on its own.
 
 `tests/conformance_index.py` holds the index. It reads the FoxIO expected-output file
 into a map of stream to method to occurrence, and it builds the same shape from the
-fingerprints ja4plus produces.
+fingerprints ja4plus produces. A raw key, such as `JA4_r`, names its own method, so the
+suite compares a raw form the same way it compares a hashed form.
 
 The suite holds three groups of test:
 
@@ -45,6 +46,7 @@ import pytest
 
 from tests.conformance_index import (
     FINGERPRINTER_METHODS,
+    RAW_METHODS,
     _connection_identity,
     index_expected,
     index_produced,
@@ -210,12 +212,12 @@ class TestConformanceIndex:
     def test_the_key_reader_reports_no_counter_on_a_plain_key(self):
         assert method_and_occurrence("JA4L-C") == ("JA4L-C", None)
 
-    def test_the_key_reader_rejects_a_raw_form(self):
-        assert method_and_occurrence("JA4_r.1") is None
-        assert method_and_occurrence("JA4_ro.1") is None
-        assert method_and_occurrence("JA4_o.1") is None
-        assert method_and_occurrence("JA4S_r") is None
-        assert method_and_occurrence("JA4H_ro") is None
+    def test_the_key_reader_reads_a_raw_form(self):
+        assert method_and_occurrence("JA4_r.1") == ("JA4_r", 1)
+        assert method_and_occurrence("JA4_ro.1") == ("JA4_ro", 1)
+        assert method_and_occurrence("JA4_o.1") == ("JA4_o", 1)
+        assert method_and_occurrence("JA4S_r") == ("JA4S_r", None)
+        assert method_and_occurrence("JA4H_ro") == ("JA4H_ro", None)
 
     def test_the_key_reader_rejects_a_key_that_names_no_method(self):
         assert method_and_occurrence("domain") is None
@@ -268,7 +270,7 @@ class TestConformanceIndex:
             2: "c36s36_c77s123_c0s0",
         }
 
-    def test_the_index_drops_a_raw_form(self):
+    def test_the_index_holds_a_raw_form(self):
         records = [
             {
                 "stream": 0,
@@ -282,7 +284,13 @@ class TestConformanceIndex:
         ]
         streams = index_expected(records)
         stream = next(iter(streams.values()))
-        assert set(stream.methods) == {"JA4"}
+        assert set(stream.methods) == {"JA4", "JA4_r"}
+        assert stream.methods["JA4_r"] == {1: "t13d1715h2_002f,0035_0005,000a_0403"}
+
+    def test_the_raw_method_map_names_only_a_key_the_reference_publishes(self):
+        published = {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r"}
+        named = {method for pairs in RAW_METHODS.values() for method, _ in pairs}
+        assert named == published
 
     def test_the_suite_reports_both_JA4L_methods(self):
         assert "JA4L-C" in FINGERPRINTER_METHODS
@@ -330,6 +338,37 @@ class TestConformanceIndex:
 # ---------------------------------------------------------------------------
 # The comparison against the FoxIO reference
 # ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec_validation
+@pytest.mark.skipif(not have_vectors(), reason="FoxIO test vectors not downloaded")
+def test_the_produced_index_holds_every_raw_form_ja4plus_computes():
+    """Read the raw keys of one vector out of the produced index.
+
+    `tls-alpn-h2.pcap` carries one client hello and one server hello, so it exercises
+    every raw key ja4plus computes.
+    """
+    produced = index_produced(VECTORS_DIR / "tls-alpn-h2.pcap")
+    methods = set()
+    for values in produced.values():
+        methods.update(values)
+    assert {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r"} <= methods
+
+
+@pytest.mark.spec_validation
+@pytest.mark.skipif(not have_vectors(), reason="FoxIO test vectors not downloaded")
+def test_the_suite_collects_one_case_for_every_raw_key_of_the_reference():
+    """Fail when a raw key the reference publishes carries no case.
+
+    The reference publishes a raw key for JA4, JA4S and JA4H. A raw form no case reads
+    is a value this project never compares, which is the defect #121 records.
+    """
+    collected = {
+        method
+        for _, _, method, _, _ in (param.values for param in _value_params())
+        if "_" in method
+    }
+    assert collected == {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r", "JA4H_ro"}
 
 
 @pytest.mark.spec_validation
