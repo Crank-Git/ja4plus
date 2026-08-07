@@ -55,6 +55,11 @@ is the only FoxIO implementation that writes a reference value for the two metho
 baseline `zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` holds the same four JA4D values.
 `docs/implementation_notes.md` records the reading.
 
+**JA4D6 rests on one source.** No FoxIO implementation other than the Wireshark
+dissector writes a JA4D6 value, so nothing corroborates its six values the way the
+Zeek baseline corroborates the four JA4D values. Treat a JA4D6 mismatch as a question
+before you treat it as a defect in this project.
+
 **`ja4db.com` publishes no versioned document.** Treat any unexpected response shape as
 a miss. Never let its response shape reach a caller unchecked.
 
