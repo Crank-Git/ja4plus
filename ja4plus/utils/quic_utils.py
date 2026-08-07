@@ -298,10 +298,19 @@ def reassemble_crypto_fragments(fragments):
     # Deduplicate identical offsets (a fragment can appear in multiple Initials)
     by_offset = {}
     for offset, data in fragments:
+        # RFC 9000 Section 16 lets a CRYPTO frame offset reach 4611686018427387903,
+        # and the buffer below reaches the highest offset. A fragment that names an
+        # offset past the limit describes no real handshake message, so the reader
+        # drops it before it allocates. The reader returns nothing. It does not raise.
+        if offset + len(data) > MAXIMUM_CRYPTO_BUFFER_BYTES:
+            continue
         # Prefer the longest fragment seen for an offset (rare, but defensive).
         existing = by_offset.get(offset)
         if existing is None or len(data) > len(existing):
             by_offset[offset] = bytes(data)
+
+    if not by_offset:
+        return b""
 
     sorted_frags = sorted(by_offset.items())
     total_len = max(off + len(data) for off, data in sorted_frags)

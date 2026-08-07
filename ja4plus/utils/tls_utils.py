@@ -45,41 +45,43 @@ def extract_tls_info(packet):
 
 def parse_tls_handshake(raw_data):
     """
-    Parse a TLS handshake message from raw bytes.
+    Parse the first ClientHello or ServerHello of a TLS segment.
+
+    The walk reads every record of the segment, because a hello does not always start
+    the segment. A TLS 1.3 client that answers a HelloRetryRequest puts the
+    compatibility-mode ChangeCipherSpec record before its second ClientHello, so the
+    first byte of that segment is 0x14.
 
     Args:
-        raw_data: Raw bytes of a TLS record
+        raw_data: Raw bytes of one TLS segment
 
     Returns:
         Dictionary with TLS handshake information or None
     """
-    # Check minimum length for TLS record header
-    if len(raw_data) < 5:
-        return None
+    offset = 0
 
-    record_type = raw_data[0]
-    if record_type != 0x16:  # 0x16 = Handshake
-        return None
+    # The per-record length comes from the packet, so the walk bounds every read on the
+    # real buffer length. A record header is five bytes, so the walk always advances.
+    while offset + 5 <= len(raw_data):
+        record_type = raw_data[offset]
+        record_length = (raw_data[offset + 3] << 8) | raw_data[offset + 4]
 
-    # Get TLS record version and length
-    record_length = (raw_data[3] << 8) | raw_data[4]
+        if record_type == 0x16 and offset + 6 <= len(raw_data):  # 0x16 = Handshake
+            handshake_type = raw_data[offset + 5]
 
-    # Ensure we have enough data
-    if len(raw_data) < 5 + record_length:
-        return None
+            if handshake_type in (1, 2):
+                # A truncated record holds no complete hello.
+                if offset + 5 + record_length > len(raw_data):
+                    return None
 
-    # Extract handshake type
-    if len(raw_data) < 6:
-        return None
+                record = raw_data[offset:]
+                if handshake_type == 1:
+                    return _parse_client_hello(record)
+                return _parse_server_hello(record)
 
-    handshake_type = raw_data[5]
+        offset += 5 + record_length
 
-    if handshake_type == 1:
-        return _parse_client_hello(raw_data)
-    elif handshake_type == 2:
-        return _parse_server_hello(raw_data)
-    else:
-        return None
+    return None
 
 
 def _parse_client_hello(raw_data):

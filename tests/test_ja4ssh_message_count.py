@@ -28,7 +28,12 @@ import pytest
 from scapy.all import IP, TCP, Raw
 
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
-from ja4plus.utils.ssh_utils import SSHMessageTracker
+from ja4plus.utils.ssh_utils import (
+    MAX_PENDING_BYTES,
+    MAX_PENDING_SEGMENTS,
+    SEQ_SPACE,
+    SSHMessageTracker,
+)
 
 VECTORS = Path(__file__).parent / "foxio_vectors"
 
@@ -169,18 +174,210 @@ def test_an_empty_segment_is_not_one_ssh_packet():
 # ---------------------------------------------------------------------------
 
 
+def client_segment(payload, seq):
+    """Return one client-to-server segment that carries the payload.
+
+    Args:
+        payload: The TCP payload of the segment, as bytes.
+        seq: The TCP sequence number of the first payload byte.
+
+    Returns:
+        The packet.
+    """
+    return IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=50000, dport=22, seq=seq) / Raw(payload)
+
+
+def server_segment(payload, seq):
+    """Return one server-to-client segment that carries the payload.
+
+    Args:
+        payload: The TCP payload of the segment, as bytes.
+        seq: The TCP sequence number of the first payload byte.
+
+    Returns:
+        The packet.
+    """
+    return IP(src="10.0.0.2", dst="10.0.0.1") / TCP(sport=22, dport=50000, seq=seq) / Raw(payload)
+
+
 def test_a_message_that_spans_two_segments_advances_the_window_once():
     fingerprinter = JA4SSHFingerprinter(packet_count=4)
-    client = IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=50000, dport=22)
-    server = IP(src="10.0.0.2", dst="10.0.0.1") / TCP(sport=22, dport=50000)
 
-    fingerprinter.process_packet(client / Raw(load=BANNER))
-    fingerprinter.process_packet(server / Raw(load=BANNER))
+    fingerprinter.process_packet(client_segment(BANNER, 1))
+    fingerprinter.process_packet(server_segment(BANNER, 1))
     whole = message(body_length=1492, code=20)
-    assert fingerprinter.process_packet(client / Raw(load=whole[:1448])) is None
-    assert fingerprinter.process_packet(client / Raw(load=whole[1448:])) is None
-    result = fingerprinter.process_packet(server / Raw(load=message()))
+    assert fingerprinter.process_packet(client_segment(whole[:1448], 22)) is None
+    assert fingerprinter.process_packet(client_segment(whole[1448:], 1470)) is None
+    result = fingerprinter.process_packet(server_segment(message(), 22))
     assert result == "c21s21_c2s2_c0s0"
+
+
+# ---------------------------------------------------------------------------
+# The retransmitted segment and the out-of-order segment
+# ---------------------------------------------------------------------------
+
+
+def test_a_retransmitted_segment_is_not_one_ssh_packet():
+    tracker = SSHMessageTracker()
+    assert tracker.add_segment(BANNER, 1) == [len(BANNER)]
+    whole = message(body_length=1492, code=20)
+    assert tracker.add_segment(whole[:1448], 22) == []
+    # The direction sends the same segment again, so the tracker reads no byte of it.
+    assert tracker.add_segment(whole[:1448], 22) == []
+    assert tracker.add_segment(whole[1448:], 1470) == [48]
+
+
+def test_a_retransmitted_segment_keeps_the_message_boundary():
+    tracker = SSHMessageTracker()
+    tracker.add_segment(BANNER, 1)
+    whole = message(body_length=1492, code=20)
+    tracker.add_segment(whole[:1448], 22)
+    tracker.add_segment(whole[:1448], 22)
+    tracker.add_segment(whole[1448:], 1470)
+    # A tracker that read the retransmission twice would hold a length field it cannot
+    # trust, and it would count this part of a message as one SSH packet.
+    split = message(body_length=1492, code=20)
+    assert tracker.add_segment(split[:1448], 1518) == []
+
+
+def test_an_out_of_order_segment_counts_on_its_own_sequence_number():
+    tracker = SSHMessageTracker()
+    tracker.add_segment(BANNER, 1)
+    whole = message(body_length=1492, code=20)
+    # The segment that completes the message arrives first, so the tracker holds it.
+    assert tracker.add_segment(whole[1448:], 1470) == []
+    # The predecessor fills the gap, and the held segment completes the message.
+    assert tracker.add_segment(whole[:1448], 22) == [48]
+
+
+def test_a_segment_that_repeats_part_of_the_stream_is_read_once():
+    tracker = SSHMessageTracker()
+    tracker.add_segment(BANNER, 1)
+    whole = message(body_length=32, code=94)
+    tracker.add_segment(whole[:10], 22)
+    # The direction sends the first ten bytes again, and eight new bytes after them.
+    # The tracker reads the eight new bytes, which complete no message.
+    assert tracker.add_segment(whole[:18], 22) == []
+    assert tracker.add_segment(whole[18:], 40) == [len(whole) - 18]
+
+
+def test_an_out_of_order_segment_that_follows_the_wrap_point_is_held():
+    tracker = SSHMessageTracker()
+    # The banner ends ten bytes before the sequence space wraps.
+    start = SEQ_SPACE - len(BANNER) - 10
+    tracker.add_segment(BANNER, start)
+    whole = message(body_length=1492, code=20)
+    first = (start + len(BANNER)) % SEQ_SPACE
+    second = (first + 1448) % SEQ_SPACE
+    assert second < 1448
+
+    # The segment that completes the message arrives first, and it starts after the
+    # wrap point. A tracker that compares the raw numbers reads it as a segment far
+    # behind the next sequence number, and it drops it.
+    assert tracker.add_segment(whole[1448:], second) == []
+    assert tracker.add_segment(whole[:1448], first) == [48]
+
+
+def test_a_retransmission_that_precedes_the_wrap_point_is_dropped():
+    tracker = SSHMessageTracker()
+    start = SEQ_SPACE - len(BANNER) - 10
+    tracker.add_segment(BANNER, start)
+    whole = message(body_length=1492, code=20)
+    first = (start + len(BANNER)) % SEQ_SPACE
+    tracker.add_segment(whole[:1448], first)
+    tracker.add_segment(whole[1448:], (first + 1448) % SEQ_SPACE)
+
+    # The direction sends the pre-wrap segment again. A tracker that compares the raw
+    # numbers reads it as a segment far ahead of the next sequence number, and it holds
+    # it until the buffer reaches its bound.
+    assert tracker.add_segment(whole[:1448], first) == []
+    assert tracker._pending == {}
+
+
+def test_a_gap_that_never_fills_makes_the_tracker_count_every_segment():
+    tracker = SSHMessageTracker()
+    tracker.add_segment(BANNER, 1)
+    whole = message(body_length=1492, code=20)
+    # The predecessor never arrives, so the buffer reaches its bound.
+    for index in range(MAX_PENDING_SEGMENTS):
+        assert tracker.add_segment(whole[:100], 10_000 + index * 100) == []
+    assert tracker.add_segment(whole[:100], 10_000 + MAX_PENDING_SEGMENTS * 100) == [100]
+    assert tracker.add_segment(whole[:100], 22) == [100]
+
+
+def test_the_held_segments_stay_below_the_byte_bound():
+    tracker = SSHMessageTracker()
+    tracker.add_segment(BANNER, 1)
+    segment = b"A" * 1448
+    held = 0
+    seq = 10_000
+    while held + len(segment) <= MAX_PENDING_BYTES:
+        tracker.add_segment(segment, seq)
+        held += len(segment)
+        seq += len(segment)
+    assert tracker._pending_bytes <= MAX_PENDING_BYTES
+
+
+def test_a_retransmitted_segment_does_not_advance_the_window():
+    fingerprinter = JA4SSHFingerprinter(packet_count=1000)
+    fingerprinter.process_packet(client_segment(BANNER, 1))
+    whole = message(body_length=1492, code=20)
+    fingerprinter.process_packet(client_segment(whole[:1448], 22))
+    fingerprinter.process_packet(client_segment(whole[:1448], 22))
+    fingerprinter.process_packet(client_segment(whole[1448:], 1470))
+    conn = fingerprinter.connections["10.0.0.1:50000-10.0.0.2:22"]
+    assert conn["ssh_packets"]["client"] == [len(BANNER), 48]
+
+
+def test_the_retransmission_capture_holds_five_client_packets_and_four_server_packets(tmp_path):
+    """The retransmission capture counts the retransmitted segment once.
+
+    `tests/build_ssh_retransmission.py` builds the capture. `.gitignore` holds no
+    capture other than the FoxIO vectors, so the test writes the file and reads it
+    back. Run the builder to write `tests/data/ssh-retransmission.pcap` for a reader.
+
+    `tshark` labels five client frames and four server frames `ssh`, and it labels the
+    retransmitted frame `tcp`:
+
+    ```
+    $ tshark -r tests/data/ssh-retransmission.pcap -Y "ssh" \
+        -T fields -e frame.number -e tcp.srcport -e tcp.len -e frame.protocols
+    4	50000	21	raw:ip:tcp:ssh
+    5	22	21	raw:ip:tcp:ssh
+    6	50000	1448	raw:ip:tcp
+    8	50000	48	raw:ip:tcp:ssh
+    9	50000	36	raw:ip:tcp:ssh
+    10	22	36	raw:ip:tcp:ssh
+    11	50000	36	raw:ip:tcp:ssh
+    12	22	36	raw:ip:tcp:ssh
+    13	50000	36	raw:ip:tcp:ssh
+    14	22	36	raw:ip:tcp:ssh
+    ```
+
+    Frame 7 holds the retransmission, and `tshark` labels it `tcp`:
+
+    ```
+    $ tshark -r tests/data/ssh-retransmission.pcap \
+        -Y "tcp.analysis.retransmission && tcp.port==22" \
+        -T fields -e frame.number -e tcp.len
+    7	1448
+    ```
+    """
+    from scapy.all import rdpcap, wrpcap
+
+    from tests.build_ssh_retransmission import build
+
+    path = tmp_path / "ssh-retransmission.pcap"
+    wrpcap(str(path), build())
+
+    fingerprinter = JA4SSHFingerprinter()
+    values = []
+    for packet in rdpcap(str(path)):
+        result = fingerprinter.process_packet(packet)
+        if result:
+            values.append(result)
+
+    assert values == ["c36s36_c5s4_c1s0"]
 
 
 # ---------------------------------------------------------------------------
