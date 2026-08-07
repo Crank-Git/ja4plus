@@ -42,11 +42,15 @@ from tests.foxio_deviations import (  # noqa: E402 - the path insert must run fi
 from tests.foxio_manifest import MANIFEST_PATH  # noqa: E402 - the path insert must run first
 
 # The issue that owns each method. #12 records the measurement that assigns them.
+#
+# #28 fixed the JA4SSH window, and it owns no case now. Every JA4SSH case that
+# remains sits on a capture that holds more than one window. A capture of one window
+# conforms, and a capture of several does not. #92 owns them.
 OWNING_ISSUES = {
     "JA4": 13,
     "JA4S": 13,
     "JA4H": 35,
-    "JA4SSH": 28,
+    "JA4SSH": 92,
     "JA4X": 78,
 }
 

@@ -79,11 +79,33 @@ not the round-trip time divided by 2.
 
 ## JA4SSH - SSH Traffic
 
-### Early fingerprint trigger
+### The fingerprint window
 
-The fingerprint window triggers at `min(configured_packet_count, 10)`,
-not at the configured count. Additionally triggers immediately when both
-HASSH fingerprints are available.
+The window holds 200 SSH packets by default, and the constructor argument
+`packet_count` sets it. `technical_details/JA4SSH.png` states the interval
+verbatim: `(runs every 200 SSH packets by default)`.
+
+The window counts the SSH packets of both directions. A bare ACK is not an SSH
+packet, and it does not advance the window. The image lists `SSH packets sent
+from client`, `SSH packets sent from server`, `Bare ACKs sent from client` and
+`Bare ACKs sent from server` as four separate fields. `ssh-scp-1050.pcap` confirms
+the reading: the reference holds four windows, each of 200 SSH packets, and the
+bare ACK counts of the four differ.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/technical_details
+(retrieved 2026-08-06).
+
+**BUG (fixed by #28):** Before #28 the window triggered at
+`min(configured_packet_count, 10)`, and a complete key exchange also triggered
+it. A capture of 10 SSH packets produced a fingerprint that no reference
+implementation matches.
+
+### The remainder of a stream
+
+The reference emits the packets that remain when a stream ends. On `ssh-r.pcap`
+stream 1 the reference holds `c64s64_c6s5_c4s5`, which counts 11 SSH packets.
+ja4plus emits no such fingerprint, because it holds no end-of-capture step. The
+deviation register records the cases.
 
 ### Direction detection on non-standard ports
 

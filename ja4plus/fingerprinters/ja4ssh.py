@@ -16,6 +16,11 @@ from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
 
+# FoxIO emits one fingerprint for every 200 SSH packets. `technical_details/JA4SSH.png`
+# states it verbatim: `(runs every 200 SSH packets by default)`. A smaller window
+# produces a fingerprint that no reference implementation matches.
+DEFAULT_PACKET_COUNT = 200
+
 
 class JA4SSHFingerprinter(BaseFingerprinter):
     """
@@ -25,12 +30,12 @@ class JA4SSHFingerprinter(BaseFingerprinter):
     Also supports HASSH fingerprinting for client/server identification.
     """
 
-    def __init__(self, packet_count=200):
-        """
-        Initialize the fingerprinter.
+    def __init__(self, packet_count=DEFAULT_PACKET_COUNT):
+        """Build the fingerprinter.
 
         Args:
-            packet_count: Number of packets to analyze before generating a fingerprint
+            packet_count: The number of SSH packets in one window. A bare ACK is not an
+                SSH packet, and it does not advance the window.
         """
         super().__init__()
         self.connections = {}
@@ -158,19 +163,12 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 else:
                     conn["bare_acks"]["server"] += 1
 
-        # Check if we have enough packets to generate a fingerprint
-        total_packets = (
-            len(conn["ssh_packets"]["client"])
-            + len(conn["ssh_packets"]["server"])
-            + conn["bare_acks"]["client"]
-            + conn["bare_acks"]["server"]
-        )
+        # The window counts the SSH packets of both directions. The FoxIO image lists
+        # the SSH packet counts and the bare ACK counts as separate fields, so a bare
+        # ACK does not advance the window.
+        total_packets = len(conn["ssh_packets"]["client"]) + len(conn["ssh_packets"]["server"])
 
-        # For testing purposes, make sure we actually generate some fingerprints
-        # This ensures our tests will pass even with small sample packets
-        if total_packets >= min(self.packet_count, 10) or (
-            total_packets > 0 and conn["hassh"] and conn["hasshServer"]
-        ):
+        if total_packets >= self.packet_count:
             # Calculate most common packet sizes
             client_sizes = conn["ssh_packets"]["client"]
             server_sizes = conn["ssh_packets"]["server"]
