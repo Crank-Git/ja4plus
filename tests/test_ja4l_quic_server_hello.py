@@ -1,10 +1,10 @@
-"""JA4L server point tests for the QUIC form.
+"""Tests for the JA4L server measurement point on the QUIC form.
 
 The reference records the server measurement point on the Initial packet that
 completes the ServerHello. `python/ja4.py` reads the point where `packet_type` is `0`
 and `tls.handshake.type` is `2`. A server that sends an Initial packet without a
-ServerHello therefore moves no point, and a server that splits the ServerHello across
-two Initial packets gives the timestamp of the second one.
+ServerHello therefore moves no point. A server that splits the ServerHello across two
+Initial packets gives the timestamp of the second one.
 
 `tests/quic_builder.py` builds the packets. Issue #102 carries the measurement.
 """
@@ -12,7 +12,8 @@ two Initial packets gives the timestamp of the second one.
 from scapy.all import IP, UDP, Raw
 
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
-from ja4plus.utils.quic_utils import QUIC_INITIAL
+from ja4plus.utils.quic_utils import MAXIMUM_CRYPTO_BUFFER_BYTES, QUIC_INITIAL
+
 from tests.quic_builder import (
     ACK_FRAME,
     client_initial,
@@ -89,8 +90,8 @@ def test_the_server_point_reads_an_initial_packet_that_a_handshake_packet_follow
     """The fingerprinter reads an Initial packet that shares a datagram with another packet.
 
     RFC 9000 Section 12.2 lets a server put a Handshake packet behind its Initial
-    packet. The AEAD tag then covers the bytes the Length field names, and a reader
-    that decrypts to the end of the datagram fails on the tag.
+    packet. The AEAD tag covers the bytes the Length field names. A reader that
+    decrypts to the end of the datagram fails on the tag.
     """
     fingerprinter = JA4LFingerprinter()
     fingerprinter.process_packet(_to_server(client_initial(CLIENT_DCID), 0.0))
@@ -117,6 +118,29 @@ def test_the_fingerprinter_reports_no_server_value_when_the_initial_packet_does_
     result = fingerprinter.process_packet(_from_server(unreadable, 0.010))
 
     assert result is None
+    assert fingerprinter.get_fingerprints() == []
+
+
+def test_the_fingerprinter_stops_the_fragment_buffer_at_the_limit():
+    """The fingerprinter collects no fragment past `MAXIMUM_CRYPTO_BUFFER_BYTES`.
+
+    A server that repeats a fragment which completes no ServerHello would otherwise
+    grow the buffer of one connection without a limit. The fragments here start at
+    offset 1024, so the reassembled bytes never start a ServerHello.
+    """
+    fingerprinter = JA4LFingerprinter()
+    fingerprinter.process_packet(_to_server(client_initial(CLIENT_DCID), 0.0))
+    filler = b"\xa5" * 1024
+    for number in range(24):
+        fingerprinter.process_packet(
+            _from_server(
+                server_initial(CLIENT_DCID, crypto_frame(1024, filler), packet_number=number),
+                0.001 * number,
+            )
+        )
+
+    collected = fingerprinter.connections[next(iter(fingerprinter.connections))]["server_crypto"]
+    assert sum(len(data) for _, data in collected) <= MAXIMUM_CRYPTO_BUFFER_BYTES
     assert fingerprinter.get_fingerprints() == []
 
 

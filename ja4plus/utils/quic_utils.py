@@ -20,6 +20,11 @@ QUIC_V2_SALT = bytes.fromhex("0dede3def700a6db819381be6e269dcbf9bd2ed9")
 
 QUIC_V2_VERSION = 0x6B3343CF
 
+# The highest number of bytes one reader collects from CRYPTO frames. A ServerHello
+# is under 200 bytes and a ClientHello reaches a few kilobytes, so this limit holds
+# every real handshake message.
+MAXIMUM_CRYPTO_BUFFER_BYTES = 16384
+
 # The long-header packet types of QUIC version 1 (RFC 9000 Section 17.2).
 QUIC_INITIAL = 0
 QUIC_ZERO_RTT = 1
@@ -115,10 +120,10 @@ def _find_pn_offset(packet_bytes):
 def _initial_packet_end(packet_bytes):
     """Return the offset one past the end of the first QUIC Initial packet.
 
-    RFC 9000 Section 12.2 lets a sender put several QUIC packets in one datagram, and
-    a server commonly puts a Handshake packet behind its Initial packet. The AEAD tag
-    of the Initial packet then covers only the bytes the Length field names, so a
-    reader that decrypts to the end of the datagram fails on the tag.
+    RFC 9000 Section 12.2 lets a sender put several QUIC packets in one datagram. A
+    server commonly puts a Handshake packet behind its Initial packet. The AEAD tag of
+    the Initial packet covers only the bytes the Length field names. A reader that
+    decrypts to the end of the datagram fails on the tag.
 
     Args:
         packet_bytes: The bytes of the UDP payload.
@@ -146,8 +151,8 @@ def _initial_packet_end(packet_bytes):
 def initial_packet_dcid(udp_payload):
     """Return the destination connection ID of a QUIC Initial packet, or None.
 
-    A server derives its Initial keys from the connection ID the client sent, so a
-    reader of a server Initial packet needs this value from the client Initial packet.
+    A server derives its Initial keys from the connection ID the client sent. A reader
+    of a server Initial packet needs that value from the client Initial packet.
 
     Args:
         udp_payload: The bytes of the UDP payload.
@@ -397,8 +402,8 @@ def decrypt_quic_server_initial_crypto(udp_payload, client_dcid):
     """Decrypt one QUIC server Initial packet and return its CRYPTO fragments.
 
     This is the multi-packet form of `parse_quic_server_initial`. A server splits the
-    ServerHello across two Initial packets, so a caller collects the fragments of
-    several packets and asks `server_hello_is_complete` after each one.
+    ServerHello across two Initial packets. A caller therefore collects the fragments
+    of several packets, and asks `server_hello_is_complete` after each one.
 
     Args:
         udp_payload: The bytes of the UDP payload the server sent.
@@ -431,8 +436,8 @@ def decrypt_quic_server_initial_crypto(udp_payload, client_dcid):
             return None
         quic_version = 1
 
-    # The server derives its Initial keys from the connection ID the client chose, so
-    # the caller supplies that value rather than the one this packet carries.
+    # The server derives its Initial keys from the connection ID the client chose. The
+    # caller therefore supplies that value, not the one this packet carries.
     _, server_secret = derive_initial_secrets(bytes(client_dcid), quic_version)
     key, iv, hp_key = derive_key_iv_hp(server_secret)
 
@@ -445,6 +450,35 @@ def decrypt_quic_server_initial_crypto(udp_payload, client_dcid):
         return None
 
     return parse_crypto_frames(plaintext)
+
+
+def collect_crypto_fragments(collected, fragments):
+    """Add the fragments of one packet to the collected list, up to the buffer limit.
+
+    RFC 9000 Section 16 lets a CRYPTO frame offset reach 4611686018427387903, and
+    `reassemble_crypto_fragments` allocates a buffer that reaches the highest offset.
+    A sender that names a large offset would make the caller allocate that many bytes.
+    A ServerHello is under 200 bytes, so a fragment above the limit describes none.
+
+    Args:
+        collected: The list of (offset, data) pairs the caller holds. The function
+            appends to it.
+        fragments: The (offset, data) pairs of one packet.
+
+    Returns:
+        The list the caller passed.
+    """
+    collected_bytes = sum(len(data) for _, data in collected)
+    for offset, data in fragments:
+        if offset + len(data) > MAXIMUM_CRYPTO_BUFFER_BYTES:
+            continue
+        # A sender that repeats a fragment grows the list without a limit, so the
+        # buffer stops before it passes the limit rather than after.
+        if collected_bytes + len(data) > MAXIMUM_CRYPTO_BUFFER_BYTES:
+            break
+        collected.append((offset, data))
+        collected_bytes += len(data)
+    return collected
 
 
 def server_hello_is_complete(fragments):
@@ -484,7 +518,7 @@ def parse_quic_server_initial(udp_payload, client_dcid):
     if not fragments:
         return None
 
-    server_hello_bytes = reassemble_crypto_fragments(fragments)
+    server_hello_bytes = reassemble_crypto_fragments(collect_crypto_fragments([], fragments))
     if not server_hello_bytes:
         return None
 

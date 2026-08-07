@@ -96,6 +96,9 @@ cannot decrypt supplies no measurement point.
 FR-spec-conformance-24 — A reader of a QUIC Initial packet decrypts the bytes the
 Length field of the long header names, and no byte behind them.
 
+FR-spec-conformance-25 — A reader collects at most 16384 bytes of CRYPTO frame data
+for one connection.
+
 ## User flows
 
 **A maintainer fixes a failing method.**
@@ -167,8 +170,12 @@ This feature set has no screen. Its output is the test report.
   9000 Section 12.2 lets a sender coalesce several QUIC packets in one datagram, and
   the AEAD tag covers the bytes of one packet. A reader that decrypts to the end of
   the datagram fails on the tag for every coalesced packet.
-- The server Initial keys derive from the connection ID the client chose, so a
-  capture that holds no client Initial packet gives no QUIC `JA4L-S` value.
+- The server Initial keys derive from the connection ID the client chose. A capture
+  that holds no client Initial packet gives no QUIC `JA4L-S` value.
+- A reader collects at most 16384 bytes of CRYPTO frame data for one connection. RFC
+  9000 Section 16 lets a CRYPTO frame offset reach 4611686018427387903, and a
+  reassembly allocates a buffer that reaches the highest offset. A sender would
+  otherwise name the size of that buffer.
 - `docs/implementation_notes.md` states how the project reads the JA4L image.
 - `JA4_o` is the hashed form of the original-order raw value. `JA4_ro` is that raw
   value unhashed. The relationship between them matches the relationship between
@@ -332,7 +339,8 @@ https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
 | A server coalesces a Handshake packet behind its Initial packet. | The reader decrypts the Initial packet and reads its ServerHello. |
 | A QUIC server Initial packet does not decrypt. | The connection carries no `JA4L-S` value. |
 | A capture starts after the client Initial packet. | The connection carries no `JA4L-S` value, because the server keys derive from the client connection ID. |
-| A server sends Initial packets that hold no ServerHello. | The fragment buffer of the connection stops at 16384 bytes. |
+| A server repeats a fragment that completes no ServerHello. | The fragment buffer of the connection stops at 16384 bytes. |
+| A CRYPTO frame names an offset of 2**40. | The reader drops the fragment and allocates no buffer. |
 
 ## Acceptance criteria
 

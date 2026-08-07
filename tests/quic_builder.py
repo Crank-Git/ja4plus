@@ -2,8 +2,8 @@
 
 A test of the JA4L QUIC path needs a server Initial packet that decrypts, because the
 fingerprinter reads the ServerHello to find its measurement point. This module builds
-one. RFC 9000 Section 17.2 gives the long header layout, and RFC 9001 Sections 5.2,
-5.3 and 5.4 give the key derivation, the payload protection and the header protection.
+one. RFC 9000 Section 17.2 gives the long header layout. RFC 9001 Sections 5.2, 5.3 and
+5.4 give the key derivation, the payload protection, and the header protection.
 
 The builder derives its keys with `ja4plus.utils.quic_utils`. The FoxIO vectors, not
 this module, prove that the derivation is correct.

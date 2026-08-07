@@ -24,6 +24,7 @@ from ja4plus.utils.http_utils import is_http_request
 from ja4plus.utils.quic_utils import (
     QUIC_HANDSHAKE,
     QUIC_INITIAL,
+    collect_crypto_fragments,
     decrypt_quic_server_initial_crypto,
     initial_packet_dcid,
     long_header_packet_type,
@@ -44,11 +45,6 @@ QUIC_PORT = 443
 # A TCP sequence number and acknowledgement number are 32 bits wide, so a relative
 # number needs this mask.
 SEQUENCE_MASK = 0xFFFFFFFF
-
-# A server sends the ServerHello in one or two Initial packets, and a ServerHello is
-# under 200 bytes. This limit stops a server that sends Initial packets without a
-# ServerHello from growing the buffer of one connection without a limit.
-MAXIMUM_SERVER_CRYPTO_BYTES = 16384
 
 # FoxIO gives the propagation factor as a table keyed on the hop count. Each pair
 # holds the highest hop count of one row and the factor of that row. A longer path
@@ -404,8 +400,8 @@ def _quic_client_initial(conn, udp_payload, ttl, now):
     """Record the client measurement point of a QUIC connection.
 
     The function also stores the destination connection ID, because the server Initial
-    keys derive from it. A Retry makes the client send another connection ID, so the
-    latest client Initial packet supplies the value.
+    keys derive from it. A Retry packet makes the client choose another connection ID.
+    The latest client Initial packet therefore supplies the value.
 
     Args:
         conn: The connection state.
@@ -455,19 +451,7 @@ def _quic_server_initial(conn, udp_payload, ttl, now):
     if not fragments:
         return None
 
-    collected = conn.setdefault("server_crypto", [])
-    collected_bytes = sum(len(data) for _, data in collected)
-    for offset, data in fragments:
-        # A CRYPTO frame offset is a 62-bit number, and a reassembly allocates a
-        # buffer that reaches the highest offset. A ServerHello is under 200 bytes,
-        # so a fragment above this limit describes no ServerHello, and it names a
-        # buffer size that a hostile server chooses.
-        if offset + len(data) > MAXIMUM_SERVER_CRYPTO_BYTES:
-            continue
-        if collected_bytes >= MAXIMUM_SERVER_CRYPTO_BYTES:
-            break
-        collected.append((offset, data))
-        collected_bytes += len(data)
+    collected = collect_crypto_fragments(conn.setdefault("server_crypto", []), fragments)
     if not server_hello_is_complete(collected):
         return None
 

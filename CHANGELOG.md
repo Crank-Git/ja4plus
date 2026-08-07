@@ -15,12 +15,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   cause was one line: `decrypt_initial_payload` read the ciphertext to the end of the
   UDP datagram, and the AEAD tag of an Initial packet covers only the bytes the
   Length field names. Every server Initial packet therefore failed the tag.
-  `ja4plus/utils/quic_utils.py` gains `_initial_packet_end`, which bounds the
-  ciphertext, `decrypt_quic_server_initial_crypto`, which returns the CRYPTO
-  fragments of one server Initial packet, and `server_hello_is_complete`, which
-  reports whether the collected fragments hold a whole ServerHello. A QUIC
-  connection whose server Initial packets do not decrypt now emits no `JA4L-S`
-  value, as the reference does. `chrome-cloudflare-quic-with-secrets.pcapng` stream
+  `ja4plus/utils/quic_utils.py` gains four functions:
+
+  - `_initial_packet_end` bounds the ciphertext by the Length field.
+  - `decrypt_quic_server_initial_crypto` returns the CRYPTO fragments of one server
+    Initial packet.
+  - `server_hello_is_complete` reports whether the collected fragments hold a whole
+    ServerHello.
+  - `collect_crypto_fragments` stops a buffer at 16384 bytes. RFC 9000 Section 16
+    lets a CRYPTO frame offset reach 4611686018427387903, and a reassembly allocates
+    a buffer that reaches the highest offset.
+
+  A QUIC connection whose server Initial packets do not decrypt now emits no
+  `JA4L-S` value, as the reference does.
+  `chrome-cloudflare-quic-with-secrets.pcapng` stream
   50280 now reports `10990_56` where it reported `9285_56`, and `tls3.pcapng` stream
   61884 reports `3583_57` where it reported `3051_57`. The register falls from 73
   entries to 71. No other vector changed.

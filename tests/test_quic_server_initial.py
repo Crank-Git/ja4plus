@@ -1,16 +1,19 @@
 """Tests for the server-side QUIC Initial reader.
 
-RFC 9000 Section 12.2 lets a sender put several QUIC packets in one datagram, and a
-server commonly puts a Handshake packet behind its Initial packet. The AEAD tag of the
-Initial packet covers only the bytes the Length field names, so a reader that decrypts
-to the end of the datagram fails on the tag. Issue #102 carries the measurement.
+RFC 9000 Section 12.2 lets a sender put several QUIC packets in one datagram. A server
+commonly puts a Handshake packet behind its Initial packet. The AEAD tag of the Initial
+packet covers only the bytes the Length field names. A reader that decrypts to the end
+of the datagram fails on the tag. Issue #102 carries the measurement.
 """
 
 from ja4plus.utils.quic_utils import (
+    MAXIMUM_CRYPTO_BUFFER_BYTES,
     QUIC_HANDSHAKE,
     _initial_packet_end,
+    collect_crypto_fragments,
     decrypt_quic_server_initial_crypto,
     initial_packet_dcid,
+    parse_quic_server_initial,
     server_hello_is_complete,
 )
 from tests.quic_builder import (
@@ -109,6 +112,35 @@ def test_the_server_reader_rejects_a_handshake_packet():
     """The reader returns None for a packet that is no Initial packet."""
     packet = bytes([0xC0 | (QUIC_HANDSHAKE << 4)]) + b"\x00\x00\x00\x01" + b"\x00" * 40
     assert decrypt_quic_server_initial_crypto(packet, CLIENT_DCID) is None
+
+
+def test_the_server_initial_parser_drops_a_fragment_that_names_a_huge_offset():
+    """The parser returns None rather than allocating the buffer the offset names.
+
+    `ja4s.py` calls this parser on every server Initial packet. RFC 9000 Section 16
+    lets a CRYPTO frame offset reach 4611686018427387903, and a reassembly allocates a
+    buffer that reaches the highest offset. One datagram would otherwise make the
+    parser allocate a terabyte.
+    """
+    packet = server_initial(CLIENT_DCID, crypto_frame(2**40, server_hello()))
+    assert parse_quic_server_initial(packet, CLIENT_DCID) is None
+
+
+def test_the_fragment_collector_drops_an_offset_past_the_limit():
+    """The collector adds no fragment whose offset reaches past the buffer limit."""
+    assert collect_crypto_fragments([], [(2**40, b"abc")]) == []
+
+
+def test_the_fragment_collector_stops_before_it_passes_the_limit():
+    """The collector holds no more than `MAXIMUM_CRYPTO_BUFFER_BYTES` bytes."""
+    fragment = (0, b"\x00" * 1024)
+    collected = collect_crypto_fragments([], [fragment] * 24)
+    assert sum(len(data) for _, data in collected) == MAXIMUM_CRYPTO_BUFFER_BYTES
+
+
+def test_the_fragment_collector_keeps_a_fragment_that_fits():
+    """The collector adds a fragment that the limit holds."""
+    assert collect_crypto_fragments([], [(0, b"abc")]) == [(0, b"abc")]
 
 
 def test_the_server_hello_reader_reports_a_whole_message():
