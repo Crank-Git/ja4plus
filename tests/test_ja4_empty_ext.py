@@ -5,6 +5,8 @@ Per FoxIO PR #288, the empty case must be the literal twelve zeros, NOT
 sha256(b'')[:12].hexdigest() (which is 'e3b0c44298fc').
 """
 
+import hashlib
+
 from ja4plus.fingerprinters.ja4 import generate_ja4
 
 
@@ -58,3 +60,28 @@ def test_ja4_only_sni_and_alpn_extensions_yields_literal_zero_hash():
     assert fp is not None
     parts = fp.split("_")
     assert parts[2] == "000000000000"
+
+
+def test_ja4_original_order_yields_the_zero_hash_when_only_sni_is_present():
+    """The original-order hash reads the sorted list for the zero sentinel.
+
+    FoxIO tests the sorted extension list, and it sets both extension hashes from that
+    one test. SNI alone leaves the sorted list empty, so `JA4_o` carries the zero
+    sentinel. #132 holds the measurement.
+    """
+    info = _client_hello_info(extensions=[0x0000], sni="www.github.com")
+    fp = generate_ja4(info, original_order=True)
+    assert fp is not None
+    parts = fp.split("_")
+    assert parts[2] == "000000000000"
+    # sha256('0000')[:12]. The reference computes this value and discards it.
+    assert parts[2] != "9af15b336e6a"
+
+
+def test_ja4_original_order_hashes_the_wire_order_when_another_extension_is_present():
+    """One extension outside SNI and ALPN restores the original-order hash."""
+    info = _client_hello_info(extensions=[0x0000, 0x000B], sni="www.github.com")
+    fp = generate_ja4(info, original_order=True)
+    assert fp is not None
+    parts = fp.split("_")
+    assert parts[2] == hashlib.sha256(b"0000,000b").hexdigest()[:12]

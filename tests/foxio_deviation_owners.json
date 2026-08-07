@@ -20,11 +20,6 @@
       "state": "open",
       "title": "Compute the JA4H raw form and compare it against JA4H_ro"
     },
-    "132": {
-      "epic": false,
-      "state": "open",
-      "title": "Settle the JA4_o extension hash when only SNI is present"
-    },
     "137": {
       "epic": false,
       "state": "open",
