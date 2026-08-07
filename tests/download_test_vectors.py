@@ -78,13 +78,17 @@ WIRESHARK_CAPTURES = [
     "dhcpv6.pcap",
 ]
 
-# The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a port
-# it does not know. The FoxIO Rust implementation reads both, so its snapshot holds a
-# stream that the expected-output file of the same capture omits. Issue #138 settles
-# those streams, and `tests/test_foxio_rust_parity.py` holds the measurement.
+# The FoxIO Python implementation reads no QUIC handshake, it reads no TLS on a port it
+# does not know, and it reads no ServerHello whose handshake record spans several TCP
+# segments. The FoxIO Rust implementation reads all three, so its snapshot holds a
+# stream that the expected-output file of the same capture omits. Issue #138 settles the
+# first two, issue #151 settles the third, and `tests/test_foxio_rust_parity.py` holds
+# the measurement.
 RUST_CAPTURES = [
+    "browsers-x509.pcapng",
     "chrome-cloudflare-quic-with-secrets.pcapng",
     "https-connect.pcap",
+    "latest.pcapng",
     "quic-tls-handshake.pcapng",
     "quic-with-several-tls-frames.pcapng",
     "ssh2.pcapng",
@@ -136,10 +140,12 @@ for each of these captures:
 
 {rust_captures}
 
-The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a
-port it does not know. The FoxIO Rust implementation reads both, so each snapshot
-above holds a stream that `{expected_dir}/<capture>.json` omits. Issue #138 settles
-those streams, and `tests/test_foxio_rust_parity.py` holds the measurement.
+The FoxIO Python implementation reads no QUIC handshake, it reads no TLS on a port
+it does not know, and it reads no ServerHello whose handshake record spans several
+TCP segments. The FoxIO Rust implementation reads all three, so each snapshot above
+holds a stream that `{expected_dir}/<capture>.json` omits. Issue #138 settles the
+first two gaps, issue #151 settles the third, and `tests/test_foxio_rust_parity.py`
+holds the measurement.
 
 The conformance suite reads only the top level of this directory, so neither
 subdirectory adds a case to it.

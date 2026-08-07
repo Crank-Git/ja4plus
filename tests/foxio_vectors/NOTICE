@@ -28,15 +28,17 @@ The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files und
 implementation that writes a reference value for the two methods.
 `docs/implementation_notes.md` records the reading.
 
-The subdirectory `rust_expected/` holds 8 more expected-output files:
+The subdirectory `rust_expected/` holds 10 more expected-output files:
 
     rust/ja4/src/snapshots/ja4__insta@<capture>.snap
         ->  tests/foxio_vectors/rust_expected/ja4__insta@<capture>.snap
 
 for each of these captures:
 
+    browsers-x509.pcapng
     chrome-cloudflare-quic-with-secrets.pcapng
     https-connect.pcap
+    latest.pcapng
     quic-tls-handshake.pcapng
     quic-with-several-tls-frames.pcapng
     ssh2.pcapng
@@ -44,10 +46,12 @@ for each of these captures:
     tls-sni.pcapng
     tls3.pcapng
 
-The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a
-port it does not know. The FoxIO Rust implementation reads both, so each snapshot
-above holds a stream that `python/test/testdata/<capture>.json` omits. Issue #138 settles
-those streams, and `tests/test_foxio_rust_parity.py` holds the measurement.
+The FoxIO Python implementation reads no QUIC handshake, it reads no TLS on a port
+it does not know, and it reads no ServerHello whose handshake record spans several
+TCP segments. The FoxIO Rust implementation reads all three, so each snapshot above
+holds a stream that `python/test/testdata/<capture>.json` omits. Issue #138 settles the
+first two gaps, issue #151 settles the third, and `tests/test_foxio_rust_parity.py`
+holds the measurement.
 
 The conformance suite reads only the top level of this directory, so neither
 subdirectory adds a case to it.

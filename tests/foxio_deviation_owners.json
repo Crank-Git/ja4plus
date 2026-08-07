@@ -30,6 +30,11 @@
       "state": "open",
       "title": "Settle whether ja4plus emits a fingerprint on a stream the FoxIO reference ignores"
     },
+    "151": {
+      "epic": false,
+      "state": "open",
+      "title": "Read the JA4S ServerHello on three streams the FoxIO Rust implementation holds a value for"
+    },
     "34": {
       "epic": false,
       "state": "open",

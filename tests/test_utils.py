@@ -264,6 +264,82 @@ class TestTLSParsing(unittest.TestCase):
         self.assertEqual(result["handshake_type"], "server_hello")
         self.assertEqual(result["cipher"], 0xC02F)
 
+    def test_parse_server_hello_reads_a_record_the_segment_truncates(self):
+        """The reader returns the ServerHello of a record longer than the segment.
+
+        A TLS 1.2 server puts the ServerHello, the Certificate and the ServerHelloDone
+        in one handshake record. That record spans several TCP segments, and the first
+        segment holds the whole ServerHello. Issue #151 names the three FoxIO streams
+        the earlier record-length bound rejected.
+        """
+        sh = bytearray()
+        sh += (0x0303).to_bytes(2, "big")
+        sh += b"\x00" * 32
+        sh += b"\x00"  # Session ID len
+        sh += (0xC02F).to_bytes(2, "big")  # Cipher
+        sh += b"\x00"  # Compression
+
+        handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)
+        # The record declares the coalesced length, and the segment carries the
+        # ServerHello alone.
+        record = b"\x16\x03\x03" + (6291).to_bytes(2, "big") + handshake
+
+        result = parse_tls_handshake(record)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["handshake_type"], "server_hello")
+        self.assertEqual(result["cipher"], 0xC02F)
+
+    def test_parse_server_hello_rejects_a_truncated_hello_message(self):
+        """The reader returns None when the segment cuts the ServerHello itself.
+
+        The record here holds every byte it declares, so a bound on the record length
+        reads the message and reports the fields it found before the cut. The message
+        declares 38 bytes and the record carries 28, so the reader returns nothing.
+        """
+        sh = bytearray()
+        sh += (0x0303).to_bytes(2, "big")
+        sh += b"\x00" * 32
+        sh += b"\x00"  # Session ID len
+        sh += (0xC02F).to_bytes(2, "big")  # Cipher
+        sh += b"\x00"  # Compression
+
+        # The message names its full length, and the record carries 10 bytes fewer.
+        handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)[:-10]
+        record = b"\x16\x03\x03" + len(handshake).to_bytes(2, "big") + handshake
+
+        self.assertIsNone(parse_tls_handshake(record))
+
+    def test_parse_server_hello_reads_no_extension_after_the_hello_message(self):
+        """The reader bounds the extension list on the length of the hello.
+
+        The extension list declares 16 bytes and the ServerHello carries 8. The bytes
+        that follow belong to the next handshake message of the same record, and a
+        reader that walks into them reports an extension the server never sent.
+        """
+        sh = bytearray()
+        sh += (0x0303).to_bytes(2, "big")
+        sh += b"\x00" * 32
+        sh += b"\x00"  # Session ID len
+        sh += (0xC02F).to_bytes(2, "big")  # Cipher
+        sh += b"\x00"  # Compression
+        sh += (16).to_bytes(2, "big")  # The declared extension-list length.
+        sh += b"\x00\x2b\x00\x04\x03\x04\x03\x03"  # The one extension it carries.
+
+        handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)
+        # The next handshake message of the record reads as extension 0x0010 to a
+        # reader that passes the end of the hello.
+        trailer = b"\x00\x10\x00\x02\x68\x32\x00\x00"
+        record = (
+            b"\x16\x03\x03"
+            + (len(handshake) + len(trailer)).to_bytes(2, "big")
+            + handshake
+            + trailer
+        )
+
+        result = parse_tls_handshake(record)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["extensions"], [0x002B])
+
     def test_extract_tls_info_from_packet(self):
         """extract_tls_info should work with scapy packets."""
         raw = self._build_client_hello(sni="test.com", ciphers=[0x1301])
