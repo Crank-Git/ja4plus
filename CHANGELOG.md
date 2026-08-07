@@ -8,6 +8,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **BREAKING — JA4SSH counts an SSH message, not a TCP segment** (#98). `ja4plus`
+  counted one SSH packet for every TCP segment that carried a payload. The FoxIO
+  reference counts the packets `tshark` labels `ssh`, and `tshark` labels only the
+  segment that completes an SSH message. The two counts therefore differed by one
+  packet for each SSH message that spans two segments, and every window boundary
+  after such a message moved. `ja4plus/utils/ssh_utils.py` gains
+  `SSHMessageTracker`, which follows the message boundary of one direction while
+  the direction sends plaintext. `ssh-r.pcap` stream 1 now reports `c6s5` where it
+  reported `c7s5`, and all five windows of `ssh-r.pcap` stream 2 now hold the
+  reference packet counts. `ssh.pcapng`, `ssh-scp-1050.pcap` and `ssh2.pcapng` are
+  unchanged.
+
 - **BREAKING — JA4L reports the one-way latency and the measurement point the
   FoxIO vectors hold** (#88). The fingerprinter reported the whole round-trip
   time, and it measured the client value to the bare ACK of the handshake. The

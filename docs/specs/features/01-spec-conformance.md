@@ -3,7 +3,7 @@ id: spec-conformance
 feature: Spec conformance
 epic: "Epic 1: Spec conformance"
 status: issued
-issues: [12, 27, 28, 29, 30, 31, 78, 80, 94]
+issues: [12, 27, 28, 29, 30, 31, 78, 80, 88, 89, 94]
 mockups: []
 ---
 
@@ -66,6 +66,27 @@ host.
 FR-spec-conformance-14 — `ja4plus` reads the IPv6 layer of a loopback capture on
 every host.
 
+FR-spec-conformance-15 — JA4SSH counts one SSH packet for the TCP segment that
+completes an SSH message.
+
+FR-spec-conformance-16 — JA4SSH counts no SSH packet for a TCP segment that holds
+part of an SSH message and no message end.
+
+FR-spec-conformance-17 — JA4L halves every round-trip time it measures.
+
+FR-spec-conformance-18 — On a TCP connection, `JA4L-S` measures from the first SYN to
+the first SYN-ACK.
+
+FR-spec-conformance-19 — On a TCP connection, the client measurement point is the last
+packet that carries the relative sequence number 1 and the relative acknowledgement
+number 1.
+
+FR-spec-conformance-20 — On a TCP connection, `JA4L-C` measures from the first SYN-ACK
+to the client measurement point.
+
+FR-spec-conformance-21 — On a TCP connection, a packet that holds a whole HTTP request
+moves no measurement point.
+
 ## User flows
 
 **A maintainer fixes a failing method.**
@@ -104,9 +125,33 @@ This feature set has no screen. Its output is the test report.
   window.
 - The JA4SSH occurrence counter starts at 1 and increases for each window on the
   same connection.
+- The JA4SSH window counts an SSH message, not a TCP segment. FoxIO counts the
+  packets `tshark` labels `ssh`, and `tshark` labels only the segment that
+  completes an SSH message. A segment that holds part of a message advances no
+  counter and contributes no packet length.
+- The SSH message boundary is readable only while the direction sends plaintext.
+  Before the version banner, and after `SSH_MSG_NEWKEYS`, JA4SSH counts every
+  segment that carries a payload.
 - The JA4L propagation factor follows the hop count. The table is 1.5 for 21 hops
   or fewer, then 1.6, 1.7, 1.8 and 1.9 for 22, 23, 24 and 25 hops, and 2.0 for 26
   hops or more.
+- JA4L reports one-way latency. FoxIO halves the time between the two measurement
+  points of a value, and it truncates the result toward zero.
+- The client measurement point starts at the bare ACK of the handshake. A later
+  packet that meets `FR-spec-conformance-19` moves the point. Either endpoint sends
+  that packet. `http1-with-cookies.pcapng` stream 0 puts the point on a bare ACK the
+  server sends, and its expected `JA4L-C` is `20_64`.
+- A packet that holds a whole HTTP request moves no measurement point.
+  `latest.pcapng` stream 6 sends one complete `GET` request, and its expected
+  `JA4L-C` is `32_128`, which is the bare ACK. `docs/implementation_notes.md` states
+  the mechanism the project infers: the reference reads that packet as HTTP, and it
+  holds the timestamps of each protocol in a separate table. The vectors prove the
+  behaviour. They do not prove the mechanism.
+- `FR-spec-conformance-18` to `FR-spec-conformance-21` describe the TCP form of
+  JA4L. `FR-spec-conformance-17` applies to both forms. The QUIC form reads the
+  Initial packets and the Handshake packets, and #102 owns its server measurement
+  point.
+- `docs/implementation_notes.md` states how the project reads the JA4L image.
 - `JA4_o` is the hashed form of the original-order raw value. `JA4_ro` is that raw
   value unhashed. The relationship between them matches the relationship between
   `JA4` and `JA4_r`.
@@ -136,6 +181,9 @@ This feature set has no screen. Its output is the test report.
   a loopback frame to the IPv6 layer.
 - New file `tests/test_loopback_link_type.py`.
 - Changed file `ja4plus/__init__.py`.
+- Changed file `ja4plus/utils/ssh_utils.py`. It holds `SSHMessageTracker`, which
+  reports whether one TCP segment completes an SSH message.
+- New file `tests/test_ja4ssh_message_count.py`.
 
 ## Interfaces
 
@@ -155,7 +203,31 @@ The JA4L image gives the propagation delay factor as a table keyed on hop count:
 and `>=26` to `2.0`. It gives the speed of light in fiber as `0.128 miles or 0.206
 km per µs`.
 
+The JA4L image names the value it reports, verbatim: `One-way TCP latency in us`.
+That name states that JA4L halves the time it measures. The image names no
+measurement point, so the expected-output files decide both points.
+
 Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/technical_details
+(retrieved 2026-08-06).
+
+Stream 0 of `browsers-x509.pcapng` proves both rules. It proves that JA4L halves the
+time it measures, and it proves the client measurement point. These are its first
+four packets.
+
+| Offset from the SYN | Packet | TTL |
+|---|---|---|
+| `0.000000` | SYN | 128 |
+| `0.003815` | SYN-ACK | 112 |
+| `0.003927` | Bare ACK | 128 |
+| `0.004371` | Client Hello, 517 payload bytes | 128 |
+
+The expected `JA4L-S` is `1907_112`, and `3815 / 2 = 1907`. The expected `JA4L-C` is
+`278_128`, and `(4371 - 3815) / 2 = 278`. Measured to the bare ACK, the client value
+is 56. Measured before JA4L halves it, the value is 556. No expected value holds
+either number.
+
+Verified against:
+https://github.com/FoxIO-LLC/ja4/blob/main/python/test/testdata/browsers-x509.pcapng.json
 (retrieved 2026-08-06).
 
 The expected value for `ssh.pcapng` is a single JA4SSH fingerprint,
@@ -193,6 +265,11 @@ Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-
 | The reference emits two fingerprints and this project emits one. | The suite fails and names the missing occurrence. |
 | A capture holds the `DLT_NULL` link type and the address family value 24, 28 or 30. | The reader dissects the frame as IPv6 on every host. |
 | A caller builds a loopback frame. | The address family value is the scapy default. This project binds the dissection path alone. |
+| One SSH message spans two TCP segments. | The second segment counts as one SSH packet. The first counts as none. |
+| A capture starts after the SSH version banner. | The tracker reads no message boundary, and every segment counts as one SSH packet. |
+| A length field names a size outside 2 and 65536 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
+| The SSH version banner spans two TCP segments. | The second segment counts as one SSH packet, and the tracker keeps the message boundary. |
+| The SSH version banner is longer than 255 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
 
 ## Acceptance criteria
 
@@ -213,6 +290,10 @@ Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-
 - [ ] No test in `tests/test_parity.py` asserts only that an attribute exists.
 - [ ] `pytest tests/ -m spec_validation` reports the same counts on Linux and on
       macOS.
+- [ ] `ssh-r.pcap` stream 1 produces one JA4SSH fingerprint whose packet counts
+      equal `c6s5`.
+- [ ] `ssh-r.pcap` stream 2 produces the fingerprint `c76s76_c66s65_c9s51` as its
+      fifth occurrence.
 - [ ] A loopback frame that holds the address family value 24, 28 or 30 dissects
       as IPv6.
 - [ ] `ipv6.pcapng` produces the JA4 value `t12d4605h2_85626a9a5f7f_aaf95bb78ec9`
