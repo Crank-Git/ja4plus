@@ -74,6 +74,8 @@ that user, because comparison is the only thing a fingerprint is for.
 | conform | verb | To produce the same output as the FoxIO reference. | comply, match spec |
 | port | noun | The Go implementation at `Crank-Git/ja4plus-go`. | Go version, sibling, twin |
 | parity | noun | The state where this project and the port expose the same interface and emit the same fingerprint. | alignment, sync, consistency |
+| hop count | noun | The count of routers a packet crossed, read as the initial TTL minus the observed TTL. | hop distance, TTL delta |
+| propagation factor | noun | The JA4L divisor that the FoxIO hop-count table gives for one hop count. | propagation delay, terrain factor |
 
 ## Goals
 

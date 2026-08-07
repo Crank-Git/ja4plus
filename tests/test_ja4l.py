@@ -97,7 +97,7 @@ class TestJA4L(unittest.TestCase):
 
 
 class TestJA4LPropagationFactor(unittest.TestCase):
-    """The propagation delay factor follows the FoxIO hop-count table.
+    """The propagation factor follows the FoxIO hop-count table.
 
     The table maps a hop count of 21 or fewer to 1.5, 22 to 1.6, 23 to 1.7, 24 to 1.8,
     25 to 1.9, and 26 or more to 2.0. An initial TTL of 64 gives the hop count
@@ -122,9 +122,9 @@ class TestJA4LPropagationFactor(unittest.TestCase):
     def test_reads_each_row_of_the_foxio_table(self):
         """Every hop count reads the factor of its row."""
         rows = ((0, 1.5), (21, 1.5), (22, 1.6), (23, 1.7), (24, 1.8), (25, 1.9), (26, 2.0))
-        for hops, factor in rows:
-            with self.subTest(hops=hops):
-                distance = self.fingerprinter.calculate_distance(1000, ttl=64 - hops)
+        for hop_count, factor in rows:
+            with self.subTest(hop_count=hop_count):
+                distance = self.fingerprinter.calculate_distance(1000, ttl=64 - hop_count)
                 self.assertAlmostEqual(distance, 1000 * 0.128 / factor, places=6)
 
     def test_reads_the_factor_2_0_for_a_hop_count_above_26(self):

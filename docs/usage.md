@@ -176,10 +176,25 @@ for packet in handshake_packets:
 - 64 = Linux / macOS / mobile
 
 **Distance estimation:**
+
+`calculate_distance` returns miles and `calculate_distance_km` returns kilometers. The
+formula is `latency_us * 0.128 / propagation_factor` for miles, and it uses `0.206` for
+kilometers.
+
+Pass the observed TTL, and the method reads the propagation factor from the FoxIO
+hop-count table. A hop count of 21 or fewer gives 1.5, then 1.6, 1.7, 1.8 and 1.9 for
+22, 23, 24 and 25 hops, and 26 hops or more give 2.0. A TTL above the initial TTL
+implies a negative hop count, which clamps to zero hops.
+
 ```python
-# JA4L latency can estimate physical distance
-# distance = latency_us * 0.128 / propagation_factor
-# propagation_factor: 1.5 (good terrain) to 2.0 (poor terrain)
+# The TTL 44 implies 20 hops, so the factor is 1.5.
+fp.calculate_distance(5191, ttl=44)
+
+# An explicit factor overrides the table.
+fp.calculate_distance(5191, propagation_factor=1.6)
+
+# A call without a TTL gives no hop count, so the factor stays 1.6.
+fp.calculate_distance(5191)
 ```
 
 ---
