@@ -55,13 +55,20 @@ is the only FoxIO implementation that writes a reference value for the two metho
 baseline `zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` holds the same four JA4D values.
 `docs/implementation_notes.md` records the reading.
 
-**A snapshot under `rust/ja4/src/snapshots/` decides only where the Python file holds an
-empty array.** `python/test/testdata/quic-with-several-tls-frames.pcapng.json` holds
-`[]`, because the FoxIO Python implementation reads no ClientHello that several CRYPTO
-frames carry. The FoxIO Rust implementation reads it and writes the JA4 value.
-`tests/foxio_vectors/rust_expected/` holds a copy of that snapshot.
-`docs/implementation_notes.md` records the reading. Where both directories carry a value
-for a method, `python/test/testdata/` decides.
+**A snapshot under `rust/ja4/src/snapshots/` decides for a stream the Python file omits.**
+The unit is the stream, not the file. `python/test/testdata/tls3.pcapng.json` holds seven
+streams and omits six, and the Rust snapshot holds all thirteen. Where the Python file
+holds no value for a stream and the Rust snapshot holds one, the Rust snapshot decides.
+Where both carry a value for one method on one stream, `python/test/testdata/` decides.
+
+The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a port it
+does not know. Those two gaps produce every case. `tests/foxio_vectors/rust_expected/`
+holds a copy of the eight snapshots that cover them, and
+`tests/test_foxio_rust_parity.py` measures the match. #138 records the reading, and
+`docs/implementation_notes.md` holds the table.
+
+Read this rule at stream granularity. An earlier form read "only where the Python file
+holds an empty array", and that form covered one capture of the eight.
 
 **JA4D6 rests on one source.** No FoxIO implementation other than the Wireshark
 dissector writes a JA4D6 value, so nothing corroborates its six values the way the

@@ -78,11 +78,19 @@ WIRESHARK_CAPTURES = [
     "dhcpv6.pcap",
 ]
 
-# The FoxIO Python implementation reads no ClientHello that several CRYPTO frames carry,
-# so the expected-output file of this capture holds an empty array. The FoxIO Rust
-# implementation reads it and writes the JA4 value.
+# The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a port
+# it does not know. The FoxIO Rust implementation reads both, so its snapshot holds a
+# stream that the expected-output file of the same capture omits. Issue #138 settles
+# those streams, and `tests/test_foxio_rust_parity.py` holds the measurement.
 RUST_CAPTURES = [
+    "chrome-cloudflare-quic-with-secrets.pcapng",
+    "https-connect.pcap",
+    "quic-tls-handshake.pcapng",
     "quic-with-several-tls-frames.pcapng",
+    "ssh2.pcapng",
+    "tls-handshake.pcapng",
+    "tls-sni.pcapng",
+    "tls3.pcapng",
 ]
 
 # The Rust implementation writes one insta snapshot for each capture, under this name.
@@ -119,14 +127,19 @@ The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files und
 implementation that writes a reference value for the two methods.
 `docs/implementation_notes.md` records the reading.
 
-The subdirectory `rust_expected/` holds one more expected-output file:
+The subdirectory `rust_expected/` holds {rust_count} more expected-output files:
 
-    {rust_dir}/ja4__insta@quic-with-several-tls-frames.pcapng.snap
-        ->  tests/foxio_vectors/rust_expected/ja4__insta@quic-with-several-tls-frames.pcapng.snap
+    {rust_dir}/ja4__insta@<capture>.snap
+        ->  tests/foxio_vectors/rust_expected/ja4__insta@<capture>.snap
 
-The FoxIO Python implementation reads no ClientHello that several CRYPTO frames
-carry, so `{expected_dir}/quic-with-several-tls-frames.pcapng.json` holds an empty
-array. The FoxIO Rust implementation reads it and writes the JA4 value.
+for each of these captures:
+
+{rust_captures}
+
+The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a
+port it does not know. The FoxIO Rust implementation reads both, so each snapshot
+above holds a stream that `{expected_dir}/<capture>.json` omits. Issue #138 settles
+those streams, and `tests/test_foxio_rust_parity.py` holds the measurement.
 
 The conformance suite reads only the top level of this directory, so neither
 subdirectory adds a case to it.
@@ -229,6 +242,8 @@ def download() -> None:
             wireshark_dir=WIRESHARK_EXPECTED_DIR,
             rust_dir=RUST_EXPECTED_DIR,
             count=len(CAPTURES),
+            rust_count=len(RUST_CAPTURES),
+            rust_captures="\n".join("    {}".format(name) for name in RUST_CAPTURES),
         )
     )
     print(f"{len(CAPTURES)} vectors written to {VECTORS_DIR}")

@@ -205,6 +205,64 @@ class TestTheEncryptedHttpDeviations:
         assert "http1-with-cookies.pcapng/JA4H_ro" not in load_register()
 
 
+# The capture whose omitted stream no FoxIO implementation reads. The rule that settles
+# every other #138 entry rests on a reference that holds the value, and this one has
+# none, so the entry stays open.
+UNSETTLED_KEY = "socks4-https.pcap/JA4X"
+
+
+class TestTheReferenceOmitsTheStreamDeviations:
+    """Check the entries issue #138 settles.
+
+    The FoxIO Python implementation reads no QUIC handshake, and it reads no TLS on a
+    port it does not know. The FoxIO Rust implementation reads both, and it holds the
+    exact value ja4plus produces. The omission is a gap in the FoxIO Python
+    implementation, so the entries record a permanent divergence.
+    `tests/test_foxio_rust_parity.py` holds the measurement.
+    """
+
+    def _entries(self):
+        return {
+            key: deviation for key, deviation in load_register().items() if deviation.issue == 138
+        }
+
+    def test_the_issue_owns_every_entry_it_settled(self):
+        assert len(self._entries()) == 34
+
+    def test_every_settled_entry_is_decided(self):
+        undecided = sorted(
+            key for key, deviation in self._entries().items() if not deviation.decided
+        )
+        assert undecided == [UNSETTLED_KEY]
+
+    def test_every_decided_entry_names_the_implementation_that_holds_the_value(self):
+        for key, deviation in self._entries().items():
+            if key == UNSETTLED_KEY:
+                continue
+            assert "FoxIO Rust snapshot" in deviation.cause, key
+
+    def test_every_decided_entry_states_why_the_python_file_omits_the_stream(self):
+        for key, deviation in self._entries().items():
+            if key == UNSETTLED_KEY:
+                continue
+            reads_no_quic = "reads no QUIC handshake" in deviation.cause
+            reads_no_tunnel = "reads no TLS on port 8080" in deviation.cause
+            assert reads_no_quic or reads_no_tunnel, key
+
+    def test_no_settled_entry_names_the_epic(self):
+        assert 13 not in {deviation.issue for deviation in load_register().values()}
+
+    def test_the_unsettled_entry_states_that_no_reference_holds_the_value(self):
+        """The SOCKS4 tunnel is the one case the rule does not reach.
+
+        Every other entry rests on a FoxIO implementation that holds the value. No FoxIO
+        implementation holds this one, so the entry stays open and undecided.
+        """
+        deviation = load_register()[UNSETTLED_KEY]
+        assert deviation.decided is False
+        assert "no FoxIO implementation holds one" in deviation.cause
+
+
 class TestTheOwnerReader:
     """Check the reader of the checked-in owner list."""
 
