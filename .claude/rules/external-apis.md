@@ -44,7 +44,16 @@ under `python/test/testdata/` decide. Record the reading in
 
 **The files under `wireshark/test/testdata/` are not the authority.**
 `wireshark/test/testdata/tls12.pcap.json` is an empty array, while the file with the
-same name under `python/test/testdata/` holds four fingerprints.
+same name under `python/test/testdata/` holds four fingerprints. Where both directories
+carry a value for a method, `python/test/testdata/` decides.
+
+**JA4D and JA4D6 are the one exception.** The FoxIO Python implementation emits neither
+method, so `python/test/testdata/dhcp.pcapng.json` and
+`python/test/testdata/dhcpv6.pcap.json` each hold an empty array. The Wireshark dissector
+is the only FoxIO implementation that writes a reference value for the two methods.
+`tests/foxio_vectors/wireshark_expected/` holds a copy of its two files. The Zeek
+baseline `zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` holds the same four JA4D values.
+`docs/implementation_notes.md` records the reading.
 
 **`ja4db.com` publishes no versioned document.** Treat any unexpected response shape as
 a miss. Never let its response shape reach a caller unchecked.
