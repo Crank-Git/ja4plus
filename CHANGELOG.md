@@ -4,6 +4,32 @@ All notable changes to ja4plus are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A loopback capture that carries IPv6 now reads the same way on every host**
+  (#94). A capture whose link type is `DLT_NULL` starts each frame with the
+  address family value of the host that captured it. That value is 24 on NetBSD
+  and OpenBSD, 28 on FreeBSD, and 30 on Darwin. scapy binds one value,
+  `socket.AF_INET6`, which is 10 on Linux, and no capture holds 10. `ipv6.pcapng`,
+  `tls-alpn-h2.pcap` and `http-empty-useragent.pcap` therefore produced
+  fingerprints on macOS and none on Linux. `ja4plus` binds all three BSD values
+  when a caller imports it, and the conformance suite now reports the same counts
+  on both hosts.
+
+### Changed
+
+- **BREAKING — JA4SSH emits one fingerprint for every 200 SSH packets** (#28).
+  The window triggered at `min(packet_count, 10)`, and a complete key exchange
+  also triggered it. A caller who relies on a fingerprint at 10 packets gets no
+  fingerprint now. FoxIO states the interval verbatim in
+  `technical_details/JA4SSH.png`: `(runs every 200 SSH packets by default)`. The
+  constructor argument `packet_count` sets the window, and it defaults to 200. A
+  bare ACK is not an SSH packet, and it does not advance the window. `ssh.pcapng`
+  now produces exactly one JA4SSH fingerprint, `c36s36_c76s124_c0s0`, which
+  equals the reference.
+
 ## [0.6.0] - 2026-05
 
 Major spec-compliance update against the May 2026 FoxIO JA4+ spec

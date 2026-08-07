@@ -150,6 +150,12 @@ JA4 and JA4S result dicts include the unhashed `raw` and
 `raw_original_order` variants — useful for human-readable output and
 fingerprint debugging.
 
+The same dicts include `fingerprint_original_order`, the FoxIO `JA4_o` value.
+It is the hashed form of `raw_original_order`, and its relationship to
+`fingerprint` matches the relationship of `raw_original_order` to `raw`. The
+`JA4Fingerprinter` and `JA4SFingerprinter` classes also hold the most recent
+one on `last_fingerprint_original_order`.
+
 ### X.509 Helpers
 
 ```python

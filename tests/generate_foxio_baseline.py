@@ -25,6 +25,7 @@ is not allowed.
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -42,30 +43,47 @@ from tests.foxio_manifest import MANIFEST_PATH  # noqa: E402 - the path insert m
 
 # The issue that owns each method. #12 records the measurement that assigns them.
 #
-# JA4L names #80, not #30 and not #34. The conformance harness does not run the JA4L
-# fingerprinter, so every JA4L case fails before any fingerprint value is compared. #30
-# changes `calculate_distance`, which no JA4L fingerprint value reads, so #30 fixes none
-# of these cases. #34 owns the client-fingerprint multiplicity defect, and #80 must land
-# first for the suite to measure it.
+# #28 fixed the JA4SSH window, and it owns no case now. Every JA4SSH case that
+# remains sits on a capture that holds more than one window. A capture of one window
+# conforms, and a capture of several does not. #92 owns them.
 OWNING_ISSUES = {
     "JA4": 13,
     "JA4S": 13,
     "JA4H": 35,
-    "JA4SSH": 28,
+    "JA4SSH": 92,
     "JA4X": 78,
-    "JA4L-C": 80,
-    "JA4L-S": 80,
 }
 
-# The cause of every JA4L case, which the failure message alone does not state. The
-# harness reports "produced=<none>" because it runs five fingerprinters and JA4L is not
-# one of them, not because ja4plus produces no JA4L value.
-HARNESS_CAUSES = {
-    "JA4L-C": "The conformance harness does not run the JA4L fingerprinter.",
-    "JA4L-S": "The conformance harness does not run the JA4L fingerprinter.",
-}
+# JA4L holds defects of two kinds, so one issue does not own every JA4L case. #80 landed
+# the harness change that measures them, and #80 owns none of them. #30 changes
+# `calculate_distance`, which no JA4L fingerprint value reads, so #30 owns none of them
+# either.
+#
+# #34 owns the multiplicity defect on both sides: how many JA4L values one connection
+# emits. On the client side JA4L emits one JA4L-C value for every ACK.
+JA4L_MULTIPLICITY_ISSUE = 34
+
+# #88 owns every JA4L value defect. `ja4l.py:218` claims FoxIO uses the raw time
+# difference. The vectors contradict that claim. On `badcurveball.pcap` stream 0, the
+# SYN to SYN-ACK time is 1563 us and the reference JA4L-S is `781_238`, which is half of
+# it. The same stream gives a client data packet 4362 us after the SYN-ACK, and the
+# reference JA4L-C is `2181_64`, which is half of that. ja4plus halves neither, and it
+# measures JA4L-C to the bare ACK rather than to the first client data packet.
+JA4L_VALUE_ISSUE = 88
 
 SUITE = "tests/test_spec_validation.py"
+
+# The counts the occurrence-key failure message reports.
+EXTRA_KEYS = re.compile(r": (\d+) extra occurrence key")
+MISSING_KEYS = re.compile(r"; (\d+) missing occurrence key")
+
+# The value pair the fingerprint failure message reports.
+VALUE_PAIR = re.compile(r"expected='([^']*)' produced='([^']*)'")
+
+# A produced latency this many microseconds from twice the reference counts as twice it.
+# Both values truncate to a whole microsecond, so an exact comparison misses a case that
+# the halving explains.
+HALVING_TOLERANCE = 2
 
 
 class _CaseCollector:
@@ -84,10 +102,107 @@ class _CaseCollector:
         self.failures.append((report.nodeid, str(report.longrepr)))
 
 
+def _failure_line(message):
+    """Return the failure line of one case.
+
+    pytest prints the source of the test above the failure, and that source holds the
+    format string of the failure message. A search of the whole report therefore matches
+    text the case never produced. Read the failure line alone.
+
+    Args:
+        message: The report text of one failed case.
+
+    Returns:
+        The line that states the failure, or the whole report when it holds no such
+        line.
+    """
+    for line in message.splitlines():
+        if "Failed: " in line:
+            return line
+    return message
+
+
+def _count(pattern, message):
+    """Return the count the pattern reports, or 0 when the message holds none."""
+    match = pattern.search(message)
+    return int(match.group(1)) if match else 0
+
+
+def _is_twice_the_reference(message):
+    """Return True when the produced latency is twice the latency of the reference."""
+    match = VALUE_PAIR.search(message)
+    if not match:
+        return False
+    expected, produced = match.group(1), match.group(2)
+    try:
+        expected_latency = int(expected.split("_")[0])
+        produced_latency = int(produced.split("_")[0])
+    except (ValueError, IndexError):
+        return False
+    return abs(produced_latency - expected_latency * 2) <= HALVING_TOLERANCE
+
+
+def _ja4l_entry(method, message, occurrence_form):
+    """Return the register entry of one JA4L case, read from the failure message.
+
+    Args:
+        method: The method name, `JA4L-C` or `JA4L-S`.
+        message: The failure message of the case.
+        occurrence_form: True for an occurrence-key case, False for a value case.
+
+    Returns:
+        The entry, as a map of `issue` to the issue number and `cause` to one line.
+    """
+    # #34 owns every occurrence-key case, on both sides of the connection. A count that
+    # differs from the reference is one defect, and the direction does not split it.
+    if occurrence_form:
+        extra = _count(EXTRA_KEYS, message)
+        missing = _count(MISSING_KEYS, message)
+        if extra and method == "JA4L-C":
+            return {
+                "issue": JA4L_MULTIPLICITY_ISSUE,
+                "cause": "ja4plus emits one JA4L-C value for every ACK on the connection.",
+            }
+        if extra and missing:
+            return {
+                "issue": JA4L_MULTIPLICITY_ISSUE,
+                "cause": "ja4plus produces a different set of {} fingerprints.".format(method),
+            }
+        if extra:
+            return {
+                "issue": JA4L_MULTIPLICITY_ISSUE,
+                "cause": "ja4plus emits more {} values than the reference holds.".format(method),
+            }
+        return {
+            "issue": JA4L_MULTIPLICITY_ISSUE,
+            "cause": "ja4plus does not decode the tunnel payload of this capture, so it "
+            "reads no TCP layer and produces no {} value.".format(method),
+        }
+    if "produced=<none>" in message:
+        return {
+            "issue": JA4L_VALUE_ISSUE,
+            "cause": "ja4plus does not decode the tunnel payload of this capture, so it "
+            "reads no TCP layer and produces no {} value on this stream.".format(method),
+        }
+    if _is_twice_the_reference(message):
+        return {
+            "issue": JA4L_VALUE_ISSUE,
+            "cause": "ja4plus reports the round-trip time, and the reference holds half of it.",
+        }
+    if method == "JA4L-C":
+        return {
+            "issue": JA4L_VALUE_ISSUE,
+            "cause": "ja4plus measures JA4L-C to the bare ACK, and it does not halve the "
+            "round-trip time.",
+        }
+    return {
+        "issue": JA4L_VALUE_ISSUE,
+        "cause": "The produced JA4L-S value differs from the reference by another amount.",
+    }
+
+
 def _cause(method, message, occurrence_form):
     """Return one line that states the cause, read from the failure message."""
-    if method in HARNESS_CAUSES:
-        return HARNESS_CAUSES[method]
     if occurrence_form:
         extra = "extra occurrence key" in message and "0 extra" not in message
         missing = "missing occurrence key" in message and "0 missing" not in message
@@ -103,6 +218,8 @@ def _cause(method, message, occurrence_form):
 
 def _entry(method, message, occurrence_form):
     """Return one register entry, or raise KeyError when no issue owns the method."""
+    if method.startswith("JA4L"):
+        return _ja4l_entry(method, message, occurrence_form)
     return {
         "issue": OWNING_ISSUES[method],
         "cause": _cause(method, message, occurrence_form),
@@ -147,6 +264,7 @@ def _register(collector):
             continue
         method = params["method"]
         vector = params["pcap_path"].name
+        message = _failure_line(message)
         if "occurrence" in params:
             stream = params["stream"]
             key = value_key(vector, stream.index, stream.src_port, method, params["occurrence"])

@@ -182,7 +182,7 @@ change, and files nothing there.
 | Remote lookup | The command-line flag `--lookup` is opt-in, but `JA4DBClient.lookup` then calls `ja4db.com` on every miss with no second opt-in. | The remote fallback is a separate opt-in. | 2 | Separate the local lookup from the remote lookup. Epic 7. |
 | Mapping file refresh | `db update` and `db info` already exist. | The same two subcommands. | — | Already at parity. Keep a test that proves it. |
 | Shard key format | `tcp:ip:port->ip:port`. | The same format. | — | Already at parity. Keep a test that proves it. |
-| JA4SSH window | Emits at `min(packet_count, 10)`. | Emits at `min(packetCount, 10)`. | 1 | Both are wrong. FoxIO specifies 200. Fix here. Epic 1. |
+| JA4SSH window | Emits at `packet_count`, which defaults to 200. | Emits at `min(packetCount, 10)`. | 1 | Fixed here by #28. The port carries the defect at `ja4ssh.go:176`. |
 | Parity test | 6 tests that assert names exist. | Not applicable. | 3 | Replace with the shared vector suite. Epic 1. |
 
 Verified against: https://github.com/Crank-Git/ja4plus-go (`types.go`,
@@ -468,6 +468,10 @@ Two items blocked approval. Both are now decided.
 | 6 | 2026-08-06 | The conformance baseline was measured for the first time. It is recorded on #12. The figure of 69 of 74 vectors passing is withdrawn: it came from a harness that matched a value against every fingerprint in a capture and skipped four whole methods. |
 | 7 | 2026-08-06 | #78 opened. JA4X fails 35 cases and no issue owned the method. |
 | 8 | 2026-08-06 | #80 opened. The conformance harness never runs the JA4L fingerprinter, so 162 of the 263 registered deviations state a harness defect, not non-conformance. JA4L conformance is unmeasured until #80 lands. |
+| 9 | 2026-08-06 | Epic 1 batch 1 shipped: #29 `JA4_o`, #80 the JA4L harness, #28 the JA4SSH window. Two are breaking behaviour changes. |
+| 10 | 2026-08-06 | #88, #92 and #78 opened for the conformance gaps the honest harness exposed. #34 widened to both directions of the connection and its acceptance criterion withdrawn; #89 carries that correction into the feature file. |
+| 11 | 2026-08-06 | `JA4S_o` is published with no FoxIO material to validate it. Recorded for the ambiguity register #31 builds. |
+| 9 | 2026-08-06 | #80 landed and JA4L conformance is measured for the first time. The harness runs the JA4L fingerprinter, reads the JA4L connection key form, and strips the method prefix from the produced value. The register holds 252 entries, and it held 263. JA4L passes 16 of its 167 cases. #88 opened to own the 114 value cases, and #34 widened to own the 37 occurrence-key cases on both sides of the connection. #89 opened, because the vectors contradict the JA4L requirement in `features/02-correctness-audit.md`. |
 
 ## Issue map
 

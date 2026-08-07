@@ -3,7 +3,7 @@ id: spec-conformance
 feature: Spec conformance
 epic: "Epic 1: Spec conformance"
 status: issued
-issues: [12, 27, 28, 29, 30, 31, 78, 80]
+issues: [12, 27, 28, 29, 30, 31, 78, 80, 94]
 mockups: []
 ---
 
@@ -60,6 +60,12 @@ ambiguous part of the specification.
 FR-spec-conformance-12 — `tests/test_parity.py` no longer asserts that a name
 exists.
 
+FR-spec-conformance-13 — The conformance suite reports the same counts on every
+host.
+
+FR-spec-conformance-14 — `ja4plus` reads the IPv6 layer of a loopback capture on
+every host.
+
 ## User flows
 
 **A maintainer fixes a failing method.**
@@ -106,6 +112,14 @@ This feature set has no screen. Its output is the test report.
   `JA4` and `JA4_r`.
 - No fingerprinter changes in a way that a vector does not require. A change that
   no vector covers belongs to Epic 2.
+- A vector produces one result on every host. A capture whose link type is
+  `DLT_NULL` starts each frame with the address family value of the host that
+  captured it, and that value is 24 on NetBSD and OpenBSD, 28 on FreeBSD, and 30
+  on Darwin. `ja4plus` binds all three values to the IPv6 layer, because scapy
+  binds only the value of the reading host.
+- A register entry names a real deviation from FoxIO. A failure that one host
+  produces and another host does not is a defect in this project, and it never
+  earns a register entry.
 
 ## Data touched
 
@@ -118,6 +132,10 @@ This feature set has no screen. Its output is the test report.
   method and by occurrence, so one test case compares one value.
 - Changed file `tests/test_parity.py`.
 - Changed file `docs/implementation_notes.md`.
+- New file `ja4plus/utils/loopback.py`. It binds the BSD address family values of
+  a loopback frame to the IPv6 layer.
+- New file `tests/test_loopback_link_type.py`.
+- Changed file `ja4plus/__init__.py`.
 
 ## Interfaces
 
@@ -147,6 +165,21 @@ Verified against:
 https://github.com/FoxIO-LLC/ja4/blob/main/python/test/testdata/ssh.pcapng.json
 (retrieved 2026-08-06).
 
+libpcap defines the address family value of a `DLT_NULL` frame. The value of
+`AF_INET6` is 24 on NetBSD, OpenBSD and BSD/OS, 28 on FreeBSD, and 30 on Darwin.
+libpcap reads all three values from a savefile, and it reads one value from a live
+capture.
+
+Verified against:
+https://github.com/the-tcpdump-group/libpcap/blob/f98637ad7f086a34c4027339c9639ae1ef842df3/gencode.c#L3333-L3354
+(retrieved 2026-08-06).
+
+scapy names 24, 28 and 30 as IPv6 in `LOOPBACK_TYPES`, and binds `socket.AF_INET6`
+alone. That value is 10 on Linux.
+
+Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-724`
+(scapy 2.7.0).
+
 ## Edge cases & failures
 
 | Case | What happens |
@@ -158,6 +191,8 @@ https://github.com/FoxIO-LLC/ja4/blob/main/python/test/testdata/ssh.pcapng.json
 | A TTL implies a negative hop count. | The hop count is clamped to zero and the factor is 1.5. |
 | A vector holds a method key this project does not implement, such as `JA4TScan`. | The suite ignores the key. |
 | The reference emits two fingerprints and this project emits one. | The suite fails and names the missing occurrence. |
+| A capture holds the `DLT_NULL` link type and the address family value 24, 28 or 30. | The reader dissects the frame as IPv6 on every host. |
+| A caller builds a loopback frame. | The address family value is the scapy default. This project binds the dissection path alone. |
 
 ## Acceptance criteria
 
@@ -176,6 +211,12 @@ https://github.com/FoxIO-LLC/ja4/blob/main/python/test/testdata/ssh.pcapng.json
 - [ ] `calculate_distance(latency, propagation_factor=1.6)` uses 1.6.
 - [ ] `docs/implementation_notes.md` records one entry for each ambiguous reading.
 - [ ] No test in `tests/test_parity.py` asserts only that an attribute exists.
+- [ ] `pytest tests/ -m spec_validation` reports the same counts on Linux and on
+      macOS.
+- [ ] A loopback frame that holds the address family value 24, 28 or 30 dissects
+      as IPv6.
+- [ ] `ipv6.pcapng` produces the JA4 value `t12d4605h2_85626a9a5f7f_aaf95bb78ec9`
+      on Linux and on macOS.
 
 ## Out of scope
 

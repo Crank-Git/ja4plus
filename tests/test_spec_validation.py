@@ -44,9 +44,12 @@ from pathlib import Path
 import pytest
 
 from tests.conformance_index import (
+    FINGERPRINTER_METHODS,
+    _connection_identity,
     index_expected,
     index_produced,
     method_and_occurrence,
+    method_and_value,
     stream_identity,
 )
 from tests.foxio_deviations import load_register, lookup, occurrence_key, value_key
@@ -58,7 +61,7 @@ VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 
 # The methods this suite reports on every vector. A method that a vector does not
 # exercise is reported as not applicable, so the report separates it from a pass.
-REPORTED_METHODS = ("JA4", "JA4H", "JA4S", "JA4SSH", "JA4X")
+REPORTED_METHODS = ("JA4", "JA4H", "JA4L-C", "JA4L-S", "JA4S", "JA4SSH", "JA4X")
 
 
 def have_vectors():
@@ -280,6 +283,32 @@ class TestConformanceIndex:
         streams = index_expected(records)
         stream = next(iter(streams.values()))
         assert set(stream.methods) == {"JA4"}
+
+    def test_the_suite_reports_both_JA4L_methods(self):
+        assert "JA4L-C" in FINGERPRINTER_METHODS
+        assert "JA4L-S" in FINGERPRINTER_METHODS
+
+    def test_the_connection_reader_reads_a_JA4SSH_connection_key(self):
+        identity = _connection_identity("172.16.225.48:57377-54.160.114.75:22")
+        assert identity == stream_identity("172.16.225.48", "57377", "54.160.114.75", "22")
+
+    def test_the_connection_reader_reads_a_JA4L_connection_key(self):
+        identity = _connection_identity("udp_172.16.224.1:53_172.16.225.48:60983")
+        assert identity == stream_identity("172.16.224.1", "53", "172.16.225.48", "60983")
+
+    def test_the_connection_reader_reads_a_JA4L_connection_key_of_two_IPv6_addresses(self):
+        identity = _connection_identity("tcp_2001:db8::1:443_2001:db8::2:51000")
+        assert identity == stream_identity("2001:db8::1", "443", "2001:db8::2", "51000")
+
+    def test_the_value_reader_strips_the_JA4L_method_prefix(self):
+        assert method_and_value("JA4L", "JA4L-S=21105_64") == ("JA4L-S", "21105_64")
+        assert method_and_value("JA4L", "JA4L-C=1_64") == ("JA4L-C", "1_64")
+
+    def test_the_value_reader_keeps_a_value_that_carries_no_prefix(self):
+        assert method_and_value("JA4SSH", "c36s36_c76s124_c0s0") == (
+            "JA4SSH",
+            "c36s36_c76s124_c0s0",
+        )
 
     def test_the_index_names_the_stream_in_its_label(self):
         records = [
