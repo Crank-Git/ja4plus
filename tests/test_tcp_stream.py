@@ -2,6 +2,9 @@
 
 import time
 import unittest
+from pathlib import Path
+
+VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 
 # A TCP sequence number is 32 bits. 0xFFFFFFFE puts the next four bytes across the
 # boundary, so a reassembler that compares raw numbers orders these segments backwards.
@@ -319,15 +322,15 @@ class TestTCPStreamMaximumAge(unittest.TestCase):
         self.assertFalse(hasattr(tcp_stream, "time"))
         self.assertFalse(hasattr(tcp_stream, "datetime"))
 
-    def test_the_packet_clock_alone_ages_a_stream(self):
+    def test_the_stream_holds_the_stated_packet_time(self):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
         r = TCPStreamReassembler(max_stream_age=100)
-        # Both packets carry a capture time from 2001. The wall clock passes it by
-        # decades, so a reassembler that reads the wall clock removes this stream.
         r.add_segment("s1", seq=0, data=b"a", timestamp=OLD_CAPTURE_TIME)
         r.add_segment("s1", seq=1, data=b"b", timestamp=OLD_CAPTURE_TIME + 1)
-        self.assertIn("s1", r.streams)
+        # The stored value is the time the caller states. A reassembler that reads the
+        # wall clock stores a time from this year, which this comparison rejects.
+        self.assertEqual(r.streams["s1"]["last_seen"], OLD_CAPTURE_TIME + 1)
         self.assertEqual(r.get_stream("s1"), b"ab")
 
     def test_an_age_eviction_accepts_the_same_segment_again(self):
@@ -365,13 +368,43 @@ class TestTCPStreamMaximumAge(unittest.TestCase):
         self.assertIn("s1", r.streams)
 
     def test_the_default_maximum_age_passes_the_longest_gap_of_the_vectors(self):
+        from scapy.all import TCP, Raw, rdpcap
+
+        from ja4plus.utils.packet_utils import get_ip_layer
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
-        # `ssh-r.pcap` holds the longest gap between two segments of one stream across
-        # `tests/foxio_vectors/`, at 320.714503 seconds. The default sits above it, so
-        # no eviction reaches a stream a fingerprinter still reads.
+        captures = sorted(VECTORS_DIR.glob("*.pcap")) + sorted(VECTORS_DIR.glob("*.pcapng"))
+        if not captures:
+            self.skipTest("tests/foxio_vectors/ holds no capture")
+
+        # The measurement reads every capture and keys each TCP segment the way
+        # `ja4h.py` keys a stream. A hardcoded reading passes whatever the vectors hold,
+        # so this test reads them. It fails when a new vector holds a wider gap.
+        widest = 0.0
+        widest_capture = None
+        for path in captures:
+            last = {}
+            for packet in rdpcap(str(path)):
+                if not (packet.haslayer(TCP) and packet.haslayer(Raw)):
+                    continue
+                ip_layer = get_ip_layer(packet)
+                if ip_layer is None:
+                    continue
+                tcp = packet[TCP]
+                key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
+                seconds = float(packet.time)
+                if key in last and seconds - last[key] > widest:
+                    widest = seconds - last[key]
+                    widest_capture = path.name
+                last[key] = seconds
+
+        self.assertGreater(widest, 0.0, "the scan measured no gap")
+        self.assertEqual(widest_capture, "ssh-r.pcap")
+        self.assertAlmostEqual(widest, 320.714503, places=5)
+        # An eviction that reaches a stream a fingerprinter still reads moves a
+        # fingerprint. The default sits above the widest gap the vectors hold.
         r = TCPStreamReassembler()
-        self.assertGreater(r.max_stream_age, 320.714503)
+        self.assertGreater(r.max_stream_age, widest)
 
 
 if __name__ == "__main__":

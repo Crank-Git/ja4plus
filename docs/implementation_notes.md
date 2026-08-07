@@ -1089,6 +1089,11 @@ every capture with `rdpcap`, keys each TCP segment the way `ja4h.py` keys a stre
 records the widest gap between two packet timestamps of one key. The second reading is
 `http1.pcapng` at 60.042404 seconds. The default sits above the widest gap.
 
+`test_the_default_maximum_age_passes_the_longest_gap_of_the_vectors` runs that scan. It
+reads the captures rather than a stored number, so a vector with a wider gap fails it.
+An earlier form compared 600 against the literal 320.714503, and that form passes
+whatever the vectors hold. The scan costs 1.1 seconds.
+
 No reference value moves. The conformance suite reports 1375 passed, 146 skipped and 120
 xfailed before the change and after it. A 300-second age gives the same three counts,
 because the one stream above 300 seconds is SSH traffic that JA4H and JA4X read nothing
