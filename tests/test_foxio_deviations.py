@@ -10,12 +10,52 @@ import json
 import pytest
 
 from tests.foxio_deviations import (
+    OWNERS_PATH,
     REGISTER_PATH,
     Deviation,
+    Owner,
+    load_owners,
     load_register,
     occurrence_key,
     value_key,
 )
+
+
+def unusable_owners(register, owners):
+    """Return one message for every entry whose owner no worker can act on.
+
+    An epic is never an owner, because an epic is not schedulable. A closed issue is an
+    owner only when the entry is decided, which records a permanent divergence.
+
+    Args:
+        register: The register that `load_register` returns.
+        owners: The owner map that `load_owners` returns.
+
+    Returns:
+        A list of messages. An empty list means every entry names a usable owner.
+    """
+    messages = []
+    for key, deviation in sorted(register.items()):
+        owner = owners.get(deviation.issue)
+        if owner is None:
+            messages.append(
+                "{} names #{}, and the owner list holds no state for it".format(
+                    key, deviation.issue
+                )
+            )
+            continue
+        if owner.epic:
+            messages.append(
+                "{} names the epic #{}, and an epic is not schedulable".format(key, owner.number)
+            )
+            continue
+        if owner.state == "closed" and not deviation.decided:
+            messages.append(
+                "{} names the closed issue #{}, and the entry is not decided".format(
+                    key, owner.number
+                )
+            )
+    return messages
 
 
 class TestTheKeyForms:
@@ -85,6 +125,23 @@ class TestTheRegisterReader:
     def test_the_reader_returns_an_empty_register_for_a_missing_file(self, tmp_path):
         assert load_register(tmp_path / "absent.json") == {}
 
+    def test_the_reader_reads_no_decided_flag_as_false(self, tmp_path):
+        path = self._write(tmp_path, {"a.pcap/0/JA4.1": {"issue": 13, "cause": "x"}})
+        assert load_register(path)["a.pcap/0/JA4.1"].decided is False
+
+    def test_the_reader_reads_the_decided_flag(self, tmp_path):
+        path = self._write(
+            tmp_path, {"a.pcap/0/JA4.1": {"issue": 13, "cause": "x", "decided": True}}
+        )
+        assert load_register(path)["a.pcap/0/JA4.1"].decided is True
+
+    def test_the_reader_rejects_a_decided_flag_that_is_not_a_boolean(self, tmp_path):
+        path = self._write(
+            tmp_path, {"a.pcap/0/JA4.1": {"issue": 13, "cause": "x", "decided": "yes"}}
+        )
+        with pytest.raises(ValueError, match="a.pcap/0/JA4.1"):
+            load_register(path)
+
     def test_the_reason_names_the_issue_and_the_cause(self):
         deviation = Deviation(issue=30, cause="JA4L needs the hop count.")
         assert deviation.reason() == "issue #30: JA4L needs the hop count."
@@ -122,6 +179,7 @@ ENCRYPTED_HTTP_KEYS = (
     + [
         "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1",
         "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1",
+        "chrome-cloudflare-quic-with-secrets.pcapng/JA4H",
         "chrome-cloudflare-quic-with-secrets.pcapng/JA4H_ro",
     ]
 )
@@ -145,3 +203,81 @@ class TestTheEncryptedHttpDeviations:
         alone. A cleartext vector that reappears here is a defect.
         """
         assert "http1-with-cookies.pcapng/JA4H_ro" not in load_register()
+
+
+class TestTheOwnerReader:
+    """Check the reader of the checked-in owner list."""
+
+    def _write(self, tmp_path, owners):
+        path = tmp_path / "owners.json"
+        path.write_text(json.dumps({"owners": owners}))
+        return path
+
+    def test_the_reader_keys_the_map_by_issue_number(self, tmp_path):
+        path = self._write(tmp_path, {"13": {"state": "open", "epic": True, "title": "Epic 2"}})
+        assert load_owners(path)[13] == Owner(number=13, state="open", epic=True, title="Epic 2")
+
+    def test_the_reader_reads_no_epic_flag_as_false(self, tmp_path):
+        path = self._write(tmp_path, {"34": {"state": "open", "title": "Emit one value"}})
+        assert load_owners(path)[34].epic is False
+
+    def test_the_reader_rejects_a_state_it_does_not_allow(self, tmp_path):
+        path = self._write(tmp_path, {"34": {"state": "merged", "title": "Emit one value"}})
+        with pytest.raises(ValueError, match="34"):
+            load_owners(path)
+
+
+class TestTheRegisterOwners:
+    """Check that every register entry names an issue a worker can act on.
+
+    The register named the epic #13 for five batches, and no test caught it. An epic
+    holds sub-issues, so no worker is assigned to it and no fix removes the entry.
+    """
+
+    def test_the_owner_list_reads(self):
+        assert load_owners()
+
+    def test_the_owner_list_holds_every_issue_the_register_names(self):
+        named = {deviation.issue for deviation in load_register().values()}
+        missing = sorted(named - set(load_owners()))
+        assert not missing, "the owner list holds no state for {}".format(missing)
+
+    def test_no_entry_names_an_epic_or_a_closed_issue(self):
+        messages = unusable_owners(load_register(), load_owners())
+        assert not messages, "\n".join(messages)
+
+    def test_the_check_reports_an_entry_that_names_an_epic(self):
+        register = {"a.pcap/JA4": Deviation(issue=13, cause="x")}
+        owners = {13: Owner(number=13, state="open", epic=True, title="Epic 2")}
+        assert unusable_owners(register, owners) == [
+            "a.pcap/JA4 names the epic #13, and an epic is not schedulable"
+        ]
+
+    def test_the_check_reports_an_entry_that_names_a_closed_issue(self):
+        register = {"a.pcap/JA4": Deviation(issue=78, cause="x")}
+        owners = {78: Owner(number=78, state="closed", epic=False, title="Fix JA4X")}
+        assert unusable_owners(register, owners) == [
+            "a.pcap/JA4 names the closed issue #78, and the entry is not decided"
+        ]
+
+    def test_the_check_accepts_a_decided_entry_that_names_a_closed_issue(self):
+        register = {"a.pcap/JA4SSH": Deviation(issue=96, cause="x", decided=True)}
+        owners = {96: Owner(number=96, state="closed", epic=False, title="Decide the mode")}
+        assert unusable_owners(register, owners) == []
+
+    def test_the_check_reports_an_owner_the_list_does_not_hold(self):
+        register = {"a.pcap/JA4": Deviation(issue=999, cause="x")}
+        assert unusable_owners(register, {}) == [
+            "a.pcap/JA4 names #999, and the owner list holds no state for it"
+        ]
+
+    def test_the_check_accepts_an_open_issue(self):
+        register = {"a.pcap/JA4": Deviation(issue=137, cause="x")}
+        owners = {137: Owner(number=137, state="open", epic=False, title="Produce the values")}
+        assert unusable_owners(register, owners) == []
+
+    def test_the_owner_list_records_where_it_came_from(self):
+        with open(OWNERS_PATH) as handle:
+            document = json.load(handle)
+        assert document["source"].startswith("gh issue list")
+        assert document["retrieved"]
