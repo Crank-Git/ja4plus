@@ -42,6 +42,27 @@ QUIC_PORT = 443
 # number needs this mask.
 SEQUENCE_MASK = 0xFFFFFFFF
 
+# FoxIO gives the propagation factor as a table keyed on the hop count. Each pair
+# holds the highest hop count of one row and the factor of that row. A longer path
+# crosses more terrain that the fiber does not follow, so the factor grows.
+PROPAGATION_FACTOR_TABLE = ((21, 1.5), (22, 1.6), (23, 1.7), (24, 1.8), (25, 1.9))
+
+# The last row of the FoxIO table covers a hop count of 26 or more.
+MAXIMUM_PROPAGATION_FACTOR = 2.0
+
+# A caller that passes no TTL gives no hop count, so the table answers nothing. The
+# worked example in the FoxIO material uses 1.6, and this project used 1.6 before it
+# read the table.
+DEFAULT_PROPAGATION_FACTOR = 1.6
+
+# FoxIO gives the speed of light in fiber as 0.128 miles or 0.206 kilometers per
+# microsecond.
+# Verified against
+# https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4L.png
+# (retrieved 2026-08-06). The image holds both the table above and these two values.
+MILES_PER_MICROSECOND = 0.128
+KILOMETERS_PER_MICROSECOND = 0.206
+
 
 class JA4LFingerprinter(BaseFingerprinter):
     """
@@ -138,36 +159,60 @@ class JA4LFingerprinter(BaseFingerprinter):
         self.connections.pop(fwd, None)
         self.connections.pop(rev, None)
 
-    def calculate_distance(self, latency_us, propagation_factor=1.6):
-        """
-        Calculate the physical distance based on JA4L latency.
+    def _propagation_factor(self, ttl, propagation_factor):
+        """Return the propagation factor one distance call uses.
 
         Args:
-            latency_us: One-way latency in microseconds
-            propagation_factor: Propagation delay factor (default: 1.6)
+            ttl: The observed TTL, or None when the caller knows none.
+            propagation_factor: The factor the caller passed, or None.
 
         Returns:
-            Distance in miles
-        """
-        # Speed of light per us in fiber (miles/us)
-        speed_of_light = 0.128
-        distance = (latency_us * speed_of_light) / propagation_factor
-        return distance
+            One of three values:
 
-    def calculate_distance_km(self, latency_us, propagation_factor=1.6):
+            - The factor the caller passed.
+            - The factor of the FoxIO table row for the hop count the TTL implies.
+            - `DEFAULT_PROPAGATION_FACTOR`, when the caller passes neither value.
+
+            A TTL above the initial TTL implies a negative hop count, which clamps to
+            zero hops.
         """
-        Calculate the physical distance in kilometers.
+        if propagation_factor is not None:
+            return propagation_factor
+        if ttl is None:
+            return DEFAULT_PROPAGATION_FACTOR
+        hop_count = max(self.estimate_hop_count(ttl), 0)
+        for highest, factor in PROPAGATION_FACTOR_TABLE:
+            if hop_count <= highest:
+                return factor
+        return MAXIMUM_PROPAGATION_FACTOR
+
+    def calculate_distance(self, latency_us, ttl=None, propagation_factor=None):
+        """Return the distance the JA4L latency implies, in miles.
 
         Args:
-            latency_us: One-way latency in microseconds
-            propagation_factor: Propagation delay factor (default: 1.6)
+            latency_us: The one-way latency, in microseconds.
+            ttl: The observed TTL. The FoxIO table reads the hop count it implies.
+            propagation_factor: An explicit factor, which overrides the table.
 
         Returns:
-            Distance in kilometers
+            The distance in miles.
         """
-        speed_of_light_km = 0.206  # km/us in fiber
-        distance = (latency_us * speed_of_light_km) / propagation_factor
-        return distance
+        factor = self._propagation_factor(ttl, propagation_factor)
+        return (latency_us * MILES_PER_MICROSECOND) / factor
+
+    def calculate_distance_km(self, latency_us, ttl=None, propagation_factor=None):
+        """Return the distance the JA4L latency implies, in kilometers.
+
+        Args:
+            latency_us: The one-way latency, in microseconds.
+            ttl: The observed TTL. The FoxIO table reads the hop count it implies.
+            propagation_factor: An explicit factor, which overrides the table.
+
+        Returns:
+            The distance in kilometers.
+        """
+        factor = self._propagation_factor(ttl, propagation_factor)
+        return (latency_us * KILOMETERS_PER_MICROSECOND) / factor
 
     def estimate_os(self, ttl):
         """
