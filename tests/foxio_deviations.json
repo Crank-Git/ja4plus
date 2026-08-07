@@ -73,11 +73,11 @@
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1": {
     "issue": 78,
-    "cause": "ja4plus reads no encrypted certificate, and the reference decrypts the QUIC handshake with the secrets the capture carries."
+    "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.2": {
     "issue": 78,
-    "cause": "ja4plus reads no encrypted certificate, and the reference decrypts the QUIC handshake with the secrets the capture carries."
+    "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4": {
     "issue": 13,
@@ -93,7 +93,7 @@
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4X": {
     "issue": 78,
-    "cause": "ja4plus reads no encrypted certificate, and the reference decrypts the QUIC handshake with the secrets the capture carries."
+    "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
   "gre-erspan-vxlan.pcap/0:65174/JA4L-C.1": {
     "issue": 88,
@@ -229,15 +229,15 @@
   },
   "http2-with-cookies.pcapng/0:58847/JA4X.1": {
     "issue": 78,
-    "cause": "ja4plus reads no encrypted certificate, and the reference decrypts the TLS 1.3 handshake with the secrets the capture carries."
+    "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
   "http2-with-cookies.pcapng/0:58847/JA4X.2": {
     "issue": 78,
-    "cause": "ja4plus reads no encrypted certificate, and the reference decrypts the TLS 1.3 handshake with the secrets the capture carries."
+    "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
   "http2-with-cookies.pcapng/0:58847/JA4X.3": {
     "issue": 78,
-    "cause": "ja4plus reads no encrypted certificate, and the reference decrypts the TLS 1.3 handshake with the secrets the capture carries."
+    "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
   "http2-with-cookies.pcapng/JA4H": {
     "issue": 35,
@@ -249,7 +249,7 @@
   },
   "http2-with-cookies.pcapng/JA4X": {
     "issue": 78,
-    "cause": "ja4plus reads no encrypted certificate, and the reference decrypts the TLS 1.3 handshake with the secrets the capture carries."
+    "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate."
   },
   "https-connect.pcap/JA4": {
     "issue": 13,

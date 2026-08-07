@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
 from scapy.all import IP, TCP, Raw
 
-from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
+from ja4plus.fingerprinters.ja4x import MAX_PROCESSED_CERTS, JA4XFingerprinter
 
 SERVER_HELLO_TYPE = 0x02
 CERTIFICATE_TYPE = 0x0B
@@ -164,7 +164,7 @@ def test_the_scan_reads_no_certificate_from_a_record_the_stream_holds_in_part(ce
     assert _values(fingerprinter) == []
 
 
-def test_the_scan_reads_no_certificate_from_a_length_field_the_record_lies_about(certificate):
+def test_the_scan_reads_no_certificate_from_a_length_that_exceeds_the_message(certificate):
     """A certificate length that exceeds the message yields no value."""
     message = _certificate_message(certificate)
     hostile = message[:7] + b"\xff\xff\xff" + message[10:]
@@ -210,7 +210,7 @@ def test_the_scan_reads_a_record_that_two_packets_carry(certificate):
 def test_the_scan_reads_a_certificate_that_follows_application_data(certificate):
     """A Certificate message after encrypted records yields its value.
 
-    The scan resumes after the records it already read, and encrypted payload holds no
+    The scan resumes after the records it already read. The encrypted payload holds no
     record boundary the scan can trust.
     """
     application_data = b"\x17\x03\x03" + (2000).to_bytes(2, "big") + b"\xa5" * 2000
@@ -236,7 +236,47 @@ def test_the_scan_reads_the_stream_once(certificate):
 
     # The scan keeps the offset it reached, so the next packet reads no byte twice.
     length = 50 * len(application_data)
-    assert fingerprinter.scan_offsets["10.0.0.2:443-10.0.0.1:54321"] > length - 5
+    _, offset = fingerprinter.scan_offsets["10.0.0.2:443-10.0.0.1:54321"]
+    assert offset > length - 5
+
+
+def test_the_scan_reads_a_certificate_that_a_late_segment_carries(certificate):
+    """A segment that arrives after a later one still yields its value.
+
+    The reassembled bytes start at the lowest sequence number the stream holds, so a
+    late segment moves every offset. The scan must not resume at an offset that now
+    names another byte.
+    """
+    first = _record(_certificate_message(certificate))
+    second = b"\x17\x03\x03" + (16).to_bytes(2, "big") + b"\xa5" * 16
+
+    fingerprinter = JA4XFingerprinter()
+    fingerprinter.process_packet(_packet(second, seq=1000 + len(first)))
+    fingerprinter.process_packet(_packet(first, seq=1000))
+
+    assert len(_values(fingerprinter)) == 1
+
+
+def test_the_certificate_table_holds_no_more_than_its_maximum(certificate):
+    """A flood of streams does not grow the certificate table without a limit."""
+    payload = _record(_certificate_message(certificate))
+
+    fingerprinter = JA4XFingerprinter()
+    for port in range(MAX_PROCESSED_CERTS + 200):
+        fingerprinter.process_packet(_packet(payload, dport=10000 + port))
+
+    assert len(fingerprinter.processed_certs) <= MAX_PROCESSED_CERTS
+
+
+def test_the_scan_offset_table_holds_no_more_than_the_stream_maximum(certificate):
+    """A flood of streams does not grow the scan offset table without a limit."""
+    payload = b"\x17\x03\x03" + (16).to_bytes(2, "big") + b"\xa5" * 16
+
+    fingerprinter = JA4XFingerprinter()
+    for port in range(500):
+        fingerprinter.process_packet(_packet(payload, dport=10000 + port))
+
+    assert len(fingerprinter.scan_offsets) <= fingerprinter.reassembler.max_streams + 1
 
 
 def test_the_cleanup_drops_the_certificate_state_of_the_connection(certificate):

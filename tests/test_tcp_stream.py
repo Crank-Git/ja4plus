@@ -59,6 +59,30 @@ class TestTCPStreamReassembler(unittest.TestCase):
         r.remove_stream(key)
         self.assertEqual(r.get_stream(key), b"")
 
+    def test_the_base_sequence_names_the_first_byte_of_the_stream(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler()
+        key = "stream1"
+        r.add_segment(key, seq=100, data=b"hello")
+        self.assertEqual(r.base_seq(key), 100)
+
+    def test_a_late_segment_lowers_the_base_sequence(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler()
+        key = "stream1"
+        r.add_segment(key, seq=105, data=b" world")
+        self.assertEqual(r.base_seq(key), 105)
+        r.add_segment(key, seq=100, data=b"hello")
+        self.assertEqual(r.base_seq(key), 100)
+
+    def test_the_base_sequence_of_an_unknown_stream_is_none(self):
+        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+
+        r = TCPStreamReassembler()
+        self.assertIsNone(r.base_seq("stream1"))
+
     def test_max_streams_cleanup(self):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 

@@ -129,9 +129,9 @@ messages, and the reference holds
 
 The scan therefore joins the payload of every complete handshake record that
 follows without a gap, then reads the handshake messages of the joined bytes.
-The stream does not always start on a record boundary, because a proxy writes
-its own handshake first, so the scan looks for the boundary one byte at a time.
-`socks-https-example.pcap` supports the reading.
+A proxy writes its own handshake first. The stream does not always start on a
+record boundary, so the scan looks for the boundary one byte at a time.
+`socks-https-example.pcap` supports this reading.
 
 ### One value for each certificate on each stream
 
@@ -139,8 +139,8 @@ its own handshake first, so the scan looks for the boundary one byte at a time.
 from common.py", and it computes one JA4X value for each certificate of the
 stream it reads. The key of the processed certificate set names the stream and
 the certificate. A key that named only the certificate dropped the value of
-every stream after the first that carried the same chain, which is what
-`socks-https-example.pcap` streams 2 and 4 exposed.
+every stream after the first that carried the same chain.
+`socks-https-example.pcap` streams 2 and 4 exposed that defect.
 
 Verified against
 `https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4x.py` (retrieved
@@ -148,9 +148,23 @@ Verified against
 
 ### Certificate deduplication cleanup
 
-The processed certificate set is pruned when it exceeds 1000 entries,
-keeping the most recent 500. This is a memory management strategy,
-not a hard limit on unique certificates.
+The processed certificate table holds 1000 entries. When the table is full, the
+fingerprinter drops the oldest 500. This is a memory management strategy, not a
+hard limit on unique certificates.
+
+The eviction runs on each new entry. A wall clock gated it before, and a capture
+replays faster than real time, so the table grew without a limit between two
+runs of a gated eviction.
+
+### The scan offset of a stream
+
+The scan of one stream resumes where the last packet of the stream left it. A
+scan that starts at zero on every packet costs the square of the stream length,
+and `http2-with-cookies.pcapng` then takes 18 seconds.
+
+The offset is stored with the sequence number the reassembled bytes start at. A
+segment that arrives late lowers that number and moves every offset, so the scan
+starts at zero again when the two numbers differ.
 
 ### Two reasons a JA4X value stays absent
 
@@ -163,11 +177,11 @@ have no counterpart here.
   entry, and the certificate of both reaches the wire encrypted. `ja4plus`
   decrypts nothing, so it reads no certificate there.
 - `tshark` dissects TLS on the ports its dissector table names. It reads the
-  tunnel of `socks-https-example.pcap` on port 1080 and holds a JA4X value, and
-  it reads no TLS on port 8080 of `https-connect.pcap` or on port 9901 of
-  `socks4-https.pcap`. `ja4plus` reads the record layer by content, so it holds
-  a JA4X value on all three. The deviation register records the two cases where
-  `ja4plus` holds a value the reference does not.
+  tunnel of `socks-https-example.pcap` on port 1080 and holds a JA4X value. It
+  reads no TLS on port 8080 of `https-connect.pcap`, and it reads none on port
+  9901 of `socks4-https.pcap`. `ja4plus` reads the record layer by content, so
+  it holds a JA4X value on all three. The deviation register records the two
+  cases where `ja4plus` holds a value the reference does not.
 
 ### TCP reassembly
 

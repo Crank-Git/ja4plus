@@ -11,7 +11,6 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.x509_utils import oid_to_hex
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 TLS_RECORD_HEADER_LENGTH = 5
 TLS_HANDSHAKE_CONTENT_TYPE = 0x16
 # Every TLS version the record layer names carries the major version 3. The check
-# rejects a byte pair that encrypted payload holds by chance.
+# rejects a byte pair that the encrypted payload holds by chance.
 TLS_RECORD_MAJOR_VERSION = 0x03
 # A TLS handshake message header holds the message type and a three-byte length.
 TLS_HANDSHAKE_HEADER_LENGTH = 4
@@ -29,7 +28,8 @@ CERTIFICATE_LENGTH_BYTES = 3
 # The scan reads at most this many bytes of one stream. A stream grows without a limit,
 # and the scan runs again on every packet of the stream.
 MAX_SCAN_BYTES = 200000
-# A length above this size is a field the packet lies about, not a certificate.
+# A length above this size names no certificate. The reader stops there, because the
+# packet is hostile input and the field carries any value.
 MAX_CERTIFICATE_BYTES = 200000
 # The maximum number of certificates the fingerprinter remembers. The entry key names
 # the stream, so a capture of many streams needs more entries than a capture of one.
@@ -89,9 +89,8 @@ class JA4XFingerprinter(BaseFingerprinter):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
-        self.processed_certs = set()
+        self.processed_certs = {}
         self.scan_offsets = {}
-        self.last_cleanup = time.time()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove the stream buffer and the certificate state of the connection."""
@@ -100,7 +99,9 @@ class JA4XFingerprinter(BaseFingerprinter):
         rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
         self.reassembler.remove_stream(rev_key)
         closed = (stream_key, rev_key)
-        self.processed_certs = {key for key in self.processed_certs if key[0] not in closed}
+        self.processed_certs = {
+            key: value for key, value in self.processed_certs.items() if key[0] not in closed
+        }
         for key in closed:
             self.scan_offsets.pop(key, None)
 
@@ -131,21 +132,6 @@ class JA4XFingerprinter(BaseFingerprinter):
 
         fingerprint = self._find_certificates_in_stream_data(stream_id, stream_data, packet)
 
-        current_time = time.time()
-        if current_time - self.last_cleanup > 30:
-            if len(self.processed_certs) > MAX_PROCESSED_CERTS:
-                self.processed_certs = set(
-                    list(self.processed_certs)[-(MAX_PROCESSED_CERTS // 2) :]
-                )
-            # The reassembler evicts a stream on its own, and a scan offset that names
-            # an evicted stream is state that nothing reads again.
-            self.scan_offsets = {
-                key: offset
-                for key, offset in self.scan_offsets.items()
-                if key in self.reassembler.streams
-            }
-            self.last_cleanup = current_time
-
         return fingerprint
 
     def _find_certificates_in_stream_data(self, stream_id, stream_data, packet):
@@ -153,13 +139,16 @@ class JA4XFingerprinter(BaseFingerprinter):
 
         The scan reads the TLS record layer, then the handshake messages inside it. One
         record carries more than one handshake message, and one handshake message spans
-        more than one record, so a scan that reads only the first message of a record
+        more than one record. A scan that reads only the first message of a record
         misses the Certificate message that follows a ServerHello.
 
-        The scan resumes where the last packet of the stream left it. The contiguous
-        bytes of a stream only grow, so a byte the scan already read never changes. A
-        scan that starts at zero on every packet costs the square of the stream length,
-        and one TLS 1.3 stream of the vectors then takes 18 seconds.
+        The scan resumes where the last packet of the stream left it. A scan that starts
+        at zero on every packet costs the square of the stream length, and one TLS 1.3
+        stream of the vectors then takes 18 seconds.
+
+        A segment that arrives late lowers the sequence number the reassembled bytes
+        start at, which moves every offset. The scan then starts at zero again, because
+        the saved offset names a byte the stream no longer holds there.
 
         Args:
             stream_id: The key of the stream in the reassembler.
@@ -174,7 +163,9 @@ class JA4XFingerprinter(BaseFingerprinter):
             return None
 
         limit = min(len(stream_data), MAX_SCAN_BYTES)
-        offset = self.scan_offsets.get(stream_id, 0)
+        base_seq = self.reassembler.base_seq(stream_id)
+        saved = self.scan_offsets.get(stream_id)
+        offset = saved[1] if saved is not None and saved[0] == base_seq else 0
         while offset + TLS_RECORD_HEADER_LENGTH <= limit:
             handshake, next_offset, truncated = self._read_handshake_run(stream_data, offset, limit)
             for message in self._certificate_messages(handshake or b""):
@@ -192,7 +183,16 @@ class JA4XFingerprinter(BaseFingerprinter):
                 continue
             offset = next_offset
 
-        self.scan_offsets[stream_id] = offset
+        self.scan_offsets[stream_id] = (base_seq, offset)
+        if len(self.scan_offsets) > self.reassembler.max_streams:
+            # The reassembler evicts a stream on its own. A scan offset that names an
+            # evicted stream is state that nothing reads again, and a flood of streams
+            # would otherwise grow the table without a limit.
+            self.scan_offsets = {
+                key: value
+                for key, value in self.scan_offsets.items()
+                if key in self.reassembler.streams
+            }
         return result
 
     def _read_handshake_run(self, stream_data, offset, limit):
@@ -280,12 +280,26 @@ class JA4XFingerprinter(BaseFingerprinter):
             key = (stream_id, hashlib.sha256(cert_bytes).hexdigest())
             if key in self.processed_certs:
                 continue
-            self.processed_certs.add(key)
+            self.processed_certs[key] = None
+            self._evict_processed_certs()
             fingerprint = self.fingerprint_certificate(cert_bytes)
             if fingerprint:
                 result = fingerprint
                 self.add_fingerprint(fingerprint, packet)
         return result
+
+    def _evict_processed_certs(self):
+        """Drop the oldest half of the processed certificates when the table is full.
+
+        The table holds one entry for each certificate on each stream, so a flood of
+        streams fills it. The eviction runs on each entry, because a run that a wall
+        clock gates lets the table grow without a limit between two runs.
+        """
+        if len(self.processed_certs) <= MAX_PROCESSED_CERTS:
+            return
+        # A dict keeps its insertion order, so the oldest entry comes first.
+        for key in list(self.processed_certs)[: MAX_PROCESSED_CERTS // 2]:
+            del self.processed_certs[key]
 
     def _certificates_in_message(self, message):
         """Return the certificates of one Certificate message body.
@@ -405,6 +419,5 @@ class JA4XFingerprinter(BaseFingerprinter):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
-        self.processed_certs = set()
+        self.processed_certs = {}
         self.scan_offsets = {}
-        self.last_cleanup = time.time()
