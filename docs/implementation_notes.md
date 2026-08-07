@@ -491,6 +491,39 @@ The reference reads four QUIC packets, and it reads the direction from port 443:
 `JA4L-S` is half the time from `A` to `B`, and `JA4L-C` is half the time from `C`
 to `D`.
 
+### The QUIC measurement points never restart
+
+A client repeats a QUIC handshake over one address pair and port pair. The reference
+reads the first handshake, and it reports one value pair for the whole flow. It reads
+no later handshake.
+
+A server Initial packet arrives before its client Initial packet. The reference
+discards that packet, and it reports no value at all for the flow.
+
+`rust/ja4/src/time/udp.rs` states the mechanism. The state machine holds a terminal
+`Done` state that ignores every later packet. Its `Handshake` state discards a later
+`ClientInitial`, and its first state discards a `ServerInitial`.
+
+The FoxIO Rust implementation is the only FoxIO implementation that reads a QUIC
+handshake, so it decides both cases. No FoxIO vector holds either case.
+`tests/build_quic_ja4l_captures.py` writes the two synthetic captures that measure
+them. The reference ran at the commit `tests/download_test_vectors.py` pins:
+
+```
+$ ja4 quic_repeat.pcap
+  ja4l_c: 500_64
+  ja4l_s: 5000_56
+$ ja4 quic_mirrored.pcap
+[]
+```
+
+`tests/test_ja4l_quic_repeated_connection.py` reads the same packets from the same
+builder, so the tests and the measurement cover one capture each.
+
+`ja4plus` reports the same value pair for the first capture. For the second capture it
+reports no server value, and it reports `JA4L-C=500_64` where the reference reports
+nothing. #123 carries that open reading.
+
 ### A time of one second or more
 
 The FoxIO program reads the difference of two timestamps as a `timedelta`, and it

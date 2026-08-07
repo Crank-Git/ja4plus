@@ -80,6 +80,7 @@ that user, because comparison is the only thing a fingerprint is for.
 | Initial packet | noun | One QUIC packet whose long-header type is Initial. RFC 9000 Section 17.2 gives the layout. | first packet, opening packet |
 | connection ID | noun | The QUIC identifier that names one endpoint of a connection. The Initial keys derive from the one the client chooses. | CID, connection identifier, DCID |
 | Retry packet | noun | One QUIC packet that asks the client to send its Initial packet again with another connection ID. RFC 9000 Section 17.2.5 gives the layout. | retry, redirect |
+| Handshake packet | noun | One QUIC packet whose long-header type is Handshake. RFC 9000 Section 17.2.4 gives the layout. | handshake, HS packet |
 | key material | noun | One secret that decrypts recorded traffic, such as a TLS session key. | secret, key log, session keys |
 | Decryption Secrets Block | noun | The pcapng block that carries key material inside a capture file. | DSB, secrets block, key log block |
 
