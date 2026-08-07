@@ -675,9 +675,92 @@ $ ja4 quic_mirrored.pcap
 `tests/test_ja4l_quic_repeated_connection.py` reads the same packets from the same
 builder, so the tests and the measurement cover one capture each.
 
-`ja4plus` reports the same value pair for the first capture. For the second capture it
-reports no server value, and it reports `JA4L-C=500_64` where the reference reports
-nothing. #123 carries that open reading.
+`ja4plus` reports the same value pair for the first capture, and no value for the second
+one. #123 measured the reference and left the client value of the second capture as an
+open reading. #156 closes it, and the section below states the rule.
+
+### When a JA4L value exists
+
+The reference gates the server value and the client value apart, and it gates each one
+on its own measurement points. It does not hold one value back until it reads every
+point of the connection. The rule binds both transports:
+
+| Value | Transport | The points it needs |
+|---|---|---|
+| `JA4L-S` | TCP | `A`, the first SYN, and `B`, the first SYN-ACK. |
+| `JA4L-C` | TCP | `B`, and `C`, the last packet that carries both relative numbers. |
+| `JA4L-S` | QUIC | `A`, the client Initial packet, and `B`, the server Initial packet. |
+| `JA4L-C` | QUIC | `B`, `C`, the last server Handshake packet, and `D`, the first client one. |
+
+A capture that cuts a connection short therefore gives the values whose points it
+holds, and no other value.
+
+Four readings measure the rule. #156 holds the commands and the counts.
+
+- `ssh2.pcapng` holds 11 TCP connections that carry a SYN and no SYN-ACK. Its
+  expected-output file names none of them, and `ja4plus` produces no value for any of
+  them.
+- No committed vector holds a TCP connection that carries a SYN-ACK and no client
+  measurement point. Every TCP connection that holds a reference `JA4L-S` also holds a
+  reference `JA4L-C`.
+- `ssh2.pcapng` stream 33 and `tls3.pcapng` stream 25 are QUIC connections whose server
+  sends no Handshake packet that the capture holds alone. The expected-output file holds
+  `JA4L-S` `16192_57` and `3583_57`, and it holds no `JA4L-C` on either one. The two
+  connections prove that the reference completes a server value without a client value.
+- `quic_mirrored.pcap` holds a server Initial packet that leads its client Initial
+  packet. The reference reports no value, so the QUIC client value needs point `B`.
+
+The body of #156 states a different rule: a JA4L value exists only when the
+fingerprinter reads all four measurement points. That rule is wrong, and the vectors
+reject it. A rule that held `JA4L-S` back until the client point arrived breaks 80
+conformance cases that pass today. It also deletes the two `JA4L-S` values above.
+
+```
+$ pytest tests/ -m spec_validation -q
+FAILED tests/test_spec_validation.py::test_the_produced_occurrence_keys_equal_the_reference[v6.pcap-JA4L-S]
+80 failed, 1295 passed, 149 skipped, 980 deselected, 117 xfailed
+```
+
+The fingerprinter therefore gates a JA4L value per side, and not on all four
+measurement points.
+
+### The return value of a partial client point
+
+`process_packet` returns the client value once for every packet that moves point `C`,
+and the stored list holds one value for the connection. Across the committed vectors
+the stored list holds 60 client values and the return path reports 105.
+
+The two paths disagree because the reference reads the last packet that carries both
+relative numbers. A reader knows which packet is last only when the connection ends.
+#156 measured three candidate end-of-connection points against the 60 values:
+
+| The end-of-connection point | Client values it reports |
+|---|---|
+| A FIN or a RST after the final client point | 26, and it loses 34 |
+| Every measurement point read | 105, which is the behaviour today |
+| A read of the stored list at the end of the capture | 60, and it loses none |
+
+Only the last point reproduces the reference, and 34 of the 60 connections never close
+inside their capture. `macos_tcp_flags.pcap` holds no FIN packet and no RST packet at
+all, and `tls3.pcapng` holds 2 FIN packets against 13 client values.
+
+`ja4plus` reads the stored list, so the conformance suite measures the correct value.
+The user decided on 2026-08-07 to record the divergence and to leave the return path as
+it is. The `Divergence register` of `docs/specs/spec.md` holds the row, and the decision
+is reversible.
+
+`tests/foxio_deviations.json` holds no entry for the divergence. The conformance harness
+reads the stored list, and the stored list is correct, so every case passes. A strict
+entry therefore reports `XPASS(strict)` and fails the suite. A probe entry for
+`latest.pcapng/JA4L-C` proves it:
+
+```
+[XPASS(strict)] issue #156: Probe: the return path reports 11 client values and the stored list holds 6.
+FAILED tests/test_spec_validation.py::test_the_produced_occurrence_keys_equal_the_reference[latest.pcapng-JA4L-C]
+```
+
+`tests/test_ja4l_return_path.py` carries the divergence instead. It holds the returned
+count and the stored count of every committed vector, so it fails when either one moves.
 
 ### A time of one second or more
 
