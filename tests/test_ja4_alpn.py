@@ -5,9 +5,16 @@ Spec: if first or last byte of the first ALPN value is not ASCII alnum
 hex representation of the FULL first ALPN string.
 """
 
+import json
+from pathlib import Path
+
 import pytest
 
 from ja4plus.fingerprinters.ja4 import compute_alpn_value
+
+VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
+CAPTURE_PATH = VECTORS_DIR / "tls-non-ascii-alpn.pcapng"
+EXPECTED_PATH = VECTORS_DIR / "tls-non-ascii-alpn.pcapng.json"
 
 
 @pytest.mark.parametrize(
@@ -64,22 +71,59 @@ def test_compute_alpn_via_generate_ja4():
     assert part_a.endswith("3b"), f"got {part_a!r}"
 
 
-def test_compute_alpn_real_pcap_tls_non_ascii():
-    """If the FoxIO non-ASCII ALPN fixture is present, sanity-check the parse."""
-    import os
+def _reference_ja4():
+    """Return the JA4 value the FoxIO expected-output file holds for the capture.
+
+    Returns:
+        The `JA4.1` value of the first stream.
+
+    Raises:
+        FileNotFoundError: The expected-output file is absent.
+        AssertionError: The expected-output file names no stream.
+    """
+    with open(EXPECTED_PATH) as handle:
+        entries = json.load(handle)
+    # An empty file compares no value, and the assertion below passes on it. #115 exists
+    # to remove a test that reports a pass on nothing.
+    assert entries, "{} names no stream".format(EXPECTED_PATH)
+    return entries[0]["JA4.1"]
+
+
+def _produced_ja4():
+    """Return every JA4 value the fingerprinter produces from the FoxIO capture."""
     from scapy.all import rdpcap
+
     from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 
-    path = "tests/foxio_vectors/pcap/tls-non-ascii-alpn.pcapng"
-    if not os.path.exists(path):
-        pytest.skip(f"fixture missing: {path}")
+    fingerprinter = JA4Fingerprinter()
+    produced = []
+    for packet in rdpcap(str(CAPTURE_PATH)):
+        fingerprint = fingerprinter.process_packet(packet)
+        if fingerprint:
+            produced.append(fingerprint)
+    return produced
 
-    fp_engine = JA4Fingerprinter()
-    pkts = rdpcap(path)
-    fingerprints = []
-    for pkt in pkts:
-        fp = fp_engine.process_packet(pkt)
-        if fp:
-            fingerprints.append(fp)
 
-    assert fingerprints, "no JA4 fingerprints produced from non-ascii ALPN pcap"
+def test_the_foxio_capture_carries_a_first_alpn_value_that_is_not_ascii():
+    """The first ALPN value of `tls-non-ascii-alpn.pcapng` is the two bytes `0xba 0xad`."""
+    from scapy.all import Raw, rdpcap
+
+    from ja4plus.utils.tls_utils import parse_tls_handshake
+
+    client_hellos = []
+    for packet in rdpcap(str(CAPTURE_PATH)):
+        if not packet.haslayer(Raw):
+            continue
+        info = parse_tls_handshake(bytes(packet[Raw].load))
+        if info and info.get("type") == "client_hello":
+            client_hellos.append(info)
+
+    assert len(client_hellos) == 1
+    # The parser keeps the ALPN bytes, because the ASCII decode drops the first value.
+    assert client_hellos[0]["alpn_raw"] == [b"\xba\xad", b"http/1.1"]
+    assert client_hellos[0]["alpn_protocols"] == ["", "http/1.1"]
+
+
+def test_the_foxio_capture_produces_the_reference_ja4_value():
+    """`tls-non-ascii-alpn.pcapng` produces the JA4 value the FoxIO reference holds."""
+    assert _produced_ja4() == [_reference_ja4()]
