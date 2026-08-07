@@ -4,6 +4,49 @@ from scapy.all import IP, IPv6, TCP, UDP
 
 from ja4plus.utils.tunnels import innermost_layer
 
+# A TCP client opens a connection with the SYN flag alone. The server answers with the
+# SYN flag and the ACK flag. The two packets name the two endpoints exactly, and no
+# later packet does.
+SYN_FLAG = 0x02
+HANDSHAKE_ACK_FLAG = 0x10
+
+
+def opens_a_connection(port_layer, proto):
+    """Report whether the packet is a TCP SYN that carries no acknowledgement.
+
+    The sender of that packet is the client of the connection.
+
+    Args:
+        port_layer: The TCP layer or the UDP layer of the packet.
+        proto: The protocol name of the connection, `tcp` or `udp`.
+
+    Returns:
+        True when the packet opens a TCP connection, and False otherwise.
+    """
+    if proto != "tcp":
+        return False
+    flags = int(port_layer.flags)
+    return bool(flags & SYN_FLAG) and not bool(flags & HANDSHAKE_ACK_FLAG)
+
+
+def accepts_a_connection(port_layer, proto):
+    """Report whether the packet is a TCP SYN that carries an acknowledgement.
+
+    The sender of that packet is the server of the connection. A capture that starts
+    after the SYN still holds this packet.
+
+    Args:
+        port_layer: The TCP layer or the UDP layer of the packet.
+        proto: The protocol name of the connection, `tcp` or `udp`.
+
+    Returns:
+        True when the packet accepts a TCP connection, and False otherwise.
+    """
+    if proto != "tcp":
+        return False
+    flags = int(port_layer.flags)
+    return bool(flags & SYN_FLAG) and bool(flags & HANDSHAKE_ACK_FLAG)
+
 
 def get_ip_layer(packet):
     """Return the IP layer (v4 or v6) from a packet, or None.

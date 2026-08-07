@@ -34,6 +34,22 @@ inside its own `process_packet` call.
 JA4SSH reports a window of many packets rather than one packet, so its entry holds the
 key `connection` instead of these four fields. JA4L holds both.
 
+#### The fields of one JA4SSH entry
+
+A JA4SSH fingerprint names a client packet size and a server packet size, so which
+endpoint is the server changes the value. Every JA4SSH entry therefore carries
+`server_decided_by`, and a consumer reads a measured endpoint and a guessed endpoint
+differently.
+
+| Value | What decided the server |
+|--------|--------|
+| `port` | One endpoint uses port 22. |
+| `handshake` | The TCP handshake names the endpoints. The SYN sender is the client, and the SYN+ACK sender is the server. |
+| `guess` | The capture holds no handshake and no endpoint on port 22, so the lower port decided. Two ephemeral ports carry no meaning, so treat the two endpoints as unproven. |
+
+The first SSH banner decides nothing. RFC 4253 section 4.2 has both endpoints send an
+identification string, and a client that does not wait sends first.
+
 ### JA4Fingerprinter
 
 TLS Client Hello fingerprinting.

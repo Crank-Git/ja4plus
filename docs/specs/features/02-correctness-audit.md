@@ -107,9 +107,34 @@ the rule the fix must satisfy.
 | 9 | `ja4plus/fingerprinters/ja4h.py:82` | When the buffer is not an HTTP request, the segment stays in the reassembler forever. | Remove the stream when the buffer cannot become an HTTP request. #33 built it. |
 | 10 | `ja4plus/fingerprinters/ja4.py:292` | The `if original_order:` branch and its `else:` branch build the same string. | Remove the branch, or make the two differ. #36 removed the branch that builds the signature-algorithm form. The cipher branch and the extension branch stay, because the two arms differ. |
 | 11 | `ja4plus/fingerprinters/base.py:38` | `add_fingerprint` stores the packet object. A monitor holds every packet it ever fingerprinted. | Store what the result needs. Never store the packet. #36 built it. An entry now holds `src`, `dst`, `srcport` and `dstport`. |
-| 12 | `ja4plus/fingerprinters/ja4ssh.py:80` | On a non-standard port, the lower port number decides which side is the server. Two ephemeral ports make this arbitrary. | Decide from the first SSH banner, and fall back to the port. |
+| 12 | `ja4plus/fingerprinters/ja4ssh.py:80` | On a non-standard port, the lower port number decides which endpoint is the server. Two ephemeral ports make this arbitrary. | Decide from the TCP handshake, and fall back to the port. #36 built it. An earlier form of this row read "Decide from the first SSH banner", and #36 disproved it. See **The banner decides nothing** below. |
 | 13 | `ja4plus/collector.py:33` | The module holds mutable state in module-level variables. It is deprecated and states removal at version 0.4.0. The project is at 0.6.0. | Remove the module in Epic 4. |
 | 14 | `ja4plus/fingerprinters/ja4ssh.py:354` | `interpret_fingerprint` catches every exception and returns an error dictionary. | Catch the parse errors it expects. #36 built it. The handler now names `AttributeError`, `IndexError` and `ValueError`. |
+
+## The banner decides nothing
+
+An earlier form of row 12 read "Decide from the first SSH banner, and fall back to the
+port." #36 measured that rule against the FoxIO material and disproved it. The row now
+reads the TCP handshake.
+
+RFC 4253 section 4.2 has both endpoints send an identification string. A client that
+does not wait for the server sends first, and OpenSSH and PuTTY both do. The two banners
+hold one form, and neither carries a field that names a client or a server.
+
+The first `SSH-` banner therefore comes from the client in 4 of the 11 streams of
+`tests/foxio_vectors/` whose SYN names an endpoint. `ssh-r.pcap` holds three of the four
+and `ssh2.pcapng` holds the fourth. `ssh.pcapng` holds no SYN, so its stream names no
+endpoint either way.
+
+The TCP handshake replaces it. The SYN sender is the client, and the SYN+ACK sender is
+the server. That is a fact of the connection rather than a race.
+
+`opens_a_connection` in `ja4plus/utils/packet_utils.py` is the one reader of that
+handshake. JA4L and JA4SSH both call it, because two readers that disagree would name
+two different clients for one connection.
+
+Every stream of `tests/foxio_vectors/` holds an endpoint on port 22, so the port decides
+all of them and no vector exercises the handshake. No JA4SSH value moves.
 
 ## Data touched
 
@@ -144,8 +169,8 @@ Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/pcap (retrieved
 | An extension list declares more extensions than the packet carries. | The parser returns nothing. |
 | An HTTP request repeats a cookie name with two values. | Both hashes describe both occurrences. |
 | A TCP connection sends 1000 ACKs after the handshake. | JA4L emits one client fingerprint. |
-| Both endpoints use an ephemeral port for SSH. | The first banner decides which side is the server. |
-| No banner is seen. | The lower port decides, and the result is recorded as a guess. |
+| Both endpoints use an ephemeral port for SSH. | The TCP handshake decides which endpoint is the server. The SYN sender is the client, and the SYN+ACK sender is the server. |
+| The capture holds no handshake, and no endpoint uses port 22. | The lower port decides. The fingerprinter records the guess on the result, in the field `server_decided_by`. |
 
 ## Acceptance criteria
 
