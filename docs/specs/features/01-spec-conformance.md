@@ -66,6 +66,12 @@ host.
 FR-spec-conformance-14 — `ja4plus` reads the IPv6 layer of a loopback capture on
 every host.
 
+FR-spec-conformance-15 — JA4SSH counts one SSH packet for the TCP segment that
+completes an SSH message.
+
+FR-spec-conformance-16 — JA4SSH counts no SSH packet for a TCP segment that holds
+part of an SSH message and no message end.
+
 ## User flows
 
 **A maintainer fixes a failing method.**
@@ -104,6 +110,13 @@ This feature set has no screen. Its output is the test report.
   window.
 - The JA4SSH occurrence counter starts at 1 and increases for each window on the
   same connection.
+- The JA4SSH window counts an SSH message, not a TCP segment. FoxIO counts the
+  packets `tshark` labels `ssh`, and `tshark` labels only the segment that
+  completes an SSH message. A segment that holds part of a message advances no
+  counter and contributes no packet length.
+- The SSH message boundary is readable only while the direction sends plaintext.
+  Before the version banner, and after `SSH_MSG_NEWKEYS`, JA4SSH counts every
+  segment that carries a payload.
 - The JA4L propagation factor follows the hop count. The table is 1.5 for 21 hops
   or fewer, then 1.6, 1.7, 1.8 and 1.9 for 22, 23, 24 and 25 hops, and 2.0 for 26
   hops or more.
@@ -136,6 +149,9 @@ This feature set has no screen. Its output is the test report.
   a loopback frame to the IPv6 layer.
 - New file `tests/test_loopback_link_type.py`.
 - Changed file `ja4plus/__init__.py`.
+- Changed file `ja4plus/utils/ssh_utils.py`. It holds `SSHMessageTracker`, which
+  reports whether one TCP segment completes an SSH message.
+- New file `tests/test_ja4ssh_message_count.py`.
 
 ## Interfaces
 
@@ -193,6 +209,11 @@ Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-
 | The reference emits two fingerprints and this project emits one. | The suite fails and names the missing occurrence. |
 | A capture holds the `DLT_NULL` link type and the address family value 24, 28 or 30. | The reader dissects the frame as IPv6 on every host. |
 | A caller builds a loopback frame. | The address family value is the scapy default. This project binds the dissection path alone. |
+| One SSH message spans two TCP segments. | The second segment counts as one SSH packet. The first counts as none. |
+| A capture starts after the SSH version banner. | The tracker reads no message boundary, and every segment counts as one SSH packet. |
+| A length field names a size outside 2 and 65536 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
+| The SSH version banner spans two TCP segments. | The second segment counts as one SSH packet, and the tracker keeps the message boundary. |
+| The SSH version banner is longer than 255 bytes. | The tracker stops the walk, and every later segment counts as one SSH packet. |
 
 ## Acceptance criteria
 
@@ -213,6 +234,10 @@ Verified against: `scapy/layers/inet6.py:4226-4228` and `scapy/layers/l2.py:720-
 - [ ] No test in `tests/test_parity.py` asserts only that an attribute exists.
 - [ ] `pytest tests/ -m spec_validation` reports the same counts on Linux and on
       macOS.
+- [ ] `ssh-r.pcap` stream 1 produces one JA4SSH fingerprint whose packet counts
+      equal `c6s5`.
+- [ ] `ssh-r.pcap` stream 2 produces the fingerprint `c76s76_c66s65_c9s51` as its
+      fifth occurrence.
 - [ ] A loopback frame that holds the address family value 24, 28 or 30 dissects
       as IPv6.
 - [ ] `ipv6.pcapng` produces the JA4 value `t12d4605h2_85626a9a5f7f_aaf95bb78ec9`
