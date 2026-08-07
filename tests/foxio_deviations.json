@@ -55,6 +55,10 @@
     "cause": "ja4plus produces a JA4S fingerprint the reference does not hold. The reference reads no QUIC handshake on the stream whose source port is 50280, and the JA4 entry of this vector names the same stream.",
     "issue": 13
   },
+  "chrome-cloudflare-quic-with-secrets.pcapng/JA4S_r": {
+    "cause": "ja4plus produces a JA4S_r value on the stream whose source port is 50280, and the reference holds none. The hashed form of the same stream is registered under chrome-cloudflare-quic-with-secrets.pcapng/JA4S with the same cause.",
+    "issue": 13
+  },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4X": {
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate.",
     "issue": 78
@@ -623,6 +627,10 @@
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets.",
     "issue": 97
   },
+  "ssh2.pcapng/JA4S_r": {
+    "cause": "ja4plus produces a JA4S_r value on stream 33 and on stream 36, and the reference holds none. The hashed form of the same streams is registered under ssh2.pcapng/JA4S with the same cause.",
+    "issue": 13
+  },
   "ssh2.pcapng/JA4_o": {
     "cause": "ja4plus produces a JA4_o fingerprint the reference does not hold.",
     "issue": 13
@@ -873,6 +881,10 @@
   },
   "tls3.pcapng/JA4S": {
     "cause": "ja4plus produces a JA4S fingerprint the reference does not hold. The reference reads no QUIC handshake on the six streams the JA4 entry of this vector names.",
+    "issue": 13
+  },
+  "tls3.pcapng/JA4S_r": {
+    "cause": "ja4plus produces a JA4S_r value on the six streams the JA4 entry of this vector names, and the reference holds none. The hashed form of the same streams is registered under tls3.pcapng/JA4S with the same cause.",
     "issue": 13
   },
   "tls3.pcapng/JA4_o": {
