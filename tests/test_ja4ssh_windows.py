@@ -166,6 +166,18 @@ def test_two_fin_packets_emit_one_fingerprint():
     assert len(fingerprinter.get_fingerprints()) == 1
 
 
+def test_a_reset_packet_leaves_the_window_open():
+    """FoxIO closes the window on the FIN flag and the ACK flag, and it reads no other
+    flag. A connection that a RST packet ends keeps its window open."""
+    fingerprinter = JA4SSHFingerprinter()
+    handshake(fingerprinter)
+    for index in range(11):
+        fingerprinter.process_packet(ssh_packet(to_server=index % 2 == 0))
+    assert fingerprinter.process_packet(_tcp(True, "R")) is None
+    assert fingerprinter.process_packet(_tcp(True, "RA")) is None
+    assert fingerprinter.get_fingerprints() == []
+
+
 def test_a_fin_packet_on_an_unknown_connection_emits_nothing():
     fingerprinter = JA4SSHFingerprinter()
     assert fingerprinter.process_packet(_tcp(True, "FA")) is None

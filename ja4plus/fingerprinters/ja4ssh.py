@@ -203,9 +203,11 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             conn_key: The connection key of the window.
 
         Returns:
-            The JA4SSH fingerprint, or None when the window holds no SSH packet. An
-            empty window emits nothing, because the second FIN packet of a close finds
-            the window the first FIN packet emptied.
+            The JA4SSH fingerprint, or None when the window holds no SSH packet. A
+            fingerprint of an empty window describes no traffic. Two connection states
+            reach this guard: the second FIN packet of a close finds the window the
+            first FIN packet emptied, and a connection that closes right after a full
+            window holds no SSH packet either.
         """
         conn = self.connections[conn_key]
         if not conn["ssh_packets"]["client"] and not conn["ssh_packets"]["server"]:
