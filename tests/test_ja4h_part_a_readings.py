@@ -219,6 +219,23 @@ def test_parse_http_request_reads_a_method_the_nine_named_methods_omit():
     assert parsed["method"] == "PROPFIND"
 
 
+def test_parse_http_request_refuses_a_token_that_names_no_http_version():
+    """The third parse path reads the same version list as the other two.
+
+    The path split the request line on one space and read no version, so `HTTP/11` wrote
+    the version token `HTTP/11`. #35 records the defect for the other two paths.
+    """
+    assert parse_http_request(b"GET / HTTP/11\r\nHost: a\r\n\r\n") is None
+
+
+def test_parse_http_request_reads_a_request_line_that_holds_two_spaces():
+    """The path split on one space, so a second space wrote the path `` and the version `/`."""
+    parsed = parse_http_request(b"GET  /  HTTP/1.1\r\nHost: a\r\n\r\n")
+    assert parsed is not None
+    assert parsed["path"] == "/"
+    assert parsed["version"] == "HTTP/1.1"
+
+
 def test_the_reassembly_gate_admits_a_method_the_nine_named_methods_omit():
     """`ja4h.py` reads a reassembled stream only when this gate admits it."""
     assert is_http_request(PROPFIND)
