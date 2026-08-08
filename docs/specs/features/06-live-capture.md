@@ -13,8 +13,9 @@ mockups: []
 them, and never calls `cleanup_connection`. A monitor started on a busy interface
 grows until the host stops it.
 
-`examples/monitoring_daemon.py` shows an operator what a real monitor needs. An
-example is not a supported mode: nothing tests it, and nothing keeps it working.
+`examples/monitoring_daemon.py` showed an operator what a real monitor needs. An
+example is not a supported mode: nothing tested it, and nothing kept it working. #56
+removed the file, and `docs/usage.md` documents the command in its place.
 
 This feature set makes a long-running monitor a supported mode.
 
@@ -136,12 +137,26 @@ The monitor reads packets through `scapy`. Two entry points matter.
 |---|---|---|
 | Read from an interface | `scapy.all.sniff(prn=..., iface=..., store=0, filter=...)` | `store=0` is required. Without it `scapy` keeps every packet. |
 | Stop reading | `sniff(stop_filter=...)` | The stop filter reads the flag the signal handler set. |
+| List the interfaces | `scapy.all.get_if_list()` | The call needs no privilege, so an error message reads the list. |
 
 Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
 (scapy 2.6, retrieved 2026-08-06).
 
 Opening a capture interface needs elevated privileges. On Linux the capability is
 `CAP_NET_RAW`. On macOS the operator needs read access to the `/dev/bpf*` devices.
+
+`scapy` 2.7.0 reports three failures, and each one carries its own class and text. #56
+records the four line numbers.
+
+| Failure | Class | Text | Source |
+|---|---|---|---|
+| The host refuses the `/dev/bpf` device. | `Scapy_Exception` | `Permission denied: could not open /dev/bpf0. ...` | `scapy/arch/bpf/core.py:59` |
+| The host holds no such interface. | `ValueError` | `Interface 'nosuchif0' not found !` | `scapy/interfaces.py:434` |
+| `libpcap` refuses the filter. | `Scapy_Exception` | `Failed to compile filter expression tcp port (-1)` | `scapy/arch/common.py:129` |
+| A socket wraps the filter failure. | `Scapy_Exception` | `Cannot set filter: ...` | `scapy/arch/bpf/supersocket.py:218` and `scapy/arch/linux/__init__.py:232` |
+
+The Linux socket calls raise `OSError` and `scapy` wraps neither. `EPERM` and `EACCES`
+name a refused privilege, and `ENODEV` names an interface the host does not hold.
 
 ## Edge cases & failures
 

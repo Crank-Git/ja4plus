@@ -52,7 +52,7 @@ ja4plus --format json analyze capture.pcap
 # Only specific fingerprint types
 ja4plus --types ja4,ja4t analyze capture.pcap
 
-# Read packets from an interface (requires root)
+# Read packets from an interface (needs the capture privilege)
 sudo ja4plus watch eth0
 
 # `live` is an alias of `watch`
@@ -60,6 +60,9 @@ sudo ja4plus live eth0
 
 # Bound the connection table of the monitor
 sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
+
+# Apply a capture filter
+sudo ja4plus watch eth0 --bpf "tcp port 443"
 
 # Fingerprint a certificate
 ja4plus cert server.der
@@ -79,8 +82,17 @@ The five output options run before the subcommand name and after it.
 `ja4plus analyze capture.pcap --format json` do the same thing. The five are
 `--format`, `--types`, `--lookup`, `--output` and `--force`.
 
-`--max-connections`, `--connection-timeout` and `--stats-interval` belong to `watch`
-alone, so they run after the subcommand name.
+`--max-connections`, `--connection-timeout`, `--stats-interval` and `--bpf` belong to
+`watch` alone, so they run after the subcommand name.
+
+`--bpf` passes a Berkeley Packet Filter expression to the capture layer, which drops
+every packet the filter rejects.
+
+The monitor reads no user identity. It attempts the capture and reads the failure, so a
+Linux host that grants `CAP_NET_RAW` without the user identity zero runs it. Where the
+capture fails, the command names the privilege, lists the interfaces of the host, or
+reports the filter error, and it ends the run with the status 1. The command runs on
+Linux and on macOS, and it reports that Windows carries no monitor.
 
 `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
 The monitor finishes the line it writes, flushes the output, and exits, so the output

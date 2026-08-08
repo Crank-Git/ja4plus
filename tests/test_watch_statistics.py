@@ -65,8 +65,8 @@ def run_watch(*argv, source=None, during=None):
     """Run the command-line program against an injected packet source.
 
     The call replaces the capture with the packets the test states, so it opens no
-    interface. It also reports the user identity zero, because the privilege check of
-    version 0.6.0 reads `os.geteuid` and #56 owns the replacement.
+    interface. The command reads no user identity: #56 replaced the `os.geteuid` check
+    of version 0.6.0 with a failed capture attempt.
 
     Args:
         argv: The arguments to pass, without the program name.
@@ -80,7 +80,7 @@ def run_watch(*argv, source=None, during=None):
     """
     from ja4plus.cli import main
 
-    def read_interface(interface, handle_packet, stop_filter=None):
+    def read_interface(interface, handle_packet, stop_filter=None, capture_filter=None):
         if during is not None:
             during()
         for packet in source or []:
@@ -95,7 +95,6 @@ def run_watch(*argv, source=None, during=None):
         patch("sys.stdout", captured_out),
         patch("sys.stderr", captured_err),
         patch("ja4plus.cli.read_interface", read_interface),
-        patch("os.geteuid", lambda: 0, create=True),
     ]
 
     status = 0

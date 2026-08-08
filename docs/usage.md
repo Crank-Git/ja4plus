@@ -416,6 +416,9 @@ sudo ja4plus live eth0
 
 # Track more connections, and shed an idle connection sooner
 sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
+
+# Read the HTTPS traffic of one host alone
+sudo ja4plus watch eth0 --bpf "tcp port 443 and host 10.0.0.5"
 ```
 
 | Option | Meaning | Default |
@@ -423,6 +426,7 @@ sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
 | `--max-connections COUNT` | The maximum count of tracked connections. | 10000 |
 | `--connection-timeout SECONDS` | The maximum age of a connection that sends no packet. | 300 |
 | `--stats-interval SECONDS` | The count of seconds between two statistics lines. | No schedule |
+| `--bpf FILTER` | The capture filter, in Berkeley Packet Filter syntax. | No filter |
 
 The command evicts a connection on either bound.
 
@@ -435,8 +439,44 @@ Each eviction drops the entry of the connection table and the per-connection sta
 all ten methods together. Eviction runs on packet arrival, and the command starts no
 thread for it.
 
-The command needs the privilege to open the interface. On Linux the capability is
-`CAP_NET_RAW`. On macOS the operator needs read access to the `/dev/bpf*` devices.
+### How to write a capture filter
+
+`--bpf` passes the expression to the capture layer, which drops every packet the filter
+rejects. The capture layer applies the filter before it reports a packet, so the monitor
+never reads a rejected packet and the packet count of the statistics line never holds
+it.
+
+```bash
+# Read the TLS and the QUIC traffic alone
+sudo ja4plus watch eth0 --bpf "tcp port 443 or udp port 443"
+
+# Read one subnet alone
+sudo ja4plus watch eth0 --bpf "net 10.0.0.0/8"
+```
+
+`tcpdump` and `ja4plus watch` read the same syntax. `man 7 pcap-filter` documents it.
+
+Warning: a filter that drops one direction of a connection produces an incomplete
+fingerprint. JA4S reads the ServerHello and JA4L reads both directions, so a filter such
+as `src host 10.0.0.5` removes the packets those methods need.
+
+### How to read a start-up error
+
+The command needs the privilege to read the interface. It attempts the capture and reads
+the failure, so a host that grants the privilege through a capability runs the monitor.
+Version 0.6.0 read `os.geteuid() != 0`, and that check refused a permitted operator on
+Linux and raised `AttributeError` on Windows.
+
+| Failure | What the command reports |
+|---|---|
+| The operator holds no capture privilege. | The command names `CAP_NET_RAW` for Linux and the `/dev/bpf*` devices for macOS, and ends the run with the status 1. |
+| The host holds no interface of that name. | The command lists every interface the host holds, and ends the run with the status 1. |
+| The capture layer refuses the `--bpf` expression. | The command names the expression and repeats the filter error, and ends the run with the status 1. |
+| The host runs Windows. | The command reports that it runs on Linux and on macOS, and ends the run with the status 1. |
+
+A Linux host grants `CAP_NET_RAW` to a process without granting it the user identity
+zero. The command runs under that operator, because it reads the failure of the capture
+and reads no user identity.
 
 ### How to stop a monitor
 

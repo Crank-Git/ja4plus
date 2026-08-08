@@ -22,6 +22,7 @@ starts, and `report_statistics` starts it only when the operator states an inter
 from __future__ import annotations
 
 import contextlib
+import errno
 import logging
 import signal
 import threading
@@ -29,6 +30,7 @@ import time
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Optional, TextIO
 
 from scapy.all import TCP, UDP
+from scapy.error import Scapy_Exception
 
 from ja4plus.processor import Processor
 from ja4plus.utils.packet_utils import packet_endpoints, packet_seconds
@@ -43,6 +45,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "CAPTURE_FAILURES",
     "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_MAX_CONNECTIONS",
     "STATISTICS_THREAD_NAME",
@@ -51,11 +54,14 @@ __all__ = [
     "StatisticsReporter",
     "StatisticsSnapshot",
     "StopRequest",
+    "available_interfaces",
     "connection_key",
+    "describe_capture_failure",
     "format_statistics",
     "read_interface",
     "report_statistics",
     "stop_on_signal",
+    "unsupported_platform_message",
     "write_statistics",
 ]
 
@@ -571,16 +577,169 @@ def stop_on_signal(
             signal.signal(number, handler)
 
 
+# The exception classes the capture layer raises when it refuses to read an interface.
+# `scapy` 2.7.0 raises one of the three for every failure this module classifies:
+# `Scapy_Exception` for a refused `/dev/bpf` device and for a refused filter, `OSError`
+# for the Linux socket calls, and `ValueError` from `resolve_iface` for an interface the
+# host does not hold.
+#
+# Warning: `BrokenPipeError` inherits `OSError`, so a caller catches it before it
+# catches this tuple. `ja4plus/cli.py` holds that order.
+CAPTURE_FAILURES: tuple[type[BaseException], ...] = (Scapy_Exception, OSError, ValueError)
+
+# The platform names of Windows. `sys.platform` reports `win32` on every Windows build,
+# whatever the word size. `features/06-live-capture.md` puts Windows out of scope.
+_WINDOWS_PLATFORMS = ("win32", "cygwin")
+
+# The error numbers that name a refused privilege. Linux returns `EPERM` from the
+# `AF_PACKET` socket call, and macOS returns `EACCES` from the `/dev/bpf` open.
+_PRIVILEGE_ERRNOS = frozenset({errno.EPERM, errno.EACCES})
+
+# The error numbers that name an interface the host does not hold. Linux returns
+# `ENODEV` from the bind call.
+_ABSENT_DEVICE_ERRNOS = frozenset({errno.ENODEV, errno.ENXIO})
+
+# The text `scapy` 2.7.0 writes for a refused `/dev/bpf` device, at
+# `scapy/arch/bpf/core.py:59`. It raises a `Scapy_Exception` there and no `OSError`, so
+# the error number of that failure reaches no reader.
+_PRIVILEGE_TEXT = "permission denied"
+
+# The text `scapy` 2.7.0 writes for an interface the host does not hold, at
+# `scapy/interfaces.py:434`.
+_ABSENT_INTERFACE_TEXT = "not found"
+
+# The word every filter failure of `scapy` 2.7.0 carries. `scapy/arch/common.py:129`
+# writes `Failed to compile filter expression`. Both socket classes wrap that failure:
+# `scapy/arch/bpf/supersocket.py:218` and `scapy/arch/linux/__init__.py:232` each write
+# `Cannot set filter:`.
+_FILTER_TEXT = "filter"
+
+
+def unsupported_platform_message(platform: str, command: str) -> Optional[str]:
+    """Return the reason the platform runs no monitor, or None when it runs one.
+
+    The call reads the platform name alone. Every platform other than Windows attempts
+    the capture, because a failed attempt reports what the host refuses and a platform
+    name does not.
+
+    Args:
+        platform: The value of `sys.platform` on this host.
+        command: The subcommand name the operator ran, `watch` or `live`.
+
+    Returns:
+        The message the operator reads, or None where the platform runs a monitor.
+    """
+    if platform.startswith(_WINDOWS_PLATFORMS):
+        return (
+            f"Error: ja4plus {command} runs on Linux and on macOS. This host runs Windows.\n"
+            "Read a capture file with ja4plus analyze instead."
+        )
+    return None
+
+
+def available_interfaces() -> list[str]:
+    """Return the name of every interface the host holds, in sorted order.
+
+    The call reads the interface list of the host and it opens no interface, so an
+    operator without the capture privilege still reads the list.
+
+    Returns:
+        The interface names, or an empty list where the capture layer reports none.
+    """
+    from scapy.all import get_if_list
+
+    try:
+        names: list[str] = list(get_if_list())
+    except CAPTURE_FAILURES:
+        # This call runs while the command reports another failure. A second failure
+        # here would replace that report with a stack trace.
+        logger.debug("the capture layer reported no interface list", exc_info=True)
+        return []
+    return sorted(names)
+
+
+def describe_capture_failure(
+    error: BaseException,
+    *,
+    interface: str,
+    command: str,
+    capture_filter: Optional[str],
+    interfaces: list[str],
+) -> str:
+    """Return the message the operator reads for one capture failure.
+
+    The call reads the failure the capture layer reported. It opens nothing and it calls
+    no capture function, so the call classifies the failure of any capture layer that
+    raises one of `CAPTURE_FAILURES`.
+
+    The privilege reading comes first. A host that refuses the privilege refuses it
+    before it reads the interface name or the filter, so a later reading would report
+    the wrong cause.
+
+    Verified against `scapy` 2.7.0, at `scapy/arch/bpf/core.py:59`,
+    `scapy/interfaces.py:434`, `scapy/arch/common.py:129` and
+    `scapy/arch/linux/__init__.py:232`, read on 2026-08-08.
+
+    Args:
+        error: The failure the capture layer reported.
+        interface: The interface name the operator stated.
+        command: The subcommand name the operator ran, `watch` or `live`.
+        capture_filter: The `--bpf` expression the operator stated, or None.
+        interfaces: The interface names the host holds.
+
+    Returns:
+        The message, as one string without a trailing line feed.
+    """
+    text = str(error).lower()
+    number = error.errno if isinstance(error, OSError) else None
+
+    if number in _PRIVILEGE_ERRNOS or _PRIVILEGE_TEXT in text:
+        return (
+            f"Error: ja4plus has no privilege to read the interface {interface!r}.\n"
+            "Linux grants the privilege through the CAP_NET_RAW capability.\n"
+            "macOS grants the privilege through read access to the /dev/bpf* devices.\n"
+            f"Try: sudo ja4plus {command} {interface}\n"
+            f"The capture layer reported: {error}"
+        )
+
+    if number in _ABSENT_DEVICE_ERRNOS or (
+        isinstance(error, ValueError) and _ABSENT_INTERFACE_TEXT in text
+    ):
+        held = (
+            f"The host holds these interfaces: {', '.join(interfaces)}"
+            if interfaces
+            else "The host reports no interface."
+        )
+        return (
+            f"Error: the host holds no interface named {interface!r}.\n"
+            f"{held}\n"
+            f"The capture layer reported: {error}"
+        )
+
+    if capture_filter is not None and _FILTER_TEXT in text:
+        return (
+            f"Error: the capture layer refused the capture filter {capture_filter!r}.\n"
+            f"The capture layer reported: {error}"
+        )
+
+    return f"Error during capture on the interface {interface!r}: {error}"
+
+
 def read_interface(
     interface: str,
     handle_packet: Callable[[Packet], None],
     stop_filter: Optional[Callable[[Packet], bool]] = None,
+    capture_filter: Optional[str] = None,
 ) -> None:
     """Read packets from one interface, and call the handler with each one.
 
     The call returns when the capture stops. `store=0` is required: without it `scapy`
     keeps every packet it read, and the monitor then grows whatever the connection table
     bounds.
+
+    The call raises what the capture layer raises. `describe_capture_failure` reads that
+    failure, so this call classifies nothing and a change to the way it opens the socket
+    leaves the classification where it is. #320 owns that change.
 
     Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
     (scapy 2.6 and later, retrieved 2026-08-08).
@@ -591,6 +750,14 @@ def read_interface(
         stop_filter: The callable that ends the capture when it returns True for a
             packet, or None to read until the process ends. `StopRequest.stop_after` is
             the callable the command passes.
+        capture_filter: The Berkeley Packet Filter expression the capture applies, or
+            None to read every packet. FR-live-capture-11 asks for it.
+
+    Raises:
+        Scapy_Exception: The host refuses the `/dev/bpf` device, or `libpcap` refuses
+            the capture filter.
+        OSError: The host refuses the capture socket, or it holds no such interface.
+        ValueError: The host holds no interface of that name.
     """
     from scapy.all import sniff
 
@@ -599,4 +766,5 @@ def read_interface(
         iface=interface if interface != "any" else None,
         store=0,
         stop_filter=stop_filter,
+        filter=capture_filter,
     )
