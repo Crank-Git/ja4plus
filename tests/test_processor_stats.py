@@ -27,10 +27,11 @@ VECTORS = Path(__file__).parent / "foxio_vectors"
 CAPTURE = "latest.pcapng"
 
 # The count of state tables the ten methods hold. #39 moved thirteen tables to
-# `BoundedStateTable`, #285 made `SynAckTracker.prefixes` the fourteenth, and the two
-# reassemblers of JA4H and JA4X carry their own bounds, so the report covers sixteen.
-# The case below re-measures the count rather than trusting this number.
-STATE_TABLE_COUNT = 16
+# `BoundedStateTable`, #285 made `SynAckTracker.prefixes` the fourteenth, #215 made the
+# JA4T connection table the fifteenth, and the two reassemblers of JA4H and JA4X carry
+# their own bounds, so the report covers seventeen. The case below re-measures the count
+# rather than trusting this number.
+STATE_TABLE_COUNT = 17
 
 # The seconds a case waits for a thread. A case that hangs reports nothing, so every
 # wait states a limit.
@@ -132,10 +133,15 @@ class TestTheReport:
             "syn_ack_times.times",
         ]
 
+    def test_the_ja4t_connection_table_reports_under_its_name(self):
+        """#215 gave JA4T a connection table, so one connection produces one value."""
+        report = Processor().stats()
+        assert sorted(report["ja4t"].tables) == ["connections"]
+
     def test_a_method_that_holds_no_state_table_reports_no_table(self):
         report = Processor().stats()
-        assert report["ja4t"].tables == {}
-        assert report["ja4t"].entries == 0
+        assert report["ja4d"].tables == {}
+        assert report["ja4d"].entries == 0
 
     def test_the_method_totals_add_the_counts_of_its_tables(self):
         processor = Processor()

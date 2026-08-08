@@ -10,6 +10,7 @@ from scapy.all import TCP
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.packet_utils import packet_endpoints, packet_seconds
 from ja4plus.utils.state_table import BoundedStateTable
+from ja4plus.utils.tcp_options import tcp_prefix
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +186,7 @@ class JA4TSFingerprinter(BaseFingerprinter):
 
     JA4TS fingerprints TCP server behavior based on SYN-ACK responses.
     Format: <window_size>_<options>_<mss>_<wscale>_<synack_delays>
-    Example: 14600_2-1-3-4-1-1_1460_0
+    Example: 14600_2-1-3-4-1-1_1460_00
 
     Part e holds the delay between each SYN-ACK of the connection, and the fingerprint
     omits it when the server answers once.
@@ -302,7 +303,7 @@ def generate_ja4ts(packet, tracker=None):
     Generate JA4TS fingerprint from TCP SYN-ACK packet.
 
     Format: <window_size>_<options>_<mss>_<wscale>_<synack_delays>
-    Example: 14600_2-1-3-4-1-1_1460_0
+    Example: 14600_2-1-3-4-1-1_1460_00
 
     TCP options use IANA numbers: 0=EOL, 1=NOP, 2=MSS, 3=WScale, 4=SACK, 8=Timestamp
     Options preserve original order per spec (never sorted).
@@ -333,37 +334,10 @@ def generate_ja4ts(packet, tracker=None):
         if not (tcp.flags & TCP_SYN_ACK_FLAGS == TCP_SYN_ACK_FLAGS):  # SYN+ACK flags
             return None
 
-        # Get window size
-        window_size = str(tcp.window)
-
-        # Parse TCP options - preserve order as seen
-        options = []
-        mss = "0"
-        wscale = "0"
-
-        # Process options in the order they appear
-        for opt in tcp.options:
-            opt_name = opt[0]
-            if opt_name == "MSS":
-                options.append("2")
-                mss = str(int(opt[1]))
-            elif opt_name == "NOP":
-                options.append("1")
-            elif opt_name == "WScale":
-                options.append("3")
-                wscale = str(opt[1])
-            elif opt_name == "SAckOK":
-                options.append("4")
-            elif opt_name == "Timestamp":
-                options.append("8")
-            elif opt_name == "EOL":
-                options.append("0")
-
-        # Join with dashes - maintain original option ordering
-        options_str = "-".join(options) if options else "0"
-
-        # Format: window_options_mss_wscale_synackdelays
-        prefix = f"{window_size}_{options_str}_{mss}_{wscale}"
+        # Part a through part d read the one reader that JA4T reads. The image titles
+        # itself `JA4T/S`, and both FoxIO implementations build the two methods from one
+        # function, so one repair covers both. #215 records D1 through D5.
+        prefix = tcp_prefix(tcp)
 
         return prefix + _part_e(packet, tracker, prefix)
 

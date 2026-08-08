@@ -1170,24 +1170,26 @@ class TestTheStreamIdentityOfTheTunneledCapture:
     def test_the_stream_measures_d1_and_the_two_forms_differ(self):
         """The comparison D1 needs names both values, so a move of either one reports.
 
-        `docs/specs/foxio/JA4T.md` D1 states that `ja4plus` writes `0` for an empty
-        option list and no FoxIO reference writes that form. This stream is the one
-        local case that holds both forms.
+        The user decided the two-digit form on 2026-08-08, and #215 records it as D1.
+        `ja4plus` therefore writes `8192_00_00_00` where the FoxIO Rust snapshot holds
+        `8192__0_0`. This stream is the one local case that holds both forms, and the
+        divergence is decided rather than open.
         """
         streams = read_rust_snapshot(RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=TUNNELED_CAPTURE))
         assert streams[TUNNEL_OUTER_IDENTITY].values == {SNAPSHOT_TCP_METHOD: "8192__0_0"}
         produced = index_produced(VECTORS_DIR / TUNNELED_CAPTURE).get(TUNNEL_OUTER_IDENTITY, {})
-        assert produced.get(SNAPSHOT_TCP_METHOD) == ("8192_0_0_0",)
+        assert produced.get(SNAPSHOT_TCP_METHOD) == ("8192_00_00_00",)
 
     def test_the_register_holds_the_one_entry_the_stream_needs(self):
-        """The value case is registered against #215, which owns the D1 decision.
+        """The value case is registered against #215, which decided D1.
 
-        The entry carries `strict=True`, so the case fails the suite the moment D1
-        lands and `ja4plus` writes the reference form.
+        The entry carries `strict=True`, so the case fails the suite the moment the
+        two forms agree again. The user decided the divergence, so the entry carries
+        the marker.
         """
         key = value_key(TUNNELED_CAPTURE, "0", "65174", SNAPSHOT_TCP_METHOD, 1)
         assert DEVIATIONS[key].issue == 215
-        assert not DEVIATIONS[key].decided
+        assert DEVIATIONS[key].decided
         # The count comparison passes, because ja4plus emits one value on the stream.
         assert occurrence_key(TUNNELED_CAPTURE, SNAPSHOT_TCP_METHOD) not in DEVIATIONS
 

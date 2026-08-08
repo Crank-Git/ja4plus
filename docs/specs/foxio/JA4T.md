@@ -162,9 +162,12 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
 - `wireshark/source/packet-ja4.c:1265` tests `tcp_flags == 0x02` for equality, so a SYN
   that carries an ECN flag produces no JA4T value in the dissector.
 
-### R11 — The references disagree on the empty part b, and on a zero part c or part d
+### R11 — The empty part b, the zero part c and the zero part d take the two-digit form
 
-**This rule is uncertain.** Keep the vector fallback.
+**The user decided this on 2026-08-08, and #215 built it.** The three FoxIO forms
+disagree, so this is a reference split and the authority rule settles nothing. Two of the
+three agree, and the user follows them. `ja4plus` writes `8192_00_00_00` for a SYN that
+carries no option.
 
 - `rust/ja4/src/tcp.rs` joins an empty option list to the empty string, and prints part c
   and part d with no padding. `ja4__insta@gre-erspan-vxlan.pcap.snap` holds `8192__0_0`.
@@ -172,10 +175,41 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
   prints part c with `%02d`, and prints part d with `%02d` when the window scale is 0.
 - The Zeek baseline follows the Wireshark form. `zeek/tests/Traces/Scripts.ja4-conn/conn.log`
   holds `ja4t 65535_00_00_00` and `ja4ts 65535_00_00_00`. #198 owns that reading and this
-  page cites it rather than repeating the survey.
+  page cites it rather than repeating the survey. `zeek/ja4t/main.zeek:195-211` states the
+  same three rules for JA4T and repeats them for JA4TS.
+- The deleted `technical_details/JA4T.md` states the rule in prose and corroborates the
+  form a third time. It reads "If any field does not exist, then the output is 00." and
+  gives `JA4T = 1024_00_00_00`. Its example table repeats the form three times:
+  `Nmap | 1024_2_1460_00`, `Zmap | 65535_00_00_00` and `Web Scanner | 1024_00_00_00`.
+  `docs/specs/foxio/deleted-text-specifications.md` holds the whole quotation.
+
+**The prose and the two implementations part on one input, and `ja4plus` follows the
+implementations.** The prose reads `00` as the mark of an absent field. The two
+implementations read the value instead: `wireshark/source/packet-ja4.c:664` tests
+`data->window_scale == 0`, and `zeek/ja4t/main.zeek:206-210` tests
+`syn_opts$window_scale == 0`. Neither one records whether the packet carried the option,
+because each stores the scale as an integer that defaults to zero. A packet that carries
+a Window Scale option of value 0 therefore writes `00` in both implementations and `0`
+under the prose alone. **7 of the 12 moved values are of that shape**, and
+`gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` each carry such a SYN or SYN-ACK. A
+fingerprint exists so that one tool's output can be compared against another tool's
+output, so `ja4plus` writes the value the two executable references write. The user cited
+those two references on 2026-08-08, and the reading is reversible.
+
+**State the cost, because the reading departs from the reference the harness compares
+against.** The parity harness compares JA4T against the FoxIO Rust snapshots, and this
+form diverges from every one of them where the two forms differ. 12 values across 6
+captures take the new form, and 1 of the 12 reaches a comparison:
+`gre-erspan-vxlan.pcap/0:65174/JA4T.1`, which stays in `tests/foxio_deviations.json` as a
+decided divergence. The `Divergence register` in `docs/specs/spec.md` holds the whole
+measurement.
 
 The image settles none of this. It draws one example, and that example carries options, a
 Maximum Segment Size and a non-zero window scale.
+
+**The rule reaches three separate cases, and a reader who reads it as one case reads it
+wrong.** A packet that carries options and a window scale of zero takes the two-digit part
+d, and 7 of the 12 moved values are of that shape.
 
 ### R12 — JA4TS carries part e, and the fingerprint omits part e when the server answers once
 
@@ -285,38 +319,51 @@ The comparison below reads `ja4plus/fingerprinters/ja4t.py` and
 `ja4plus/fingerprinters/ja4ts.py` at commit `3c01c94`. Every field is named. A field this
 table does not name is a field nobody read.
 
+**#215 moved part a through part d of both methods into
+`ja4plus/utils/tcp_options.py`, so every line number below that names part a, part b,
+part c or part d names the file as it stood before #215.** The reading each row records
+still holds, and `tcp_prefix` is where the code now sits.
+
 ### JA4T — the fields that agree
 
 | Field | Rule | `ja4t.py` | Reading |
 |---|---|---|---|
-| Part count and separator | R1 | `ja4t.py:88` | Agrees. The format string is `f"{window_size}_{options_str}_{mss}_{wscale}"`. |
-| Part a, raw window | R3 | `ja4t.py:60` | Agrees. `str(tcp.window)` reads the unscaled field. |
-| Part b order | R4 | `ja4t.py:67` | Agrees. The loop keeps wire order and nothing sorts it. |
-| Part b separator | R4 | `ja4t.py:85` | Agrees. `"-".join(options)`. |
-| Part c absent | R6 | `ja4t.py:64` | Agrees. `mss = "0"` is the default. |
-| Part d absent | R7 | `ja4t.py:65` | Agrees. `wscale = "0"` is the default. |
-| Packet selection | R8 | `ja4t.py:56` | Agrees. SYN set and ACK clear, tested as a mask. |
-| ECN on a SYN | R10 | `ja4t.py:56` | Agrees with `tcp.rs`. Disagrees with the dissector, which R10 marks uncertain. |
+| Part count and separator | R1 | `tcp_options.py`, `tcp_prefix` | Agrees. The format string is `"{}_{}_{:02d}_{}"`. |
+| Part a, raw window | R3 | `tcp_options.py`, `tcp_prefix` | Agrees. `tcp.window` reads the unscaled field. |
+| Part b order | R4 | `tcp_options.py`, `read_options` | Agrees. The loop keeps wire order and nothing sorts it. |
+| Part b separator | R4 | `tcp_options.py`, `tcp_prefix` | Agrees. `"-".join(...)`. |
+| Part c absent | R6 | `tcp_options.py`, `read_options` | Agrees on the value and diverges on the form. The default is 0, and R11 writes it as `00`. |
+| Part d absent | R7 | `tcp_options.py`, `read_options` | Agrees on the value and diverges on the form. The default is 0, and R11 writes it as `00`. |
+| Packet selection | R8 | `ja4t.py`, `generate_ja4t` | Agrees. SYN set and ACK clear, tested as a mask. |
+| ECN on a SYN | R10 | `ja4t.py`, `generate_ja4t` | Agrees with `tcp.rs`. Disagrees with the dissector, which R10 marks uncertain. |
 | Part e | R2 | absent from `ja4t.py` | Agrees. JA4T carries no timing part. |
+| One value for one connection | R9 | `ja4t.py`, `_first_syn_of_connection` | Agrees. The connection table reads the first SYN alone. |
 
-### JA4T — the disagreements
+### JA4T — the disagreements, all five repaired
 
-**D1 — `ja4t.py:85` writes `0` for an empty option list, and no reference writes `0`.**
+**#215 landed all five on 2026-08-08.** The user ruled on D1, D2 and D4. D3 and D5 are
+plain defects and rode with them. `ja4plus/utils/tcp_options.py` now holds part a through
+part d for both methods, so one reader answers all five.
 
-`options_str = "-".join(options) if options else "0"` produces `8192_0_0_0`. The FoxIO Rust
-snapshot holds `8192__0_0` and the Wireshark form is `8192_00_00_00`. This project matches
-neither reference.
+**D1 — repaired. `ja4t.py` writes the two-digit form.**
+
+The old expression `options_str = "-".join(options) if options else "0"` produced
+`8192_0_0_0`, which matched no reference. R11 above states the decided rule and names the
+three FoxIO forms.
 
 Measured on 2026-08-08 against `tests/foxio_vectors/gre-erspan-vxlan.pcap`, which this
 repository already holds.
 
 ```
 FoxIO rust ja4__insta@gre-erspan-vxlan.pcap.snap : 8192__0_0
-ja4plus generate_ja4t                            : 8192_0_0_0
+ja4plus before #215                              : 8192_0_0_0
+ja4plus after #215                               : 8192_00_00_00
 ```
 
-**D2 — `ja4t.py:67` reads scapy's parsed option list, which reports one `EOL` entry for
-several pad bytes.**
+**This value diverges from the FoxIO Rust snapshot on purpose**, so the register keeps
+`gre-erspan-vxlan.pcap/0:65174/JA4T.1` and marks it decided.
+
+**D2 — repaired. `ja4t.py` reads the raw TCP option bytes.**
 
 The SYN of `tests/foxio_vectors/chrome-cloudflare-quic-with-secrets.pcapng` carries the
 option bytes `020405a0010303060101080a88d73b2c0000000004020000`. The wire kinds are
@@ -326,42 +373,48 @@ which holds one `EOL` for two `0x00` bytes.
 
 ```
 FoxIO rust ja4__insta@chrome-cloudflare-quic-with-secrets.pcapng.snap : 65535_2-1-3-1-1-8-4-0-0_1440_6
-ja4plus generate_ja4t                                                 : 65535_2-1-3-1-1-8-4-0_1440_6
+ja4plus before #215                                                   : 65535_2-1-3-1-1-8-4-0_1440_6
+ja4plus after #215                                                    : 65535_2-1-3-1-1-8-4-0-0_1440_6
 ```
 
-This breaks R5.
+The reading follows R5, and 16 values across the vector set move to the reference form.
 
-**D3 — `ja4t.py:69` to `ja4t.py:82` drop every option kind the loop does not name.**
+**D3 — repaired. Part b holds every option kind.**
 
-The loop maps six names: `MSS`, `NOP`, `WScale`, `SAckOK`, `Timestamp` and `EOL`. It
-appends nothing for any other kind. R4 states that both references append every kind. A SYN
-that carries kind 5, kind 28, kind 30 or kind 34 therefore produces a part b that omits it.
-No vector in this repository carries such an option, so no measurement demonstrates D3. The
-reading is a code reading, and R4 holds two corroborations.
+The old loop mapped six names: `MSS`, `NOP`, `WScale`, `SAckOK`, `Timestamp` and `EOL`. It
+appended nothing for any other kind. R4 states that both references append every kind. A
+SYN that carries kind 5, kind 28, kind 30 or kind 34 therefore produced a part b that
+omitted it. No vector in this repository carries such an option, so
+`tests/test_ja4t_form.py` holds two constructed cases instead.
 
-**D4 — `ja4t.py` holds no connection state, so it emits one value for every SYN.**
+**D4 — repaired. One connection produces one JA4T value.**
 
-R9 states that the reference reads only the first SYN of a connection. `ja4t.py` has no
-state table and `process_packet` fingerprints each SYN it sees.
+R9 states that the reference reads only the first SYN of a connection. `ja4t.py` now holds
+a connection table, and that table carries a maximum entry count of 10000 and a maximum
+age of 600 seconds.
 
 Measured on 2026-08-08 against `tests/foxio_vectors/ssh2.pcapng`.
 
 ```
 FoxIO rust ja4__insta@ssh2.pcapng.snap : 19 ja4t values, for 19 connections
-ja4plus generate_ja4t                  : 44 values, over the same 19 connections
+ja4plus before #215                    : 44 values, over the same 19 connections
+ja4plus after #215                     : 19 values, over the same 19 connections
 ```
 
-10 connections produce more than one value. `.claude/rules/conformance.md` states that a
+10 connections produced more than one value. `.claude/rules/conformance.md` states that a
 method that emits more fingerprints than the reference is a defect. The distinct values
-agree, so D4 changes the count and not the value.
+agreed before the repair, so D4 changed the count and no value.
 
-**D5 — `ja4t.py:71` and `ja4t.py:76` keep the last option, and the reference keeps the
-first.**
+**D4 reaches JA4T alone.** R12 rule 3 states that a JA4TS value grows with each SYN-ACK,
+so JA4TS keeps one value for each SYN-ACK packet.
 
-`mss = str(int(opt[1]))` and `wscale = str(opt[1])` run inside the loop, so a second
-Maximum Segment Size option overwrites the first. `rust/ja4/src/tcp.rs` calls
-`.next()` on the field iterator, which keeps the first. No vector in this repository carries
-a repeated option, so no measurement demonstrates D5.
+**D5 — repaired. A repeated option keeps the first value.**
+
+The old lines `mss = str(int(opt[1]))` and `wscale = str(opt[1])` ran inside the loop, so a
+second Maximum Segment Size option overwrote the first. `rust/ja4/src/tcp.rs` calls
+`.next()` on the field iterator, which keeps the first. No vector in this repository
+carries a repeated option, so `tests/test_ja4t_form.py` holds two constructed cases
+instead.
 
 ### JA4TS — the fields that agree
 
@@ -380,10 +433,15 @@ a repeated option, so no measurement demonstrates D5.
 
 ### JA4TS — the disagreements
 
-`ja4ts.py` repeats the body of `ja4t.py`, so it repeats D1, D2, D3 and D5 at
-`ja4ts.py:250`, `ja4ts.py:232`, `ja4ts.py:234` to `ja4ts.py:247`, and `ja4ts.py:236` with
-`ja4ts.py:241`. Two disagreements belong to JA4TS alone. **#226 added part e above that
-body, so every line number in this section moved.**
+**#215 repaired D1, D2, D3 and D5 on JA4TS too.** `ja4ts.py` repeated the body of
+`ja4t.py`, so it repeated all four. Both methods now call `tcp_prefix` in
+`ja4plus/utils/tcp_options.py`, which holds part a through part d once. The FoxIO
+references build the two methods from one function as well: `ja4t()` in
+`wireshark/source/packet-ja4.c` serves both fields, and `zeek/ja4t/main.zeek:195-236`
+repeats one block. 13 JA4TS values across the vector set moved, and the `Divergence
+register` in `docs/specs/spec.md` holds the count.
+
+Two disagreements belong to JA4TS alone.
 
 **D6 — repaired. `ja4ts.py` writes part e.**
 
@@ -475,35 +533,37 @@ and name the loss.
 |---|---|
 | `test_the_local_snapshots_hold_the_thirty_nine_values_the_reading_counts` | The snapshot reader finds no JA4T value. |
 | `test_the_suite_collects_one_case_for_every_value_the_snapshots_hold` | The parameter list is empty. |
-| `test_every_register_entry_matches_a_collected_case` | The two JA4T register entries match no case. |
+| `test_every_register_entry_matches_a_collected_case` | The one JA4T register entry matches no case. #215 left one entry, and #216 and #242 read two. |
 
 ## What the comparison reports
 
-**37 of the 39 values reproduce exactly, and two differ.** No value the register does
-not name disagrees. Neither #216 nor #242 changed a file under `ja4plus/`, and #215 owns
-all three entries.
+**#216 and #242 read 37 of the 39 values as exact and two as different. #215 landed the
+decisions, and the reading is now 38 of 39 exact and one decided divergence.** No value
+the register does not name disagrees.
 
-| Capture | Values | Result |
-|---|---|---|
-| `browsers-x509.pcapng` | 3 | Each value matches. |
-| `chrome-cloudflare-quic-with-secrets.pcapng` | 1 | D2. The value differs by one `0`. |
-| `gre-erspan-vxlan.pcap` | 1 | D1. The value differs in part b. |
-| `https-connect.pcap` | 1 | The value matches. |
-| `latest.pcapng` | 6 | Each value matches. |
-| `ssh2.pcapng` | 19 | Each value matches, and D4 makes 10 streams carry more than one. |
-| `tls3.pcapng` | 8 | Each value matches. |
+| Capture | Values | Result before #215 | Result after #215 |
+|---|---|---|---|
+| `browsers-x509.pcapng` | 3 | Each value matches. | Each value matches. |
+| `chrome-cloudflare-quic-with-secrets.pcapng` | 1 | D2. The value differs by one `0`. | The value matches. |
+| `gre-erspan-vxlan.pcap` | 1 | D1. The value differs in part b. | D1. The value differs in part b, part c and part d, and the user decided it. |
+| `https-connect.pcap` | 1 | The value matches. | The value matches. |
+| `latest.pcapng` | 6 | Each value matches. | Each value matches. |
+| `ssh2.pcapng` | 19 | Each value matches, and D4 makes 10 streams carry more than one. | Each value matches, and each stream carries one. |
+| `tls3.pcapng` | 8 | Each value matches. | Each value matches. |
 
-The three register entries are these.
+One register entry remains, and #215 marked it decided.
 
-| Key | Issue | The reading it records |
-|---|---|---|
-| `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` | 215 | D2 |
-| `gre-erspan-vxlan.pcap/0:65174/JA4T.1` | 215 | D1 |
-| `ssh2.pcapng/JA4T` | 215 | D4 |
+| Key | Issue | The reading it records | State |
+|---|---|---|---|
+| `gre-erspan-vxlan.pcap/0:65174/JA4T.1` | 215 | D1 | Decided. `ja4plus` writes `8192_00_00_00` and the snapshot holds `8192__0_0`. |
+
+The D2 entry and the D4 entry left the register when #215 landed, because each case
+resolves to a pass. The register falls from 137 keys to 135.
 
 **D3 and D5 reach no local snapshot value.** They need a SYN that no local capture
-carries. #242 brought D1 into the comparison, and "The snapshot the comparison now
-reaches" section below records how.
+carries, so `tests/test_ja4t_form.py` holds constructed cases for both. #242 brought D1
+into the comparison, and "The snapshot the comparison now reaches" section below records
+how.
 
 ## JA4TS stays uncovered
 
