@@ -150,10 +150,10 @@ def extract_certificate_from_bytes(
                                     return candidate
                                 # The `cryptography` documentation names `ValueError`
                                 # for data the loader cannot parse. A measurement of
-                                # 10000 malformed certificates also raised
-                                # `InvalidVersion`, which inherits `Exception` and not
-                                # `ValueError`, so a list of `ValueError` alone drops
-                                # it. #316 holds the measurement.
+                                # malformed certificates also raised `InvalidVersion`,
+                                # which inherits `Exception` and not `ValueError`, so
+                                # a list of `ValueError` alone drops it. #316 holds
+                                # the measurement.
                                 except (ValueError, x509.InvalidVersion) as e:
                                     if verbose:
                                         print(f"  ASN.1 parse error: {e}")

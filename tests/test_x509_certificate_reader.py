@@ -125,7 +125,7 @@ def test_the_reader_returns_nothing_for_bytes_that_carry_no_certificate():
 
 
 @pytest.fixture(scope="module")
-def bad_version_certificate(certificate_der: bytes) -> bytes:
+def bad_version_certificate() -> bytes:
     """Return the DER form of one certificate whose version field names no version.
 
     The version field of a TBSCertificate holds the DER bytes `a0 03 02 01 02`. The
@@ -192,26 +192,33 @@ def test_the_reader_returns_nothing_for_hostile_input(label, data):
     assert x509_utils.extract_certificate_from_bytes(data, try_asn1=True) is None
 
 
-def test_the_reader_returns_nothing_for_a_truncated_certificate(certificate_der):
-    """Truncation reaches every field of the certificate, and no cut raises."""
+def test_the_reader_raises_nothing_for_a_truncated_certificate(certificate_der):
+    """Truncation reaches every field of the certificate, and no cut makes the reader raise.
+
+    The reader returns a slice of its input or nothing, so the case fails if the
+    reader raises and it fails if the reader invents bytes.
+    """
     for cut in range(1, len(certificate_der)):
-        found = x509_utils.extract_certificate_from_bytes(certificate_der[:cut], try_asn1=True)
-        assert found is None or isinstance(found, bytes)
+        data = certificate_der[:cut]
+        found = x509_utils.extract_certificate_from_bytes(data, try_asn1=True)
+        assert found is None or found in data
 
 
 def test_the_reader_raises_nothing_for_a_mutated_certificate(certificate_der):
-    """No single-byte run of damage makes the reader raise.
+    """No run of damage inside a certificate makes the reader raise.
 
     The seed fixes the mutations, so the case measures the same 400 inputs on every
-    run. Each input is the certificate with one to six bytes replaced.
+    run. Each input is the certificate with one to six bytes replaced. The reader
+    returns a slice of its input or nothing.
     """
     generator = random.Random(4309)
     for _ in range(400):
         mutated = bytearray(certificate_der)
         for _ in range(generator.randint(1, 6)):
             mutated[generator.randrange(len(mutated))] = generator.randrange(256)
-        found = x509_utils.extract_certificate_from_bytes(bytes(mutated), try_asn1=True)
-        assert found is None or isinstance(found, bytes)
+        data = bytes(mutated)
+        found = x509_utils.extract_certificate_from_bytes(data, try_asn1=True)
+        assert found is None or found in data
 
 
 class ReaderProbeError(Exception):
