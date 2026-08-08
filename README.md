@@ -64,6 +64,17 @@ ja4plus --lookup analyze capture.pcap
 
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 
+The `json` and the `csv` formats write the same fields whatever flags you pass. Each
+record carries the source address, the source port, the destination address and the
+destination port as separate fields, in this order:
+
+```
+schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as
+```
+
+A field with no value is `null` in the `json` format and empty in the `csv` format. The
+`table` format is for a person reading a terminal, and it carries no stability promise.
+
 ## Fingerprint Lookup
 
 ja4plus includes a bundled database of known JA4+ fingerprints from FoxIO's [ja4plus-mapping.csv](https://github.com/FoxIO-LLC/ja4/blob/main/ja4plus-mapping.csv). Identifies Chrome, Firefox, Safari, Python, Cobalt Strike, Sliver, IcedID, and more.
