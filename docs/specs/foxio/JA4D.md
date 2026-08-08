@@ -622,10 +622,10 @@ of #271, and those numbers name a different set from the D1 to D11 of #231 above
 
 **Every one of the three rests on one source, and this page states that plainly.** No
 FoxIO implementation other than the Wireshark dissector writes a JA4D6 value.
-`zeek/README.md:15` states `JA4D6 &rarr; ja4d.log (awaiting Zeek DHCPv6 suppport)`, FoxIO
-ships no Python and no Rust for the method, and no deleted text file covers it. **The
-dissector and the image are the whole of the reference material, and on subfield 1 they
-contradict each other.**
+`zeek/README.md:15` states `JA4D6 &rarr; ja4d.log (awaiting Zeek DHCPv6 suppport)`. FoxIO
+ships no Python and no Rust for the method. No deleted text file covers the method.
+**The dissector and the image are the whole of the reference material.** On subfield 1 the
+two contradict each other.
 
 **No vector separates any of the three.** `tests/foxio_vectors/dhcpv6.pcap` carries no
 relay message, and all six reference values match before the change and after it.
@@ -635,12 +635,15 @@ the count of cases that a reversal of each reading fails is the evidence.
 **D1 of #271 — the three part a subfield fields. Ruling: read them at any nesting depth.**
 
 `wireshark/source/packet-ja4.c:967-969` calls `proto_all_finfos(tree)` and walks every
-field of the whole dissection tree. Each test matches on the field name alone, so
-`dhcpv6.duid.bytes` at `wireshark/source/packet-ja4.c:1547-1559`, `dhcpv6.iata` at
-`wireshark/source/packet-ja4.c:1560-1562` and `dhcpv6.client_domain` at
-`wireshark/source/packet-ja4.c:1563-1565` each reach an inner relay message. **#231
-already made part b recurse into DHCPv6 option 9**, so all three parts now read the same
-way and the inconsistency leaves. A reversal of this ruling fails 3 cases.
+field of the whole dissection tree. Each test matches on the field name alone. Three tests
+therefore reach an inner relay message.
+
+- `dhcpv6.duid.bytes` at `wireshark/source/packet-ja4.c:1547-1559`.
+- `dhcpv6.iata` at `wireshark/source/packet-ja4.c:1560-1562`.
+- `dhcpv6.client_domain` at `wireshark/source/packet-ja4.c:1563-1565`.
+
+**#231 already made part b recurse into DHCPv6 option 9.** All three parts now read the
+same way, and the inconsistency leaves. A reversal of this ruling fails 3 cases.
 
 **D2 of #271 — the Option Request List. Ruling: read it at any nesting depth.**
 
@@ -660,8 +663,8 @@ vector exists, so no bytes decide, and the schema stands. A consumer that reads 
 position keeps working. `ja4plus` writes `rlayf`. A reversal of this ruling fails 5 cases.
 
 **One consequence follows for a reader who compares the two tools.** A relay message is
-the one case where a `ja4plus` JA4D6 value and a Wireshark JA4D6 value differ, and the
-divergence register of `docs/specs/spec.md` holds the row.
+the one case where the two JA4D6 values differ. The divergence register of
+`docs/specs/spec.md` holds the row.
 
 ## The register
 
@@ -724,5 +727,5 @@ second implementation may arrive. **The uncertainty is structural rather than te
 and the user decided knowing that.**
 
 **#271 ruled on the two JA4D6 divergences that D8 uncovered, and it cleared no uncertain
-mark.** R16, R19 and R20 each gained a settled nesting depth and no second corroboration,
-so all three stay uncertain and all three keep the vector fallback.
+mark.** R16, R19 and R20 each gained a settled nesting depth and no second corroboration.
+All three stay uncertain, and all three keep the vector fallback.

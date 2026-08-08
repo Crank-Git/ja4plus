@@ -177,15 +177,15 @@ fingerprinter on its own.
 
 **No second FoxIO implementation corroborates JA4D6.** The Wireshark dissector is the only
 one that writes a JA4D6 value. `zeek/README.md:15` states
-`JA4D6 &rarr; ja4d.log (awaiting Zeek DHCPv6 suppport)`, FoxIO ships no Python and no Rust
-for the method, and no deleted text file covers it. R16, R19 and R20 of
+`JA4D6 &rarr; ja4d.log (awaiting Zeek DHCPv6 suppport)`. FoxIO ships no Python and no Rust
+for the method. No deleted text file covers the method. R16, R19 and R20 of
 `docs/specs/foxio/JA4D.md` are uncertain for that one reason.
 
 **#271 asked the user to settle what those three rules measure, and the user settled it.**
-Each rule now reads its field at any nesting depth. **The three marks stay**, because the
-mark counts FoxIO-authored corroborations and a decision adds none. Read the two things
-apart: a decision settles what this project builds, and a corroboration settles what the
-reference states.
+Each rule now reads its field at any nesting depth. **The three marks stay.** The mark
+counts FoxIO-authored corroborations, and a decision adds none. Read the two things apart.
+A decision settles what this project builds. A corroboration settles what the reference
+states.
 
 ## The authority rule
 
