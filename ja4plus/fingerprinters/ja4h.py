@@ -67,8 +67,8 @@ class JA4HFingerprinter(BaseFingerprinter):
     raw form: a sorted value matches no reference value and no other implementation.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, thread_safe=True):
+        super().__init__(thread_safe=thread_safe)
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
         self.unusable_base = self._stream_shadow_table()
@@ -101,63 +101,64 @@ class JA4HFingerprinter(BaseFingerprinter):
         Accumulates TCP stream data and attempts HTTP parsing on each
         new segment.
         """
-        if not (packet.haslayer(TCP) and packet.haslayer(Raw)):
-            return None
-
-        # The two tables age against the capture clock, so every packet announces its
-        # own timestamp. A table that reads the wall clock evicts state a replay needs.
-        now = packet_seconds(packet)
-        self.consumed_seq.on_packet(now)
-        self.unusable_base.on_packet(now)
-
-        ip_layer = get_ip_layer(packet)
-        if ip_layer is None:
-            return None
-
-        tcp = packet[TCP]
-        raw_data = bytes(packet[Raw])
-
-        stream_key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
-        seq = tcp.seq if hasattr(tcp, "seq") else 0
-
-        if self._segment_carries_no_new_request(stream_key, seq, len(raw_data)):
-            return None
-
-        self.reassembler.add_segment(stream_key, seq, raw_data, now)
-        stream_data = self.reassembler.get_stream(stream_key)
-
-        # Try to parse HTTP from reassembled stream
-        if not is_http_request(stream_data):
-            self._drop_an_unusable_stream(stream_key, stream_data)
-            # Also try the single packet (backward compat)
-            http_info = extract_http_info(packet)
-            if not http_info:
+        with self._lock:
+            if not (packet.haslayer(TCP) and packet.haslayer(Raw)):
                 return None
-            fingerprint = _generate_ja4h_from_info(http_info)
-            if fingerprint:
-                self._record(fingerprint, http_info, packet)
-                return fingerprint
-            return None
 
-        header_end = header_block_end(stream_data)
-        if header_end is None:
-            return None
+            # The two tables age against the capture clock, so every packet announces its
+            # own timestamp. A table that reads the wall clock evicts state a replay needs.
+            now = packet_seconds(packet)
+            self.consumed_seq.on_packet(now)
+            self.unusable_base.on_packet(now)
 
-        http_info = _extract_http_info_from_bytes(stream_data)
-        fingerprint = _generate_ja4h_from_info(http_info) if http_info else None
-        if fingerprint is None:
-            # The buffer holds a complete header block, so no later byte changes this
-            # parse. A buffer that stays makes every later packet of the connection read
-            # the whole buffer again, and the buffer grows to `max_stream_bytes`. #190
-            # measures 420036 bytes over 300 packets.
-            self._drop_a_stream_whose_base_holds(stream_key)
-            return None
+            ip_layer = get_ip_layer(packet)
+            if ip_layer is None:
+                return None
 
-        self._record(fingerprint, http_info, packet)
-        self._remember_the_consumed_request(stream_key, len(stream_data))
-        self.reassembler.remove_stream(stream_key)
-        self.unusable_base.pop(stream_key, None)
-        return fingerprint
+            tcp = packet[TCP]
+            raw_data = bytes(packet[Raw])
+
+            stream_key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
+            seq = tcp.seq if hasattr(tcp, "seq") else 0
+
+            if self._segment_carries_no_new_request(stream_key, seq, len(raw_data)):
+                return None
+
+            self.reassembler.add_segment(stream_key, seq, raw_data, now)
+            stream_data = self.reassembler.get_stream(stream_key)
+
+            # Try to parse HTTP from reassembled stream
+            if not is_http_request(stream_data):
+                self._drop_an_unusable_stream(stream_key, stream_data)
+                # Also try the single packet (backward compat)
+                http_info = extract_http_info(packet)
+                if not http_info:
+                    return None
+                fingerprint = _generate_ja4h_from_info(http_info)
+                if fingerprint:
+                    self._record(fingerprint, http_info, packet)
+                    return fingerprint
+                return None
+
+            header_end = header_block_end(stream_data)
+            if header_end is None:
+                return None
+
+            http_info = _extract_http_info_from_bytes(stream_data)
+            fingerprint = _generate_ja4h_from_info(http_info) if http_info else None
+            if fingerprint is None:
+                # The buffer holds a complete header block, so no later byte changes this
+                # parse. A buffer that stays makes every later packet of the connection
+                # read the whole buffer again, and the buffer grows to `max_stream_bytes`.
+                # #190 measures 420036 bytes over 300 packets.
+                self._drop_a_stream_whose_base_holds(stream_key)
+                return None
+
+            self._record(fingerprint, http_info, packet)
+            self._remember_the_consumed_request(stream_key, len(stream_data))
+            self.reassembler.remove_stream(stream_key)
+            self.unusable_base.pop(stream_key, None)
+            return fingerprint
 
     def _remember_the_consumed_request(self, stream_key, length):
         """Store the sequence range this stream read to produce its value.
@@ -270,25 +271,27 @@ class JA4HFingerprinter(BaseFingerprinter):
         self.fingerprints.append(entry)
 
     def reset(self):
-        super().reset()
-        self.reassembler = TCPStreamReassembler(max_streams=100)
-        self.last_raw_original_order = None
-        self.unusable_base = self._stream_shadow_table()
-        # The base code ran the age pass of this one table on each packet, and the
-        # table holds 100 entries at most, so the pass keeps that schedule.
-        self.consumed_seq = self._stream_shadow_table(eviction_interval=1)
+        with self._lock:
+            super().reset()
+            self.reassembler = TCPStreamReassembler(max_streams=100)
+            self.last_raw_original_order = None
+            self.unusable_base = self._stream_shadow_table()
+            # The base code ran the age pass of this one table on each packet, and the
+            # table holds 100 entries at most, so the pass keeps that schedule.
+            self.consumed_seq = self._stream_shadow_table(eviction_interval=1)
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove TCP stream buffer for the given connection."""
-        stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-        self.reassembler.remove_stream(stream_key)
-        # Also try reverse direction
-        rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
-        self.reassembler.remove_stream(rev_key)
-        self.unusable_base.pop(stream_key, None)
-        self.unusable_base.pop(rev_key, None)
-        self.consumed_seq.pop(stream_key, None)
-        self.consumed_seq.pop(rev_key, None)
+        with self._lock:
+            stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+            self.reassembler.remove_stream(stream_key)
+            # Also try reverse direction
+            rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+            self.reassembler.remove_stream(rev_key)
+            self.unusable_base.pop(stream_key, None)
+            self.unusable_base.pop(rev_key, None)
+            self.consumed_seq.pop(stream_key, None)
+            self.consumed_seq.pop(rev_key, None)
 
 
 def _extract_http_info_from_bytes(data):

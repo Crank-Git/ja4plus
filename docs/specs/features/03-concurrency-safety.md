@@ -9,10 +9,11 @@ mockups: []
 
 ## Purpose
 
-The library holds no lock anywhere. Every stateful fingerprinter holds a mutable
+The library held no lock anywhere. Every stateful fingerprinter holds a mutable
 state table, and the processor drives ten of them. `Processor.get_shard_key` exists
 so that a caller can spread traffic across workers, which tells the reader that
-concurrency is expected. Nothing states what is safe.
+concurrency is expected. Nothing stated what is safe. #42 guarded the lookup client and
+#40 gave every fingerprinter one lock, so the section below states what the code holds.
 
 Every state table also grew without limit. `cleanup_connection` exists, but the
 caller must call it, and a caller who does not know it exists runs out of memory. #38
@@ -193,14 +194,34 @@ holds 1000 entries at most, so the cost of the pass stays flat.
 data, so the `## Terms` table does not name it a state table. It appears above because
 it grows without a limit, and Goal 3 covers it.
 
-This file states three more targets that the code does not hold today:
+This file states one more target that the code does not hold today:
 
-- `Processor.__init__` accepts no argument. The `thread_safe`, `max_connections` and
-  `max_connection_age` arguments are targets.
-- No fingerprinter holds a lock. `threading` reaches one module under `ja4plus/`,
-  and that module is `ja4plus/ja4db.py`.
 - No class reports a state table entry count, and no class counts an eviction.
-  `Processor.stats` is a target.
+  `Processor.stats` is a target, and #41 owns it.
+
+#40 landed the lock, and this section records what the code holds now.
+
+- `Processor.__init__` accepts `thread_safe`, and it defaults to True. The
+  `max_connections` and `max_connection_age` arguments stay targets.
+- Every fingerprinter holds one lock. `BaseFingerprinter.__init__` builds a
+  `threading.RLock` when `thread_safe` is True, and it holds the shared `NULL_LOCK`
+  when `thread_safe` is False. Ten fingerprinters hold ten locks.
+- The lock is reentrant, because `Processor.process_packet` holds the lock of one
+  fingerprinter and then calls `process_packet` on that fingerprinter, which holds it
+  again. A `threading.Lock` deadlocks on the first packet.
+- The processor holds the lock of one fingerprinter across the call and across the read
+  of `last_raw` that follows it. The raw form describes the value the call produced, so
+  a second thread that runs between the two pairs one fingerprint with the raw form of
+  another packet.
+- `BaseFingerprinter.add_fingerprint`, `get_fingerprints` and `reset` hold no lock.
+  `list.append` and the rebind each run as one operation, and every composite operation
+  over that list sits in a subclass method or in `Processor.process_packet`. A lock on
+  the three failed no run of `tests/test_thread_safety.py` out of 20 with it removed.
+- `SynAckTracker` holds no lock. Every caller of it runs inside a method of
+  `JA4TSFingerprinter`, and that method holds the lock of that fingerprinter.
+- The lock of a fingerprinter and the module lock of `ja4plus/ja4db.py` never meet. No
+  fingerprinter calls `ja4plus.ja4db.lookup`, so no thread holds one while it waits for
+  the other, and the two cannot deadlock.
 
 #42 built the lookup client, and this paragraph records what the code holds now.
 `ja4plus.ja4db.lookup` builds one client, and every thread that calls it receives

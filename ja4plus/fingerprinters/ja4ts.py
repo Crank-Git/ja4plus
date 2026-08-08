@@ -111,9 +111,11 @@ class JA4TSFingerprinter(BaseFingerprinter):
     omits it when the server answers once.
     """
 
-    def __init__(self):
+    def __init__(self, thread_safe=True):
         """Initialize the fingerprinter and its SYN-ACK table."""
-        super().__init__()
+        super().__init__(thread_safe=thread_safe)
+        # The tracker holds no lock of its own. Every caller of it runs inside a method
+        # of this fingerprinter, and that method holds the lock of this fingerprinter.
         self.syn_ack_times = SynAckTracker()
 
     def process_packet(self, packet):
@@ -126,16 +128,18 @@ class JA4TSFingerprinter(BaseFingerprinter):
         Returns:
             The extracted fingerprint if successful, None otherwise
         """
-        fingerprint = generate_ja4ts(packet, self.syn_ack_times)
-        if fingerprint:
-            self.add_fingerprint(fingerprint, packet)
-            return fingerprint
-        return None
+        with self._lock:
+            fingerprint = generate_ja4ts(packet, self.syn_ack_times)
+            if fingerprint:
+                self.add_fingerprint(fingerprint, packet)
+                return fingerprint
+            return None
 
     def reset(self):
         """Reset the collected fingerprints and the SYN-ACK table."""
-        super().reset()
-        self.syn_ack_times.clear()
+        with self._lock:
+            super().reset()
+            self.syn_ack_times.clear()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove the stored SYN-ACK times of the given connection.
@@ -143,8 +147,9 @@ class JA4TSFingerprinter(BaseFingerprinter):
         The key names the server first, because every SYN-ACK travels from the server.
         The caller names either direction, so both orderings are dropped.
         """
-        self.syn_ack_times.drop((src_ip, src_port, dst_ip, dst_port))
-        self.syn_ack_times.drop((dst_ip, dst_port, src_ip, src_port))
+        with self._lock:
+            self.syn_ack_times.drop((src_ip, src_port, dst_ip, dst_port))
+            self.syn_ack_times.drop((dst_ip, dst_port, src_ip, src_port))
 
 
 def _connection_key(packet):

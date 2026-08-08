@@ -45,8 +45,8 @@ class JA4SFingerprinter(BaseFingerprinter):
     Format: <proto><version><ext_count><alpn>_<cipher>_<ext_hash>
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, thread_safe=True):
+        super().__init__(thread_safe=thread_safe)
         # Maps "srcIP:srcPort-dstIP:dstPort" -> client DCID bytes. The connection ID
         # outlives the fragments, because a server answers a client Initial packet
         # after a round trip, so this table holds the default age of 600 seconds.
@@ -73,24 +73,25 @@ class JA4SFingerprinter(BaseFingerprinter):
         Returns:
             The extracted fingerprint if successful, None otherwise
         """
-        # Try QUIC path first (UDP packets)
-        udp = packet.getlayer(UDP)
-        if udp is not None:
-            udp_payload = bytes(udp.payload)
-            if udp_payload and long_header_packet_type(udp_payload) == QUIC_INITIAL:
-                return self._quic_initial(packet, udp, udp_payload)
+        with self._lock:
+            # Try QUIC path first (UDP packets)
+            udp = packet.getlayer(UDP)
+            if udp is not None:
+                udp_payload = bytes(udp.payload)
+                if udp_payload and long_header_packet_type(udp_payload) == QUIC_INITIAL:
+                    return self._quic_initial(packet, udp, udp_payload)
 
-        # TCP/TLS path
-        from ja4plus.utils.tls_utils import extract_tls_info as _extract
+            # TCP/TLS path
+            from ja4plus.utils.tls_utils import extract_tls_info as _extract
 
-        tls_info = _extract(packet)
-        if not tls_info or tls_info.get("handshake_type") != "server_hello":
+            tls_info = _extract(packet)
+            if not tls_info or tls_info.get("handshake_type") != "server_hello":
+                return None
+            fingerprint = _generate_ja4s_from_tls_info(tls_info)
+            if fingerprint:
+                self._record(fingerprint, tls_info, packet)
+                return fingerprint
             return None
-        fingerprint = _generate_ja4s_from_tls_info(tls_info)
-        if fingerprint:
-            self._record(fingerprint, tls_info, packet)
-            return fingerprint
-        return None
 
     def _quic_initial(self, packet, udp, udp_payload):
         """Return the JA4S value one QUIC Initial packet gives, or None.
@@ -189,21 +190,23 @@ class JA4SFingerprinter(BaseFingerprinter):
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored QUIC DCID state for the given connection."""
-        fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-        rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
-        self._quic_dcids.pop(fwd, None)
-        self._quic_dcids.pop(rev, None)
-        self._drop_quic_server_crypto(fwd)
-        self._drop_quic_server_crypto(rev)
+        with self._lock:
+            fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+            rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+            self._quic_dcids.pop(fwd, None)
+            self._quic_dcids.pop(rev, None)
+            self._drop_quic_server_crypto(fwd)
+            self._drop_quic_server_crypto(rev)
 
     def reset(self):
         """Reset all state."""
-        super().reset()
-        self._quic_dcids = BoundedStateTable()
-        self._quic_server_crypto = quic_fragment_table()
-        self.last_raw = None
-        self.last_raw_original_order = None
-        self.last_fingerprint_original_order = None
+        with self._lock:
+            super().reset()
+            self._quic_dcids = BoundedStateTable()
+            self._quic_server_crypto = quic_fragment_table()
+            self.last_raw = None
+            self.last_raw_original_order = None
+            self.last_fingerprint_original_order = None
 
 
 def _server_hello_from_crypto_fragments(fragments):

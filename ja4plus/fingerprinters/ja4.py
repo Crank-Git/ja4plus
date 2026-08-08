@@ -358,8 +358,8 @@ class JA4Fingerprinter(BaseFingerprinter):
     one is on ``last_fingerprint_original_order``.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, thread_safe=True):
+        super().__init__(thread_safe=thread_safe)
         self.last_raw = None
         self.last_raw_original_order = None
         self.last_fingerprint_original_order = None
@@ -376,30 +376,31 @@ class JA4Fingerprinter(BaseFingerprinter):
         accumulate per Destination Connection ID until a full ClientHello
         can be reassembled. Once parsed, the per-DCID buffer is released.
         """
-        tls_info = extract_tls_info(packet)
-        if not tls_info:
-            tls_info = self._try_quic_multi_packet(packet)
-        if not tls_info:
-            return None
+        with self._lock:
+            tls_info = extract_tls_info(packet)
+            if not tls_info:
+                tls_info = self._try_quic_multi_packet(packet)
+            if not tls_info:
+                return None
 
-        fingerprint = generate_ja4(tls_info)
-        if fingerprint:
-            raw = get_raw_fingerprint(tls_info, original_order=False)
-            raw_oo = get_raw_fingerprint(tls_info, original_order=True)
-            fingerprint_oo = generate_ja4(tls_info, original_order=True)
-            self.last_raw = raw
-            self.last_raw_original_order = raw_oo
-            self.last_fingerprint_original_order = fingerprint_oo
-            entry = {
-                "fingerprint": fingerprint,
-                "fingerprint_original_order": fingerprint_oo,
-                "raw": raw,
-                "raw_original_order": raw_oo,
-            }
-            entry.update(packet_endpoints(packet))
-            self.fingerprints.append(entry)
+            fingerprint = generate_ja4(tls_info)
+            if fingerprint:
+                raw = get_raw_fingerprint(tls_info, original_order=False)
+                raw_oo = get_raw_fingerprint(tls_info, original_order=True)
+                fingerprint_oo = generate_ja4(tls_info, original_order=True)
+                self.last_raw = raw
+                self.last_raw_original_order = raw_oo
+                self.last_fingerprint_original_order = fingerprint_oo
+                entry = {
+                    "fingerprint": fingerprint,
+                    "fingerprint_original_order": fingerprint_oo,
+                    "raw": raw,
+                    "raw_original_order": raw_oo,
+                }
+                entry.update(packet_endpoints(packet))
+                self.fingerprints.append(entry)
 
-        return fingerprint
+            return fingerprint
 
     def _try_quic_multi_packet(self, packet):
         """Accumulate QUIC CRYPTO fragments per DCID; return tls_info if a
@@ -451,20 +452,22 @@ class JA4Fingerprinter(BaseFingerprinter):
         self._quic_dcid_to_tuple.pop(dcid_key, None)
 
     def reset(self):
-        super().reset()
-        self.last_raw = None
-        self.last_raw_original_order = None
-        self.last_fingerprint_original_order = None
-        self._quic_fragments = quic_fragment_table()
-        self._quic_dcid_to_tuple = quic_fragment_table()
+        with self._lock:
+            super().reset()
+            self.last_raw = None
+            self.last_raw_original_order = None
+            self.last_fingerprint_original_order = None
+            self._quic_fragments = quic_fragment_table()
+            self._quic_dcid_to_tuple = quic_fragment_table()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Drop any accumulated QUIC CRYPTO fragments for the given 5-tuple."""
-        tuple_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-        rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
-        for dcid_key, tup in list(self._quic_dcid_to_tuple.items()):
-            if tup == tuple_key or tup == rev_key:
-                self._drop_quic_fragments(dcid_key)
+        with self._lock:
+            tuple_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+            rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+            for dcid_key, tup in list(self._quic_dcid_to_tuple.items()):
+                if tup == tuple_key or tup == rev_key:
+                    self._drop_quic_fragments(dcid_key)
 
     def get_raw_fingerprint(self, packet, original_order=False):
         """

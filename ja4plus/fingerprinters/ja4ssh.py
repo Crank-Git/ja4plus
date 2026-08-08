@@ -62,14 +62,15 @@ class JA4SSHFingerprinter(BaseFingerprinter):
     Also supports HASSH fingerprinting for client/server identification.
     """
 
-    def __init__(self, packet_count=DEFAULT_PACKET_COUNT):
+    def __init__(self, packet_count=DEFAULT_PACKET_COUNT, thread_safe=True):
         """Build the fingerprinter.
 
         Args:
             packet_count: The number of SSH packets in one window. A bare ACK is not an
                 SSH packet, and it does not advance the window.
+            thread_safe: True makes the fingerprinter guard its own state with a lock.
         """
-        super().__init__()
+        super().__init__(thread_safe=thread_safe)
         self.connections = BoundedStateTable()
         # The count of connections this fingerprinter opened. Each entry stores the
         # value it read at its own start, and two readers publish in that order.
@@ -84,6 +85,22 @@ class JA4SSHFingerprinter(BaseFingerprinter):
     def process_packet(self, packet):
         """
         Process a packet and track SSH session patterns.
+
+        Args:
+            packet: A network packet to analyze
+
+        Returns:
+            The extracted fingerprint if a new one is generated, None otherwise
+        """
+        # The body of this method runs past fifty lines. The lock guards it from here,
+        # so the body keeps the indentation the reader already knows.
+        with self._lock:
+            return self._process_packet(packet)
+
+    def _process_packet(self, packet):
+        """Return the JA4SSH value this packet completes, or None.
+
+        The caller holds the lock of this fingerprinter.
 
         Args:
             packet: A network packet to analyze
@@ -366,11 +383,12 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         Returns:
             A list of the fingerprint entries the call appended to `self.fingerprints`.
         """
-        emitted = []
-        for conn_key, _ in self._connections_in_arrival_order():
-            if self._close_window(conn_key) is not None:
-                emitted.append(self.fingerprints[-1])
-        return emitted
+        with self._lock:
+            emitted = []
+            for conn_key, _ in self._connections_in_arrival_order():
+                if self._close_window(conn_key) is not None:
+                    emitted.append(self.fingerprints[-1])
+            return emitted
 
     def _close_window(self, conn_key):
         """Emit the open window of one connection, and start a new window.
@@ -464,46 +482,49 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         Returns:
             List of HASSH fingerprints
         """
-        hassh_fps = []
-        for conn_key, conn in self._connections_in_arrival_order():
-            if conn.get("hassh"):
-                hassh_fps.append(
-                    {
-                        "fingerprint": conn["hassh"],
-                        "banner": conn.get("client_id"),
-                        "type": "client",
-                    }
-                )
-            if conn.get("hasshServer"):
-                hassh_fps.append(
-                    {
-                        "fingerprint": conn["hasshServer"],
-                        "banner": conn.get("server_id"),
-                        "type": "server",
-                    }
-                )
-        return hassh_fps
+        with self._lock:
+            hassh_fps = []
+            for conn_key, conn in self._connections_in_arrival_order():
+                if conn.get("hassh"):
+                    hassh_fps.append(
+                        {
+                            "fingerprint": conn["hassh"],
+                            "banner": conn.get("client_id"),
+                            "type": "client",
+                        }
+                    )
+                if conn.get("hasshServer"):
+                    hassh_fps.append(
+                        {
+                            "fingerprint": conn["hasshServer"],
+                            "banner": conn.get("server_id"),
+                            "type": "server",
+                        }
+                    )
+            return hassh_fps
 
     def reset(self):
         """Reset fingerprinter state."""
-        super().reset()
-        self.hassh_fingerprints = []
-        self.connections = BoundedStateTable()
-        self._arrivals = 0
-        self._handshake_clients = BoundedStateTable(max_connections=MAX_HANDSHAKE_CONNECTIONS)
+        with self._lock:
+            super().reset()
+            self.hassh_fingerprints = []
+            self.connections = BoundedStateTable()
+            self._arrivals = 0
+            self._handshake_clients = BoundedStateTable(max_connections=MAX_HANDSHAKE_CONNECTIONS)
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored SSH session state for the given connection."""
-        # JA4SSH stores state as client:port-server:port (client is higher port)
-        fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-        rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
-        self.connections.pop(fwd, None)
-        self.connections.pop(rev, None)
-        # The handshake table outlives the connection otherwise, because the processor
-        # evicts a connection that a later packet of the same endpoint pair rebuilds.
-        self._handshake_clients.pop(
-            self._endpoint_pair_key(src_ip, src_port, dst_ip, dst_port), None
-        )
+        with self._lock:
+            # JA4SSH stores state as client:port-server:port (client is higher port)
+            fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+            rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+            self.connections.pop(fwd, None)
+            self.connections.pop(rev, None)
+            # The handshake table outlives the connection otherwise, because the
+            # processor evicts a connection that a later packet of the pair rebuilds.
+            self._handshake_clients.pop(
+                self._endpoint_pair_key(src_ip, src_port, dst_ip, dst_port), None
+            )
 
     def interpret_fingerprint(self, fingerprint):
         """

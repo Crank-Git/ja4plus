@@ -54,8 +54,20 @@ class Processor:
         ("ja4d6", JA4D6Fingerprinter),
     ]
 
-    def __init__(self):
-        self.fingerprinters = {name: cls() for name, cls in self._SPEC}
+    def __init__(self, thread_safe=True):
+        """Build one processor and the ten fingerprinters it drives.
+
+        Args:
+            thread_safe: True makes every fingerprinter guard its own state with a
+                reentrant lock, and several threads may then call `process_packet` on
+                one processor. False makes every fingerprinter acquire no lock, and the
+                caller then promises that one thread at a time calls this processor. A
+                caller that breaks the promise gets undefined results.
+        """
+        self.thread_safe = bool(thread_safe)
+        # One fingerprinter holds one lock, so ten threads work at once on ten methods.
+        # A single lock over the processor would serialize all ten.
+        self.fingerprinters = {name: cls(thread_safe=thread_safe) for name, cls in self._SPEC}
 
     def __getattr__(self, name):
         # Convenience: processor.ja4 returns the underlying fingerprinter.
@@ -76,25 +88,30 @@ class Processor:
         src_ip, dst_ip, src_port, dst_port = _packet_endpoints(packet)
 
         for fp_type, fp in self.fingerprinters.items():
-            try:
-                fingerprint = fp.process_packet(packet)
-            except Exception as e:
-                logger.debug(f"{fp_type} processing failed: {e}")
-                continue
-            if not fingerprint:
-                continue
-            results.append(
-                {
-                    "type": fp_type,
-                    "fingerprint": fingerprint,
-                    "raw": getattr(fp, "last_raw", None),
-                    "raw_original_order": getattr(fp, "last_raw_original_order", None),
-                    "src_ip": src_ip,
-                    "src_port": src_port,
-                    "dst_ip": dst_ip,
-                    "dst_port": dst_port,
-                }
-            )
+            # `last_raw` describes the value the call below produces, so that call and
+            # the read of `last_raw` form one operation. A second thread that runs
+            # between the two pairs the raw form of its own packet with this
+            # fingerprint.
+            with fp.lock:
+                try:
+                    fingerprint = fp.process_packet(packet)
+                except Exception as e:
+                    logger.debug(f"{fp_type} processing failed: {e}")
+                    continue
+                if not fingerprint:
+                    continue
+                results.append(
+                    {
+                        "type": fp_type,
+                        "fingerprint": fingerprint,
+                        "raw": getattr(fp, "last_raw", None),
+                        "raw_original_order": getattr(fp, "last_raw_original_order", None),
+                        "src_ip": src_ip,
+                        "src_port": src_port,
+                        "dst_ip": dst_ip,
+                        "dst_port": dst_port,
+                    }
+                )
         return results
 
     def close_open_windows(self):

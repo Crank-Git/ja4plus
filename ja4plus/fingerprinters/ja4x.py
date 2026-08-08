@@ -84,9 +84,9 @@ def generate_ja4x(cert_info):
 class JA4XFingerprinter(BaseFingerprinter):
     """Fingerprinter for JA4X (X.509 Certificates)."""
 
-    def __init__(self):
+    def __init__(self, thread_safe=True):
         """Initialize the fingerprinter with TCP stream tracking."""
-        super().__init__()
+        super().__init__(thread_safe=thread_safe)
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
@@ -103,51 +103,53 @@ class JA4XFingerprinter(BaseFingerprinter):
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove the stream buffer and the certificate state of the connection."""
-        stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-        self.reassembler.remove_stream(stream_key)
-        rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
-        self.reassembler.remove_stream(rev_key)
-        closed = (stream_key, rev_key)
-        for key in self.processed_certs.keys():
-            if key[0] in closed:
-                del self.processed_certs[key]
-        for key in closed:
-            self.scan_offsets.pop(key, None)
+        with self._lock:
+            stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+            self.reassembler.remove_stream(stream_key)
+            rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+            self.reassembler.remove_stream(rev_key)
+            closed = (stream_key, rev_key)
+            for key in self.processed_certs.keys():
+                if key[0] in closed:
+                    del self.processed_certs[key]
+            for key in closed:
+                self.scan_offsets.pop(key, None)
 
     def process_packet(self, packet):
         """Process a packet and extract JA4X fingerprint if applicable."""
-        if not (TCP in packet and Raw in packet):
-            return None
-
-        try:
-            from ja4plus.utils.packet_utils import get_ip_layer, packet_seconds
-
-            ip_layer = get_ip_layer(packet)
-            if ip_layer is None:
+        with self._lock:
+            if not (TCP in packet and Raw in packet):
                 return None
-            src_ip = ip_layer.src
-            dst_ip = ip_layer.dst
-            src_port = packet[TCP].sport
-            dst_port = packet[TCP].dport
-        except (IndexError, AttributeError):
-            return None
 
-        # The two tables age against the capture clock, so every packet announces its
-        # own timestamp. A table that reads the wall clock evicts state a replay needs.
-        seconds = packet_seconds(packet)
-        self.processed_certs.on_packet(seconds)
-        self.scan_offsets.on_packet(seconds)
+            try:
+                from ja4plus.utils.packet_utils import get_ip_layer, packet_seconds
 
-        stream_id = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-        raw_data = bytes(packet[Raw])
-        seq = packet[TCP].seq if hasattr(packet[TCP], "seq") else 0
+                ip_layer = get_ip_layer(packet)
+                if ip_layer is None:
+                    return None
+                src_ip = ip_layer.src
+                dst_ip = ip_layer.dst
+                src_port = packet[TCP].sport
+                dst_port = packet[TCP].dport
+            except (IndexError, AttributeError):
+                return None
 
-        self.reassembler.add_segment(stream_id, seq, raw_data, packet_seconds(packet))
-        stream_data = self.reassembler.get_stream(stream_id)
+            # The two tables age against the capture clock, so every packet announces its
+            # own timestamp. A table that reads the wall clock evicts state a replay needs.
+            seconds = packet_seconds(packet)
+            self.processed_certs.on_packet(seconds)
+            self.scan_offsets.on_packet(seconds)
 
-        fingerprint = self._find_certificates_in_stream_data(stream_id, stream_data, packet)
+            stream_id = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+            raw_data = bytes(packet[Raw])
+            seq = packet[TCP].seq if hasattr(packet[TCP], "seq") else 0
 
-        return fingerprint
+            self.reassembler.add_segment(stream_id, seq, raw_data, packet_seconds(packet))
+            stream_data = self.reassembler.get_stream(stream_id)
+
+            fingerprint = self._find_certificates_in_stream_data(stream_id, stream_data, packet)
+
+            return fingerprint
 
     def _find_certificates_in_stream_data(self, stream_id, stream_data, packet):
         """Return the last JA4X value the stream yields, or None.
@@ -411,17 +413,18 @@ class JA4XFingerprinter(BaseFingerprinter):
 
     def reset(self):
         """Reset the fingerprinter state."""
-        self.fingerprints = []
-        from ja4plus.utils.tcp_stream import TCPStreamReassembler
+        with self._lock:
+            self.fingerprints = []
+            from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
-        self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
-        # The table holds one entry for each certificate on each stream, and the
-        # certificate of a stream that goes quiet reaches no reader again. The age pass
-        # reads up to 1000 entries, so it runs on the default schedule and not on each
-        # packet.
-        self.processed_certs = BoundedStateTable(max_connections=MAX_PROCESSED_CERTS)
-        # One entry for each live stream, so the reassembler states both bounds.
-        self.scan_offsets = BoundedStateTable(
-            max_connections=self.reassembler.max_streams,
-            max_connection_age=self.reassembler.max_stream_age,
-        )
+            self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
+            # The table holds one entry for each certificate on each stream, and the
+            # certificate of a stream that goes quiet reaches no reader again. The age
+            # pass reads up to 1000 entries, so it runs on the default schedule and not
+            # on each packet.
+            self.processed_certs = BoundedStateTable(max_connections=MAX_PROCESSED_CERTS)
+            # One entry for each live stream, so the reassembler states both bounds.
+            self.scan_offsets = BoundedStateTable(
+                max_connections=self.reassembler.max_streams,
+                max_connection_age=self.reassembler.max_stream_age,
+            )
