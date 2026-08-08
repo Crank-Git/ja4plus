@@ -76,6 +76,7 @@ transcription and names the two sources that name JA4LS as a separate method.
 | JA4H | `docs/specs/foxio/JA4H.md` | Complete. #203 |
 | JA4SSH | `docs/specs/foxio/JA4SSH.md` | Complete. #199 |
 | JA4L | `docs/specs/foxio/JA4L.md` | Complete. #200. The page covers the client form, because the image specifies no server form. |
+| JA4D and JA4D6 | `docs/specs/foxio/JA4D.md` | Complete. #204. One page transcribes the two images |
 | The seven deleted text files | `docs/specs/foxio/deleted-text-specifications.md` | Complete. #221. It transcribes no image and it reconciles the deleted prose |
 
 ## A deleted text specification corroborates, and it never outranks the image
@@ -83,6 +84,13 @@ transcription and names the two sources that name JA4LS as a separate method.
 **FoxIO published a text specification for seven methods, and commit `b6f3ff4` deleted
 all seven.** `technical_details/JA4.md` and `technical_details/JA4H.md` exist again at the
 pinned commit. `JA4L.md`, `JA4S.md`, `JA4SSH.md`, `JA4T.md` and `JA4X.md` do not.
+
+**JA4D and JA4D6 hold no deleted text file, because neither file has ever existed.** The
+seven deleted names carry no `JA4D.md` and no `JA4D6.md`, and
+`git log --all --diff-filter=ADR -- '*JA4D*'` reports one commit, `6239c08`, which adds
+the two images and nothing else. **The two images are therefore the only FoxIO prose that
+has ever specified the two methods**, and `docs/specs/foxio/JA4D.md` corroborates every
+rule from implementations alone. #204 owns that reading.
 
 A deleted file is FoxIO-authored, so it counts as one corroboration. **It is not the
 pinned specification, so the image at the pinned commit outranks it.** Cite the path, the
