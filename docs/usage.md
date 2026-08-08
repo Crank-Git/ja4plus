@@ -442,9 +442,9 @@ thread for it.
 ### How to write a capture filter
 
 `--bpf` passes the expression to the capture layer, which drops every packet the filter
-rejects. The monitor therefore never reads that packet, and the packet count of the
-statistics line never holds it. A filter costs less than a monitor that reads every
-packet and discards most of them.
+rejects. The capture layer applies the filter before it reports a packet, so the monitor
+never reads a rejected packet and the packet count of the statistics line never holds
+it.
 
 ```bash
 # Read the TLS and the QUIC traffic alone
