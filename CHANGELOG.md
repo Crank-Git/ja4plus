@@ -8,6 +8,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`FingerprintResult` is the typed result of the public interface** (#44). The new
+  module `ja4plus/types.py` holds a frozen dataclass with nine fields, and `ja4plus`
+  exports the name. The field names are the snake-case form of the `FingerprintResult`
+  struct of the Go port, under parity rule 2, so the field that names the method is
+  `type` and not `method`. A result reads by field name as well as by attribute, so
+  code written against the dictionary of version 0.6.0 keeps working for one major
+  version. **Item access emits a `DeprecationWarning` that names the attribute form.**
+  The item access covers reading only, and a result supports no item assignment.
+  `Processor.process_packet` still returns a list of dictionaries, and #45 changes it.
+  No fingerprint value moved. `docs/specs/features/04-typed-api.md` states
+  FR-typed-api-1, FR-typed-api-2, FR-typed-api-5 and FR-typed-api-6.
+
 - **JA4SSH emits the window a connection holds open when the capture ends**
   (#214). Every fingerprinter and the processor now carry `close_open_windows()`.
   Call it when the packet source ends. `ja4plus analyze` calls it after the file
