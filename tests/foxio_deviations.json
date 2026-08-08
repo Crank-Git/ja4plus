@@ -1,10 +1,10 @@
 {
   "CVE-2018-6794.pcap/JA4L-C": {
-    "cause": "ja4plus emits more JA4L-C values than the reference holds.",
+    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "CVE-2018-6794.pcap/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds.",
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "alpn-condition.pcap/2:44403/JA4.1": {
@@ -98,12 +98,14 @@
     "decided": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
     "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
@@ -173,6 +175,10 @@
     "cause": "ja4plus produces a JA4_ro value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
     "decided": true
+  },
+  "gre-erspan-vxlan.pcap/0:65174/JA4T.1": {
+    "issue": 215,
+    "cause": "ja4t.py:85 writes 0 for an empty option list, so ja4plus writes 8192_0_0_0 and the FoxIO Rust snapshot holds 8192__0_0. D1 of docs/specs/foxio/JA4T.md records the reading, and #215 decides the form. This stream is the one local case that reaches D1, and #242 committed the snapshot that measures it."
   },
   "gre-sample.pcap/JA4SSH": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
@@ -365,11 +371,11 @@
     "decided": true
   },
   "https-connect.pcap/JA4L-C": {
-    "cause": "ja4plus emits more JA4L-C values than the reference holds.",
+    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "https-connect.pcap/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds.",
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "https-connect.pcap/JA4S": {
@@ -463,16 +469,19 @@
     "issue": 97
   },
   "ssh2.pcapng/33:51810/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "ssh2.pcapng/36:61861/JA4L-C.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "ssh2.pcapng/36:61861/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "ssh2.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
@@ -480,7 +489,7 @@
     "decided": true
   },
   "ssh2.pcapng/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds.",
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The FoxIO Python file holds 10 `JA4L-S` values on this capture, and ja4plus produces 11. `ja4plus/fingerprinters/ja4l.py:430` returns a second server value for a retransmitted SYN-ACK, and the extra value is `JA4L-S=6252_58` on the connection to 184.150.157.177:80. This is the one entry of the six that compares two measured counts. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "ssh2.pcapng/JA4S": {
@@ -528,7 +537,7 @@
     "decided": true
   },
   "tls-handshake.pcapng/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds.",
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "tls-handshake.pcapng/JA4S": {
@@ -577,48 +586,59 @@
     "decided": true
   },
   "tls3.pcapng/21:62481/JA4L-C.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/21:62481/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/22:61732/JA4L-C.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/22:61732/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/23:49791/JA4L-C.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/23:49791/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/24:56684/JA4L-C.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/24:56684/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/25:61884/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/28:58117/JA4L-C.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/28:58117/JA4L-S.1": {
-    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
-    "issue": 225
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
+    "issue": 225,
+    "decided": true
   },
   "tls3.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
