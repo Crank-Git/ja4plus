@@ -102,6 +102,67 @@ def test_a_part_that_carries_no_client_prefix_reports_no_client_number(fingerpri
     assert result == {"error": "Invalid JA4SSH format"}
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        "c36s36s99_c50s50_c70s30",
+        "c36s36_c50s50s1_c70s30",
+        "c36s36_c50s50_c70s30s7",
+    ],
+    ids=[
+        "a packet size part that carries a second separator",
+        "an SSH ratio part that carries a second separator",
+        "an ACK ratio part that carries a second separator",
+    ],
+)
+def test_a_part_that_carries_a_second_separator_returns_an_error_dictionary(fingerprinter, value):
+    """A part that carries a second `s` separator returns an error dictionary.
+
+    Issue #186 records the defect. The part `c36s36s99` reported a server packet size of
+    36 and dropped `99`, because nothing checked that the split produced two elements.
+    """
+    result = fingerprinter.interpret_fingerprint(value)
+    assert result == {"error": "Invalid JA4SSH format"}, f"{value!r} returned {result}"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "c 36s36_c50s50_c70s30",
+        "c36s 36_c50s50_c70s30",
+        "c-5s36_c50s50_c70s30",
+        "c36s-5_c50s50_c70s30",
+        "c36s+36_c50s50_c70s30",
+        "c٦s36_c50s50_c70s30",
+        "c36s٦_c50s50_c70s30",
+        "c36s36_c50s50_c70s30\n",
+        "c36s36_c50s50_c70s30 ",
+        "c36_c50s50_c70s30",
+    ],
+    ids=[
+        "a client packet size that holds a space",
+        "a server packet size that holds a space",
+        "a client packet size that holds a sign",
+        "a server packet size that holds a sign",
+        "a server packet size that holds a plus sign",
+        "a client packet size that holds an Arabic-Indic digit",
+        "a server packet size that holds an Arabic-Indic digit",
+        "an ACK ratio part that ends with a line feed",
+        "an ACK ratio part that ends with a space",
+        "a part that holds no server field",
+    ],
+)
+def test_a_part_that_holds_a_character_the_form_denies_returns_an_error(fingerprinter, value):
+    """A part that holds any character other than `c`, `s` and an ASCII digit fails.
+
+    Issue #186 records the three readings a comment measured. `int()` accepts a space, a
+    sign and a Unicode digit, so each of these parts reported a number the fingerprint
+    does not hold.
+    """
+    result = fingerprinter.interpret_fingerprint(value)
+    assert result == {"error": "Invalid JA4SSH format"}, f"{value!r} returned {result}"
+
+
 def test_a_valid_fingerprint_still_reports_the_session_type(fingerprinter):
     """A valid fingerprint reports the session type it reported before the change."""
     result = fingerprinter.interpret_fingerprint("c36s36_c50s50_c70s30")
