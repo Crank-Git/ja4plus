@@ -193,6 +193,19 @@ class TestTheAgeBound:
         table.on_packet()
         assert "idle" not in table
 
+    def test_one_packet_without_a_timestamp_moves_the_table_to_the_wall_clock(self, monkeypatch):
+        # The class docstring warns about this. A capture recorded in the past ages out
+        # whole when one packet of the replay states no timestamp.
+        monkeypatch.setattr(state_table, "time", types.SimpleNamespace(time=lambda: 5000.0))
+        table = BoundedStateTable(max_connections=100, max_connection_age=10.0, eviction_interval=1)
+        table.on_packet(1000.0)
+        table["conn"] = "state"
+        table.on_packet(1002.0)
+        assert "conn" in table
+        table.on_packet()
+        assert "conn" not in table
+        assert table.evictions == 1
+
 
 class TestTheEvictionInterval:
     """An eviction pass runs at most once per 1000 packets."""
@@ -300,6 +313,44 @@ class TestTheDictionaryInterface:
         assert repr(table) == (
             "BoundedStateTable(entries=1, max_connections=10, max_connection_age=600.0)"
         )
+
+    def test_a_read_inside_a_loop_over_the_keys_method_raises_no_error(self):
+        # `keys` returns a list and not a view, for the reason the case above states.
+        table = BoundedStateTable(max_connections=10, max_connection_age=600.0)
+        for index in range(5):
+            table[index] = index
+        assert [table[key] for key in table.keys()] == [0, 1, 2, 3, 4]
+
+    def test_a_pass_over_the_items_holds_no_entry_against_the_age_bound(self):
+        table = BoundedStateTable(max_connections=10, max_connection_age=10.0, eviction_interval=1)
+        table.on_packet(1000.0)
+        table["idle"] = "state"
+        table.on_packet(1005.0)
+        assert list(table.items()) == [("idle", "state")]
+        assert list(table.values()) == ["state"]
+        assert list(table.keys()) == ["idle"]
+        table.on_packet(1011.0)
+        assert "idle" not in table
+
+    def test_the_dict_constructor_holds_every_entry_against_the_age_bound(self):
+        # `dict(table)` reads each key through `__getitem__`, so it is a read of each
+        # entry. The class docstring states it, because a dictionary reads otherwise.
+        table = BoundedStateTable(max_connections=10, max_connection_age=10.0, eviction_interval=1)
+        table.on_packet(1000.0)
+        table["idle"] = "state"
+        table.on_packet(1005.0)
+        assert dict(table) == {"idle": "state"}
+        table.on_packet(1011.0)
+        assert "idle" in table
+
+    def test_popitem_removes_the_least_recently_used_entry(self):
+        # A dictionary removes the entry it received last. The class docstring states
+        # the difference, and no call site reaches this operation today.
+        table = BoundedStateTable(max_connections=10, max_connection_age=600.0)
+        table["a"] = 1
+        table["b"] = 2
+        table["c"] = 3
+        assert table.popitem() == ("a", 1)
 
     def test_clear_removes_every_entry_and_counts_no_eviction(self):
         table = BoundedStateTable(max_connections=10, max_connection_age=600.0)

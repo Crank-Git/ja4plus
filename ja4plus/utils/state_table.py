@@ -2,8 +2,8 @@
 
 Every stateful fingerprinter holds per-connection data across packets, and
 `CLAUDE.md` states the rule: nothing that survives across packets grows without a
-limit. #179 records six tables that hold no bound today. This class is the one shape
-they all move onto, and #39 performs that move.
+limit. #179 records six tables that hold no bound today. #39 moves them, and this
+class is the shape four of them take.
 
 The table evicts on two conditions.
 
@@ -14,6 +14,18 @@ The table evicts on two conditions.
   `eviction_interval` packets, so the eviction cost stays proportional to the traffic.
 
 The library starts no thread. Eviction runs on packet arrival.
+
+Two of the six tables that #179 records need something else, and #39 owns the answer
+for each.
+
+- `BaseFingerprinter.fingerprints` is a list. It holds one result for each fingerprint
+  and no per-connection data, so the `## Terms` table names it no state table.
+  `ja4l.py` overwrites an entry at a stored index, and `ja4ssh.py` reads the entry at
+  index -1. A mapping keyed by connection serves neither call site.
+- `JA4DBClient._cache` reads no packet, so nothing calls `on_packet` and the age pass
+  never runs on its own. Its count bound still holds, because `__setitem__` applies
+  that bound at once. A caller with no packet calls `evict_aged` to age an entry out.
+  #42 owns the lookup cache.
 """
 
 import logging
@@ -54,6 +66,14 @@ class BoundedStateTable(MutableMapping):
     no entry, because `keys`, `values`, `items` and iteration describe the table rather
     than one connection.
 
+    Two operations of a dictionary read differently here, and neither reaches a call
+    site today.
+
+    - `dict(table)` reads each key through `__getitem__`, so it holds every entry
+      against both bounds. Call `items` for a pass that holds none.
+    - `popitem` removes the least recently used entry. A dictionary removes the entry
+      it received last.
+
     Args:
         max_connections: The maximum entry count. The name matches the `Processor`
             argument that `features/03-concurrency-safety.md` publishes.
@@ -90,13 +110,19 @@ class BoundedStateTable(MutableMapping):
     def on_packet(self, timestamp=None):
         """Announce one packet to the table, and run the age eviction pass on schedule.
 
-        The table reads this timestamp for every later operation, until the next packet
-        arrives. A capture file replays faster than real time, so a wall clock evicts
-        state the capture still needs.
+        A stated timestamp holds until the next packet arrives, and every operation
+        between the two reads it. A capture file replays faster than real time, so a
+        wall clock evicts state the capture still needs.
+
+        Warning: one call that states no timestamp moves the table to the wall clock
+        for that packet. A replay of a capture recorded in the past then ages out
+        whole. A caller states the timestamp on every packet of one capture, or on
+        none of them.
 
         Args:
             timestamp: The packet timestamp, in seconds since the epoch. A caller that
-                states None makes the table read the wall clock instead.
+                states None makes the table read the wall clock for each operation,
+                until a later packet states a timestamp.
         """
         self._now = timestamp
         self._packets += 1
@@ -184,8 +210,13 @@ class BoundedStateTable(MutableMapping):
         return True
 
     def keys(self):
-        """Return the keys, least recently read first. The pass holds no entry."""
-        return self._entries.keys()
+        """Return the keys, least recently read first. The pass holds no entry.
+
+        The result is a list and not a view. A caller that reads a value inside a loop
+        over a live view moves that entry. An OrderedDict refuses that move during its
+        own iteration.
+        """
+        return list(self._entries.keys())
 
     def values(self):
         """Return the values, least recently read first. The pass holds no entry."""

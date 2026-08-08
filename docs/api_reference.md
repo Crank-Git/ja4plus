@@ -281,6 +281,15 @@ The table answers the dictionary operations a fingerprinter uses: `[]`, `[] =`, 
 A read of one key holds that entry against both bounds. A pass over the whole table
 holds no entry, so `keys`, `values`, `items` and iteration change no eviction order.
 
+Two operations read differently from the dictionary this table replaces. `dict(table)`
+reads each key through `__getitem__`, so it holds every entry; call `items` for a pass
+that holds none. `popitem` removes the least recently used entry, and a dictionary
+removes the entry it received last.
+
+Warning: state the packet timestamp on every packet of one capture, or on none of them.
+One `on_packet()` call that states no timestamp moves the table to the wall clock, and a
+replay of a capture recorded in the past then ages out whole.
+
 The defaults are 10000 entries, 600 seconds and 1000 packets. `ssh-r.pcap` sets the age.
 It holds the longest gap between two segments of one connection across
 `tests/foxio_vectors/`, at 320.714503 seconds.
