@@ -34,6 +34,30 @@ index 0 to two streams. The pair matches the test identifier the suite prints.
 
 4. Run the conformance suite again. The case now reports as `xfailed`.
 
+## The marker rule
+
+An entry whose cause cites a decision carries `"decided": true`. An entry that cites no
+decision stays unmarked, and that is the correct state for an entry that stays open. An
+unmarked entry states that nobody read it, so a marker that is missing hides a decision.
+
+`unmarked_decisions` in `tests/test_foxio_deviations.py` enforces the rule. It reads three
+forms of citation as evidence that a person decided an entry:
+
+| Form | Example |
+|---|---|
+| A Changelog round named by number | `Changelog round 66 settled the marker.` |
+| A decision recorded against an issue or a date | `decided on #105`, `decided on 2026-08-07` |
+| An issue named as the place the decision was made | `#138 decided to keep the values.` |
+
+Every form is past tense. Naming the issue that will decide an entry is not naming a
+decision, so `#215 decides whether ja4plus reads the raw option bytes` leaves the entry
+open. A denied citation is not a citation either, so `no Changelog round settled it`
+leaves the entry open.
+
+The rule runs in one direction. An entry that cites no decision may still carry the
+marker, which the 34 entries of #138 and the 5 entries of #151 do. A FoxIO Rust snapshot
+settled those by measurement, and no person decided them.
+
 ## How to remove an entry
 
 A fix that lands makes the case pass, and the strict marker turns that pass into a
