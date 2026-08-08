@@ -101,3 +101,37 @@ def test_a_repeated_segment_produces_no_second_value():
     fingerprinter.process_packet(_segment(100, payload))
     assert fingerprinter.process_packet(_segment(100, payload)) is None
     assert len(fingerprinter.get_fingerprints()) == 1
+
+
+def test_the_consumed_request_table_stays_inside_the_stream_cap():
+    """`CLAUDE.md` states that every state table holds a maximum entry count."""
+    fingerprinter = JA4HFingerprinter()
+    payload = _request("/one")
+    for port in range(1024, 1024 + 300):
+        packet = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=port, dport=80, seq=100)
+            / Raw(load=payload)
+        )
+        fingerprinter.process_packet(packet)
+    assert len(fingerprinter.consumed_seq) <= fingerprinter.reassembler.max_streams
+
+
+def test_a_consumed_request_leaves_the_table_after_the_maximum_stream_age():
+    """`CLAUDE.md` states that every state table holds a maximum age.
+
+    The age reads the packet timestamp, because a capture file replays faster than real
+    time.
+    """
+    # A capture time from 2001, far from the wall clock.
+    capture_time = 1000000000.0
+    fingerprinter = JA4HFingerprinter()
+    first = _segment(100, _request("/one"))
+    first.time = capture_time
+    fingerprinter.process_packet(first)
+    assert "10.0.0.1:12345-10.0.0.2:80" in fingerprinter.consumed_seq
+
+    later = _segment(100, _request("/one"))
+    later.time = capture_time + fingerprinter.reassembler.max_stream_age + 1
+    fingerprinter.process_packet(later)
+    assert len(fingerprinter.get_fingerprints()) == 2

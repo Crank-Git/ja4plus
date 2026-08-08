@@ -66,6 +66,11 @@ the branch is removed.
 
 FR-correctness-audit-13 — The malformed-input suite runs on every pull request.
 
+FR-correctness-audit-14 — JA4H reads a request whose lines end with one line feed.
+
+FR-correctness-audit-15 — JA4H emits one fingerprint for one request, whatever count
+of times the sender transmits the segments that carry it.
+
 ## User flows
 
 **A hostile packet reaches the processor.**
@@ -168,6 +173,8 @@ Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/pcap (retrieved
 | A TLS record declares a length larger than the packet. | The parser returns nothing. |
 | An extension list declares more extensions than the packet carries. | The parser returns nothing. |
 | An HTTP request repeats a cookie name with two values. | Both hashes describe both occurrences. |
+| An HTTP request ends every line with one line feed. | JA4H reads the request and emits one fingerprint. |
+| A sender retransmits the segments that carry one HTTP request. | JA4H emits one fingerprint, because a retransmission carries no new request. |
 | A TCP connection sends 1000 ACKs after the handshake. | JA4L emits one client fingerprint. |
 | Both endpoints use an ephemeral port for SSH. | The TCP handshake decides which endpoint is the server. The SYN sender is the client, and the SYN+ACK sender is the server. |
 | The capture holds no handshake, and no endpoint uses port 22. | The lower port decides. The fingerprinter records the guess on the result, in the field `server_decided_by`. |

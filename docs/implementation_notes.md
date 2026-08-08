@@ -1198,6 +1198,47 @@ request line.
 before attempting to parse. Prior versions operated on single-packet
 payloads only, missing HTTP requests spanning multiple TCP segments.
 
+### One line feed ends a line
+
+`technical_details/JA4H.md` holds two facts and no third one. It states that "JA4H
+fingerprints the HTTP client based on each HTTP request", and it states that part a
+carries the "2 digit number of headers, not counting Cookie and Referer". It names no
+line ending, and it names no rule that reads the value of a header. The specification
+therefore decides that a request is a request, and the vector decides the bytes.
+
+`tests/foxio_vectors/http-empty-useragent.pcap` carries the request
+`GET / HTTP/1.0\nUser-Agent:\n\n` over three TCP segments. Every line ends with one line
+feed, and the `User-Agent` header carries no value. The FoxIO expected-output file holds
+`ge10nn010000_b8bcd45ac095_000000000000_000000000000` for stream 0, and `b8bcd45ac095`
+is the first 12 characters of the SHA-256 hash of the 10 bytes `User-Agent`. The
+reference counts the header, so a header that carries no value is one header.
+
+`ja4plus` read the two bytes `\r\n` as the only line ending, on all three parse paths, so
+it read the request as one line and produced nothing. `split_http_lines` and
+`header_block_end` now read one line feed as well. #193 records the defect, and the name
+of the capture does not state it: the empty header value is legal on both readings.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4H.md
+(retrieved 2026-08-08).
+
+### A retransmitted request produces one value
+
+The same sentence bounds the count of values. A retransmitted TCP segment carries no new
+HTTP request, so it produces no second JA4H value.
+
+`tests/foxio_vectors/CVE-2018-6794.pcap` holds two streams, and the sender transmits each
+request six times. The FoxIO expected-output file holds one value on each stream.
+`ja4plus` produced six on each, because the fingerprinter removed the stream from the
+reassembler after a value and the retransmission rebuilt the same request. The register
+recorded that as `ja4plus produces no JA4H fingerprint the reference holds`, and the
+measurement contradicts the direction: both values matched, and ten extra occurrence keys
+failed the case.
+
+`JA4HFingerprinter.consumed_seq` now holds the sequence number that follows a request
+each stream produced a value for. A segment that ends at or before that number produces
+nothing. The comparison holds across a wrap of the 32-bit sequence number, and a
+pipelined request sits above the number, so it still produces a second value.
+
 ---
 
 ## TLS Utilities

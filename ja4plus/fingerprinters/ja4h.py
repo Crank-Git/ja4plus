@@ -94,10 +94,11 @@ class JA4HFingerprinter(BaseFingerprinter):
         stream_key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
         seq = tcp.seq if hasattr(tcp, "seq") else 0
 
-        if self._segment_carries_no_new_request(stream_key, seq, len(raw_data)):
+        now = packet_seconds(packet)
+        if self._segment_carries_no_new_request(stream_key, seq, len(raw_data), now):
             return None
 
-        self.reassembler.add_segment(stream_key, seq, raw_data, packet_seconds(packet))
+        self.reassembler.add_segment(stream_key, seq, raw_data, now)
         stream_data = self.reassembler.get_stream(stream_key)
 
         # Try to parse HTTP from reassembled stream
@@ -124,13 +125,13 @@ class JA4HFingerprinter(BaseFingerprinter):
         fingerprint = _generate_ja4h_from_info(http_info)
         if fingerprint:
             self._record(fingerprint, http_info, packet)
-            self._remember_the_consumed_request(stream_key, header_end)
+            self._remember_the_consumed_request(stream_key, header_end, now)
             self.reassembler.remove_stream(stream_key)
             return fingerprint
 
         return None
 
-    def _remember_the_consumed_request(self, stream_key, header_end):
+    def _remember_the_consumed_request(self, stream_key, header_end, now):
         """Store the sequence number that follows the request this stream just produced.
 
         The reassembler drops the stream after a value, so a retransmitted segment
@@ -141,33 +142,54 @@ class JA4HFingerprinter(BaseFingerprinter):
         Args:
             stream_key: The key of the stream in the reassembler.
             header_end: The offset of the first byte after the header block.
+            now: The packet timestamp of the segment that completed the request, in
+                seconds, or None when the packet carries no time.
         """
         base = self.reassembler.base_seq(stream_key)
         if base is None:
             return
-        self.consumed_seq[stream_key] = (base + header_end) & SEQUENCE_MASK
+        self.consumed_seq[stream_key] = ((base + header_end) & SEQUENCE_MASK, now)
         self.consumed_seq.move_to_end(stream_key)
         if len(self.consumed_seq) > self.reassembler.max_streams:
             # The table holds one entry for each connection, and a flood of connections
             # would otherwise grow it without a limit.
             self.consumed_seq.popitem(last=False)
 
-    def _segment_carries_no_new_request(self, stream_key, seq, length):
+    def _evict_the_aged_consumed_requests(self, now):
+        """Remove every consumed-request entry older than the maximum stream age.
+
+        The age reads the packet timestamp and never the wall clock, because a capture
+        file replays faster than real time.
+
+        Args:
+            now: The packet timestamp of the current segment, in seconds.
+        """
+        # `max_streams` bounds this scan at 100 entries, so the cost per packet is flat.
+        for key, (_, seen) in list(self.consumed_seq.items()):
+            if seen is not None and now - seen > self.reassembler.max_stream_age:
+                del self.consumed_seq[key]
+
+    def _segment_carries_no_new_request(self, stream_key, seq, length, now):
         """Report whether the stream already produced a value for these bytes.
 
         Args:
             stream_key: The key of the stream in the reassembler.
             seq: The 32-bit sequence number of the first byte of the segment.
             length: The count of payload bytes the segment carries.
+            now: The packet timestamp of the segment, in seconds, or None when the
+                packet carries no time.
 
         Returns:
             True when the segment ends inside the sequence range of a request that
             already produced a value. The comparison holds across a wrap of the 32-bit
             sequence number.
         """
-        consumed = self.consumed_seq.get(stream_key)
-        if consumed is None:
+        if now is not None:
+            self._evict_the_aged_consumed_requests(now)
+        entry = self.consumed_seq.get(stream_key)
+        if entry is None:
             return False
+        consumed, _ = entry
         end = (seq + length) & SEQUENCE_MASK
         return not sequence_before(consumed, end)
 
