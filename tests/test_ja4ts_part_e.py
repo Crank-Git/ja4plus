@@ -9,9 +9,11 @@ retransmission, and part e holds the delay between each SYN-ACK in whole seconds
 """
 
 import unittest
+from pathlib import Path
 
-from scapy.all import IP, TCP
+from scapy.all import IP, TCP, rdpcap
 
+from ja4plus.processor import Processor
 from ja4plus.fingerprinters.ja4ts import (
     MAX_SYN_ACK_DELAYS,
     MAX_TRACKED_CONNECTIONS,
@@ -182,6 +184,45 @@ class TestPartEBounds(unittest.TestCase):
             fingerprinter.process_packet(syn_ack(1000.0 + step, dport=40000))
         stored = sum(len(v) for v in fingerprinter.syn_ack_times.times.values())
         self.assertEqual(stored, 11)
+
+
+class TestPartEOnTheVectorSet(unittest.TestCase):
+    """One vector measures the value that part e changed.
+
+    `tests/foxio_vectors/ssh2.pcapng` holds the one connection of the whole vector set
+    that the server answered twice. It is the only capture where part e appears, so it
+    is the only capture that measures the rule against real traffic.
+    """
+
+    CAPTURE = Path(__file__).parent / "foxio_vectors" / "ssh2.pcapng"
+    SERVER = "184.150.157.177"
+    CLIENT = "172.16.225.48"
+
+    def setUp(self):
+        if not self.CAPTURE.exists():
+            self.skipTest(f"{self.CAPTURE} is absent")
+        processor = Processor()
+        self.values = []
+        for index, packet in enumerate(rdpcap(str(self.CAPTURE))):
+            for result in processor.process_packet(packet):
+                if result["type"] == "ja4ts":
+                    self.values.append((index, result["fingerprint"]))
+
+    def test_the_retransmitted_syn_ack_carries_part_e(self):
+        """Packet 372 answers a connection that packet 369 already answered."""
+        self.assertIn((372, "64240_2-1-1-4-1-3_1460_7_0"), self.values)
+
+    def test_the_first_syn_ack_of_that_connection_carries_no_part_e(self):
+        self.assertIn((369, "64240_2-1-1-4-1-3_1460_7"), self.values)
+
+    def test_one_value_of_the_capture_carries_part_e(self):
+        """Every other connection of the capture holds one SYN-ACK."""
+        with_part_e = [value for _, value in self.values if value.count("_") == 4]
+        self.assertEqual(with_part_e, ["64240_2-1-1-4-1-3_1460_7_0"])
+
+    def test_the_capture_produces_nine_ja4ts_values(self):
+        """A value that appears or disappears changes this count."""
+        self.assertEqual(len(self.values), 9)
 
 
 class TestPartEStateRelease(unittest.TestCase):
