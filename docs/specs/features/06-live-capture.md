@@ -3,7 +3,7 @@ id: live-capture
 feature: Live capture
 epic: "Epic 6: Live capture"
 status: issued
-issues: [17, 53, 54, 55, 56]
+issues: [17, 53, 54, 55, 56, 320]
 mockups: []
 ---
 
@@ -137,7 +137,7 @@ The statistics line, written to standard error:
 
 ## Interfaces
 
-The monitor reads packets through `scapy`. Two entry points matter.
+The monitor reads packets through `scapy`. Four entry points matter.
 
 | What | Call | Note |
 |---|---|---|
@@ -152,7 +152,7 @@ packet that arrives between two calls. #320 records the reading.
 
 Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
 (scapy 2.6, retrieved 2026-08-06). The `opened_socket` reading comes from `scapy` 2.7.0,
-at `scapy/sendrecv.py:1140`, `scapy/sendrecv.py:1205` and `scapy/sendrecv.py:1263`, read
+at `scapy/sendrecv.py:1268`, `scapy/sendrecv.py:1331` and `scapy/sendrecv.py:1391`, read
 on 2026-08-08.
 
 Opening a capture interface needs elevated privileges. On Linux the capability is

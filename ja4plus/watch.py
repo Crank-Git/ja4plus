@@ -744,8 +744,8 @@ def open_capture_socket(interface: str, capture_filter: Optional[str] = None) ->
     reads `iface or conf.iface`, so a `sniff` call that stated no interface read the same
     one.
 
-    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1140` and
-    `scapy/arch/bpf/supersocket.py:213`, read on 2026-08-08.
+    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1268` and
+    `scapy/arch/bpf/supersocket.py:215`, read on 2026-08-08.
 
     Args:
         interface: The interface name. The name `any` reads the default interface of the
@@ -802,8 +802,8 @@ def read_interface(
     The call raises what the capture layer raises. `describe_capture_failure` reads that
     failure, so this call classifies nothing.
 
-    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1140`, `scapy/sendrecv.py:1205`
-    and `scapy/sendrecv.py:1263`, read on 2026-08-08.
+    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1268`, `scapy/sendrecv.py:1331`
+    and `scapy/sendrecv.py:1391`, read on 2026-08-08.
 
     Args:
         interface: The interface name. The name `any` reads the default interface of the
@@ -861,7 +861,8 @@ def read_interface(
             )
             if stop_requested is not None and stop_requested():
                 return
-            # `AsyncSniffer._run` closes a socket whose read raised and it drops that
+            # `AsyncSniffer._run` closes a socket whose read raised at
+            # `scapy/sendrecv.py:1370`, and it drops that
             # socket from its list. A loop that called `sniff` again would wait on a
             # closed socket for as long as the monitor runs.
             if capture_socket.closed:

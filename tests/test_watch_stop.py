@@ -56,8 +56,8 @@ class SilentSocket:
     socket path reads `close`. A True `nonblocking_socket` keeps the control pipe of
     `scapy` out of the socket list, so the loop this class drives holds one socket.
 
-    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1205` and
-    `scapy/sessions.py:79`, read on 2026-08-08.
+    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1331` and
+    `scapy/sessions.py:58`, read on 2026-08-08.
 
     Args:
         before_wait: A callable the socket calls before it waits, with the socket. The
@@ -382,7 +382,7 @@ class TheMonitorHoldsOneSocketAcrossTheCalls(unittest.TestCase):
         The loop must return there. A loop that called `sniff` again would wait on a
         closed socket for as long as the monitor runs.
 
-        Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1229`, read on 2026-08-08.
+        Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1370`, read on 2026-08-08.
         """
         capture = SilentSocket()
         capture.queue.append(tcp_packet())
