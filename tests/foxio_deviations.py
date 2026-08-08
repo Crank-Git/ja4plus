@@ -40,7 +40,7 @@ An entry whose cause cites a decision carries `"decided": true`. An entry that c
 decision stays unmarked, and that is the correct state for an entry that stays open. An
 unmarked entry states that nobody read it, so a marker that is missing hides a decision.
 
-`unmarked_decisions` in `tests/test_foxio_deviations.py` enforces the rule. It reads three
+`unmarked_decisions` in `tests/test_foxio_deviations.py` enforces the rule. It reads four
 forms of citation as evidence that a person decided an entry:
 
 | Form | Example |
@@ -48,15 +48,21 @@ forms of citation as evidence that a person decided an entry:
 | A Changelog round named by number | `Changelog round 66 settled the marker.` |
 | A decision recorded against an issue or a date | `decided on #105`, `decided on 2026-08-07` |
 | An issue named as the place the decision was made | `#138 decided to keep the values.` |
+| An issue named as the record of the decision | `#162 records the decision.` |
 
-Every form is past tense. Naming the issue that will decide an entry is not naming a
+Every form is past tense. An entry that names the issue that will decide it names no
 decision, so `#215 decides whether ja4plus reads the raw option bytes` leaves the entry
 open. A denied citation is not a citation either, so `no Changelog round settled it`
 leaves the entry open.
 
+The guard on a denied citation reads the word before the citation alone. A cause that
+denies a citation in other words fails the gate. Reword the cause. A gate that misses a
+decision costs more than a gate that asks a question.
+
 The rule runs in one direction. An entry that cites no decision may still carry the
-marker, which the 34 entries of #138 and the 5 entries of #151 do. A FoxIO Rust snapshot
-settled those by measurement, and no person decided them.
+marker, which 38 of the 128 decided entries do. A FoxIO Rust snapshot settled those by
+measurement, and no person decided them. The 38 are the 34 entries of #138 and 4 of the 5
+entries of #151.
 
 ## How to remove an entry
 

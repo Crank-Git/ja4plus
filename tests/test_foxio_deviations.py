@@ -22,15 +22,20 @@ from tests.foxio_deviations import (
 )
 
 
-# The three forms of citation that record a decision a person made. Each one is past
+# The four forms of citation that record a decision a person made. Each one is past
 # tense, because a decision that was made is the only evidence that somebody read the
 # entry. The present tense names the issue that will decide, as `#215 decides whether
-# ja4plus reads the raw option bytes` does, and that is not a citation. The lookbehind
+# ja4plus reads the raw option bytes` does, and that names no decision. The lookbehind
 # drops a denied citation, because the six #34 entries close with `no Changelog round
-# settled it`.
+# settled it`. The guard reads the word before the citation alone. A cause that denies a
+# citation in other words fails the gate, and the repair is to reword the cause, because
+# a gate that misses a decision costs more than a gate that asks a question.
 DECISION_CITATION = re.compile(
     r"(?<![Nn]o )(?<![Nn]ot )"
-    r"(?:Changelog round \d+|decided on (?:#\d+|\d{4}-\d{2}-\d{2})|#\d+ decided)"
+    r"(?:Changelog round \d+"
+    r"|decided on (?:#\d+|\d{4}-\d{2}-\d{2})"
+    r"|#\d+ decided"
+    r"|#\d+ records the decision)"
 )
 
 
@@ -441,10 +446,20 @@ class TestTheRegisterMarkerRule:
             "a.pcap/JA4 names Changelog round 66, and the entry carries no decided marker"
         ]
 
-    def test_the_check_reports_an_entry_that_names_the_issue_a_decision_was_made_on(self):
+    def test_the_check_reports_an_entry_that_names_the_issue_the_user_decided_on(self):
         register = {"a.pcap/JA4": Deviation(issue=105, cause="A defect, decided on #105.")}
         assert unmarked_decisions(register) == [
             "a.pcap/JA4 names decided on #105, and the entry carries no decided marker"
+        ]
+
+    def test_the_check_reports_an_entry_that_names_the_issue_that_records_the_decision(self):
+        """The 16 entries of #162 close their cause with this form.
+
+        A future entry that copies the form and carries no marker must fail the gate.
+        """
+        register = {"a.pcap/JA4": Deviation(issue=162, cause="#162 records the decision.")}
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4 names #162 records the decision, and the entry carries no decided marker"
         ]
 
     def test_the_check_reports_an_entry_that_names_the_date_of_the_decision(self):
@@ -479,7 +494,7 @@ class TestTheRegisterMarkerRule:
         """The present tense names a decision nobody has made yet.
 
         The three JA4T entries read `#215 decides whether ja4plus reads the raw option
-        bytes`. Naming the issue that will decide an entry is not naming a decision.
+        bytes`. An entry that names the issue that will decide it names no decision.
         """
         register = {"a.pcap/JA4T": Deviation(issue=215, cause="#215 decides the JA4T form.")}
         assert unmarked_decisions(register) == []
@@ -503,6 +518,22 @@ class TestTheRegisterMarkerRule:
             "a.pcap/JA4L-S": Deviation(issue=34, cause="No Changelog round 76 settled the entry.")
         }
         assert unmarked_decisions(register) == []
+
+    def test_the_check_reads_a_citation_that_follows_a_denied_citation(self):
+        """A denied citation hides no decision that the same cause states later.
+
+        The check reads the whole cause. A cause that opens with a denial and then records
+        a decision still names the decision.
+        """
+        register = {
+            "a.pcap/JA4": Deviation(
+                issue=162,
+                cause="No Changelog round 76 settled it. The user decided on 2026-08-07.",
+            )
+        }
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4 names decided on 2026-08-07, and the entry carries no decided marker"
+        ]
 
 
 class TestTheOwnerReader:
