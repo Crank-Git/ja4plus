@@ -144,6 +144,11 @@ delay between two SYN-ACK packets. It counts ten retransmissions for one connect
 it drops a connection two minutes after the last SYN-ACK. Call `cleanup_connection` when
 a connection ends, or `reset` to drop every entry.
 
+The fingerprinter also reads the RST packet that the server sends. A RST on a connection
+that already holds a delay appends `R` and its own delay to part e, and the value reads
+part a through part d from the first SYN-ACK of the connection. A RST on a connection
+with no delay produces no value, and a client RST produces no value.
+
 ### JA4LFingerprinter
 
 Network latency estimation from TCP handshake timing.
@@ -208,7 +213,7 @@ result = generate_ja4(packet)
 | `generate_ja4s(packet)` | scapy packet | JA4S TLS server fingerprint |
 | `generate_ja4h(packet)` | scapy packet | JA4H HTTP fingerprint |
 | `generate_ja4t(packet)` | scapy packet | JA4T TCP client fingerprint |
-| `generate_ja4ts(packet, tracker=None)` | scapy packet | JA4TS TCP server fingerprint. One packet names no retransmission, so a call with no tracker writes four parts. `JA4TSFingerprinter` passes its own tracker and writes part e. |
+| `generate_ja4ts(packet, tracker=None)` | scapy packet | JA4TS TCP server fingerprint. One packet names no retransmission, so a call with no tracker writes four parts. `JA4TSFingerprinter` passes its own tracker and writes part e. A RST that the server sends on a connection that already holds a delay appends `R` and its own delay to part e, and that value reads part a through part d from the tracker. A call with no tracker reads no RST. |
 | `generate_ja4l(packet)` | scapy packet | JA4L latency fingerprint |
 | `generate_ja4x(cert_info)` | dict | JA4X certificate fingerprint (takes cert_info dict) |
 | `generate_ja4ssh(packet)` | scapy packet | JA4SSH session fingerprint |
