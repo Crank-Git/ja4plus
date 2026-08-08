@@ -50,6 +50,11 @@
       "state": "open",
       "title": "Decide the JA4T and JA4TS form where this project disagrees with FoxIO"
     },
+    "225": {
+      "epic": false,
+      "state": "open",
+      "title": "Decide the JA4L form: the part count, the protocol part and the duplicate server value"
+    },
     "34": {
       "epic": false,
       "state": "open",
