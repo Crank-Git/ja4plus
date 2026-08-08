@@ -268,14 +268,32 @@ This feature set has no screen. Its output is the test report.
 
 ## Interfaces
 
-FoxIO publishes each method's description in `technical_details/`. Two are text
-files. The rest are images.
+FoxIO publishes each method's description in `technical_details/`. The directory holds
+twelve files: three text files and nine images. **One method of twelve holds a complete
+text specification, and that method is JA4.** `docs/specs/foxio/README.md` holds the
+inventory, every byte count and every SHA-256, measured at the pinned commit
+`27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`.
 
 | Method | Source | Format |
 |---|---|---|
-| JA4 | `technical_details/JA4.md` | Text |
-| JA4H | `technical_details/JA4H.md` | Text |
-| JA4L, JA4S, JA4SSH, JA4T, JA4X, JA4D, JA4D6 | `technical_details/<name>.png` | Image |
+| JA4 | `technical_details/JA4.md`, and `technical_details/JA4.png` | Text and image |
+| JA4S | `technical_details/JA4S.png` | Image |
+| JA4H | `technical_details/JA4H.png`. `technical_details/JA4H.md` is 278 bytes and states one rule, the header count | Image |
+| JA4L | `technical_details/JA4L.png` | Image |
+| JA4LS | No image carries its name, and #200 read `JA4L.png` and found no server rule. The reference implementations state every rule it follows | No FoxIO source |
+| JA4X | `technical_details/JA4X.png` | Image |
+| JA4SSH | `technical_details/JA4SSH.png` | Image |
+| JA4T | `technical_details/JA4T.png` | Image |
+| JA4TS | No image carries its name. #196 read `JA4T.png`, which titles itself `JA4T/S: TCP Fingerprint`, so that image specifies JA4TS too | Image |
+| JA4TScan | No image and no text file. `Out of scope` below holds the decline | No FoxIO source |
+| JA4D | `technical_details/JA4D.png` | Image |
+| JA4D6 | `technical_details/JA4D6.png` | Image |
+
+FoxIO published a text specification for seven methods, and commit `b6f3ff4` deleted all
+seven on 2024-02-22. `technical_details/JA4.md` and `technical_details/JA4H.md` carry the
+name again at the pinned commit. A deleted file corroborates a rule, and the material at
+the pinned commit outranks it. `docs/specs/foxio/deleted-text-specifications.md` holds
+the whole reading.
 
 The JA4SSH image states, verbatim: `(runs every 200 SSH packets by default)`.
 
@@ -431,7 +449,10 @@ https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
 
 ## Out of scope
 
-- JA4TScan. The spec places it out of scope, and it is an open question.
+- JA4TScan. The user declined it on 2026-08-08, and the decision is reversible. It sends
+  crafted packets to a host the operator names, and every other method reads traffic that
+  already exists. #197 holds the reading, and `Non-goals` in `docs/specs/spec.md` holds
+  the decision.
 - Any change that no vector requires. That work is Epic 2.
 - Performance of the conformance suite.
 

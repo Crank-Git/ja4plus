@@ -78,6 +78,18 @@
   </div>
 </header>
 
+<div class="card q">
+  <h3>How this page is maintained</h3>
+  <p><strong>A person maintains this page by hand, and no command generates it.</strong>
+  <code>docs/specs/spec.md</code> is the specification. This page is a summary of it, and
+  the page lags it. Two commits wrote this page, and the later one is <code>f6d808b</code>
+  of #175. The page holds no Changelog section, and <code>docs/specs/spec.md</code>
+  records 68 Changelog rounds before #211.</p>
+  <p><strong>Read <code>docs/specs/spec.md</code> wherever the two disagree.</strong> #211
+  records this note and corrects the two statements that contradicted the measurement.
+  Whether this page survives is a question for the user.</p>
+</div>
+
 <h2>Executive summary</h2>
 
 <p><code>ja4plus</code> is a Python library and command-line program that reads network
@@ -299,9 +311,11 @@ from FoxIO's hop-count table instead of hardcoding 1.6.</p>
 <p><strong>Key criteria:</strong> <code>ssh.pcapng</code> produces exactly one JA4SSH
 fingerprint equal to <code>c36s36_c76s124_c0s0</code>; <code>tls12.pcap</code> produces
 <code>JA4_o = t13d1715h2_5b234860e130_014157ec0da2</code>.</p>
-<p class="ev">Seven of the twelve FoxIO methods are specified only as PNG images, not text.
-Where an image is ambiguous, the expected-output files decide and the reading is recorded
-in <code>docs/implementation_notes.md</code>.</p>
+<p class="ev">Eleven of the twelve FoxIO methods carry no complete text specification, and
+JA4 is the one method that holds one. Where a reader reads the image and finds it
+ambiguous, the expected-output files decide and the reading goes in
+<code>docs/implementation_notes.md</code>. An image nobody read reaches no fallback.
+<code>docs/specs/foxio/README.md</code> holds the inventory.</p>
 
 <h3><a href="features/02-correctness-audit.md">02 — Correctness audit</a></h3>
 <p>13 requirements over a 14-row audit register, each row citing a file and line. The
@@ -401,10 +415,14 @@ may not render in an iframe.</p>
 
 <div class="card a">
   <h3>Decided at approval</h3>
-  <p><strong>JA4TScan stays out of scope.</strong> It sends crafted packets rather than
-  reading traffic, so it needs raw-socket transmission, a target-host argument, and
-  privileges the read path never needs. Epic 8 corrects the README's coverage claim
-  instead. This is a permanent non-goal, not deferred work.</p>
+  <p><strong>JA4TScan is declined.</strong> It sends crafted packets rather than reading
+  traffic, so it needs raw-socket transmission, a target-host argument, and privileges the
+  read path never needs. A program that sends packets to a host reaches a network the
+  operator did not capture, and that capability is larger than fingerprint production.
+  Epic 8 corrects the README's coverage claim instead. Round 3 recorded this as a
+  permanent non-goal on 2026-08-06. <strong>The user restated it on 2026-08-08 as a
+  decline that is reversible</strong>, and <code>Non-goals</code> in
+  <code>docs/specs/spec.md</code> holds the later form. #197 holds the reading.</p>
   <p><strong><code>dev</code> becomes the GitHub default branch.</strong> A pull request
   then opens against <code>dev</code> with no manual step. <code>master</code> stays the
   release branch and is protected. Epic 0 makes both changes.</p>
