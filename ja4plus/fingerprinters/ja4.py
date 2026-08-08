@@ -124,7 +124,10 @@ def generate_ja4(tls_info, original_order=False):
             version_str = "10"
         elif version == 0x0300:  # SSL 3.0
             version_str = "s3"
-        elif version == 0x0200:  # SSL 2.0
+        # FoxIO commit `3e02a27` corrected the SSL 2.0 value from `0x0200` to `0x0002`,
+        # and `technical_details/JA4.md:65` states the corrected value. #227 holds the
+        # reading. A hello that names `0x0200` reaches the `00` fallback.
+        elif version == 0x0002:  # SSL 2.0
             version_str = "s2"
         elif version == 0xFEFF:  # DTLS 1.0
             version_str = "d1"
@@ -247,7 +250,8 @@ def get_raw_fingerprint(tls_info, original_order=False):
             version_str = "10"
         elif version == 0x0300:  # SSL 3.0
             version_str = "s3"
-        elif version == 0x0200:  # SSL 2.0
+        # The raw form reads the same table as `generate_ja4`, and #227 holds the reading.
+        elif version == 0x0002:  # SSL 2.0
             version_str = "s2"
         elif version == 0xFEFF:  # DTLS 1.0
             version_str = "d1"

@@ -383,14 +383,20 @@ def generate_ja4s(packet):
 
 
 def _version_to_str(version):
-    """Convert TLS version number to JA4 version string."""
+    """Convert TLS version number to JA4 version string.
+
+    The table follows `technical_details/JA4.md:65` at the pinned commit. A value the
+    table omits reaches the `00` fallback, which the same line states.
+    """
     version_map = {
         0x0304: "13",  # TLS 1.3
         0x0303: "12",  # TLS 1.2
         0x0302: "11",  # TLS 1.1
         0x0301: "10",  # TLS 1.0
         0x0300: "s3",  # SSL 3.0
-        0x0200: "s2",  # SSL 2.0
+        # FoxIO commit `3e02a27` corrected the SSL 2.0 value from `0x0200` to `0x0002`.
+        # #227 holds the reading.
+        0x0002: "s2",  # SSL 2.0
         0xFEFF: "d1",  # DTLS 1.0
         0xFEFD: "d2",  # DTLS 1.2
         0xFEFC: "d3",  # DTLS 1.3
