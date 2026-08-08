@@ -42,7 +42,7 @@ independent implementation of that standard. Version 0.6.0 is on PyPI now.
 FoxIO publishes twelve methods. **`ja4plus` implements eleven of them.** The twelfth is
 JA4TScan, and this project declines it by decision rather than omits it by oversight.
 `Non-goals` holds the decision and the reason. `docs/specs/foxio/README.md` holds the
-inventory of the FoxIO specification material and the procedure that a reading follows.
+inventory of the FoxIO specification material and the transcription procedure.
 
 This spec defines version 1.0.0. Version 1.0.0 makes three promises that version
 0.6.0 does not make. The first promise is conformance: every fingerprinter matches
@@ -90,7 +90,7 @@ that user, because comparison is the only thing a fingerprint is for.
 | key material | noun | One secret that decrypts recorded traffic, such as a TLS session key. | secret, key log, session keys |
 | Decryption Secrets Block | noun | The pcapng block that carries key material inside a capture file. | DSB, secrets block, key log block |
 | image | noun | One PNG file under `technical_details/` that publishes one method. | diagram, picture, figure |
-| transcription | noun | This project's own prose reading of one image, held under `docs/specs/foxio/`. | translation, copy, write-up |
+| transcription | noun | This project's own prose form of one image, held under `docs/specs/foxio/`. | translation, copy, write-up |
 | corroboration | noun | One FoxIO-authored source, other than the image, that states the same rule. | confirmation, second opinion, backup |
 
 ## Goals
@@ -115,8 +115,8 @@ that user, because comparison is the only thing a fingerprint is for.
 - **JA4TScan is declined.** `technical_details/README.md` describes it as an Active TCP
   Fingerprint Scanner. It sends crafted packets to a host the operator names and reads
   the responses. Every other JA4+ method reads traffic that already exists. The reason is
-  a capability boundary: a program that sends packets to a host reaches a network the
-  operator did not capture, and that capability is larger than fingerprint production.
+  a capability boundary. A program that sends packets to a host reaches a network the
+  operator did not capture. That capability is larger than fingerprint production.
   The user decided it on 2026-08-08, and #197 holds the reading. The decision is
   reversible. The README must stop implying full method coverage while this is true.
 - Live packet capture on Windows is out of scope. The daemon mode targets Linux
@@ -482,7 +482,7 @@ environment. The GitHub release carries the changelog entry.
 
 | Item | Why it matters | Blocks approval |
 |---|---|---|
-| Eleven of the twelve FoxIO methods are specified only in an image, not in text. `technical_details/JA4.md` is the one complete text specification. `technical_details/JA4H.md` is 278 bytes and states one rule, the header count, so JA4H is an image method too. Three methods hold no image at all: JA4LS, JA4TS and JA4TScan. Where a reader reads the image and finds it ambiguous, the project treats the expected-output files as the authority and records the reading in `docs/implementation_notes.md`. An image nobody read does not reach that fallback. `docs/specs/foxio/README.md` holds the inventory and the procedure for a reading, and Epic 10 writes the transcriptions. | An ambiguous spec produces a defensible but non-conforming implementation. | No |
+| Eleven of the twelve FoxIO methods are specified only in an image, not in text. `technical_details/JA4.md` is the one complete text specification. `technical_details/JA4H.md` is 278 bytes and states one rule, the header count, so JA4H is an image method too. Three methods hold no image at all: JA4LS, JA4TS and JA4TScan. Where a reader reads the image and finds it ambiguous, the project treats the expected-output files as the authority and records the reading in `docs/implementation_notes.md`. An image nobody read does not reach that fallback. `docs/specs/foxio/README.md` holds the inventory and the transcription procedure, and Epic 10 writes the transcriptions. | An ambiguous spec produces a defensible but non-conforming implementation. | No |
 | Not every vector exercises a method `ja4plus` implements. The suite must skip a method a vector does not cover, and must never pass by skipping everything. | A silent skip looks identical to a pass. | No |
 | The 90 percent coverage target may not be reachable on the `scapy` interface layer without brittle mocks. | An unreachable gate gets lowered under pressure, which defeats it. | No |
 | Fixing the JA4SSH window changes the output for every existing user of that method. | It is a breaking behaviour change, correct but disruptive. Version 1.0.0 is the right place, and the changelog must state it plainly. | No |

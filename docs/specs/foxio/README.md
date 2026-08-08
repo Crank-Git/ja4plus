@@ -65,19 +65,22 @@ lands, treat both as unconfirmed.
 this project publishes to PyPI. Record the SHA-256 and cite the upstream address instead.
 
 1. Read the image at the pinned commit from a checkout outside this repository.
-2. Write the reading as this project's own prose in `docs/specs/foxio/<METHOD>.md`.
-3. Open that page with the source address, the pinned commit, the retrieval date, and the
-   SHA-256 of the image you read.
+2. Write the transcription as this project's own prose in `docs/specs/foxio/<METHOD>.md`.
+3. Open that page with four facts.
+   - The source address.
+   - The pinned commit.
+   - The retrieval date.
+   - The SHA-256 of the image you read.
 4. Corroborate every rule against two FoxIO-authored sources that are not the image.
 5. Cite the source of every statement.
-6. Mark a rule that holds fewer than two corroborations as uncertain, and keep the vector
-   fallback for it.
+6. Mark a rule that holds fewer than two corroborations as uncertain.
+7. Keep the vector fallback for an uncertain rule.
 
 ## The two-corroboration rule
 
 An image carries no text that a tool can search. A person reads it, and a person can
-misread it. Two FoxIO-authored sources therefore support each transcribed rule. The image
-is the reading itself, and it counts toward neither of the two.
+misread it. Two FoxIO-authored sources therefore corroborate each transcribed rule. The
+image is the transcribed source, and it counts toward neither of the two.
 
 These sources corroborate:
 
@@ -91,7 +94,7 @@ Each in-repository source counts at the pinned commit. Cite the file path and th
 or the URL and the retrieval date.
 
 **A rule with fewer than two corroborations is uncertain.** Mark it uncertain on the
-transcription page, and keep the vector fallback for it. An uncertain rule never changes a
+transcription page. Keep the vector fallback for it. An uncertain rule never changes a
 fingerprinter on its own.
 
 ## The authority rule

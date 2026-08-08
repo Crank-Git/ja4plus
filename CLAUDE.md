@@ -16,8 +16,9 @@ Design lives in `docs/specs/`. Read `docs/specs/spec.md` and the relevant
    fingerprint exists so that one tool's output can be compared against another tool's
    output. Never change a fingerprinter without a vector, or a test derived from the
    FoxIO material, that proves the change is correct.
-   `docs/specs/foxio/README.md` holds the FoxIO specification material and the method for
-   a reading. `.claude/rules/conformance.md` states the two shapes that decline a defect.
+   `docs/specs/foxio/README.md` holds the inventory of the FoxIO specification material
+   and the transcription procedure. `.claude/rules/conformance.md` states the two shapes
+   that decline a defect.
 2. **Every packet is hostile input.** No parser trusts a length field it read from the
    packet. A parser that cannot read a packet returns nothing. It does not raise.
 

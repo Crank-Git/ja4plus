@@ -26,7 +26,7 @@ Read the rule in three parts.
    it under the two shapes below, and records the decline.
 
 The user stated the rule on 2026-08-08. `docs/specs/foxio/README.md` holds the inventory
-of the specification material and the procedure for a reading.
+of the specification material and the transcription procedure.
 
 ## Before you change a fingerprinter
 
@@ -98,11 +98,12 @@ Eleven of the twelve methods are published as an image. Only JA4 holds a complet
 specification. Read the image before you call it ambiguous. An image nobody read settles
 nothing, and it permits no fallback.
 
-1. Read the image, and read the transcription under `docs/specs/foxio/<METHOD>.md`.
-2. If the image does not settle the question, the expected-output file decides.
-3. Record the reading in `docs/implementation_notes.md`, with the vector that supports
+1. Read the image at the pinned commit.
+2. Read the transcription under `docs/specs/foxio/<METHOD>.md`.
+3. If the image does not settle the question, the expected-output file decides.
+4. Record the reading in `docs/implementation_notes.md`, with the vector that supports
    it.
-4. Never guess from the method name or from another implementation.
+5. Never guess from the method name or from another implementation.
 
 ## State rules
 
