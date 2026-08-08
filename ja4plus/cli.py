@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import dataclasses
+import math
 import os
 import sys
 from datetime import datetime, timezone
@@ -31,7 +32,9 @@ from ja4plus.watch import (
     DEFAULT_MAX_CONNECTIONS,
     Monitor,
     read_interface,
+    report_statistics,
     stop_on_signal,
+    write_statistics,
 )
 
 if TYPE_CHECKING:
@@ -474,6 +477,9 @@ def cmd_watch(args: argparse.Namespace) -> None:
             if batch:
                 _write_results(batch, writer, ja4db_client)
                 stream.flush()
+                # FR-live-capture-8 asks for the fingerprint count. The monitor counts
+                # the packet and the report counts what the packet produced.
+                monitor.stats.count_fingerprints(len(batch))
 
         monitor = Monitor(
             processor,
@@ -489,7 +495,11 @@ def cmd_watch(args: argparse.Namespace) -> None:
             # would end the run at the point the signal arrived, and that point holds
             # half a line whenever the signal arrives during a write.
             with stop_on_signal() as stop:
-                read_interface(args.interface, monitor.handle_packet, stop.stop_after)
+                # FR-live-capture-9 asks for the schedule, and FR-live-capture-10 puts
+                # the line on standard error. The thread ends when the capture returns,
+                # so a monitor that reads a termination signal starts no line after it.
+                with report_statistics(monitor.stats, args.stats_interval, sys.stderr):
+                    read_interface(args.interface, monitor.handle_packet, stop.stop_after)
             if stop.requested():
                 print("\nCapture stopped.", file=sys.stderr)
         except KeyboardInterrupt:
@@ -507,12 +517,19 @@ def cmd_watch(args: argparse.Namespace) -> None:
         trailing = _close_open_windows(processor, order)
         if trailing:
             _write_results(trailing, writer, ja4db_client)
+            # The exit summary reports every fingerprint the command wrote, and the
+            # trailing window is a fingerprint the command wrote.
+            monitor.stats.count_fingerprints(len(trailing))
 
         # FR-live-capture-7 asks for a flush before the exit. The stream holds a buffer,
         # and the operator reads the file of a monitor that runs for weeks. A flush that
         # the interpreter runs at shutdown reaches no reader of a running monitor, and it
         # reaches no file after a host kills the process.
         stream.flush()
+
+        # FR-live-capture-8 asks for statistics on exit. The line follows the flush, so
+        # the counts it reports describe output the operator can already read.
+        write_statistics(monitor.stats, sys.stderr)
 
 
 def cmd_cert(args: argparse.Namespace) -> None:
@@ -665,6 +682,37 @@ def _connection_timeout(value: str) -> float:
     return seconds
 
 
+def _stats_interval(value: str) -> float:
+    """Return the statistics interval the user stated, in seconds.
+
+    Args:
+        value: The text the user wrote after `--stats-interval`.
+
+    Returns:
+        The interval as a count of seconds.
+
+    Raises:
+        argparse.ArgumentTypeError: The text is no number, or it is 0 or less, or it is
+            no finite number. An interval of zero writes a statistics line without an
+            end. `Event.wait` returns at once for `nan`, which writes a line without an
+            end, and it raises `OverflowError` for `inf`, which ends the statistics
+            thread and leaves the monitor running.
+    """
+    try:
+        seconds = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"--stats-interval needs a number, and it is {value}")
+    if not math.isfinite(seconds):
+        raise argparse.ArgumentTypeError(
+            f"--stats-interval needs a finite number, and it is {value}"
+        )
+    if seconds <= 0:
+        raise argparse.ArgumentTypeError(
+            f"--stats-interval must be more than 0, and it is {seconds}"
+        )
+    return seconds
+
+
 def _add_output_options(parser: argparse.ArgumentParser, *, defaults: bool) -> None:
     """Add the five options that every result-producing subcommand accepts.
 
@@ -758,6 +806,17 @@ def main() -> None:
         help=(
             "Maximum age of a connection that sends no packet, in seconds "
             f"(default: {int(DEFAULT_CONNECTION_TIMEOUT)})"
+        ),
+    )
+    watch_parser.add_argument(
+        "--stats-interval",
+        type=_stats_interval,
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Write a statistics line to standard error every SECONDS seconds "
+            "(default: no schedule). The monitor writes one statistics line on exit "
+            "whether or not this option is given."
         ),
     )
     _add_output_options(watch_parser, defaults=False)

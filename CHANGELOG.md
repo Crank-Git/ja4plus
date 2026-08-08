@@ -66,6 +66,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`ja4plus watch` reports statistics on exit and on a schedule** (#55). Round TBD. The
+  monitor writes one statistics line when it exits, and `--stats-interval SECONDS` adds
+  a line for each interval that passes. Every line goes to standard error, so a pipe
+  that reads standard output reads fingerprints alone. The line reports the packet
+  count, the fingerprint count, the connection count, the eviction count, the
+  dropped-packet count and the uptime. `MonitorStats` holds the four counts under one
+  lock, and the capture thread publishes the two table counts, so the statistics thread
+  reads no state table. The statistics thread is the only thread the command starts, and
+  the command starts it only when the operator passes `--stats-interval`. The thread
+  ends with the capture, so a termination signal stops the monitor and the thread
+  together. The `dropped` field reads `null`, because `scapy` 2.7.0 reports no drop
+  count to a caller of `sniff`; #326 records the measurement and the work that reports a
+  count. The fingerprint count holds the trailing JA4SSH window that a capture leaves
+  open, which the command writes and #214 decided.
+
 - **`ja4plus watch` stops on a termination signal and flushes its output** (#54). Round
   TBD. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
   status zero. The handler sets a flag and returns. It calls `sys.exit` never, because a

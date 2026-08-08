@@ -658,11 +658,13 @@ Each eviction calls `Processor.cleanup_connection`, so it drops the entry of the
 connection table and the per-connection state of all ten methods together. Version 0.6.0
 called `cleanup_connection` never, and its monitor grew until the host stopped it.
 
-Eviction runs on packet arrival. The module starts no thread.
+Eviction runs on packet arrival. The statistics thread is the only thread the module
+starts, and `report_statistics` starts it only when the caller states an interval.
 
 | Class/Function | Description |
 |----------------|-------------|
 | `Monitor(processor, report, ...)` | The monitor loop, without the packet source |
+| `Monitor.stats` | The counts the statistics line reports |
 | `Monitor.handle_packet(packet)` | Record the connection of one packet, evict, and report the packet |
 | `Monitor.tracked_connections()` | Return the key of every connection the table holds |
 | `Monitor.evictions` | The count of connections the monitor evicted |
@@ -672,6 +674,24 @@ Eviction runs on packet arrival. The module starts no thread.
 | `StopRequest.requested()` | Return True after a termination signal arrived |
 | `StopRequest.stop_after(packet)` | Return True when the capture stops after this packet |
 | `stop_on_signal(signal_numbers)` | Yield the stop request, with a handler installed for each signal |
+| `MonitorStats(clock, dropped_source)` | The counts of one monitor, and the lock that guards them |
+| `MonitorStats.count_fingerprints(count)` | Add the fingerprints of one packet to the fingerprint count |
+| `MonitorStats.record_packet(connections, evicted)` | Count one packet, and publish the two table counts |
+| `MonitorStats.snapshot()` | Return the counts of one instant |
+| `StatisticsSnapshot` | The counts one statistics line reports |
+| `format_statistics(snapshot)` | Return the statistics line of one snapshot |
+| `write_statistics(stats, stream)` | Write one statistics line, and flush the stream |
+| `StatisticsReporter(stats, interval, stream)` | The thread that writes a statistics line on a schedule |
+| `report_statistics(stats, interval, stream)` | Yield the reporter, and stop it when the body returns |
+
+The capture thread writes the counts and the statistics thread reads them. Every write
+and every read holds one lock, so a reader reads the counts of one instant. The capture
+thread publishes the two table counts through `record_packet`, so the statistics thread
+reads `MonitorStats` and never the connection table.
+
+The `dropped` field reports the count a `dropped_source` returns, and `null` where the
+caller passes none. `ja4plus watch` passes none, because `scapy` 2.7.0 reports no drop
+count to a caller of `sniff`. Issue #326 records the measurement.
 
 `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
 The handler sets the stop request and returns. It calls `sys.exit` never, because a
