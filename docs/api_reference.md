@@ -187,6 +187,55 @@ hassh = fp.get_hassh_fingerprints()              # HASSH fingerprints
 lookup = fp.lookup_hassh(hassh_value)            # Known HASSH lookup
 ```
 
+## Result type
+
+### ja4plus.types
+
+`FingerprintResult` is the typed result of the public interface. It is a frozen
+dataclass, because a result describes something that already happened.
+
+| Field | Type | Constraint |
+|---|---|---|
+| `type` | `str` | One of the ten method names, lowercase. |
+| `fingerprint` | `str` | The fingerprint string. Never empty. |
+| `raw` | `str \| None` | The raw form, when the method defines one. |
+| `raw_original_order` | `str \| None` | The original-order raw form, when the method defines one. |
+| `src_ip` | `str` | The source address. Empty when the packet carries no address. |
+| `src_port` | `int` | The source port. Zero when the packet carries no port. |
+| `dst_ip` | `str` | The destination address. |
+| `dst_port` | `int` | The destination port. |
+| `timestamp` | `datetime \| None` | The packet timestamp, or `None` when the packet carries none. |
+
+The field names are the snake-case form of the `FingerprintResult` struct of the Go
+port, under parity rule 2. The field that names the method is `type`, not `method`.
+
+```python
+from ja4plus import FingerprintResult
+
+result = FingerprintResult(type="ja4", fingerprint="t13d1516h2_8daaf6152771_b0da82dd1658")
+result.type          # "ja4"
+result.fingerprint   # "t13d1516h2_8daaf6152771_b0da82dd1658"
+result.timestamp     # None
+```
+
+#### The deprecated item access
+
+Version 0.6.0 returned a dictionary. A result reads by field name too, so that code
+written against the dictionary keeps working for one major version.
+
+Warning: item access emits a `DeprecationWarning`. Read the attribute instead.
+
+```python
+result["fingerprint"]   # the same value, and one DeprecationWarning
+result["method"]        # KeyError. The field is `type`.
+```
+
+The item access covers reading only. `result["fingerprint"] = "x"` raises `TypeError`,
+and `result.fingerprint = "x"` raises `dataclasses.FrozenInstanceError`.
+
+`Processor.process_packet` still returns a list of dictionaries. #45 changes it to
+return a list of `FingerprintResult`.
+
 ## Processor
 
 ### ja4plus.processor
