@@ -3,6 +3,13 @@ Deep tests for JA4T (TCP SYN) and JA4TS (TCP SYN-ACK) fingerprinting.
 
 Covers option ordering preservation, all TCP option types, flag filtering,
 window sizes, MSS/WScale extraction, and format validation.
+
+#215 moved several expected values here, and the cause is one reading, not several.
+The reader takes the raw TCP option bytes, and scapy pads the option field to a 32-bit
+boundary with End of Option List bytes. A wire packet carries the same pad bytes, and
+both FoxIO implementations count one entry for each of them. `docs/specs/foxio/JA4T.md`
+states the rule as R5. The zero parts take the two-digit form the user decided on
+2026-08-08, which the same page records as D1.
 """
 
 import unittest
@@ -52,7 +59,8 @@ class TestJA4TOptionOrderPreservation(unittest.TestCase):
             options=[("WScale", 7), ("SAckOK", ""), ("MSS", 1460)],
         )
         fp = generate_ja4t(packet)
-        self.assertEqual(fp.split("_")[1], "3-4-2")
+        # Three pad bytes follow the nine option bytes.
+        self.assertEqual(fp.split("_")[1], "3-4-2-0-0-0")
 
     def test_full_linux_option_set(self):
         """Standard Linux: MSS, SAckOK, Timestamp, NOP, WScale."""
@@ -116,14 +124,14 @@ class TestJA4TAllOptionTypes(unittest.TestCase):
             sport=54321, dport=443, flags="S", window=65535, options=[("NOP", None)]
         )
         fp = generate_ja4t(packet)
-        self.assertEqual(fp.split("_")[1], "1")
+        self.assertEqual(fp.split("_")[1], "1-0-0-0")
 
     def test_wscale_option(self):
         packet = IP() / TCP(
             sport=54321, dport=443, flags="S", window=65535, options=[("WScale", 7)]
         )
         fp = generate_ja4t(packet)
-        self.assertEqual(fp.split("_")[1], "3")
+        self.assertEqual(fp.split("_")[1], "3-0")
         self.assertEqual(fp.split("_")[3], "7")
 
     def test_sackok_option(self):
@@ -131,21 +139,21 @@ class TestJA4TAllOptionTypes(unittest.TestCase):
             sport=54321, dport=443, flags="S", window=65535, options=[("SAckOK", "")]
         )
         fp = generate_ja4t(packet)
-        self.assertEqual(fp.split("_")[1], "4")
+        self.assertEqual(fp.split("_")[1], "4-0-0")
 
     def test_timestamp_option(self):
         packet = IP() / TCP(
             sport=54321, dport=443, flags="S", window=65535, options=[("Timestamp", (0, 0))]
         )
         fp = generate_ja4t(packet)
-        self.assertEqual(fp.split("_")[1], "8")
+        self.assertEqual(fp.split("_")[1], "8-0-0")
 
     def test_eol_option(self):
         packet = IP() / TCP(
             sport=54321, dport=443, flags="S", window=65535, options=[("EOL", None)]
         )
         fp = generate_ja4t(packet)
-        self.assertEqual(fp.split("_")[1], "0")
+        self.assertEqual(fp.split("_")[1], "0-0-0-0")
 
 
 class TestJA4TWindowSizes(unittest.TestCase):
@@ -192,7 +200,7 @@ class TestJA4TMSSValues(unittest.TestCase):
             sport=54321, dport=443, flags="S", window=65535, options=[("NOP", None)]
         )
         fp = generate_ja4t(packet)
-        self.assertEqual(fp.split("_")[2], "0")
+        self.assertEqual(fp.split("_")[2], "00")
 
 
 class TestJA4TWScaleValues(unittest.TestCase):
@@ -205,14 +213,15 @@ class TestJA4TWScaleValues(unittest.TestCase):
                     sport=54321, dport=443, flags="S", window=65535, options=[("WScale", wscale)]
                 )
                 fp = generate_ja4t(packet)
-                self.assertEqual(fp.split("_")[3], str(wscale))
+                expected = "00" if wscale == 0 else str(wscale)
+                self.assertEqual(fp.split("_")[3], expected)
 
     def test_no_wscale_gives_zero(self):
         packet = IP() / TCP(
             sport=54321, dport=443, flags="S", window=65535, options=[("NOP", None)]
         )
         fp = generate_ja4t(packet)
-        self.assertEqual(fp.split("_")[3], "0")
+        self.assertEqual(fp.split("_")[3], "00")
 
 
 class TestJA4TFlagFiltering(unittest.TestCase):
@@ -260,9 +269,9 @@ class TestJA4TFormat(unittest.TestCase):
         fp = generate_ja4t(packet)
         parts = fp.split("_")
         self.assertEqual(parts[0], "65535")
-        self.assertEqual(parts[1], "0")
-        self.assertEqual(parts[2], "0")
-        self.assertEqual(parts[3], "0")
+        self.assertEqual(parts[1], "00")
+        self.assertEqual(parts[2], "00")
+        self.assertEqual(parts[3], "00")
 
 
 class TestJA4TFingerprinterClass(unittest.TestCase):
@@ -359,7 +368,7 @@ class TestJA4TSServerResponses(unittest.TestCase):
             ],
         )
         fp = generate_ja4ts(packet)
-        self.assertEqual(fp, "14600_2-1-3-4-1-1_1460_0")
+        self.assertEqual(fp, "14600_2-1-3-4-1-1_1460_00")
 
     def test_f5_bigip_to_linux(self):
         packet = IP() / TCP(
@@ -374,12 +383,12 @@ class TestJA4TSServerResponses(unittest.TestCase):
             ],
         )
         fp = generate_ja4ts(packet)
-        self.assertEqual(fp, "14600_2-1-3-4-8_1460_0")
+        self.assertEqual(fp, "14600_2-1-3-4-8_1460_00")
 
     def test_minimal_synack(self):
         packet = IP() / TCP(flags="SA", window=8192, options=[])
         fp = generate_ja4ts(packet)
-        self.assertEqual(fp, "8192_0_0_0")
+        self.assertEqual(fp, "8192_00_00_00")
 
 
 class TestJA4TSFormat(unittest.TestCase):

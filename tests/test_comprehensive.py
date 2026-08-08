@@ -558,9 +558,10 @@ class TestJA4TComprehensive(unittest.TestCase):
         fp = generate_ja4t(packet)
         self.assertIsNotNone(fp)
         parts = fp.split("_")
-        self.assertEqual(parts[1], "0")
-        self.assertEqual(parts[2], "0")
-        self.assertEqual(parts[3], "0")
+        # #215 decided the two-digit form for an empty option list and for a zero part.
+        self.assertEqual(parts[1], "00")
+        self.assertEqual(parts[2], "00")
+        self.assertEqual(parts[3], "00")
 
     def test_ack_not_syn_ignored(self):
         """Non-SYN packets should be ignored."""
@@ -628,7 +629,8 @@ class TestJA4TSComprehensive(unittest.TestCase):
         parts = fp.split("_")
         self.assertEqual(parts[0], "14600")
         self.assertEqual(parts[2], "1460")
-        self.assertEqual(parts[3], "0")
+        # A window scale of zero writes `00`. #215 records the reading as D1.
+        self.assertEqual(parts[3], "00")
 
     def test_syn_only_ignored(self):
         """Pure SYN (no ACK) should be ignored by JA4TS."""

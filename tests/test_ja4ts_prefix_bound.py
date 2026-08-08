@@ -151,7 +151,7 @@ def test_the_rst_value_survives_an_eviction_that_the_entry_count_drives():
 
     value = fingerprinter.syn_ack_times.reset_value(key, 1000.5)
 
-    assert value == "64240_2_1460_0_0-R0"
+    assert value == "64240_2_1460_00_0-R0"
 
 
 def test_the_prefix_table_is_a_bounded_state_table():
