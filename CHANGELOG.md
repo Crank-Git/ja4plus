@@ -235,6 +235,49 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The two handlers of the X.509 byte reader name the errors they expect** (#316).
+  Round 100. `extract_certificate_from_bytes` wrote `except Exception` twice, once
+  around the ASN.1 parse and once around the whole function body. #294 narrowed
+  neither, because it targeted the `(ValueError, TypeError, Exception)` form. The inner
+  list now names `ValueError` and `InvalidVersion`. The `cryptography` documentation
+  states `ValueError` alone, and a measurement of malformed candidates raised
+  `InvalidVersion` as well, which inherits `Exception` and not `ValueError`. The outer
+  list names `TypeError`, which `len()` raises for input that is no sequence. **The
+  reader still returns nothing and raises nothing for hostile input**: 13680 calls over
+  empty, truncated, textual, damaged and random data raised no error. **A defect of
+  this project now reaches a reader**, where the wide catch returned nothing. **No
+  fingerprint moves**: the conformance suite reports 1531 passed, 143 skipped and 135
+  xfailed before the change and after it. `tests/test_x509_certificate_reader.py` holds
+  16 cases, and one of the 12 new cases failed against the base.
+
+- **`extract_certificate_info` reads the module `x509`** (#309). Round 98.
+  `x509_utils.py:262` and `x509_utils.py:263` imported `x509` and `default_backend`
+  inside one branch, which made both names locals of the whole function. The parse at
+  `x509_utils.py:285` therefore raised `UnboundLocalError` for every packet whose
+  payload carried a certificate the reader found, and the wide handler below it returned
+  nothing. The module imports both names already, so the branch-local import bought
+  nothing, and this release removes it. **No caller inside `ja4plus/` calls the
+  function**, so no fingerprint moves: the conformance suite reports 1531 passed, 143
+  skipped and 135 xfailed before the change and after it.
+  `tests/test_x509_certificate_info.py` holds three cases, and one of them failed
+  against the base.
+
+- **The three X.509 handlers name the errors they expect** (#294). Round 97.
+  `ja4x.py:460`, `ja4x.py:490` and `x509_utils.py:267` each wrote
+  `except (ValueError, TypeError, Exception) as e:`. `Exception` is a superclass of the
+  other two names, so each handler caught every error while it read as a narrow catch.
+  `CLAUDE.md` states that a fingerprinter catches the parse errors it expects and catches
+  no bare `Exception`. The three lists now name the errors the `cryptography`
+  documentation states for the calls inside them: `ValueError` for
+  `load_der_x509_certificate`, `DuplicateExtension` and `UnsupportedGeneralNameType` for
+  `Certificate.extensions`, and `InvalidVersion` for `Certificate.version`.
+  `read_certificate` keeps `TypeError`, because `bytes()` raises it for input that is no
+  byte string. **A defect of this project now reaches a reader**, where the wide catch
+  logged it and returned nothing. **No fingerprint moves**: the conformance suite reports
+  1531 passed, 143 skipped and 135 xfailed before the change and after it.
+  `tests/test_ja4x_named_exceptions.py` holds 18 cases, and three of them failed against
+  the base.
+
 - **JA4 and JA4S write `s2` for the SSL 2.0 version value `0x0002`** (#227).
   `ja4.py:127`, `ja4.py:250` and `ja4s.py:393` wrote `s2` for `0x0200`, which is the
   value FoxIO retracted. `technical_details/JA4.md:65` at the pinned commit states
@@ -398,6 +441,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   equals the reference.
 
 ### Removed
+
+- **Four X.509 helpers leave `ja4plus/utils/x509_utils.py`** (#314). Round 99. The
+  user decided on 2026-08-08 that `extract_certificate_info` leaves the package before
+  version 1.0.0, together with the sibling helpers no caller uses. The four are
+  `extract_certificate_info`, `get_certificate_issuer`, `get_certificate_subject` and
+  `get_name_attribute`. `__all__` named none of the four, and a grep of `ja4plus/`,
+  `tests/`, `examples/` and `docs/` found no caller for any of them. `__all__` still
+  names 25 entries. `docs/api_reference.md` documented `extract_certificate_info` alone
+  of the four, and that row is gone. **Two plain `except Exception` handlers leave with
+  the function**, which #294 narrowed neither, because each wrote the plain form rather
+  than the deceptive form. **No fingerprint moves**: the conformance suite reports 1531
+  passed, 143 skipped and 135 xfailed before the change and after it.
+  `tests/test_x509_certificate_info.py` is now
+  `tests/test_x509_certificate_reader.py`, because it measures
+  `extract_certificate_from_bytes`, the reader that stays.
 
 - **The private helper `_src_is_client` leaves `ja4plus/fingerprinters/ja4l.py`**
   (#119). The helper read the outer address of a packet with `get_ip_layer`, and
