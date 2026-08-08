@@ -163,6 +163,16 @@ def test_a_part_that_holds_a_character_the_form_denies_returns_an_error(fingerpr
     assert result == {"error": "Invalid JA4SSH format"}, f"{value!r} returned {result}"
 
 
+def test_a_part_that_holds_more_digits_than_python_converts_returns_an_error(fingerprinter):
+    """A part of 5000 digits returns an error dictionary and raises nothing.
+
+    CPython converts 4300 digits at most. Such a part matches the JA4SSH form, so the
+    part guard admits it and `int()` raises the `ValueError` the handler names.
+    """
+    result = fingerprinter.interpret_fingerprint(f"c{'9' * 5000}s36_c50s50_c70s30")
+    assert "error" in result, f"a part of 5000 digits returned no error: {result}"
+
+
 def test_a_valid_fingerprint_still_reports_the_session_type(fingerprinter):
     """A valid fingerprint reports the session type it reported before the change."""
     result = fingerprinter.interpret_fingerprint("c36s36_c50s50_c70s30")

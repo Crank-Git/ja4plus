@@ -558,12 +558,13 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             }
 
         # `AttributeError` names a value that is not a string, and `_close_window`
-        # returns None, so a caller reaches this method with None. The part guard now
-        # rejects a malformed string before `IndexError` and `ValueError` can reach this
-        # handler, and the two names stay because #36 and the correctness audit set the
-        # handler to the parse errors this method expects. A wider handler would report a
-        # defect inside this project as a malformed fingerprint, and the caller would
-        # read a wrong answer instead of a stack trace.
+        # returns None, so a caller reaches this method with None. `ValueError` names a
+        # part that holds more than 4300 digits, which matches the pattern and exceeds
+        # the CPython limit on an integer conversion. `IndexError` reaches this handler
+        # from no input the part guard admits, and it stays because #36 and the
+        # correctness audit set the handler to the parse errors this method expects. A
+        # wider handler would report a defect inside this project as a malformed
+        # fingerprint, and the caller would read a wrong answer instead of a stack trace.
         except (AttributeError, IndexError, ValueError) as e:
             return {"error": f"Failed to interpret: {str(e)}"}
 
