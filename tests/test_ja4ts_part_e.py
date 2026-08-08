@@ -192,6 +192,9 @@ class TestPartEOnTheVectorSet(unittest.TestCase):
     `tests/foxio_vectors/ssh2.pcapng` holds the one connection of the whole vector set
     that the server answered twice. It is the only capture where part e appears, so it
     is the only capture that measures the rule against real traffic.
+
+    Each index below counts from 0, because `enumerate` reads the packet list from 0. A
+    one-based reader such as Wireshark numbers the same two packets 370 and 373.
     """
 
     CAPTURE = Path(__file__).parent / "foxio_vectors" / "ssh2.pcapng"
@@ -209,7 +212,7 @@ class TestPartEOnTheVectorSet(unittest.TestCase):
                     self.values.append((index, result["fingerprint"]))
 
     def test_the_retransmitted_syn_ack_carries_part_e(self):
-        """Packet 372 answers a connection that packet 369 already answered."""
+        """Index 372 answers a connection that index 369 already answered."""
         self.assertIn((372, "64240_2-1-1-4-1-3_1460_7_0"), self.values)
 
     def test_the_first_syn_ack_of_that_connection_carries_no_part_e(self):

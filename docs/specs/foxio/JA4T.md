@@ -552,7 +552,7 @@ the change and after it, and compared every value.
 | Keys in `tests/foxio_deviations.json` | 116 | 116 |
 | `xfailed` in the conformance suite | 116 | 116 |
 
-**One value moved, and it is a JA4TS value.** `ssh2.pcapng` packet 372 moves from
+**One value moved, and it is a JA4TS value.** `ssh2.pcapng` packet index 372, which is frame 373 in a one-based reader, moves from
 `64240_2-1-1-4-1-3_1460_7` to `64240_2-1-1-4-1-3_1460_7_0`. No value of another method
 moved, so part e reaches nothing it should not reach.
 

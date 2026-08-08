@@ -595,7 +595,7 @@ with `-`. Four rules apply.
   one fewer than the prose and Zeek state.
 
 **The change moved one value in the whole vector set.** The 38 captures produce 803
-values before and 803 after. `ssh2.pcapng` packet 372 moves from
+values before and 803 after. `ssh2.pcapng` packet index 372, which is frame 373 in a one-based reader, moves from
 `64240_2-1-1-4-1-3_1460_7` to `64240_2-1-1-4-1-3_1460_7_0`, and it is the one connection
 of the set that the server answered twice. The Zeek JA4TS comparison holds at 9 of 10.
 
