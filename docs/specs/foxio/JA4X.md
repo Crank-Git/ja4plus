@@ -117,16 +117,17 @@ offset += 1
 Each rule below carries two corroborations. Neither corroboration is the image. The
 in-repository corroborations read the FoxIO material at the pinned commit.
 
-**Eleven rules reach two corroborations each, and one rule is uncertain.**
+**Eleven rules reach two corroborations each, and the user decided the twelfth.**
 
 | State | Rules |
 |---|---|
 | Two corroborations, and the image agrees | R1, R2, R3, R4, R5, R6, R7, R10 |
 | Two corroborations, and the image states nothing | R9, R11 |
-| Two corroborations, and the image contradicts them | **R8. It is uncertain, and it keeps the vector fallback.** |
+| Two corroborations, and the image contradicts them | **R8. The user decided it on 2026-08-08, and the decision is reversible.** |
 
-**No rule on this page holds fewer than two corroborations.** R8 is uncertain for the
+**No rule on this page holds fewer than two corroborations.** R8 was uncertain for the
 opposite reason: the image draws both forms, so the image contradicts its own example.
+**The user settled it, and Changelog round 77 records the ruling.**
 
 ### R1 — JA4X holds three parts, joined with `_`
 
@@ -206,7 +207,9 @@ The image's caption states this rule in words: `(does not include values)`.
 
 ### R8 — An empty list writes the zero sentinel, and the image contradicts itself
 
-**This rule is uncertain. Keep the vector fallback.**
+**The user decided this rule on 2026-08-08, and the decision is reversible.** An empty
+list writes `000000000000`. The section below records the contradiction the image
+carries, so that a later reader does not derive it again.
 
 The zero sentinel is the literal value `000000000000`.
 
@@ -246,6 +249,42 @@ records the FoxIO Rust output and the Wireshark output.**
 `tests/foxio_vectors/` holds `e3b0c44298fc`, and none holds a `JA4X` value with a zero
 sentinel. Measured on 2026-08-08 with `grep -rl "e3b0c44298fc" tests/foxio_vectors/`, which
 matched no file.
+
+#### The decision of 2026-08-08, and the contradiction it records
+
+**The user decided the zero sentinel.** #228 holds the decision comment, and Changelog
+round 77 of `docs/specs/spec.md` records it. The decision is reversible.
+
+| Form | Value | Sources at the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` |
+|---|---|---|
+| **The decided form** | `000000000000` | `rust/ja4x/src/lib.rs:166` to `:176`, whose unit test at `:181` asserts `assert_eq!(hash12(""), "000000000000");`. `wireshark/source/packet-ja4.c:590` to `:592`. `README.md` line 146, which reads ```JA4X=2bab15409345_af684594efb4_000000000000```. |
+| **The rejected form** | `e3b0c44298fc` | `python/ja4x.py:87`, which hashes the join with no guard on the empty list. The `Qakbot` row of `technical_details/JA4X.png`, which reads `2bab15409345_af684594efb4_e3b0c44298fc`. |
+
+**The image contradicts itself, and this page states the contradiction rather than
+hiding it.** Its two `Sliver, Havoc C2` rows write `000000000000` in part a, and its
+`Qakbot` row writes `e3b0c44298fc` in part c for the same condition. The rejected form is
+the truncated SHA-256 of the empty string, reproduced on 2026-08-08:
+
+```bash
+python3 -c "import hashlib; print(hashlib.sha256(b'').hexdigest()[:12])"
+e3b0c44298fc
+```
+
+**The first two parts of the `Qakbot` row and of `README.md` line 146 match exactly, and
+the third part does not**, so the two sources describe one certificate and two
+implementations.
+
+**#228 changed no fingerprinter, because `ja4plus` already wrote the decided form.**
+`ja4plus/fingerprinters/ja4x.py:65` to `:71` hold the guard, one for each of the three
+parts. `tests/test_ja4x_empty_ext.py` pins the sentinel and names this rule.
+
+**The gate is proven by its reversal.** Remove the three guards, so that each part hashes
+the empty join, and 7 unit cases fail: 4 of `tests/test_ja4x_empty_ext.py`,
+`tests/test_comprehensive.py::TestJA4XComprehensive::test_no_extensions_cert`,
+`tests/test_edge_cases.py::TestX509EdgeCases::test_generate_ja4x_empty_lists` and
+`tests/test_ja4x_deep.py::TestJA4XNoExtensions::test_no_extensions_hash_is_zero_sentinel`.
+**The conformance suite reports no failure under the same reversal**, which measures the
+statement that no local vector reaches the case.
 
 ### R9 — JA4X reads the certificates of the Certificate handshake message
 
@@ -304,7 +343,7 @@ this table does not name is a field nobody read.**
 | The list separator | R6 | `ja4x.py:59` to `ja4x.py:61` | Agrees. `",".join(...)`. |
 | The hex form of an object identifier | R6 | `x509_utils.py:152` to `x509_utils.py:185` | Agrees. `oid_to_hex("2.5.4.3")` returns `550403`. |
 | No value in a list | R7 | `ja4x.py:369`, `ja4x.py:374`, `ja4x.py:378` | Agrees. Each line reads `attr.oid` or `ext.oid`, and none reads a value. |
-| The zero sentinel | R8 | `ja4x.py:65` to `ja4x.py:71` | Agrees with the FoxIO Rust implementation, the Wireshark dissector and the `README.md`. Disagrees with the image's Qakbot row and with `python/ja4x.py`. R8 marks the rule uncertain. |
+| The zero sentinel | R8 | `ja4x.py:65` to `ja4x.py:71` | Agrees with the FoxIO Rust implementation, the Wireshark dissector and the `README.md`. Disagrees with the image's Qakbot row and with `python/ja4x.py`. The user decided the sentinel on 2026-08-08 under Changelog round 77, so `ja4x.py` needed no change. |
 | The packet the reader selects | R9 | `ja4x.py:257` | Agrees. `message_type == TLS_CERTIFICATE_MESSAGE_TYPE` selects handshake type 11. |
 | Wire order, and no sort | R10 | `ja4x.py:367` to `ja4x.py:378` | Agrees. Each loop keeps the order the certificate holds, and nothing sorts a list. |
 | The direction the reader accepts | R9 | `ja4x.py:108` to `ja4x.py:135` | Agrees. `process_packet` tests no direction and no port, and the references test neither. |
@@ -375,7 +414,9 @@ boundary rather than a schema rule.
 
 **No other disagreement exists.** Every field the table above names agrees, and the two
 measurements prove the schema against a reference value. R8 is the one rule the image
-leaves open, and `ja4plus` follows two of the three FoxIO implementations there.
+leaves open, and `ja4plus` follows two of the three FoxIO implementations there. **The
+user closed R8 on 2026-08-08 and kept that form**, so the image leaves the rule open and
+the project does not.
 
 ## The register
 
@@ -530,13 +571,17 @@ and it owns the reading. #229 changes nothing there.
 
 This page changes no fingerprinter and it moves no fingerprint.
 
-1. **R8.** Which empty form does this project write? The FoxIO Rust implementation, the
-   Wireshark dissector and the `README.md` write `000000000000`. The FoxIO Python
-   implementation and the image's Qakbot row write `e3b0c44298fc`. `ja4plus` writes
-   `000000000000`. **No local vector reaches the case, so no fingerprint moves either
-   way**, and the question is a schema question rather than a defect. #228 holds it.
-2. **D1.** Does this project publish a `JA4X_r` raw form? Two FoxIO implementations do, the
-   FoxIO Python implementation does not, and the image states nothing. #228 holds it.
+1. **R8. Decided on 2026-08-08, and the decision is reversible.** An empty list writes
+   `000000000000`. The FoxIO Rust implementation, the Wireshark dissector and the
+   `README.md` write it, and the project already uses the same sentinel where JA4H
+   signals a request that carries no cookie. The FoxIO Python implementation and the
+   image's Qakbot row write `e3b0c44298fc`, which the decision rejects. **No local vector
+   reaches the case, so no fingerprint moved.** "The decision of 2026-08-08, and the
+   contradiction it records" above holds the whole reading. #228 built it under Changelog
+   round 77.
+2. **D1. Open.** Does this project publish a `JA4X_r` raw form? Two FoxIO implementations
+   do, the FoxIO Python implementation does not, and the image states nothing. **#267
+   holds it**, and it waits for the user. #228 raised it and ruled nothing on it.
 
 **The named question needs no decision.** The image states nothing about the transport, so
 the specification confirms the user's decision of 2026-08-07 rather than reopening it.

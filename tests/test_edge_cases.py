@@ -278,7 +278,9 @@ class TestX509EdgeCases(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_generate_ja4x_empty_lists(self):
-        """Empty RDN/extension lists should produce hashes of empty strings."""
+        """An empty list writes the zero sentinel, and never the hash of the empty
+        string. The user decided it on 2026-08-08 and R8 of
+        `docs/specs/foxio/JA4X.md` holds the reading."""
         import hashlib
 
         cert_info = {"issuer_rdns": [], "subject_rdns": [], "extensions": []}
