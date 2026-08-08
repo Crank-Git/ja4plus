@@ -5,11 +5,17 @@ JA4SSH analyzes SSH traffic patterns to identify session types
 even when the content is encrypted. Also includes HASSH support.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import hashlib
 import logging
 import re
 from collections import Counter
-from scapy.all import TCP, Raw, IP, IPv6
+from typing import Any
+
+from scapy.all import TCP, Raw, IP, IPv6, Packet
 import time
 
 from ja4plus.utils.ssh_utils import (
@@ -62,7 +68,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
     Also supports HASSH fingerprinting for client/server identification.
     """
 
-    def __init__(self, packet_count=DEFAULT_PACKET_COUNT, thread_safe=True):
+    def __init__(self, packet_count: int = DEFAULT_PACKET_COUNT, thread_safe: bool = True) -> None:
         """Build the fingerprinter.
 
         Args:
@@ -76,13 +82,13 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         # value it read at its own start, and two readers publish in that order.
         self._arrivals = 0
         self.packet_count = packet_count
-        self.hassh_fingerprints = []
+        self.hassh_fingerprints: list[dict[str, Any]] = []
         # The endpoint pair of one connection -> the client endpoint the TCP handshake
         # names. The handshake arrives before any SSH data, and the connection entry
         # does not exist yet, so the answer waits here until the first SSH packet.
         self._handshake_clients = BoundedStateTable(max_connections=MAX_HANDSHAKE_CONNECTIONS)
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and track SSH session patterns.
 
@@ -97,7 +103,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         with self._lock:
             return self._process_packet(packet)
 
-    def _process_packet(self, packet):
+    def _process_packet(self, packet: Packet) -> str | None:
         """Return the JA4SSH value this packet completes, or None.
 
         The caller holds the lock of this fingerprinter.
@@ -127,6 +133,8 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         from ja4plus.utils.packet_utils import get_ip_layer
 
         ip = get_ip_layer(packet)
+        if ip is None:
+            return None
 
         # Create connection key
         src_ip = ip.src
@@ -260,7 +268,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         return None
 
     @staticmethod
-    def _endpoint_pair_key(src_ip, src_port, dst_ip, dst_port):
+    def _endpoint_pair_key(src_ip: str, src_port: int, dst_ip: str, dst_port: int) -> str:
         """Return the key that names one connection in either direction.
 
         Args:
@@ -275,7 +283,9 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         first, second = sorted(((src_ip, src_port), (dst_ip, dst_port)))
         return f"{first[0]}:{first[1]}-{second[0]}:{second[1]}"
 
-    def _record_handshake(self, tcp, src_ip, src_port, dst_ip, dst_port):
+    def _record_handshake(
+        self, tcp: Packet, src_ip: str, src_port: int, dst_ip: str, dst_port: int
+    ) -> None:
         """Record the client endpoint that the TCP handshake of one connection names.
 
         The SYN sender is the client. The SYN+ACK sender is the server, so its
@@ -305,7 +315,9 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         # recently read entry on its own.
         self._handshake_clients[key] = client
 
-    def _decide_endpoints(self, src_ip, src_port, dst_ip, dst_port):
+    def _decide_endpoints(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int
+    ) -> tuple[str, int, str, int, str]:
         """Return the client endpoint, the server endpoint, and how the two were decided.
 
         Three rules decide, in this order:
@@ -349,7 +361,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             return src_ip, src_port, dst_ip, dst_port, "guess"
         return dst_ip, dst_port, src_ip, src_port, "guess"
 
-    def _connections_in_arrival_order(self):
+    def _connections_in_arrival_order(self) -> list[tuple[str, dict[str, Any]]]:
         """Return the connection pairs, in the order the capture opened them.
 
         The state table orders its keys by the last read, because its entry count bound
@@ -364,7 +376,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         """
         return sorted(self.connections.items(), key=lambda pair: pair[1]["arrival"])
 
-    def close_open_windows(self):
+    def close_open_windows(self) -> list[dict[str, Any]]:
         """Emit the window every connection holds open, and return the new entries.
 
         The caller runs this method when the packet source ends. A connection that
@@ -390,7 +402,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                     emitted.append(self.fingerprints[-1])
             return emitted
 
-    def _close_window(self, conn_key):
+    def _close_window(self, conn_key: str) -> str | None:
         """Emit the open window of one connection, and start a new window.
 
         Args:
@@ -428,7 +440,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
 
         return fingerprint
 
-    def _generate_ja4ssh(self, conn_key):
+    def _generate_ja4ssh(self, conn_key: str) -> str | None:
         """Generate JA4SSH fingerprint for a connection."""
         if conn_key not in self.connections:
             return None
@@ -460,7 +472,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
 
         return ja4ssh
 
-    def _mode(self, values):
+    def _mode(self, values: list[int]) -> int:
         """Find the most common value in a list (deterministic).
 
         Per FoxIO PR #281, when multiple values tie for the highest frequency,
@@ -475,7 +487,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         # Among values with the top frequency, pick the smallest.
         return min(v for v, c in counter.items() if c == max_count)
 
-    def get_hassh_fingerprints(self):
+    def get_hassh_fingerprints(self) -> list[dict[str, Any]]:
         """
         Get all collected HASSH fingerprints.
 
@@ -503,7 +515,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                     )
             return hassh_fps
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset fingerprinter state."""
         with self._lock:
             super().reset()
@@ -512,7 +524,9 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             self._arrivals = 0
             self._handshake_clients = BoundedStateTable(max_connections=MAX_HANDSHAKE_CONNECTIONS)
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Remove stored SSH session state for the given connection."""
         with self._lock:
             # JA4SSH stores state as client:port-server:port (client is higher port)
@@ -526,7 +540,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 self._endpoint_pair_key(src_ip, src_port, dst_ip, dst_port), None
             )
 
-    def interpret_fingerprint(self, fingerprint):
+    def interpret_fingerprint(self, fingerprint: str | None) -> dict[str, Any]:
         """
         Return the session type that a JA4SSH fingerprint describes.
 
@@ -540,7 +554,10 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             bytearray each return the error dictionary.
         """
         try:
-            parts = fingerprint.split("_")
+            # A caller passes None, bytes or bytearray, and the except block below
+            # reads the AttributeError or TypeError that follows as a malformed
+            # fingerprint. `type: ignore` states that the None case is deliberate.
+            parts = fingerprint.split("_")  # type: ignore[union-attr]
             if len(parts) != 3:
                 return {"error": "Invalid JA4SSH format"}
 
@@ -613,7 +630,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         except (AttributeError, IndexError, TypeError, ValueError) as e:
             return {"error": f"Failed to interpret: {str(e)}"}
 
-    def lookup_hassh(self, hassh_value):
+    def lookup_hassh(self, hassh_value: str) -> dict[str, Any]:
         """
         Look up a HASSH fingerprint from a known database.
 
@@ -647,7 +664,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         return {"fingerprint": hassh_value, "identified_as": "Unknown", "source": None}
 
 
-def generate_ja4ssh(packet, conn=None):
+def generate_ja4ssh(packet: Packet, conn: Any = None) -> str | None:
     """
     Generate a simplified JA4SSH fingerprint for a single packet.
 

@@ -117,7 +117,7 @@ class BaseFingerprinter:
                     tables[f"{name}.{inner_name}"] = inner_value
         return tables
 
-    def process_packet(self, packet: Packet) -> Any:
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and extract fingerprint if applicable.
         This method should be overridden by subclasses.

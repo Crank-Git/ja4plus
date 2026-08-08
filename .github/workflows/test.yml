@@ -43,8 +43,9 @@ jobs:
         run: ruff format --check ja4plus/ tests/
 
       - name: Check types
-        # `--strict` stays off in Epic 0. Epic 4, the typed public interface, turns it on.
-        run: mypy ja4plus/
+        # FR-typed-api-8 states this command. #46 turned `--strict` on, and the test
+        # suite stays out of the type check.
+        run: mypy --strict ja4plus/
 
   test:
     runs-on: ${{ matrix.os }}

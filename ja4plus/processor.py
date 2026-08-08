@@ -17,8 +17,9 @@ Mirrors the API of ja4plus-go's ja4plus.Processor:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
@@ -30,6 +31,7 @@ from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 from ja4plus.fingerprinters.ja4d import JA4DFingerprinter
 from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
 from ja4plus.types import FingerprintResult
+from ja4plus.utils.state_table import TableStats
 
 if TYPE_CHECKING:
     # The module reads scapy inside the two functions that need it, so an import at the
@@ -67,7 +69,7 @@ class ProcessorStats:
 
     __slots__ = ("method", "packets", "tables", "entries", "evictions", "returned_connections")
 
-    def __init__(self, method, packets, tables):
+    def __init__(self, method: str, packets: int, tables: dict[str, TableStats]) -> None:
         self.method = method
         self.packets = packets
         self.tables = tables
@@ -75,7 +77,7 @@ class ProcessorStats:
         self.evictions = sum(table.evictions for table in tables.values())
         self.returned_connections = sum(table.returned_connections for table in tables.values())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"ProcessorStats(method={self.method!r}, packets={self.packets}, "
             f"entries={self.entries}, evictions={self.evictions}, "
@@ -88,7 +90,7 @@ class Processor:
     """Aggregator that runs every JA4+ fingerprinter on each packet."""
 
     # The order here drives the iteration order of process_packet()
-    _SPEC = [
+    _SPEC: list[tuple[str, type[BaseFingerprinter]]] = [
         ("ja4", JA4Fingerprinter),
         ("ja4s", JA4SFingerprinter),
         ("ja4h", JA4HFingerprinter),
@@ -101,7 +103,7 @@ class Processor:
         ("ja4d6", JA4D6Fingerprinter),
     ]
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         """Build one processor and the ten fingerprinters it drives.
 
         Args:
@@ -114,12 +116,14 @@ class Processor:
         self.thread_safe = bool(thread_safe)
         # One fingerprinter holds one lock, so ten threads work at once on ten methods.
         # A single lock over the processor would serialize all ten.
-        self.fingerprinters = {name: cls(thread_safe=thread_safe) for name, cls in self._SPEC}
+        self.fingerprinters: dict[str, BaseFingerprinter] = {
+            name: cls(thread_safe=thread_safe) for name, cls in self._SPEC
+        }
         # `stats` reports this count, and no fingerprinter holds it. A method that reads
         # no packet still receives every packet, and the count records that.
         self._packet_counts = {name: 0 for name, _ in self._SPEC}
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         # Convenience: processor.ja4 returns the underlying fingerprinter.
         # __getattr__ is only invoked when normal attribute lookup fails,
         # so this doesn't shadow process_packet/reset/etc.
@@ -204,7 +208,7 @@ class Processor:
                 )
         return results, errors
 
-    def close_open_windows(self):
+    def close_open_windows(self) -> list[dict[str, Any]]:
         """Emit every window the fingerprinters hold open, and return the results.
 
         Run this method when the packet source ends. JA4SSH is the only method that
@@ -216,7 +220,7 @@ class Processor:
             and the connection key of the window. It holds no packet endpoint, because
             no packet produces the value.
         """
-        results = []
+        results: list[dict[str, Any]] = []
         for fp_type, fp in self.fingerprinters.items():
             try:
                 entries = fp.close_open_windows()
@@ -233,7 +237,7 @@ class Processor:
                 )
         return results
 
-    def stats(self):
+    def stats(self) -> dict[str, ProcessorStats]:
         """Return the counts each method reports, keyed by the method name.
 
         The report holds one entry for each of the ten methods. Each entry states the
@@ -253,7 +257,7 @@ class Processor:
         Returns:
             A dict that maps the method name to a `ProcessorStats`.
         """
-        report = {}
+        report: dict[str, ProcessorStats] = {}
         for fp_type, fp in self.fingerprinters.items():
             with fp.lock:
                 tables = {name: table.stats() for name, table in fp.state_tables().items()}
@@ -261,7 +265,7 @@ class Processor:
             report[fp_type] = ProcessorStats(fp_type, packets, tables)
         return report
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset every underlying fingerprinter, and return every packet count to zero.
 
         A reset drops the state tables, and a count that survives the drop describes
@@ -272,7 +276,9 @@ class Processor:
                 fp.reset()
                 self._packet_counts[fp_type] = 0
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Drop per-connection state across all fingerprinters.
 
         Each fingerprinter normalizes the 5-tuple to its own internal key
@@ -285,7 +291,7 @@ class Processor:
             except Exception as e:
                 logger.debug(f"cleanup_connection error in {fp.__class__.__name__}: {e}")
 
-    def get_shard_key(self, packet):
+    def get_shard_key(self, packet: Packet) -> str:
         """Return a stable per-connection key for sharding processors.
 
         Sorts the 5-tuple so both directions of the same connection map
@@ -355,7 +361,7 @@ def _drop_traceback(error: Exception) -> Exception:
     return error
 
 
-def _packet_endpoints(packet):
+def _packet_endpoints(packet: Packet) -> tuple[str, str, int, int]:
     """Best-effort extraction of (src_ip, dst_ip, src_port, dst_port)."""
     from scapy.all import TCP, UDP, IP, IPv6
 

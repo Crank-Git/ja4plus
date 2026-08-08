@@ -15,9 +15,15 @@ The reference holds three measurement points on a TCP connection:
 `JA4L-S` is half the time from `A` to `B`. `JA4L-C` is half the time from `B` to `C`.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import time
 import logging
-from scapy.all import IP, IPv6, TCP, UDP
+from typing import Any
+
+from scapy.all import IP, IPv6, TCP, UDP, Packet
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.http_utils import is_http_request
@@ -88,7 +94,7 @@ class JA4LFingerprinter(BaseFingerprinter):
     JA4L measures latency between client and server to estimate physical distance.
     """
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         """Initialize the fingerprinter."""
         super().__init__(thread_safe=thread_safe)
         self.connections = BoundedStateTable()
@@ -97,7 +103,7 @@ class JA4LFingerprinter(BaseFingerprinter):
         # map reads the grouping key from the reported key.
         self.grouping_keys = BoundedStateTable()
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and extract JA4L fingerprint if applicable.
 
@@ -189,14 +195,16 @@ class JA4LFingerprinter(BaseFingerprinter):
             self.fingerprints.append(entry)
             return fingerprint
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset all fingerprints and connection tracking."""
         with self._lock:
             super().reset()
             self.connections = BoundedStateTable()
             self.grouping_keys = BoundedStateTable()
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Remove stored timing state for the given connection."""
         with self._lock:
             # JA4L normalizes the key so we must try both orderings
@@ -207,7 +215,7 @@ class JA4LFingerprinter(BaseFingerprinter):
                 # tunnelled connection groups under another key, and the map holds it.
                 self.connections.pop(self.grouping_keys.pop(reported, reported), None)
 
-    def _propagation_factor(self, ttl, propagation_factor):
+    def _propagation_factor(self, ttl: int | None, propagation_factor: float | None) -> float:
         """Return the propagation factor one distance call uses.
 
         Args:
@@ -234,7 +242,9 @@ class JA4LFingerprinter(BaseFingerprinter):
                 return factor
         return MAXIMUM_PROPAGATION_FACTOR
 
-    def calculate_distance(self, latency_us, ttl=None, propagation_factor=None):
+    def calculate_distance(
+        self, latency_us: float, ttl: int | None = None, propagation_factor: float | None = None
+    ) -> float:
         """Return the distance the JA4L latency implies, in miles.
 
         Args:
@@ -248,7 +258,9 @@ class JA4LFingerprinter(BaseFingerprinter):
         factor = self._propagation_factor(ttl, propagation_factor)
         return (latency_us * MILES_PER_MICROSECOND) / factor
 
-    def calculate_distance_km(self, latency_us, ttl=None, propagation_factor=None):
+    def calculate_distance_km(
+        self, latency_us: float, ttl: int | None = None, propagation_factor: float | None = None
+    ) -> float:
         """Return the distance the JA4L latency implies, in kilometers.
 
         Args:
@@ -262,7 +274,7 @@ class JA4LFingerprinter(BaseFingerprinter):
         factor = self._propagation_factor(ttl, propagation_factor)
         return (latency_us * KILOMETERS_PER_MICROSECOND) / factor
 
-    def estimate_os(self, ttl):
+    def estimate_os(self, ttl: int) -> str:
         """
         Estimate the operating system based on TTL value.
 
@@ -279,7 +291,7 @@ class JA4LFingerprinter(BaseFingerprinter):
         else:
             return "Cisco, F5, or Networking Device (initial TTL: 255)"
 
-    def estimate_hop_count(self, ttl):
+    def estimate_hop_count(self, ttl: int) -> int:
         """
         Estimate the hop count based on TTL value.
 
@@ -297,7 +309,7 @@ class JA4LFingerprinter(BaseFingerprinter):
             return 255 - ttl
 
 
-def _reported_key(proto, outer_layer, sport, dport):
+def _reported_key(proto: str, outer_layer: Packet, sport: int, dport: int) -> str:
     """Return the connection key the reference reports for one connection.
 
     The reference reports the outer address pair and the inner port pair. It pairs the
@@ -318,7 +330,7 @@ def _reported_key(proto, outer_layer, sport, dport):
     return "{}_{}:{}_{}:{}".format(proto, first[0], first[1], second[0], second[1])
 
 
-def _packet_microseconds(packet):
+def _packet_microseconds(packet: Packet) -> int:
     """Return the timestamp of one packet, in microseconds.
 
     Args:
@@ -333,7 +345,7 @@ def _packet_microseconds(packet):
     return int(round(seconds * 1000000))
 
 
-def _one_way_latency(start, end):
+def _one_way_latency(start: int, end: int) -> int:
     """Return the one-way latency between two timestamps, in microseconds.
 
     Args:
@@ -346,7 +358,9 @@ def _one_way_latency(start, end):
     return int((end - start) / LATENCY_DIVISOR)
 
 
-def _relative_numbers(conn, source, target, tcp_layer):
+def _relative_numbers(
+    conn: dict[str, Any], source: tuple[str, int], target: tuple[str, int], tcp_layer: Packet
+) -> tuple[int, int] | None:
     """Return the relative sequence number and acknowledgement number of one packet.
 
     Args:
@@ -368,7 +382,7 @@ def _relative_numbers(conn, source, target, tcp_layer):
     return sequence, acknowledgement
 
 
-def _holds_a_complete_http_request(payload):
+def _holds_a_complete_http_request(payload: bytes) -> bool:
     """Report whether the payload holds an HTTP request with its whole header block.
 
     The reference keeps the timestamps of a packet under the protocol its dissector
@@ -389,7 +403,7 @@ def _holds_a_complete_http_request(payload):
     return b"\r\n\r\n" in payload or b"\n\n" in payload
 
 
-def _restart_connection(conn):
+def _restart_connection(conn: dict[str, Any]) -> None:
     """Drop every measurement point of one connection.
 
     A later connection reuses the endpoints of a closed one, and the reference counts
@@ -403,7 +417,9 @@ def _restart_connection(conn):
     conn.pop("client_entry", None)
 
 
-def _tcp_ja4l(packet, conn, ip_layer, ttl, now):
+def _tcp_ja4l(
+    packet: Packet, conn: dict[str, Any], ip_layer: Packet, ttl: int, now: int
+) -> str | None:
     """Return the JA4L value this TCP packet gives, or None."""
     tcp_layer = packet[TCP]
     flags = int(tcp_layer.flags)
@@ -461,7 +477,7 @@ def _tcp_ja4l(packet, conn, ip_layer, ttl, now):
     return "JA4L-C={}_{}".format(_one_way_latency(timestamps["B"], timestamps["C"]), ttls["client"])
 
 
-def _quic_client_initial(conn, udp_payload, ttl, now):
+def _quic_client_initial(conn: dict[str, Any], udp_payload: bytes, ttl: int, now: int) -> None:
     """Record the client measurement point of a QUIC connection.
 
     The function also stores the destination connection ID, because the server Initial
@@ -487,7 +503,9 @@ def _quic_client_initial(conn, udp_payload, ttl, now):
     return None
 
 
-def _quic_server_initial(conn, udp_payload, ttl, now):
+def _quic_server_initial(
+    conn: dict[str, Any], udp_payload: bytes, ttl: int, now: int
+) -> str | None:
     """Return the JA4L server value this QUIC server Initial packet gives, or None.
 
     The reference records the server measurement point on the Initial packet that
@@ -528,7 +546,7 @@ def _quic_server_initial(conn, udp_payload, ttl, now):
     )
 
 
-def _quic_ja4l(packet, conn, ttl, now):
+def _quic_ja4l(packet: Packet, conn: dict[str, Any], ttl: int, now: int) -> str | None:
     """Return the JA4L value this QUIC packet gives, or None."""
     udp_layer = packet[UDP]
     udp_payload = bytes(udp_layer.payload)
@@ -546,7 +564,10 @@ def _quic_ja4l(packet, conn, ttl, now):
 
     if packet_type == QUIC_INITIAL:
         if to_server:
-            return _quic_client_initial(conn, udp_payload, ttl, now)
+            # `_quic_client_initial` returns None on every path, so this call and the
+            # return below match the call the code made before annotation.
+            _quic_client_initial(conn, udp_payload, ttl, now)
+            return None
         if from_server:
             return _quic_server_initial(conn, udp_payload, ttl, now)
         return None
@@ -578,7 +599,7 @@ def _quic_ja4l(packet, conn, ttl, now):
     return None
 
 
-def generate_ja4l(packet, conn=None):
+def generate_ja4l(packet: Packet, conn: dict[str, Any] | None = None) -> str | None:
     """Return the JA4L value this packet gives, or None.
 
     The function reads the measurement points of the connection from `conn` and

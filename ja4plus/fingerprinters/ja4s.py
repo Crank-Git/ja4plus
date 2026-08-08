@@ -2,11 +2,16 @@
 JA4S TLS Server Hello Fingerprinting implementation.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import hashlib
 import logging
 import time
+from typing import Any
 
-from scapy.all import IP, IPv6, UDP
+from scapy.all import IP, IPv6, UDP, Packet
 
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value, parse_tls_handshake
 from ja4plus.utils.quic_utils import (
@@ -45,7 +50,7 @@ class JA4SFingerprinter(BaseFingerprinter):
     Format: <proto><version><ext_count><alpn>_<cipher>_<ext_hash>
     """
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         super().__init__(thread_safe=thread_safe)
         # Maps "srcIP:srcPort-dstIP:dstPort" -> client DCID bytes. The connection ID
         # outlives the fragments, because a server answers a client Initial packet
@@ -55,11 +60,11 @@ class JA4SFingerprinter(BaseFingerprinter):
         # Section 12.2 lets a server split the ServerHello across two Initial packets,
         # and neither packet then holds the whole message.
         self._quic_server_crypto = quic_fragment_table()
-        self.last_raw = None
-        self.last_raw_original_order = None
-        self.last_fingerprint_original_order = None
+        self.last_raw: str | None = None
+        self.last_raw_original_order: str | None = None
+        self.last_fingerprint_original_order: str | None = None
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and extract JA4S fingerprint if applicable.
 
@@ -93,7 +98,7 @@ class JA4SFingerprinter(BaseFingerprinter):
                 return fingerprint
             return None
 
-    def _quic_initial(self, packet, udp, udp_payload):
+    def _quic_initial(self, packet: Packet, udp: Packet, udp_payload: bytes) -> str | None:
         """Return the JA4S value one QUIC Initial packet gives, or None.
 
         A client Initial packet supplies the connection ID that derives the server
@@ -163,11 +168,11 @@ class JA4SFingerprinter(BaseFingerprinter):
         self._record(fingerprint, tls_info, packet)
         return fingerprint
 
-    def _drop_quic_server_crypto(self, connection_key):
+    def _drop_quic_server_crypto(self, connection_key: str) -> None:
         """Drop the fragment table entry one connection holds."""
         self._quic_server_crypto.pop(connection_key, None)
 
-    def _record(self, fingerprint, tls_info, packet):
+    def _record(self, fingerprint: str, tls_info: dict[str, Any], packet: Packet) -> None:
         """Append a JA4S fingerprint result with raw / raw_original_order."""
         raw = _generate_ja4s_raw_from_tls_info(tls_info)
         # JA4S sorts no list, so one raw value serves both keys. FoxIO publishes
@@ -179,7 +184,7 @@ class JA4SFingerprinter(BaseFingerprinter):
         # value equals the fingerprint. FoxIO publishes no `JA4S_o` key. The field
         # exists so one caller reads one name on JA4 and on JA4S.
         self.last_fingerprint_original_order = fingerprint
-        entry = {
+        entry: dict[str, Any] = {
             "fingerprint": fingerprint,
             "fingerprint_original_order": fingerprint,
             "raw": raw,
@@ -188,7 +193,9 @@ class JA4SFingerprinter(BaseFingerprinter):
         entry.update(packet_endpoints(packet))
         self.fingerprints.append(entry)
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Remove stored QUIC DCID state for the given connection."""
         with self._lock:
             fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
@@ -198,7 +205,7 @@ class JA4SFingerprinter(BaseFingerprinter):
             self._drop_quic_server_crypto(fwd)
             self._drop_quic_server_crypto(rev)
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset all state."""
         with self._lock:
             super().reset()
@@ -209,7 +216,9 @@ class JA4SFingerprinter(BaseFingerprinter):
             self.last_fingerprint_original_order = None
 
 
-def _server_hello_from_crypto_fragments(fragments):
+def _server_hello_from_crypto_fragments(
+    fragments: list[tuple[int, bytes]],
+) -> dict[str, Any] | None:
     """Return the ServerHello fields the collected CRYPTO fragments hold, or None.
 
     `quic_utils.parse_quic_server_initial` reads a ServerHello that one Initial packet
@@ -232,13 +241,15 @@ def _server_hello_from_crypto_fragments(fragments):
     record = (
         bytes([0x16, 0x03, 0x01]) + len(server_hello_bytes).to_bytes(2, "big") + server_hello_bytes
     )
-    tls_info = parse_tls_handshake(record)
+    # The untyped TLS reader gives this value as `Any`. The local annotation states the
+    # type the value holds, and it changes no value.
+    tls_info: dict[str, Any] | None = parse_tls_handshake(record)
     if tls_info:
         tls_info["is_quic"] = True
     return tls_info
 
 
-def _get_ip_pair(packet):
+def _get_ip_pair(packet: Packet) -> tuple[str, str]:
     """Extract (src_ip, dst_ip) as strings from a packet."""
     ip = packet.getlayer(IP) or packet.getlayer(IPv6)
     if ip:
@@ -246,7 +257,7 @@ def _get_ip_pair(packet):
     return "0.0.0.0", "0.0.0.0"
 
 
-def _generate_ja4s_from_tls_info(tls_info):
+def _generate_ja4s_from_tls_info(tls_info: dict[str, Any]) -> str | None:
     """
     Generate a JA4S fingerprint from an already-parsed tls_info dict.
     Shared by the TCP path (via generate_ja4s) and the QUIC server path.
@@ -294,7 +305,7 @@ def _generate_ja4s_from_tls_info(tls_info):
         return None
 
 
-def _generate_ja4s_raw_from_tls_info(tls_info):
+def _generate_ja4s_raw_from_tls_info(tls_info: dict[str, Any]) -> str | None:
     """Return the raw JA4S value of an already-parsed tls_info dict.
 
     JA4S has one variable-length section, which holds the extensions. The section holds
@@ -345,7 +356,7 @@ def _generate_ja4s_raw_from_tls_info(tls_info):
         return None
 
 
-def generate_ja4s(packet):
+def generate_ja4s(packet: Packet) -> str | None:
     """
     Generate a JA4S fingerprint from a packet.
 
@@ -361,13 +372,15 @@ def generate_ja4s(packet):
     return _generate_ja4s_from_tls_info(tls_info)
 
 
-def _version_to_str(version):
+def _version_to_str(version: int | None) -> str:
     """Convert TLS version number to JA4 version string.
 
     The table follows `technical_details/JA4.md:65` at the pinned commit. A value the
     table omits reaches the `00` fallback, which the same line states.
     """
-    version_map = {
+    # `version` is `int | None`, and this dict never carries a `None` key. The
+    # annotation widens the key type to match the caller, and it changes no value.
+    version_map: dict[int | None, str] = {
         0x0304: "13",  # TLS 1.3
         0x0303: "12",  # TLS 1.2
         0x0302: "11",  # TLS 1.1
@@ -383,7 +396,7 @@ def _version_to_str(version):
     return version_map.get(version, "00")
 
 
-def _get_alpn_value(alpn_protocols, alpn_raw=None):
+def _get_alpn_value(alpn_protocols: list[str], alpn_raw: list[bytes] | None = None) -> str:
     """Extract the ALPN value for the JA4S fingerprint.
 
     Delegates to ja4plus.fingerprinters.ja4.compute_alpn_value() to get

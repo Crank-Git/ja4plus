@@ -6,6 +6,10 @@ created by FoxIO LLC. Supports TLS, TCP, HTTP, SSH, and X.509
 fingerprinting for network security monitoring and traffic analysis.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
@@ -44,7 +48,7 @@ bind_loopback_ipv6()
 register_tunnel_dissectors()
 
 
-def compute_ja4x_from_der(cert_der_bytes):
+def compute_ja4x_from_der(cert_der_bytes: bytes) -> str | None:
     """Compute the JA4X fingerprint for a DER-encoded X.509 certificate.
 
     Args:
@@ -57,7 +61,7 @@ def compute_ja4x_from_der(cert_der_bytes):
     return fp.fingerprint_certificate(cert_der_bytes)
 
 
-def compute_ja4x_from_pem(cert_pem_bytes):
+def compute_ja4x_from_pem(cert_pem_bytes: bytes | str) -> str | None:
     """Compute the JA4X fingerprint for a PEM-encoded X.509 certificate.
 
     Args:
