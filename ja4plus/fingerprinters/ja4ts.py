@@ -173,6 +173,9 @@ class SynAckTracker:
         if stamps is None or len(stamps) < 2:
             return None
         delays = "-".join(str(delay) for delay in _delay_list(stamps))
+        # The read holds no fallback on purpose. A key that `times` holds and `prefixes`
+        # does not is a broken lockstep, and #285 states that no path produces one. A
+        # fallback here would hide that state rather than report it.
         return f"{self.prefixes[key]}_{delays}-R{_delay_seconds(now, stamps[-1])}"
 
 
