@@ -341,6 +341,28 @@ result = client.lookup(fingerprint_string)
 
 | Class/Function | Description |
 |----------------|-------------|
-| `JA4DBClient()` | Client with local cache and bundled database |
+| `JA4DBClient(cache_size=100000)` | Client with a bounded lookup cache and the bundled database |
 | `JA4DBClient.lookup(fingerprint)` | Look up a fingerprint, returns dict or None |
 | `lookup(fingerprint)` | Module-level convenience using a shared client |
+
+#### The concurrency contract of the lookup client
+
+The first caller of `lookup` builds the module-level client. Two threads that call
+`lookup` at the same time receive results from one client. Several threads may share
+one `JA4DBClient`, and the client holds a lock over the lookup cache read and over the
+lookup cache write.
+
+#### The bound of the lookup cache
+
+The lookup cache holds a hit and it holds a miss, so a repeated miss costs one read.
+It holds no more than `cache_size` entries, and it evicts the least recently used
+entry at that count. It also evicts an entry that receives no read for 600 seconds.
+An age pass reads every entry, so the pass runs once for every `cache_size` lookups,
+and once for every 100000 lookups at most.
+
+A caller that shares one client between threads therefore receives a result the client
+looked up before, or a result the client looks up now. An entry that leaves the lookup
+cache costs the next caller one more lookup, and it changes no result.
+
+The client reads the mapping file once, at construction. A caller that replaces the
+mapping file builds a new client, and the new client holds an empty lookup cache.

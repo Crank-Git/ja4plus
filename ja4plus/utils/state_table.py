@@ -22,10 +22,11 @@ for each.
   and no per-connection data, so the `## Terms` table names it no state table.
   `ja4l.py` overwrites an entry at a stored index, and `ja4ssh.py` reads the entry at
   index -1. A mapping keyed by connection serves neither call site.
-- `JA4DBClient._cache` reads no packet, so nothing calls `on_packet` and the age pass
-  never runs on its own. Its count bound still holds, because `__setitem__` applies
-  that bound at once. A caller with no packet calls `evict_aged` to age an entry out.
-  #42 owns the lookup cache.
+- `JA4DBClient._cache` reads no packet. #42 built the answer: `JA4DBClient.lookup`
+  calls `on_packet` on every lookup, so one lookup counts as one arrival and the age
+  pass runs on the lookup schedule. Its count bound holds whatever the caller does,
+  because `__setitem__` applies that bound at once. A caller that drives neither a
+  packet nor a lookup calls `evict_aged` to age an entry out.
 """
 
 import logging
