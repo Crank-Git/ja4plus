@@ -37,10 +37,22 @@ Code inside this repository is different. Read the code.
 
 ## Rules specific to this project
 
-**FoxIO is the authority on behaviour.** Seven of the twelve methods are published as
-PNG images rather than text. Where an image is ambiguous, the expected-output files
-under `python/test/testdata/` decide. Record the reading in
-`docs/implementation_notes.md`.
+**FoxIO is the authority on behaviour.** The specification decides intent and schema. The
+vectors decide the exact bytes where intent runs out. A provable reference defect is
+declined and recorded.
+
+**Eleven of the twelve methods are published as an image rather than as text.** Only JA4
+holds a complete text specification, in `technical_details/JA4.md`. `technical_details/JA4H.md`
+is 278 bytes and states one rule, so JA4H is an image method too.
+`docs/specs/foxio/README.md` holds the inventory, every SHA-256, and the transcription
+procedure.
+
+**The vector fallback needs an image that a person read and found ambiguous.** Where a
+reader reads the image and the image does not settle the question, the expected-output
+files under `python/test/testdata/` decide, and `docs/implementation_notes.md` records the
+reading. An image that nobody read is not a license to use the fallback. Read the image
+first. Transcribe it into `docs/specs/foxio/<METHOD>.md`. Use the fallback only for what
+the image leaves open.
 
 **The files under `wireshark/test/testdata/` are not the authority.**
 `wireshark/test/testdata/tls12.pcap.json` is an empty array, while the file with the

@@ -11,10 +11,14 @@ Design lives in `docs/specs/`. Read `docs/specs/spec.md` and the relevant
 
 ## The two rules that matter most
 
-1. **A fingerprint changes only when a FoxIO vector requires it.** A fingerprint exists
-   so that one tool's output can be compared against another tool's output. Never change
-   a fingerprinter without a vector, or a test derived from the FoxIO material, that
-   proves the change is correct.
+1. **The specification decides intent and schema. The vectors decide the exact bytes
+   where intent runs out. A provable reference defect is declined and recorded.** A
+   fingerprint exists so that one tool's output can be compared against another tool's
+   output. Never change a fingerprinter without a vector, or a test derived from the
+   FoxIO material, that proves the change is correct.
+   `docs/specs/foxio/README.md` holds the inventory of the FoxIO specification material
+   and the transcription procedure. `.claude/rules/conformance.md` states the two shapes
+   that decline a defect.
 2. **Every packet is hostile input.** No parser trusts a length field it read from the
    packet. A parser that cannot read a packet returns nothing. It does not raise.
 
