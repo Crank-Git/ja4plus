@@ -202,8 +202,12 @@ def index_produced(pcap_path):
     from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
     from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
     from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
+    from ja4plus.fingerprinters.ja4t import JA4TFingerprinter
     from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 
+    # The FoxIO Python expected-output file holds no JA4T value, so no case of
+    # `tests/test_spec_validation.py` reads this name. `tests/test_foxio_rust_parity.py`
+    # reads it, because the FoxIO Rust snapshot holds 38 JA4T values.
     fingerprinters = {
         "JA4": JA4Fingerprinter(),
         "JA4S": JA4SFingerprinter(),
@@ -211,6 +215,7 @@ def index_produced(pcap_path):
         "JA4X": JA4XFingerprinter(),
         "JA4SSH": JA4SSHFingerprinter(),
         "JA4L": JA4LFingerprinter(),
+        "JA4T": JA4TFingerprinter(),
     }
 
     for packet in rdpcap(str(pcap_path)):
