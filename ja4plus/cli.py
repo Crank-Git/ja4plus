@@ -13,11 +13,12 @@ Subcommands:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import dataclasses
 import os
 import sys
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterator, TextIO
 
 from ja4plus import __version__
 from ja4plus.output import OutputWriter, build_writer
@@ -181,6 +182,91 @@ def _report_errors(errors: list[tuple[str, Exception]]) -> None:
         print(f"Warning: {method} could not read a packet: {error}", file=sys.stderr)
 
 
+@contextlib.contextmanager
+def _result_stream(args: argparse.Namespace) -> Iterator[TextIO]:
+    """Yield the stream that carries the results, and close it at the end.
+
+    FR-structured-output-9 gives standard output to the results alone, and
+    FR-structured-output-10 lets `--output` send them to a file instead. The behaviour
+    rules refuse to overwrite a file that exists, because a run that names the wrong file
+    destroys the earlier run.
+
+    The `csv` module ends a row with `\\r\\n`, so the call opens the file with no newline
+    translation. A file opened without that argument holds `\\r\\r\\n` on Windows.
+
+    Args:
+        args: The parsed command line. It carries `output` and `force`.
+
+    Yields:
+        Standard output when the user named no file, and the open file otherwise.
+
+    Raises:
+        SystemExit: The file exists and the user passed no `--force`, or the file cannot
+            be opened. Both exit with the status 1.
+    """
+    path: str | None = getattr(args, "output", None)
+    if path is None:
+        yield sys.stdout
+        return
+    refusal = f"Error: the output file exists: {path}. Pass --force to overwrite it."
+    force = getattr(args, "force", False)
+    if os.path.exists(path) and not force:
+        print(refusal, file=sys.stderr)
+        sys.exit(1)
+    try:
+        # The mode `x` fails when the file exists, so a file that arrives between the
+        # test above and this call is refused too. The mode `w` would overwrite it.
+        handle = open(path, "w" if force else "x", encoding="utf-8", newline="")
+    except FileExistsError:
+        print(refusal, file=sys.stderr)
+        sys.exit(1)
+    except OSError as error:
+        print(f"Error: could not open the output file: {error}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        yield handle
+    finally:
+        handle.close()
+
+
+def _exit_on_broken_pipe() -> None:
+    """End the run without a traceback after the reader of standard output goes away.
+
+    A command such as `head -1` closes the pipe early. Every later write then raises
+    `BrokenPipeError`. The interpreter flushes standard output at exit, and that flush
+    raises the error a second time. The call therefore points the file descriptor of
+    standard output at the null device first.
+    https://docs.python.org/3/library/signal.html#note-on-sigpipe gives this recipe. The
+    recipe exits with the status 1. Retrieved 2026-08-08.
+
+    Raises:
+        SystemExit: Always, with the status 1.
+    """
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+    except (OSError, ValueError):
+        # An in-memory stream that a caller put in place of standard output holds no file
+        # descriptor. The interpreter flushes no pipe for such a stream at exit.
+        pass
+    sys.exit(1)
+
+
+def _report_no_result(args: argparse.Namespace, count: int) -> None:
+    """Write one line to standard error when the table format produced no result.
+
+    The edge-case table of `docs/specs/features/05-structured-output.md` gives this
+    message to the table format alone. The `json` format writes nothing for this case and
+    the `csv` format writes its header, because a parser reads both.
+
+    Args:
+        args: The parsed command line. It carries `format`.
+        count: The count of results the run wrote.
+    """
+    if count == 0 and args.format == "table":
+        print("No fingerprint was produced.", file=sys.stderr)
+
+
 def _close_open_windows(processor: Processor, order: dict[str, int]) -> list[FingerprintResult]:
     """Return one result for every window the processor holds open.
 
@@ -298,38 +384,46 @@ def cmd_analyze(args: argparse.Namespace) -> None:
     processor = Processor()
     ja4db_client = _init_lookup(args)
 
-    # FR-structured-output-4 asks for the same columns whatever flags the user passed, so
-    # the header reads no flag.
-    writer = build_writer(args.format, sys.stdout)
-    writer.write_header()
-
     try:
         from scapy.utils import PcapReader
     except ImportError:
         print("Error: scapy is required. Install with: pip install scapy", file=sys.stderr)
         sys.exit(1)
 
-    try:
-        with PcapReader(pcap_file) as reader:
-            for packet in reader:
-                batch = _fingerprint_one_packet(packet, processor, order)
-                if batch:
-                    _write_results(batch, writer, ja4db_client)
-            # The capture ends here, and a connection that never closes still holds a
-            # window open. #214 decided that JA4SSH emits that window.
-            trailing = _close_open_windows(processor, order)
-            if trailing:
-                _write_results(trailing, writer, ja4db_client)
-    except FileNotFoundError:
-        print(f"Error: file not found: {pcap_file}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:
-        err = str(e)
-        if "not a pcap" in err.lower() or "magic" in err.lower() or "truncated" in err.lower():
-            print(f"Error: invalid or corrupt PCAP file: {pcap_file}", file=sys.stderr)
-        else:
-            print(f"Error reading PCAP file: {e}", file=sys.stderr)
-        sys.exit(1)
+    with _result_stream(args) as stream:
+        # FR-structured-output-4 asks for the same columns whatever flags the user
+        # passed, so the header reads no flag.
+        writer = build_writer(args.format, stream)
+        writer.write_header()
+        count = 0
+        try:
+            with PcapReader(pcap_file) as reader:
+                for packet in reader:
+                    batch = _fingerprint_one_packet(packet, processor, order)
+                    if batch:
+                        _write_results(batch, writer, ja4db_client)
+                        count += len(batch)
+                # The capture ends here, and a connection that never closes still holds a
+                # window open. #214 decided that JA4SSH emits that window.
+                trailing = _close_open_windows(processor, order)
+                if trailing:
+                    _write_results(trailing, writer, ja4db_client)
+                    count += len(trailing)
+        except FileNotFoundError:
+            print(f"Error: file not found: {pcap_file}", file=sys.stderr)
+            sys.exit(1)
+        except BrokenPipeError:
+            # The reader of standard output went away. `main` ends the run quietly, and
+            # the catch below would report it as a read error of the capture file.
+            raise
+        except Exception as e:
+            err = str(e)
+            if "not a pcap" in err.lower() or "magic" in err.lower() or "truncated" in err.lower():
+                print(f"Error: invalid or corrupt PCAP file: {pcap_file}", file=sys.stderr)
+            else:
+                print(f"Error reading PCAP file: {e}", file=sys.stderr)
+            sys.exit(1)
+    _report_no_result(args, count)
 
 
 def cmd_live(args: argparse.Namespace) -> None:
@@ -349,39 +443,44 @@ def cmd_live(args: argparse.Namespace) -> None:
     processor = Processor()
     ja4db_client = _init_lookup(args)
 
-    # FR-structured-output-4 asks for the same columns whatever flags the user passed, so
-    # the header reads no flag.
-    writer = build_writer(args.format, sys.stdout)
-    writer.write_header()
+    with _result_stream(args) as stream:
+        # FR-structured-output-4 asks for the same columns whatever flags the user
+        # passed, so the header reads no flag.
+        writer = build_writer(args.format, stream)
+        writer.write_header()
 
-    print(f"Starting live capture on '{args.interface}'... (Ctrl-C to stop)", file=sys.stderr)
+        print(f"Starting live capture on '{args.interface}'... (Ctrl-C to stop)", file=sys.stderr)
 
-    def process_packet(packet: Packet) -> None:
-        batch = _fingerprint_one_packet(packet, processor, order)
-        if batch:
-            _write_results(batch, writer, ja4db_client)
-            sys.stdout.flush()
+        def process_packet(packet: Packet) -> None:
+            batch = _fingerprint_one_packet(packet, processor, order)
+            if batch:
+                _write_results(batch, writer, ja4db_client)
+                stream.flush()
 
-    try:
-        from scapy.all import sniff
+        try:
+            from scapy.all import sniff
 
-        sniff(
-            prn=process_packet,
-            iface=args.interface if args.interface != "any" else None,
-            store=0,
-        )
-    except KeyboardInterrupt:
-        print("\nCapture stopped.", file=sys.stderr)
-    except Exception as e:
-        print(f"Error during capture: {e}", file=sys.stderr)
-        sys.exit(1)
+            sniff(
+                prn=process_packet,
+                iface=args.interface if args.interface != "any" else None,
+                store=0,
+            )
+        except KeyboardInterrupt:
+            print("\nCapture stopped.", file=sys.stderr)
+        except BrokenPipeError:
+            # The reader of standard output went away. `main` ends the run quietly, and
+            # the catch below would report it as a capture error.
+            raise
+        except Exception as e:
+            print(f"Error during capture: {e}", file=sys.stderr)
+            sys.exit(1)
 
-    # The capture ends here, and a connection that never closes still holds a window
-    # open. #214 decided that JA4SSH emits that window.
-    trailing = _close_open_windows(processor, order)
-    if trailing:
-        _write_results(trailing, writer, ja4db_client)
-        sys.stdout.flush()
+        # The capture ends here, and a connection that never closes still holds a window
+        # open. #214 decided that JA4SSH emits that window.
+        trailing = _close_open_windows(processor, order)
+        if trailing:
+            _write_results(trailing, writer, ja4db_client)
+            stream.flush()
 
 
 def cmd_cert(args: argparse.Namespace) -> None:
@@ -425,9 +524,10 @@ def cmd_cert(args: argparse.Namespace) -> None:
     results = [FingerprintResult(type="ja4x", fingerprint=fingerprint)]
     ja4db_client = _init_lookup(args)
 
-    writer = build_writer(args.format, sys.stdout)
-    writer.write_header()
-    _write_results(results, writer, ja4db_client)
+    with _result_stream(args) as stream:
+        writer = build_writer(args.format, stream)
+        writer.write_header()
+        _write_results(results, writer, ja4db_client)
 
 
 def cmd_db(args: argparse.Namespace) -> None:
@@ -448,7 +548,9 @@ def cmd_db(args: argparse.Namespace) -> None:
         return
 
     # db update
-    print("Downloading latest fingerprint database from FoxIO...")
+    # FR-structured-output-9 keeps standard output for results. This line reports
+    # progress, so a person reads it and a pipe does not.
+    print("Downloading latest fingerprint database from FoxIO...", file=sys.stderr)
     try:
         import urllib.request
 
@@ -481,30 +583,65 @@ def cmd_db(args: argparse.Namespace) -> None:
     print(f"Updated: {entry_count} fingerprint entries written to {_BUNDLED_CSV}")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        prog="ja4plus",
-        description="JA4+ Network Fingerprinting Tool",
-    )
-    parser.add_argument("--version", action="version", version=f"ja4plus {__version__}")
+def _add_output_options(parser: argparse.ArgumentParser, *, defaults: bool) -> None:
+    """Add the five options that every result-producing subcommand accepts.
+
+    The main parser carries these options, and each result-producing subparser carries
+    them again. The acceptance criteria of #52 write them after the subcommand name, as
+    in `ja4plus analyze capture.pcap --output out.json --force`, and version 0.6.0
+    accepted them before it.
+
+    A subparser default overwrites the value the main parser already parsed, so a
+    subparser sets `argparse.SUPPRESS` and writes nothing when the user names no option.
+
+    Args:
+        parser: The parser to add the options to.
+        defaults: True for the main parser, which holds the real default of each option.
+            False for a subparser, which holds `argparse.SUPPRESS` instead.
+    """
+
+    def default(value: Any) -> Any:
+        return value if defaults else argparse.SUPPRESS
+
     parser.add_argument(
         "--format",
         choices=["table", "json", "csv"],
-        default="table",
+        default=default("table"),
         help="Output format (default: table)",
     )
     parser.add_argument(
         "--types",
-        default=None,
+        default=default(None),
         metavar="TYPES",
         help=f"Comma-separated fingerprint types to include. Valid: {', '.join(VALID_TYPES)}",
     )
     parser.add_argument(
         "--lookup",
         action="store_true",
-        default=False,
+        default=default(False),
         help="Identify fingerprints using ja4db (bundled database + optional remote lookup)",
     )
+    parser.add_argument(
+        "--output",
+        default=default(None),
+        metavar="FILE",
+        help="Write the results to FILE instead of standard output",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        default=default(False),
+        help="Overwrite the file that --output names when it exists",
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="ja4plus",
+        description="JA4+ Network Fingerprinting Tool",
+    )
+    parser.add_argument("--version", action="version", version=f"ja4plus {__version__}")
+    _add_output_options(parser, defaults=True)
 
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
     subparsers.required = True
@@ -512,14 +649,17 @@ def main() -> None:
     # analyze subcommand
     analyze_parser = subparsers.add_parser("analyze", help="Fingerprint packets in a PCAP file")
     analyze_parser.add_argument("pcap_file", help="Path to the PCAP file")
+    _add_output_options(analyze_parser, defaults=False)
 
     # live subcommand
     live_parser = subparsers.add_parser("live", help="Live capture from a network interface")
     live_parser.add_argument("interface", help="Network interface (e.g. eth0, any)")
+    _add_output_options(live_parser, defaults=False)
 
     # cert subcommand
     cert_parser = subparsers.add_parser("cert", help="Fingerprint an X.509 certificate")
     cert_parser.add_argument("cert_file", help="Path to certificate file (DER or PEM)")
+    _add_output_options(cert_parser, defaults=False)
 
     # db subcommand
     db_parser = subparsers.add_parser("db", help="Manage the fingerprint identification database")
@@ -535,14 +675,20 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.command == "analyze":
-        cmd_analyze(args)
-    elif args.command == "live":
-        cmd_live(args)
-    elif args.command == "cert":
-        cmd_cert(args)
-    elif args.command == "db":
-        cmd_db(args)
+    try:
+        if args.command == "analyze":
+            cmd_analyze(args)
+        elif args.command == "live":
+            cmd_live(args)
+        elif args.command == "cert":
+            cmd_cert(args)
+        elif args.command == "db":
+            cmd_db(args)
+        # The flush belongs inside the guard, so a pipe that closed early raises here
+        # rather than during the flush the interpreter runs at exit.
+        sys.stdout.flush()
+    except BrokenPipeError:
+        _exit_on_broken_pipe()
 
 
 if __name__ == "__main__":

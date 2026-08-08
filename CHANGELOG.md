@@ -8,6 +8,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The command-line program separates results from diagnostics and gains `--output`**
+  (#52). Round TBD. The program writes results to standard output and every diagnostic
+  to standard error, so a pipe that reads standard output reads results alone. The
+  progress line of `db update` moves to standard error. `--output FILE` writes the
+  results to a file and leaves standard output empty. The program refuses to overwrite a
+  file that exists and exits with the status 1, and `--force` overwrites it. Without
+  `--force` the program creates the file, so it writes through no symbolic link and it
+  loses no file to a second writer. A reader
+  that closes the pipe early, such as `head -1`, ends the run with no traceback and no
+  shutdown message. Every option now runs before the subcommand name and after it, so
+  `ja4plus analyze capture.pcap --format csv` does what
+  `ja4plus --format csv analyze capture.pcap` does. A capture that produces no
+  fingerprint writes one line to standard error in the `table` format, and the `json`
+  and `csv` formats keep the output the schema promises.
+
 - **The command-line program runs on `Processor` and reports a fingerprinter error**
   (#51). Round TBD. The program built its own dictionary of fingerprinters and ran its
   own per-packet loop in `analyze` and in `live`. Both loops caught every error with
