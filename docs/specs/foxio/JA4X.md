@@ -117,7 +117,8 @@ offset += 1
 Each rule below carries two corroborations. Neither corroboration is the image. The
 in-repository corroborations read the FoxIO material at the pinned commit.
 
-**Eleven rules reach two corroborations each, and the user decided the twelfth.**
+**Eleven rules reach two corroborations each. The user decided R8, which the image
+contradicts.**
 
 | State | Rules |
 |---|---|
@@ -270,8 +271,8 @@ python3 -c "import hashlib; print(hashlib.sha256(b'').hexdigest()[:12])"
 e3b0c44298fc
 ```
 
-**The first two parts of the `Qakbot` row and of `README.md` line 146 match exactly, and
-the third part does not**, so the two sources describe one certificate and two
+**The first two parts of the `Qakbot` row and of `README.md` line 146 match exactly.** The
+third part does not match. The two sources therefore describe one certificate and two
 implementations.
 
 **#228 changed no fingerprinter, because `ja4plus` already wrote the decided form.**
@@ -573,8 +574,8 @@ This page changes no fingerprinter and it moves no fingerprint.
 
 1. **R8. Decided on 2026-08-08, and the decision is reversible.** An empty list writes
    `000000000000`. The FoxIO Rust implementation, the Wireshark dissector and the
-   `README.md` write it, and the project already uses the same sentinel where JA4H
-   signals a request that carries no cookie. The FoxIO Python implementation and the
+   `README.md` write it. The project already uses the same sentinel where JA4H signals a
+   request that carries no cookie. The FoxIO Python implementation and the
    image's Qakbot row write `e3b0c44298fc`, which the decision rejects. **No local vector
    reaches the case, so no fingerprint moved.** "The decision of 2026-08-08, and the
    contradiction it records" above holds the whole reading. #228 built it under Changelog
