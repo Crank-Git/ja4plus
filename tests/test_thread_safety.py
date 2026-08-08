@@ -72,7 +72,7 @@ def one_thread_values(packets):
     processor = Processor()
     values = []
     for packet in packets:
-        values.extend(result["fingerprint"] for result in processor.process_packet(packet))
+        values.extend(result.fingerprint for result in processor.process_packet(packet))
     values.extend(result["fingerprint"] for result in processor.close_open_windows())
     return sorted(values)
 
@@ -106,7 +106,7 @@ def eight_thread_values(packets, partition_by_connection=True):
         mine = []
         try:
             for packet in bucket:
-                mine.extend(result["fingerprint"] for result in processor.process_packet(packet))
+                mine.extend(result.fingerprint for result in processor.process_packet(packet))
         except Exception as error:  # noqa: BLE001 — the case reports every failure shape.
             errors.append(error)
         with collect:
@@ -488,9 +488,9 @@ class TestTheProcessorPairsEachRawFormWithItsOwnFingerprint:
         expected = {}
         for packet in (first, second):
             alone = Processor()
-            results = [r for r in alone.process_packet(packet) if r["type"] == "ja4"]
+            results = [r for r in alone.process_packet(packet) if r.type == "ja4"]
             assert len(results) == 1, "the packet produced no JA4 value, so nothing measures"
-            expected[id(packet)] = (results[0]["fingerprint"], results[0]["raw"])
+            expected[id(packet)] = (results[0].fingerprint, results[0].raw)
         assert expected[id(first)] != expected[id(second)], "the two packets must differ"
 
         processor = Processor()
@@ -513,7 +513,7 @@ class TestTheProcessorPairsEachRawFormWithItsOwnFingerprint:
         collected = {}
 
         def feed(name, packet):
-            collected[name] = [r for r in processor.process_packet(packet) if r["type"] == "ja4"]
+            collected[name] = [r for r in processor.process_packet(packet) if r.type == "ja4"]
 
         try:
             slow = threading.Thread(target=feed, args=("first", first))
@@ -533,7 +533,7 @@ class TestTheProcessorPairsEachRawFormWithItsOwnFingerprint:
             del fingerprinter.process_packet
 
         assert len(collected["first"]) == 1
-        got = (collected["first"][0]["fingerprint"], collected["first"][0]["raw"])
+        got = (collected["first"][0].fingerprint, collected["first"][0].raw)
         assert got == expected[id(first)], (
             "the first thread received the raw form of another packet"
         )

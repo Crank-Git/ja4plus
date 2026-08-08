@@ -6,7 +6,28 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round TBD.
+  The method returned a list of dictionaries through version 0.6.0. A caller who reads
+  `result["fingerprint"]` keeps working for one major version, and item access emits a
+  `DeprecationWarning` that names the attribute form. Read `result.fingerprint` instead.
+  The results follow the fixed method order `ja4`, `ja4s`, `ja4h`, `ja4t`, `ja4ts`,
+  `ja4l`, `ja4x`, `ja4ssh`, `ja4d`, `ja4d6`, and that order is part of the interface.
+  `Processor.close_open_windows` still returns a list of dictionaries, because a window
+  carries a connection key and no `FingerprintResult` field holds one. The processor
+  reads no packet timestamp, so `timestamp` holds `None`. No fingerprint value moved:
+  the conformance suite reports the same 1477 passed, 143 skipped and 137 xfailed.
+  `docs/specs/features/04-typed-api.md` states FR-typed-api-3.
+
 ### Added
+
+- **`Processor.process_packet_with_errors` returns the results and the errors** (#45).
+  Round TBD. `process_packet` logs a fingerprinter error at DEBUG and returns the
+  results alone, so a caller could not tell a packet that produces no fingerprint from a
+  packet that failed a parse. The new method returns both lists, and one method that
+  raises poisons no other method. The Go port returns the pair from one call, and parity
+  rule 2 keeps it. `docs/specs/features/04-typed-api.md` states FR-typed-api-4.
 
 - **`FingerprintResult` is the typed result of the public interface** (#44). The new
   module `ja4plus/types.py` holds a frozen dataclass with nine fields, and `ja4plus`
@@ -16,8 +37,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   code written against the dictionary of version 0.6.0 keeps working for one major
   version. **Item access emits a `DeprecationWarning` that names the attribute form.**
   The item access covers reading only, and a result supports no item assignment.
-  `Processor.process_packet` still returns a list of dictionaries, and #45 changes it.
-  No fingerprint value moved. `docs/specs/features/04-typed-api.md` states
+  #45 makes `Processor.process_packet` return these results. No fingerprint value moved. `docs/specs/features/04-typed-api.md` states
   FR-typed-api-1, FR-typed-api-2, FR-typed-api-5 and FR-typed-api-6.
 
 - **JA4SSH emits the window a connection holds open when the capture ends**
