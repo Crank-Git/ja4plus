@@ -497,20 +497,26 @@ def cmd_watch(args: argparse.Namespace) -> None:
 
         try:
             # FR-live-capture-5 and FR-live-capture-6 ask for a clean exit on a signal.
-            # The handler sets a flag and the capture reads the flag after each packet,
-            # so the loop finishes the line it writes. A handler that called `sys.exit`
-            # would end the run at the point the signal arrived, and that point holds
-            # half a line whenever the signal arrives during a write.
+            # The handler sets a flag and the capture reads the flag after each packet
+            # and after each poll interval, so the loop finishes the line it writes. A
+            # handler that called `sys.exit` would end the run at the point the signal
+            # arrived, and that point holds half a line whenever the signal arrives
+            # during a write.
             with stop_on_signal() as stop:
                 # FR-live-capture-9 asks for the schedule, and FR-live-capture-10 puts
                 # the line on standard error. The thread ends when the capture returns,
                 # so a monitor that reads a termination signal starts no line after it.
                 with report_statistics(monitor.stats, args.stats_interval, sys.stderr):
+                    # #320 asks the monitor to stop on an interface that carries no
+                    # traffic. `stop_filter` reads a packet, and `stop_requested` reads
+                    # the flag after each poll interval, so a quiet interface stops the
+                    # monitor too.
                     read_interface(
                         args.interface,
                         monitor.handle_packet,
                         stop.stop_after,
                         capture_filter=args.bpf,
+                        stop_requested=stop.requested,
                     )
             if stop.requested():
                 print("\nCapture stopped.", file=sys.stderr)

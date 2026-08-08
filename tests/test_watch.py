@@ -252,17 +252,25 @@ def run_cli(*argv, source=None, monitor_factory=None):
     """
     from ja4plus.cli import main
 
-    def read_interface(interface, handle_packet, stop_filter=None, capture_filter=None):
+    def read_interface(
+        interface, handle_packet, stop_filter=None, capture_filter=None, stop_requested=None
+    ):
         """Replay the packets the test states, the way `scapy` reads an interface.
 
         `scapy` reports one packet through `prn` and then applies `stop_filter` to the
         same packet, and it ends the capture when the filter returns True.
         `scapy/sendrecv.py` holds that order in `AsyncSniffer._run`, at the line
         `if (stop_filter and stop_filter(p))`, which follows the `prn` call.
+
+        #320 added the loop that reads `stop_requested` after each poll interval, and
+        this replay reads it after each packet. `tests/test_watch_stop.py` measures that
+        loop against the real `scapy` capture loop.
         """
         for packet in source or []:
             handle_packet(packet)
             if stop_filter is not None and stop_filter(packet):
+                break
+            if stop_requested is not None and stop_requested():
                 break
 
     captured_out = io.StringIO()

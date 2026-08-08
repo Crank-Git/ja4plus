@@ -66,6 +66,19 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`ja4plus watch` stops on an interface that carries no traffic** (#320). Round TBD.
+  A monitor on a quiet interface exits within one second of `SIGINT` or of `SIGTERM`.
+  `scapy` applies the `stop_filter` argument of `sniff` to a packet and to nothing else,
+  and its capture loop waits in `select` without an end, so the monitor read the stop
+  flag when the next packet arrived and not when the signal arrived. An operator who ran
+  `systemctl stop` on such a monitor waited for the service timeout, and the host then
+  sent `SIGKILL`, which skips the flush. The command now opens the capture socket itself
+  and calls `sniff` with `opened_socket` and a timeout of 0.25 seconds, in a loop, and it
+  reads the stop flag after each call. The socket stays open across the calls, so the
+  monitor loses no packet that arrives between two of them. `--bpf` still applies, and
+  `libpcap` now compiles the expression when the socket opens. The command still starts
+  no thread other than the one `--stats-interval` starts.
+
 - **`ja4plus watch` applies a capture filter and reads the capture failure** (#56). Round
   TBD. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
   which drops every packet the filter rejects. The command reads no user identity. It
@@ -104,8 +117,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   command then flushes the output and exits, so the output file holds every fingerprint
   the monitor reported. The command flushed the output only when it wrote a result, so a
   monitor that produced no fingerprint left its header in the buffer. `scapy` applies the
-  filter on packet arrival alone, so an interface that carries no traffic holds the
-  monitor until the next packet arrives. #320 records that gap.
+  filter on packet arrival alone, so an interface that carries no traffic reached that
+  filter never; the entry for #320 records the loop that repairs it.
 
 - **`ja4plus watch <interface>` reads an interface and bounds its connection table**
   (#53). Round TBD. `ja4plus live` stays as an alias of it, so a version 0.6.0 script

@@ -80,12 +80,17 @@ def run_watch(*argv, source=None, during=None):
     """
     from ja4plus.cli import main
 
-    def read_interface(interface, handle_packet, stop_filter=None, capture_filter=None):
+    def read_interface(
+        interface, handle_packet, stop_filter=None, capture_filter=None, stop_requested=None
+    ):
         if during is not None:
             during()
         for packet in source or []:
             handle_packet(packet)
             if stop_filter is not None and stop_filter(packet):
+                break
+            # #320 added the loop that reads the stop request after each poll interval.
+            if stop_requested is not None and stop_requested():
                 break
 
     captured_out = io.StringIO()
