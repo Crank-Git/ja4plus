@@ -179,7 +179,14 @@ The measurement below states the size of the disagreement.
 and each one holds two parts.
 
 The authority rule decides the bytes this project writes, and it does not close the
-question the image raises. `.claude/rules/conformance.md` states the rule.
+question the image raises. `.claude/rules/conformance.md` states the rule, and #225 holds
+the decision.
+
+**This measurement corrects a reading of #198.** `docs/specs/foxio/zeek.md` stated that the
+Zeek script adds a third part that no other reference holds. #198 compared the Python
+reference against the Zeek script, and it read neither the image nor
+`wireshark/test/testdata/`. **Zeek is not the outlier on the part count.** This branch
+corrects that section, and #198's measurement itself stands.
 
 ### R5 — The references disagree on what a connection with no application handshake writes
 
@@ -484,8 +491,8 @@ PY
 
 ## The decisions this page raises
 
-**#196 produced #215, #198 produced #214 and #203 produced #219. The decisions below need
-their own issue.** Each one needs the user, because each one changes a fingerprint that this
+**#225 holds these decisions**, as #215 holds those of #196, #214 those of #198 and #219
+those of #203. Each one needs the user, because each one changes a fingerprint that this
 project publishes or changes a recorded cause. **This page changes no fingerprinter and no
 register entry.**
 

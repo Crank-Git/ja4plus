@@ -180,28 +180,58 @@ and the `ja4plus` value matches those two.
 | `192.168.1.169:63253` | 36498.5 | 36498 | 36498 | 36498 |
 | `192.168.1.169:63255` | 33738.5 | 33738 | 33738 | 33738 |
 
-**The FoxIO Python reference agrees with `ja4plus`, and the Zeek script is the outlier.**
-`tests/foxio_vectors/ipv6.pcapng.json` holds `JA4L-S` as `18861_59`, and the Zeek
-baseline holds `18862_59_14792`. The exact half-interval is 18861.5.
-`tests/foxio_vectors/chrome-cloudflare-quic-with-secrets.pcapng.json` holds `JA4L-S` as
-`5749_56`, and the Zeek baseline holds `5750_56_15994`. The exact half-interval is
-5749.583.
+**On the rounding rule, the FoxIO Python reference agrees with `ja4plus` and the Zeek
+script is the outlier.** `tests/foxio_vectors/ipv6.pcapng.json` holds `JA4L-S` as
+`18861_59`, and the Zeek baseline holds `18862_59_14792`. The exact half-interval is
+18861.5. `tests/foxio_vectors/chrome-cloudflare-quic-with-secrets.pcapng.json` holds
+`JA4L-S` as `5749_56`, and the Zeek baseline holds `5750_56_15994`. The exact
+half-interval is 5749.583.
 
 The authority rule decides it. `python/test/testdata/` decides the exact bytes, so
 `ja4plus` needs no change. **No fingerprint moves for this difference.**
 
-### JA4L and JA4LS: the Zeek script adds a third part that no other reference holds
+**Read that sentence for the rounding rule alone. It does not hold for the part count**,
+and the section below states the correction #200 measured.
 
-The Zeek `ja4ls` column carries three parts on a TCP connection that completes a TLS
-handshake, for example `18862_59_14792`. `zeek/ja4l/main.zeek:191-192` appends half the
-interval from the ClientHello to the ServerHello. The Zeek `ja4l` column carries a third
-part in the same way, from `zeek/ja4l/main.zeek:132-133`. That part is half the interval
-from the ServerHello to the first client data packet.
+### JA4L and JA4LS: the third part, and the correction #200 made to this section
+
+**This section first read that the Zeek script adds a third part that no other reference
+holds. That heading was wrong, and #200 measured the correction.** The specification
+carries a third part, and so does the Wireshark reference. #198 compared the Python
+reference against the Zeek script. It read neither `technical_details/JA4L.png` nor
+`wireshark/test/testdata/`, so it saw two of the five readings below. The measurement
+#198 made is correct. The conclusion it drew from two sources does not survive the
+other three.
+
+| Source | Parts |
+|---|---|
+| `technical_details/JA4L.png`, the specification | **three** |
+| `wireshark/test/testdata/`, the `ja4.ja4l` and `ja4.ja4ls` keys | **three** |
+| `zeek/tests/Traces/`, the `ja4l` and `ja4ls` columns | **three** |
+| `python/test/testdata/` | two |
+| `ja4plus` | two |
+
+**The Zeek script is therefore not the outlier on the part count.** The specification and
+two implementations write three parts, the Python reference writes two, and this project
+follows the Python reference.
+
+- The image labels three parts, and it captions the third `One-way application handshake
+  latency`. `docs/specs/foxio/JA4L.md` holds the transcription, and #200 read the image.
+- `wireshark/test/testdata/https-connect.pcap.json:58-59` holds
+  `"ja4.ja4l": [` and `"45_64_66"`. **Every one of the 88 values under
+  `wireshark/test/testdata/` holds three parts**, in 15 files. 18 of them carry the
+  literal `quic` as the third part.
+- `zeek/ja4l/main.zeek:191-192` appends half the interval from the ClientHello to the
+  ServerHello to `ja4ls`, for example `18862_59_14792`. `zeek/ja4l/main.zeek:132-133`
+  appends a third part to `ja4l` in the same way, and that part is half the interval from
+  the ServerHello to the first client data packet.
 
 **The FoxIO Python reference publishes the two-part form, and `ja4plus` emits it.**
 `tests/foxio_vectors/ipv6.pcapng.json` holds `JA4L-S` as `18861_59` and `JA4L-C` as
-`3911_64`. Each value carries two parts. The authority rule decides it, and no
-fingerprint moves.
+`3911_64`. Each value carries two parts, and so does every one of the 114 JA4L values
+this repository holds. **The authority rule keeps the two-part form today and no
+fingerprint moves**, because no vector this project reads measures a third part. #225
+holds the decision, and the user decides it.
 
 `ja4plus` reports a second measurement as a second `JA4L-C` value where the Zeek script
 reports it as a third part. The two implementations measure different intervals, so the
@@ -267,8 +297,12 @@ each one is answered.
    on eight of ten. Two rules cause the two that differ: the same `DLT_NULL` defect, and
    the option kind 0 rule that FoxIO's own JA4TScan documentation settles.
 2. **`ja4ls` carries three parts where `python/test/testdata/` carries two.** Confirmed.
-   The Python reference and `ja4plus` both carry two parts, and the Zeek script adds a
+   The Python reference and `ja4plus` both carry two parts, and the Zeek script carries a
    third. The authority rule decides it in favour of the two-part form.
+   **#200 corrected the conclusion this reading drew.** The Zeek script is not alone: the
+   specification labels three parts and every value under `wireshark/test/testdata/`
+   holds three. This reading compared two sources of five, and the section above states
+   the measurement. #225 holds the decision.
 3. **`ja4l_delta` and `ja4ls_delta` appear in no other reference.** Confirmed. Both are
    ratios that the Zeek script writes with `%.1f`, and neither is part of a fingerprint.
 
