@@ -200,6 +200,11 @@ class TestTheLookupCacheBound:
         """`features/07-db-enrichment.md` states 100000, and the client holds that value."""
         assert JA4DBClient()._cache.max_connections == 100000
 
+    def test_a_small_cache_runs_its_age_pass_on_its_own_entry_count(self):
+        """An age pass reads every entry, so the interval stays at or below that count."""
+        assert JA4DBClient()._cache.eviction_interval == 100000
+        assert JA4DBClient(cache_size=50)._cache.eviction_interval == 50
+
     def test_the_cache_holds_no_more_than_cache_size_after_200000_distinct_lookups(self):
         client = self.offline_client(cache_size=1000)
         for index in range(200000):
@@ -258,7 +263,33 @@ class TestTheLookupCacheBound:
             thread.join(timeout=60)
 
         assert failures == []
-        assert len(client._cache) <= 50
+        assert len(client._cache) == 50
+
+    def test_eight_threads_that_share_one_client_raise_nothing(self):
+        """The lock holds the lookup cache together while a pass evicts an entry.
+
+        The client holds two entries and it ages every entry out, so an eviction runs
+        beside every read. A run that replaces the lock with a no-op raises `KeyError`.
+        """
+        with patch.object(ja4db, "DEFAULT_CACHE_AGE", 0.0):
+            client = self.offline_client(cache_size=2)
+        failures = []
+
+        def call():
+            try:
+                for index in range(60000):
+                    client.lookup(f"t13d1516h2_000000000000_{index % 6:012d}")
+            except Exception as error:  # The case reports the failure of any thread.
+                failures.append(f"{type(error).__name__}: {error}")
+
+        threads = [threading.Thread(target=call) for _ in range(8)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=120)
+
+        assert failures == []
+        assert len(client._cache) <= 2
 
 
 class TestCLILookupFlag:
