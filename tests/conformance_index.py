@@ -44,6 +44,10 @@ RAW_METHODS = {
     ),
     "JA4S": (("JA4S_r", "raw"),),
     "JA4H": (("JA4H_ro", "raw_original_order"),),
+    # No expected-output file holds a `JA4X_r` key, because the FoxIO Python
+    # implementation writes none. `tests/test_foxio_rust_parity.py` compares the value
+    # against the FoxIO Rust snapshot through the hash, and #267 decided the form.
+    "JA4X": (("JA4X_r", "raw"),),
 }
 
 # The methods the conformance suite reports. One fingerprinter produces one method,

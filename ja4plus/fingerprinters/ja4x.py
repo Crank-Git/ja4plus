@@ -81,6 +81,39 @@ def generate_ja4x(cert_info):
         return None
 
 
+def generate_ja4x_raw(cert_info):
+    """Return the JA4X_r raw form of certificate info.
+
+    The raw form holds the three unhashed lists of `generate_ja4x`, joined with `_`. R11
+    of `docs/specs/foxio/JA4X.md` states the rule, and #267 decided that this project
+    publishes the value. `rust/ja4x/src/lib.rs` writes the same form as
+    `let ja4x_r = with_raw.then(|| parts.join("_"));`.
+
+    An empty list reaches the raw form as an empty part. The zero sentinel of R8 belongs
+    to the hashed form, because the FoxIO Rust implementation runs `hash12` on the hashed
+    form alone.
+
+    Args:
+        cert_info: A dictionary with certificate information.
+
+    Returns:
+        A JA4X_r string, or None when the certificate info is empty.
+    """
+    if not cert_info:
+        return None
+
+    try:
+        parts = [
+            ",".join(cert_info.get("issuer_rdns", [])),
+            ",".join(cert_info.get("subject_rdns", [])),
+            ",".join(cert_info.get("extensions", [])),
+        ]
+        return "_".join(parts)
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        logger.debug(f"Failed to generate JA4X raw form: {e}")
+        return None
+
+
 class JA4XFingerprinter(BaseFingerprinter):
     """Fingerprinter for JA4X (X.509 Certificates)."""
 
@@ -90,6 +123,10 @@ class JA4XFingerprinter(BaseFingerprinter):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
+        # `Processor.process_packet` reads these two attributes after the call that
+        # writes them, and it pairs the raw form with the fingerprint of one packet.
+        self.last_raw = None
+        self.last_raw_original_order = None
         # The table holds one entry for each certificate on each stream, and the
         # certificate of a stream that goes quiet reaches no reader again. The age pass
         # reads up to 1000 entries, so it runs on the default schedule and not on each
@@ -293,11 +330,37 @@ class JA4XFingerprinter(BaseFingerprinter):
             # The table holds the entry count and the entry age, and it evicts the
             # least recently read entry on its own.
             self.processed_certs[key] = None
-            fingerprint = self.fingerprint_certificate(cert_bytes)
+            fingerprint, raw = self.read_certificate(cert_bytes)
             if fingerprint:
                 result = fingerprint
-                self.add_fingerprint(fingerprint, packet)
+                self._record(fingerprint, raw, packet)
         return result
+
+    def _record(self, fingerprint, raw, packet):
+        """Append one JA4X result, with the raw form beside the fingerprint.
+
+        R10 of `docs/specs/foxio/JA4X.md` sorts no list, so one raw value serves the
+        `raw` key and the `raw_original_order` key. FoxIO publishes `JA4X_r` and no
+        `JA4X_ro`, and `JA4S` holds the same shape for the same reason. The second key
+        exists so that one caller reads one name on every method.
+
+        Args:
+            fingerprint: The JA4X value of the certificate.
+            raw: The JA4X_r value of the same certificate.
+            packet: The packet that completed the stream data. The method reads the
+                endpoints of the packet and drops the reference when it returns.
+        """
+        from ja4plus.utils.packet_utils import packet_endpoints
+
+        self.last_raw = raw
+        self.last_raw_original_order = raw
+        entry = {
+            "fingerprint": fingerprint,
+            "raw": raw,
+            "raw_original_order": raw,
+        }
+        entry.update(packet_endpoints(packet))
+        self.fingerprints.append(entry)
 
     def _certificates_in_message(self, message):
         """Return the certificates of one Certificate message body.
@@ -384,15 +447,18 @@ class JA4XFingerprinter(BaseFingerprinter):
             logger.warning(f"Certificate error: {e}")
             return None
 
-    def fingerprint_certificate(self, cert_data):
-        """
-        Generate a JA4X fingerprint from raw certificate data.
+    def read_certificate(self, cert_data):
+        """Return the JA4X value and the JA4X_r value of one certificate.
+
+        The reader parses the certificate once, because the two values read the same
+        three lists. #267 added the raw form.
 
         Args:
-            cert_data: Raw certificate data in DER format
+            cert_data: Raw certificate data in DER format.
 
         Returns:
-            JA4X fingerprint or None if not applicable
+            A (fingerprint, raw form) pair. Both are None when the reader cannot read
+            the certificate.
         """
         try:
             # Ensure cert_data is bytes
@@ -406,10 +472,22 @@ class JA4XFingerprinter(BaseFingerprinter):
             cert_info = self.get_cert_details(cert)
 
             # Generate fingerprint
-            return generate_ja4x(cert_info)
+            return generate_ja4x(cert_info), generate_ja4x_raw(cert_info)
         except (ValueError, TypeError, Exception) as e:
             logger.warning(f"Certificate error: {e}")
-            return None
+            return None, None
+
+    def fingerprint_certificate(self, cert_data):
+        """
+        Generate a JA4X fingerprint from raw certificate data.
+
+        Args:
+            cert_data: Raw certificate data in DER format
+
+        Returns:
+            JA4X fingerprint or None if not applicable
+        """
+        return self.read_certificate(cert_data)[0]
 
     def reset(self):
         """Reset the fingerprinter state."""
@@ -418,6 +496,10 @@ class JA4XFingerprinter(BaseFingerprinter):
             from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
             self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
+            # The reset drops these two attributes too. Each one holds a value of the
+            # capture the reset discards, and a later reader would read it as its own.
+            self.last_raw = None
+            self.last_raw_original_order = None
             # The table holds one entry for each certificate on each stream, and the
             # certificate of a stream that goes quiet reaches no reader again. The age
             # pass reads up to 1000 entries, so it runs on the default schedule and not

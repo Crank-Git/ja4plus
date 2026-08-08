@@ -326,6 +326,38 @@ corroboration.
 file under `tests/foxio_vectors/` holds a `JA4X_r` key. Measured on 2026-08-08 with
 `grep -l "JA4X_r" tests/foxio_vectors/*.json`, which matched no file.
 
+#### The decision of 2026-08-08, and the form it names
+
+**The user decided that this project publishes the raw form, and the decision is
+reversible.** #267 holds the decision comment. `ja4plus` writes `JA4X_r`, which holds the
+three unhashed lists joined with `_`. The name follows the `JA4S_r` form this package
+already publishes.
+
+**Two of the three FoxIO implementations publish the value.** The decision comment of
+#267 states the reading in the user's words:
+`Two of the three FoxIO implementations publish it, and FoxIO specifies the value, so
+parity rule 1 decides it and the port does not outrank it.` Read "FoxIO specifies the
+value" as the two implementations and not as the image. The image states nothing, which
+is the heading of this rule.
+
+**The zero sentinel of R8 reaches no raw form.** `rust/ja4x/src/lib.rs` builds
+`let parts = [issuer_rdns, subject_rdns, extensions];`, runs `hash12` on the hashed form
+alone, and joins the same three parts for `ja4x_r`. An empty list therefore writes an
+empty part.
+
+**The comparison runs through the hash, because no snapshot field holds the raw form.**
+`TestTheJa4xRawFormTheRustSnapshotImplies` in `tests/test_foxio_rust_parity.py` hashes
+each part of each produced raw form and reads the snapshot value. All 43 values agree.
+
+**The gate is proven by its reversal.** Three mutations of `generate_ja4x_raw` each make
+the conformance suite fail, measured on 2026-08-08.
+
+| Mutation | Cases the conformance suite fails |
+|---|---|
+| Join the three parts with `\|` rather than `_` | 46 |
+| Join the issuer list with `;` rather than `,` | 44 |
+| Sort the extension list | 43 |
+
 ## The comparison against this project
 
 The comparison below reads `ja4plus/fingerprinters/ja4x.py` and
@@ -349,6 +381,7 @@ this table does not name is a field nobody read.**
 | Wire order, and no sort | R10 | `ja4x.py:367` to `ja4x.py:378` | Agrees. Each loop keeps the order the certificate holds, and nothing sorts a list. |
 | The direction the reader accepts | R9 | `ja4x.py:108` to `ja4x.py:135` | Agrees. `process_packet` tests no direction and no port, and the references test neither. |
 | One value for each certificate | R9 | `ja4x.py:279` to `ja4x.py:289` | Agrees. The loop emits one value for each certificate of the Certificate message, and `rust/ja4/src/tls.rs:93` pushes one record for each certificate too. |
+| The raw form | R11 | `generate_ja4x_raw` in `ja4x.py` | Agrees since #267. The function joins the same three unhashed lists with `_` that `rust/ja4x/src/lib.rs` joins. D1 below records the state before #267. |
 
 **Two fields carry no rule, because the image states none.** This table records them so
 that the next reader does not mistake them for fields nobody read.
@@ -395,11 +428,17 @@ which is part c of the same value. **Three independent sources produce the same 
 
 ### The disagreements
 
-**D1 — `ja4x.py` writes no raw form, and two FoxIO implementations write one.**
+**D1 — Closed on 2026-08-08. `ja4x.py` wrote no raw form, and two FoxIO implementations
+write one.**
 
-R11 states the rule. `ja4plus` publishes no `JA4X_r` value, and the FoxIO Python
-implementation publishes none either. No expected-output file in this repository holds the
-key, so **no vector measures D1**. The reading is a code reading.
+R11 states the rule. Before #267, `ja4plus` published no `JA4X_r` value, and the FoxIO
+Python implementation publishes none either. No expected-output file in this repository
+holds the key, so no vector measured D1 and the reading was a code reading.
+
+**#267 built the value, and the disagreement is gone.** `generate_ja4x_raw` in `ja4x.py`
+writes `JA4X_r`, and `TestTheJa4xRawFormTheRustSnapshotImplies` compares all 43 values
+against the FoxIO Rust snapshots through the hash. "The decision of 2026-08-08, and the
+form it names" above holds the whole reading.
 
 **D2 — `cryptography` rejects a certificate that holds a duplicate attribute inside one
 RDN, and the FoxIO readers accept it.**
@@ -521,7 +560,7 @@ certificate that carries no extension, so it corroborates neither form of R8.
 
 **#229 built it.** `read_rust_snapshot` enters the `tls_certs` block, and
 `TestTheJa4xValuesTheRustSnapshotHolds` compares every JA4X value the local snapshots
-hold. This page changes no fingerprinter.
+hold. #229 changed no fingerprinter.
 
 | Measurement | Count |
 |---|---|
@@ -557,11 +596,24 @@ stream that file omits, which is `https-connect.pcap` stream 0 on port 54723. A 
 keeps the two key sets apart, because one entry that matches a case of each module marks
 both and neither fix reports itself.
 
-**D1 and D2 stay unmeasured, and neither is a mismatch.** D1 is the raw form, which no
-snapshot field holds. D2 is a certificate with a duplicate attribute, which no capture in
-this repository carries. **No local vector reaches R8** either: a certificate with no
-extension would settle which empty form this project must write, and this repository
-holds none.
+**D2 stays unmeasured, and it is no mismatch.** D2 is a certificate with a duplicate
+attribute, which no capture in this repository carries. **No local vector reaches R8**
+either: a certificate with no extension would settle which empty form this project must
+write, and this repository holds none.
+
+**#267 measured D1.** No snapshot field holds the raw form, so the comparison hashes each
+part of the produced value and reads the snapshot value.
+`TestTheJa4xRawFormTheRustSnapshotImplies` holds it, and the counts below record the
+result.
+
+| Measurement | Count |
+|---|---|
+| Raw forms the five local snapshots imply | 43 |
+| Values `ja4plus` reproduces exactly, in snapshot order | 43 |
+| Values that differ | 0 |
+| Streams whose value count differs | 0 |
+
+**The register gains no entry.** Every value agrees.
 
 **The `ja4ssh` values of the snapshots stay unread.**
 `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215` holds a `ja4ssh:`
@@ -570,7 +622,10 @@ and it owns the reading. #229 changes nothing there.
 
 ## The decisions this page raises
 
-This page changes no fingerprinter and it moves no fingerprint.
+**No fingerprint moves.** #267 adds the `JA4X_r` value, and it changes no JA4X value. The
+conformance suite reports 1477 passed, 143 skipped and 137 xfailed before #267, and 1529
+passed, 143 skipped and 137 xfailed after it. The 52 new cases are the raw-form
+comparison.
 
 1. **R8. Decided on 2026-08-08, and the decision is reversible.** An empty list writes
    `000000000000`. The FoxIO Rust implementation, the Wireshark dissector and the
@@ -580,9 +635,11 @@ This page changes no fingerprinter and it moves no fingerprint.
    reaches the case, so no fingerprint moved.** "The decision of 2026-08-08, and the
    contradiction it records" above holds the whole reading. #228 built it under Changelog
    round 77.
-2. **D1. Open.** Does this project publish a `JA4X_r` raw form? Two FoxIO implementations
-   do, the FoxIO Python implementation does not, and the image states nothing. **#267
-   holds it**, and it waits for the user. #228 raised it and ruled nothing on it.
+2. **D1. Decided on 2026-08-08, and the decision is reversible.** This project publishes
+   a `JA4X_r` raw form, which holds the three unhashed lists joined with `_`. Two FoxIO
+   implementations write it, the FoxIO Python implementation writes none, and the image
+   states nothing. **#267 holds the decision and built the value**, under Changelog round
+   TBD. #228 raised it and ruled nothing on it.
 
 **The named question needs no decision.** The image states nothing about the transport, so
 the specification confirms the user's decision of 2026-08-07 rather than reopening it.
