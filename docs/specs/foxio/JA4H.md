@@ -570,7 +570,7 @@ across 11 captures.
 4. **D1 needs a request whose method is outside the nine.** No capture carries one.
 5. **D5 needs no new vector.** `CVE-2018-6794.pcap` measures it today. On the base of this
    page the register entry xfails on it. #193 repaired the count and removed the entry, so
-   the conformance suite measures the capture as a pass as of #193.
+   the conformance suite reports a pass for the capture as of #193.
 
 ## What the deleted text specification adds
 
