@@ -301,6 +301,7 @@ carries a connection key and no `FingerprintResult` field holds one.
 | `Processor(thread_safe=True)` | Build one processor and the ten fingerprinters it drives |
 | `.process_packet(packet)` | Run every fingerprinter on one packet, and return a list of `FingerprintResult` |
 | `.process_packet_with_errors(packet)` | Return the same list, and the errors the fingerprinters raised |
+| `.process_packet_with_method_errors(packet)` | Return the same list, and each error with the name of the method that raised it |
 | `.close_open_windows()` | Emit every window the fingerprinters hold open |
 | `.get_shard_key(packet)` | Return one stable key for the connection of a packet |
 | `.cleanup_connection(src_ip, src_port, dst_ip, dst_port, proto)` | Drop the state of one connection across every fingerprinter |
@@ -327,6 +328,17 @@ for error in errors:
 The results follow the fixed method order `ja4`, `ja4s`, `ja4h`, `ja4t`, `ja4ts`,
 `ja4l`, `ja4x`, `ja4ssh`, `ja4d`, `ja4d6`. The order is part of the interface. The
 errors follow the same order.
+
+An exception names no method, so a caller that reports an error to a person calls
+`process_packet_with_method_errors` instead. It returns the same results, and one pair
+of the method name and the exception for each method that raised. #51 added it, and the
+command-line program reads it.
+
+```python
+results, errors = processor.process_packet_with_method_errors(packet)
+for method, error in errors:
+    print(f"{method} could not read the packet: {error}")
+```
 
 Warning: every returned exception carries no traceback. A traceback holds the frame of
 every call it passed, and those frames hold the packet. A monitor that keeps the errors
