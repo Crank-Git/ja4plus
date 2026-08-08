@@ -43,11 +43,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   same. A new column appends to the end of the row and raises no version.
   `TheSchemaDocument` parses the page and compares its field table against the written
   CSV header and the written JSON object, so the page and the code cannot drift apart.
-  **Seven mutations each make the file fail**, measured on 2026-08-08: a swap of two CSV
-  columns fails 6 cases, an appended column fails 4, a dropped JSON field fails 4, a
-  raise of `SCHEMA_VERSION` with no history entry fails 4, a renamed column in the page
-  alone fails 3, a changed stability promise fails 1, and a deleted rule sentence fails
-  1. **The `json` and `csv` formats carry the stability promise, and the `table` format
+  Two further cases read the value of each field, because a swap of two values changes
+  the meaning of both fields and moves no name. **Ten mutations each make the file
+  fail**, measured on 2026-08-08 against a baseline of 41 passed: a swap of two CSV
+  columns fails 7 cases, an appended column fails 4, a dropped JSON field fails 5, a
+  raise of `SCHEMA_VERSION` with no history entry fails 6, a renamed column in the page
+  alone fails 3, a changed stability promise fails 1, a deleted rule sentence fails 1, a
+  swap of two JSON values fails 1, a swap of two CSV values fails 2, and a write of
+  `src_port` into `dst_port` fails 2. The appended column is the case that proves the
+  rule: it fails the page checks, because a new field must be documented, and it leaves
+  the version checks green, because a new field raises no version.
+  **The `json` and `csv` formats carry the stability promise, and the `table` format
   carries none**, which the page states and a check reads back. The page records that
   `ja4`, `ja4s`, `ja4h` and `ja4x` write a raw form and the other six methods write
   `null`; `ja4x` now writes `JA4X_r`, which #267 added.

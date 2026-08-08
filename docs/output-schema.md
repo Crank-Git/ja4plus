@@ -1,12 +1,12 @@
 # The output schema
 
-The command-line program writes one record for each fingerprint it produces. This page
-records the schema of that record and the version of that schema. A downstream tool
+The command-line program writes one output line for each fingerprint it produces. This
+page records the schema of that line and the version of that schema. A downstream tool
 reads this page to learn what it may rely on.
 
 `docs/specs/features/05-structured-output.md` defines the feature.
-`ja4plus/output.py` writes the records, and `tests/test_output_schema.py` reads this
-page back and compares it against the written record.
+`ja4plus/output.py` writes the output lines, and `tests/test_output_schema.py` reads
+this page back and compares it against the written output line.
 
 **The current schema version is 1.**
 
@@ -19,9 +19,9 @@ The rule holds three parts:
 - A new CSV column appends to the end of the row.
 
 A JSON object omits no field, and a field with no value is `null`. A CSV row holds one
-value for each column, and a column with no value is empty. The record therefore holds
-the same field set whatever options the user passed. `--lookup` changes the value of
-`identified_as` and no other part of the record.
+value for each column, and a column with no value is empty. The output line therefore
+holds the same field set whatever options the user passed. `--lookup` changes the value
+of `identified_as` and no other part of the line.
 
 `tests/test_output_schema.py` holds the rule as a check. `SCHEMA_HISTORY` in that file
 records the column list of each released version. The check fails when a released
@@ -29,11 +29,11 @@ column moves, changes name or goes away while `SCHEMA_VERSION` stays the same.
 
 ## How a parser reads the version
 
-A parser reads `schema_version` first. A parser that understands version 1 accepts a
-record whose `schema_version` is 1, and rejects a record whose `schema_version` is
+A parser reads `schema_version` first. A parser that understands version 1 accepts an
+output line whose `schema_version` is 1, and rejects a line whose `schema_version` is
 above 1. A parser reads a field by name in the JSON format, and by the position of the
-header name in the CSV format. A parser that ignores a field it does not know keeps
-working when this project appends one.
+header name in the CSV format. When this project appends a field, a parser that ignores
+an unknown field keeps working.
 
 ## Stability
 
@@ -49,8 +49,8 @@ reads the `json` format or the `csv` format instead.
 
 ## Fields
 
-The record holds eleven fields. The CSV format writes them as eleven columns in this
-order, and the JSON format writes them as eleven keys.
+The output line holds eleven fields. The CSV format writes them as eleven columns in
+this order, and the JSON format writes them as eleven keys.
 
 | Position | Field | JSON type | Empty value | Meaning |
 |---|---|---|---|---|
@@ -75,8 +75,9 @@ belong to the command-line program, and the library result carries neither.
 
 ## The raw forms
 
-Four of the ten methods write a raw form. The other six write `null` in both raw
-fields.
+Four of the ten methods write a value into a raw field. The other six write `null` into
+both raw fields. JA4H writes a value into one raw field and `null` into the other, so
+read the table for the exact behaviour of each method.
 
 | Method | `raw` | `raw_original_order` |
 |---|---|---|
@@ -89,7 +90,7 @@ fields.
 JA4S and JA4X sort no list, so one value serves both raw fields. JA4H writes no `JA4H_r`
 value, so its `raw` field is always `null`.
 
-## An example JSON record
+## An example JSON object
 
 ```json
 {"schema_version": 1, "timestamp": "2004-05-13T10:17:08.222534Z", "type": "ja4h", "fingerprint": "ge11nr08enus_dacf082e1695_000000000000_000000000000", "raw": null, "raw_original_order": "ge11nr08enus_Host,User-Agent,Accept,Accept-Language,Accept-Encoding,Accept-Charset,Keep-Alive,Connection_", "src_ip": "145.254.160.237", "src_port": 3372, "dst_ip": "65.208.228.223", "dst_port": 80, "identified_as": null}

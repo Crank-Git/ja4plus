@@ -65,17 +65,19 @@ SCHEMA_HISTORY = {
 
 
 def released_columns(version):
-    """Return the columns of the newest released version at or below the version.
+    """Return the frozen column list of the schema version.
 
     Args:
         version: The schema version the module writes.
 
     Returns:
-        The frozen column list of that version, or of the highest recorded version
-        below it when `SCHEMA_HISTORY` holds no entry for it.
+        The column list `SCHEMA_HISTORY` records for that version.
+
+    Raises:
+        KeyError: `SCHEMA_HISTORY` records no list for that version.
+            `test_the_history_records_the_version_the_module_writes` names the cause.
     """
-    recorded = [key for key in SCHEMA_HISTORY if key <= version]
-    return SCHEMA_HISTORY[max(recorded)]
+    return SCHEMA_HISTORY[version]
 
 
 def schema_document():
@@ -109,8 +111,11 @@ def document_table(heading):
         AssertionError: The document holds no such heading, or no table below it.
     """
     text = schema_document()
-    assert heading in text, f"the document holds no heading {heading!r}"
-    body = text.split(heading, 1)[1]
+    # The match is one whole line, so a longer heading that starts with the same words
+    # selects no table. A substring match would read the wrong section.
+    anchor = f"\n{heading}\n"
+    assert text.count(anchor) == 1, f"the document holds no one heading line {heading!r}"
+    body = text.split(anchor, 1)[1]
     rows = []
     for line in body.splitlines():
         stripped = line.strip()
@@ -473,12 +478,12 @@ class TheSchemaVersionRule(unittest.TestCase):
     def test_a_released_column_keeps_its_position_until_the_version_rises(self):
         released = released_columns(SCHEMA_VERSION)
         current = list(CSV_COLUMNS)
-        prefix_holds = current[: len(released)] == released
-        self.assertTrue(
-            prefix_holds or SCHEMA_VERSION > max(SCHEMA_HISTORY),
+        self.assertEqual(
+            current[: len(released)],
+            released,
             "a released column moved, changed name or went away. Append a new column to "
             "the end of CSV_COLUMNS, or raise SCHEMA_VERSION and record the new version "
-            f"in SCHEMA_HISTORY. released={released} current={current}",
+            "in SCHEMA_HISTORY.",
         )
 
     def test_a_released_field_stays_in_the_json_object_until_the_version_rises(self):
@@ -488,11 +493,75 @@ class TheSchemaVersionRule(unittest.TestCase):
         )
         present = set(json.loads(stream.getvalue()))
         released = set(released_columns(SCHEMA_VERSION))
-        self.assertTrue(
-            released <= present or SCHEMA_VERSION > max(SCHEMA_HISTORY),
-            f"the JSON object lost the released fields {sorted(released - present)}. "
-            "Raise SCHEMA_VERSION and record the new version in SCHEMA_HISTORY.",
+        self.assertEqual(
+            released - present,
+            set(),
+            "the JSON object lost a released field. Raise SCHEMA_VERSION and record the "
+            "new version in SCHEMA_HISTORY.",
         )
+
+    def test_every_json_field_carries_the_value_of_the_field_it_names(self):
+        """A swap of two values changes the meaning of both fields and moves no name.
+
+        The name checks above read the keys alone, so a writer that put `raw` under
+        `raw_original_order` would pass them. This case reads the values.
+        """
+        result = FingerprintResult(
+            type="ja4",
+            fingerprint="t13d1516h2_8daaf6152771_02713d6af862",
+            raw="the raw value",
+            raw_original_order="the original order value",
+            src_ip="145.254.160.237",
+            src_port=3372,
+            dst_ip="65.208.228.223",
+            dst_port=80,
+            timestamp=datetime(2026, 8, 6, 12, 34, 56, 789012, tzinfo=timezone.utc),
+        )
+        stream = io.StringIO()
+        JsonLinesWriter(stream).write(result, identified_as="Test Application")
+        record = json.loads(stream.getvalue())
+        self.assertEqual(record["schema_version"], SCHEMA_VERSION)
+        self.assertEqual(record["timestamp"], "2026-08-06T12:34:56.789012Z")
+        self.assertEqual(record["type"], result.type)
+        self.assertEqual(record["fingerprint"], result.fingerprint)
+        self.assertEqual(record["raw"], result.raw)
+        self.assertEqual(record["raw_original_order"], result.raw_original_order)
+        self.assertEqual(record["src_ip"], result.src_ip)
+        self.assertEqual(record["src_port"], result.src_port)
+        self.assertEqual(record["dst_ip"], result.dst_ip)
+        self.assertEqual(record["dst_port"], result.dst_port)
+        self.assertEqual(record["identified_as"], "Test Application")
+
+    def test_every_csv_column_carries_the_value_of_the_column_it_names(self):
+        """The CSV counterpart of the case above. A swap of two values fails here."""
+        result = FingerprintResult(
+            type="ja4",
+            fingerprint="t13d1516h2_8daaf6152771_02713d6af862",
+            raw="the raw value",
+            raw_original_order="the original order value",
+            src_ip="145.254.160.237",
+            src_port=3372,
+            dst_ip="65.208.228.223",
+            dst_port=80,
+            timestamp=datetime(2026, 8, 6, 12, 34, 56, 789012, tzinfo=timezone.utc),
+        )
+        stream = io.StringIO()
+        writer = CsvWriter(stream)
+        writer.write_header()
+        writer.write(result, identified_as="Test Application")
+        rows = csv_rows(stream.getvalue())
+        row = dict(zip(rows[0], rows[1]))
+        self.assertEqual(row["schema_version"], str(SCHEMA_VERSION))
+        self.assertEqual(row["timestamp"], "2026-08-06T12:34:56.789012Z")
+        self.assertEqual(row["type"], result.type)
+        self.assertEqual(row["fingerprint"], result.fingerprint)
+        self.assertEqual(row["raw"], result.raw)
+        self.assertEqual(row["raw_original_order"], result.raw_original_order)
+        self.assertEqual(row["src_ip"], result.src_ip)
+        self.assertEqual(row["src_port"], str(result.src_port))
+        self.assertEqual(row["dst_ip"], result.dst_ip)
+        self.assertEqual(row["dst_port"], str(result.dst_port))
+        self.assertEqual(row["identified_as"], "Test Application")
 
     def test_the_history_records_the_version_the_module_writes(self):
         self.assertIn(
