@@ -269,6 +269,88 @@ class TestTheConstructor:
         assert state_table.DEFAULT_MAX_CONNECTION_AGE == DEFAULT_MAX_STREAM_AGE
 
 
+class TestTheEvictionHook:
+    """#285 added `on_eviction` and `evict_key`, and this class measures both.
+
+    A second table that holds the same keys needs to hear about an eviction.
+    `SynAckTracker` is the first caller: `times` evicts, and `prefixes` loses the same
+    key. Every case here is proven by its removal. With the `self.on_eviction(key)` call
+    of `evict_key` removed, the first three cases fail.
+    """
+
+    def test_the_table_calls_the_hook_on_the_entry_count_bound(self):
+        """The count bound reports the key it removes."""
+        seen = []
+        table = BoundedStateTable(
+            max_connections=2, max_connection_age=600.0, on_eviction=seen.append
+        )
+
+        table["a"] = 1
+        table["b"] = 2
+        table["c"] = 3
+
+        assert seen == ["a"]
+
+    def test_the_table_calls_the_hook_on_the_age_pass(self):
+        """The age pass reports every key it removes."""
+        seen = []
+        table = BoundedStateTable(
+            max_connections=10,
+            max_connection_age=60.0,
+            eviction_interval=1,
+            on_eviction=seen.append,
+        )
+
+        table.on_packet(1000.0)
+        table["a"] = 1
+        table.on_packet(1100.0)
+        table["b"] = 2
+
+        assert seen == ["a"]
+
+    def test_the_table_calls_no_hook_for_a_removal_the_caller_asked_for(self):
+        """`pop`, `del` and `clear` belong to the caller, so none of them reports."""
+        seen = []
+        table = BoundedStateTable(max_connection_age=600.0, on_eviction=seen.append)
+
+        table["a"] = 1
+        table["b"] = 2
+        table["c"] = 3
+        table.pop("a", None)
+        del table["b"]
+        table.clear()
+
+        assert seen == []
+
+    def test_evict_key_raises_the_eviction_count_and_not_the_removal_count(self):
+        """FR-concurrency-safety-12 counts what the table lost without a caller ask."""
+        table = BoundedStateTable(max_connection_age=600.0)
+        table["a"] = 1
+
+        assert table.evict_key("a") is True
+        assert table.evictions == 1
+        assert table.removals == 0
+        assert len(table) == 0
+
+    def test_evict_key_reports_false_for_a_key_the_table_does_not_hold(self):
+        """A hook that arrives twice for one key evicts once."""
+        table = BoundedStateTable(max_connection_age=600.0)
+
+        assert table.evict_key("a") is False
+        assert table.evictions == 0
+
+    def test_the_table_holds_its_count_invariant_after_a_hook_eviction(self):
+        """`inserts == entries + evictions + removals` survives `evict_key`."""
+        table = BoundedStateTable(max_connection_age=600.0)
+        for index in range(5):
+            table[index] = index
+        table.evict_key(0)
+        table.pop(1, None)
+
+        stats = table.stats()
+        assert stats.inserts == stats.entries + stats.evictions + stats.removals
+
+
 class TestTheDictionaryInterface:
     """#39 replaces a plain dictionary with this table, so the operations must match."""
 

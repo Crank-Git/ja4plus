@@ -164,6 +164,7 @@ every fingerprinter table onto `BoundedStateTable`, and wrote this form.
 | `JA4SSHFingerprinter.connections` | 10000 | 600 seconds | 1000 |
 | `JA4SSHFingerprinter._handshake_clients` | 1000 | 600 seconds | 1000 |
 | `SynAckTracker.times`, held by JA4TS | 1000 | 120 seconds | 1 |
+| `SynAckTracker.prefixes`, held by JA4TS | 1000 | 120 seconds | none |
 | `JA4DBClient._cache`, held by the lookup client | 100000 | 600 seconds | 100000 reads |
 | `BaseFingerprinter.fingerprints` | none | none | none |
 
@@ -174,7 +175,15 @@ Every row other than the first two and `BaseFingerprinter.fingerprints` is a
 `BoundedStateTable`. #39 moved thirteen tables, and it removed two companion tables,
 `_quic_fragment_seen` and `_quic_server_crypto_seen`, because the state table holds the
 age of each entry. #42 moved `JA4DBClient._cache`, which reads no packet, so its age
-pass counts reads rather than packets.
+pass counts reads rather than packets. #285 moved `SynAckTracker.prefixes`, the
+fourteenth, which #246 added while Epic 3 was live.
+
+`SynAckTracker.prefixes` runs no age pass of its own, and the table above states no
+eviction interval for it. `SynAckTracker.times` holds the eviction hook that
+`BoundedStateTable` publishes, and that hook removes from `prefixes` the key `times`
+evicted. The two tables therefore hold the same keys, and the RST value of #246 reads a
+prefix for every connection `times` holds. Both bounds of `prefixes` are a second limit
+that the hook keeps the table away from.
 
 `TCPStreamReassembler.streams` stays an `OrderedDict`. It holds both bounds already, and
 `add_segment` applies two more per-stream caps that no mapping models. #39 records the
@@ -205,19 +214,21 @@ it grows without a limit, and Goal 3 covers it.
 - `TableStats` states six counts: `entries`, `max_entries`, `inserts`, `evictions`,
   `removals` and `returned_connections`. The six hold the invariant
   `inserts == entries + evictions + removals`.
-- **The report covers fifteen state tables, and not thirteen.** Round 82 counted the
+- **The report covers sixteen state tables, and not thirteen.** Round 82 counted the
   thirteen `BoundedStateTable` instances. `JA4HFingerprinter.reassembler` and
   `JA4XFingerprinter.reassembler` each hold per-connection data across packets, so the
   `## Terms` table names each one a state table too. `TCPStreamReassembler` therefore
-  inherits `StateTable` and counts the same six things.
+  inherits `StateTable` and counts the same six things. Round 87 adds the sixteenth,
+  `SynAckTracker.prefixes`.
 - `StateTable` is the base class both hold. `BaseFingerprinter.state_tables` finds a
   state table by that type, so a new table reaches the report with no further change.
-  The search descends one level, which reaches `SynAckTracker.times`.
+  The search descends one level, which reaches `SynAckTracker.times` and
+  `SynAckTracker.prefixes`.
 - A returned connection is a connection the table evicted and then saw again. The table
   remembers the keys it evicted, and it bounds that memory at its own entry count. A
   key the caller removed leaves no memory, so a connection that returns after
-  `cleanup_connection` counts as a first sighting. The fifteen tables hold 46400
-  remembered keys between them, at 187 bytes for one key, so the memory costs 8.3 MiB
+  `cleanup_connection` counts as a first sighting. The sixteen tables hold 47400
+  remembered keys between them, at 187 bytes for one key, so the memory costs 8.5 MiB
   at its worst.
 - `Processor.stats` holds the lock of one fingerprinter across the read of that
   fingerprinter, because the counts of one method describe one instant. It acquires one
@@ -341,7 +352,14 @@ entry.
 names each table in `TABLES`, and a list cannot report a table that a later change adds.
 `test_the_processor_holds_no_mapping_without_a_bound` walks a live `Processor()` and fails
 on any mapping that is neither a `BoundedStateTable` nor one of the two stream tables.
-The walk reads 13 bounded tables and 2 stream tables, which matches the table above.
+The walk reads 14 bounded tables and 2 stream tables, which matches the table above.
+
+**#285 proves the eviction hook by its removal.** With the `self.on_eviction(key)` call
+of `BoundedStateTable.evict_key` removed, five cases fail: two in
+`tests/test_state_table.py::TestTheEvictionHook` and three in
+`tests/test_ja4ts_prefix_bound.py`. The third of those three reads
+`KeyError: ('10.0.0.2', 443, '10.0.0.1', 50000)`, because `SynAckTracker.reset_value`
+then reads a prefix that the prefix table already lost.
 
 **This feature states no memory ceiling, and #43 states none.** #279 owns the number, and
 round 81 records that the measurement forces a floor and forces no ceiling. The memory
@@ -350,13 +368,14 @@ file proves the bound through entry counts and eviction counts instead: a second
 
 **#41 landed before #43, so the contract states the statistics it built.**
 `docs/api_reference.md` holds a `stats()` row, the six fields of `ProcessorStats`, and
-the definition of a returned connection. **#43 re-measured the table count and reads
-fifteen**, which matches round 85: `Processor.stats()` reports 15 tables across 10
-methods, and the walk of `tests/test_memory_bounds.py` reads 15 by an independent route.
+the definition of a returned connection. **#285 re-measured the table count and reads
+sixteen**: `Processor.stats()` reports 16 tables across 10 methods, and the walk of
+`tests/test_memory_bounds.py` reads 16 by an independent route.
 `test_the_walk_of_this_file_agrees_with_the_report_of_the_processor` compares the two, so
-a change that hides a table from one of them fails. The count moved three times, from six
-in #179 to thirteen in #39 to fifteen in #41, and each move followed a better walk rather
-than new code.
+a change that hides a table from one of them fails. The count moved four times, from six
+in #179 to thirteen in #39 to fifteen in #41 to sixteen in #285. Three of the four moves
+followed a better walk rather than new code, and #285 is the one that followed new code:
+#246 added `SynAckTracker.prefixes` while Epic 3 was live.
 
 ## Data touched
 

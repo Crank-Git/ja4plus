@@ -215,24 +215,69 @@ adopts all four.
 
 **The RST suffix stays out of this rule.** R13 records it.
 
-### R13 — The RST value of JA4TS is not built, and #246 owns it
+### R13 — A RST appends `R` and its delay to part e
 
-The deleted file states that a RST appends `R` and its delay to part e, and that a RST
-packet carries no window size and no option, so the reader needs the previous JA4TS.
-`wireshark/source/packet-ja4.c:1608` writes a second `JA4TS` value on the RST, and it
-rebuilds part a through part d from the stored connection.
+**Changelog round 79 records this reading, and #246 built it.** The deleted
+`technical_details/JA4T.md` is the primary source, and two implementations corroborate
+it. The file reads: "the final TCP packet, a RST packet, should be appended to the last
+JA4TS denoted with 'R' and its delay." Its example ends
+`65535_2-1-3-1-1-4_65495_8_1-2-4-8-R6`.
 
-**The RST value separates from part e, and #226 measured the separation.** Both
-implementations nest the RST branch inside the delay branch:
-`wireshark/source/packet-ja4.c:693` reads `rst_time` only when `syn_ack_count > 1`, and
-`zeek/ja4t/main.zeek:233` reads `rst_ts` only when the delay list holds a value. A delay
-list is therefore complete and correct with no RST, which the deleted file's own second
-example shows: it ends at `62727_2_8961_00_1-2-4-8-16` and carries no RST. The RST value
-also needs two things part e does not: a reader of RST packets, and stored part a
-through part d for a packet that carries neither.
+This project adopts four rules.
 
-No vector reaches this rule. `tests/foxio_vectors/` holds one connection with more than
-one SYN-ACK, and the server sent no RST on it.
+1. **A RST that the server sends appends `-R` and its delay to part e.** The delay is the
+   interval since the last SYN-ACK, in whole seconds.
+   `wireshark/source/packet-ja4.c:694` subtracts
+   `conn->syn_ack_times[conn->syn_ack_count - 1]` from `conn->rst_time`, and
+   `zeek/ja4t/main.zeek:233` subtracts `last_ts` from `rst_ts`. The delay rounds the way
+   part e rounds, which R12 rule 2 states.
+2. **A RST on a connection with no delay produces no value.** Both implementations nest
+   the RST branch inside the delay branch. `wireshark/source/packet-ja4.c:693` reads
+   `rst_time` only when `syn_ack_count > 1`, and `zeek/ja4t/main.zeek:232` reads `rst_ts`
+   only when the delay list holds a value. A delay list is therefore complete and correct
+   with no RST, which the deleted file's own second example shows: it ends at
+   `62727_2_8961_00_1-2-4-8-16` and carries no RST.
+3. **The RST value reads part a through part d from the stored connection.** The file
+   reads: "Note that RST packets do not contain TCP options or window sizes, as such the
+   program will need to be aware of the previous JA4TS."
+   `wireshark/source/packet-ja4.c:1608` writes a second `JA4TS` value on the RST packet,
+   and lines 1601 to 1607 restore `window_scale`, `window_size`, `mss_val` and
+   `tcp_options` from the connection. `ja4plus` stores the parts of the **first** SYN-ACK,
+   which `zeek/ja4t/main.zeek:177-178` also reads and never replaces. A retransmission
+   repeats the SYN-ACK, so the two readings agree on real traffic.
+4. **The RST value reads the same two bounds that part e reads.** The stored parts live in
+   the connection table that R12 rule 4 bounds, and they add no table.
+   `zeek/ja4t/main.zeek:162` drops the connection on the timeout before it reads the RST,
+   so a RST that arrives more than two minutes after the last SYN-ACK produces no value.
+
+**The two implementations disagree on the flag combination that names a RST packet, and
+this project reads the bit.** `zeek/ja4t/main.zeek:167` tests `rph$tcp$flags & TH_RST`,
+so any packet that carries the RST bit reaches the rule.
+`wireshark/source/packet-ja4.c:1296` tests `tcp_flags == 0x004` for equality, so the
+dissector reads no RST that also carries ACK. The deleted file writes "a RST packet" and
+names no flag combination, so the prose and the Zeek script agree and the dissector reads
+one case fewer. A RST that carries ACK is common on real traffic, and the narrow reading
+would drop it.
+
+**`ja4plus` emits no value for a RST on a connection with no delay, where the dissector
+emits the four parts again.** `wireshark/source/packet-ja4.c:1599` writes the `JA4TS`
+field whenever `syn == 3`, and `ja4t()` then omits part e. That second value repeats the
+value the SYN-ACK already produced and describes no packet of its own, which
+`.claude/rules/conformance.md` declines under its second shape. `zeek/ja4t/main.zeek`
+writes one JA4TS value for one connection and never a second, so the Zeek package
+corroborates the decline.
+
+**A client RST produces no value.** Every SYN-ACK travels from the server, so the
+connection key names the server first and a client RST reverses it.
+`zeek/ja4t/main.zeek:189` sets the packet threshold with `F`, so the Zeek script reads
+responder packets alone. The dissector reads either direction, because
+`wireshark/source/packet-ja4.c:1296` holds no direction guard.
+
+**No vector reaches this rule.** `tests/foxio_vectors/` holds 10 RST packets across its 38
+captures, and none of the 10 sits on a connection with more than one SYN-ACK.
+`ssh2.pcapng` holds the one connection of the set that the server answered twice, and the
+server sent no RST on it. `tests/build_ja4ts_rst.py` therefore writes the capture from the
+six capture times the deleted file lists, and `tests/test_ja4ts_reset.py` reads it back.
 
 ## The comparison against this project
 

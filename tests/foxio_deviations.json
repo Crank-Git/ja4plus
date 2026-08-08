@@ -1,11 +1,11 @@
 {
   "CVE-2018-6794.pcap/JA4L-C": {
-    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
-    "issue": 34
+    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
+    "issue": 272
   },
   "CVE-2018-6794.pcap/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
-    "issue": 34
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
+    "issue": 272
   },
   "alpn-condition.pcap/2:44403/JA4.1": {
     "issue": 162,
@@ -371,12 +371,12 @@
     "decided": true
   },
   "https-connect.pcap/JA4L-C": {
-    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
-    "issue": 34
+    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
+    "issue": 272
   },
   "https-connect.pcap/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
-    "issue": 34
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
+    "issue": 272
   },
   "https-connect.pcap/JA4S": {
     "cause": "The FoxIO Rust snapshot and the Wireshark dissector both hold the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no TLS on port 8080, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
@@ -489,8 +489,8 @@
     "decided": true
   },
   "ssh2.pcapng/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds. The FoxIO Python file holds 10 `JA4L-S` values on this capture, and ja4plus produces 11. `ja4plus/fingerprinters/ja4l.py:430` returns a second server value for a retransmitted SYN-ACK, and the extra value is `JA4L-S=6252_58` on the connection to 184.150.157.177:80. This is the one entry of the six that compares two measured counts. The entry stays open under #34, and no Changelog round settled it.",
-    "issue": 34
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The FoxIO Python file holds 10 `JA4L-S` values on this capture, and ja4plus produces 11. `ja4plus/fingerprinters/ja4l.py:430` returns a second server value for a retransmitted SYN-ACK, and the extra value is `JA4L-S=6252_58` on the connection to 184.150.157.177:80. This is the one entry of the six that compares two measured counts. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
+    "issue": 272
   },
   "ssh2.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. It also reads no ServerHello whose handshake record spans several TCP segments, which omits the two streams #151 names. tests/test_foxio_rust_parity.py measures the match.",
@@ -537,8 +537,8 @@
     "decided": true
   },
   "tls-handshake.pcapng/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
-    "issue": 34
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
+    "issue": 272
   },
   "tls-handshake.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. It also reads no ServerHello whose handshake record spans several TCP segments, which omits the stream #151 names. tests/test_foxio_rust_parity.py measures the match.",

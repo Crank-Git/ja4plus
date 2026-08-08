@@ -34,6 +34,36 @@ index 0 to two streams. The pair matches the test identifier the suite prints.
 
 4. Run the conformance suite again. The case now reports as `xfailed`.
 
+## The marker rule
+
+An entry whose cause cites a decision carries `"decided": true`. An entry that cites no
+decision stays unmarked, and that is the correct state for an entry that stays open. An
+unmarked entry states that nobody read it, so a marker that is missing hides a decision.
+
+`unmarked_decisions` in `tests/test_foxio_deviations.py` enforces the rule. It reads four
+forms of citation as evidence that a person decided an entry:
+
+| Form | Example |
+|---|---|
+| A Changelog round named by number | `Changelog round 66 settled the marker.` |
+| A decision recorded against an issue or a date | `decided on #105`, `decided on 2026-08-07` |
+| An issue named as the place the decision was made | `#138 decided to keep the values.` |
+| An issue named as the record of the decision | `#162 records the decision.` |
+
+Every form is past tense. An entry that names the issue that will decide it names no
+decision, so `#215 decides whether ja4plus reads the raw option bytes` leaves the entry
+open. A denied citation is not a citation either, so `no Changelog round settled it`
+leaves the entry open.
+
+The guard on a denied citation reads the word before the citation alone. A cause that
+denies a citation in other words fails the gate. Reword the cause. A gate that misses a
+decision costs more than a gate that asks a question.
+
+The rule runs in one direction. An entry that cites no decision may still carry the
+marker, which 38 of the 128 decided entries do. A FoxIO Rust snapshot settled those by
+measurement, and no person decided them. The 38 are the 34 entries of #138 and 4 of the 5
+entries of #151.
+
 ## How to remove an entry
 
 A fix that lands makes the case pass, and the strict marker turns that pass into a
@@ -47,6 +77,12 @@ Never delete an entry to make a red suite green.
 or a closed issue that no decision record explains. The register named the epic #13 for
 five batches, and no test caught it.
 
+Warning: a refresh turns the suite red whenever an owner closed since the last refresh.
+The red suite is the true state. The repair is to point the entry at an open issue. Never
+restore the stale state, and never mark the entry `decided`. #255 refreshed the file, and
+six undecided entries named the closed #34. The `retrieved` date detects nothing here,
+because #34 closed on the day the file records.
+
 The file is checked in, so the unit suite reaches no network. Refresh it with:
 
 ```bash
@@ -55,6 +91,9 @@ gh issue list --state all --limit 500 --json number,state,labels,title
 
 An entry whose owner the file does not hold fails the test. Add the owner, or point the
 entry at an issue the file already holds.
+
+Whenever an owner closes, refresh the file. An owner that no register entry names may stay
+in the file. #34 stays as the record of the earlier owner of the six JA4L entries.
 
 ## How to measure a new baseline
 

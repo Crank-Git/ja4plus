@@ -144,6 +144,11 @@ delay between two SYN-ACK packets. It counts ten retransmissions for one connect
 it drops a connection two minutes after the last SYN-ACK. Call `cleanup_connection` when
 a connection ends, or `reset` to drop every entry.
 
+The fingerprinter also reads the RST packet that the server sends. A RST on a connection
+that already holds a delay appends `R` and its own delay to part e, and the value reads
+part a through part d from the first SYN-ACK of the connection. A RST on a connection
+with no delay produces no value, and a client RST produces no value.
+
 ### JA4LFingerprinter
 
 Network latency estimation from TCP handshake timing.
@@ -198,7 +203,7 @@ lookup = fp.lookup_hassh(hassh_value)            # Known HASSH lookup
 | `.thread_safe` | The value the constructor read |
 
 `stats()` reports what the state tables hold, and #41 built it. One processor holds
-**fifteen** state tables across the ten methods: the thirteen `BoundedStateTable`
+**sixteen** state tables across the ten methods: the fourteen `BoundedStateTable`
 instances and the two `TCPStreamReassembler` instances of JA4H and JA4X. A method that
 holds no state reports an empty `tables` list.
 
@@ -251,7 +256,7 @@ one processor without that arrangement, and it guards a `reset` that runs beside
 
 #### The memory bound of the processor
 
-One processor holds fifteen state tables: thirteen `BoundedStateTable` instances and two
+One processor holds sixteen state tables: fourteen `BoundedStateTable` instances and two
 `TCPStreamReassembler` instances. `features/03-concurrency-safety.md` states the maximum
 entry count and the maximum age of each one. A table that reaches its maximum entry count
 evicts the least recently used entry. A long capture can therefore evict a connection
@@ -292,7 +297,7 @@ result = generate_ja4(packet)
 | `generate_ja4s(packet)` | scapy packet | JA4S TLS server fingerprint |
 | `generate_ja4h(packet)` | scapy packet | JA4H HTTP fingerprint |
 | `generate_ja4t(packet)` | scapy packet | JA4T TCP client fingerprint |
-| `generate_ja4ts(packet, tracker=None)` | scapy packet | JA4TS TCP server fingerprint. One packet names no retransmission, so a call with no tracker writes four parts. `JA4TSFingerprinter` passes its own tracker and writes part e. |
+| `generate_ja4ts(packet, tracker=None)` | scapy packet | JA4TS TCP server fingerprint. One packet names no retransmission, so a call with no tracker writes four parts. `JA4TSFingerprinter` passes its own tracker and writes part e. A RST that the server sends on a connection that already holds a delay appends `R` and its own delay to part e, and that value reads part a through part d from the tracker. A call with no tracker reads no RST. |
 | `generate_ja4l(packet)` | scapy packet | JA4L latency fingerprint |
 | `generate_ja4x(cert_info)` | dict | JA4X certificate fingerprint (takes cert_info dict) |
 | `generate_ja4ssh(packet)` | scapy packet | JA4SSH session fingerprint |
@@ -346,11 +351,11 @@ caller removed with `cleanup_connection` counts as a first sighting when it retu
 because the caller asked for that removal.
 
 A table remembers the keys it evicted, so that it can recognise a return. The memory
-holds the entry bound of its own table. The fifteen tables of one processor hold 46400
-remembered keys between them, at 187 bytes for one key, so the memory costs 8.3 MiB
+holds the entry bound of its own table. The sixteen tables of one processor hold 47400
+remembered keys between them, at 187 bytes for one key, so the memory costs 8.5 MiB
 when every table is full and every entry of every table has been replaced.
 
-Ten methods hold fifteen state tables between them. `JA4TFingerprinter`,
+Ten methods hold sixteen state tables between them. `JA4TFingerprinter`,
 `JA4DFingerprinter` and `JA4D6Fingerprinter` hold none, and each reports an empty
 `tables` dict.
 
@@ -424,9 +429,11 @@ inherits `StateTable` and reports the six counts every state table reports.
 
 | Class/Function | Description |
 |----------------|-------------|
-| `BoundedStateTable(max_connections, max_connection_age, eviction_interval)` | A mapping that evicts on the entry count and on the entry age |
+| `BoundedStateTable(max_connections, max_connection_age, eviction_interval, on_eviction)` | A mapping that evicts on the entry count and on the entry age |
 | `.on_packet(timestamp)` | Announce one packet. The table reads `timestamp` for every later operation, and it runs one age eviction pass for every `eviction_interval` packets |
 | `.evict_aged(now)` | Run one age eviction pass, and return the count of entries it removed |
+| `.evict_key(key)` | Remove one entry, count it as an eviction, and call `on_eviction`. Return False when the table holds no such key |
+| `.on_eviction` | A callable the table calls with the key of every entry it evicts. A caller removal calls nothing. #285 added it, so that a second table holding the same keys stays in lockstep |
 | `.evictions` | The count of entries the table itself removed. `pop`, `del` and `clear` raise none |
 | `.stats()` | Return the `TableStats` of the table |
 | `StateTable` | The base class every state table inherits. It holds the six counts and the memory of the evicted keys |

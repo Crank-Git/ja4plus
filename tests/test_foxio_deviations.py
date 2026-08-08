@@ -6,6 +6,7 @@ key forms and the shape of the committed register.
 """
 
 import json
+import re
 
 import pytest
 
@@ -19,6 +20,51 @@ from tests.foxio_deviations import (
     occurrence_key,
     value_key,
 )
+
+
+# The four forms of citation that record a decision a person made. Each one is past
+# tense, because a decision that was made is the only evidence that somebody read the
+# entry. The present tense names the issue that will decide, as `#215 decides whether
+# ja4plus reads the raw option bytes` does, and that names no decision. The lookbehind
+# drops a denied citation, because the six JA4L entries hold `no Changelog round
+# settled it`. The guard reads the word before the citation alone. A cause that denies a
+# citation in other words fails the gate, and the repair is to reword the cause, because
+# a gate that misses a decision costs more than a gate that asks a question.
+DECISION_CITATION = re.compile(
+    r"(?<![Nn]o )(?<![Nn]ot )"
+    r"(?:Changelog round \d+"
+    r"|decided on (?:#\d+|\d{4}-\d{2}-\d{2})"
+    r"|#\d+ decided"
+    r"|#\d+ records the decision)"
+)
+
+
+def unmarked_decisions(register):
+    """Return one message for every entry that cites a decision and carries no marker.
+
+    A cause that names a Changelog round by number, or names the issue or the date a
+    decision was made on, records that a person read the entry. Such an entry carries
+    `decided`. A cause that cites no decision stays unmarked, and that is the correct
+    state for an entry that stays open.
+
+    Args:
+        register: The register that `load_register` returns.
+
+    Returns:
+        A list of messages, sorted by key. An empty list means every entry that cites a
+        decision carries the marker.
+    """
+    messages = []
+    for key, deviation in sorted(register.items()):
+        if deviation.decided:
+            continue
+        citation = DECISION_CITATION.search(deviation.cause)
+        if citation is None:
+            continue
+        messages.append(
+            "{} names {}, and the entry carries no decided marker".format(key, citation.group())
+        )
+    return messages
 
 
 def unusable_owners(register, owners):
@@ -344,9 +390,15 @@ TCP_OPTION_KEYS = (
     "ssh2.pcapng/JA4T",
 )
 
-# Every entry that stays open. #34 owns the six JA4L entries, and #215 owns the three
+# The six JA4L entries together. #34 owned them, and #34 is closed, so a worker can act
+# on none of them. #272 is open and it holds the question the user answers.
+JA4L_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,)
+
+JA4L_OWNER = 272
+
+# Every entry that stays open. #272 owns the six JA4L entries, and #215 owns the three
 # JA4T entries.
-OPEN_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,) + TCP_OPTION_KEYS
+OPEN_KEYS = JA4L_KEYS + TCP_OPTION_KEYS
 
 
 class TestTheOpenRegisterEntries:
@@ -372,6 +424,15 @@ class TestTheOpenRegisterEntries:
         for key, deviation in self._undecided().items():
             assert "#{}".format(deviation.issue) in deviation.cause, key
 
+    def test_every_ja4l_entry_names_the_open_issue_that_holds_the_question(self):
+        """#34 closed on 2026-08-07 and left the six entries with no owner.
+
+        An entry whose owner is closed names nobody a worker can reach. #272 is open, it
+        carries the question the user answers, and it decides none of the six.
+        """
+        for key in JA4L_KEYS:
+            assert load_register()[key].issue == JA4L_OWNER, key
+
     def test_every_method_filter_entry_names_the_reference_line_that_deletes_the_key(self):
         for key in METHOD_FILTER_KEYS:
             assert "python/ja4.py:339" in load_register()[key].cause, key
@@ -380,6 +441,115 @@ class TestTheOpenRegisterEntries:
         cause = load_register()[DUPLICATE_SERVER_VALUE_KEY].cause
         assert "JA4L-S=6252_58" in cause
         assert "retransmitted SYN-ACK" in cause
+
+
+class TestTheRegisterMarkerRule:
+    """Check that every entry a person decided carries the marker.
+
+    The register gained 21 entries in batch 18, and 16 of them named a decision the user
+    had made while carrying no marker. #193 repaired the same fault earlier the same day,
+    and #251 repaired it again. An unmarked entry states that nobody read it, so a cause
+    that cites a decision and carries no marker is a defect.
+    """
+
+    def test_the_committed_register_hides_no_decision(self):
+        assert unmarked_decisions(load_register()) == []
+
+    def test_the_check_reports_an_entry_that_names_a_changelog_round(self):
+        register = {"a.pcap/JA4": Deviation(issue=225, cause="Changelog round 66 keeps the part.")}
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4 names Changelog round 66, and the entry carries no decided marker"
+        ]
+
+    def test_the_check_reports_an_entry_that_names_the_issue_the_user_decided_on(self):
+        register = {"a.pcap/JA4": Deviation(issue=105, cause="A defect, decided on #105.")}
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4 names decided on #105, and the entry carries no decided marker"
+        ]
+
+    def test_the_check_reports_an_entry_that_names_the_issue_that_records_the_decision(self):
+        """The 16 entries of #162 close their cause with this form.
+
+        A future entry that copies the form and carries no marker must fail the gate.
+        """
+        register = {"a.pcap/JA4": Deviation(issue=162, cause="#162 records the decision.")}
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4 names #162 records the decision, and the entry carries no decided marker"
+        ]
+
+    def test_the_check_reports_an_entry_that_names_the_date_of_the_decision(self):
+        register = {"a.pcap/JA4": Deviation(issue=162, cause="The user decided on 2026-08-07.")}
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4 names decided on 2026-08-07, and the entry carries no decided marker"
+        ]
+
+    def test_the_check_reports_an_entry_that_names_the_issue_that_decided_it(self):
+        register = {"a.pcap/JA4X": Deviation(issue=138, cause="#138 decided to keep the values.")}
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4X names #138 decided, and the entry carries no decided marker"
+        ]
+
+    def test_the_check_names_every_offending_key(self):
+        register = {
+            "b.pcap/JA4S": Deviation(issue=225, cause="Changelog round 66 keeps the part."),
+            "a.pcap/JA4": Deviation(issue=105, cause="A defect, decided on #105."),
+        }
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4 names decided on #105, and the entry carries no decided marker",
+            "b.pcap/JA4S names Changelog round 66, and the entry carries no decided marker",
+        ]
+
+    def test_the_check_accepts_a_marked_entry_that_names_a_round(self):
+        register = {
+            "a.pcap/JA4": Deviation(issue=225, cause="Changelog round 66 keeps it.", decided=True)
+        }
+        assert unmarked_decisions(register) == []
+
+    def test_the_check_accepts_an_open_entry_that_names_the_issue_that_will_decide_it(self):
+        """The present tense names a decision nobody has made yet.
+
+        The three JA4T entries read `#215 decides whether ja4plus reads the raw option
+        bytes`. An entry that names the issue that will decide it names no decision.
+        """
+        register = {"a.pcap/JA4T": Deviation(issue=215, cause="#215 decides the JA4T form.")}
+        assert unmarked_decisions(register) == []
+
+    def test_the_check_accepts_an_open_entry_that_states_no_round_settled_it(self):
+        """The six JA4L entries hold this sentence."""
+        register = {
+            "a.pcap/JA4L-S": Deviation(
+                issue=272,
+                cause="The entry stays open under #272, and no Changelog round settled it.",
+            )
+        }
+        assert unmarked_decisions(register) == []
+
+    def test_the_check_accepts_an_open_entry_that_denies_a_numbered_round(self):
+        """A denied citation is not a citation.
+
+        The JA4L sentence names no number today. A future author who writes the number
+        into it must not make the gate demand a marker on an open entry.
+        """
+        register = {
+            "a.pcap/JA4L-S": Deviation(issue=272, cause="No Changelog round 76 settled the entry.")
+        }
+        assert unmarked_decisions(register) == []
+
+    def test_the_check_reads_a_citation_that_follows_a_denied_citation(self):
+        """A denied citation hides no decision that the same cause states later.
+
+        The check reads the whole cause. A cause that opens with a denial and then records
+        a decision still names the decision.
+        """
+        register = {
+            "a.pcap/JA4": Deviation(
+                issue=162,
+                cause="No Changelog round 76 settled it. The user decided on 2026-08-07.",
+            )
+        }
+        assert unmarked_decisions(register) == [
+            "a.pcap/JA4 names decided on 2026-08-07, and the entry carries no decided marker"
+        ]
 
 
 class TestTheOwnerReader:

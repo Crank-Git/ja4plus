@@ -32,6 +32,7 @@ Code inside this repository is different. Read the code.
 | `FoxIO-LLC/ja4tscan` | Commit `d01bfec4e64366d37ae95982a5068a5b41ca43b0`, dated 2024-08-29 | https://github.com/FoxIO-LLC/ja4tscan |
 | `FoxIO-LLC/ja4-nginx-module` | Commit `7eeee6202b9b65f5ccf85572957a816ade8cb0bc`, dated 2026-04-20 | https://github.com/FoxIO-LLC/ja4-nginx-module |
 | `ja4db.com` lookup | No published version | `https://ja4db.com/api/read/<fingerprint>` |
+| Wireshark core dissectors | Release 4.4.2 | https://gitlab.com/wireshark/wireshark/-/tree/v4.4.2/epan/dissectors |
 | `scapy` | 2.4 or later | https://scapy.readthedocs.io/ |
 | `cryptography` | 42 or later | https://cryptography.io/en/latest/ |
 | PyPI trusted publishing | `pypa/gh-action-pypi-publish` release v1 | https://docs.pypi.org/trusted-publishers/ |
@@ -108,6 +109,14 @@ option kind 0 inside the JA4T option list. #197 owns the scope decision.
 `README.md` opens with a `# NOTICE` section that reads "This version of JA4 has known
 issues and bugs and may not produce correct JA4 values. Use at your own risk." Treat none
 of its four golden files under `test/testdata/` as a reference value.
+
+**The pinned FoxIO checkout carries no core Wireshark dissector.** Its `wireshark/`
+directory holds the FoxIO plugin alone, and `wireshark/source/packet-ja4.c` reads fields
+that a core dissector produced. A question about which packet reaches that plugin is
+therefore a question for the Wireshark repository, and the table above pins it. #231 is
+the first reading that needed it: `packet-dhcp.c` states
+`#define DHCP_UDP_PORT_RANGE  "67-68,4011"`, so the reference reads DHCP on three UDP
+ports where `packet-ja4.c` names none.
 
 **JA4D6 rests on one source.** No FoxIO implementation other than the Wireshark
 dissector writes a JA4D6 value, so nothing corroborates its six values the way the
