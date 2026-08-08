@@ -82,6 +82,19 @@ python tests/compare_zeek_baselines.py <path-to-FoxIO-ja4-checkout>
 
 The run of 2026-08-08 printed 98 rows. 62 match and 36 differ.
 
+**#324 repaired the script on 2026-08-08 and re-ran it. The re-run prints 98 rows, of
+which 63 match and 35 differ.** #49 removed the composite `source` field the reader read,
+so the script raised `KeyError` on the first output line between the two runs. The reader
+now reads `src_ip`, `src_port`, `dst_ip` and `dst_port`, which `docs/output-schema.md`
+states. The one row that moved is JA4SSH, because #214 landed and `ssh2.pcapng` now
+produces the second value the Zeek baseline holds. Every other method reads the same as
+the table below.
+
+**`tests/test_compare_zeek_baselines.py` runs the script over `dhcp.pcapng`, so a later
+change to the output schema fails a case instead of breaking the script in silence.** The
+case writes its own baseline in the Zeek TSV form, because this repository holds no Zeek
+baseline.
+
 ## What the comparison measured
 
 One row holds one connection and one method. A row holds every value that connection

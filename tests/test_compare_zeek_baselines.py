@@ -13,11 +13,15 @@ connection key and the comparison. It measures no FoxIO value.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
 
-from tests.compare_zeek_baselines import ja4plus_readings
+import pytest
+
+from tests import compare_zeek_baselines
+from tests.compare_zeek_baselines import READS_SCHEMA_VERSION, ja4plus_readings
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "tests" / "compare_zeek_baselines.py"
@@ -70,6 +74,24 @@ class TestTheReaderOfTheOutputLines:
         assert readings[CLIENT_CONNECTION]["ja4d"] == CLIENT_FINGERPRINTS
         assert readings[SERVER_CONNECTION]["ja4d"] == SERVER_FINGERPRINTS
 
+    def test_the_reader_rejects_an_output_line_above_the_schema_version_it_reads(self, monkeypatch):
+        line = {
+            "schema_version": READS_SCHEMA_VERSION + 1,
+            "type": "ja4d",
+            "fingerprint": CLIENT_FINGERPRINTS[0],
+            "src_ip": "0.0.0.0",
+            "src_port": 68,
+            "dst_ip": "255.255.255.255",
+            "dst_port": 67,
+        }
+
+        def fake_run(*args, **kwargs):
+            return subprocess.CompletedProcess(args, 0, json.dumps(line) + "\n", "")
+
+        monkeypatch.setattr(compare_zeek_baselines.subprocess, "run", fake_run)
+        with pytest.raises(ValueError, match="schema version"):
+            ja4plus_readings(CAPTURE)
+
 
 class TestTheEndToEndRun:
     def test_the_script_reports_no_difference_when_the_baseline_agrees(self, tmp_path):
@@ -87,7 +109,10 @@ class TestTheEndToEndRun:
         assert "Connection-and-method pairs that differ: 0" in run.stdout
 
     def test_the_script_counts_a_difference_when_the_baseline_disagrees(self, tmp_path):
-        write_baseline(tmp_path, ["dpack0000nn_58-59-51-54-1_00"] + CLIENT_FINGERPRINTS[1:] + SERVER_FINGERPRINTS)
+        write_baseline(
+            tmp_path,
+            ["dpack0000nn_58-59-51-54-1_00"] + CLIENT_FINGERPRINTS[1:] + SERVER_FINGERPRINTS,
+        )
         run = run_script(tmp_path)
         assert run.returncode == 0, run.stderr
         assert "| NO |" in run.stdout

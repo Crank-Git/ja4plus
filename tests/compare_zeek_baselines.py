@@ -12,6 +12,10 @@ Usage, from the root of a checkout:
     python tests/compare_zeek_baselines.py <path-to-FoxIO-ja4-checkout>
 
 The report is Markdown. `docs/specs/foxio/zeek.md` records the reading it produced.
+
+The script reads the `json` format of this project. `docs/output-schema.md` states what a
+reader of that format may rely on. `tests/test_compare_zeek_baselines.py` runs the script
+end to end, because a change to that schema broke this reader once and no gate saw it.
 """
 
 from __future__ import annotations
@@ -23,6 +27,12 @@ from collections import defaultdict
 from pathlib import Path
 
 VECTORS = Path(__file__).parent / "foxio_vectors"
+
+# The schema version this reader understands. `docs/output-schema.md` states that a
+# parser accepts an output line at this version and rejects one above it. A version rises
+# only when a field goes away or its meaning changes, so a higher version may move a
+# field this reader keys on.
+READS_SCHEMA_VERSION = 1
 
 # Each baseline names its capture in the `@TEST-EXEC` line of the script that produced it.
 # `zeek/tests/btest.cfg` sets `TRACES` to the `pcap/` directory of the same checkout.
@@ -85,26 +95,6 @@ def connection_key(a: str, b: str) -> tuple[str, str]:
     return tuple(sorted((a, b)))  # type: ignore[return-value]
 
 
-def split_source(source: str) -> tuple[str, str]:
-    """Return the two endpoints of a `ja4plus` `source` field.
-
-    The field has the form `host:port -> host:port`. The function keeps each endpoint
-    whole and splits no port from it, because an IPv6 host holds colons and the Zeek key
-    joins the host and the port in the same way.
-
-    Args:
-        source: The `source` field of one `ja4plus` output line.
-
-    Returns:
-        The sender endpoint and the receiver endpoint.
-
-    Raises:
-        ValueError: The field holds no ` -> ` separator.
-    """
-    left, right = source.split(" -> ")
-    return left, right
-
-
 def zeek_readings(rows: list[dict[str, str]]) -> dict[tuple[str, str], dict[str, list[str]]]:
     """Return the Zeek fingerprints, keyed by connection and then by method.
 
@@ -140,6 +130,9 @@ def ja4plus_readings(capture: Path) -> dict[tuple[str, str], dict[str, list[str]
     Raises:
         subprocess.CalledProcessError: The command-line program failed. `compare` catches
             it, prints the standard error stream, and reads the next baseline.
+        ValueError: One output line carries a schema version above `READS_SCHEMA_VERSION`.
+            A comparison that misreads a field states a false difference, which is worse
+            than no comparison, so the reader stops.
     """
     result = subprocess.run(
         [sys.executable, "-m", "ja4plus.cli", "--format", "json", "analyze", str(capture)],
@@ -152,7 +145,16 @@ def ja4plus_readings(capture: Path) -> dict[tuple[str, str], dict[str, list[str]
         if not line.startswith("{"):
             continue
         json_object = json.loads(line)
-        left, right = split_source(json_object["source"])
+        version = json_object["schema_version"]
+        if version > READS_SCHEMA_VERSION:
+            raise ValueError(
+                f"{capture}: the output line carries schema version {version}, and this "
+                f"reader reads version {READS_SCHEMA_VERSION}"
+            )
+        # The `json` format writes each port as a number and the Zeek log writes it as a
+        # string, so the key needs the string form. `docs/output-schema.md` states both.
+        left = endpoint(json_object["src_ip"], str(json_object["src_port"]))
+        right = endpoint(json_object["dst_ip"], str(json_object["dst_port"]))
         method = json_object["type"]
         value = json_object["fingerprint"]
         # A JA4L fingerprint carries its side as a prefix. The Zeek log holds two columns

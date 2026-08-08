@@ -6,6 +6,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Zeek baseline comparison script runs again, and a case now runs it** (#324).
+  Round TBD. `tests/compare_zeek_baselines.py` read the composite `source` field that
+  #49 removed, so the script raised `KeyError` on the first output line it parsed. The
+  reader now reads `src_ip`, `src_port`, `dst_ip` and `dst_port`, which
+  `docs/output-schema.md` states, and `split_source` goes away because nothing needs it.
+  The reader also reads `schema_version` first and stops on a version above 1, which the
+  same page states. **The script is evidence-producing tooling, not dead code**:
+  `docs/specs/foxio/zeek.md` rests on it, and #198, #226 and #276 reason from its
+  readings. `tests/test_compare_zeek_baselines.py` runs the script end to end over
+  `dhcp.pcapng`, so a later schema change fails a case instead of breaking the script in
+  silence. No fingerprint moves, no output field changes, and the schema version stays 1.
+
 ### Changed
 
 - **The vocabulary settles one word for the serialized output line** (#306). Round TBD.
