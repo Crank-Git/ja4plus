@@ -74,8 +74,9 @@ DIVERGENT_CAPTURES = (
 TUNNELED_CAPTURE = "gre-erspan-vxlan.pcap"
 
 # The captures whose local Rust snapshot holds a JA4T value and no handshake value. The
-# FoxIO Python file of such a capture omits no handshake stream, so the #138 rule
-# reaches none of it, and the JA4T cases below are the whole comparison.
+# snapshot names no JA4 value and no JA4S value, so `handshake_cases` returns nothing for
+# such a capture and the #138 rule reaches none of it. `DIVERGENT_CAPTURES` therefore
+# holds none of them, and the JA4T cases below are the whole comparison.
 TCP_ONLY_CAPTURES = (TUNNELED_CAPTURE,)
 
 # Every capture whose local Rust snapshot this module reads.

@@ -610,12 +610,14 @@ bound of ten, and the largest interval is 0.005829 s, against a timeout of two m
 
 ## The decisions this page raises
 
-**#215 holds these decisions and #216 holds the conformance evidence.** Each item needs the
+**#215 holds these decisions. #216 and #242 hold the conformance evidence.** Each item needs the
 user, because each changes a fingerprint that this project publishes. This page changes no
 fingerprinter.
 
 1. **D1.** Which empty form does this project write? Rust writes `8192__0_0`, Wireshark and
-   Zeek write `8192_00_00_00`, and this project writes `8192_0_0_0`.
+   Zeek write `8192_00_00_00`, and this project writes `8192_0_0_0`. #242 committed the
+   one local snapshot that measures it, and the register key
+   `gre-erspan-vxlan.pcap/0:65174/JA4T.1` carries the case.
 2. **D2.** Reading the raw option bytes rather than scapy's parsed list repairs the pad-byte
    count. That changes a published fingerprint.
 3. **D4.** Holding one JA4T value per connection changes the count this project emits.
