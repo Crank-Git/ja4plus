@@ -372,14 +372,20 @@ def _ja4h_part_a(http_info):
     method = http_info.get("method", "").lower()
     version_str = _http_version_to_str(http_info.get("version", ""))
 
-    has_cookie = "c" if http_info.get("cookie_fields", []) else "n"
-    has_referer = "r" if http_info.get("referer", "") else "n"
+    # Field a3 and field a4 read the header, and neither reads the header value. A
+    # Cookie header whose value holds no `=` still writes `c`, and a Referer header that
+    # carries an empty value still writes `r`. All three FoxIO references read the
+    # header: `rust/ja4/src/http.rs:83`, `wireshark/source/packet-ja4.c:1165` and
+    # `python/ja4h.py:18`. #219 records the two defects.
+    header_names = [name.lower() for name in http_info.get("headers", [])]
+    has_cookie = "c" if "cookie" in header_names else "n"
+    has_referer = "r" if "referer" in header_names else "n"
 
-    header_count = 0
-    for header in http_info.get("headers", []):
-        if header.lower() not in ["cookie", "referer"]:
-            header_count += 1
-    header_count = min(header_count, 99)
+    # Field a5 counts the list part b hashes, so no header name reaches one and not the
+    # other. The count read the whole header list, and part b drops a name that is empty
+    # and a pseudo-header, so a header named with a space raised the count by one and
+    # changed no hash. #219 records the defect.
+    header_count = min(len(_ja4h_header_names(http_info)), 99)
     header_count_str = f"{header_count:02d}"
 
     language = http_info.get("language", "")
