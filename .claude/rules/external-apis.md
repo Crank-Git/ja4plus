@@ -28,6 +28,9 @@ Code inside this repository is different. Read the code.
 | FoxIO JA4+ specification | Upstream default branch, commit dated 2026-07-21 | https://github.com/FoxIO-LLC/ja4/tree/main/technical_details |
 | FoxIO test vectors | `pcap/`, `python/test/testdata/`, `wireshark/test/testdata/` and `rust/ja4/src/snapshots/` at the pinned commit | https://github.com/FoxIO-LLC/ja4/tree/main/python/test/testdata |
 | FoxIO mapping file | `ja4plus-mapping.csv` at the pinned commit | https://github.com/FoxIO-LLC/ja4/blob/main/ja4plus-mapping.csv |
+| FoxIO Zeek package | `zeek/` at the pinned commit | https://github.com/FoxIO-LLC/ja4/tree/main/zeek |
+| `FoxIO-LLC/ja4tscan` | Commit `d01bfec4e64366d37ae95982a5068a5b41ca43b0`, dated 2024-08-29 | https://github.com/FoxIO-LLC/ja4tscan |
+| `FoxIO-LLC/ja4-nginx-module` | Commit `7eeee6202b9b65f5ccf85572957a816ade8cb0bc`, dated 2026-04-20 | https://github.com/FoxIO-LLC/ja4-nginx-module |
 | `ja4db.com` lookup | No published version | `https://ja4db.com/api/read/<fingerprint>` |
 | `scapy` | 2.4 or later | https://scapy.readthedocs.io/ |
 | `cryptography` | 42 or later | https://cryptography.io/en/latest/ |
@@ -82,6 +85,26 @@ readings, #151 records the third, and `docs/implementation_notes.md` holds both 
 
 Read this rule at stream granularity. An earlier form read "only where the Python file
 holds an empty array", and that form covered one capture of the eight.
+
+**The Zeek package is a fourth reference, and it outranks nothing.** `zeek/` implements
+eight methods and carries seven baselines under `zeek/tests/Traces/`. Every baseline
+names its capture, and this project holds all seven captures.
+`docs/specs/foxio/zeek.md` records the whole reading, and
+`tests/compare_zeek_baselines.py` reproduces the comparison. Where
+`python/test/testdata/` and a Zeek baseline both hold a value for one method on one
+connection, `python/test/testdata/` decides. **Read no JA4L or JA4LS value of a Zeek
+baseline as a reference value.** The Zeek script rounds the halved latency where the
+Python reference truncates it, it appends a third part the Python reference does not
+publish, and it marks a QUIC connection with a `q` part.
+
+**`FoxIO-LLC/ja4tscan` holds prose and no baseline.** Its `README.md` gives eight
+JA4TScan example values against named operating systems, and two of them record TCP
+option kind 0 inside the JA4T option list. #197 owns the scope decision.
+
+**Warning: FoxIO states that `FoxIO-LLC/ja4-nginx-module` is not correct.** Its
+`README.md` opens with a `# NOTICE` section that reads "This version of JA4 has known
+issues and bugs and may not produce correct JA4 values. Use at your own risk." Treat none
+of its four golden files under `test/testdata/` as a reference value.
 
 **JA4D6 rests on one source.** No FoxIO implementation other than the Wireshark
 dissector writes a JA4D6 value, so nothing corroborates its six values the way the
