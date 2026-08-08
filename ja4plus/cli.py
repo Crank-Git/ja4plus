@@ -130,13 +130,20 @@ def _reporting_order(types: list[str]) -> dict[str, int]:
     that the order is part of the library interface. The command reports the order the
     user asked for instead, so `--types ja4t,ja4` writes the JA4T value first.
 
+    A name the user wrote twice keeps its first position, because version 0.6.0 built a
+    dict of fingerprinters and a repeated key kept the position of its first write.
+    `--types ja4t,ja4,ja4t` therefore writes the JA4T value first.
+
     Args:
         types: The method names the user asked for, in the order the user wrote them.
 
     Returns:
         A dict that maps the method name to its position.
     """
-    return {name: position for position, name in enumerate(types)}
+    order: dict[str, int] = {}
+    for position, name in enumerate(types):
+        order.setdefault(name, position)
+    return order
 
 
 def _select(results: list[FingerprintResult], order: dict[str, int]) -> list[FingerprintResult]:

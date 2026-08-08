@@ -18,7 +18,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   kept would hold the error chain of every packet it read. `--types` now selects which
   methods the program reports rather than which methods it builds, so the program evicts
   the connections of a method you filtered out and it reports that method's errors. The
-  reported order is still the order you wrote in `--types`. No fingerprint value moved:
+  reported order is still the order you wrote in `--types`, and a name you write twice
+  keeps its first position. No fingerprint value moved:
   the program writes the same 863 records over the 43 committed captures, byte for byte,
   and the conformance suite reports the same 1531 passed, 143 skipped and 135 xfailed.
 

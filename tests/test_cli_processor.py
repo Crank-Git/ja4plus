@@ -188,6 +188,34 @@ class TheProgramReportsAFingerprinterError(unittest.TestCase):
         self.assertEqual(types, {"ja4t"})
 
 
+class TheReportingOrderFollowsTheUser(unittest.TestCase):
+    """The program reports the order the user wrote, and not the fixed method order.
+
+    The processor runs `ja4t` and `ja4ts` before `ja4l`, and `VALID_TYPES` holds `ja4l`
+    first. A program that reported the order of the processor would move the output of
+    version 0.6.0.
+    """
+
+    def test_the_program_writes_the_methods_in_the_order_the_user_wrote(self):
+        from ja4plus.cli import _reporting_order
+
+        self.assertEqual(list(_reporting_order(["ja4t", "ja4"])), ["ja4t", "ja4"])
+        self.assertEqual(list(_reporting_order(["ja4ts", "ja4l"])), ["ja4ts", "ja4l"])
+
+    def test_a_method_the_user_wrote_twice_keeps_its_first_position(self):
+        """Version 0.6.0 built a dict, and a repeated key kept its first position."""
+        from ja4plus.cli import _reporting_order
+
+        order = _reporting_order(["ja4t", "ja4", "ja4t"])
+        self.assertEqual(sorted(order, key=lambda name: order[name]), ["ja4t", "ja4"])
+
+    def test_the_program_reports_one_record_for_a_method_the_user_wrote_twice(self):
+        out, err, status = run_cli("--format", "json", "--types", "ja4t,ja4t", "analyze", HTTP_CAP)
+        self.assertEqual(status, 0, err)
+        once, _, _ = run_cli("--format", "json", "--types", "ja4t", "analyze", HTTP_CAP)
+        self.assertEqual(out, once)
+
+
 class TheProgramHoldsNoError(unittest.TestCase):
     """The program keeps no exception object after it reports one.
 

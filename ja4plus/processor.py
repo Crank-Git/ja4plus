@@ -5,6 +5,7 @@ Mirrors the API of ja4plus-go's ja4plus.Processor:
     p = Processor()
     results = p.process_packet(pkt)            # list of FingerprintResult
     results, errors = p.process_packet_with_errors(pkt)
+    results, errors = p.process_packet_with_method_errors(pkt)   # each error names its method
     p.cleanup_connection(src_ip, src_port, dst_ip, dst_port, "tcp")
     key = p.get_shard_key(pkt)                 # stable connection key
     p.reset()                                  # clear all state
