@@ -56,7 +56,183 @@ _VALUE = 0
 _LAST_SEEN = 1
 
 
-class BoundedStateTable(MutableMapping):
+class TableStats:
+    """The counts one state table reports.
+
+    `Processor.stats` collects one of these for every state table of every method.
+    FR-concurrency-safety-11 asks for the entry count, and FR-concurrency-safety-12
+    asks for the eviction count. The other four counts make the report readable: a
+    reader who sees 10000 entries cannot tell a table that filled once from a table
+    that evicted a million connections.
+
+    The six counts hold one invariant, `inserts == entries + evictions + removals`. A
+    reader who sees it broken read the table while another thread wrote it.
+
+    Args:
+        entries: The count of entries the table holds now.
+        max_entries: The maximum entry count of the table.
+        inserts: The count of keys the table ever added.
+        evictions: The count of entries the table itself removed, on either bound.
+        removals: The count of entries the caller removed, through `del`, `pop`,
+            `clear` or `cleanup_connection`.
+        returned_connections: The count of connections the table evicted and then saw
+            again. The fingerprint of such a connection may be incomplete, because the
+            new entry holds none of the packets that came before the eviction.
+    """
+
+    __slots__ = (
+        "entries",
+        "max_entries",
+        "inserts",
+        "evictions",
+        "removals",
+        "returned_connections",
+    )
+
+    def __init__(self, entries, max_entries, inserts, evictions, removals, returned_connections):
+        self.entries = entries
+        self.max_entries = max_entries
+        self.inserts = inserts
+        self.evictions = evictions
+        self.removals = removals
+        self.returned_connections = returned_connections
+
+    def __repr__(self):
+        return (
+            f"TableStats(entries={self.entries}, max_entries={self.max_entries}, "
+            f"inserts={self.inserts}, evictions={self.evictions}, "
+            f"removals={self.removals}, "
+            f"returned_connections={self.returned_connections})"
+        )
+
+
+class StateTable:
+    """The counters every state table keeps, and the keys the table evicted.
+
+    Two classes hold per-connection data across packets: `BoundedStateTable` and
+    `TCPStreamReassembler`. Both count the same six things, so both inherit this class.
+    `BaseFingerprinter.state_tables` finds a state table by this type, so a new state
+    table reaches `Processor.stats` as soon as it inherits this class.
+
+    A subclass raises `inserts`, `evictions` and `removals` itself, through
+    `count_insert`, `count_eviction` and `count_removals`. It builds its report with
+    `build_stats`.
+
+    A subclass that adds a key calls `take_evicted_key` first, then evicts, then stores
+    the entry, then calls `count_insert`. The order matters: an insert can evict, and
+    an eviction can drop the memory of the key that arrives.
+
+    Args:
+        max_evicted_keys: The count of evicted keys the table remembers. The memory of
+            an evicted key costs one key, so this bound matches the entry bound of the
+            table.
+    """
+
+    def __init__(self, max_evicted_keys):
+        self.inserts = 0
+        self.evictions = 0
+        self.removals = 0
+        self.returned_connections = 0
+        self.max_evicted_keys = max_evicted_keys
+
+        # The keys the table evicted and has not seen again, least recent first. A set
+        # answers the membership question, and it gives no order to drop the oldest
+        # key by. Nothing that survives across packets grows without a limit, so this
+        # memory holds the same bound the table holds.
+        self._evicted_keys = OrderedDict()
+
+    def take_evicted_key(self, key):
+        """Report whether this table evicted the key, and drop the memory of it.
+
+        A first sighting and a return look the same at the call site: both add a key
+        the table does not hold. The two differ in the memory of the evicted keys. A
+        key this table evicted returns; a key it never evicted arrives for the first
+        time. A key the caller removed returns nothing, because the caller asked for
+        that removal and no eviction lost its packets.
+
+        Call this method before the eviction that the arrival of the key drives. That
+        eviction adds a key to the memory, and it drops the oldest key of the memory,
+        which can be the key that arrives.
+
+        Args:
+            key: The key that arrives.
+
+        Returns:
+            True when this table evicted the key and has not seen it since.
+        """
+        if key not in self._evicted_keys:
+            return False
+        del self._evicted_keys[key]
+        return True
+
+    def count_insert(self, returned=False):
+        """Count one new key, and count a connection that returned after an eviction.
+
+        Args:
+            returned: The value `take_evicted_key` returned for this key.
+        """
+        self.inserts += 1
+        if returned:
+            self.returned_connections += 1
+
+    def count_eviction(self, key):
+        """Count one entry the table itself removed, and remember its key.
+
+        Args:
+            key: The key the table removed.
+        """
+        self.evictions += 1
+        self._evicted_keys[key] = None
+        self._evicted_keys.move_to_end(key)
+        while len(self._evicted_keys) > self.max_evicted_keys:
+            self._evicted_keys.popitem(last=False)
+
+    def count_removals(self, count=1):
+        """Count the entries the caller removed.
+
+        Args:
+            count: The count of entries the caller removed.
+        """
+        self.removals += count
+
+    def forget_evicted_keys(self):
+        """Drop the memory of every evicted key.
+
+        The caller runs this method when it empties the table. A key that arrives after
+        the table is emptied describes a new run, so it counts as a first sighting.
+        """
+        self._evicted_keys.clear()
+
+    def build_stats(self, entries, max_entries):
+        """Return the counts this table reports.
+
+        Args:
+            entries: The count of entries the table holds now.
+            max_entries: The maximum entry count of the table.
+
+        Returns:
+            A `TableStats`.
+        """
+        return TableStats(
+            entries=entries,
+            max_entries=max_entries,
+            inserts=self.inserts,
+            evictions=self.evictions,
+            removals=self.removals,
+            returned_connections=self.returned_connections,
+        )
+
+    def stats(self):
+        """Return the counts this table reports.
+
+        Raises:
+            NotImplementedError: The subclass states no count. Every subclass overrides
+                this method.
+        """
+        raise NotImplementedError("A state table reports its counts.")
+
+
+class BoundedStateTable(StateTable, MutableMapping):
     """A mapping that evicts an entry on the entry count and on the entry age.
 
     The table answers the operations a fingerprinter performs on a dictionary. #39
@@ -96,13 +272,13 @@ class BoundedStateTable(MutableMapping):
         if eviction_interval < 1:
             raise ValueError(f"eviction_interval must be 1 or more, and it is {eviction_interval}")
 
+        # `evictions` counts the entries the table itself removed. `pop` and `del`
+        # belong to the caller, so neither raises that count. #41 reports it.
+        StateTable.__init__(self, max_evicted_keys=max_connections)
+
         self.max_connections = max_connections
         self.max_connection_age = max_connection_age
         self.eviction_interval = eviction_interval
-
-        # The count of entries the table itself removed. `pop` and `del` belong to the
-        # caller, so neither raises this count. #41 reports it.
-        self.evictions = 0
 
         self._entries = OrderedDict()
         self._packets = 0
@@ -150,9 +326,9 @@ class BoundedStateTable(MutableMapping):
         for key, entry in list(self._entries.items()):
             if now - entry[_LAST_SEEN] > self.max_connection_age:
                 del self._entries[key]
+                self.count_eviction(key)
                 removed += 1
 
-        self.evictions += removed
         return removed
 
     def _read_clock(self):
@@ -184,15 +360,19 @@ class BoundedStateTable(MutableMapping):
 
         # The loop rather than one removal covers a caller that lowered the bound after
         # the table filled.
+        returned = self.take_evicted_key(key)
+
         while len(self._entries) >= self.max_connections:
             evicted_key, _ = self._entries.popitem(last=False)
-            self.evictions += 1
+            self.count_eviction(evicted_key)
             logger.debug("state table evicts %r on its entry count", evicted_key)
 
         self._entries[key] = [value, now]
+        self.count_insert(returned)
 
     def __delitem__(self, key):
         del self._entries[key]
+        self.count_removals()
 
     def __iter__(self):
         # A caller that reads a value inside this loop moves that entry to the end, and
@@ -228,8 +408,21 @@ class BoundedStateTable(MutableMapping):
         return [(key, entry[_VALUE]) for key, entry in self._entries.items()]
 
     def clear(self):
-        """Remove every entry. The removal belongs to the caller, so it counts none."""
+        """Remove every entry. The removal belongs to the caller, so it evicts none."""
+        self.count_removals(len(self._entries))
         self._entries.clear()
+        # A key that arrives after this call describes a new run of the table, so it
+        # counts as a first sighting and not as a connection that returned.
+        self.forget_evicted_keys()
+
+    def stats(self):
+        """Return the counts this table reports.
+
+        Returns:
+            A `TableStats`. The caller holds the lock of the fingerprinter across this
+            call, because the six counts describe one instant.
+        """
+        return self.build_stats(len(self._entries), self.max_connections)
 
     def __repr__(self):
         return (
