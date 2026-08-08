@@ -205,12 +205,12 @@ class JA4TSFingerprinter(BaseFingerprinter):
         return None
 
     def reset(self):
-        """Reset the collected fingerprints and the SYN-ACK table."""
+        """Reset the collected fingerprints and the connection table."""
         super().reset()
         self.syn_ack_times.clear()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
-        """Remove the stored SYN-ACK times of the given connection.
+        """Remove the stored SYN-ACK times and stored parts of the given connection.
 
         The key names the server first, because every SYN-ACK travels from the server.
         The caller names either direction, so both orderings are dropped.
@@ -220,10 +220,12 @@ class JA4TSFingerprinter(BaseFingerprinter):
 
 
 def _connection_key(packet):
-    """Return the connection key of one SYN-ACK packet, or None.
+    """Return the connection key of one SYN-ACK packet or one RST packet, or None.
 
     Every SYN-ACK of one connection travels from the server to the client, so the
-    packet order names the connection without normalization.
+    packet order names the connection without normalization. A RST that the server sends
+    travels the same way and produces the same key. A client RST reverses the key, so it
+    finds no connection.
     """
     endpoints = packet_endpoints(packet)
     if endpoints["src"] is None or endpoints["srcport"] is None:
