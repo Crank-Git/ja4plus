@@ -557,17 +557,21 @@ DHCPv6 defines no message type 0, and no vector carries one.
 
 ## The register
 
-**`tests/foxio_deviations.json` holds 120 keys, and no key names JA4D or JA4D6.** Every
-register entry that names either method is therefore accounted for, and the count of such
-entries is zero.
+**`tests/foxio_deviations.json` holds 114 keys as of #193, and no key names JA4D or
+JA4D6.** Every register entry that names either method is therefore accounted for, and the
+count of such entries is zero.
 
-Reproduce the search.
+#193 landed on `batch/193-register-and-state-rule`, which is not the base of this page. It
+removed six JA4H keys, 120 keys to 114, and it removed no JA4D key. The count of zero is
+therefore the same on both branches.
+
+Reproduce the search on a checkout that holds #193.
 
 ```bash
 python -c "import json; d=json.load(open('tests/foxio_deviations.json')); print(len(d)); print([k for k in d if 'JA4D' in k.upper()])"
 ```
 
-It reports `120` and `[]`.
+It reports `114` and `[]`. The base of this page reports `120` and `[]`.
 
 **The reason the register holds no entry is structural, and not an absence of evidence.**
 The conformance suite walks the top level of `tests/foxio_vectors/`, and the two DHCP

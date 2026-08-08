@@ -491,15 +491,29 @@ both the wire casing and a repeated header name. No fingerprint reads it today.
 
 ## The register
 
-`tests/foxio_deviations.json` holds 120 entries, and **42 of them name JA4H**. They cover
-four captures and three issues. Each row states whether the specification explains it.
+`tests/foxio_deviations.json` holds 114 entries as of #193, and **36 of them name JA4H**.
+They cover two captures and one issue. Each row states whether the specification explains
+it.
 
 | Capture | Key | Entries | Issue | Explained by the specification |
 |---|---|---|---|---|
-| `CVE-2018-6794.pcap` | `JA4H`, `JA4H_ro` | 2 | #35 | **Yes, and the stated cause is wrong.** R18 states one fingerprint for each request. The measurement above shows 10 extra occurrence keys and 0 missing keys, so the values match and the count does not. The entry states `ja4plus produces no JA4H fingerprint the reference holds.` |
-| `http-empty-useragent.pcap` | `JA4H`, `JA4H_ro`, and the two stream keys | 4 | #35 | **No.** The specification states no line-terminator rule and no rule about an empty header value. #193 owns the cause, and its fix landed on `batch/193-register-and-state-rule`. The reference value is `ge10nn010000_b8bcd45ac095_000000000000_000000000000`, so R7 and R12 confirm that a header with an empty value still counts and still hashes. |
 | `chrome-cloudflare-quic-with-secrets.pcapng` | `JA4H`, `JA4H_ro`, and the two stream keys | 4 | #129 | **No.** The specification states the schema of a request and states nothing about how an implementation reaches a request inside QUIC. The reference decrypts the traffic with the secrets the capture carries. |
 | `http2-with-cookies.pcapng` | `JA4H` and `JA4H_ro`, 16 each | 32 | #129 | **Partly.** R4 states that an HTTP/2 request writes version `20`, so the specification does cover HTTP/2 as a source. It states nothing about how an implementation reaches a request inside TLS 1.3. The reference decrypts the traffic with the secrets the capture carries. |
+
+### The six entries #193 removed
+
+**#193 repaired the defect behind each of the six entries, and it reclassified none of
+them.** The FoxIO reference holds the JA4H values it always held. This project now produces
+them too, so the comparison passes and the register needs no entry.
+
+The base of this page is `epic/194-read-the-specification-images`, where the register holds
+120 entries and 42 of them name JA4H. The two rows below state the six as that register
+holds them.
+
+| Capture | Key | Entries | Issue | Explained by the specification | What #193 changed |
+|---|---|---|---|---|---|
+| `CVE-2018-6794.pcap` | `JA4H`, `JA4H_ro` | 2 | #35 | **Yes, and the stated cause is wrong.** R18 states one fingerprint for each request. The measurement above shows 10 extra occurrence keys and 0 missing keys, so the values match and the count does not. The entry states `ja4plus produces no JA4H fingerprint the reference holds.` | `ja4h.py` now holds the sequence range of a request it read, and a retransmission of that request produces no second value. The count agrees, and the two entries leave the register. |
+| `http-empty-useragent.pcap` | `JA4H`, `JA4H_ro`, and the two stream keys | 4 | #35 | **No.** The specification states no line-terminator rule and no rule about an empty header value. #193 owns the cause, and its fix landed on `batch/193-register-and-state-rule`. The reference value is `ge10nn010000_b8bcd45ac095_000000000000_000000000000`, so R7 and R12 confirm that a header with an empty value still counts and still hashes. | The capture ends each request line with one line feed, and the parser read the two bytes CRLF as the only line ending. `http_utils.py` now reads both line endings, this project produces the reference value, and the four entries leave the register. |
 
 No register entry names a rule this page transcribes as a value disagreement. **The two
 value disagreements this page finds, D2 and D3, reach no vector**, so the register holds no
@@ -554,8 +568,9 @@ across 11 captures.
    header with no `=`, and none carries a Referer header with an empty value.
 3. **D4 needs a request with a header whose name is empty.** No capture carries one.
 4. **D1 needs a request whose method is outside the nine.** No capture carries one.
-5. **D5 needs no new vector.** `CVE-2018-6794.pcap` measures it today, and the register
-   entry already xfails on it.
+5. **D5 needs no new vector.** `CVE-2018-6794.pcap` measures it today. On the base of this
+   page the register entry xfails on it. #193 repaired the count and removed the entry, so
+   the conformance suite reports a pass for the capture as of #193.
 
 ## What the deleted text specification adds
 
@@ -600,6 +615,8 @@ changes no fingerprinter and no register entry.**
 5. **D1.** Does this project read a request method outside the nine the pattern names?
 6. **The register cause of `CVE-2018-6794.pcap/JA4H` and `/JA4H_ro` is wrong.** The
    measurement shows extra values, and the entry states that this project produces none.
+   #193 removed both entries when it repaired the count, so no entry carries the wrong
+   cause as of #193. The reading stands for a reader of the base of this page.
 7. **R19 to R24 stay uncertain.** Each holds a disagreement between two FoxIO
    implementations, and the image settles none of them. The vector fallback stays. R24 is
    the widest. The Rust reference counts and hashes the four HTTP/2 pseudo-headers, and
