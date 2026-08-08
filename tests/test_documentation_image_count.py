@@ -68,12 +68,16 @@ def _section(text: str, heading: str) -> str:
         The text after the heading and before the next line that starts with `#`.
 
     Raises:
-        AssertionError: The page holds no such heading.
+        AssertionError: The page holds no line equal to the heading.
     """
-    assert heading in text, f"the page holds no {heading!r} heading"
-    body = text.split(heading, 1)[1]
+    # A paragraph quotes a heading, so a search of the whole page reaches the quotation
+    # first and returns the wrong body. Match the heading as a whole line instead.
+    page = text.splitlines()
+    starts = [number for number, line in enumerate(page) if line.strip() == heading]
+    assert starts, f"the page holds no {heading!r} heading"
+    assert len(starts) == 1, f"the page holds {len(starts)} {heading!r} headings"
     lines: list[str] = []
-    for line in body.splitlines()[1:]:
+    for line in page[starts[0] + 1 :]:
         if line.startswith("#"):
             break
         lines.append(line)
@@ -121,7 +125,9 @@ def _bullet(section: str, subject: str) -> list[str]:
     for line in section.splitlines():
         if line.startswith(f"- {subject}"):
             lines.append(line)
-        elif lines and line.startswith("- "):
+        # The next bullet and a blank line each end this bullet. A search that stops on
+        # the next bullet alone swallows the prose that follows the last bullet.
+        elif lines and (line.startswith("- ") or not line.strip()):
             break
         elif lines:
             lines.append(line)
