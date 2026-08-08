@@ -1,10 +1,10 @@
 {
   "CVE-2018-6794.pcap/JA4L-C": {
-    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
+    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "CVE-2018-6794.pcap/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "alpn-condition.pcap/2:44403/JA4.1": {
@@ -367,11 +367,11 @@
     "decided": true
   },
   "https-connect.pcap/JA4L-C": {
-    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
+    "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "https-connect.pcap/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "https-connect.pcap/JA4S": {
@@ -533,7 +533,7 @@
     "decided": true
   },
   "tls-handshake.pcapng/JA4L-S": {
-    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
+    "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #34, and no Changelog round settled it.",
     "issue": 34
   },
   "tls-handshake.pcapng/JA4S": {

@@ -268,8 +268,9 @@ class TestTheReferenceOmitsTheStreamDeviations:
 
 
 # Changelog round 66 settled the JA4L protocol marker on 2026-08-08, and #225 holds the
-# decision. These are the 16 entries the decision reaches. The list is written out rather
-# than derived from the owner number, so an entry that joins or leaves #225 reports itself.
+# decision. These are the 16 entries the decision reaches. The list names each key, and
+# `test_the_issue_owns_the_sixteen_keys_the_round_names` compares it against the entries
+# that name #225. An entry that joins or leaves #225 therefore fails that check.
 QUIC_MARKER_KEYS = (
     "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1",
     "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1",
