@@ -20,9 +20,10 @@ import sys
 import threading
 import time
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from scapy.all import IP, TCP, Ether
+from scapy.all import IP, TCP, Ether, rdpcap
 
 from ja4plus.watch import (
     STATISTICS_THREAD_NAME,
@@ -550,6 +551,20 @@ class TheStatisticsGoToStandardError(unittest.TestCase):
         self.assertIn(f"fingerprints={written}", line)
         self.assertIn("packets=2", line)
         self.assertIn("connections=1", line)
+
+    def test_the_final_line_counts_the_trailing_window(self):
+        """A capture that ends holds a JA4SSH window open, and #214 emits that window.
+
+        The self-review of #55 found the gap: the command wrote the trailing window and
+        counted it never. `ssh.pcapng` produces two fingerprints, and one of them is
+        the trailing window.
+        """
+        packets = list(rdpcap(str(Path(__file__).parent / "foxio_vectors" / "ssh.pcapng")))
+        out, err, status = run_watch("--format", "json", "watch", "eth0", source=packets)
+        self.assertEqual(status, 0, err)
+        written = len([line for line in out.splitlines() if line.strip()])
+        self.assertEqual(written, 2)
+        self.assertIn(f"fingerprints={written}", statistics_lines(err)[0])
 
     def test_the_final_line_follows_the_stop_message(self):
         """The exit summary is the last thing the operator reads."""

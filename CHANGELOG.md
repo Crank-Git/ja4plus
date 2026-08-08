@@ -78,7 +78,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ends with the capture, so a termination signal stops the monitor and the thread
   together. The `dropped` field reads `null`, because `scapy` 2.7.0 reports no drop
   count to a caller of `sniff`; #326 records the measurement and the work that reports a
-  count.
+  count. The fingerprint count holds the trailing JA4SSH window that a capture leaves
+  open, which the command writes and #214 decided.
 
 - **`ja4plus watch` stops on a termination signal and flushes its output** (#54). Round
   TBD. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the

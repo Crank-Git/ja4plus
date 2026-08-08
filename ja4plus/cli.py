@@ -516,6 +516,9 @@ def cmd_watch(args: argparse.Namespace) -> None:
         trailing = _close_open_windows(processor, order)
         if trailing:
             _write_results(trailing, writer, ja4db_client)
+            # The exit summary reports every fingerprint the command wrote, and the
+            # trailing window is a fingerprint the command wrote.
+            monitor.stats.count_fingerprints(len(trailing))
 
         # FR-live-capture-7 asks for a flush before the exit. The stream holds a buffer,
         # and the operator reads the file of a monitor that runs for weeks. A flush that
