@@ -31,6 +31,7 @@ from ja4plus.watch import (
     DEFAULT_MAX_CONNECTIONS,
     Monitor,
     read_interface,
+    stop_on_signal,
 )
 
 if TYPE_CHECKING:
@@ -482,7 +483,15 @@ def cmd_watch(args: argparse.Namespace) -> None:
         )
 
         try:
-            read_interface(args.interface, monitor.handle_packet)
+            # FR-live-capture-5 and FR-live-capture-6 ask for a clean exit on a signal.
+            # The handler sets a flag and the capture reads the flag after each packet,
+            # so the loop finishes the line it writes. A handler that called `sys.exit`
+            # would end the run at the point the signal arrived, and that point holds
+            # half a line whenever the signal arrives during a write.
+            with stop_on_signal() as stop:
+                read_interface(args.interface, monitor.handle_packet, stop.stop_after)
+            if stop.requested():
+                print("\nCapture stopped.", file=sys.stderr)
         except KeyboardInterrupt:
             print("\nCapture stopped.", file=sys.stderr)
         except BrokenPipeError:
@@ -498,7 +507,12 @@ def cmd_watch(args: argparse.Namespace) -> None:
         trailing = _close_open_windows(processor, order)
         if trailing:
             _write_results(trailing, writer, ja4db_client)
-            stream.flush()
+
+        # FR-live-capture-7 asks for a flush before the exit. The stream holds a buffer,
+        # and the operator reads the file of a monitor that runs for weeks. A flush that
+        # the interpreter runs at shutdown reaches no reader of a running monitor, and it
+        # reaches no file after a host kills the process.
+        stream.flush()
 
 
 def cmd_cert(args: argparse.Namespace) -> None:
