@@ -162,6 +162,23 @@ def test_field_a5_counts_every_name_part_b_hashes(parse):
     assert value.split("_")[1] == hashlib.sha256(names).hexdigest()[:12]
 
 
+@PARSE_PATHS
+def test_field_a5_writes_99_for_a_request_that_carries_more_than_99_headers(parse):
+    """R8. The count that reads the hashed list keeps the cap the reference applies.
+
+    The repair of D4 rewrote the expression that holds the cap, and no case held it.
+    """
+    headers = b"".join(b"H%d: v\r\n" % index for index in range(120))
+    assert parse(b"GET / HTTP/1.1\r\n" + headers + b"\r\n")[6:8] == "99"
+
+
+@PARSE_PATHS
+def test_field_a5_writes_the_exact_count_below_the_cap(parse):
+    """R7. 99 headers write `99`, and the cap does not hide a wrong count."""
+    headers = b"".join(b"H%d: v\r\n" % index for index in range(98))
+    assert parse(b"GET / HTTP/1.1\r\n" + headers + b"\r\n")[6:8] == "98"
+
+
 # D1 — field a1 reads the first two characters of any method.
 
 
