@@ -74,9 +74,13 @@ ja4plus analyze capture.pcap --format json --output results.json
 ja4plus analyze capture.pcap --format json --output results.json --force
 ```
 
-Every option runs before the subcommand name and after it.
+The five output options run before the subcommand name and after it.
 `ja4plus --format json analyze capture.pcap` and
-`ja4plus analyze capture.pcap --format json` do the same thing.
+`ja4plus analyze capture.pcap --format json` do the same thing. The five are
+`--format`, `--types`, `--lookup`, `--output` and `--force`.
+
+`--max-connections` and `--connection-timeout` belong to `watch` alone, so they run
+after the subcommand name.
 
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 

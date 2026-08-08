@@ -151,6 +151,10 @@ class Monitor:
         The pass holds no entry against either bound, so a caller reads the table
         without changing what the table evicts next.
 
+        Warning: the monitor acquires no lock. Call this method from the thread that
+        calls `handle_packet`. A second thread that reads the table while the capture
+        thread writes it reads a list the writer changed under it.
+
         Returns:
             A list of connection keys, least recently seen first.
         """
