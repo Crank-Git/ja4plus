@@ -29,7 +29,7 @@ The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files und
 implementation that writes a reference value for the two methods.
 `docs/implementation_notes.md` records the reading.
 
-The subdirectory `rust_expected/` holds 10 more expected-output files:
+The subdirectory `rust_expected/` holds 11 more expected-output files:
 
     rust/ja4/src/snapshots/ja4__insta@<capture>.snap
         ->  tests/foxio_vectors/rust_expected/ja4__insta@<capture>.snap
@@ -38,6 +38,7 @@ for each of these captures:
 
     browsers-x509.pcapng
     chrome-cloudflare-quic-with-secrets.pcapng
+    gre-erspan-vxlan.pcap
     https-connect.pcap
     latest.pcapng
     quic-tls-handshake.pcapng
@@ -53,6 +54,11 @@ TCP segments. The FoxIO Rust implementation reads all three, so each snapshot ab
 holds a stream that `python/test/testdata/<capture>.json` omits. Issue #138 settles the
 first two gaps, issue #151 settles the third, and `tests/test_foxio_rust_parity.py`
 holds the measurement.
+
+`gre-erspan-vxlan.pcap` is here for a fourth reason. The FoxIO Python implementation
+writes no JA4T value for any capture, so its snapshot holds the one local JA4T value
+that reaches D1 of `docs/specs/foxio/JA4T.md`. The two references name that stream by
+different addresses, and issue #242 records the pair.
 
 The conformance suite reads only the top level of this directory, so neither
 subdirectory adds a case to it.

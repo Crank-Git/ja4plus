@@ -84,9 +84,14 @@ WIRESHARK_CAPTURES = [
 # stream that the expected-output file of the same capture omits. Issue #138 settles the
 # first two, issue #151 settles the third, and `tests/test_foxio_rust_parity.py` holds
 # the measurement.
+#
+# `gre-erspan-vxlan.pcap` is here for a fourth reason. The FoxIO Python implementation
+# writes no JA4T value for any capture, so its snapshot holds the one local JA4T value
+# that reaches D1 of `docs/specs/foxio/JA4T.md`. #242 added it.
 RUST_CAPTURES = [
     "browsers-x509.pcapng",
     "chrome-cloudflare-quic-with-secrets.pcapng",
+    "gre-erspan-vxlan.pcap",
     "https-connect.pcap",
     "latest.pcapng",
     "quic-tls-handshake.pcapng",
@@ -99,6 +104,10 @@ RUST_CAPTURES = [
 
 # The Rust implementation writes one insta snapshot for each capture, under this name.
 RUST_SNAPSHOT_NAME = "ja4__insta@{capture}.snap"
+
+# The snapshot fields `tests/test_foxio_rust_parity.py` compares. A snapshot that writes
+# none of them reaches no case.
+RUST_COMPARED_FIELDS = (b"ja4: ", b"ja4s: ", b"ja4t: ", b"ja4x: ")
 
 NOTICE_TEMPLATE = """\
 FoxIO JA4+ conformance vectors
@@ -147,6 +156,11 @@ TCP segments. The FoxIO Rust implementation reads all three, so each snapshot ab
 holds a stream that `{expected_dir}/<capture>.json` omits. Issue #138 settles the
 first two gaps, issue #151 settles the third, and `tests/test_foxio_rust_parity.py`
 holds the measurement.
+
+`gre-erspan-vxlan.pcap` is here for a fourth reason. The FoxIO Python implementation
+writes no JA4T value for any capture, so its snapshot holds the one local JA4T value
+that reaches D1 of `docs/specs/foxio/JA4T.md`. The two references name that stream by
+different addresses, and issue #242 records the pair.
 
 The conformance suite reads only the top level of this directory, so neither
 subdirectory adds a case to it.
@@ -247,11 +261,13 @@ def download() -> None:
         snapshot_name = RUST_SNAPSHOT_NAME.format(capture=capture)
         print(f"rust_expected/{snapshot_name}")
         snapshot = _fetch(f"{FOXIO_RAW}/{RUST_EXPECTED_DIR}/{snapshot_name}")
-        # A snapshot with no `ja4:` line compares no value, and the QUIC reference test
-        # would then report a pass on nothing. That is the defect #115 closes. The test
-        # strips each line before it matches, so this check strips too.
-        if not any(line.strip().startswith(b"ja4: ") for line in snapshot.splitlines()):
-            raise ValueError(f"rust_expected/{snapshot_name} holds no JA4 value")
+        # A snapshot that writes none of these fields compares no value, and the
+        # reference test would then report a pass on nothing. That is the defect #115
+        # closes. `gre-erspan-vxlan.pcap` writes `ja4t` alone, so a check for `ja4`
+        # alone rejects it. The test strips each line before it matches, so this check
+        # strips too.
+        if not any(line.strip().startswith(RUST_COMPARED_FIELDS) for line in snapshot.splitlines()):
+            raise ValueError(f"rust_expected/{snapshot_name} holds no fingerprint value")
         (RUST_DIR / snapshot_name).write_bytes(snapshot)
 
     (VECTORS_DIR / "NOTICE").write_text(
