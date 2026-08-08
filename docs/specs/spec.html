@@ -223,6 +223,7 @@ and files nothing there.</p>
 <tbody>
 <tr><td>Thread safety</td><td>Locked by default. <code>Processor(thread_safe=False)</code> opts out for a caller who shards.</td></tr>
 <tr><td>Bounded memory</td><td>Every state table has a maximum entry count and a maximum age. No packet object is retained after <code>process_packet</code> returns.</td></tr>
+<tr><td>The boundary of the state rule</td><td>A state table survives across packets. A structure that one packet or one request builds and releases is not a state table, and it holds neither bound. The cookie list of one HTTP request is such a structure, and #175 records the decision. The boundary removes no bound from a state table. The six unbounded state tables that #179 records keep their bound.</td></tr>
 <tr><td>Error handling</td><td>A parser that cannot read a packet returns nothing; it does not raise. A caller error raises <code>ValueError</code>.</td></tr>
 <tr><td>Validation</td><td>Every packet is hostile input. No parser trusts a length field it read from the packet.</td></tr>
 <tr><td>Security posture</td><td>No network request unless the caller opts in. A fingerprint sent to a third party discloses observed traffic.</td></tr>

@@ -141,6 +141,60 @@ two different clients for one connection.
 Every stream of `tests/foxio_vectors/` holds an endpoint on port 22, so the port decides
 all of them and no vector exercises the handshake. No JA4SSH value moves.
 
+## The cookie list carries no bound
+
+The cookie list of one HTTP request holds no maximum entry count and no maximum length.
+The user decided that on 2026-08-08, on #175. This file held no cookie bound paragraph
+before that decision, and it holds none after it.
+
+The FoxIO reference caps nothing. `docs/implementation_notes.md` quotes `python/ja4h.py`,
+which sorts the cookie pairs and caps nothing. The Go port caps nothing. `ja4plus`
+matches both.
+
+A bound merged as `be3604f`, and the user reverted it as `042e8c3`. Past the bound the
+cookie parse produced no result, so the request produced no JA4H value. Part a and part b
+read the method, the HTTP version, the header count, the `Accept-Language` value and the
+header names. None of them reads a cookie, and the bound discarded all five readings to
+bound one list.
+
+### The measurement
+
+Every reading below comes from the base commit `b6468dc`, before any change.
+
+| Reading | Value |
+|---|---|
+| Growth | 100000 pairs built in 11.0 to 12.1 ms, on all three parser sites |
+| Third parser site | `ja4plus/fingerprinters/ja4h.py:_extract_http_info_from_bytes` |
+| Vector maxima | 14 pairs, a 41-byte name, a 264-byte value, an 877-byte header |
+
+The first two sites are `parse_http_request` and `extract_http_info`, both in
+`ja4plus/utils/http_utils.py`. The JA4H reassembled-stream path reads the third site. No
+FoxIO vector reaches any candidate bound, so no vector exercises the over-bound path.
+
+### The state rule does not reach this list
+
+A state table survives across packets. One request builds one cookie list, and that
+request releases the list when it ends. The two are different objects, and the state rule
+never named the boundary between them. The measurement above makes the boundary safe to
+state, because the memory returns at once.
+
+`CLAUDE.md`, `.claude/rules/conformance.md`, `docs/specs/spec.md` and
+`docs/specs/spec.html` now carry the boundary. **The boundary does not weaken Epic 3.**
+The six unbounded state tables that #179 records are state tables under the rule, and
+they keep their bound.
+
+### The divergence register gains no row
+
+The register records a reading that diverges from the FoxIO reference. The reference
+holds no cookie bound, and `ja4plus` holds no cookie bound, so the two agree. A reader
+finds no register row for this decision, and none is missing.
+
+### The test
+
+`tests/test_ja4h_large_cookie_header.py` proves that a large Cookie header produces a
+complete JA4H value: part a, part b, part c and part d. Each case builds a Cookie header
+past all three reverted bounds. The cases fail against a parser that holds the bound.
+
 ## Data touched
 
 - Changed files: `ja4plus/utils/tcp_stream.py`, `ja4plus/fingerprinters/ja4l.py`,

@@ -72,8 +72,11 @@ register.
   handler and sets no level.
 - A fingerprinter catches the parse errors it expects. It does not catch bare
   `Exception`.
-- A state table has a maximum entry count and a maximum age. Nothing grows without a
-  limit.
+- A state table has a maximum entry count and a maximum age. A state table survives
+  across packets, and nothing that survives across packets grows without a limit.
+- A structure that one packet or one request builds and releases is not a state table,
+  and it holds neither bound. The cookie list of one HTTP request is such a structure.
+  #175 records the decision. The boundary removes no bound from a state table.
 - No code holds a reference to a packet object after `process_packet` returns.
 - Prose and code comments follow `.claude/rules/ste.md`. The controlled vocabulary is
   the `## Terms` table in `docs/specs/spec.md`.
