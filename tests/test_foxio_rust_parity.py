@@ -15,6 +15,7 @@ FoxIO source is not proof, so the snapshots are committed and the suite compares
 
 import json
 import logging
+from collections import Counter
 from pathlib import Path
 from typing import NamedTuple
 
@@ -781,7 +782,11 @@ class TestTheJa4xValuesTheRustSnapshotHolds:
     @pytest.mark.parametrize("capture,case", _certificate_value_params())
     def test_the_produced_ja4x_equals_the_rust_snapshot_value(self, capture, case):
         """ja4plus produces the JA4X value the FoxIO Rust snapshot holds for the position."""
-        produced = index_produced(VECTORS_DIR / capture).get(case.identity, {}).get("JA4X", ())
+        produced = (
+            index_produced(VECTORS_DIR / capture)
+            .get(case.identity, {})
+            .get(SNAPSHOT_CERT_METHOD, ())
+        )
         if len(produced) < case.occurrence:
             pytest.fail(
                 "{} {} {}.{}: rust={} ja4plus=<none>".format(
@@ -813,12 +818,10 @@ class TestTheJa4xValuesTheRustSnapshotHolds:
         after the last position reaches no case. This check reports that direction.
         """
         produced = index_produced(VECTORS_DIR / capture)
-        expected = {}
-        for case in certificate_cases(capture):
-            expected[case.identity] = case.occurrence
+        expected = Counter(case.identity for case in certificate_cases(capture))
         differences = []
         for identity, count in expected.items():
-            ours = produced.get(identity, {}).get("JA4X", ())
+            ours = produced.get(identity, {}).get(SNAPSHOT_CERT_METHOD, ())
             if len(ours) != count:
                 differences.append(
                     "{} {}: rust={} value(s) ja4plus={} value(s)".format(
@@ -838,7 +841,7 @@ class TestTheJa4xValuesTheRustSnapshotHolds:
         """
         identity = stream_identity("10.11.12.13", "54723", "10.9.8.7", "8080")
         produced = index_produced(VECTORS_DIR / "https-connect.pcap")
-        assert produced.get(identity, {}).get("JA4X", ()) == (
+        assert produced.get(identity, {}).get(SNAPSHOT_CERT_METHOD, ()) == (
             "7d5dbb3783b4_2bab15409345_5e17a2514980",
             "7d5dbb3783b4_7d5dbb3783b4_9c5875a5c227",
         )
