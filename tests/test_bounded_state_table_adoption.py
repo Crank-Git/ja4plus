@@ -355,6 +355,56 @@ def test_the_synack_table_evicts_a_connection_that_passes_the_maximum_age():
     assert "second" in tracker.times
 
 
+def _connection_traffic(index, second):
+    """Return the packets of one connection, each with its own capture timestamp."""
+    client = f"10.{(index >> 16) & 0xFF}.{(index >> 8) & 0xFF}.{index & 0xFF}"
+    port = 20000 + (index % 40000)
+    http = b"GET /a HTTP/1.1\r\nHost: e.com\r\nUser-Agent: t\r\n\r\n"
+    ssh = b"\x00\x00\x00\x20\x0a" + b"z" * 27
+    tls = b"\x16\x03\x03\x00\x20" + b"\x00" * 32
+    quic = b"\xc0\x00\x00\x00\x01\x04\xaa\xbb\xcc\xdd\x00" + b"\x00" * 40
+    built = [
+        _tcp(client, port, "10.9.9.9", 22, "S", second),
+        _tcp("10.9.9.9", 22, client, port, "SA", second),
+        _tcp(client, port, "10.9.9.9", 22, "PA", second, payload=ssh),
+        _tcp(client, port, "10.9.9.9", 80, "PA", second, payload=http),
+        _tcp(client, port, "10.9.9.9", 443, "PA", second, payload=tls),
+        IP(src=client, dst="10.9.9.9") / UDP(sport=port, dport=443) / Raw(load=quic),
+    ]
+    built[-1].time = second
+    return built
+
+
+def test_no_state_table_passes_its_entry_count_under_a_flood_of_connections():
+    """A flood of 2000 connections leaves every table at or below its entry count.
+
+    The traffic reaches every stateful method, so each table of the processor builds
+    entries. The case reads the entry count of each table against the bound that table
+    states, which is FR-concurrency-safety-7.
+    """
+    from ja4plus.processor import Processor
+
+    processor = Processor()
+    for index in range(2000):
+        for packet in _connection_traffic(index, 1000.0 + index * 0.1):
+            processor.process_packet(packet)
+
+    counted = 0
+    for name, fingerprinter in processor.fingerprinters.items():
+        holders = [fingerprinter, getattr(fingerprinter, "syn_ack_times", None)]
+        for holder in holders:
+            if holder is None:
+                continue
+            for attribute, table in vars(holder).items():
+                if isinstance(table, BoundedStateTable):
+                    counted += 1
+                    assert len(table) <= table.max_connections, f"{name}.{attribute}"
+
+    # The processor holds ten fingerprinters and thirteen bounded tables, so the loop
+    # reads every table rather than nothing.
+    assert counted == 13
+
+
 def test_ja4ts_reads_two_synack_packets_whose_gap_stays_inside_the_maximum_age():
     """Part e reports the delay of a retransmission that arrives 100 seconds later.
 
