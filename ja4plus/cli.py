@@ -4,7 +4,8 @@ JA4+ CLI - Command-line interface for network fingerprinting.
 
 Subcommands:
   analyze <pcap_file>  Fingerprint packets in a PCAP file
-  live <interface>     Live capture from a network interface
+  watch <interface>    Read packets from a network interface
+  live <interface>     An alias of watch
   cert <cert_file>     Fingerprint an X.509 certificate (DER or PEM)
 """
 
@@ -25,6 +26,12 @@ from ja4plus.output import OutputWriter, build_writer
 from ja4plus.processor import Processor
 from ja4plus.types import FingerprintResult
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
+from ja4plus.watch import (
+    DEFAULT_CONNECTION_TIMEOUT,
+    DEFAULT_MAX_CONNECTIONS,
+    Monitor,
+    read_interface,
+)
 
 if TYPE_CHECKING:
     # Each command imports scapy and the lookup client where it needs them, so an
@@ -426,20 +433,30 @@ def cmd_analyze(args: argparse.Namespace) -> None:
     _report_no_result(args, count)
 
 
-def cmd_live(args: argparse.Namespace) -> None:
-    """Handle the 'live' subcommand."""
+def cmd_watch(args: argparse.Namespace) -> None:
+    """Handle the `watch` subcommand, and the `live` alias of it.
+
+    The command owns the connection table. It records the connection of every packet it
+    reads, and it evicts a connection on the entry count or on the entry age.
+    `ja4plus/watch.py` holds the table and the loop. Version 0.6.0 called
+    `Processor.cleanup_connection` never, so its monitor grew until the host stopped it.
+
+    Args:
+        args: The parsed command line. It carries `interface`, `max_connections` and
+            `connection_timeout`, plus the five output options.
+    """
     if os.geteuid() != 0:
         print(
             "Error: live capture requires root privileges.\n"
-            f"Try: sudo ja4plus live {args.interface}",
+            f"Try: sudo ja4plus {args.command} {args.interface}",
             file=sys.stderr,
         )
         sys.exit(1)
 
     types = _parse_types(args.types) if args.types else list(VALID_TYPES)
     order = _reporting_order(types)
-    # FR-structured-output-11 asks for one processor. A live capture runs without an
-    # end, so the connection eviction of Epic 3 matters most here.
+    # FR-structured-output-11 asks for one processor. A monitor runs without an end, so
+    # the connection eviction of Epic 3 matters most here.
     processor = Processor()
     ja4db_client = _init_lookup(args)
 
@@ -451,20 +468,21 @@ def cmd_live(args: argparse.Namespace) -> None:
 
         print(f"Starting live capture on '{args.interface}'... (Ctrl-C to stop)", file=sys.stderr)
 
-        def process_packet(packet: Packet) -> None:
+        def report(packet: Packet) -> None:
             batch = _fingerprint_one_packet(packet, processor, order)
             if batch:
                 _write_results(batch, writer, ja4db_client)
                 stream.flush()
 
-        try:
-            from scapy.all import sniff
+        monitor = Monitor(
+            processor,
+            report,
+            max_connections=args.max_connections,
+            connection_timeout=args.connection_timeout,
+        )
 
-            sniff(
-                prn=process_packet,
-                iface=args.interface if args.interface != "any" else None,
-                store=0,
-            )
+        try:
+            read_interface(args.interface, monitor.handle_packet)
         except KeyboardInterrupt:
             print("\nCapture stopped.", file=sys.stderr)
         except BrokenPipeError:
@@ -583,6 +601,56 @@ def cmd_db(args: argparse.Namespace) -> None:
     print(f"Updated: {entry_count} fingerprint entries written to {_BUNDLED_CSV}")
 
 
+def _max_connections(value: str) -> int:
+    """Return the maximum connection count the user stated.
+
+    A table that holds fewer than one connection tracks nothing, and `BoundedStateTable`
+    raises `ValueError` for it. The command reports the refusal instead of a traceback.
+
+    Args:
+        value: The text the user wrote after `--max-connections`.
+
+    Returns:
+        The count as an integer.
+
+    Raises:
+        argparse.ArgumentTypeError: The text is no integer, or it is below one.
+    """
+    try:
+        count = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--max-connections needs a whole number, and it is {value}"
+        )
+    if count < 1:
+        raise argparse.ArgumentTypeError(f"--max-connections must be 1 or more, and it is {count}")
+    return count
+
+
+def _connection_timeout(value: str) -> float:
+    """Return the maximum connection age the user stated, in seconds.
+
+    Args:
+        value: The text the user wrote after `--connection-timeout`.
+
+    Returns:
+        The age as a count of seconds.
+
+    Raises:
+        argparse.ArgumentTypeError: The text is no number, or it is below zero. A
+            negative age evicts every connection on the first pass.
+    """
+    try:
+        seconds = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"--connection-timeout needs a number, and it is {value}")
+    if seconds < 0:
+        raise argparse.ArgumentTypeError(
+            f"--connection-timeout must be 0 or more, and it is {seconds}"
+        )
+    return seconds
+
+
 def _add_output_options(parser: argparse.ArgumentParser, *, defaults: bool) -> None:
     """Add the five options that every result-producing subcommand accepts.
 
@@ -651,10 +719,34 @@ def main() -> None:
     analyze_parser.add_argument("pcap_file", help="Path to the PCAP file")
     _add_output_options(analyze_parser, defaults=False)
 
-    # live subcommand
-    live_parser = subparsers.add_parser("live", help="Live capture from a network interface")
-    live_parser.add_argument("interface", help="Network interface (e.g. eth0, any)")
-    _add_output_options(live_parser, defaults=False)
+    # watch subcommand, and the live alias FR-live-capture-14 keeps. One parser serves
+    # both names, so the two accept the same options and behave the same way.
+    watch_parser = subparsers.add_parser(
+        "watch", aliases=["live"], help="Read packets from a network interface"
+    )
+    watch_parser.add_argument("interface", help="Network interface (e.g. eth0, any)")
+    watch_parser.add_argument(
+        "--max-connections",
+        type=_max_connections,
+        default=DEFAULT_MAX_CONNECTIONS,
+        metavar="COUNT",
+        help=(
+            "Maximum number of tracked connections "
+            f"(default: {DEFAULT_MAX_CONNECTIONS}). When the table is full, the "
+            "monitor evicts the least recently used connection."
+        ),
+    )
+    watch_parser.add_argument(
+        "--connection-timeout",
+        type=_connection_timeout,
+        default=DEFAULT_CONNECTION_TIMEOUT,
+        metavar="SECONDS",
+        help=(
+            "Maximum age of a connection that sends no packet, in seconds "
+            f"(default: {int(DEFAULT_CONNECTION_TIMEOUT)})"
+        ),
+    )
+    _add_output_options(watch_parser, defaults=False)
 
     # cert subcommand
     cert_parser = subparsers.add_parser("cert", help="Fingerprint an X.509 certificate")
@@ -678,8 +770,8 @@ def main() -> None:
     try:
         if args.command == "analyze":
             cmd_analyze(args)
-        elif args.command == "live":
-            cmd_live(args)
+        elif args.command in ("watch", "live"):
+            cmd_watch(args)
         elif args.command == "cert":
             cmd_cert(args)
         elif args.command == "db":

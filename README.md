@@ -52,8 +52,14 @@ ja4plus --format json analyze capture.pcap
 # Only specific fingerprint types
 ja4plus --types ja4,ja4t analyze capture.pcap
 
-# Live capture (requires root)
+# Read packets from an interface (requires root)
+sudo ja4plus watch eth0
+
+# `live` is an alias of `watch`
 sudo ja4plus live eth0
+
+# Bound the connection table of the monitor
+sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
 
 # Fingerprint a certificate
 ja4plus cert server.der
@@ -68,9 +74,13 @@ ja4plus analyze capture.pcap --format json --output results.json
 ja4plus analyze capture.pcap --format json --output results.json --force
 ```
 
-Every option runs before the subcommand name and after it.
+The five output options run before the subcommand name and after it.
 `ja4plus --format json analyze capture.pcap` and
-`ja4plus analyze capture.pcap --format json` do the same thing.
+`ja4plus analyze capture.pcap --format json` do the same thing. The five are
+`--format`, `--types`, `--lookup`, `--output` and `--force`.
+
+`--max-connections` and `--connection-timeout` belong to `watch` alone, so they run
+after the subcommand name.
 
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 
