@@ -621,7 +621,8 @@ Command-line interface for JA4+ fingerprinting. Installed as the `ja4plus` comma
 
 ```bash
 ja4plus analyze <pcap_file>   # Fingerprint a PCAP file
-ja4plus live <interface>      # Live capture (requires root)
+ja4plus watch <interface>     # Read an interface (requires root)
+ja4plus live <interface>      # An alias of watch
 ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
 ```
 
@@ -630,7 +631,43 @@ ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
 | `--format table\|json\|csv` | Output format (default: table) |
 | `--types ja4,ja4s,...` | Filter to specific fingerprint types |
 | `--lookup` | Identify fingerprints using bundled ja4db database |
+| `--output FILE` | Write the results to FILE instead of standard output |
+| `--force` | Overwrite the file that `--output` names when it exists |
 | `--version` | Print version |
+
+The `watch` command carries two more options. Both bound the connection table it owns.
+
+| Option | Description |
+|--------|-------------|
+| `--max-connections COUNT` | Maximum number of tracked connections (default: 10000) |
+| `--connection-timeout SECONDS` | Maximum age of a connection that sends no packet (default: 300) |
+
+### ja4plus.watch
+
+The monitor loop and the connection table of `ja4plus watch`.
+
+The command owns the connection table. It records the connection of every packet it
+reads, and it evicts a connection on two bounds.
+
+- The count bound removes the least recently used connection as soon as the table
+  reaches `--max-connections`.
+- The age bound removes every connection that sends no packet for
+  `--connection-timeout` seconds of capture time.
+
+Each eviction calls `Processor.cleanup_connection`, so it drops the entry of the
+connection table and the per-connection state of all ten methods together. Version 0.6.0
+called `cleanup_connection` never, and its monitor grew until the host stopped it.
+
+Eviction runs on packet arrival. The module starts no thread.
+
+| Class/Function | Description |
+|----------------|-------------|
+| `Monitor(processor, report, ...)` | The monitor loop, without the packet source |
+| `Monitor.handle_packet(packet)` | Record the connection of one packet, evict, and report the packet |
+| `Monitor.tracked_connections()` | Return the key of every connection the table holds |
+| `Monitor.evictions` | The count of connections the monitor evicted |
+| `connection_key(packet)` | Return the key of the connection the packet belongs to, or None |
+| `read_interface(interface, handle_packet)` | Read packets from one interface until the capture stops |
 
 ## Lookup Module
 

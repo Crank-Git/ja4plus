@@ -65,9 +65,11 @@ that user, because comparison is the only thing a fingerprint is for.
 | fingerprint | noun | The output string of one method for one connection. | hash, signature, ID |
 | fingerprinter | noun | The class that implements one method. | analyzer, parser, engine |
 | processor | noun | The `Processor` class that runs every fingerprinter on each packet. | aggregator, pipeline, collector |
+| monitor | noun | The `ja4plus watch` command, which reads packets from an interface until the operator stops it. | daemon, sniffer, listener, live capture |
 | connection | noun | One network flow, identified by protocol and two endpoints. | session, stream, flow |
 | endpoint | noun | One address and one port. | host, peer, side |
 | state table | noun | The dictionary a fingerprinter uses to hold per-connection data. | cache, store, map |
+| connection table | noun | The state table the monitor owns. It holds the time each connection last sent a packet. | tracker, flow table, session map |
 | eviction | noun | The removal of one entry from a state table. | cleanup, expiry, purge |
 | eviction hook | noun | The callable that a state table calls with the key of every entry it evicts. | callback, listener, observer |
 | lockstep | noun | The state where two state tables hold the same keys after every operation. | in step, synchronised, coupled |

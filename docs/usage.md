@@ -14,6 +14,7 @@ Detailed usage for each JA4+ fingerprinter.
 - [JA4SSH - SSH](#ja4ssh---ssh)
 - [PCAP Analysis](#pcap-analysis)
 - [Live Capture](#live-capture)
+- [Read a network interface](#read-a-network-interface)
 
 ---
 
@@ -394,3 +395,44 @@ sniff(filter="tcp port 443", prn=handle_packet)
 ```
 
 > Note: Live capture typically requires root privileges.
+
+The recipe above keeps the state of every connection it reads. Use the `watch` command
+below for a monitor that runs for a long time.
+
+---
+
+## Read a network interface
+
+The `ja4plus watch` command reads packets from an interface until the operator stops it.
+It owns a connection table, and that table holds two bounds. A monitor that held no
+bound would grow until the host stopped it.
+
+```bash
+# Read an interface, and write one JSON object per fingerprint to a file
+sudo ja4plus watch eth0 --format json --output /var/log/ja4.jsonl
+
+# `live` is an alias of `watch`, so version 0.6.0 scripts keep working
+sudo ja4plus live eth0
+
+# Track more connections, and shed an idle connection sooner
+sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
+```
+
+| Option | Meaning | Default |
+|---|---|---|
+| `--max-connections COUNT` | The maximum count of tracked connections. | 10000 |
+| `--connection-timeout SECONDS` | The maximum age of a connection that sends no packet. | 300 |
+
+The command evicts a connection on either bound.
+
+- The count bound removes the least recently used connection as soon as the table is
+  full.
+- The age bound removes a connection that sends no packet for `--connection-timeout`
+  seconds of capture time.
+
+Each eviction drops the entry of the connection table and the per-connection state of
+all ten methods together. Eviction runs on packet arrival, and the command starts no
+thread for it.
+
+The command needs the privilege to open the interface. On Linux the capability is
+`CAP_NET_RAW`. On macOS the operator needs read access to the `/dev/bpf*` devices.

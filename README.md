@@ -52,8 +52,14 @@ ja4plus --format json analyze capture.pcap
 # Only specific fingerprint types
 ja4plus --types ja4,ja4t analyze capture.pcap
 
-# Live capture (requires root)
+# Read packets from an interface (requires root)
+sudo ja4plus watch eth0
+
+# `live` is an alias of `watch`
 sudo ja4plus live eth0
+
+# Bound the connection table of the monitor
+sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
 
 # Fingerprint a certificate
 ja4plus cert server.der
