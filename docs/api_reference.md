@@ -266,6 +266,34 @@ result = generate_ja4(packet)
 | `.get_stream(key)` | Get reassembled contiguous bytes |
 | `.remove_stream(key)` | Remove a tracked stream |
 
+### ja4plus.utils.state_table
+
+| Class/Function | Description |
+|----------------|-------------|
+| `BoundedStateTable(max_connections, max_connection_age, eviction_interval)` | A mapping that evicts on the entry count and on the entry age |
+| `.on_packet(timestamp)` | Announce one packet. The table reads `timestamp` for every later operation, and it runs one age eviction pass for every `eviction_interval` packets |
+| `.evict_aged(now)` | Run one age eviction pass, and return the count of entries it removed |
+| `.evictions` | The count of entries the table itself removed. `pop`, `del` and `clear` raise none |
+
+The table answers the dictionary operations a fingerprinter uses: `[]`, `[] =`, `del`,
+`in`, `get`, `pop`, `setdefault`, `len`, `keys`, `values`, `items` and iteration.
+
+A read of one key holds that entry against both bounds. A pass over the whole table
+holds no entry, so `keys`, `values`, `items` and iteration change no eviction order.
+
+Two operations read differently from the dictionary this table replaces. `dict(table)`
+reads each key through `__getitem__`, so it holds every entry; call `items` for a pass
+that holds none. `popitem` removes the least recently used entry, and a dictionary
+removes the entry it received last.
+
+Warning: state the packet timestamp on every packet of one capture, or on none of them.
+One `on_packet()` call that states no timestamp moves the table to the wall clock, and a
+replay of a capture recorded in the past then ages out whole.
+
+The defaults are 10000 entries, 600 seconds and 1000 packets. `ssh-r.pcap` sets the age.
+It holds the longest gap between two segments of one connection across
+`tests/foxio_vectors/`, at 320.714503 seconds.
+
 ### ja4plus.utils.packet_utils
 
 | Function | Description |
