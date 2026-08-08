@@ -380,9 +380,9 @@ leaves open, and `ja4plus` follows two of the three FoxIO implementations there.
 ## The register
 
 `tests/foxio_deviations.json` holds 114 entries as of #193, and **nine of them name this
-method.** #193 removed six JA4H entries and no JA4X entry, so the count of nine is the same
-on the base of this page, where the register holds 120 entries. The table states each one
-as explained or unexplained by the specification.
+method.** #193 removed six JA4H entries and no JA4X entry. The count of nine is therefore
+the same on the base of this page, where the register holds 120 entries. The table states
+each one as explained or unexplained by the specification.
 
 | Key | Issue | Cause the register states, in short | Explained by the image |
 |---|---|---|---|

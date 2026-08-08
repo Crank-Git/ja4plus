@@ -335,8 +335,9 @@ page reads, so this page cites it.
 ## What the register holds
 
 `tests/foxio_deviations.json` holds 114 entries as of #193. **14 of them name JA4S.** #193
-removed six JA4H entries and no JA4S entry, so the count of 14 is the same on the base of
-this page, where the register holds 120 entries. Twelve form six pairs, each pair holding
+removed six JA4H entries and no JA4S entry. The count of 14 is therefore the same on the
+base of this page, where the register holds 120 entries. Twelve form six pairs, each pair
+holding
 one `JA4S` entry and one `JA4S_r` entry. `https-connect.pcap` and
 `socks4-https.pcap` hold a `JA4S` entry and no `JA4S_r` entry.
 
