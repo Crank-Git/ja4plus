@@ -68,6 +68,39 @@ DIVERGENT_CAPTURES = (
     "tls3.pcapng",
 )
 
+# The capture whose local Rust snapshot holds a JA4T value and no handshake value. One
+# packet of it holds three address layers, and the two FoxIO references read different
+# ones. #242 owns the stream identity, and `SNAPSHOT_ADDRESS_ALIASES` below records it.
+TUNNELED_CAPTURE = "gre-erspan-vxlan.pcap"
+
+# The captures whose local Rust snapshot holds a JA4T value and no handshake value. The
+# FoxIO Python file of such a capture omits no handshake stream, so the #138 rule
+# reaches none of it, and the JA4T cases below are the whole comparison.
+TCP_ONLY_CAPTURES = (TUNNELED_CAPTURE,)
+
+# Every capture whose local Rust snapshot this module reads.
+SNAPSHOT_CAPTURES = DIVERGENT_CAPTURES + TCP_ONLY_CAPTURES
+
+# The two identities of the one stream of `gre-erspan-vxlan.pcap`. The inner pair is the
+# pair the Rust snapshot names, and the outer pair is the pair ja4plus and the FoxIO
+# Python file name. Both ports come from the inner layer, and the two references agree on
+# them.
+TUNNEL_INNER_IDENTITY = stream_identity("10.16.27.12", "65174", "10.16.27.131", "80")
+TUNNEL_OUTER_IDENTITY = stream_identity("100.20.9.2", "65174", "100.20.9.1", "80")
+
+# The stream identity ja4plus produces, for each stream a Rust snapshot names by another
+# address pair. A tunneled capture carries several address layers, and the two FoxIO
+# references read different ones: `python/test/testdata/gre-erspan-vxlan.pcap.json` names
+# the outer pair `100.20.9.2` and `100.20.9.1`, and the Rust snapshot names the inner pair
+# `10.16.27.12` and `10.16.27.131`. ja4plus reads the outer pair, so no case reached this
+# snapshot before #242.
+#
+# The map holds both addresses and both ports of both pairs. A looser identity, such as
+# the port pair alone, would match every stream on ports 65174 and 80, and `ssh2.pcapng`
+# alone holds 19 JA4T streams. A wrong address here finds no entry, so the case reports
+# `ja4plus=<none>` and fails.
+SNAPSHOT_ADDRESS_ALIASES = {}
+
 # The streams on which the server coalesces the ServerHello, the Certificate and the
 # ServerHelloDone into one handshake record that spans several TCP segments. The FoxIO
 # Python file omits the JA4S value of every one, and the FoxIO Rust snapshot holds it.
@@ -845,6 +878,108 @@ class TestTheJa4xValuesTheRustSnapshotHolds:
             "7d5dbb3783b4_2bab15409345_5e17a2514980",
             "7d5dbb3783b4_7d5dbb3783b4_9c5875a5c227",
         )
+
+
+@pytest.mark.spec_validation
+class TestTheStreamIdentityOfTheTunneledCapture:
+    """Measure the one stream whose two FoxIO references name different addresses.
+
+    `gre-erspan-vxlan.pcap` carries ERSPAN inside GRE and VXLAN inside that, so one
+    packet holds three address layers. The FoxIO Python file names the outer pair and
+    the FoxIO Rust snapshot names the inner pair. ja4plus names the outer pair, which
+    is the pair the FoxIO Python file names, so no case reached this snapshot before
+    #242 and the snapshot stayed out of the repository.
+
+    `SNAPSHOT_ADDRESS_ALIASES` records the one pair. Each check below measures one part
+    of it, because an identity that matches too loosely turns a real difference into a
+    passing comparison.
+    """
+
+    def test_the_two_foxio_references_name_the_stream_by_different_addresses(self):
+        """The disagreement the alias records is a measurement, not a reading.
+
+        A vector refresh that makes the two references agree removes the reason for the
+        alias. This check fails then, and it names the addresses that moved.
+        """
+        snapshot = (RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=TUNNELED_CAPTURE)).read_text()
+        fields = dict(
+            line.strip().split(": ", 1) for line in snapshot.splitlines() if ": " in line.strip()
+        )
+        assert (fields["src"], fields["dst"]) == ("10.16.27.12", "10.16.27.131")
+        [record] = json.loads((VECTORS_DIR / "{}.json".format(TUNNELED_CAPTURE)).read_text())
+        assert (record["src"], record["dst"]) == ("100.20.9.2", "100.20.9.1")
+        # The two references agree on the port pair, and the ports come from the inner
+        # layer. The address layer is the whole disagreement.
+        assert (fields["src_port"], fields["dst_port"]) == ("65174", "80")
+        assert (record["srcport"], record["dstport"]) == ("65174", "80")
+
+    def test_the_snapshot_pair_reaches_no_value_ja4plus_produces(self):
+        """Without the alias the case compares against a stream that holds nothing.
+
+        This check states why the alias exists. A reader who deletes the alias makes
+        the JA4T case report `ja4plus=<none>`, which names the address layer and not
+        the value.
+        """
+        assert TUNNEL_INNER_IDENTITY not in index_produced(VECTORS_DIR / TUNNELED_CAPTURE)
+
+    def test_the_alias_maps_the_snapshot_pair_to_the_pair_ja4plus_produces(self):
+        """The reader returns the outer pair for the stream the snapshot names inside."""
+        streams = read_rust_snapshot(RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=TUNNELED_CAPTURE))
+        assert list(streams) == [TUNNEL_OUTER_IDENTITY]
+        assert TUNNEL_OUTER_IDENTITY in index_produced(VECTORS_DIR / TUNNELED_CAPTURE)
+
+    @pytest.mark.parametrize(
+        "src,src_port,dst,dst_port",
+        (
+            ("203.0.113.9", "65174", "10.16.27.131", "80"),
+            ("10.16.27.12", "65174", "203.0.113.9", "80"),
+            ("203.0.113.9", "65174", "203.0.113.9", "80"),
+            ("10.16.27.12", "1234", "10.16.27.131", "80"),
+            ("10.16.27.12", "65174", "10.16.27.131", "8080"),
+            ("100.20.9.2", "65174", "100.20.9.1", "80"),
+        ),
+    )
+    def test_a_stream_the_alias_does_not_name_finds_no_entry(self, src, src_port, dst, dst_port):
+        """A wrong address or a wrong port finds no alias, so the case fails.
+
+        A port-pair identity would match every stream on ports 65174 and 80, and
+        `ssh2.pcapng` alone holds 19 JA4T streams. The map is keyed on both addresses
+        and both ports, so each substitution below reaches nothing. The last one is the
+        outer pair, which the map holds as a value and never as a key.
+        """
+        assert stream_identity(src, src_port, dst, dst_port) not in SNAPSHOT_ADDRESS_ALIASES
+
+    def test_the_alias_moves_no_other_capture(self):
+        """One alias entry that matched a second capture would rename a working stream."""
+        for capture in SNAPSHOT_CAPTURES:
+            if capture == TUNNELED_CAPTURE:
+                continue
+            path = RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=capture)
+            assert not set(read_rust_snapshot(path)) & set(SNAPSHOT_ADDRESS_ALIASES.values())
+
+    def test_the_stream_measures_d1_and_the_two_forms_differ(self):
+        """The comparison D1 needs names both values, so a move of either one reports.
+
+        `docs/specs/foxio/JA4T.md` D1 states that `ja4plus` writes `0` for an empty
+        option list and no FoxIO reference writes that form. This stream is the one
+        local case that holds both forms.
+        """
+        streams = read_rust_snapshot(RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=TUNNELED_CAPTURE))
+        assert streams[TUNNEL_OUTER_IDENTITY].values == {SNAPSHOT_TCP_METHOD: "8192__0_0"}
+        produced = index_produced(VECTORS_DIR / TUNNELED_CAPTURE).get(TUNNEL_OUTER_IDENTITY, {})
+        assert produced.get(SNAPSHOT_TCP_METHOD) == ("8192_0_0_0",)
+
+    def test_the_register_holds_the_one_entry_the_stream_needs(self):
+        """The value case is registered against #215, which owns the D1 decision.
+
+        The entry carries `strict=True`, so the case fails the suite the moment D1
+        lands and `ja4plus` writes the reference form.
+        """
+        key = value_key(TUNNELED_CAPTURE, "0", "65174", SNAPSHOT_TCP_METHOD, 1)
+        assert DEVIATIONS[key].issue == 215
+        assert not DEVIATIONS[key].decided
+        # The count comparison passes, because ja4plus emits one value on the stream.
+        assert occurrence_key(TUNNELED_CAPTURE, SNAPSHOT_TCP_METHOD) not in DEVIATIONS
 
 
 @pytest.mark.spec_validation
