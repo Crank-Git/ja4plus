@@ -133,8 +133,9 @@ Python one. The exception rests on a declined Python value, so it passes over th
 records a disagreement about the value. It does not reach a row whose decline records a
 capability this project chose not to build, because no implementation change could ever
 close that difference. **#129 is that case.** `ja4plus` reads no encrypted request, by
-decision, and the Wireshark file holds the decrypted values. Naming those as the
-reference would create 30 permanent divergences of a kind this project chose.
+decision, and the Wireshark file holds the decrypted values. #129 carries 37 decided
+value-form keys, and another FoxIO source holds a value for 35 of them. Naming those as
+the reference would create 35 permanent divergences of a kind this project chose.
 
 **The register records no field that separates the two kinds of decline.** Fact 3
 therefore names the issue today, and `tests/test_precedence_exception.py` holds
@@ -166,8 +167,8 @@ not name it.** The dissector appends a third part to every JA4L and JA4LS value 
 writes: a delta on a TCP connection, and the marker `quic` on a QUIC connection. That is
 the second of the three rules. #225 nevertheless records that this project adopted the
 `quic` marker from the dissector on purpose, so widening the bar would contradict a
-recorded decision. #334 reports the finding and changes what the bar covers on nobody's
-own judgment. The user decides.
+recorded decision. #334 reports the finding and leaves the bar as it stands. The user
+decides what the bar covers.
 
 **This exception adopts no source as a vector.** It states which source may hold a
 reference value, and adoption is its own decision. "Which baselines are usable as
