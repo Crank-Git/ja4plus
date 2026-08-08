@@ -267,6 +267,119 @@ class TestTheReferenceOmitsTheStreamDeviations:
         assert "without regard to the tunnel protocol" in deviation.cause
 
 
+# Changelog round 66 settled the JA4L protocol marker on 2026-08-08, and #225 holds the
+# decision. These are the 16 entries the decision reaches. The list names each key, and
+# `test_the_issue_owns_the_sixteen_keys_the_round_names` compares it against the entries
+# that name #225. An entry that joins or leaves #225 therefore fails that check.
+QUIC_MARKER_KEYS = (
+    "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1",
+    "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1",
+    "ssh2.pcapng/33:51810/JA4L-S.1",
+    "ssh2.pcapng/36:61861/JA4L-C.1",
+    "ssh2.pcapng/36:61861/JA4L-S.1",
+    "tls3.pcapng/21:62481/JA4L-C.1",
+    "tls3.pcapng/21:62481/JA4L-S.1",
+    "tls3.pcapng/22:61732/JA4L-C.1",
+    "tls3.pcapng/22:61732/JA4L-S.1",
+    "tls3.pcapng/23:49791/JA4L-C.1",
+    "tls3.pcapng/23:49791/JA4L-S.1",
+    "tls3.pcapng/24:56684/JA4L-C.1",
+    "tls3.pcapng/24:56684/JA4L-S.1",
+    "tls3.pcapng/25:61884/JA4L-S.1",
+    "tls3.pcapng/28:58117/JA4L-C.1",
+    "tls3.pcapng/28:58117/JA4L-S.1",
+)
+
+
+class TestTheQuicMarkerDeviations:
+    """Check the entries Changelog round 66 settled.
+
+    ja4plus writes the `quic` marker as a third part on a QUIC connection, and the FoxIO
+    Python reference writes two parts. The user decided on 2026-08-08 that the marker
+    stays, so the entries record a permanent divergence.
+    """
+
+    def _entries(self):
+        return {
+            key: deviation for key, deviation in load_register().items() if deviation.issue == 225
+        }
+
+    def test_the_issue_owns_the_sixteen_keys_the_round_names(self):
+        assert sorted(self._entries()) == sorted(QUIC_MARKER_KEYS)
+
+    def test_every_settled_entry_is_decided(self):
+        undecided = sorted(
+            key for key, deviation in self._entries().items() if not deviation.decided
+        )
+        assert undecided == []
+
+    def test_every_settled_entry_names_the_changelog_round(self):
+        for key, deviation in self._entries().items():
+            assert "Changelog round 66" in deviation.cause, key
+
+    def test_every_settled_entry_states_that_the_marker_is_the_whole_difference(self):
+        for key, deviation in self._entries().items():
+            assert "the marker is the whole difference" in deviation.cause, key
+
+
+# The five entries whose expected-output file publishes no JA4L key. The FoxIO Python
+# implementation deletes both JA4L keys when the run names another method, so the count
+# ja4plus produces has nothing to compare against.
+METHOD_FILTER_KEYS = (
+    "CVE-2018-6794.pcap/JA4L-C",
+    "CVE-2018-6794.pcap/JA4L-S",
+    "https-connect.pcap/JA4L-C",
+    "https-connect.pcap/JA4L-S",
+    "tls-handshake.pcapng/JA4L-S",
+)
+
+# The one entry of the six that compares two measured counts.
+DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
+
+# The two entries that await the #215 decision on the JA4T form.
+TCP_OPTION_KEYS = (
+    "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1",
+    "ssh2.pcapng/JA4T",
+)
+
+# Every entry that stays open. #34 owns the six JA4L entries, and #215 owns the two JA4T
+# entries.
+OPEN_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,) + TCP_OPTION_KEYS
+
+
+class TestTheOpenRegisterEntries:
+    """Check the entries no Changelog round settled.
+
+    An unmarked entry states that nobody read it, and that is the register's only job.
+    #193 marked 43 entries a round had settled, and batch 18 added 16 more unmarked. These
+    checks hold the count of entries that stay open, and the reason each one is open.
+    """
+
+    def _undecided(self):
+        return {
+            key: deviation for key, deviation in load_register().items() if not deviation.decided
+        }
+
+    def test_the_register_holds_eight_undecided_entries(self):
+        assert len(self._undecided()) == 8
+
+    def test_the_undecided_keys_are_the_eight_no_round_settled(self):
+        assert sorted(self._undecided()) == sorted(OPEN_KEYS)
+
+    def test_every_undecided_entry_names_the_issue_that_decides_it(self):
+        for key, deviation in self._undecided().items():
+            assert "#{}".format(deviation.issue) in deviation.cause, key
+
+    def test_every_method_filter_entry_names_the_reference_line_that_deletes_the_key(self):
+        for key in METHOD_FILTER_KEYS:
+            assert "python/ja4.py:339" in load_register()[key].cause, key
+
+    def test_the_duplicate_server_value_entry_names_the_extra_value(self):
+        cause = load_register()[DUPLICATE_SERVER_VALUE_KEY].cause
+        assert "JA4L-S=6252_58" in cause
+        assert "retransmitted SYN-ACK" in cause
+
+
 class TestTheOwnerReader:
     """Check the reader of the checked-in owner list."""
 
