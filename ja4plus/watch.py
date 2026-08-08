@@ -24,6 +24,7 @@ from __future__ import annotations
 import contextlib
 import errno
 import logging
+import math
 import signal
 import threading
 import time
@@ -820,15 +821,24 @@ def read_interface(
         poll_interval: The count of seconds one `sniff` call reads before it returns to
             the loop.
         open_socket: The callable that opens the capture socket. A caller states one to
-            read a socket it supplies, and a test states one to open no interface.
+            read a socket it supplies, and a test states one to open no interface. The
+            socket it returns holds `closed`, which `SuperSocket` holds as a class
+            attribute.
 
     Raises:
         Scapy_Exception: The host refuses the `/dev/bpf` device, or `libpcap` refuses
             the capture filter.
         OSError: The host refuses the capture socket, or it holds no such interface.
-        ValueError: The host holds no interface of that name.
+        ValueError: The host holds no interface of that name, or `poll_interval` is no
+            positive finite number.
     """
     from scapy.all import sniff
+
+    # `AsyncSniffer._run` breaks before it waits while the remaining time is at or below
+    # zero, so a poll interval of zero would turn this loop into a spin. #55 shipped the
+    # same guard for `--stats-interval`, where `nan` produced the same defect.
+    if not math.isfinite(poll_interval) or poll_interval <= 0:
+        raise ValueError(f"the poll interval must be a positive finite number: {poll_interval!r}")
 
     stopped = False
 

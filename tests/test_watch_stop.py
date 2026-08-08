@@ -412,6 +412,82 @@ class TheMonitorHoldsOneSocketAcrossTheCalls(unittest.TestCase):
         self.assertIs(raised.exception, failure)
 
 
+class BlockingSocket(SilentSocket):
+    """A capture socket that reports a blocking select, as the real sockets do.
+
+    `AsyncSniffer._run` adds a control socket for such a socket, and that control socket
+    is an `ObjectPipe` that holds two file descriptors. It builds one for each `sniff`
+    call, so a monitor that runs for weeks builds one every poll interval.
+
+    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1300` and
+    `scapy/automaton.py:164`, read on 2026-08-08.
+    """
+
+    nonblocking_socket = False
+
+
+class TheMonitorHoldsNoFileDescriptorAcrossTheCalls(unittest.TestCase):
+    """A monitor runs for weeks, and it calls `sniff` four times every second."""
+
+    def test_three_hundred_calls_hold_the_open_descriptor_count(self):
+        capture = BlockingSocket()
+        rounds = []
+        counts = []
+
+        def stop_requested():
+            rounds.append(1)
+            counts.append(len(os.listdir("/dev/fd")))
+            return len(rounds) >= 300
+
+        before = len(os.listdir("/dev/fd"))
+        read_interface(
+            "eth0",
+            lambda packet: None,
+            None,
+            stop_requested=stop_requested,
+            poll_interval=0.0005,
+            open_socket=one_socket(capture),
+        )
+        self.assertEqual(len(rounds), 300)
+        self.assertEqual(max(counts), before)
+
+
+class ThePollIntervalIsAPositiveFiniteNumber(unittest.TestCase):
+    """A poll interval of zero turns the loop into a spin.
+
+    `AsyncSniffer._run` breaks before it waits while the remaining time is at or below
+    zero. #55 shipped the same guard for `--stats-interval`, where `nan` produced the
+    same defect.
+    """
+
+    def test_the_call_refuses_a_poll_interval_of_zero(self):
+        with self.assertRaises(ValueError):
+            read_interface(
+                "eth0", lambda packet: None, poll_interval=0, open_socket=one_socket(SilentSocket())
+            )
+
+    def test_the_call_refuses_a_poll_interval_that_is_no_finite_number(self):
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.assertRaises(ValueError):
+                read_interface(
+                    "eth0",
+                    lambda packet: None,
+                    poll_interval=value,
+                    open_socket=one_socket(SilentSocket()),
+                )
+
+    def test_the_call_opens_no_socket_for_a_poll_interval_it_refuses(self):
+        opens = []
+        with self.assertRaises(ValueError):
+            read_interface(
+                "eth0",
+                lambda packet: None,
+                poll_interval=-1.0,
+                open_socket=one_socket(SilentSocket(), opens),
+            )
+        self.assertEqual(opens, [])
+
+
 class TheCaptureCallStatesTheOpenedSocketAndTheTimeout(unittest.TestCase):
     """The mechanism the user chose, read from the arguments the call passes."""
 
