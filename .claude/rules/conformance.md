@@ -11,6 +11,23 @@ A fingerprint exists so that one tool's output can be compared against another t
 output. A fingerprint that does not match the FoxIO reference is worse than no
 fingerprint, because it looks usable and is not.
 
+## The authority rule
+
+**The specification decides intent and schema. The vectors decide the exact bytes where
+intent runs out. A provable reference defect is declined and recorded.**
+
+Read the rule in three parts.
+
+1. The FoxIO specification under `technical_details/` states what a method measures and
+   what its output looks like. Start there, and never build a method from a vector alone.
+2. Where the specification leaves a byte open, the expected-output files decide. That is
+   the only case the vector settles.
+3. Where the reference implementation produces a value by accident, this project declines
+   it under the two shapes below, and records the decline.
+
+The user stated the rule on 2026-08-08. `docs/specs/foxio/README.md` holds the inventory
+of the specification material and the transcription procedure.
+
 ## Before you change a fingerprinter
 
 1. Run `pytest tests/ -m spec_validation` and record the result.
@@ -77,13 +94,16 @@ Decided on 2026-08-07. #96, #97 and #105 are the first three.
 
 ## When the FoxIO material is ambiguous
 
-Seven of the twelve methods are published as images. When an image does not settle a
-question:
+Eleven of the twelve methods are published as an image. Only JA4 holds a complete text
+specification. Read the image before you call it ambiguous. An image nobody read settles
+nothing, and it permits no fallback.
 
-1. The expected-output file decides.
-2. Record the reading in `docs/implementation_notes.md`, with the vector that supports
+1. Read the image at the pinned commit.
+2. Read the transcription under `docs/specs/foxio/<METHOD>.md`.
+3. If the image does not settle the question, the expected-output file decides.
+4. Record the reading in `docs/implementation_notes.md`, with the vector that supports
    it.
-3. Never guess from the method name or from another implementation.
+5. Never guess from the method name or from another implementation.
 
 ## State rules
 

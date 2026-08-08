@@ -28,6 +28,9 @@ Code inside this repository is different. Read the code.
 | FoxIO JA4+ specification | Upstream default branch, commit dated 2026-07-21 | https://github.com/FoxIO-LLC/ja4/tree/main/technical_details |
 | FoxIO test vectors | `pcap/`, `python/test/testdata/`, `wireshark/test/testdata/` and `rust/ja4/src/snapshots/` at the pinned commit | https://github.com/FoxIO-LLC/ja4/tree/main/python/test/testdata |
 | FoxIO mapping file | `ja4plus-mapping.csv` at the pinned commit | https://github.com/FoxIO-LLC/ja4/blob/main/ja4plus-mapping.csv |
+| FoxIO Zeek package | `zeek/` at the pinned commit | https://github.com/FoxIO-LLC/ja4/tree/main/zeek |
+| `FoxIO-LLC/ja4tscan` | Commit `d01bfec4e64366d37ae95982a5068a5b41ca43b0`, dated 2024-08-29 | https://github.com/FoxIO-LLC/ja4tscan |
+| `FoxIO-LLC/ja4-nginx-module` | Commit `7eeee6202b9b65f5ccf85572957a816ade8cb0bc`, dated 2026-04-20 | https://github.com/FoxIO-LLC/ja4-nginx-module |
 | `ja4db.com` lookup | No published version | `https://ja4db.com/api/read/<fingerprint>` |
 | `scapy` | 2.4 or later | https://scapy.readthedocs.io/ |
 | `cryptography` | 42 or later | https://cryptography.io/en/latest/ |
@@ -37,10 +40,22 @@ Code inside this repository is different. Read the code.
 
 ## Rules specific to this project
 
-**FoxIO is the authority on behaviour.** Seven of the twelve methods are published as
-PNG images rather than text. Where an image is ambiguous, the expected-output files
-under `python/test/testdata/` decide. Record the reading in
-`docs/implementation_notes.md`.
+**FoxIO is the authority on behaviour.** The specification decides intent and schema. The
+vectors decide the exact bytes where intent runs out. A provable reference defect is
+declined and recorded.
+
+**Eleven of the twelve methods are published as an image rather than as text.** Only JA4
+holds a complete text specification, in `technical_details/JA4.md`. `technical_details/JA4H.md`
+is 278 bytes and states one rule, so JA4H is an image method too.
+`docs/specs/foxio/README.md` holds the inventory, every SHA-256, and the transcription
+procedure.
+
+**The vector fallback needs an image that a person read and found ambiguous.** Where a
+reader reads the image and the image does not settle the question, the expected-output
+files under `python/test/testdata/` decide, and `docs/implementation_notes.md` records the
+reading. An image that nobody read is not a license to use the fallback. Read the image
+first. Transcribe it into `docs/specs/foxio/<METHOD>.md`. Use the fallback only for what
+the image leaves open.
 
 **The files under `wireshark/test/testdata/` are not the authority.**
 `wireshark/test/testdata/tls12.pcap.json` is an empty array, while the file with the
@@ -70,6 +85,29 @@ readings, #151 records the third, and `docs/implementation_notes.md` holds both 
 
 Read this rule at stream granularity. An earlier form read "only where the Python file
 holds an empty array", and that form covered one capture of the eight.
+
+**The Zeek package is a fourth reference, and it outranks nothing.** `zeek/` implements
+eight methods and carries seven baselines under `zeek/tests/Traces/`. Every baseline
+names its capture, and this project holds all seven captures.
+`docs/specs/foxio/zeek.md` records the whole reading, and
+`tests/compare_zeek_baselines.py` reproduces the comparison. Where
+`python/test/testdata/` and a Zeek baseline both hold a value for one method on one
+connection, `python/test/testdata/` decides. **Read no JA4L or JA4LS value of a Zeek
+baseline as a reference value.** Three rules of the Zeek script diverge from the Python
+reference.
+
+1. It rounds the halved latency, where the Python reference truncates it.
+2. It appends a third part that the Python reference does not publish.
+3. It marks a QUIC connection with a `q` part.
+
+**`FoxIO-LLC/ja4tscan` holds prose and no baseline.** Its `README.md` gives eight
+JA4TScan example values against named operating systems, and two of them record TCP
+option kind 0 inside the JA4T option list. #197 owns the scope decision.
+
+**Warning: FoxIO states that `FoxIO-LLC/ja4-nginx-module` is not correct.** Its
+`README.md` opens with a `# NOTICE` section that reads "This version of JA4 has known
+issues and bugs and may not produce correct JA4 values. Use at your own risk." Treat none
+of its four golden files under `test/testdata/` as a reference value.
 
 **JA4D6 rests on one source.** No FoxIO implementation other than the Wireshark
 dissector writes a JA4D6 value, so nothing corroborates its six values the way the

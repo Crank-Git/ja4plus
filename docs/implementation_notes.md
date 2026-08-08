@@ -905,6 +905,34 @@ Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4ssh.py
 detection was inverted: the lower port was assigned as client when it
 should be server. Fixed by swapping the assignment.
 
+### The image states no rule that closes the last window
+
+#199 read `technical_details/JA4SSH.png` and wrote `docs/specs/foxio/JA4SSH.md`. It also
+found a deleted FoxIO text specification of the method, at commit
+`16850cc2c8bcb8328c1a43a851a3a9a6eaa56103`. **Both state the 200-packet boundary, and
+neither states what closes the last window.** Neither names a FIN packet, a connection
+that closes, or the end of a capture.
+
+`.claude/rules/conformance.md` therefore sends the question to the vector, and this note
+records the reading.
+
+**The vector does not settle it either, because the two FoxIO references disagree.**
+`tests/foxio_vectors/ssh2.pcapng.json` holds `c36s36_c0s0_c2s0`, which #97 declines as a
+defect. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` holds
+`c36s52_c42s76_c51s2`, and the Zeek baseline holds the same value.
+
+`ja4plus` closes the last window on a FIN+ACK packet, at
+`ja4plus/fingerprinters/ja4ssh.py:221-222`. That matches `python/ja4.py:554-556` and
+`wireshark/source/packet-ja4.c:1399-1404`. It does not match `rust/ja4/src/ssh.rs:45-55`
+or `zeek/ja4ssh/main.zeek:160-164`, which close it at the end of the capture.
+
+**`ssh2.pcapng` carries no FIN+ACK packet on port 22**, so `ja4plus` emits one value for
+it where the Rust and Zeek references emit two. **#214 holds the decision, and no
+fingerprint moves until the user rules.**
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4SSH.png
+(retrieved 2026-08-08, commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`).
+
 ---
 
 ## JA4X - X.509 Certificates
