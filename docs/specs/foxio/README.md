@@ -98,7 +98,8 @@ These sources corroborate:
 - The `README.md` of the `ja4` repository, and `technical_details/README.md`.
 - The Wireshark plugin documentation.
 - The doc comments under `rust/ja4/src/`.
-- The Zeek scripts.
+- The Zeek scripts. `docs/specs/foxio/zeek.md` records what each one builds, with a file
+  path and a line number for each rule.
 - A FoxIO blog post.
 
 Each in-repository source counts at the pinned commit. Cite the file path and the commit,
