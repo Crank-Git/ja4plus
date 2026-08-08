@@ -385,7 +385,9 @@ rule, so the specification does not decide D4.
 
 ## The register
 
-`tests/foxio_deviations.json` holds 120 entries, and **six of them name this method**. All
+`tests/foxio_deviations.json` holds 114 entries as of #193, and **six of them name this
+method**. #193 removed six JA4H entries and no JA4L entry, so the count of six is the same
+on the base of this page, where the register holds 120 entries. All
 six name #34. #193 left all six unmarked on `batch/193-register-and-state-rule`, and the
 audit read Changelog round 38 as the round that settled them. **Round 38 settled the stored
 list and the return path of `process_packet`, and it did not settle these six.** The
