@@ -166,6 +166,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The two handlers of the X.509 byte reader name the errors they expect** (#316).
+  Round TBD. `extract_certificate_from_bytes` wrote `except Exception` twice, once
+  around the ASN.1 parse and once around the whole function body. #294 narrowed
+  neither, because it targeted the `(ValueError, TypeError, Exception)` form. The inner
+  list now names `ValueError` and `InvalidVersion`. The `cryptography` documentation
+  states `ValueError` alone, and a measurement of malformed candidates raised
+  `InvalidVersion` as well, which inherits `Exception` and not `ValueError`. The outer
+  list names `TypeError`, which `len()` raises for input that is no sequence. **The
+  reader still returns nothing and raises nothing for hostile input**: 13680 calls over
+  empty, truncated, textual, damaged and random data raised no error. **A defect of
+  this project now reaches a reader**, where the wide catch returned nothing. **No
+  fingerprint moves**: the conformance suite reports 1531 passed, 143 skipped and 135
+  xfailed before the change and after it. `tests/test_x509_certificate_reader.py` holds
+  16 cases, and one of the 12 new cases failed against the base.
+
 - **`extract_certificate_info` reads the module `x509`** (#309). Round TBD.
   `x509_utils.py:262` and `x509_utils.py:263` imported `x509` and `default_backend`
   inside one branch, which made both names locals of the whole function. The parse at
