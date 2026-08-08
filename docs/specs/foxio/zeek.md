@@ -2,8 +2,8 @@
 
 FoxIO ships a Zeek package under `zeek/` in `https://github.com/FoxIO-LLC/ja4`. The
 package implements eight methods, and it carries seven baselines under
-`zeek/tests/Traces/`. This page records what the package holds, which capture produced
-each baseline, and how each baseline value compares against the value `ja4plus` produces
+`zeek/tests/Traces/`. This page records what the package holds and which capture produced
+each baseline. It also compares each baseline value against the value `ja4plus` produces
 on the same capture.
 
 | Item | Value |
@@ -189,8 +189,8 @@ The authority rule decides it. `python/test/testdata/` decides the exact bytes, 
 The Zeek `ja4ls` column carries three parts on a TCP connection that completes a TLS
 handshake, for example `18862_59_14792`. `zeek/ja4l/main.zeek:191-192` appends half the
 interval from the ClientHello to the ServerHello. The Zeek `ja4l` column carries a third
-part in the same way, from `zeek/ja4l/main.zeek:132-133`, and that part is half the
-interval from the ServerHello to the first client data packet.
+part in the same way, from `zeek/ja4l/main.zeek:132-133`. That part is half the interval
+from the ServerHello to the first client data packet.
 
 **The FoxIO Python reference publishes the two-part form, and `ja4plus` emits it.**
 `tests/foxio_vectors/ipv6.pcapng.json` holds `JA4L-S` as `18861_59` and `JA4L-C` as
@@ -229,9 +229,9 @@ Python reference. This page records the Zeek value and asks for no change.
 The first value matches across all three implementations.
 
 **The two references disagree about the second value, and the disagreement matters.**
-`tests/foxio_deviations.json` declines the Python second value under #97, because
-`c0s0` states that the window holds no SSH packet, and a fingerprint that describes no
-traffic is one of the two shapes `.claude/rules/conformance.md` declines. The Zeek second
+`tests/foxio_deviations.json` declines the Python second value under #97. `c0s0` states
+that the window holds no SSH packet. A fingerprint that describes no traffic is one of
+the two shapes `.claude/rules/conformance.md` declines. The Zeek second
 value holds 42 client packets and 76 server packets, so **it describes real traffic and
 falls outside the shape #97 declined.**
 
@@ -258,8 +258,8 @@ each one is answered.
 1. **`JA4T` and `JA4TS` hold a reference value.** Confirmed. The three `conn.log`
    baselines hold 10 JA4T values and 10 JA4TS values. **JA4TS matches `ja4plus` on nine
    of ten rows, and the tenth is the `DLT_NULL` defect of the Zeek script.** JA4T matches
-   on eight of ten; the two that differ are the same `DLT_NULL` defect and the option
-   kind 0 rule that FoxIO's own JA4TScan documentation settles for `ja4plus`.
+   on eight of ten. Two rules cause the two that differ: the same `DLT_NULL` defect, and
+   the option kind 0 rule that FoxIO's own JA4TScan documentation settles.
 2. **`ja4ls` carries three parts where `python/test/testdata/` carries two.** Confirmed.
    The Python reference and `ja4plus` both carry two parts, and the Zeek script adds a
    third. The authority rule decides it in favour of the two-part form.
@@ -290,8 +290,8 @@ seven captures, so all seven baselines are usable. The value of each one differs
    Zeek baseline where both hold a value for one method on one connection.
 3. A reader for the Zeek TSV form. `tests/compare_zeek_baselines.py` holds one.
 
-**A JA4L or JA4LS value of any Zeek baseline is not usable as a vector**, because the
-Zeek rounding rule and the Zeek third part both diverge from the Python reference.
+**A JA4L or JA4LS value of any Zeek baseline is not usable as a vector.** The Zeek
+rounding rule and the Zeek third part both diverge from the Python reference.
 
 ## The Zeek reading of each method
 
@@ -309,13 +309,13 @@ script builds. Cite the file path and the pinned commit when you use one.
   server name, and to `i` otherwise.
 - `zeek/ja4/main.zeek:89-101` caps the cipher count and the extension count at `99`.
 - `zeek/ja4/main.zeek:84-87` builds the ALPN field from the first character and the last
-  character of the first offered protocol, and writes `00` when the ClientHello offers
+  character of the first offered protocol. It writes `00` when the ClientHello offers
   none.
 - `zeek/ja4/helpers.zeek:56-70` and `zeek/ja4/helpers.zeek:83` remove every GREASE value
   from the ciphers, the compression methods and the extensions.
-- `zeek/ja4/main.zeek:141-152` sorts the ciphers and the extensions, excludes the SNI
-  extension and the ALPN extension from part c, and appends the signature algorithms in
-  wire order.
+- `zeek/ja4/main.zeek:141-152` sorts the ciphers and the extensions. It excludes the SNI
+  extension and the ALPN extension from part c, and it appends the signature algorithms
+  in wire order.
 - `zeek/utils/common.zeek:62-70` truncates each SHA-256 to 12 hexadecimal characters and
   returns `000000000000` for an empty list.
 
@@ -350,7 +350,7 @@ script builds. Cite the file path and the pinned commit when you use one.
 - `zeek/ja4ssh/main.zeek:79-85` builds the fingerprint as
   `c<client mode>s<server mode>_c<client packets>s<server packets>_c<client ACKs>s<server ACKs>`.
 - `zeek/ja4ssh/main.zeek:122-136` counts a packet that carries no payload and holds only
-  the ACK flag as an ACK, and every other packet by its TCP payload length.
+  the ACK flag as an ACK. It counts every other packet by its TCP payload length.
 - `zeek/ja4ssh/main.zeek:68-70` breaks a tie between two modes in favour of the smaller
   value.
 - `zeek/ja4ssh/main.zeek:160-164` emits the window a connection holds open when it
@@ -358,9 +358,14 @@ script builds. Cite the file path and the pinned commit when you use one.
 
 ### JA4D
 
-- `zeek/ja4d/main.zeek:113-118` builds the fingerprint as the message type, the maximum
-  message size, the requested-address flag, the FQDN flag, then the option list, then the
-  parameter list. It hashes nothing.
+- `zeek/ja4d/main.zeek:113-118` builds the fingerprint from six fields, in this order.
+  It hashes nothing.
+  1. The message type.
+  2. The maximum message size.
+  3. The requested-address flag.
+  4. The FQDN flag.
+  5. The option list.
+  6. The parameter list.
 - `zeek/ja4d/consts.zeek:4-23` maps each DHCP message type to a five-character name.
 - `zeek/ja4d/consts.zeek:25-30` excludes option codes 53, 255, 50 and 81 from the option
   list, because the earlier fields already carry them.
@@ -381,8 +386,8 @@ script builds. Cite the file path and the pinned commit when you use one.
 - `zeek/ja4t/main.zeek:232-234` appends `-R<seconds>` when the server sends a RST packet.
 - `zeek/ja4t/main.zeek:185` stops after ten SYN-ACK delays.
 
-**The JA4TS delay list and the `R` marker reach no baseline**, because each of the ten
-JA4TS values comes from a connection the server answered once. This project emits the
+**The JA4TS delay list and the `R` marker reach no baseline.** Each of the ten JA4TS
+values comes from a connection the server answered once. This project emits the
 four-part form, and the Zeek baselines corroborate the four-part form alone.
 
 ### JA4L and JA4LS
