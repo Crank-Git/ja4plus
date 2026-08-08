@@ -987,7 +987,7 @@ A TCP sequence number is 32 bits and wraps back to zero. An order that compares 
 numbers puts every segment after the wrap point before every segment before it, so a
 connection that crosses the boundary reassembles backwards.
 
-`_seq_before` orders two sequence numbers on the difference between them, as RFC 1982
+`sequence_before` orders two sequence numbers on the difference between them, as RFC 1982
 does. `get_stream` reads it for the gap test and the overlap arithmetic, so both hold
 across the wrap.
 
@@ -997,7 +997,7 @@ segments on the raw number, finds the widest step, and starts the stream at the 
 after it. `get_stream` and `base_seq` both read that order.
 
 A comparison of each segment against a running earliest value looks equivalent and is
-not. `_seq_before` stops being transitive once the segments span more than half the
+not. `sequence_before` stops being transitive once the segments span more than half the
 sequence space, so that form returns a different first segment for a different arrival
 order. `max_stream_bytes` now bounds the stored segments, so the spread of the stored
 sequence numbers stays inside one arc. The widest-step reading depends only on the
@@ -1033,7 +1033,7 @@ read the bytes beyond the cap. The conformance suite reports 1375 passed, 146 sk
 `max_stream_bytes`, and the result never holds more than the stream stores.
 
 `trim_stream` compared raw sequence numbers, which holds the defect #32 removed from
-`get_stream`. It now reads `_seq_before`. It takes an absolute sequence number, never a
+`get_stream`. It now reads `sequence_before`. It takes an absolute sequence number, never a
 byte offset. #78 removed its one call site, because that call passed a byte offset and
 removed no segment for a realistic initial sequence number.
 
