@@ -328,6 +328,8 @@ This is the shape `.claude/rules/conformance.md` names under "Ask whether a case
 
 ## The conformance evidence a later issue can build
 
+**#216 owns this work.**
+
 1. **JA4T needs no new file.** Add `("JA4T", "ja4t")` to `SNAPSHOT_METHODS` and compare the
    38 local values. D1 and D2 fail immediately, so the change lands with a deviation entry
    or with a repair.
@@ -340,8 +342,9 @@ This is the shape `.claude/rules/conformance.md` names under "Ask whether a case
 
 ## The decisions this page raises
 
-Each item needs the user, because each changes a fingerprint that this project publishes.
-This page changes no fingerprinter.
+**#215 holds these decisions and #216 holds the conformance evidence.** Each item needs the
+user, because each changes a fingerprint that this project publishes. This page changes no
+fingerprinter.
 
 1. **D1.** Which empty form does this project write? Rust writes `8192__0_0`, Wireshark and
    Zeek write `8192_00_00_00`, and this project writes `8192_0_0_0`.
