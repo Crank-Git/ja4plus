@@ -14,9 +14,15 @@ names also reads them, so the read follows the import for every input. Both case
 therefore pass before the repair and after it. They exist because the ASN.1 path carried
 no case at all, and a path that no case reaches is the defect this module has already
 paid for twice.
+
+#316 narrows the two handlers of the reader. The inner one names `ValueError` and
+`InvalidVersion`, and the outer one names `TypeError`. The cases below measure three
+things: a foreign error reaches the caller, each named error is reached by one case, and
+the reader returns nothing for hostile input.
 """
 
 import datetime
+import random
 
 import pytest
 from cryptography import x509
@@ -116,3 +122,124 @@ def test_the_asn1_reader_returns_nothing_for_a_sequence_that_is_no_certificate()
 def test_the_reader_returns_nothing_for_bytes_that_carry_no_certificate():
     """Every packet is hostile input, so the reader returns nothing and does not raise."""
     assert x509_utils.extract_certificate_from_bytes(b"\xff" * 200, try_asn1=True) is None
+
+
+@pytest.fixture(scope="module")
+def bad_version_certificate() -> bytes:
+    """Return the DER form of one certificate whose version field names no version.
+
+    The version field of a TBSCertificate holds the DER bytes `a0 03 02 01 02`. The
+    fixture writes the value 18 in place of 2, and the loader then raises
+    `InvalidVersion` rather than `ValueError`. The fixture builds certificates until
+    the record reader rejects one, so the ASN.1 reader is the only reader that
+    reaches the loader.
+
+    Returns:
+        The DER form of one certificate.
+
+    Raises:
+        AssertionError: No certificate of 10 avoided the record reader.
+    """
+    for _ in range(10):
+        der = _self_signed_der()
+        assert der.count(b"\xa0\x03\x02\x01\x02") == 1
+        mangled = der.replace(b"\xa0\x03\x02\x01\x02", b"\xa0\x03\x02\x01\x12")
+        if x509_utils.extract_certificate_from_bytes(mangled) is None:
+            return mangled
+    raise AssertionError("no certificate of 10 avoided the record reader")
+
+
+def test_the_asn1_reader_returns_nothing_for_a_certificate_of_an_unknown_version(
+    bad_version_certificate,
+):
+    """The loader raises `InvalidVersion`, which inherits `Exception` and not `ValueError`.
+
+    The case fails if the inner list drops `x509.InvalidVersion`, because the outer
+    handler names `TypeError` alone and holds the error no longer.
+    """
+    with pytest.raises(x509.InvalidVersion):
+        x509.load_der_x509_certificate(bad_version_certificate)
+
+    assert x509_utils.extract_certificate_from_bytes(bad_version_certificate, try_asn1=True) is None
+
+
+def test_the_reader_returns_nothing_for_input_that_is_no_sequence_of_bytes():
+    """`len()` raises `TypeError`, and the reader returns nothing rather than raise.
+
+    The case fails if the outer list drops `TypeError`.
+    """
+    assert x509_utils.extract_certificate_from_bytes(None) is None
+    assert x509_utils.extract_certificate_from_bytes(None, try_asn1=True) is None
+
+
+@pytest.mark.parametrize(
+    "label,data",
+    [
+        ("empty", b""),
+        ("plain text", b"GET / HTTP/1.1\r\nHost: ja4plus.test\r\n\r\n"),
+        ("zero bytes", b"\x00" * 5000),
+        ("set bytes", b"\xff" * 5000),
+        ("a sequence header and no body", b"\x30\x82\xff\xff"),
+        ("a sequence of an impossible length", b"\x30\x83\xff\xff\xff" + b"\x06\x03\x55\x04" * 8),
+        (
+            "a sequence that carries the OID pattern",
+            b"\x30\x0a" + b"\x06\x03\x55\x04" + b"\x00" * 8,
+        ),
+    ],
+)
+def test_the_reader_returns_nothing_for_hostile_input(label, data):
+    """A parser that cannot read a packet returns nothing, and it does not raise."""
+    assert x509_utils.extract_certificate_from_bytes(data, try_asn1=True) is None
+
+
+def test_the_reader_raises_nothing_for_a_truncated_certificate(certificate_der):
+    """Truncation reaches every field of the certificate, and no cut makes the reader raise.
+
+    The reader returns a slice of its input or nothing, so the case fails if the
+    reader raises and it fails if the reader invents bytes.
+    """
+    for cut in range(1, len(certificate_der)):
+        data = certificate_der[:cut]
+        found = x509_utils.extract_certificate_from_bytes(data, try_asn1=True)
+        assert found is None or found in data
+
+
+def test_the_reader_raises_nothing_for_a_mutated_certificate(certificate_der):
+    """No run of damage inside a certificate makes the reader raise.
+
+    The seed fixes the mutations, so the case measures the same 400 inputs on every
+    run. Each input is the certificate with one to six bytes replaced. The reader
+    returns a slice of its input or nothing.
+    """
+    generator = random.Random(4309)
+    for _ in range(400):
+        mutated = bytearray(certificate_der)
+        for _ in range(generator.randint(1, 6)):
+            mutated[generator.randrange(len(mutated))] = generator.randrange(256)
+        data = bytes(mutated)
+        found = x509_utils.extract_certificate_from_bytes(data, try_asn1=True)
+        assert found is None or found in data
+
+
+class ReaderProbeError(Exception):
+    """Name an error that neither handler of the reader expects."""
+
+
+def test_the_reader_holds_no_error_that_its_two_handlers_do_not_name(monkeypatch):
+    """Neither handler names `Exception`, so a foreign error reaches the caller.
+
+    The reader held two plain `except Exception` handlers, one around the ASN.1 parse
+    and one around the whole body. Either one holds every error, and a handler that
+    holds every error hides a defect of this project beside a defect of the packet.
+    """
+
+    def raise_probe_error(data: bytes, backend: object = None) -> None:
+        raise ReaderProbeError("the loader failed for a reason no handler names")
+
+    monkeypatch.setattr(x509_utils.x509, "load_der_x509_certificate", raise_probe_error)
+
+    body = b"\x06\x03\x55\x04" + b"\x00" * 40
+    candidate = b"\x30" + len(body).to_bytes(1, "big") + body
+
+    with pytest.raises(ReaderProbeError):
+        x509_utils.extract_certificate_from_bytes(candidate, try_asn1=True)
