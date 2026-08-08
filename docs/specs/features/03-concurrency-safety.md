@@ -155,11 +155,11 @@ every fingerprinter table onto `BoundedStateTable`, and wrote this form.
 | `JA4SFingerprinter._quic_server_crypto` | 1000 | 30 seconds | 1 |
 | `JA4SFingerprinter._quic_dcids` | 10000 | 600 seconds | 1000 |
 | `JA4HFingerprinter.consumed_seq` | 100 | 600 seconds | 1 |
-| `JA4HFingerprinter.unusable_base` | 100 | 600 seconds | 1 |
+| `JA4HFingerprinter.unusable_base` | 100 | 600 seconds | 1000 |
 | `JA4LFingerprinter.connections` | 10000 | 600 seconds | 1000 |
 | `JA4LFingerprinter.grouping_keys` | 10000 | 600 seconds | 1000 |
-| `JA4XFingerprinter.processed_certs` | 1000 | 600 seconds | 1 |
-| `JA4XFingerprinter.scan_offsets` | 50 | 600 seconds | 1 |
+| `JA4XFingerprinter.processed_certs` | 1000 | 600 seconds | 1000 |
+| `JA4XFingerprinter.scan_offsets` | 50 | 600 seconds | 1000 |
 | `JA4SSHFingerprinter.connections` | 10000 | 600 seconds | 1000 |
 | `JA4SSHFingerprinter._handshake_clients` | 1000 | 600 seconds | 1000 |
 | `SynAckTracker.times`, held by JA4TS | 1000 | 120 seconds | 1 |
@@ -185,8 +185,9 @@ fingerprinter holds, so one number bounds the stream and the state that describe
 
 A table whose age is below the default runs one age pass on each packet. A pass that
 waits for 1000 packets is longer than a 30-second age on a connection that sends few
-packets, so that pass evicts nothing. Each such table holds 1000 entries at most, so
-the cost of the pass stays flat.
+packets, so that pass evicts nothing. `JA4HFingerprinter.consumed_seq` runs one pass on
+each packet too, because the base code ran that pass on each packet. Each of the five
+holds 1000 entries at most, so the cost of the pass stays flat.
 
 `BaseFingerprinter.fingerprints` holds one result per fingerprint, not per-connection
 data, so the `## Terms` table does not name it a state table. It appears above because

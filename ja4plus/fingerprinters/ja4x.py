@@ -91,15 +91,14 @@ class JA4XFingerprinter(BaseFingerprinter):
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
         # The table holds one entry for each certificate on each stream, and the
-        # certificate of a stream that goes quiet reaches no reader again.
-        self.processed_certs = BoundedStateTable(
-            max_connections=MAX_PROCESSED_CERTS, eviction_interval=1
-        )
-        # One entry for each live stream, so the reassembler states the entry count.
+        # certificate of a stream that goes quiet reaches no reader again. The age pass
+        # reads up to 1000 entries, so it runs on the default schedule and not on each
+        # packet.
+        self.processed_certs = BoundedStateTable(max_connections=MAX_PROCESSED_CERTS)
+        # One entry for each live stream, so the reassembler states both bounds.
         self.scan_offsets = BoundedStateTable(
             max_connections=self.reassembler.max_streams,
             max_connection_age=self.reassembler.max_stream_age,
-            eviction_interval=1,
         )
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
@@ -417,13 +416,12 @@ class JA4XFingerprinter(BaseFingerprinter):
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
         # The table holds one entry for each certificate on each stream, and the
-        # certificate of a stream that goes quiet reaches no reader again.
-        self.processed_certs = BoundedStateTable(
-            max_connections=MAX_PROCESSED_CERTS, eviction_interval=1
-        )
-        # One entry for each live stream, so the reassembler states the entry count.
+        # certificate of a stream that goes quiet reaches no reader again. The age pass
+        # reads up to 1000 entries, so it runs on the default schedule and not on each
+        # packet.
+        self.processed_certs = BoundedStateTable(max_connections=MAX_PROCESSED_CERTS)
+        # One entry for each live stream, so the reassembler states both bounds.
         self.scan_offsets = BoundedStateTable(
             max_connections=self.reassembler.max_streams,
             max_connection_age=self.reassembler.max_stream_age,
-            eviction_interval=1,
         )

@@ -332,18 +332,20 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             return src_ip, src_port, dst_ip, dst_port, "guess"
         return dst_ip, dst_port, src_ip, src_port, "guess"
 
-    def _connection_keys_in_arrival_order(self):
-        """Return the connection keys, in the order the capture opened them.
+    def _connections_in_arrival_order(self):
+        """Return the connection pairs, in the order the capture opened them.
 
         The state table orders its keys by the last read, because its entry count bound
         evicts the least recently read entry. The published order of the windows and of
         the HASSH values reads the capture instead, so two runs of one capture agree.
 
+        The pass reads `items`, which holds no entry against either bound. A report of
+        the state renews no connection.
+
         Returns:
-            A list of connection keys, earliest first.
+            A list of (connection key, connection) pairs, earliest first.
         """
-        pairs = sorted(self.connections.items(), key=lambda pair: pair[1]["arrival"])
-        return [key for key, _ in pairs]
+        return sorted(self.connections.items(), key=lambda pair: pair[1]["arrival"])
 
     def close_open_windows(self):
         """Emit the window every connection holds open, and return the new entries.
@@ -365,7 +367,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             A list of the fingerprint entries the call appended to `self.fingerprints`.
         """
         emitted = []
-        for conn_key in self._connection_keys_in_arrival_order():
+        for conn_key, _ in self._connections_in_arrival_order():
             if self._close_window(conn_key) is not None:
                 emitted.append(self.fingerprints[-1])
         return emitted
@@ -463,8 +465,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             List of HASSH fingerprints
         """
         hassh_fps = []
-        for conn_key in self._connection_keys_in_arrival_order():
-            conn = self.connections[conn_key]
+        for conn_key, conn in self._connections_in_arrival_order():
             if conn.get("hassh"):
                 hassh_fps.append(
                     {

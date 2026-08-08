@@ -24,7 +24,7 @@ from ja4plus.utils.http_utils import (
 )
 from ja4plus.utils.tcp_stream import SEQUENCE_MASK, TCPStreamReassembler, sequence_before
 from ja4plus.utils.packet_utils import get_ip_layer, packet_endpoints, packet_seconds
-from ja4plus.utils.state_table import BoundedStateTable
+from ja4plus.utils.state_table import DEFAULT_EVICTION_INTERVAL, BoundedStateTable
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -72,14 +72,18 @@ class JA4HFingerprinter(BaseFingerprinter):
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
         self.unusable_base = self._stream_shadow_table()
-        self.consumed_seq = self._stream_shadow_table()
+        # The base code ran the age pass of this one table on each packet, and the
+        # table holds 100 entries at most, so the pass keeps that schedule.
+        self.consumed_seq = self._stream_shadow_table(eviction_interval=1)
 
-    def _stream_shadow_table(self):
+    def _stream_shadow_table(self, eviction_interval=DEFAULT_EVICTION_INTERVAL):
         """Return one bounded table that holds one entry for each live stream.
 
         The two bounds read the reassembler, so one number bounds the stream and the
-        state that describes it. The age pass runs on each packet, because the table
-        holds 100 entries at most and a pass over 100 entries costs little.
+        state that describes it.
+
+        Args:
+            eviction_interval: The count of packets between two age passes.
 
         Returns:
             A `BoundedStateTable` whose bounds match the reassembler.
@@ -87,7 +91,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         return BoundedStateTable(
             max_connections=self.reassembler.max_streams,
             max_connection_age=self.reassembler.max_stream_age,
-            eviction_interval=1,
+            eviction_interval=eviction_interval,
         )
 
     def process_packet(self, packet):
@@ -270,7 +274,9 @@ class JA4HFingerprinter(BaseFingerprinter):
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
         self.unusable_base = self._stream_shadow_table()
-        self.consumed_seq = self._stream_shadow_table()
+        # The base code ran the age pass of this one table on each packet, and the
+        # table holds 100 entries at most, so the pass keeps that schedule.
+        self.consumed_seq = self._stream_shadow_table(eviction_interval=1)
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove TCP stream buffer for the given connection."""
