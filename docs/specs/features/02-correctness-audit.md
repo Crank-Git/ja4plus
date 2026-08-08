@@ -114,7 +114,7 @@ the rule the fix must satisfy.
 | 11 | `ja4plus/fingerprinters/base.py:38` | `add_fingerprint` stores the packet object. A monitor holds every packet it ever fingerprinted. | Store what the result needs. Never store the packet. #36 built it. An entry now holds `src`, `dst`, `srcport` and `dstport`. |
 | 12 | `ja4plus/fingerprinters/ja4ssh.py:80` | On a non-standard port, the lower port number decides which endpoint is the server. Two ephemeral ports make this arbitrary. | Decide from the TCP handshake, and fall back to the port. #36 built it. An earlier form of this row read "Decide from the first SSH banner", and #36 disproved it. See **The banner decides nothing** below. |
 | 13 | `ja4plus/collector.py:33` | The module holds mutable state in module-level variables. It is deprecated and states removal at version 0.4.0. The project is at 0.6.0. | Remove the module in Epic 4. |
-| 14 | `ja4plus/fingerprinters/ja4ssh.py:354` | `interpret_fingerprint` catches every exception and returns an error dictionary. | Catch the parse errors it expects. #36 built it. The handler now names `AttributeError`, `IndexError` and `ValueError`. |
+| 14 | `ja4plus/fingerprinters/ja4ssh.py:354` | `interpret_fingerprint` catches every exception and returns an error dictionary. | Catch the parse errors it expects. #36 built it. The handler now names `AttributeError`, `IndexError`, `TypeError` and `ValueError`. #262 added `TypeError`, because a value of type bytes or bytearray is a malformed fingerprint. |
 
 ## The banner decides nothing
 
