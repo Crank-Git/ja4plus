@@ -40,6 +40,11 @@
       "state": "open",
       "title": "Record the settled JA4 ALPN readings and measure the divergence"
     },
+    "214": {
+      "epic": false,
+      "state": "open",
+      "title": "Decide whether JA4SSH emits the trailing window on ssh2.pcapng"
+    },
     "215": {
       "epic": false,
       "state": "open",

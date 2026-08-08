@@ -98,6 +98,36 @@ def test_processor_cleanup_connection_propagates():
     assert "1.2.3.4:22-5.6.7.8:55000" not in p.ja4ssh.connections
 
 
+def test_processor_close_open_windows_emits_the_held_ja4ssh_window():
+    """The processor closes the open window of every fingerprinter when the packet
+    source ends. Only JA4SSH holds a window, and #214 decided that it emits it."""
+    import struct
+
+    from ja4plus import Processor
+    from scapy.all import IP, TCP, Raw
+
+    payload = struct.pack(">I", 32) + bytes([4, 94]) + b"A" * 30
+
+    p = Processor()
+    for index in range(11):
+        if index % 2 == 0:
+            packet = IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=50000, dport=22, flags="PA")
+        else:
+            packet = IP(src="10.0.0.2", dst="10.0.0.1") / TCP(sport=22, dport=50000, flags="PA")
+        p.process_packet(packet / Raw(load=payload))
+
+    results = p.close_open_windows()
+    assert [r["type"] for r in results] == ["ja4ssh"]
+    assert results[0]["fingerprint"] == "c36s36_c6s5_c0s0"
+    assert results[0]["connection"] == "10.0.0.1:50000-10.0.0.2:22"
+
+
+def test_processor_close_open_windows_returns_nothing_without_state():
+    from ja4plus import Processor
+
+    assert Processor().close_open_windows() == []
+
+
 def test_processor_get_shard_key_is_direction_independent():
     """Both directions of the same connection map to the same shard key."""
     from ja4plus import Processor

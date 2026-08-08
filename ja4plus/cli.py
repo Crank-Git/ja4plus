@@ -105,6 +105,36 @@ def _get_packet_source(packet):
     return "unknown"
 
 
+def _close_open_windows(fingerprinters):
+    """Return one result row for every window the fingerprinters hold open.
+
+    Run this function when the packet source ends. JA4SSH is the only method that holds
+    a window, and #214 decided that it emits the window a connection holds open.
+
+    Args:
+        fingerprinters: The map of method name to fingerprinter that the command built.
+
+    Returns:
+        A list of `(source, fp_type, fingerprint, None, None)` tuples, in the order the
+        fingerprinters emitted them. The source reads the connection key of the window,
+        because no packet produces the value.
+    """
+    rows = []
+    for fp_type, fp in fingerprinters.items():
+        try:
+            entries = fp.close_open_windows()
+        except Exception:
+            continue
+        for entry in entries:
+            connection = entry.get("connection", "")
+            # The key form is `<client>-<server>`, and an IPv6 address holds a colon and
+            # no hyphen, so the first hyphen separates the two endpoints.
+            client, separator, server = connection.partition("-")
+            source = f"{client} -> {server}" if separator else connection
+            rows.append((source, fp_type, entry["fingerprint"], None, None))
+    return rows
+
+
 def _output_results(results, fmt, writer=None, ja4db_client=None):
     """
     Output a list of result tuples in the requested format.
@@ -210,6 +240,11 @@ def cmd_analyze(args):
                         pass
                 if row_batch:
                     _output_results(row_batch, args.format, csv_writer, ja4db_client)
+            # The capture ends here, and a connection that never closes still holds a
+            # window open. #214 decided that JA4SSH emits that window.
+            trailing = _close_open_windows(fingerprinters)
+            if trailing:
+                _output_results(trailing, args.format, csv_writer, ja4db_client)
     except FileNotFoundError:
         print(f"Error: file not found: {pcap_file}", file=sys.stderr)
         sys.exit(1)
@@ -281,6 +316,13 @@ def cmd_live(args):
     except Exception as e:
         print(f"Error during capture: {e}", file=sys.stderr)
         sys.exit(1)
+
+    # The capture ends here, and a connection that never closes still holds a window
+    # open. #214 decided that JA4SSH emits that window.
+    trailing = _close_open_windows(fingerprinters)
+    if trailing:
+        _output_results(trailing, args.format, csv_writer, ja4db_client)
+        sys.stdout.flush()
 
 
 def cmd_cert(args):
