@@ -987,7 +987,7 @@ A TCP sequence number is 32 bits and wraps back to zero. An order that compares 
 numbers puts every segment after the wrap point before every segment before it, so a
 connection that crosses the boundary reassembles backwards.
 
-`_seq_before` orders two sequence numbers on the difference between them, as RFC 1982
+`sequence_before` orders two sequence numbers on the difference between them, as RFC 1982
 does. `get_stream` reads it for the gap test and the overlap arithmetic, so both hold
 across the wrap.
 
@@ -997,7 +997,7 @@ segments on the raw number, finds the widest step, and starts the stream at the 
 after it. `get_stream` and `base_seq` both read that order.
 
 A comparison of each segment against a running earliest value looks equivalent and is
-not. `_seq_before` stops being transitive once the segments span more than half the
+not. `sequence_before` stops being transitive once the segments span more than half the
 sequence space, so that form returns a different first segment for a different arrival
 order. `max_stream_bytes` now bounds the stored segments, so the spread of the stored
 sequence numbers stays inside one arc. The widest-step reading depends only on the
@@ -1033,7 +1033,7 @@ read the bytes beyond the cap. The conformance suite reports 1375 passed, 146 sk
 `max_stream_bytes`, and the result never holds more than the stream stores.
 
 `trim_stream` compared raw sequence numbers, which holds the defect #32 removed from
-`get_stream`. It now reads `_seq_before`. It takes an absolute sequence number, never a
+`get_stream`. It now reads `sequence_before`. It takes an absolute sequence number, never a
 byte offset. #78 removed its one call site, because that call passed a byte offset and
 removed no segment for a realistic initial sequence number.
 
@@ -1197,6 +1197,70 @@ request line.
 **Fixed in v0.4.0:** HTTP parsing now accumulates TCP stream data
 before attempting to parse. Prior versions operated on single-packet
 payloads only, missing HTTP requests spanning multiple TCP segments.
+
+### One line feed ends a line
+
+`technical_details/JA4H.md` holds two facts and no third one. It states that "JA4H
+fingerprints the HTTP client based on each HTTP request". It states that part a carries
+the "2 digit number of headers, not counting Cookie and Referer". It names no line
+ending. It names no rule that reads the value of a header. The specification therefore
+decides that a request is a request, and the vector decides the bytes.
+
+`tests/foxio_vectors/http-empty-useragent.pcap` carries the request
+`GET / HTTP/1.0\nUser-Agent:\n\n` over three TCP segments. Every line ends with one line
+feed, and the `User-Agent` header carries no value. The FoxIO expected-output file holds
+`ge10nn010000_b8bcd45ac095_000000000000_000000000000` for stream 0, and `b8bcd45ac095`
+is the first 12 characters of the SHA-256 hash of the 10 bytes `User-Agent`. The
+reference counts the header, so a header that carries no value is one header.
+
+`ja4plus` read the two bytes `\r\n` as the only line ending, on all three parse paths. It
+read the request as one line and produced nothing. `split_http_lines` and
+`header_block_end` now read one line feed as well. #193 records the defect, and the name
+of the capture does not state it: the empty header value is legal on both readings.
+
+**A line feed ends a line wherever it sits, and `tshark` holds the same reading.** The
+self-review of #193 asked whether the new rule moves a request that the old rule read.
+It does. The probe request is
+`GET / HTTP/1.1\r\nX-Data: line1\n\nHost: example.com\r\nUser-Agent: probe\r\n\r\n`, and
+`tshark -r lf_in_value.pcap -T fields -e http.request.line` reports one line,
+`X-Data: line1\n`. The new rule reports the header names `['X-Data']`, and the old rule
+reported `['User-Agent']`. **The new rule matches the reference and the old rule did
+not**, because the FoxIO Python implementation reads the `tshark` fields.
+`test_one_line_feed_ends_a_line_inside_a_header_value` holds the reading.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4H.md
+(retrieved 2026-08-08).
+
+### A retransmitted request produces one value
+
+The same sentence bounds the count of values. A retransmitted TCP segment carries no new
+HTTP request, so it produces no second JA4H value.
+
+`tests/foxio_vectors/CVE-2018-6794.pcap` holds two streams, and the sender transmits each
+request six times. The FoxIO expected-output file holds one value on each stream.
+`ja4plus` produced six on each, because the fingerprinter removed the stream from the
+reassembler after a value and the retransmission rebuilt the same request. The register
+recorded that as `ja4plus produces no JA4H fingerprint the reference holds`. The
+measurement contradicts the direction: both values matched, and ten extra occurrence keys
+failed the case.
+
+`JA4HFingerprinter.consumed_seq` now holds the sequence range of the request each stream
+produced a value for. A segment that lies inside that range produces nothing. The
+comparison holds across a wrap of the 32-bit sequence number. A pipelined request sits
+above the range, so it still produces a second value.
+
+**The range ends after the whole buffer, and not after the header block.** The
+self-review of #193 measured a POST request whose segment carries 200 body bytes past the
+header block. A range that ends at the header block leaves that segment outside itself,
+so the retransmission produced a second value.
+`test_a_retransmitted_request_that_carries_a_body_produces_one_value` holds the reading.
+
+**The range holds the start as well as the end, and the start is what a self-review
+added.** A second connection on one address pair and one port pair starts at its own
+initial sequence number, and that number sits below the stored one about half the time. A
+rule that reads the end alone loses the first request of the second connection. A
+retransmission repeats bytes the request carried, so it starts at or after the request,
+and a segment that starts before the request names a new connection.
 
 ---
 
