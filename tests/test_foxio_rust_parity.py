@@ -102,6 +102,17 @@ SNAPSHOT_METHODS = (("JA4", "ja4"), ("JA4S", "ja4s"), ("JA4T", "ja4t"))
 # local snapshot holds a `ja4ts` field, so JA4TS reaches no reference value here.
 SNAPSHOT_TCP_METHOD = "JA4T"
 
+# The method the certificate cases below compare, and the field name the snapshot writes
+# for it. One stream holds a list of these values rather than one value, because a
+# Certificate message carries several certificates. #229 added the reading.
+SNAPSHOT_CERT_METHOD = "JA4X"
+SNAPSHOT_CERT_FIELD = "ja4x"
+
+# The two lines that open the nested block the JA4X values sit in. `tls_certs:` opens the
+# block at the two-space level, and `- x509:` opens its one list at the same level. Every
+# other two-space line closes the block, because it names a field of the stream itself.
+CERTIFICATE_BLOCK_OPENERS = ("tls_certs", "- x509")
+
 # The address fields the Rust snapshot writes for each stream.
 SNAPSHOT_ADDRESS_FIELDS = ("src", "dst", "src_port", "dst_port")
 
@@ -114,20 +125,23 @@ class RustStream(NamedTuple):
         index: The stream index the snapshot gives, as a string.
         src_port: The source port the snapshot gives.
         values: A map of method name to value.
+        certs: The JA4X values of the stream, in the order the snapshot writes them.
     """
 
     identity: tuple
     index: str
     src_port: str
     values: dict
+    certs: list
 
 
 def read_rust_snapshot(path):
     """Return the streams one FoxIO Rust snapshot holds, keyed by stream identity.
 
     The snapshot is a YAML list. Each stream opens with `- stream:` at column 0, and the
-    fields of that stream follow at two spaces. A nested block indents further, so the
-    reader takes the two-space level alone and ignores `tls_certs` and `http`.
+    fields of that stream follow at two spaces. A nested block indents further. The
+    reader takes the two-space level, and it enters the `tls_certs` block alone, because
+    that block holds the JA4X values. It ignores `http` and `ssh_extras`.
 
     Args:
         path: The path of the snapshot file.
@@ -142,6 +156,7 @@ def read_rust_snapshot(path):
     """
     streams = {}
     block = None
+    in_certificates = False
 
     def close(block):
         if block is None:
@@ -156,24 +171,37 @@ def read_rust_snapshot(path):
                 index=block["index"],
                 src_port=block["src_port"],
                 values=dict(block["values"]),
+                certs=list(block["certs"]),
             )
             return
         held.values.update(block["values"])
+        held.certs.extend(block["certs"])
 
     for line in path.read_text().splitlines():
         if line.startswith("- stream:"):
             close(block)
-            block = {"index": line.partition(": ")[2].strip(), "values": {}}
+            block = {"index": line.partition(": ")[2].strip(), "values": {}, "certs": []}
+            in_certificates = False
             continue
         if block is None:
             continue
         # A field of the stream itself sits at two spaces. A deeper indent belongs to a
-        # nested block, which names no stream of its own.
+        # nested block, and `tls_certs` is the one nested block that holds a value this
+        # module compares.
         if not line.startswith("  ") or line.startswith("   "):
+            entry = line.strip()
+            prefix = "- {}: ".format(SNAPSHOT_CERT_FIELD)
+            if in_certificates and entry.startswith(prefix):
+                block["certs"].append(entry[len(prefix) :].strip())
             continue
-        name, separator, value = line.strip().partition(": ")
+        stripped = line.strip()
+        name, separator, value = stripped.partition(": ")
         if not separator:
+            # A two-space line that carries no value opens the certificate block or
+            # closes it. `ja4ssh:`, `http:` and `ssh_extras:` each close it.
+            in_certificates = stripped.rstrip(":") in CERTIFICATE_BLOCK_OPENERS
             continue
+        in_certificates = False
         if name in SNAPSHOT_ADDRESS_FIELDS:
             block[name] = value.strip()
         for method, field in SNAPSHOT_METHODS:
@@ -323,6 +351,109 @@ def _tcp_occurrence_params():
     ]
 
 
+class CertificateCase(NamedTuple):
+    """One JA4X value that the FoxIO Rust snapshot of one stream holds.
+
+    Attributes:
+        identity: The direction-free stream identity.
+        index: The stream index the snapshot gives.
+        src_port: The source port the snapshot gives.
+        occurrence: The position of the value in the certificate list, counted from 1.
+        value: The value the snapshot holds.
+        python_holds: True when the FoxIO Python file holds a JA4X value for the stream.
+    """
+
+    identity: tuple
+    index: str
+    src_port: str
+    occurrence: int
+    value: str
+    python_holds: bool
+
+
+def certificate_cases(capture):
+    """Return every JA4X value the FoxIO Rust snapshot of one capture holds.
+
+    The reader keeps the order of the snapshot, because R10 of
+    `docs/specs/foxio/JA4X.md` states that nothing sorts a certificate list.
+
+    Args:
+        capture: The capture file name.
+
+    Returns:
+        A list of CertificateCase entries, sorted by stream index and source port.
+    """
+    rust = read_rust_snapshot(RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=capture))
+    python = read_python_methods(VECTORS_DIR / "{}.json".format(capture))
+    cases = []
+    for identity, stream in rust.items():
+        for position, value in enumerate(stream.certs, start=1):
+            cases.append(
+                CertificateCase(
+                    identity=identity,
+                    index=stream.index,
+                    src_port=stream.src_port,
+                    occurrence=position,
+                    value=value,
+                    python_holds=SNAPSHOT_CERT_METHOD in python.get(identity, set()),
+                )
+            )
+    return sorted(cases, key=lambda case: (case.index, case.src_port, case.occurrence))
+
+
+def certificate_captures():
+    """Return every capture whose local Rust snapshot holds a JA4X value."""
+    return tuple(capture for capture in DIVERGENT_CAPTURES if certificate_cases(capture))
+
+
+def certificate_key(capture, case):
+    """Return the register key of one JA4X case, or None.
+
+    `tests/test_spec_validation.py` builds the same key form from the FoxIO Python file,
+    and that file holds a JA4X value for 18 of the 19 streams the snapshots name. One
+    entry that matches two cases marks both, so this module keys the one stream that file
+    omits and it leaves the other keys to that module.
+
+    Args:
+        capture: The capture file name.
+        case: One CertificateCase entry.
+
+    Returns:
+        The register key, or None when `tests/test_spec_validation.py` owns the key.
+    """
+    if case.python_holds:
+        return None
+    return value_key(capture, case.index, case.src_port, SNAPSHOT_CERT_METHOD, case.occurrence)
+
+
+def _certificate_value_params():
+    """Return one parameter set for every JA4X value a local Rust snapshot holds.
+
+    A case that carries a register key reports as `xfailed` while another issue owns the
+    mismatch. A case whose key `tests/test_spec_validation.py` owns carries no mark, and
+    a mismatch there fails both modules.
+    """
+    params = []
+    for capture in certificate_captures():
+        for case in certificate_cases(capture):
+            key = certificate_key(capture, case)
+            params.append(
+                pytest.param(
+                    capture,
+                    case,
+                    id="{}-stream{}:{}-{}.{}".format(
+                        capture,
+                        case.index,
+                        case.src_port,
+                        SNAPSHOT_CERT_METHOD,
+                        case.occurrence,
+                    ),
+                    marks=_deviation_marks(key) if key else (),
+                )
+            )
+    return params
+
+
 def register_keys():
     """Return every register key this module reads.
 
@@ -338,6 +469,11 @@ def register_keys():
         keys.append(occurrence_key(capture, SNAPSHOT_TCP_METHOD))
         for case in tcp_cases(capture):
             keys.append(value_key(capture, case.index, case.src_port, case.method, 1))
+    for capture in certificate_captures():
+        for case in certificate_cases(capture):
+            key = certificate_key(capture, case)
+            if key:
+                keys.append(key)
     return keys
 
 
@@ -572,6 +708,139 @@ class TestTheJa4tValuesTheRustSnapshotHolds:
                 )
         assert not differences, "{}: {} stream(s) differ\n{}".format(
             capture, len(differences), "\n".join(differences)
+        )
+
+
+@pytest.mark.spec_validation
+class TestTheJa4xValuesTheRustSnapshotHolds:
+    """Compare JA4X against every JA4X value the local Rust snapshots hold.
+
+    Before #229 the reader took the two-space level of a snapshot alone, and every `ja4x`
+    value sits under `tls_certs:` at a deeper indent. The five local snapshots that hold
+    a certificate carried 43 JA4X values that no case compared, and the register entry
+    `https-connect.pcap/JA4X` named this module as the measurement of the match.
+
+    18 of the 19 streams also reach a case of `tests/test_spec_validation.py`, which
+    compares the same value against the FoxIO Python file. `certificate_key` therefore
+    keys the one stream that file omits, and it leaves the other 18 keys to that module.
+    """
+
+    def test_the_local_snapshots_hold_the_forty_three_values_the_reading_counts(self):
+        """`docs/specs/foxio/JA4X.md` counts 43 JA4X values in the five local snapshots.
+
+        A snapshot that leaves the repository takes its cases away, and the suite still
+        reports green. This check makes that loss as loud as a mismatch.
+        """
+        counts = {capture: len(certificate_cases(capture)) for capture in certificate_captures()}
+        assert counts == {
+            "browsers-x509.pcapng": 7,
+            "https-connect.pcap": 2,
+            "latest.pcapng": 8,
+            "ssh2.pcapng": 12,
+            "tls-handshake.pcapng": 14,
+        }
+        assert sum(counts.values()) == 43
+
+    def test_the_suite_collects_one_case_for_every_value_the_snapshots_hold(self):
+        """Fail when a snapshot value carries no case.
+
+        The parameter list is the comparison. A reader who drops the `tls_certs` branch
+        of `read_rust_snapshot` empties the list, and this check names the loss.
+        """
+        assert len(_certificate_value_params()) == 43
+
+    def test_the_https_connect_stream_is_the_one_stream_the_python_file_omits(self):
+        """This module keys one stream, and the register entry claims that stream.
+
+        `tests/foxio_deviations.json` holds `https-connect.pcap/JA4X` because the FoxIO
+        Python implementation reads no TLS on port 8080. That stream is the one stream
+        whose JA4X key no case of `tests/test_spec_validation.py` carries.
+        """
+        keyed = [
+            (capture, case.index, case.src_port, case.occurrence)
+            for capture in certificate_captures()
+            for case in certificate_cases(capture)
+            if certificate_key(capture, case)
+        ]
+        assert keyed == [
+            ("https-connect.pcap", "0", "54723", 1),
+            ("https-connect.pcap", "0", "54723", 2),
+        ]
+
+    def test_no_register_key_of_this_module_belongs_to_the_spec_validation_suite(self):
+        """One entry that matches a case of each module marks both, so neither reports itself.
+
+        `tests/test_spec_validation.py` builds a key for every JA4X value the FoxIO
+        Python file holds. This check keeps the two key sets apart.
+        """
+        from tests.test_spec_validation import collected_register_keys
+
+        shared = sorted(set(register_keys()) & collected_register_keys())
+        assert not shared, "two modules share {} register key(s): {}".format(len(shared), shared)
+
+    @pytest.mark.parametrize("capture,case", _certificate_value_params())
+    def test_the_produced_ja4x_equals_the_rust_snapshot_value(self, capture, case):
+        """ja4plus produces the JA4X value the FoxIO Rust snapshot holds for the position."""
+        produced = index_produced(VECTORS_DIR / capture).get(case.identity, {}).get("JA4X", ())
+        if len(produced) < case.occurrence:
+            pytest.fail(
+                "{} {} {}.{}: rust={} ja4plus=<none>".format(
+                    capture,
+                    label(case.identity),
+                    SNAPSHOT_CERT_METHOD,
+                    case.occurrence,
+                    case.value,
+                )
+            )
+        ours = produced[case.occurrence - 1]
+        if ours != case.value:
+            pytest.fail(
+                "{} {} {}.{}: rust={} ja4plus={}".format(
+                    capture,
+                    label(case.identity),
+                    SNAPSHOT_CERT_METHOD,
+                    case.occurrence,
+                    case.value,
+                    ours,
+                )
+            )
+
+    @pytest.mark.parametrize("capture", certificate_captures())
+    def test_the_produced_ja4x_count_equals_the_rust_snapshot_count(self, capture):
+        """ja4plus produces one JA4X value for each certificate the snapshot names.
+
+        The value comparison above reads one position at a time, so a value ja4plus adds
+        after the last position reaches no case. This check reports that direction.
+        """
+        produced = index_produced(VECTORS_DIR / capture)
+        expected = {}
+        for case in certificate_cases(capture):
+            expected[case.identity] = case.occurrence
+        differences = []
+        for identity, count in expected.items():
+            ours = produced.get(identity, {}).get("JA4X", ())
+            if len(ours) != count:
+                differences.append(
+                    "{} {}: rust={} value(s) ja4plus={} value(s)".format(
+                        label(identity), SNAPSHOT_CERT_METHOD, count, len(ours)
+                    )
+                )
+        assert not differences, "{}: {} stream(s) differ\n{}".format(
+            capture, len(differences), "\n".join(differences)
+        )
+
+    def test_the_https_connect_stream_produces_both_rust_snapshot_values(self):
+        """The stream that the register entry names produces both values, in order.
+
+        `tests/foxio_deviations.json` states that this module measures the match, and
+        this check is that measurement. It names both values, so a later change that
+        moves either one reports the value it moved.
+        """
+        identity = stream_identity("10.11.12.13", "54723", "10.9.8.7", "8080")
+        produced = index_produced(VECTORS_DIR / "https-connect.pcap")
+        assert produced.get(identity, {}).get("JA4X", ()) == (
+            "7d5dbb3783b4_2bab15409345_5e17a2514980",
+            "7d5dbb3783b4_7d5dbb3783b4_9c5875a5c227",
         )
 
 
