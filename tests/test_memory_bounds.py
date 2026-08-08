@@ -45,17 +45,18 @@ from ja4plus.processor import Processor
 from ja4plus.utils.state_table import BoundedStateTable, StateTable
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
-# The count of state tables one processor holds. The count moved three times, and each
+# The count of state tables one processor holds. The count moved four times, and each
 # move improved the way the project counts rather than the code: #179 read six, #39 read
-# thirteen, and #41 read fifteen. #43 re-measured it against the code and reads fifteen.
-# The number is a literal, so a table that a later change adds fails this file rather
-# than passing it unread.
-STATE_TABLE_COUNT = 15
+# thirteen, #41 read fifteen, and #43 re-measured fifteen. #285 re-measured it after the
+# merge of #246 and reads sixteen, because `SynAckTracker.prefixes` is now a
+# `BoundedStateTable`. The number is a literal, so a table that a later change adds
+# fails this file rather than passing it unread.
+STATE_TABLE_COUNT = 16
 
-# The count of those fifteen that are a `BoundedStateTable`. The other two are the
+# The count of those sixteen that are a `BoundedStateTable`. The other two are the
 # `TCPStreamReassembler` of JA4H and of JA4X. #41 made `TCPStreamReassembler` inherit
 # `StateTable`, and each one keeps the two bounds it already held.
-BOUNDED_TABLE_COUNT = 13
+BOUNDED_TABLE_COUNT = 14
 STREAM_TABLE_COUNT = 2
 
 # The entry count each table holds while a case floods the processor. A small bound
@@ -260,7 +261,7 @@ def shipped_flood():
 class TestTheProcessorHoldsNoUnboundedStateTable:
     """Every mapping that survives across packets states both bounds."""
 
-    def test_a_walk_of_the_processor_finds_thirteen_bounded_state_tables(self):
+    def test_a_walk_of_the_processor_finds_fourteen_bounded_state_tables(self):
         tables = walk_tables(Processor())
         assert len(tables) == BOUNDED_TABLE_COUNT, sorted(tables)
 

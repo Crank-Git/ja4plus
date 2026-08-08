@@ -48,6 +48,7 @@ TABLES = [
     (JA4SSHFingerprinter, "connections", 10000, 600),
     (JA4SSHFingerprinter, "_handshake_clients", 1000, 600),
     (SynAckTracker, "times", 1000, 120),
+    (SynAckTracker, "prefixes", 1000, 120),
 ]
 
 TABLE_IDS = [f"{cls.__name__}.{name}" for cls, name, _, _ in TABLES]
@@ -400,9 +401,10 @@ def test_no_state_table_passes_its_entry_count_under_a_flood_of_connections():
                     counted += 1
                     assert len(table) <= table.max_connections, f"{name}.{attribute}"
 
-    # The processor holds ten fingerprinters and thirteen bounded tables, so the loop
-    # reads every table rather than nothing.
-    assert counted == 13
+    # The processor holds ten fingerprinters and fourteen bounded tables, so the loop
+    # reads every table rather than nothing. #285 added the fourteenth,
+    # `SynAckTracker.prefixes`.
+    assert counted == 14
 
 
 def test_ja4ts_reads_two_synack_packets_whose_gap_stays_inside_the_maximum_age():

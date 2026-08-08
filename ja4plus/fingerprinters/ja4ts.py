@@ -76,8 +76,18 @@ class SynAckTracker:
 
     `times` holds the capture timestamps of one connection, which part e reads.
     `prefixes` holds part a through part d of the first SYN-ACK, which the RST value
-    reads. The two maps hold the same keys. The entry count and the entry age both hold a
-    bound, because a monitor runs for weeks.
+    reads. The entry count and the entry age both hold a bound, because a monitor runs
+    for weeks.
+
+    The two tables hold the same keys, and #285 states the one mechanism that keeps them
+    so: `times` evicts, and its eviction hook removes the same key from `prefixes`. Every
+    other path writes both tables in the same call. `record` stores into `times` before
+    it stores into `prefixes`, so the hook runs before the new prefix arrives and
+    `prefixes` never passes the count of `times`.
+
+    `prefixes` receives no packet, so its own age pass never runs and its own count bound
+    never fires. Both bounds are a second limit that the hook keeps the table away from.
+    The eviction count of `prefixes` therefore reports what the hook removed.
     """
 
     def __init__(self):
@@ -87,8 +97,20 @@ class SynAckTracker:
             max_connections=MAX_TRACKED_CONNECTIONS,
             max_connection_age=SYN_ACK_TIMEOUT_SECONDS,
             eviction_interval=1,
+            on_eviction=self._drop_prefix,
         )
-        self.prefixes = {}
+        self.prefixes = BoundedStateTable(
+            max_connections=MAX_TRACKED_CONNECTIONS,
+            max_connection_age=SYN_ACK_TIMEOUT_SECONDS,
+        )
+
+    def _drop_prefix(self, key):
+        """Remove the stored parts of a connection that `times` evicted.
+
+        Args:
+            key: The connection key that `times` removed.
+        """
+        self.prefixes.evict_key(key)
 
     def clear(self):
         """Drop every connection."""

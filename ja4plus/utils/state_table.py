@@ -259,6 +259,13 @@ class BoundedStateTable(StateTable, MutableMapping):
             argument that `features/03-concurrency-safety.md` publishes.
         max_connection_age: The maximum age of one entry, in seconds.
         eviction_interval: The count of packets between two age eviction passes.
+        on_eviction: A callable the table calls with the key of every entry it evicts,
+            on either bound. The table calls it after it removes the entry. A caller
+            that removes an entry itself receives no call, because that caller already
+            knows. The hook exists for a second table that holds the same keys, and
+            #285 is the first: `SynAckTracker` keeps its prefix table in lockstep with
+            its time table through it. A hook that writes to this table produces
+            undefined results, because the table calls it inside an eviction.
 
     Raises:
         ValueError: `max_connections` is below one, or `eviction_interval` is below one.
@@ -269,6 +276,7 @@ class BoundedStateTable(StateTable, MutableMapping):
         max_connections=DEFAULT_MAX_CONNECTIONS,
         max_connection_age=DEFAULT_MAX_CONNECTION_AGE,
         eviction_interval=DEFAULT_EVICTION_INTERVAL,
+        on_eviction=None,
     ):
         if max_connections < 1:
             raise ValueError(f"max_connections must be 1 or more, and it is {max_connections}")
@@ -282,6 +290,7 @@ class BoundedStateTable(StateTable, MutableMapping):
         self.max_connections = max_connections
         self.max_connection_age = max_connection_age
         self.eviction_interval = eviction_interval
+        self.on_eviction = on_eviction
 
         self._entries = OrderedDict()
         self._packets = 0
@@ -328,11 +337,32 @@ class BoundedStateTable(StateTable, MutableMapping):
         removed = 0
         for key, entry in list(self._entries.items()):
             if now - entry[_LAST_SEEN] > self.max_connection_age:
-                del self._entries[key]
-                self.count_eviction(key)
+                self.evict_key(key)
                 removed += 1
 
         return removed
+
+    def evict_key(self, key):
+        """Remove one entry, count it as an eviction, and call the eviction hook.
+
+        The eviction count and the removal count answer two different questions, and
+        FR-concurrency-safety-12 asks for the first. This method raises the eviction
+        count, so a table that another table drives reports the entries it lost. `pop`
+        and `del` raise the removal count instead, because the caller asked for those.
+
+        Args:
+            key: The key to remove.
+
+        Returns:
+            True when the table held the key, and False when it held no such key.
+        """
+        if key not in self._entries:
+            return False
+        del self._entries[key]
+        self.count_eviction(key)
+        if self.on_eviction is not None:
+            self.on_eviction(key)
+        return True
 
     def _read_clock(self):
         """Return the time the table measures an age against, in seconds.
@@ -366,8 +396,8 @@ class BoundedStateTable(StateTable, MutableMapping):
         returned = self.take_evicted_key(key)
 
         while len(self._entries) >= self.max_connections:
-            evicted_key, _ = self._entries.popitem(last=False)
-            self.count_eviction(evicted_key)
+            evicted_key = next(iter(self._entries))
+            self.evict_key(evicted_key)
             logger.debug("state table evicts %r on its entry count", evicted_key)
 
         self._entries[key] = [value, now]
