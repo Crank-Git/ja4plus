@@ -49,8 +49,8 @@ Neither image has changed since.
    from implementations alone.** The corroborations below are the Wireshark dissector,
    the Zeek scripts, the two Wireshark expected-output files, the Zeek baseline and the
    two documented values in `README.md`. **An uncertain rule on this page is uncertain
-   because one implementation states it and no second implementation states anything**,
-   which is a weaker position than an uncertain rule on any other page.
+   because one implementation states it and no second implementation states anything.**
+   That position is weaker than an uncertain rule on any other page.
 
 **The images also postdate the deletion by 21 months.** `b6f3ff4` deleted the seven text
 files on 2024-02-22, and `6239c08` added these two images on 2025-11-07. The reading of
@@ -139,10 +139,10 @@ character. Part a therefore holds eleven characters.
 
 ### R3 — The DHCP message type is a five-character name from a table of eighteen
 
-- Corroboration 1: `wireshark/source/packet-ja4.c:804-832`, the function
-  `get_dhcp_type_code`, maps codes 1 to 18 to `disco`, `offer`, `reqst`, `decln`,
-  `dpack`, `dpnak`, `relse`, `infor`, `frenw`, `lqery`, `lunas`, `lunkn`, `lactv`,
-  `blklq`, `lqdon`, `actlq`, `lqsta` and `dhtls`.
+- Corroboration 1: `wireshark/source/packet-ja4.c:804-831`, the function
+  `get_dhcp_type_code`, maps codes 1 to 18. The eighteen names are `disco`, `offer`,
+  `reqst`, `decln`, `dpack`, `dpnak`, `relse`, `infor`, `frenw`, `lqery`, `lunas`,
+  `lunkn`, `lactv`, `blklq`, `lqdon`, `actlq`, `lqsta` and `dhtls`.
 - Corroboration 2: `zeek/ja4d/consts.zeek:4-23` holds the same eighteen names against the
   same eighteen codes. `docs/specs/foxio/zeek.md:411` records that reading.
 
@@ -155,7 +155,7 @@ character. Part a therefore holds eleven characters.
 
 ### R5 — The maximum message size is four decimal digits, 9999 at most, and `0000` when absent
 
-- Corroboration 1: `wireshark/source/packet-ja4.c:1507-1516` writes `"%04d"` below 9999
+- Corroboration 1: `wireshark/source/packet-ja4.c:1507-1517` writes `"%04d"` below 9999
   and the literal `9999` at 9999 or above. `wireshark/source/packet-ja4.c:706-707` writes
   `0000` when the option is absent.
 - Corroboration 2: `zeek/ja4d/main.zeek:55-63` writes `9999` above 9999, `fmt("%04d", ...)`
@@ -206,9 +206,9 @@ whose part b is not in ascending order.
 - Corroboration 1: `zeek/ja4d/consts.zeek:25-30` holds
   `DHCP_SKIP_OPTIONS: set[count] = { 53, 255, 50, 81 }`, which is the same four codes the
   image's caption names.
-- Corroboration 2: the four values of `wireshark/test/testdata/dhcp.pcapng.json` and the
-  four values of `zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` carry none of the four
-  codes, and each of the four frames carries option 53.
+- Corroboration 2: the four values of `wireshark/test/testdata/dhcp.pcapng.json` carry none
+  of the four codes. The four values of `zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` carry
+  none of them either, and each of the four frames carries option 53.
 
 **The dissector names a different set, and this page reports both readings.**
 `wireshark/source/packet-ja4.c:1526` tests `val != 0 && val != 53 && val != 50 &&
@@ -264,7 +264,7 @@ Both baselines hold one value for each of the four frames of `dhcp.pcapng`.
 
 ### R14 — JA4D6 holds the same three-part shape as JA4D
 
-- Corroboration 1: `wireshark/source/packet-ja4.c:702-721` holds one builder, and
+- Corroboration 1: `wireshark/source/packet-ja4.c:702-722` holds one builder, and
   `wireshark/source/packet-ja4.c:1662-1672` calls it for both DHCP and DHCPv6.
 - Corroboration 2: `README.md:155` states ```JA4D6=solct0010nn_8-1-3-6_24-23```, whose
   part a holds eleven characters and whose three parts join with `_`.
@@ -274,15 +274,15 @@ Both baselines hold one value for each of the four frames of `dhcp.pcapng`.
 **The table is uncertain beyond the one entry a second source states.** Keep the vector
 fallback for any entry other than `solct`.
 
-- `wireshark/source/packet-ja4.c:833-878`, the function `get_dhcpv6_type_code`, maps codes
+- `wireshark/source/packet-ja4.c:833-879`, the function `get_dhcpv6_type_code`, maps codes
   1 to 37 and writes `"%05u"` at `wireshark/source/packet-ja4.c:1544` for any other code.
 - `README.md:155` states `solct` for a Solicit message, which corroborates code 1 alone.
 - No second FoxIO implementation exists. `zeek/README.md:15` states
   `JA4D6 &rarr; ja4d.log (awaiting Zeek DHCPv6 suppport)`, so the Zeek package builds no
   JA4D6.
 
-The six values of `wireshark/test/testdata/dhcpv6.pcap.json` exercise four more entries:
-`solct`, `advrt`, `reqst`, `reply` and `relse`.
+The six values of `wireshark/test/testdata/dhcpv6.pcap.json` exercise five entries of the
+table: `solct`, `advrt`, `reqst`, `reply` and `relse`.
 
 ### R16 — Subfield 2 of JA4D6 holds the Client DUID length in bytes, as four decimal digits
 
@@ -304,9 +304,9 @@ The six values of `wireshark/test/testdata/dhcpv6.pcap.json` exercise four more 
 - Corroboration 2: `README.md:155` holds `8-1-3-6`, which is not in ascending order and
   which carries option 1, the Client Identifier that subfield 2 already reports.
 
-The image corroborates the second half of the rule from the other side: the JA4D caption
-carries the clause `ignoring options 50, 53, 81, and 255` and the JA4D6 caption carries no
-such clause.
+The image corroborates the second half of the rule from the other side. The JA4D caption
+carries the clause `ignoring options 50, 53, 81, and 255`, and the JA4D6 caption carries
+no such clause.
 
 ### R18 — Part c of JA4D6 holds the Option Request option, code 6, in wire order
 
@@ -443,8 +443,8 @@ the two references and not this project. The image states no port.
 `zeek/ja4d/main.zeek:43-45` returns `"00000"` when the message carries no type, which
 builds a fingerprint from a BOOTP message. `wireshark/source/packet-ja4.c:1498` sets
 `ja4d_data.proto` only inside the option 53 block, so the dissector agrees with this
-project and the `00000` default at `wireshark/source/packet-ja4.c:705` is unreachable for
-DHCP. **Two references against one.** No vector carries a BOOTP message.
+project. The `00000` default at `wireshark/source/packet-ja4.c:705` is therefore
+unreachable for DHCP. **Two references against one.** No vector carries a BOOTP message.
 
 **D3 — `ja4d.py:136-137` reads the presence of option 81, and the dissector reads the name
 inside it.**
@@ -483,7 +483,7 @@ four.
 |---|---|---|---|
 | Part count and separator | R14 | `ja4d6.py:212` | Agrees. `f"{section_a}_{section_b}_{section_c}"`. |
 | Part a layout | R14 | `ja4d6.py:208` | Agrees. Eleven characters, four subfields, no separator. |
-| Message type table | R15 | `ja4d6.py:31-69` | Agrees. The same thirty-seven names against the same thirty-seven codes as `wireshark/source/packet-ja4.c:833-878`. |
+| Message type table | R15 | `ja4d6.py:31-69` | Agrees. The same thirty-seven names against the same thirty-seven codes as `wireshark/source/packet-ja4.c:833-879`. |
 | Unknown message type | R15 | `ja4d6.py:202` | Agrees. `f"{msg_type:05d}"`. |
 | Size source | R16 | `ja4d6.py:140-141` | Agrees. The length of the option 1 data. |
 | Size width and cap | R16 | `ja4d6.py:203-204` | Agrees. `min(..., 9999)` and `f"{duid_len:04d}"`. |
@@ -533,9 +533,9 @@ Relay Message, is the clearest case**, because it carries a whole inner DHCPv6 m
 **This item also names an internal contradiction.** The comment at `ja4d6.py:74-75` reads
 `Option 17 (Vendor-specific Information) carries enterprise-specific sub-options keyed by
 enterprise-number`, and `ja4d6.py:76-82` holds no entry for code 17. The comment describes
-a behaviour the table does not build. **This page rules on nothing here**, because the
-Wireshark field name for a vendor sub-option cannot be read from the FoxIO checkout, and
-no vector carries option 17.
+a behaviour the table does not build. **This page rules on nothing here.** The Wireshark field
+name for a vendor sub-option cannot be read from the FoxIO checkout, and no vector carries
+option 17.
 
 **D9 — `ja4d6.py:140-141` keeps the last option 1, and the dissector keeps the first.**
 
@@ -574,7 +574,7 @@ The conformance suite walks the top level of `tests/foxio_vectors/`, and the two
 reference files sit under `tests/foxio_vectors/wireshark_expected/`.
 `docs/implementation_notes.md:510-513` records that reading.
 `tests/test_ja4d_foxio.py` and `tests/test_ja4d6_foxio.py` compare all ten values inside
-the unit suite instead, and both compare the whole map in both directions, so a value this
+the unit suite instead. Both compare the whole map in both directions, so a value this
 project adds fails the same as a value it drops.
 
 **This is the opposite of the shape `docs/specs/foxio/JA4T.md` reports.** There the
