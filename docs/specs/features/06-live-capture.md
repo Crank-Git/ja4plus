@@ -190,5 +190,12 @@ Opening a capture interface needs elevated privileges. On Linux the capability i
 
 ## Open questions
 
-- Whether `scapy` reports dropped-packet counts on both Linux and macOS. The first
-  issue in this epic measures it, and the field is `null` where it does not.
+- Whether `scapy` reports dropped-packet counts on both Linux and macOS. #55 measured
+  it against `scapy` 2.7.0, and the field reads `null`. On macOS the capture socket
+  reads a drop count through the `BIOCGSTATS` ioctl, at
+  `scapy/arch/bpf/supersocket.py:297`, and `sniff` holds the socket it opens in a local
+  name, so a caller reaches that socket through the `opened_socket` argument alone. On
+  Linux `scapy` defines `PACKET_STATISTICS = 6` at `scapy/arch/linux/__init__.py:95`
+  and calls `getsockopt` with that option nowhere. The macOS reading ran on macOS
+  25.6.0. The Linux reading is a reading of the `scapy` source, and no Linux host ran
+  it. #326 owns the socket work that reports a count, and it follows #56.

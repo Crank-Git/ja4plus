@@ -79,12 +79,19 @@ The five output options run before the subcommand name and after it.
 `ja4plus analyze capture.pcap --format json` do the same thing. The five are
 `--format`, `--types`, `--lookup`, `--output` and `--force`.
 
-`--max-connections` and `--connection-timeout` belong to `watch` alone, so they run
-after the subcommand name.
+`--max-connections`, `--connection-timeout` and `--stats-interval` belong to `watch`
+alone, so they run after the subcommand name.
 
 `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
 The monitor finishes the line it writes, flushes the output, and exits, so the output
 file holds every fingerprint it reported.
+
+The monitor writes one statistics line to standard error when it exits, and
+`--stats-interval SECONDS` adds a line for each interval that passes.
+
+```
+[ja4plus] packets=1284302 fingerprints=48211 connections=8134 evicted=112094 dropped=0 uptime=3600s
+```
 
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 

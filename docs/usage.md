@@ -422,6 +422,7 @@ sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
 |---|---|---|
 | `--max-connections COUNT` | The maximum count of tracked connections. | 10000 |
 | `--connection-timeout SECONDS` | The maximum age of a connection that sends no packet. | 300 |
+| `--stats-interval SECONDS` | The count of seconds between two statistics lines. | No schedule |
 
 The command evicts a connection on either bound.
 
@@ -453,3 +454,39 @@ and exits, and the output file holds every fingerprint the monitor reported.
 
 The monitor reads the flag on packet arrival. An interface that carries no traffic
 therefore holds the monitor until the next packet arrives. Issue #320 records that gap.
+
+### How to read the statistics
+
+The monitor writes one statistics line when it exits. `--stats-interval` adds a line for
+each interval that passes.
+
+```bash
+# Write a statistics line every 60 seconds, and one more on exit
+sudo ja4plus watch eth0 --format json --output /var/log/ja4.jsonl --stats-interval 60
+```
+
+Every statistics line goes to standard error, so a pipe that reads standard output reads
+fingerprints alone.
+
+```
+[ja4plus] packets=1284302 fingerprints=48211 connections=8134 evicted=112094 dropped=0 uptime=3600s
+```
+
+| Field | Meaning |
+|---|---|
+| `packets` | The count of packets the monitor read. |
+| `fingerprints` | The count of fingerprints the monitor wrote. |
+| `connections` | The count of connections the connection table holds now. |
+| `evicted` | The count of connections the monitor evicted, on either bound. |
+| `dropped` | The count of packets the capture layer dropped, or `null`. |
+| `uptime` | The count of whole seconds since the monitor started. |
+
+`--stats-interval` starts one thread, and it is the only thread the command starts. The
+thread ends with the capture, so a termination signal stops the monitor and the thread
+together.
+
+The `dropped` field reads `null` today. `scapy` 2.7.0 reports no drop count to a caller
+of `sniff`: on macOS the capture socket reads the count and `sniff` keeps that socket to
+itself, and on Linux `scapy` reads the count from no socket at all. Issue #326 records
+the finding and the work that reports a count. Read the interface counters of the host
+until then, with `netstat -i` on macOS or `ip -s link` on Linux.

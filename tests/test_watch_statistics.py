@@ -199,6 +199,17 @@ class TheStatisticsLineHoldsTheFieldsTheSpecificationStates(unittest.TestCase):
         )
         self.assertIn("dropped=17", format_statistics(snapshot))
 
+    def test_the_snapshot_repr_names_every_count(self):
+        """A failed comparison reads the six counts, and not an object address."""
+        snapshot = StatisticsSnapshot(
+            packets=1, fingerprints=2, connections=3, evicted=4, dropped=5, uptime=6.0
+        )
+        text = repr(snapshot)
+        for field in ("packets=1", "fingerprints=2", "connections=3", "evicted=4"):
+            self.assertIn(field, text)
+        self.assertIn("dropped=5", text)
+        self.assertIn("uptime=6.0", text)
+
     def test_the_line_truncates_the_uptime_to_a_whole_second(self):
         snapshot = StatisticsSnapshot(
             packets=1, fingerprints=2, connections=3, evicted=4, dropped=0, uptime=60.9
@@ -282,6 +293,15 @@ class TheSnapshotReadsOneInstant(unittest.TestCase):
 
     `MonitorStats` publishes the four counts under one lock, so a reader reads them
     together. The capture thread is the only thread that reads the connection table.
+
+    Warning: a case that reads an invariant while another thread writes it measures
+    nothing here. The measurement of 2026-08-08 ran one reader against one writer for
+    20000 writes, with the lock and without it. Both read 97635 snapshots and both
+    found 0 broken invariants, at the default switch interval and at one microsecond.
+    CPython leaves one thread inside three attribute stores that hold no call and no
+    backward jump, so the reader never samples the gap. The case below therefore holds
+    the reader inside the guarded region by hand, and it measures the wait of the
+    writer.
     """
 
     def test_the_snapshot_reads_no_connection_table(self):
@@ -302,36 +322,41 @@ class TheSnapshotReadsOneInstant(unittest.TestCase):
         self.assertEqual(snapshot.packets, 7)
         self.assertEqual(snapshot.connections, 3)
 
-    def test_a_reader_beside_a_writer_reads_no_partial_update(self):
-        """The writer holds `packets == connections + evicted` at every publish.
+    def test_a_write_waits_while_a_read_holds_the_guarded_region(self):
+        """One thread at a time reads or writes the four counts.
 
-        The writer publishes the three counts together. A reader that caught a write
-        half done would read a sum that does not match, so a broken invariant names a
-        read of two instants.
+        The clock of the snapshot blocks, so the reader stays inside the guarded
+        region. The writer then calls `record_packet`, and it reaches no count until
+        the reader leaves. A `MonitorStats` that acquires nothing lets the writer
+        finish, and this case reports that.
         """
-        stats = MonitorStats()
-        stop = threading.Event()
-        broken = []
+        inside = threading.Event()
+        release = threading.Event()
+        calls = []
 
-        def write():
-            for count in range(1, 20001):
-                stats.record_packet(connections=count // 2, evicted=count - count // 2)
-            stop.set()
+        def blocking_clock():
+            calls.append(1)
+            # The constructor reads the clock once, and that read starts no thread.
+            if len(calls) > 1:
+                inside.set()
+                release.wait(5.0)
+            return 0.0
 
-        def read():
-            while not stop.is_set():
-                snapshot = stats.snapshot()
-                if snapshot.packets != snapshot.connections + snapshot.evicted:
-                    broken.append(snapshot)
-
-        writer = threading.Thread(target=write)
-        reader = threading.Thread(target=read)
+        stats = MonitorStats(clock=blocking_clock)
+        reader = threading.Thread(target=stats.snapshot)
         reader.start()
+        self.assertTrue(inside.wait(5.0), "the reader entered no guarded region")
+
+        writer = threading.Thread(target=stats.record_packet, args=(1, 0))
         writer.start()
-        writer.join()
-        reader.join()
-        self.assertEqual(broken, [])
-        self.assertEqual(stats.snapshot().packets, 20000)
+        writer.join(0.2)
+        wrote_beside_the_read = not writer.is_alive()
+        release.set()
+        reader.join(5.0)
+        writer.join(5.0)
+
+        self.assertFalse(wrote_beside_the_read, "the write ran beside the read")
+        self.assertEqual(stats.snapshot().packets, 1)
 
     def test_eight_writers_lose_no_count(self):
         stats = MonitorStats()
