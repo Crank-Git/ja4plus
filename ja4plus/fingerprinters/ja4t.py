@@ -2,8 +2,14 @@
 JA4T TCP Client Fingerprinting implementation.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import logging
-from scapy.all import TCP, IP
+from typing import Any
+
+from scapy.all import TCP, IP, Packet
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -19,7 +25,7 @@ class JA4TFingerprinter(BaseFingerprinter):
     Example: 29200_2-4-8-1-3_1424_7
     """
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and extract JA4T fingerprint if applicable.
 
@@ -36,7 +42,7 @@ class JA4TFingerprinter(BaseFingerprinter):
         return None
 
 
-def generate_ja4t(packet):
+def generate_ja4t(packet: Packet) -> str | None:
     """
     Generate JA4T fingerprint from TCP SYN packet.
 
@@ -60,7 +66,7 @@ def generate_ja4t(packet):
         window_size = str(tcp.window)
 
         # Parse TCP options - preserve original order
-        options = []
+        options: list[str] = []
         mss = "0"
         wscale = "0"
 

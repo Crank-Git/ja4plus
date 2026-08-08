@@ -6,7 +6,60 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round TBD.
+  The method returned a list of dictionaries through version 0.6.0. A caller who reads
+  `result["fingerprint"]` keeps working for one major version, and item access emits a
+  `DeprecationWarning` that names the attribute form. Read `result.fingerprint` instead.
+  The results follow the fixed method order `ja4`, `ja4s`, `ja4h`, `ja4t`, `ja4ts`,
+  `ja4l`, `ja4x`, `ja4ssh`, `ja4d`, `ja4d6`, and that order is part of the interface.
+  `Processor.close_open_windows` still returns a list of dictionaries, because a window
+  carries a connection key and no `FingerprintResult` field holds one. The processor
+  reads no packet timestamp, so `timestamp` holds `None`. No fingerprint value moved:
+  the conformance suite reports the same 1477 passed, 143 skipped and 137 xfailed.
+  `docs/specs/features/04-typed-api.md` states FR-typed-api-3.
+
 ### Added
+
+- **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
+  The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as
+  package data. A caller who runs `mypy --strict` against their own code now resolves
+  the annotations of `ja4plus`: `unzip -l dist/*.whl` lists `ja4plus/py.typed`, and a
+  consumer installed from that wheel reads `result.fingerprint` as `str`.
+  **`ja4plus.__all__` names the 25 promised names**, and version 1.0.0 keeps each one
+  until version 2.0.0. A name absent from `__all__` is not promised. The list holds the
+  typed result, the processor, the ten fingerprinter classes, the ten one-shot
+  functions, the two certificate helpers and `__version__`. `bind_loopback_ipv6`,
+  `register_tunnel_dissectors`, `__author__` and `__license__` stay out: the package
+  calls the first two at import time, and the last two describe the project and not the
+  interface.
+  **`ProcessorStats` is public at `ja4plus.processor.ProcessorStats`**, because
+  `Processor.stats` returns `dict[str, ProcessorStats]`; the class moves nowhere.
+  `docs/specs/features/04-typed-api.md` states FR-typed-api-9, FR-typed-api-10,
+  FR-typed-api-12 and FR-typed-api-13.
+
+- **`Processor.process_packet_with_errors` returns the results and the errors** (#45).
+  Round TBD. `process_packet` logs a fingerprinter error at DEBUG and returns the
+  results alone, so a caller could not tell a packet that produces no fingerprint from a
+  packet that failed a parse. The new method returns both lists, and one method that
+  raises poisons no other method. The Go port returns the pair from one call, and parity
+  rule 2 keeps it. **Every returned exception carries no traceback.** A traceback holds
+  the frame of every call it passed. Those frames hold the packet. A monitor that keeps
+  the errors of every packet would therefore hold every packet it read. The type, the
+  message and the error chain stay. `docs/specs/features/04-typed-api.md` states
+  FR-typed-api-4. `CLAUDE.md` states the packet rule.
+
+- **`FingerprintResult` is the typed result of the public interface** (#44). The new
+  module `ja4plus/types.py` holds a frozen dataclass with nine fields, and `ja4plus`
+  exports the name. The field names are the snake-case form of the `FingerprintResult`
+  struct of the Go port, under parity rule 2, so the field that names the method is
+  `type` and not `method`. A result reads by field name as well as by attribute, so
+  code written against the dictionary of version 0.6.0 keeps working for one major
+  version. **Item access emits a `DeprecationWarning` that names the attribute form.**
+  The item access covers reading only, and a result supports no item assignment.
+  #45 makes `Processor.process_packet` return these results. No fingerprint value moved. `docs/specs/features/04-typed-api.md` states
+  FR-typed-api-1, FR-typed-api-2, FR-typed-api-5 and FR-typed-api-6.
 
 - **JA4SSH emits the window a connection holds open when the capture ends**
   (#214). Every fingerprinter and the processor now carry `close_open_windows()`.

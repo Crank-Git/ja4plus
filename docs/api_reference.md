@@ -1,5 +1,49 @@
 # API Reference
 
+## Public interface
+
+`ja4plus.__all__` names the interface the project promises. Version 1.0.0 promises that
+a name in that list stays until version 2.0.0. A name absent from the list is not
+promised, and the project may change it in any release.
+
+```python
+import ja4plus
+
+ja4plus.__all__   # the 25 promised names
+```
+
+| Group | Names |
+|---|---|
+| Result and processor | `FingerprintResult`, `Processor` |
+| Fingerprinter classes | `JA4Fingerprinter`, `JA4SFingerprinter`, `JA4HFingerprinter`, `JA4LFingerprinter`, `JA4XFingerprinter`, `JA4SSHFingerprinter`, `JA4TFingerprinter`, `JA4TSFingerprinter`, `JA4DFingerprinter`, `JA4D6Fingerprinter` |
+| One-shot functions | `generate_ja4`, `generate_ja4s`, `generate_ja4h`, `generate_ja4l`, `generate_ja4x`, `generate_ja4ssh`, `generate_ja4t`, `generate_ja4ts`, `generate_ja4d`, `generate_ja4d6` |
+| Certificate helpers | `compute_ja4x_from_der`, `compute_ja4x_from_pem` |
+| Version | `__version__` |
+
+A module states its own public names in its own `__all__`. `ja4plus.types` names
+`FingerprintResult`, and `ja4plus.processor` names `Processor` and `ProcessorStats`.
+`Processor.stats` returns `dict[str, ProcessorStats]`, so a caller who annotates the
+report imports the class from `ja4plus.processor`.
+
+Four names of the top-level namespace are not promised. `bind_loopback_ipv6` and
+`register_tunnel_dissectors` are the two calls the package makes at import time, so a
+caller needs neither name. `__author__` and `__license__` describe the project and not
+the interface, and the distribution metadata carries the license.
+
+### Type checking
+
+The package ships a `py.typed` marker, and the wheel carries it. A caller who runs
+`mypy --strict` against their own code therefore resolves the annotations of `ja4plus`.
+
+```python
+from ja4plus import FingerprintResult
+
+result = FingerprintResult(type="ja4", fingerprint="t13d1516h2_8daaf6152771_b0da82dd1658")
+name: str = result.fingerprint   # mypy reads `str`
+```
+
+Verified against: https://peps.python.org/pep-0561/ (retrieved 2026-08-08).
+
 ## Fingerprinter Classes
 
 All fingerprinters inherit from `BaseFingerprinter` and share a common interface.
@@ -187,6 +231,56 @@ hassh = fp.get_hassh_fingerprints()              # HASSH fingerprints
 lookup = fp.lookup_hassh(hassh_value)            # Known HASSH lookup
 ```
 
+## Result type
+
+### ja4plus.types
+
+`FingerprintResult` is the typed result of the public interface. It is a frozen
+dataclass, because a result describes something that already happened.
+
+| Field | Type | Constraint |
+|---|---|---|
+| `type` | `str` | One of the ten method names, lowercase. |
+| `fingerprint` | `str` | The fingerprint string. Never empty. |
+| `raw` | `str \| None` | The raw form, when the method defines one. |
+| `raw_original_order` | `str \| None` | The original-order raw form, when the method defines one. |
+| `src_ip` | `str` | The source address. Empty when the packet carries no address. |
+| `src_port` | `int` | The source port. Zero when the packet carries no port. |
+| `dst_ip` | `str` | The destination address. |
+| `dst_port` | `int` | The destination port. |
+| `timestamp` | `datetime \| None` | The packet timestamp, or `None` when the packet carries none. |
+
+The field names are the snake-case form of the `FingerprintResult` struct of the Go
+port, under parity rule 2. The field that names the method is `type`, not `method`.
+
+```python
+from ja4plus import FingerprintResult
+
+result = FingerprintResult(type="ja4", fingerprint="t13d1516h2_8daaf6152771_b0da82dd1658")
+result.type          # "ja4"
+result.fingerprint   # "t13d1516h2_8daaf6152771_b0da82dd1658"
+result.timestamp     # None
+```
+
+#### The deprecated item access
+
+Version 0.6.0 returned a dictionary. A result reads by field name too, so that code
+written against the dictionary keeps working for one major version.
+
+Warning: item access emits a `DeprecationWarning`. Read the attribute instead.
+
+```python
+result["fingerprint"]   # the same value, and one DeprecationWarning
+result["method"]        # KeyError. The field is `type`.
+```
+
+The item access covers reading only. `result["fingerprint"] = "x"` raises `TypeError`,
+and `result.fingerprint = "x"` raises `dataclasses.FrozenInstanceError`.
+
+`Processor.process_packet` returns a list of `FingerprintResult`, and #45 changed it.
+`Processor.close_open_windows` still returns a list of dictionaries, because a window
+carries a connection key and no `FingerprintResult` field holds one.
+
 ## Processor
 
 ### ja4plus.processor
@@ -194,13 +288,44 @@ lookup = fp.lookup_hassh(hassh_value)            # Known HASSH lookup
 | Class/Function | Description |
 |----------------|-------------|
 | `Processor(thread_safe=True)` | Build one processor and the ten fingerprinters it drives |
-| `.process_packet(packet)` | Run every fingerprinter on one packet, and return a list of result dicts |
+| `.process_packet(packet)` | Run every fingerprinter on one packet, and return a list of `FingerprintResult` |
+| `.process_packet_with_errors(packet)` | Return the same list, and the errors the fingerprinters raised |
 | `.close_open_windows()` | Emit every window the fingerprinters hold open |
 | `.get_shard_key(packet)` | Return one stable key for the connection of a packet |
 | `.cleanup_connection(src_ip, src_port, dst_ip, dst_port, proto)` | Drop the state of one connection across every fingerprinter |
 | `.reset()` | Reset every fingerprinter, and return every count to zero |
 | `.stats()` | Return one `ProcessorStats` for each of the ten methods |
 | `.thread_safe` | The value the constructor read |
+
+#### How to read the parse failures
+
+`process_packet` returns the results alone. A fingerprinter that raises produces no
+result, and the processor logs the error at DEBUG. One method that raises poisons no
+other method.
+
+`process_packet_with_errors` returns the results and the errors together. Call it to
+tell a packet that produces no fingerprint from a packet that failed a parse.
+FR-typed-api-4 states the requirement.
+
+```python
+results, errors = processor.process_packet_with_errors(packet)
+for error in errors:
+    print(f"one method failed to read the packet: {error!r}")
+```
+
+The results follow the fixed method order `ja4`, `ja4s`, `ja4h`, `ja4t`, `ja4ts`,
+`ja4l`, `ja4x`, `ja4ssh`, `ja4d`, `ja4d6`. The order is part of the interface. The
+errors follow the same order.
+
+Warning: every returned exception carries no traceback. A traceback holds the frame of
+every call it passed, and those frames hold the packet. A monitor that keeps the errors
+of every packet would therefore hold every packet it read. `CLAUDE.md` states that no
+code holds a reference to a packet object after `process_packet` returns. The type, the
+message and the error chain stay, so `repr(error)` reads the same. If the stack matters,
+log the error inside the loop that reads it.
+
+`process_packet_with_errors` sets no `timestamp` on a result, because the processor
+reads no packet timestamp. The field holds `None`.
 
 `stats()` reports what the state tables hold, and #41 built it. One processor holds
 **sixteen** state tables across the ten methods: the fourteen `BoundedStateTable`

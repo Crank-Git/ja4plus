@@ -2,15 +2,23 @@
 Enhanced TLS utility functions for JA4+ fingerprinting.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import struct
 import logging
-from scapy.all import Raw, UDP
+from collections.abc import Iterable
+from typing import Any
+
+from scapy.all import Raw, UDP, Packet
+
 from ja4plus.utils.quic_utils import parse_quic_initial
 
 logger = logging.getLogger(__name__)
 
 
-def extract_tls_info(packet):
+def extract_tls_info(packet: Packet) -> dict[str, Any] | None:
     """
     Extract TLS information from a packet.
 
@@ -24,7 +32,10 @@ def extract_tls_info(packet):
         Dictionary with TLS handshake information or None if not applicable
     """
     if hasattr(packet, "tls_info"):
-        return packet.tls_info
+        # scapy ships no type information, so this attribute reads as `Any`. The local
+        # annotation states the type the attribute holds, and it changes no value.
+        cached: dict[str, Any] | None = packet.tls_info
+        return cached
 
     if Raw not in packet:
         return None
@@ -43,7 +54,7 @@ def extract_tls_info(packet):
         return None
 
 
-def parse_tls_handshake(raw_data):
+def parse_tls_handshake(raw_data: bytes) -> dict[str, Any] | None:
     """
     Parse the first ClientHello or ServerHello of a TLS segment.
 
@@ -94,7 +105,7 @@ def parse_tls_handshake(raw_data):
     return None
 
 
-def _parse_client_hello(raw_data):
+def _parse_client_hello(raw_data: bytes) -> dict[str, Any] | None:
     """Parse a TLS ClientHello message."""
     if len(raw_data) < 11:
         return None
@@ -102,7 +113,7 @@ def _parse_client_hello(raw_data):
     # ClientHello version is at offset 9-10 (after record header + handshake header)
     version = (raw_data[9] << 8) | raw_data[10]
 
-    tls_info = {
+    tls_info: dict[str, Any] = {
         "handshake_type": "client_hello",
         "type": "client_hello",
         "version": version,
@@ -142,13 +153,13 @@ def _parse_client_hello(raw_data):
     pos += 1 + compression_len
 
     # Parse extensions
-    extensions = []
-    extension_data = {}
-    supported_versions = []
-    alpn_protocols = []
-    alpn_raw = []
-    signature_algorithms = []
-    sni = None
+    extensions: list[int] = []
+    extension_data: dict[int, Any] = {}
+    supported_versions: list[int] = []
+    alpn_protocols: list[str] = []
+    alpn_raw: list[bytes] = []
+    signature_algorithms: list[int] = []
+    sni: str | bool | None = None
 
     if pos + 2 <= len(raw_data):
         extensions_len = (raw_data[pos] << 8) | raw_data[pos + 1]
@@ -199,7 +210,7 @@ def _parse_client_hello(raw_data):
     return tls_info
 
 
-def _parse_server_hello(raw_data):
+def _parse_server_hello(raw_data: bytes) -> dict[str, Any] | None:
     """Parse a TLS ServerHello message."""
     if len(raw_data) < 11:
         return None
@@ -207,7 +218,7 @@ def _parse_server_hello(raw_data):
     # ServerHello version at offset 9-10
     version = (raw_data[9] << 8) | raw_data[10]
 
-    tls_info = {
+    tls_info: dict[str, Any] = {
         "handshake_type": "server_hello",
         "type": "server_hello",
         "version": version,
@@ -236,11 +247,11 @@ def _parse_server_hello(raw_data):
     pos += 1
 
     # Parse extensions
-    extensions = []
-    extension_data = {}
-    alpn_protocols = []
-    alpn_raw = []
-    supported_versions = []
+    extensions: list[int] = []
+    extension_data: dict[int, Any] = {}
+    alpn_protocols: list[str] = []
+    alpn_raw: list[bytes] = []
+    supported_versions: list[int] = []
 
     if pos + 2 <= len(raw_data):
         extensions_len = (raw_data[pos] << 8) | raw_data[pos + 1]
@@ -285,7 +296,7 @@ def _parse_server_hello(raw_data):
     return tls_info
 
 
-def _parse_sni(data):
+def _parse_sni(data: bytes) -> str | bool:
     """Parse Server Name Indication extension data."""
     if len(data) < 5:
         return True  # Extension exists but can't parse hostname
@@ -316,9 +327,9 @@ def _parse_sni(data):
         return True
 
 
-def _parse_supported_versions_client(data):
+def _parse_supported_versions_client(data: bytes) -> list[int]:
     """Parse supported_versions extension from ClientHello."""
-    versions = []
+    versions: list[int] = []
     if len(data) < 1:
         return versions
 
@@ -337,7 +348,7 @@ def _parse_supported_versions_client(data):
     return versions
 
 
-def _parse_alpn(data):
+def _parse_alpn(data: bytes) -> list[str]:
     """Parse Application-Layer Protocol Negotiation extension data.
 
     Returns a list of decoded strings. Raw bytes are stored separately on the
@@ -348,7 +359,7 @@ def _parse_alpn(data):
     return protocols
 
 
-def _parse_alpn_with_bytes(data):
+def _parse_alpn_with_bytes(data: bytes) -> tuple[list[str], list[bytes]]:
     """Parse ALPN, returning both decoded strings and original bytes.
 
     Returns:
@@ -356,8 +367,8 @@ def _parse_alpn_with_bytes(data):
         ASCII-decoded strings (errors ignored, non-ASCII bytes dropped) and
         ``raw_protocols`` is a list of the corresponding raw bytes objects.
     """
-    protocols = []
-    raw_protocols = []
+    protocols: list[str] = []
+    raw_protocols: list[bytes] = []
     if len(data) < 2:
         return protocols, raw_protocols
 
@@ -383,9 +394,9 @@ def _parse_alpn_with_bytes(data):
     return protocols, raw_protocols
 
 
-def _parse_signature_algorithms(data):
+def _parse_signature_algorithms(data: bytes) -> list[int]:
     """Parse signature_algorithms extension data."""
-    algorithms = []
+    algorithms: list[int] = []
     if len(data) < 2:
         return algorithms
 
@@ -404,7 +415,7 @@ def _parse_signature_algorithms(data):
     return algorithms
 
 
-def is_grease_value(value):
+def is_grease_value(value: Any) -> bool:
     """
     Check if a value is a TLS GREASE value.
 
@@ -431,7 +442,7 @@ def is_grease_value(value):
         return False
 
 
-def find_tls_extension(extensions, extension_type):
+def find_tls_extension(extensions: Iterable[Any], extension_type: Any) -> Any:
     """Find a specific TLS extension by type."""
     for ext in extensions:
         if hasattr(ext, "type") and ext.type == extension_type:

@@ -29,10 +29,15 @@ for each.
   packet nor a lookup calls `evict_aged` to age an entry out.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import logging
 import time
 from collections import OrderedDict
-from collections.abc import MutableMapping
+from collections.abc import Callable, Iterator, MutableMapping
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +94,15 @@ class TableStats:
         "returned_connections",
     )
 
-    def __init__(self, entries, max_entries, inserts, evictions, removals, returned_connections):
+    def __init__(
+        self,
+        entries: int,
+        max_entries: int,
+        inserts: int,
+        evictions: int,
+        removals: int,
+        returned_connections: int,
+    ) -> None:
         self.entries = entries
         self.max_entries = max_entries
         self.inserts = inserts
@@ -97,7 +110,7 @@ class TableStats:
         self.removals = removals
         self.returned_connections = returned_connections
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"TableStats(entries={self.entries}, max_entries={self.max_entries}, "
             f"inserts={self.inserts}, evictions={self.evictions}, "
@@ -128,7 +141,7 @@ class StateTable:
             table.
     """
 
-    def __init__(self, max_evicted_keys):
+    def __init__(self, max_evicted_keys: int) -> None:
         self.inserts = 0
         self.evictions = 0
         self.removals = 0
@@ -139,9 +152,9 @@ class StateTable:
         # answers the membership question, and it gives no order to drop the oldest
         # key by. Nothing that survives across packets grows without a limit, so this
         # memory holds the same bound the table holds.
-        self._evicted_keys = OrderedDict()
+        self._evicted_keys: OrderedDict[Any, None] = OrderedDict()
 
-    def take_evicted_key(self, key):
+    def take_evicted_key(self, key: Any) -> bool:
         """Report whether this table evicted the key, and drop the memory of it.
 
         A first sighting and a return look the same at the call site: both add a key
@@ -165,7 +178,7 @@ class StateTable:
         del self._evicted_keys[key]
         return True
 
-    def count_insert(self, returned=False):
+    def count_insert(self, returned: bool = False) -> None:
         """Count one new key, and count a connection that returned after an eviction.
 
         Args:
@@ -175,7 +188,7 @@ class StateTable:
         if returned:
             self.returned_connections += 1
 
-    def count_eviction(self, key):
+    def count_eviction(self, key: Any) -> None:
         """Count one entry the table itself removed, and remember its key.
 
         Args:
@@ -190,7 +203,7 @@ class StateTable:
         while len(self._evicted_keys) > self.max_evicted_keys:
             self._evicted_keys.popitem(last=False)
 
-    def count_removals(self, count=1):
+    def count_removals(self, count: int = 1) -> None:
         """Count the entries the caller removed.
 
         Args:
@@ -198,7 +211,7 @@ class StateTable:
         """
         self.removals += count
 
-    def forget_evicted_keys(self):
+    def forget_evicted_keys(self) -> None:
         """Drop the memory of every evicted key.
 
         The caller runs this method when it empties the table. A key that arrives after
@@ -206,7 +219,7 @@ class StateTable:
         """
         self._evicted_keys.clear()
 
-    def build_stats(self, entries, max_entries):
+    def build_stats(self, entries: int, max_entries: int) -> TableStats:
         """Return the counts this table reports.
 
         Args:
@@ -225,7 +238,7 @@ class StateTable:
             returned_connections=self.returned_connections,
         )
 
-    def stats(self):
+    def stats(self) -> TableStats:
         """Return the counts this table reports.
 
         Raises:
@@ -235,7 +248,7 @@ class StateTable:
         raise NotImplementedError("A state table reports its counts.")
 
 
-class BoundedStateTable(StateTable, MutableMapping):
+class BoundedStateTable(StateTable, MutableMapping[Any, Any]):
     """A mapping that evicts an entry on the entry count and on the entry age.
 
     The table answers the operations a fingerprinter performs on a dictionary. #39
@@ -273,11 +286,11 @@ class BoundedStateTable(StateTable, MutableMapping):
 
     def __init__(
         self,
-        max_connections=DEFAULT_MAX_CONNECTIONS,
-        max_connection_age=DEFAULT_MAX_CONNECTION_AGE,
-        eviction_interval=DEFAULT_EVICTION_INTERVAL,
-        on_eviction=None,
-    ):
+        max_connections: int = DEFAULT_MAX_CONNECTIONS,
+        max_connection_age: float = DEFAULT_MAX_CONNECTION_AGE,
+        eviction_interval: int = DEFAULT_EVICTION_INTERVAL,
+        on_eviction: Callable[[Any], None] | None = None,
+    ) -> None:
         if max_connections < 1:
             raise ValueError(f"max_connections must be 1 or more, and it is {max_connections}")
         if eviction_interval < 1:
@@ -292,11 +305,13 @@ class BoundedStateTable(StateTable, MutableMapping):
         self.eviction_interval = eviction_interval
         self.on_eviction = on_eviction
 
-        self._entries = OrderedDict()
+        # Each entry is a two-item list: the stored value, then the time of the last
+        # read. `_VALUE` and `_LAST_SEEN` name the two positions.
+        self._entries: OrderedDict[Any, list[Any]] = OrderedDict()
         self._packets = 0
-        self._now = None
+        self._now: float | None = None
 
-    def on_packet(self, timestamp=None):
+    def on_packet(self, timestamp: float | None = None) -> None:
         """Announce one packet to the table, and run the age eviction pass on schedule.
 
         A stated timestamp holds until the next packet arrives, and every operation
@@ -318,7 +333,7 @@ class BoundedStateTable(StateTable, MutableMapping):
         if self._packets % self.eviction_interval == 0:
             self.evict_aged()
 
-    def evict_aged(self, now=None):
+    def evict_aged(self, now: float | None = None) -> int:
         """Remove every entry that receives no read for `max_connection_age` seconds.
 
         Args:
@@ -342,7 +357,7 @@ class BoundedStateTable(StateTable, MutableMapping):
 
         return removed
 
-    def evict_key(self, key):
+    def evict_key(self, key: Any) -> bool:
         """Remove one entry, count it as an eviction, and call the eviction hook.
 
         The eviction count and the removal count answer two different questions, and
@@ -364,7 +379,7 @@ class BoundedStateTable(StateTable, MutableMapping):
             self.on_eviction(key)
         return True
 
-    def _read_clock(self):
+    def _read_clock(self) -> float:
         """Return the time the table measures an age against, in seconds.
 
         Returns:
@@ -375,13 +390,13 @@ class BoundedStateTable(StateTable, MutableMapping):
             return time.time()
         return self._now
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         entry = self._entries[key]
         entry[_LAST_SEEN] = self._read_clock()
         self._entries.move_to_end(key)
         return entry[_VALUE]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Any, value: Any) -> None:
         now = self._read_clock()
 
         entry = self._entries.get(key)
@@ -403,19 +418,19 @@ class BoundedStateTable(StateTable, MutableMapping):
         self._entries[key] = [value, now]
         self.count_insert(returned)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: Any) -> None:
         del self._entries[key]
         self.count_removals()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Any]:
         # A caller that reads a value inside this loop moves that entry to the end, and
         # an OrderedDict refuses that move during its own iteration.
         return iter(list(self._entries))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._entries)
 
-    def __contains__(self, key):
+    def __contains__(self, key: object) -> bool:
         entry = self._entries.get(key)
         if entry is None:
             return False
@@ -423,7 +438,7 @@ class BoundedStateTable(StateTable, MutableMapping):
         self._entries.move_to_end(key)
         return True
 
-    def keys(self):
+    def keys(self) -> list[Any]:  # type: ignore[override]  # A list, not a live view.
         """Return the keys, least recently read first. The pass holds no entry.
 
         The result is a list and not a view. A caller that reads a value inside a loop
@@ -432,15 +447,17 @@ class BoundedStateTable(StateTable, MutableMapping):
         """
         return list(self._entries.keys())
 
-    def values(self):
+    def values(self) -> list[Any]:  # type: ignore[override]  # A list, not a live view.
         """Return the values, least recently read first. The pass holds no entry."""
         return [entry[_VALUE] for entry in self._entries.values()]
 
-    def items(self):
+    def items(  # type: ignore[override]  # A list of pairs, not a live view.
+        self,
+    ) -> list[tuple[Any, Any]]:
         """Return the pairs, least recently read first. The pass holds no entry."""
         return [(key, entry[_VALUE]) for key, entry in self._entries.items()]
 
-    def clear(self):
+    def clear(self) -> None:
         """Remove every entry. The removal belongs to the caller, so it evicts none."""
         self.count_removals(len(self._entries))
         self._entries.clear()
@@ -448,7 +465,7 @@ class BoundedStateTable(StateTable, MutableMapping):
         # counts as a first sighting and not as a connection that returned.
         self.forget_evicted_keys()
 
-    def stats(self):
+    def stats(self) -> TableStats:
         """Return the counts this table reports.
 
         Returns:
@@ -457,7 +474,7 @@ class BoundedStateTable(StateTable, MutableMapping):
         """
         return self.build_stats(len(self._entries), self.max_connections)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"BoundedStateTable(entries={len(self._entries)}, "
             f"max_connections={self.max_connections}, "

@@ -27,7 +27,7 @@ BSD_AF_INET6_VALUES = (0x18, 0x1C, 0x1E)
 _bound = False
 
 
-def bind_loopback_ipv6():
+def bind_loopback_ipv6() -> None:
     """Bind the BSD address family values of a loopback frame to the IPv6 layer.
 
     The bind reaches the dissection path alone. A caller that builds a loopback frame

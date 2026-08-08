@@ -39,7 +39,7 @@ def test_processor_attribute_access_to_fingerprinters():
 
 def test_processor_process_packet_runs_all_fingerprinters():
     """For a DHCP packet we should get a JA4D fingerprint and nothing else."""
-    from ja4plus import Processor
+    from ja4plus import FingerprintResult, Processor
     from scapy.all import IP, UDP, Raw
 
     # Build a minimal DHCP DISCOVER packet (53=msgtype + end)
@@ -50,18 +50,18 @@ def test_processor_process_packet_runs_all_fingerprinters():
 
     p = Processor()
     results = p.process_packet(pkt)
-    types = [r["type"] for r in results]
+    types = [r.type for r in results]
     assert "ja4d" in types
-    # Each result should expose canonical structure
+    # #45 returns a `FingerprintResult` in place of a dict, so the case reads the
+    # attribute. Item access still works, and it emits a `DeprecationWarning`.
     for r in results:
-        assert "fingerprint" in r
-        assert "type" in r
-        assert "src_ip" in r
-        assert "dst_ip" in r
-        assert "src_port" in r
-        assert "dst_port" in r
-        assert "raw" in r
-        assert "raw_original_order" in r
+        assert isinstance(r, FingerprintResult)
+        assert r.fingerprint
+        assert r.type
+        assert r.src_ip == "0.0.0.0"
+        assert r.dst_ip == "255.255.255.255"
+        assert r.src_port == 68
+        assert r.dst_port == 67
 
 
 def test_processor_reset_clears_all_state():

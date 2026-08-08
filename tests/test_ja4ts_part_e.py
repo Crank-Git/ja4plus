@@ -208,8 +208,8 @@ class TestPartEOnTheVectorSet(unittest.TestCase):
         self.values = []
         for index, packet in enumerate(rdpcap(str(self.CAPTURE))):
             for result in processor.process_packet(packet):
-                if result["type"] == "ja4ts":
-                    self.values.append((index, result["fingerprint"]))
+                if result.type == "ja4ts":
+                    self.values.append((index, result.fingerprint))
 
     def test_the_retransmitted_syn_ack_carries_part_e(self):
         """Index 372 answers a connection that index 369 already answered."""

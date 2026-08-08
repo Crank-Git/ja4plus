@@ -4,10 +4,16 @@ Decrypts QUIC v1 (RFC 9001) and v2 (RFC 9369) Initial packets to
 extract the TLS ClientHello for JA4 fingerprinting.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import hashlib
 import hmac
 import logging
 import struct
+from collections.abc import Iterable
+from typing import Any
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDFExpand
@@ -42,7 +48,7 @@ _VERSION_2_PACKET_TYPES = {
 }
 
 
-def long_header_packet_type(udp_payload):
+def long_header_packet_type(udp_payload: bytes) -> int | None:
     """Return the long-header packet type of a QUIC datagram, or None.
 
     Args:
@@ -67,7 +73,7 @@ def long_header_packet_type(udp_payload):
     return packet_type
 
 
-def _decode_varint(data):
+def _decode_varint(data: bytes) -> tuple[int, int]:
     """Decode a QUIC variable-length integer (RFC 9000 Section 16)."""
     prefix = data[0] >> 6
     length = 1 << prefix
@@ -77,7 +83,7 @@ def _decode_varint(data):
     return val, length
 
 
-def hkdf_expand_label(secret, label, context, length):
+def hkdf_expand_label(secret: bytes, label: bytes, context: bytes, length: int) -> bytes:
     """HKDF-Expand-Label as defined in TLS 1.3 (RFC 8446 Section 7.1)."""
     full_label = b"tls13 " + label
     hkdf_label = struct.pack("!H", length)
@@ -86,7 +92,7 @@ def hkdf_expand_label(secret, label, context, length):
     return HKDFExpand(algorithm=hashes.SHA256(), length=length, info=hkdf_label).derive(secret)
 
 
-def derive_initial_secrets(dcid, version=1):
+def derive_initial_secrets(dcid: bytes, version: int = 1) -> tuple[bytes, bytes]:
     """Derive QUIC Initial client and server secrets from the DCID."""
     salt = QUIC_V1_SALT if version == 1 else QUIC_V2_SALT
     initial_secret = hmac.new(salt, dcid, hashlib.sha256).digest()
@@ -95,7 +101,7 @@ def derive_initial_secrets(dcid, version=1):
     return client_secret, server_secret
 
 
-def derive_key_iv_hp(secret):
+def derive_key_iv_hp(secret: bytes) -> tuple[bytes, bytes, bytes]:
     """Derive AES key, IV, and header protection key from a traffic secret."""
     key = hkdf_expand_label(secret, b"quic key", b"", 16)
     iv = hkdf_expand_label(secret, b"quic iv", b"", 12)
@@ -103,7 +109,7 @@ def derive_key_iv_hp(secret):
     return key, iv, hp
 
 
-def _find_pn_offset(packet_bytes):
+def _find_pn_offset(packet_bytes: bytes) -> int:
     """Find the packet number offset in a QUIC Initial long header."""
     pos = 5
     dcid_len = packet_bytes[pos]
@@ -117,7 +123,7 @@ def _find_pn_offset(packet_bytes):
     return pos
 
 
-def _initial_packet_end(packet_bytes):
+def _initial_packet_end(packet_bytes: bytes) -> int:
     """Return the offset one past the end of the first QUIC Initial packet.
 
     RFC 9000 Section 12.2 lets a sender put several QUIC packets in one datagram. A
@@ -148,7 +154,7 @@ def _initial_packet_end(packet_bytes):
     return end
 
 
-def initial_packet_dcid(udp_payload):
+def initial_packet_dcid(udp_payload: bytes) -> bytes | None:
     """Return the destination connection ID of a QUIC Initial packet, or None.
 
     A server derives its Initial keys from the connection ID the client sent. A reader
@@ -172,7 +178,7 @@ def initial_packet_dcid(udp_payload):
     return bytes(udp_payload[6 : 6 + dcid_length])
 
 
-def remove_header_protection(packet_bytes, hp_key):
+def remove_header_protection(packet_bytes: bytes, hp_key: bytes) -> tuple[bytes, int, int]:
     """Remove QUIC header protection to reveal the real packet number."""
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -198,7 +204,9 @@ def remove_header_protection(packet_bytes, hp_key):
     return bytes(header), pn, pn_length
 
 
-def decrypt_initial_payload(packet_bytes, pn, pn_length, pn_offset, key, iv):
+def decrypt_initial_payload(
+    packet_bytes: bytes, pn: int, pn_length: int, pn_offset: int, key: bytes, iv: bytes
+) -> bytes:
     """Decrypt a QUIC Initial packet payload using AES-128-GCM."""
     nonce = bytearray(iv)
     pn_bytes = pn.to_bytes(len(nonce), "big")
@@ -212,7 +220,7 @@ def decrypt_initial_payload(packet_bytes, pn, pn_length, pn_offset, key, iv):
     return aesgcm.decrypt(bytes(nonce), ciphertext, ad)
 
 
-def extract_crypto_frames(plaintext):
+def extract_crypto_frames(plaintext: bytes) -> bytes | None:
     """Extract and reassemble CRYPTO frame data from decrypted QUIC payload.
 
     Single-datagram convenience: reassembles fragments from a single
@@ -225,7 +233,7 @@ def extract_crypto_frames(plaintext):
     return reassemble_crypto_fragments(fragments)
 
 
-def parse_crypto_frames(plaintext):
+def parse_crypto_frames(plaintext: bytes) -> list[tuple[int, bytes]]:
     """Extract CRYPTO frame fragments from a decrypted QUIC Initial payload.
 
     Returns a list of (offset, data) tuples in the order they appear.
@@ -233,7 +241,7 @@ def parse_crypto_frames(plaintext):
     multi-packet captures with intermixed ACKs still surface their
     CRYPTO fragments. Stops at the first unknown frame type.
     """
-    fragments = []
+    fragments: list[tuple[int, bytes]] = []
     pos = 0
     while pos < len(plaintext):
         frame_type = plaintext[pos]
@@ -284,7 +292,7 @@ def parse_crypto_frames(plaintext):
     return fragments
 
 
-def reassemble_crypto_fragments(fragments):
+def reassemble_crypto_fragments(fragments: Iterable[tuple[int, bytes]]) -> bytes:
     """Reassemble offset-keyed CRYPTO fragments into a contiguous bytestring.
 
     Args:
@@ -296,7 +304,7 @@ def reassemble_crypto_fragments(fragments):
     if not fragments:
         return b""
     # Deduplicate identical offsets (a fragment can appear in multiple Initials)
-    by_offset = {}
+    by_offset: dict[int, bytes] = {}
     for offset, data in fragments:
         # RFC 9000 Section 16 lets a CRYPTO frame offset reach 4611686018427387903,
         # and the buffer below reaches the highest offset. A fragment that names an
@@ -320,7 +328,9 @@ def reassemble_crypto_fragments(fragments):
     return bytes(buf)
 
 
-def decrypt_quic_initial_crypto(udp_payload):
+def decrypt_quic_initial_crypto(
+    udp_payload: bytes,
+) -> tuple[list[tuple[int, bytes]] | None, bytes | None]:
     """Decrypt a QUIC Initial packet and return its CRYPTO fragments.
 
     This is the multi-packet-friendly variant of parse_quic_initial:
@@ -375,7 +385,9 @@ def decrypt_quic_initial_crypto(udp_payload):
     return parse_crypto_frames(plaintext), dcid
 
 
-def client_hello_from_crypto_fragments(fragments):
+def client_hello_from_crypto_fragments(
+    fragments: Iterable[tuple[int, bytes]],
+) -> dict[str, Any] | None:
     """Reassemble fragments and try to parse a TLS ClientHello.
 
     Returns a tls_info dict (with is_quic=True) on success, or None if
@@ -407,7 +419,9 @@ def client_hello_from_crypto_fragments(fragments):
     return tls_info
 
 
-def decrypt_quic_server_initial_crypto(udp_payload, client_dcid):
+def decrypt_quic_server_initial_crypto(
+    udp_payload: bytes, client_dcid: bytes
+) -> list[tuple[int, bytes]] | None:
     """Decrypt one QUIC server Initial packet and return its CRYPTO fragments.
 
     This is the multi-packet form of `parse_quic_server_initial`. A server splits the
@@ -461,7 +475,9 @@ def decrypt_quic_server_initial_crypto(udp_payload, client_dcid):
     return parse_crypto_frames(plaintext)
 
 
-def collect_crypto_fragments(collected, fragments):
+def collect_crypto_fragments(
+    collected: list[tuple[int, bytes]], fragments: Iterable[tuple[int, bytes]]
+) -> list[tuple[int, bytes]]:
     """Add the fragments of one packet to the collected list, up to the buffer limit.
 
     RFC 9000 Section 16 lets a CRYPTO frame offset reach 4611686018427387903, and
@@ -490,7 +506,7 @@ def collect_crypto_fragments(collected, fragments):
     return collected
 
 
-def server_hello_is_complete(fragments):
+def server_hello_is_complete(fragments: Iterable[tuple[int, bytes]]) -> bool:
     """Report whether the CRYPTO fragments hold a whole TLS ServerHello.
 
     Args:
@@ -508,7 +524,7 @@ def server_hello_is_complete(fragments):
     return len(assembled) >= 4 + message_length
 
 
-def parse_quic_server_initial(udp_payload, client_dcid):
+def parse_quic_server_initial(udp_payload: bytes, client_dcid: bytes) -> dict[str, Any] | None:
     """
     Parse a QUIC Server Initial packet and extract the TLS ServerHello.
 
@@ -549,7 +565,7 @@ def parse_quic_server_initial(udp_payload, client_dcid):
     return tls_info
 
 
-def parse_quic_initial(udp_payload):
+def parse_quic_initial(udp_payload: bytes) -> dict[str, Any] | None:
     """Parse a QUIC Initial packet and extract the TLS ClientHello."""
     if len(udp_payload) < 20:
         return None
