@@ -127,7 +127,7 @@ in-repository path names the FoxIO `ja4` repository at the pinned commit.
 ### R2 — Part a is the one-way latency, in microseconds
 
 - Corroboration 1: `python/ja4.py:157` writes `f"{diff}_{ttl}"`, where `diff` comes from
-  `epoch_diff` and `python/common.py:181` reads `.microseconds`.
+  `epoch_diff` and `python/common.py:182` reads `.microseconds`.
 - Corroboration 2: `rust/ja4/src/time/tcp.rs:186` writes
   `format!("{ja4l_c}_{client_ttl}", client_ttl = client_ttl.0)`.
 
@@ -289,7 +289,7 @@ field is named. A field this table does not name is a field nobody read.**
 | Field | Rule | `ja4l.py` | Reading |
 |---|---|---|---|
 | The halving | R1 | `ja4l.py:44` and `ja4l.py:324` | Agrees. `LATENCY_DIVISOR = 2`, and `_one_way_latency` returns `int((end - start) / LATENCY_DIVISOR)`. |
-| The rounding of part a | R1 | `ja4l.py:324` | Agrees with `python/common.py:181` and `rust/ja4/src/time/tcp.rs:179`, which truncate toward zero. `zeek/ja4l/main.zeek:158` rounds half to even, and #198 owns that difference. |
+| The rounding of part a | R1 | `ja4l.py:324` | Agrees with `python/common.py:182` and `rust/ja4/src/time/tcp.rs:179`, which truncate toward zero. `zeek/ja4l/main.zeek:158` rounds half to even, and #198 owns that difference. |
 | Part a unit | R2 | `ja4l.py:299` to `ja4l.py:311` | Agrees. `_packet_microseconds` returns microseconds. |
 | Part a, the server interval | R2 | `ja4l.py:409` and `ja4l.py:424` | Agrees. `JA4L-S` measures from the SYN to the SYN-ACK, as `python/ja4.py:155` does. |
 | Part a, the client interval | R2 | `ja4l.py:439` | Agrees. `JA4L-C` measures from the SYN-ACK to the client measurement point, as `python/ja4.py:160` does. |
@@ -405,7 +405,7 @@ value, and no rule about how many values a capture produces.
 | `CVE-2018-6794.pcap` | `JA4H`, `JA4H_ro` | 0 | 3 `JA4L-S`, 3 `JA4L-C` |
 | `https-connect.pcap` | `JA4H`, `JA4H_ro` | 0 | 1 `JA4L-S`, 1 `JA4L-C` |
 | `tls-handshake.pcapng` | `JA4`, `JA4_o`, `JA4_r`, `JA4_ro`, `JA4S`, `JA4S_r`, `JA4X` | 0 | 20 `JA4L-S` |
-| `ssh2.pcapng` | eleven method keys, including `JA4L-C` and `JA4L-S` | 10 `JA4L-S`, 9 `JA4L-C` | 11 `JA4L-S`, 9 `JA4L-C` |
+| `ssh2.pcapng` | twelve method keys, including `JA4L-C` and `JA4L-S` | 10 `JA4L-S`, 9 `JA4L-C` | 11 `JA4L-S`, 9 `JA4L-C` |
 
 `python/ja4.py:339` reads
 `if 'ja4l' not in output_types: delete_keys(['JA4L-S', 'JA4L-C'], final)`, and
