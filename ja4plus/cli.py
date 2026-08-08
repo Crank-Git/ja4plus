@@ -121,11 +121,7 @@ def _close_open_windows(fingerprinters):
     """
     rows = []
     for fp_type, fp in fingerprinters.items():
-        try:
-            entries = fp.close_open_windows()
-        except Exception:
-            continue
-        for entry in entries:
+        for entry in fp.close_open_windows():
             connection = entry.get("connection", "")
             # The key form is `<client>-<server>`, and an IPv6 address holds a colon and
             # no hyphen, so the first hyphen separates the two endpoints.
