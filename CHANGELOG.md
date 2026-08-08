@@ -8,6 +8,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The Zeek reference page reads the current comparison** (#327). Round TBD.
+  `docs/specs/foxio/zeek.md` read as though #214 were open, in three places. #214 made
+  JA4SSH emit the window a connection holds open when the capture ends, so `ssh2.pcapng`
+  now produces `c36s52_c42s76_c51s2` as its second value, which the Zeek baseline holds.
+  The re-run against the pinned FoxIO checkout prints 98 rows, of which 63 match and 35
+  differ, where round 52 read 98 rows, 62 match and 36 differ. **The page now names the
+  Changelog round of every run it cites**, so a reader can tell a stale count from a
+  current one. **One value rating no longer follows from its evidence and reads
+  `Undecided`**: the JA4SSH baseline was `Blocked` on #214, and the replacement rating is
+  a precedence question the user decides. No file under `ja4plus/` changes, no
+  fingerprint moves, and the register holds 135 keys against 135 xfailed.
+
 - **The Zeek baseline comparison script runs again, and a case now runs it** (#324).
   Round TBD. `tests/compare_zeek_baselines.py` read the composite `source` field that
   #49 removed, so the script raised `KeyError` on the first output line it parsed. The
