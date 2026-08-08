@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import dataclasses
+import math
 import os
 import sys
 from datetime import datetime, timezone
@@ -691,13 +692,20 @@ def _stats_interval(value: str) -> float:
         The interval as a count of seconds.
 
     Raises:
-        argparse.ArgumentTypeError: The text is no number, or it is 0 or less. An
-            interval of zero writes a statistics line without an end.
+        argparse.ArgumentTypeError: The text is no number, or it is 0 or less, or it is
+            no finite number. An interval of zero writes a statistics line without an
+            end. `Event.wait` returns at once for `nan`, which writes a line without an
+            end, and it raises `OverflowError` for `inf`, which ends the statistics
+            thread and leaves the monitor running.
     """
     try:
         seconds = float(value)
     except ValueError:
         raise argparse.ArgumentTypeError(f"--stats-interval needs a number, and it is {value}")
+    if not math.isfinite(seconds):
+        raise argparse.ArgumentTypeError(
+            f"--stats-interval needs a finite number, and it is {value}"
+        )
     if seconds <= 0:
         raise argparse.ArgumentTypeError(
             f"--stats-interval must be more than 0, and it is {seconds}"

@@ -592,6 +592,19 @@ class TheCommandDocumentsTheOption(unittest.TestCase):
         self.assertNotEqual(status, 0)
         self.assertIn("--stats-interval", err)
 
+    def test_the_command_refuses_an_interval_that_is_no_finite_number(self):
+        """`Event.wait` returns at once for `nan` and it raises for `inf`.
+
+        A monitor that accepted `nan` would write a statistics line without an end. A
+        monitor that accepted `inf` would lose the statistics thread to an
+        `OverflowError` and keep running.
+        """
+        for text in ("nan", "inf", "-inf"):
+            with self.subTest(interval=text):
+                _, err, status = run_watch("watch", "eth0", "--stats-interval", text)
+                self.assertNotEqual(status, 0)
+                self.assertIn("--stats-interval", err)
+
 
 class TheWriterWritesOneLine(unittest.TestCase):
     """`write_statistics` writes the exit summary the command reports."""
