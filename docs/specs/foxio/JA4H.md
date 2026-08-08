@@ -604,6 +604,10 @@ it contradicts none of them. It carries two further findings.
 fingerprint that this project publishes, or it changes a recorded cause. **This page
 changes no fingerprinter and no register entry.**
 
+**The user settled every item on 2026-08-08. `## What the user decided` below states each
+ruling and the repair that carries it.** The list that follows records what this page
+raised, and it reads as the page wrote it.
+
 1. **D2.** Does field a3 read the Cookie header or the parsed cookie list? All three
    references read the header.
 2. **D3.** Does field a4 read the Referer header or its value? All three references read
@@ -621,3 +625,32 @@ changes no fingerprinter and no register entry.**
    implementations, and the image settles none of them. The vector fallback stays. R24 is
    the widest. The Rust reference counts and hashes the four HTTP/2 pseudo-headers, and
    the other two references drop them, so the two disagree on every HTTP/2 request.
+
+## What the user decided
+
+The user settled D1, D2, D3 and D4 on 2026-08-08, and #219 carries the repair. #193 had
+already repaired D5 and D6 on `batch/193-register-and-state-rule`, which is not the base of
+this page.
+
+**No FoxIO vector reaches any of the four readings.** The largest JA4H vector carries no
+valueless Cookie header, no empty Referer value, no header named with a space and no method
+outside the nine. The repair therefore holds two measurements.
+
+- The 38 captures under `tests/foxio_vectors/` produce 791 fingerprint values before the
+  repair and 791 after, and every value is unchanged. 73 of them are JA4H values.
+- The conformance suite reports 114 `xfailed` before the repair and 114 after, and
+  `tests/foxio_deviations.json` holds 114 keys before and after.
+
+`tests/test_ja4h_part_a_readings.py` holds 35 constructed cases, and each repair is proven
+by reverting it.
+
+| Ruling | What changed | Cases that fail when the repair is reverted |
+|---|---|---|
+| **D2.** Field a3 reads the Cookie header, and it does not read the parsed cookie list. R5 states the rule, and all three references read the header. This is a defect, so the `Divergence register` gains no row. | `ja4h.py:_ja4h_part_a` reads the header name list. | 3 |
+| **D3.** Field a4 reads the Referer header, and it does not read the header value. R6 states the rule. This is a defect, so the `Divergence register` gains no row. | `ja4h.py:_ja4h_part_a` reads the header name list. | 5 |
+| **D4.** Field a5 counts the list part b hashes. R9 states the rule, and a value that reports two headers while it hashes one contradicts itself. | `ja4h.py:_ja4h_part_a` counts `_ja4h_header_names`. | 5 |
+| **D1.** Field a1 reads the first two characters of any method, as `python/ja4h.py:9` does. The three references disagree, so the `Divergence register` of `docs/specs/spec.md` holds a row. | `http_utils.py:REQUEST_LINE_PATTERN` reads a method token and names no method. The three parse paths read that one pattern. | 12 |
+
+The reassembly gate keeps a narrow test. `is_http_request` admits a method the nine tokens
+omit only when the buffer holds a whole request line. `ja4l.py:365` reads the same gate, and
+a wider test would admit an SSH banner, which starts with method characters and one space.
