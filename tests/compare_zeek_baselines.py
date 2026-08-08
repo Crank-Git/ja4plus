@@ -58,7 +58,8 @@ def read_zeek_log(path: Path) -> list[dict[str, str]]:
         if line.startswith("#fields"):
             fields = line.split("\t")[1:]
             continue
-        if line.startswith("#") or line.startswith("###") or not line:
+        # A btest baseline opens with a `###` line, and a Zeek log opens with `#` lines.
+        if line.startswith("#") or not line:
             continue
         rows.append(dict(zip(fields, line.split("\t"))))
     return rows
@@ -77,8 +78,18 @@ def connection_key(a: str, b: str) -> tuple[str, str]:
 def split_source(source: str) -> tuple[str, str]:
     """Return the two endpoints of a `ja4plus` `source` field.
 
-    The field has the form `host:port -> host:port`. An IPv6 host holds colons, so the
-    port is the text after the last colon.
+    The field has the form `host:port -> host:port`. The function keeps each endpoint
+    whole and splits no port from it, because an IPv6 host holds colons and the Zeek key
+    joins the host and the port in the same way.
+
+    Args:
+        source: The `source` field of one `ja4plus` JSON record.
+
+    Returns:
+        The sender endpoint and the receiver endpoint.
+
+    Raises:
+        ValueError: The field holds no ` -> ` separator.
     """
     left, right = source.split(" -> ")
     return left, right
