@@ -283,6 +283,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
+- **Four X.509 helpers leave `ja4plus/utils/x509_utils.py`** (#314). Round TBD. The
+  user decided on 2026-08-08 that `extract_certificate_info` leaves the package before
+  version 1.0.0, together with the sibling helpers no caller uses. The four are
+  `extract_certificate_info`, `get_certificate_issuer`, `get_certificate_subject` and
+  `get_name_attribute`. `__all__` named none of the four, and a grep of `ja4plus/`,
+  `tests/`, `examples/` and `docs/` found no caller for any of them. `__all__` still
+  names 25 entries. `docs/api_reference.md` documented `extract_certificate_info` alone
+  of the four, and that row is gone. **Two plain `except Exception` handlers leave with
+  the function**, which #294 narrowed neither, because each wrote the plain form rather
+  than the deceptive form. **No fingerprint moves**: the conformance suite reports 1531
+  passed, 143 skipped and 135 xfailed before the change and after it.
+  `tests/test_x509_certificate_info.py` is now
+  `tests/test_x509_certificate_reader.py`, because it measures
+  `extract_certificate_from_bytes`, the reader that stays.
+
 - **The private helper `_src_is_client` leaves `ja4plus/fingerprinters/ja4l.py`**
   (#119). The helper read the outer address of a packet with `get_ip_layer`, and
   it compared that address against the address the connection key holds. #101
