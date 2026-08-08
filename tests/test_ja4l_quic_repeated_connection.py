@@ -58,7 +58,7 @@ def test_a_repeated_quic_handshake_reports_one_value_pair():
     """
     packets = handshake_round(FIRST_DCID, 1000.0) + handshake_round(SECOND_DCID, 1001.0)
 
-    assert _read(packets) == ["JA4L-S=5000_56", "JA4L-C=500_64"]
+    assert _read(packets) == ["JA4L-S=5000_56_quic", "JA4L-C=500_64_quic"]
 
 
 def test_a_leading_server_initial_packet_gives_no_value():

@@ -97,6 +97,14 @@
     "issue": 151,
     "decided": true
   },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
     "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
@@ -434,6 +442,18 @@
     "decided": true,
     "issue": 97
   },
+  "ssh2.pcapng/33:51810/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "ssh2.pcapng/36:61861/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "ssh2.pcapng/36:61861/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
   "ssh2.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
@@ -535,6 +555,50 @@
     "cause": "ja4plus produces a JA4_ro value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
     "decided": true
+  },
+  "tls3.pcapng/21:62481/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/21:62481/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/22:61732/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/22:61732/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/23:49791/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/23:49791/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/24:56684/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/24:56684/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/25:61884/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/28:58117/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/28:58117/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
   },
   "tls3.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
