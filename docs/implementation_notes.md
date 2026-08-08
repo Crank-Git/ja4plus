@@ -328,12 +328,58 @@ The spec only mentions TLS 1.0 through 1.3. The implementation also maps:
 | Wire value | String | Protocol   |
 |------------|--------|------------|
 | `0x0300`   | `s3`   | SSL 3.0    |
-| `0x0200`   | `s2`   | SSL 2.0    |
+| `0x0002`   | `s2`   | SSL 2.0    |
 | `0xFEFF`   | `d1`   | DTLS 1.0   |
 | `0xFEFD`   | `d2`   | DTLS 1.2   |
 | `0xFEFC`   | `d3`   | DTLS 1.3   |
 
 Any unrecognized version maps to `'00'`.
+
+### The SSL 2.0 version value, and the value FoxIO retracted
+
+**`ja4plus` writes `s2` for `0x0002`, and it writes `00` for `0x0200`.** #227 owns the
+reading, and #221 found the defect.
+
+`technical_details/JA4.md:65` at the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`
+states `0x0002 = SSL 2.0 = “s2”`. The form FoxIO deleted on 2024-02-22 states
+`0x0200 = SSL 2.0 = “s2”` and `0x0100 = SSL 1.0 = “s1”`. FoxIO commit `3e02a27`, dated
+2024-08-23, is titled `Fix SSL version fields: SSL 2.0 is 0x0002, SSL 1.0 never existed`.
+The author corrected the statement, so the retracted form carries no authority. The rule
+is in `docs/specs/foxio/deleted-text-specifications.md`: rank a statement, and not a file.
+
+**Three sources decide that `0x0200` now writes `00`, and none of them makes it an alias.**
+
+| Source | What it holds |
+|---|---|
+| `technical_details/JA4.md:65` | The table names nine values, and it states `Unknown = “00”` for every other value |
+| `wireshark/source/packet-ja4.c:72-81` | `ssl_versions[]` holds `{0x0002, "s2"}` and no `0x0200` entry |
+| `python/common.py` | `TLS_MAPPER` holds `'0x0002': "s2"` and no `'0x0200'` key |
+
+The specification states a closed table plus one fallback. A tolerated alias would write
+`s2` where all three FoxIO references write `00`. A fingerprint exists so that one tool's
+output matches another tool's output, and an alias breaks that match. **The repair
+replaces the row. It adds no alias.**
+
+**`ja4plus` holds no `0x0100` row, so the SSL 1.0 half of the correction needs nothing.**
+Measured on 2026-08-08: `0x0100` reaches the `00` fallback in JA4 and in JA4S.
+
+**Two parser paths reach the value, and the SSL 2.0 record format reaches none.** Measured
+on 2026-08-08 with `ja4plus/utils/tls_utils.py:46`:
+
+1. `_parse_client_hello` reads the legacy version field verbatim from bytes 9 and 10 of a
+   handshake record, so a TLS-framed hello whose field holds `00 02` presents `0x0002`.
+2. `_parse_supported_versions_client` reads any 16-bit value, so the `supported_versions`
+   extension presents `0x0002` too.
+3. `parse_tls_handshake` returns `None` for a genuine SSL 2.0 ClientHello. That message
+   opens with a two-byte length whose high bit is set, and the reader expects a TLS record
+   header. **The repair therefore reaches no genuine SSL 2.0 handshake**, and it reaches a
+   hello that names the value in a TLS record.
+
+`tests/test_ja4_ssl2_version.py` holds all three measurements.
+
+**No vector measures the row.** No capture under `tests/foxio_vectors/` carries an SSL 2.0
+hello. Measured on 2026-08-08 across the 38 captures: 1494 produced values before the
+repair and 1494 after, and zero values differ.
 
 ### Cipher sorting
 
