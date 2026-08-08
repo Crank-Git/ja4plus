@@ -1313,3 +1313,85 @@ three streams #151 names, and their cause text now records the second reason.
 
 Verified against: https://www.rfc-editor.org/rfc/rfc5246#section-6.2.1 (TLS 1.2, retrieved 2026-08-07)
 Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/rust/ja4/src/snapshots (commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8)
+
+## The suite is swept for a case that cannot fail
+
+Issue #172 asked of the suite the question that found twelve defects by accident:
+**would this case fail if the code were wrong?** `tests/mutation_sweep.py` asks it. The
+sweep changes one expression in one module under `ja4plus/`, runs the suite, and records
+which cases fail. The change is a measurement, and the sweep reverts it.
+
+`docs/mutation_sweep.md` holds the generated report of the first sweep, and
+`.claude/rules/conformance.md` states how to run it again.
+
+### What the first sweep measured
+
+The sweep applied 12 mutations to each module, 275 in all, on 2026-08-07. Each mutation
+ran the whole suite of 2857 cases. 976 cases failed for no mutation. 248 of the 976 are
+cases the baseline reports as skipped or as xfailed, which cannot fail, so 728 remain.
+
+A sample of 12 answers for that sample alone. `ja4plus/utils/tls_utils.py` holds 327
+mutations, so 12 reads 4 percent of it. A candidate of the whole-suite sweep is a
+question, and the answer comes from a sweep of one module against one file.
+
+| Module | Mutations | Cases killed by at least one |
+|---|---|---|
+| `ja4plus/fingerprinters/ja4t.py` | 12 | 12 |
+| `ja4plus/fingerprinters/ja4x.py` | 12 | 11 |
+| `ja4plus/utils/tcp_stream.py` | 12 | 11 |
+| `ja4plus/fingerprinters/ja4ts.py` | 12 | 10 |
+| `ja4plus/utils/x509_utils.py` | 12 | 1 |
+| `ja4plus/fingerprinters/__init__.py` | 9 | 0 |
+| `ja4plus/collector.py` | 12 | 0 |
+
+### JA4L read the wall clock, so no case named a value
+
+`tests/test_ja4l.py` built a TCP handshake and assigned no packet time. `scapy` then
+stamped each packet with the wall clock, so the latency differed on every run and no
+case could name a value. The cases matched the pattern `JA4L-S=\d+_\d+`, which every
+latency meets.
+
+The measurement: `LATENCY_DIVISOR = 2` changed to `3` survived **all 224 mutations of
+`ja4plus/fingerprinters/ja4l.py` against `tests/test_ja4l.py`**. The same mutation fails
+138 cases of the whole suite, so the FoxIO vectors hold the divisor. The unit suite did
+not.
+
+The handshake now states its own times, and the two cases compare against
+`JA4L-S=10000_64` and `JA4L-C=15000_128`. Both fail against the divisor mutation.
+
+The same sweep, run again on the repaired file, reports 96 of the 224 mutations killed
+where it reported 92, and it names no candidate where it named one.
+
+`estimate_os` read one word of one answer at one TTL of each range, so a boundary that
+moved by one passed the case. `assertIn("Windows", ...)` also accepts the mutated string
+`Windows_mutated`. The case names each edge now: 64, 65, 128 and 129. `if ttl <= 64`
+changed to `if ttl <= 65` fails it.
+
+### Three candidates the reader rejected
+
+A case may be correct and the mutation wrong. The sweep of every mutation of
+`ja4plus/utils/tcp_stream.py` against `tests/test_tcp_stream.py` named three candidates,
+and each is a case the mutation operators cannot reach.
+
+| Case | Why no mutation reaches it |
+|---|---|
+| `test_the_module_reads_no_wall_clock` | It reads the module attributes. No expression carries the import. |
+| `test_the_base_sequence_of_an_unknown_stream_is_none` | It reads an early `return None`. The operators change no return value. |
+| `test_the_default_maximum_age_passes_the_longest_gap_of_the_vectors` | It compares the default against a gap the vectors hold, and the margin is wide by design. |
+
+`tests/test_ja4l.py::TestJA4LPropagationFactor::test_reads_each_row_of_the_foxio_table`
+was a fourth. It exposed a defect in the sweep, not in the case. `pytest` prints a
+failing subtest as `SUBFAILED(hop_count=23)` and prints no `FAILED` line for the case
+that holds it, so the first form of the sweep counted a case with subtests as measured
+by nothing. The pattern now reads both forms.
+
+### What the sweep did not decide
+
+173 of the 181 mutations of `ja4plus/utils/x509_utils.py` survive the four JA4X test
+files, and the whole-suite sweep killed 1 of its 12. The module is weakly measured. That
+is a coverage question, and #172 states that coverage is a different question, so the
+reading stays here for the issue that owns it.
+
+No mutation of `ja4plus/collector.py` failed one case, and no module and no test imports
+it. The module carries its own removal notice for v0.4.0, and the project publishes
+0.6.0. #191 owns the removal.

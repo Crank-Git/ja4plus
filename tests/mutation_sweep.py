@@ -280,9 +280,7 @@ def run_suite(
         "no:cacheprovider",
     ]
     command.extend(pytest_args)
-    finished = subprocess.run(
-        command, cwd=str(root), capture_output=True, text=True, check=False
-    )
+    finished = subprocess.run(command, cwd=str(root), capture_output=True, text=True, check=False)
     failures: Set[str] = set()
     for line in finished.stdout.splitlines():
         match = FAILURE_LINE.match(line)
@@ -327,6 +325,14 @@ def markdown_report(report: Dict[str, object]) -> str:
         "one expression in one module, runs the suite, and records which cases fail.",
         "A case that no mutation makes fail is a candidate, and a candidate needs a reader.",
         "A case may be correct and the mutation wrong.",
+        "",
+        "Read the candidate list with two limits in mind.",
+        "",
+        "1. A case that the baseline reports as skipped or as xfailed cannot fail, so it",
+        "   reaches this list for a reason the suite already states.",
+        "2. A sample of the mutations of a module answers for that sample alone. To settle",
+        "   one case, sweep the module whole against the file that holds the case:",
+        "   `--max-per-module 0 --tests tests/<file>.py`.",
         "",
         "| Field | Value |",
         "|---|---|",
@@ -544,9 +550,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     path.write_text(
                         original[: mutation.start] + mutation.after + original[mutation.end :]
                     )
-                    failures, _ = run_suite(
-                        root, options.python, options.pytest_arg, tests
-                    )
+                    failures, _ = run_suite(root, options.python, options.pytest_arg, tests)
                     killed = failures - baseline
                     mutation.killed = sorted(killed)
                     if len(killed) >= UNUSABLE_KILL_RATIO * max(len(cases), 1):
