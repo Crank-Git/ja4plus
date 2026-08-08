@@ -126,15 +126,15 @@ class TestJA4LAgainstTheFoxIOVectors:
         # ssh2.pcapng stream 36 is QUIC. JA4L-S measures the two Initial packets, and
         # JA4L-C measures the last server Handshake packet to the first client one.
         produced = values_on("ssh2.pcapng", SSH2_QUIC)
-        assert "JA4L-S=5389_57" in produced
-        assert "JA4L-C=169_128" in produced
+        assert "JA4L-S=5389_57_quic" in produced
+        assert "JA4L-C=169_128_quic" in produced
 
     def test_the_quic_server_point_skips_an_initial_packet_that_carries_no_server_hello(self):
         # chrome-cloudflare-quic-with-secrets.pcapng stream 0, port 50280. The server
         # sends an Initial packet at +18569 us that holds an ACK frame, and a second
         # one at +21981 us that holds the whole ServerHello. The reference reads the
         # second one.
-        assert "JA4L-S=10990_56" in values_on(
+        assert "JA4L-S=10990_56_quic" in values_on(
             "chrome-cloudflare-quic-with-secrets.pcapng", CLOUDFLARE_QUIC
         )
 
@@ -142,7 +142,7 @@ class TestJA4LAgainstTheFoxIOVectors:
         # tls3.pcapng stream 25, port 61884. The server sends an Initial packet at
         # +6102 us that holds an ACK frame, and a second one at +7166 us that holds
         # the whole ServerHello.
-        assert "JA4L-S=3583_57" in values_on("tls3.pcapng", TLS3_QUIC)
+        assert "JA4L-S=3583_57_quic" in values_on("tls3.pcapng", TLS3_QUIC)
 
     def test_a_cut_short_connection_of_ssh2_produces_no_value(self):
         # ssh2.pcapng holds 11 TCP connections that carry a SYN and no SYN-ACK, such as
@@ -156,7 +156,7 @@ class TestJA4LAgainstTheFoxIOVectors:
         # ssh2.pcapng stream 33 carries a client Initial packet and a server Initial
         # packet, and the server sends no Handshake packet the capture holds alone. The
         # reference reports JA4L-S 16192_57 and no JA4L-C.
-        assert values_on("ssh2.pcapng", SSH2_QUIC_SERVER_ONLY) == ["JA4L-S=16192_57"]
+        assert values_on("ssh2.pcapng", SSH2_QUIC_SERVER_ONLY) == ["JA4L-S=16192_57_quic"]
 
     def test_the_fingerprinter_emits_one_client_value_for_one_connection(self):
         produced = values_on("badcurveball.pcap", BADCURVEBALL)

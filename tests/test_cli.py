@@ -140,6 +140,26 @@ class TestVersionFlag(unittest.TestCase):
         )
 
 
+SSH2_VECTOR = os.path.join(os.path.dirname(__file__), "foxio_vectors", "ssh2.pcapng")
+
+
+class TestTheTrailingJA4SSHWindow(unittest.TestCase):
+    """The `analyze` command reads a file, so the capture ends at the last packet.
+
+    `ssh2.pcapng` carries no FIN+ACK packet on port 22, so the connection holds its last
+    window open. #214 decided that this project emits that window.
+    """
+
+    @unittest.skipUnless(os.path.exists(SSH2_VECTOR), "the FoxIO vector ssh2.pcapng is absent")
+    def test_analyze_writes_the_window_the_connection_holds_open(self):
+        out, err, code = run_cli("--format", "json", "--types", "ja4ssh", "analyze", SSH2_VECTOR)
+        self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
+        records = [json.loads(line) for line in out.strip().splitlines() if line.strip()]
+        values = [record["fingerprint"] for record in records]
+        self.assertEqual(values, ["c36s36_c76s124_c74s5", "c36s52_c42s76_c51s2"])
+        self.assertEqual(records[1]["source"], "172.16.225.48:57377 -> 54.160.114.75:22")
+
+
 class TestInvalidTypes(unittest.TestCase):
     def test_invalid_types(self):
         """--types with unknown type exits with code 1 and lists valid types."""

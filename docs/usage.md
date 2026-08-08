@@ -130,7 +130,7 @@ Options are listed in their **original packet order** (never sorted).
 
 Fingerprints TCP servers from SYN-ACK responses. Response depends on the client SYN.
 
-**Format:** `{window_size}_{tcp_options}_{mss}_{window_scale}`
+**Format:** `{window_size}_{tcp_options}_{mss}_{window_scale}_{synack_delays}`
 
 ```python
 from ja4plus import JA4TSFingerprinter
@@ -140,7 +140,29 @@ result = fp.process_packet(packet)
 # Example: 14600_2-4-8-1-3_1460_0
 ```
 
-Same format as JA4T, but extracted from the server's SYN-ACK packet.
+Part a through part d match JA4T, and the fingerprinter reads the server's SYN-ACK
+packet.
+
+**Part e holds the delay between each SYN-ACK of the connection, in whole seconds.** A
+server retransmits a SYN-ACK when it receives no acknowledgement, and the delay pattern
+identifies the TCP stack. The fingerprinter emits one value for each SYN-ACK, so the
+value grows with each retransmission.
+
+```python
+# The server answered once. The fingerprint omits part e.
+# 62727_2_8961_0
+#
+# The server retransmitted five times, at 1, 2, 4, 8 and 16 seconds.
+# 62727_2_8961_0_1-2-4-8-16
+```
+
+**The fingerprint omits part e when the server answers once**, which is the normal case.
+Part e is absent, and it is not `0`.
+
+`JA4TSFingerprinter` holds one entry for each connection it tracks. Call
+`cleanup_connection` when a connection ends, or `reset` to drop every entry. The
+fingerprinter counts ten retransmissions for one connection, and it drops a connection
+two minutes after the last SYN-ACK.
 
 ---
 

@@ -57,7 +57,7 @@ def test_the_server_value_appears_when_the_client_address_sorts_first():
     result = fingerprinter.process_packet(
         _quic_packet("10.0.0.2", "10.0.0.1", 443, 50000, QUIC_INITIAL, t=0.001)
     )
-    assert result == "JA4L-S=500_64"
+    assert result == "JA4L-S=500_64_quic"
 
 
 def test_the_server_value_appears_when_the_client_address_sorts_last():
@@ -69,7 +69,7 @@ def test_the_server_value_appears_when_the_client_address_sorts_last():
     result = fingerprinter.process_packet(
         _quic_packet("10.0.0.1", "10.0.0.99", 443, 50000, QUIC_INITIAL, t=0.002)
     )
-    assert result == "JA4L-S=1000_64"
+    assert result == "JA4L-S=1000_64_quic"
 
 
 def test_the_client_value_measures_the_two_handshake_packets():
@@ -89,9 +89,9 @@ def test_the_client_value_measures_the_two_handshake_packets():
     )
 
     assert initial_client is None
-    assert initial_server == "JA4L-S=1000_64"
+    assert initial_server == "JA4L-S=1000_64_quic"
     assert handshake_server is None
-    assert handshake_client == "JA4L-C=1000_64"
+    assert handshake_client == "JA4L-C=1000_64_quic"
 
 
 def test_the_fingerprinter_reports_nothing_for_a_udp_flow_that_carries_no_quic():

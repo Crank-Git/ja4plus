@@ -106,6 +106,10 @@ holds for the two methods outside `python/test/testdata/`.
 **JA4TS matches on nine of ten rows, and this is the first external comparison the method
 has ever had.** #196 cites this reading.
 
+**#226 added part e to JA4TS on 2026-08-08, and it re-ran this comparison. JA4TS still
+matches on nine of ten rows.** The reading above is unchanged, and "The part e reading of
+#226" below states why, with the measurement.
+
 ## The differences, with the cause of each
 
 ### JA4T: Zeek reads no TCP option on a capture whose link type is not Ethernet
@@ -295,7 +299,9 @@ each one is answered.
 
 1. **`JA4T` and `JA4TS` hold a reference value.** Confirmed. The three `conn.log`
    baselines hold 10 JA4T values and 10 JA4TS values. **JA4TS matches `ja4plus` on nine
-   of ten rows, and the tenth is the `DLT_NULL` defect of the Zeek script.** JA4T matches
+   of ten rows, and the tenth is the `DLT_NULL` defect of the Zeek script.** The reading
+   holds after #226 added part e, and "The part e reading of #226" states the
+   measurement. JA4T matches
    on eight of ten. Two rules cause the two that differ: the same `DLT_NULL` defect, and
    the option kind 0 rule that FoxIO's own JA4TScan documentation settles.
 2. **`ja4ls` carries three parts where `python/test/testdata/` carries two.** Confirmed.
@@ -431,6 +437,41 @@ script builds. Cite the file path and the pinned commit when you use one.
 **The JA4TS delay list and the `R` marker reach no baseline.** Each of the ten JA4TS
 values comes from a connection the server answered once. This project emits the
 four-part form, and the Zeek baselines corroborate the four-part form alone.
+
+### The part e reading of #226
+
+**#226 added part e to JA4TS on 2026-08-08, and the comparison above did not move.** The
+user reversed the D6 and D7 ruling of #215, so `ja4plus` now writes the delay between
+each SYN-ACK of a connection. `docs/specs/foxio/JA4T.md` states the rule as R12.
+
+**The user accepted a fall in this comparison in advance. The measurement reports none.**
+
+| Reading | #198, before part e | #226, after part e |
+|---|---|---|
+| JA4TS rows compared | 10 | 10 |
+| JA4TS rows that match | 9 | **9** |
+| `ja4plus` JA4TS values that carry part e | 0 | **0** |
+
+**The cause is the omission rule, and the sentence above already stated it.** Each of the
+ten baseline connections holds one SYN-ACK. The deleted `technical_details/JA4T.md`
+states that a fingerprint omits part e when it sees no retransmission, so `ja4plus`
+writes the same four-part value it wrote before. `zeek/ja4t/main.zeek:227` appends the
+delay list only when the list holds a value, so the Zeek script omits part e on the same
+ten rows for the same reason.
+
+**The one row that differs is unchanged, and it is the `DLT_NULL` defect.** The Zeek
+baseline holds `ja4ts 65535_00_00_00` for the `ipv6.pcapng` connection and `ja4plus`
+holds `65535_2-1-1-4-1-3_1346_10`. Part e appears in neither value. "JA4T: Zeek reads no
+TCP option on a capture whose link type is not Ethernet" above states the cause, and
+#226 changed nothing about it.
+
+**The two scripts still disagree on how a delay rounds, and no baseline reaches the
+disagreement.** `zeek/ja4t/main.zeek:180` divides an integer count of microseconds, which
+truncates. `timediff` in `wireshark/source/packet-ja4.c` calls the C `round`, which
+carries a half away from zero, and the deleted file states "rounding the result to the
+nearest whole number in seconds". `ja4plus` follows the prose and the dissector. A
+baseline that carried a retransmission of 1.6 s would separate the two readings, and none
+does.
 
 ### JA4L and JA4LS
 

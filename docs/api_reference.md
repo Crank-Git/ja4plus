@@ -11,6 +11,39 @@ All fingerprinters inherit from `BaseFingerprinter` and share a common interface
 | `process_packet(packet)` | `str` or `None` | Process a scapy packet. Returns fingerprint string if one is generated. |
 | `get_fingerprints()` | `list[dict]` | Returns all collected fingerprints as `{"fingerprint": str, ...}` dicts. |
 | `reset()` | `None` | Clears all collected fingerprints and internal state. |
+| `close_open_windows()` | `list[dict]` | Emits the window every connection holds open, and returns the new entries. |
+
+#### When to call `close_open_windows`
+
+Call this method when the packet source ends. A file reader reaches the last packet, and
+a live capture stops. JA4SSH is the only method that holds a window, so every other
+fingerprinter returns an empty list.
+
+A connection that sends no FIN+ACK packet holds its last window open, and no other rule
+emits it. `ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK packet, so this
+method produces its second value, `c36s52_c42s76_c51s2`. #214 holds the decision.
+
+A window that holds no SSH packet emits nothing. A fingerprint of an empty window
+describes no traffic, and #97 declines the same value in the FoxIO Python reference.
+
+The method emits the window and evicts no entry, so the state table holds the same keys
+after the call. A second call emits nothing, because the first call cleared the counters.
+
+```python
+from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
+from scapy.all import PcapReader
+
+fp = JA4SSHFingerprinter()
+with PcapReader("ssh2.pcapng") as reader:
+    for packet in reader:
+        fp.process_packet(packet)
+trailing = fp.close_open_windows()   # [{"fingerprint": "c36s52_c42s76_c51s2", ...}]
+```
+
+`Processor.close_open_windows()` runs the same method on every fingerprinter it holds,
+and it returns one result dict for each window. Each dict holds the keys `type`,
+`fingerprint` and `connection`. It holds no packet endpoint, because no packet produces
+the value.
 
 #### The fields of one entry
 
@@ -106,6 +139,11 @@ fp = JA4TSFingerprinter()
 result = fp.process_packet(packet)
 ```
 
+The fingerprinter holds the SYN-ACK times of each connection, because part e reads the
+delay between two SYN-ACK packets. It counts ten retransmissions for one connection, and
+it drops a connection two minutes after the last SYN-ACK. Call `cleanup_connection` when
+a connection ends, or `reset` to drop every entry.
+
 ### JA4LFingerprinter
 
 Network latency estimation from TCP handshake timing.
@@ -170,7 +208,7 @@ result = generate_ja4(packet)
 | `generate_ja4s(packet)` | scapy packet | JA4S TLS server fingerprint |
 | `generate_ja4h(packet)` | scapy packet | JA4H HTTP fingerprint |
 | `generate_ja4t(packet)` | scapy packet | JA4T TCP client fingerprint |
-| `generate_ja4ts(packet)` | scapy packet | JA4TS TCP server fingerprint |
+| `generate_ja4ts(packet, tracker=None)` | scapy packet | JA4TS TCP server fingerprint. One packet names no retransmission, so a call with no tracker writes four parts. `JA4TSFingerprinter` passes its own tracker and writes part e. |
 | `generate_ja4l(packet)` | scapy packet | JA4L latency fingerprint |
 | `generate_ja4x(cert_info)` | dict | JA4X certificate fingerprint (takes cert_info dict) |
 | `generate_ja4ssh(packet)` | scapy packet | JA4SSH session fingerprint |

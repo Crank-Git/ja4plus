@@ -301,7 +301,9 @@ connection state and fingerprints every SYN, where the reference reads the first
 alone. Neither entry is `decided`: #215 decides both, and a repair removes them.
 
 **JA4TS reaches no reference value here.** No local snapshot writes a `ja4ts` field. The
-Zeek baseline holds `ja4ts 65535_00_00_00`, and #198 owns that reading.
+Zeek baselines hold ten JA4TS values, `Scripts.ja4-conn/conn.log` holds
+`ja4ts 65535_00_00_00`, and #198 owns that reading. #226 added part e and re-ran the
+comparison, which holds at 9 of 10.
 
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`,
 `docs/specs/foxio/JA4T.md`.
@@ -564,6 +566,43 @@ changelog records it at round 11.
 No expected-output file of the 37 carries a `JA4T` key or a `JA4TS` key, and the vector
 set holds many TCP handshakes. The image is the only FoxIO material for both methods, and
 no reference value settles a question the image leaves open.
+
+### JA4TS carries part e, the time since the last SYN-ACK
+
+**The user decided this on 2026-08-08, and the decision reverses the D6 and D7 ruling of
+#215 of the same day.** The image caption reads
+`TCP Retransmission Timings (only on JA4TScan)`, and three FoxIO sources contradict it:
+the deleted `technical_details/JA4T.md`, `wireshark/source/packet-ja4.c:1595` through
+`ja4t()`, and `zeek/ja4t/main.zeek:227-236`. `docs/specs/foxio/JA4T.md` states the rule
+as R12, and the `Divergence register` of `docs/specs/spec.md` holds the row.
+
+Part e holds the delay between each SYN-ACK of one connection, in whole seconds, joined
+with `-`. Four rules apply.
+
+- **A fingerprint omits part e when the server answers once.** Part e is absent, and it
+  is not `00`. Both FoxIO implementations append part e only when a delay exists.
+- **A delay rounds to the nearest whole second, and a half rounds away from zero.**
+  `timediff` in the dissector calls the C `round`. Two Python expressions look right and
+  are not. The built-in `round` carries a half to the even number, so it writes `0` for
+  `0.5` where the dissector writes `1`. `math.floor(delay + 0.5)` carries a negative half
+  towards zero, so it writes `0` for `-0.5` where the dissector writes `-1`. A capture
+  that holds a SYN-ACK out of order produces a negative delay, and every packet is
+  hostile input, so `ja4ts.py` reads the sign separately with `math.copysign`.
+  `zeek/ja4t/main.zeek:180` truncates, and the prose and the dissector outvote it.
+- **A fingerprint grows with each SYN-ACK.** `ja4plus` emits one value per SYN-ACK.
+- **The state holds ten retransmissions and a timeout of two minutes.** `MAX_SYN_ACK_TIMES`
+  in the dissector stores ten timestamps, which holds nine delays, so the dissector reads
+  one fewer than the prose and Zeek state.
+
+**The change moved one value in the whole vector set.** The 38 captures produce 803
+values before and 803 after. `ssh2.pcapng` packet index 372, which is frame 373 in a one-based reader, moves from
+`64240_2-1-1-4-1-3_1460_7` to `64240_2-1-1-4-1-3_1460_7_0`, and it is the one connection
+of the set that the server answered twice. The Zeek JA4TS comparison holds at 9 of 10.
+
+**The RST value of JA4TS is not built.** It separates from part e, and #246 owns it.
+
+**Location:** `ja4plus/fingerprinters/ja4ts.py`, `tests/test_ja4ts_part_e.py`,
+`docs/specs/foxio/JA4T.md`, `docs/specs/foxio/zeek.md`.
 
 ### The option list holds six option kinds
 
@@ -942,11 +981,67 @@ window the first FIN packet emptied and adds no value.
 
 `ssh-r.pcap` confirms the reading. Stream 1 holds 11 SSH packets and one
 occurrence, `c64s64_c6s5_c4s5`. Stream 2 holds 931 SSH packets, four full windows,
-and a fifth occurrence of 131 packets. `ssh-scp-1050.pcap` and `ssh2.pcapng` carry
-no FIN packet, and each keeps its full windows alone.
+and a fifth occurrence of 131 packets.
 
 Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4.py
 (retrieved 2026-08-06).
+
+### The end of the capture closes the last window
+
+`close_open_windows` emits the window every connection holds open. The caller runs it
+when the packet source ends. `tests/conformance_index.py` runs it after the last packet
+of a capture, and `ja4plus/cli.py` runs it after the file reader and after a live
+capture stops.
+
+**The specification states no rule that closes the last window.**
+`docs/specs/foxio/JA4SSH.md` R11 records the gap. #199 read the deleted
+`technical_details/JA4SSH.md`, which `rust/ja4/src/ssh.rs:283` cites, and it names no
+FIN packet, no connection that closes, and no end of a capture.
+
+**The references split two against two.** `python/ja4.py:554-556` and
+`wireshark/source/packet-ja4.c:1399-1404` close the last window on a FIN+ACK packet.
+`rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` close it at the end of
+the capture. `python/ja4.py:610` runs no end-of-capture step at all, because the line
+`#finalize_ja4ssh() if 'ja4ssh' in output_types else None` is commented out.
+
+**Two FoxIO references agree on the value, and this repository holds the proof.**
+`ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK packet, so no FIN+ACK
+rule fires on it. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217`
+holds `c36s52_c42s76_c51s2`, and the Zeek baseline holds the same value. The user decided
+on 2026-08-08 that `ja4plus` emits it, and #214 holds the decision. The decision is
+reversible.
+
+**A window that holds no SSH packet still emits nothing.** #97 declines
+`c36s36_c0s0_c2s0`, whose window holds no SSH packet, and the new rule reaches the same
+guard. `tests/test_ja4ssh_windows.py` holds two cases that prove it: a connection of bare
+ACKs alone, and the empty window that follows a full window.
+
+**Six JA4SSH comparisons moved, and no other value moved.**
+
+| Vector | Value the end of the capture adds |
+|---|---|
+| `ssh2.pcapng` | `c36s52_c42s76_c51s2` |
+| `ssh.pcapng` | `c36s52_c42s76_c0s0` |
+| `ssh-scp-1050.pcap` | `c0s1460_c0s53_c6s0` |
+| `ssh2-malformed.pcap` | `c16s23_c7s6_c3s4` |
+| `ssh2-moloch-crash.pcap` | `c16s23_c7s6_c3s4` |
+| `tcpdump-geneve.pcap` | `c144s48_c10s11_c6s4` |
+
+`gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` already produced a trailing value, because
+each one carries a FIN+ACK packet. The rule is now one rule for every capture.
+
+**The register moved by four keys.** It lost `ssh2.pcapng/JA4SSH`, whose occurrence keys
+now equal the reference, and it gained one entry under #214 for each of the five other
+vectors. The FoxIO Python reference emits no trailing window for a connection that sends
+no FIN+ACK packet, so each of those five is a decided divergence.
+
+**The state table holds no entry longer.** `close_open_windows` emits the open window and
+evicts nothing, so `JA4SSHFingerprinter.connections` holds the same keys after the call.
+That table is one of the six unbounded state tables #179 records, and Epic 3 owns its
+bound.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/rust/ja4/src/ssh.rs
+(retrieved 2026-08-08).
 
 ### Three defects of the reference
 
