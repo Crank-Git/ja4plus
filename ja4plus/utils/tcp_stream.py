@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 # A TCP sequence number is 32 bits and wraps back to zero. RFC 1982 orders two such
 # numbers on the difference between them, not on the numbers themselves.
-_SEQ_MASK = 0xFFFFFFFF
+SEQUENCE_MASK = 0xFFFFFFFF
 _SEQ_HALF = 0x80000000
 
 
-def _seq_before(a, b):
+def sequence_before(a, b):
     """Report whether sequence number a comes before sequence number b.
 
     The two numbers must lie within 2**31 of each other. A stream holds at most
@@ -28,7 +28,7 @@ def _seq_before(a, b):
     Returns:
         True when a comes before b, and False when a equals b or comes after b.
     """
-    return ((a - b) & _SEQ_MASK) > _SEQ_HALF
+    return ((a - b) & SEQUENCE_MASK) > _SEQ_HALF
 
 
 # The largest stream of the FoxIO vectors holds 1336 segments without a byte cap, and
@@ -163,7 +163,7 @@ class TCPStreamReassembler:
         # earliest value gives a different answer for a different arrival order,
         # because the comparison is not transitive once the segments span the space.
         start = 0
-        widest = (by_seq[0][0] - by_seq[-1][0]) & _SEQ_MASK
+        widest = (by_seq[0][0] - by_seq[-1][0]) & SEQUENCE_MASK
         for i in range(1, len(by_seq)):
             step = by_seq[i][0] - by_seq[i - 1][0]
             if step > widest:
@@ -192,11 +192,11 @@ class TCPStreamReassembler:
         for seq, data in segments:
             # A gap and an overlap differ by the direction of the difference, which a
             # subtraction of the raw numbers reports wrongly across a wrap.
-            if seq == next_seq or _seq_before(seq, next_seq):
-                overlap = (next_seq - seq) & _SEQ_MASK
+            if seq == next_seq or sequence_before(seq, next_seq):
+                overlap = (next_seq - seq) & SEQUENCE_MASK
                 if overlap < len(data):
                     result.extend(data[overlap:])
-                    next_seq = (seq + len(data)) & _SEQ_MASK
+                    next_seq = (seq + len(data)) & SEQUENCE_MASK
             else:
                 break
 
@@ -247,7 +247,7 @@ class TCPStreamReassembler:
         stream["segments"] = [
             (seq, data)
             for seq, data in stream["segments"]
-            if _seq_before(up_to_seq, (seq + len(data)) & _SEQ_MASK)
+            if sequence_before(up_to_seq, (seq + len(data)) & SEQUENCE_MASK)
         ]
         # `add_segment` reads this set to detect a duplicate. A trimmed segment that
         # stays in the set makes `add_segment` drop that segment when it arrives again.

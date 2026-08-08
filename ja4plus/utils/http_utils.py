@@ -18,6 +18,47 @@ REQUEST_LINE_PATTERN = (
     r"\s+(\S+)\s+(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
 )
 
+# A sender may end a line with the two bytes `\r\n`, or with one line feed. A parser that
+# reads `\r\n` alone reads a line-feed request as one line, so it finds no header and no
+# end of the header block. `tests/foxio_vectors/http-empty-useragent.pcap` holds such a
+# request, and the reference holds a JA4H value for it. #193 records the defect.
+LINE_ENDING_PATTERN = re.compile(r"\r\n|\n")
+
+# The byte groups that end the header block of an HTTP message.
+HEADER_BLOCK_TERMINATORS = (b"\r\n\r\n", b"\n\n")
+
+
+def split_http_lines(text):
+    """Return the lines of an HTTP message head.
+
+    Args:
+        text: The head of an HTTP message, as text.
+
+    Returns:
+        The lines in wire order. A line ends with the two bytes `\\r\\n`, or with one
+        line feed.
+    """
+    return LINE_ENDING_PATTERN.split(text)
+
+
+def header_block_end(data):
+    """Return the offset of the first byte after the header block of an HTTP message.
+
+    Args:
+        data: The bytes the caller holds.
+
+    Returns:
+        The offset, or None when the bytes hold no complete header block.
+    """
+    ends = []
+    for terminator in HEADER_BLOCK_TERMINATORS:
+        offset = data.find(terminator)
+        if offset != -1:
+            ends.append(offset + len(terminator))
+    if not ends:
+        return None
+    return min(ends)
+
 
 def parse_http_request(data):
     """
@@ -40,7 +81,7 @@ def parse_http_request(data):
             data_str = data
 
         # Split into lines
-        lines = data_str.split("\r\n")
+        lines = split_http_lines(data_str)
         if not lines:
             return None
 
@@ -199,7 +240,7 @@ def extract_http_info(packet):
         # Parse headers
         headers = {}
         header_names = []
-        lines = data.split("\r\n")
+        lines = split_http_lines(data)
 
         for line in lines[1:]:  # Skip request line
             if not line or line.isspace():

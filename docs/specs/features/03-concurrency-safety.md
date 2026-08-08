@@ -147,6 +147,8 @@ reader does not read a target as a description. #179 measured it against the cod
 |---|---|---|
 | `TCPStreamReassembler.streams`, built by JA4H | 100 | 600 seconds |
 | `TCPStreamReassembler.streams`, built by JA4X | 50 | 600 seconds |
+| `JA4HFingerprinter.consumed_seq` | 100 | 600 seconds |
+| `JA4HFingerprinter.unusable_base` | 100 | none |
 | `JA4Fingerprinter._quic_fragments` | 1000 | 30 seconds |
 | `JA4SFingerprinter._quic_server_crypto` | 1000 | 30 seconds |
 | `JA4XFingerprinter.processed_certs` | 1000 | none |
@@ -158,6 +160,11 @@ reader does not read a target as a description. #179 measured it against the cod
 
 `TCPStreamReassembler` carries two more per-stream bounds: `max_stream_bytes` is
 1048576, and `max_stream_segments` is 4096.
+
+The two `JA4HFingerprinter` tables read `TCPStreamReassembler.max_streams` and
+`max_stream_age` of the reassembler that fingerprinter holds, so one number bounds the
+stream and the state that describes it. #179 measured this table before #193 added
+`consumed_seq`, and it omitted `unusable_base`, which #33 built.
 
 A row that reads `none` relies on the caller to call `cleanup_connection`.
 FR-concurrency-safety-7 and FR-concurrency-safety-8 own that gap, and Epic 3 closes it.
