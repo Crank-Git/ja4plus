@@ -3,18 +3,72 @@ Base fingerprinter class for JA4+ fingerprinters.
 """
 
 import logging
+import threading
 
 from ja4plus.utils.packet_utils import packet_endpoints
 
 logger = logging.getLogger(__name__)
 
 
-class BaseFingerprinter:
-    """Base class for all JA4+ fingerprinters."""
+class NullLock:
+    """A lock placeholder that acquires nothing.
 
-    def __init__(self):
-        """Initialize the fingerprinter."""
+    `Processor(thread_safe=False)` is a promise the caller makes, and
+    FR-concurrency-safety-5 states that the processor then acquires no lock. This
+    placeholder gives every guarded method one code path, and it holds no lock.
+
+    Its `__enter__` runs no atomic operation, so a second thread never waits on it.
+    """
+
+    __slots__ = ()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def __repr__(self):
+        return "NullLock()"
+
+
+# Every fingerprinter that locks none shares this instance. The placeholder holds no
+# state, so one instance serves every caller.
+NULL_LOCK = NullLock()
+
+
+class BaseFingerprinter:
+    """Base class for all JA4+ fingerprinters.
+
+    Args:
+        thread_safe: True makes the fingerprinter guard its own state with a lock.
+            False makes it acquire no lock, and the caller then promises that one
+            thread at a time calls it.
+    """
+
+    def __init__(self, thread_safe=True):
+        """Initialize the fingerprinter and its lock."""
         self.fingerprints = []
+        self.thread_safe = bool(thread_safe)
+        # The lock is a reentrant lock, because `Processor.process_packet` holds it and
+        # then calls `process_packet` on this fingerprinter, which holds it again. A
+        # `threading.Lock` deadlocks on that second acquisition, and it deadlocks on the
+        # first packet. One fingerprinter holds one lock, so ten threads work at once on
+        # ten methods.
+        self._lock = threading.RLock() if thread_safe else NULL_LOCK
+
+    @property
+    def lock(self):
+        """Return the lock that guards the state of this fingerprinter.
+
+        `Processor.process_packet` reads `last_raw` after the call that writes it, so
+        the processor holds this lock across both operations.
+
+        Returns:
+            A `threading.RLock` when the caller asked for a thread-safe fingerprinter,
+            and a `NullLock` otherwise.
+        """
+        return self._lock
 
     def process_packet(self, packet):
         """
@@ -41,6 +95,11 @@ class BaseFingerprinter:
             packet: The packet that produced this fingerprint. The method reads the
                 endpoints of the packet and drops the reference when it returns.
         """
+        # This method holds no lock. `list.append` runs as one operation, so a second
+        # thread reads the list at no halfway point. Every composite operation over this
+        # list sits in a subclass method or in `Processor.process_packet`, and each of
+        # those holds the lock. `ja4l.py` holds the one composite: it reads the length
+        # and appends after it.
         entry = {"fingerprint": fingerprint}
         entry.update(packet_endpoints(packet))
         self.fingerprints.append(entry)
