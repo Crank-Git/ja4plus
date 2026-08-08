@@ -76,6 +76,26 @@ def _every_path_accepts(cookie_header, count):
     assert generate_ja4h(packet) is not None
 
 
+def test_the_three_bounds_hold_the_values_the_user_decided_on_2026_08_08():
+    """The bounds are 512 pairs, 256 name bytes and 4096 value bytes, and not a default.
+
+    The user decided these three numbers on 2026-08-08, on #175. The decision comment is
+    https://github.com/Crank-Git/ja4plus/issues/175#issuecomment-5223660889, and it
+    records the vector readings each number sits above: 14 pairs, a 41-byte name and a
+    264-byte value.
+
+    Every other case in this file builds its input from the constant, as
+    `MAX_COOKIE_PAIRS + 1`. Those cases prove that the refusal happens at the constant.
+    They prove nothing about the constant, and all of them stay green when the three
+    values change. A later `MAX_COOKIE_PAIRS = 5` would then suppress the JA4H value of
+    ordinary traffic against a green suite. This case reads the numbers, so that change
+    fails here.
+    """
+    assert MAX_COOKIE_PAIRS == 512
+    assert MAX_COOKIE_NAME_BYTES == 256
+    assert MAX_COOKIE_VALUE_BYTES == 4096
+
+
 def test_a_cookie_header_above_the_pair_cap_produces_no_parse_result():
     """A header of 513 pairs produces nothing on all three parsers and no JA4H value."""
     _every_path_refuses(_pairs(MAX_COOKIE_PAIRS + 1))
