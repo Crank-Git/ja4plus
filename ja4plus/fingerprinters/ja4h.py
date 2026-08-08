@@ -17,7 +17,6 @@ from ja4plus.utils.http_utils import (
     can_become_http_request,
     extract_http_info,
     is_http_request,
-    parse_cookie_header,
     parse_http_request,
 )
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
@@ -228,11 +227,13 @@ def _extract_http_info_from_bytes(data):
         cookie_fields = []
         cookie_values = []
         if "cookie" in headers:
-            parsed_cookies = parse_cookie_header(headers["cookie"])
-            if parsed_cookies is None:
-                # A header past a bound produces no request. #175 states the reason.
-                return None
-            cookies, cookie_fields, cookie_values = parsed_cookies
+            for pair in headers["cookie"].split(";"):
+                if "=" in pair:
+                    k, v = pair.split("=", 1)
+                    k, v = k.strip(), v.strip()
+                    cookies[k] = v
+                    cookie_fields.append(k)
+                    cookie_values.append(v)
 
         return {
             "method": method,
