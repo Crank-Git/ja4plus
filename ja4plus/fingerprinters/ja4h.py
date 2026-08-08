@@ -125,30 +125,35 @@ class JA4HFingerprinter(BaseFingerprinter):
         fingerprint = _generate_ja4h_from_info(http_info)
         if fingerprint:
             self._record(fingerprint, http_info, packet)
-            self._remember_the_consumed_request(stream_key, header_end, now)
+            self._remember_the_consumed_request(stream_key, len(stream_data), now)
             self.reassembler.remove_stream(stream_key)
             return fingerprint
 
         return None
 
-    def _remember_the_consumed_request(self, stream_key, header_end, now):
-        """Store the sequence number that follows the request this stream just produced.
+    def _remember_the_consumed_request(self, stream_key, length, now):
+        """Store the sequence range this stream read to produce its value.
 
         The reassembler drops the stream after a value, so a retransmitted segment
         rebuilds the same request and produces a second value. The reference holds one
-        value for one request, and this number tells the two apart. #193 records the
+        value for one request, and this range tells the two apart. #193 records the
         defect.
+
+        The range ends after the whole buffer, and not after the header block. A request
+        that carries a body reaches the fingerprinter in a segment that ends past the
+        header block, so a range that ends at the header block leaves that segment
+        outside itself, and the retransmission produces a second value.
 
         Args:
             stream_key: The key of the stream in the reassembler.
-            header_end: The offset of the first byte after the header block.
+            length: The count of contiguous bytes the stream held.
             now: The packet timestamp of the segment that completed the request, in
                 seconds, or None when the packet carries no time.
         """
         base = self.reassembler.base_seq(stream_key)
         if base is None:
             return
-        self.consumed_seq[stream_key] = (base, (base + header_end) & SEQUENCE_MASK, now)
+        self.consumed_seq[stream_key] = (base, (base + length) & SEQUENCE_MASK, now)
         self.consumed_seq.move_to_end(stream_key)
         if len(self.consumed_seq) > self.reassembler.max_streams:
             # The table holds one entry for each connection, and a flood of connections

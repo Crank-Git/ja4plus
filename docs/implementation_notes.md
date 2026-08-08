@@ -1201,10 +1201,10 @@ payloads only, missing HTTP requests spanning multiple TCP segments.
 ### One line feed ends a line
 
 `technical_details/JA4H.md` holds two facts and no third one. It states that "JA4H
-fingerprints the HTTP client based on each HTTP request", and it states that part a
-carries the "2 digit number of headers, not counting Cookie and Referer". It names no
-line ending, and it names no rule that reads the value of a header. The specification
-therefore decides that a request is a request, and the vector decides the bytes.
+fingerprints the HTTP client based on each HTTP request". It states that part a carries
+the "2 digit number of headers, not counting Cookie and Referer". It names no line
+ending. It names no rule that reads the value of a header. The specification therefore
+decides that a request is a request, and the vector decides the bytes.
 
 `tests/foxio_vectors/http-empty-useragent.pcap` carries the request
 `GET / HTTP/1.0\nUser-Agent:\n\n` over three TCP segments. Every line ends with one line
@@ -1213,10 +1213,20 @@ feed, and the `User-Agent` header carries no value. The FoxIO expected-output fi
 is the first 12 characters of the SHA-256 hash of the 10 bytes `User-Agent`. The
 reference counts the header, so a header that carries no value is one header.
 
-`ja4plus` read the two bytes `\r\n` as the only line ending, on all three parse paths, so
-it read the request as one line and produced nothing. `split_http_lines` and
+`ja4plus` read the two bytes `\r\n` as the only line ending, on all three parse paths. It
+read the request as one line and produced nothing. `split_http_lines` and
 `header_block_end` now read one line feed as well. #193 records the defect, and the name
 of the capture does not state it: the empty header value is legal on both readings.
+
+**A line feed ends a line wherever it sits, and `tshark` holds the same reading.** The
+self-review of #193 asked whether the new rule moves a request that the old rule read.
+It does. The probe request is
+`GET / HTTP/1.1\r\nX-Data: line1\n\nHost: example.com\r\nUser-Agent: probe\r\n\r\n`, and
+`tshark -r lf_in_value.pcap -T fields -e http.request.line` reports one line,
+`X-Data: line1\n`. The new rule reports the header names `['X-Data']`, and the old rule
+reported `['User-Agent']`. **The new rule matches the reference and the old rule did
+not**, because the FoxIO Python implementation reads the `tshark` fields.
+`test_one_line_feed_ends_a_line_inside_a_header_value` holds the reading.
 
 Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4H.md
 (retrieved 2026-08-08).
@@ -1230,14 +1240,20 @@ HTTP request, so it produces no second JA4H value.
 request six times. The FoxIO expected-output file holds one value on each stream.
 `ja4plus` produced six on each, because the fingerprinter removed the stream from the
 reassembler after a value and the retransmission rebuilt the same request. The register
-recorded that as `ja4plus produces no JA4H fingerprint the reference holds`, and the
+recorded that as `ja4plus produces no JA4H fingerprint the reference holds`. The
 measurement contradicts the direction: both values matched, and ten extra occurrence keys
 failed the case.
 
 `JA4HFingerprinter.consumed_seq` now holds the sequence range of the request each stream
 produced a value for. A segment that lies inside that range produces nothing. The
-comparison holds across a wrap of the 32-bit sequence number, and a pipelined request sits
+comparison holds across a wrap of the 32-bit sequence number. A pipelined request sits
 above the range, so it still produces a second value.
+
+**The range ends after the whole buffer, and not after the header block.** The
+self-review of #193 measured a POST request whose segment carries 200 body bytes past the
+header block. A range that ends at the header block leaves that segment outside itself,
+so the retransmission produced a second value.
+`test_a_retransmitted_request_that_carries_a_body_produces_one_value` holds the reading.
 
 **The range holds the start as well as the end, and the start is what a self-review
 added.** A second connection on one address pair and one port pair starts at its own

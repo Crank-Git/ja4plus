@@ -90,3 +90,17 @@ def test_a_carriage_return_line_feed_request_still_reads_the_same_headers():
     info = _extract_http_info_from_bytes(request)
     assert info is not None
     assert info["headers"] == ["Host", "Accept"]
+
+
+def test_one_line_feed_ends_a_line_inside_a_header_value():
+    """A line feed ends a line wherever it sits, which is the reading `tshark` holds.
+
+    `tshark` reads the request below and reports one header line, `X-Data: line1\\n`. The
+    FoxIO Python implementation reads the `tshark` fields, so that reading is the
+    reference. The self-review of #193 measured it, and the measurement is recorded in
+    `docs/implementation_notes.md`.
+    """
+    request = b"GET / HTTP/1.1\r\nX-Data: line1\n\nHost: example.com\r\nUser-Agent: probe\r\n\r\n"
+    info = _extract_http_info_from_bytes(request)
+    assert info is not None
+    assert info["headers"] == ["X-Data"]

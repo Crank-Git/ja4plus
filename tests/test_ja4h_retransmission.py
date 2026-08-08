@@ -103,6 +103,19 @@ def test_a_repeated_segment_produces_no_second_value():
     assert len(fingerprinter.get_fingerprints()) == 1
 
 
+def test_a_retransmitted_request_that_carries_a_body_produces_one_value():
+    """A segment that ends past the header block is still one request.
+
+    The consumed range ends after the whole buffer for that reason.
+    """
+    body = b"x" * 200
+    payload = b"POST /one HTTP/1.1\r\nHost: example.com\r\nContent-Length: 200\r\n\r\n" + body
+    fingerprinter = JA4HFingerprinter()
+    fingerprinter.process_packet(_segment(100, payload))
+    assert fingerprinter.process_packet(_segment(100, payload)) is None
+    assert len(fingerprinter.get_fingerprints()) == 1
+
+
 @pytest.mark.parametrize(
     "first_sequence,second_sequence",
     [(2000000000, 1000000000), (1000, 500), (3000000000, 2000000000)],
