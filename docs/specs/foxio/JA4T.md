@@ -340,6 +340,33 @@ This is the shape `.claude/rules/conformance.md` names under "Ask whether a case
 4. **JA4TS reaches no FoxIO reference value except the Zeek baseline.** No Rust snapshot and
    no Wireshark expected-output file holds one. #198 owns the Zeek reading.
 
+## What the deleted text specification adds
+
+**FoxIO published `technical_details/JA4T.md`, 6423 bytes, and `b6f3ff4` deleted it on
+2024-02-22.** #221 read it, and `docs/specs/foxio/deleted-text-specifications.md` holds the
+whole reading and the provenance. **This page rewrites no rule above.** The deleted file is
+not the pinned specification, so the image outranks it.
+
+The deleted text carries two findings for this page.
+
+1. **It contradicts the image on part e of JA4TS.** Its form for JA4TS reads
+   `WindowSize_TCPOptions_MSSValue_WindowScale_TimeSinceLastSYNACK`, and the image's caption
+   reads `TCP Retransmission Timings (only on JA4TScan)`. The deleted text agrees with the
+   Wireshark dissector, which D6 records. **R2 stays uncertain and the vector fallback
+   stays.** #215 item 4 owns the decision.
+2. **It states the empty-field form that R11 records the image does not settle.** It reads
+   `If any field does not exist, then the output is 00.` and it gives
+   `JA4T = 1024_00_00_00`. `wireshark/source/packet-ja4.c:664` and the Zeek baseline both
+   write that form, so the rule now holds two corroborations that are not the deleted file.
+   `rust/ja4/src/tcp.rs` writes `8192__0_0` and `ja4plus` writes `8192_0_0_0`. **#215 item 1
+   owns the decision, and this is the FoxIO prose it lacked.**
+
+The deleted text also states four rules the image does not state: the interval of part e
+rounds to the nearest second, a RST appends an `R` and its delay, a RST carries no window
+size or option, and the state bound is 10 retransmissions with a timeout of 2 minutes.
+**The state bound rests on the deleted file alone**, so it stays uncertain and it specifies
+no bound of this project.
+
 ## The decisions this page raises
 
 **#215 holds these decisions and #216 holds the conformance evidence.** Each item needs the

@@ -70,6 +70,7 @@ specifies JA4TS as well as JA4T. `docs/specs/foxio/JA4T.md` holds the transcript
 | JA4T and JA4TS | `docs/specs/foxio/JA4T.md` | Complete. #196 |
 | JA4H | `docs/specs/foxio/JA4H.md` | Complete. #203 |
 | JA4SSH | `docs/specs/foxio/JA4SSH.md` | Complete. #199 |
+| The seven deleted text files | `docs/specs/foxio/deleted-text-specifications.md` | Complete. #221. It transcribes no image and it reconciles the deleted prose |
 
 ## A deleted text specification corroborates, and it never outranks the image
 
@@ -82,11 +83,40 @@ pinned specification, so the image at the pinned commit outranks it.** Cite the 
 commit that holds the file, and the blob SHA-1.
 
 #199 read the deleted `JA4SSH.md`, and `docs/specs/foxio/JA4SSH.md` holds the provenance
-table to follow. **#221 reads the other five.**
+table to follow. **#221 read the other six, and
+`docs/specs/foxio/deleted-text-specifications.md` holds the whole reading.** That page
+carries the provenance of all seven files, the byte count and the two hashes of each one,
+and the reconciliation of each statement against the pinned material.
 
 ```bash
 git log --oneline --diff-filter=D --name-only -- 'technical_details/*.md'
 ```
+
+### How a deleted statement ranks
+
+**Rank a statement, and not a file.** #221 measured the two files that carry a deleted
+name today, and the two cases are opposite. `JA4.md` came back as the same blob five days
+later, so its deletion corrected nothing. `JA4H.md` never came back: a different file of
+278 bytes carries the name, and it corrects a defect the 9137-byte file holds. **A
+deletion in the FoxIO repository therefore carries no single meaning**, and a reader must
+weigh each sentence.
+
+Apply these four readings, which the user set on 2026-08-08.
+
+1. **The material at the pinned commit outranks a deleted file wherever the two
+   disagree.**
+2. **Where the deleted text agrees with the pinned material, it corroborates**, and it is
+   a strong corroboration, because FoxIO wrote it.
+3. **Where the deleted text states a rule the pinned material only draws, record it as a
+   rule the pinned material does not state.** Mark the rule uncertain until a second
+   FoxIO-authored source that is not the deleted file corroborates it.
+4. **Where the deleted text contradicts the pinned material, report both readings and
+   rule on nothing.** A contradiction is a finding, and the user decides it.
+
+**A deleted file that states nothing about a subject corroborates no rule about it.** #221
+read the deleted `JA4SSH.md` for the rule #214 needs, and the file names no FIN packet, no
+connection that closes, and no end of a capture. That negative result confirms R11 of
+`docs/specs/foxio/JA4SSH.md` and it answers #214 with nothing.
 
 ## How to read one image
 

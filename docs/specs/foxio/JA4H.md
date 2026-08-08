@@ -557,6 +557,32 @@ across 11 captures.
 5. **D5 needs no new vector.** `CVE-2018-6794.pcap` measures it today, and the register
    entry already xfails on it.
 
+## What the deleted text specification adds
+
+**A 9137-byte `technical_details/JA4H.md` existed, and `b6f3ff4` deleted it on 2024-02-22.**
+The 278-byte file this page reads is a different file, created on 2024-09-25. #221 read the
+deleted one, and `docs/specs/foxio/deleted-text-specifications.md` holds the reading and the
+provenance. **This page rewrites no rule above.**
+
+**The replacement corrected a defect, which answers why the deletion happened.** The deleted
+file states the cap as `99 = anything > than 100 headers`, which names two thresholds. The
+278-byte file states `If there are more than 99, the output is 99.`, which names one. R8
+holds the corrected rule and both implementations follow it.
+
+The deleted text corroborates R1, R2, R4, R5, R6, R7, R10, R11, R13, R14, R15 and R16, and
+it contradicts none of them. It carries two further findings.
+
+1. **It names exactly nine request methods**, and the image's caption ends with `etc`.
+   `rust/ja4/src/http.rs:364` writes the same nine and `python/ja4h.py:9` reads any method.
+   **D1 and #219 item 5 own the decision**, and this is a FoxIO-authored source for the
+   closed list.
+2. **The FoxIO worked example computes 11 headers and publishes 13.** The deleted file
+   carries the request that produces the image's example value, and that request holds 13
+   header fields, two of which are `Cookie` and `Referer`. The file lists the 11 names it
+   hashes and then writes `ge20cr13enus`. **The example disagrees with the rule R7 states,
+   and the image repeats the value.** No implementation reads the example and no vector
+   carries it, so **this changes no fingerprint and it raises no decision.**
+
 ## The decisions this page raises
 
 **#219 holds these decisions.** Each item needs the user, because each changes a
