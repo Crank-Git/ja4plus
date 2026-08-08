@@ -28,12 +28,16 @@ from ja4plus.processor import Processor
 from ja4plus.types import FingerprintResult
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.watch import (
+    CAPTURE_FAILURES,
     DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_MAX_CONNECTIONS,
     Monitor,
+    available_interfaces,
+    describe_capture_failure,
     read_interface,
     report_statistics,
     stop_on_signal,
+    unsupported_platform_message,
     write_statistics,
 )
 
@@ -445,16 +449,19 @@ def cmd_watch(args: argparse.Namespace) -> None:
     `ja4plus/watch.py` holds the table and the loop. Version 0.6.0 called
     `Processor.cleanup_connection` never, so its monitor grew until the host stopped it.
 
+    The command reads no user identity. It attempts the capture and reads the failure,
+    because a Linux host grants `CAP_NET_RAW` without granting the user identity zero.
+    Version 0.6.0 read `os.geteuid() != 0` and refused that operator.
+
     Args:
-        args: The parsed command line. It carries `interface`, `max_connections` and
-            `connection_timeout`, plus the five output options.
+        args: The parsed command line. It carries `interface`, `max_connections`,
+            `connection_timeout` and `bpf`, plus the five output options.
     """
-    if os.geteuid() != 0:
-        print(
-            "Error: live capture requires root privileges.\n"
-            f"Try: sudo ja4plus {args.command} {args.interface}",
-            file=sys.stderr,
-        )
+    # `os.geteuid` is absent on Windows, so a check that read it raised `AttributeError`
+    # there. FR-live-capture-13 names Linux and macOS, and Windows is out of scope.
+    refusal = unsupported_platform_message(sys.platform, args.command)
+    if refusal is not None:
+        print(refusal, file=sys.stderr)
         sys.exit(1)
 
     types = _parse_types(args.types) if args.types else list(VALID_TYPES)
@@ -499,16 +506,39 @@ def cmd_watch(args: argparse.Namespace) -> None:
                 # the line on standard error. The thread ends when the capture returns,
                 # so a monitor that reads a termination signal starts no line after it.
                 with report_statistics(monitor.stats, args.stats_interval, sys.stderr):
-                    read_interface(args.interface, monitor.handle_packet, stop.stop_after)
+                    read_interface(
+                        args.interface,
+                        monitor.handle_packet,
+                        stop.stop_after,
+                        capture_filter=args.bpf,
+                    )
             if stop.requested():
                 print("\nCapture stopped.", file=sys.stderr)
         except KeyboardInterrupt:
             print("\nCapture stopped.", file=sys.stderr)
         except BrokenPipeError:
             # The reader of standard output went away. `main` ends the run quietly, and
-            # the catch below would report it as a capture error.
+            # the catch below would report it as a capture error. `BrokenPipeError`
+            # inherits `OSError`, so this clause must precede the capture clause.
             raise
+        except CAPTURE_FAILURES as error:
+            # FR-live-capture-12 asks for a clear error. The command attempts the
+            # capture and reads the failure, so a host that grants the privilege through
+            # a capability is not refused on its user identity.
+            print(
+                describe_capture_failure(
+                    error,
+                    interface=args.interface,
+                    command=args.command,
+                    capture_filter=args.bpf,
+                    interfaces=available_interfaces(),
+                ),
+                file=sys.stderr,
+            )
+            sys.exit(1)
         except Exception as e:
+            # The capture layer raises one of `CAPTURE_FAILURES`, so this clause reads a
+            # failure of the report path. #319 owns the bare catches of this module.
             print(f"Error during capture: {e}", file=sys.stderr)
             sys.exit(1)
 
@@ -817,6 +847,16 @@ def main() -> None:
             "Write a statistics line to standard error every SECONDS seconds "
             "(default: no schedule). The monitor writes one statistics line on exit "
             "whether or not this option is given."
+        ),
+    )
+    watch_parser.add_argument(
+        "--bpf",
+        default=None,
+        metavar="FILTER",
+        help=(
+            "Capture filter, in Berkeley Packet Filter syntax "
+            "(for example 'tcp port 443'). The capture layer drops every packet the "
+            "filter rejects, so the monitor never reads it."
         ),
     )
     _add_output_options(watch_parser, defaults=False)

@@ -238,8 +238,8 @@ def run_cli(*argv, source=None, monitor_factory=None):
     """Run the command-line program and return its standard output, error and status.
 
     The call replaces the capture with the packets the test states, so it opens no
-    interface. It also reports the user identity zero, because the privilege check of
-    version 0.6.0 reads `os.geteuid` and #56 owns the replacement.
+    interface. The command reads no user identity: #56 replaced the `os.geteuid` check
+    of version 0.6.0 with a failed capture attempt.
 
     Args:
         argv: The arguments to pass, without the program name.
@@ -252,7 +252,7 @@ def run_cli(*argv, source=None, monitor_factory=None):
     """
     from ja4plus.cli import main
 
-    def read_interface(interface, handle_packet, stop_filter=None):
+    def read_interface(interface, handle_packet, stop_filter=None, capture_filter=None):
         """Replay the packets the test states, the way `scapy` reads an interface.
 
         `scapy` reports one packet through `prn` and then applies `stop_filter` to the
@@ -272,7 +272,6 @@ def run_cli(*argv, source=None, monitor_factory=None):
         patch("sys.stdout", captured_out),
         patch("sys.stderr", captured_err),
         patch("ja4plus.cli.read_interface", read_interface),
-        patch("os.geteuid", lambda: 0, create=True),
     ]
     if monitor_factory is not None:
         patches.append(patch("ja4plus.cli.Monitor", monitor_factory))
