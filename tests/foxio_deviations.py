@@ -77,6 +77,12 @@ Never delete an entry to make a red suite green.
 or a closed issue that no decision record explains. The register named the epic #13 for
 five batches, and no test caught it.
 
+Warning: a refresh turns the suite red whenever an owner closed since the last refresh.
+The red suite is the true state. The repair is to point the entry at an open issue. Never
+restore the stale state, and never mark the entry `decided`. #255 refreshed the file, and
+six undecided entries named the closed #34. The `retrieved` date detects nothing here,
+because #34 closed on the day the file records.
+
 The file is checked in, so the unit suite reaches no network. Refresh it with:
 
 ```bash
@@ -85,6 +91,9 @@ gh issue list --state all --limit 500 --json number,state,labels,title
 
 An entry whose owner the file does not hold fails the test. Add the owner, or point the
 entry at an issue the file already holds.
+
+Whenever an owner closes, refresh the file. An owner that no register entry names may stay
+in the file. #34 stays as the record of the earlier owner of the six JA4L entries.
 
 ## How to measure a new baseline
 

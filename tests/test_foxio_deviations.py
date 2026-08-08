@@ -26,7 +26,7 @@ from tests.foxio_deviations import (
 # tense, because a decision that was made is the only evidence that somebody read the
 # entry. The present tense names the issue that will decide, as `#215 decides whether
 # ja4plus reads the raw option bytes` does, and that names no decision. The lookbehind
-# drops a denied citation, because the six #34 entries close with `no Changelog round
+# drops a denied citation, because the six JA4L entries hold `no Changelog round
 # settled it`. The guard reads the word before the citation alone. A cause that denies a
 # citation in other words fails the gate, and the repair is to reword the cause, because
 # a gate that misses a decision costs more than a gate that asks a question.
@@ -390,9 +390,15 @@ TCP_OPTION_KEYS = (
     "ssh2.pcapng/JA4T",
 )
 
-# Every entry that stays open. #34 owns the six JA4L entries, and #215 owns the three
+# The six JA4L entries together. #34 owned them, and #34 is closed, so a worker can act
+# on none of them. #272 is open and it holds the question the user answers.
+JA4L_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,)
+
+JA4L_OWNER = 272
+
+# Every entry that stays open. #272 owns the six JA4L entries, and #215 owns the three
 # JA4T entries.
-OPEN_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,) + TCP_OPTION_KEYS
+OPEN_KEYS = JA4L_KEYS + TCP_OPTION_KEYS
 
 
 class TestTheOpenRegisterEntries:
@@ -417,6 +423,15 @@ class TestTheOpenRegisterEntries:
     def test_every_undecided_entry_names_the_issue_that_decides_it(self):
         for key, deviation in self._undecided().items():
             assert "#{}".format(deviation.issue) in deviation.cause, key
+
+    def test_every_ja4l_entry_names_the_open_issue_that_holds_the_question(self):
+        """#34 closed on 2026-08-07 and left the six entries with no owner.
+
+        An entry whose owner is closed names nobody a worker can reach. #272 is open, it
+        carries the question the user answers, and it decides none of the six.
+        """
+        for key in JA4L_KEYS:
+            assert load_register()[key].issue == JA4L_OWNER, key
 
     def test_every_method_filter_entry_names_the_reference_line_that_deletes_the_key(self):
         for key in METHOD_FILTER_KEYS:
@@ -500,10 +515,11 @@ class TestTheRegisterMarkerRule:
         assert unmarked_decisions(register) == []
 
     def test_the_check_accepts_an_open_entry_that_states_no_round_settled_it(self):
-        """The six #34 entries close their cause with this sentence."""
+        """The six JA4L entries hold this sentence."""
         register = {
             "a.pcap/JA4L-S": Deviation(
-                issue=34, cause="The entry stays open under #34, and no Changelog round settled it."
+                issue=272,
+                cause="The entry stays open under #272, and no Changelog round settled it.",
             )
         }
         assert unmarked_decisions(register) == []
@@ -511,11 +527,11 @@ class TestTheRegisterMarkerRule:
     def test_the_check_accepts_an_open_entry_that_denies_a_numbered_round(self):
         """A denied citation is not a citation.
 
-        The #34 sentence names no number today. A future author who writes the number
+        The JA4L sentence names no number today. A future author who writes the number
         into it must not make the gate demand a marker on an open entry.
         """
         register = {
-            "a.pcap/JA4L-S": Deviation(issue=34, cause="No Changelog round 76 settled the entry.")
+            "a.pcap/JA4L-S": Deviation(issue=272, cause="No Changelog round 76 settled the entry.")
         }
         assert unmarked_decisions(register) == []
 
