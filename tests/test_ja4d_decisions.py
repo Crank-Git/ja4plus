@@ -230,6 +230,24 @@ def test_ja4d6_reads_the_options_inside_a_relay_message():
     assert fingerprint.split("_")[1] == "18-9-1-6"
 
 
+def test_ja4d6_reads_a_deeply_nested_relay_message_without_a_raise():
+    """A crafted relay chain returns a value rather than a RecursionError.
+
+    Every packet is hostile input, and D8 lets one relay message nest another. Python
+    raises RecursionError near 1000 frames, so `_walk_options` bounds the depth.
+    """
+    # 1200 relay levels exceed the Python recursion limit and stay inside the 16-bit
+    # UDP length field.
+    chain_length = 1200
+    message = _dhcpv6_message(1)
+    for _ in range(chain_length):
+        message = bytes([12, 0]) + bytes(16) + bytes(16) + _dhcpv6_option(9, message)
+    fingerprint = generate_ja4d6(_dhcpv6_packet(message))
+    assert fingerprint.startswith("rlayf")
+    # The bound truncates the walk, so part b holds far fewer codes than the chain.
+    assert len(fingerprint.split("_")[1].split("-")) < chain_length
+
+
 # --- D9 — a repeated option 1 -----------------------------------------------------
 
 

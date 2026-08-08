@@ -676,36 +676,65 @@ the unit suite. #109 closed the gap.
 ### How ja4plus reads JA4D
 
 The form is `{type}{size}{ip}{fqdn}_{options}_{parameters}`. `ja4plus` reads it as
-follows. The comment at `ja4plus/fingerprinters/ja4d.py:42` names two FoxIO pull
-requests, 267 and 270, as the source of the skip set. The four reference values of
-`dhcp.pcapng` confirm the reading.
+follows. R9 of `docs/specs/foxio/JA4D.md` is the source of the skip set: the image caption
+names the four codes and `zeek/ja4d/consts.zeek:25-30` names the same four. **#231 removed
+the earlier citation of FoxIO pull requests 267 and 270, because neither number reads from
+a checkout at the pinned commit.** The four reference values of `dhcp.pcapng` confirm the
+reading, and #231 moved none of them.
 
+- `ja4plus` reads a DHCP message on UDP port 67, 68 or 4011.
+  `epan/dissectors/packet-dhcp.c` states `#define DHCP_UDP_PORT_RANGE  "67-68,4011"`, and
+  port 4011 carries Proxy DHCP.
 - The type is a five-character abbreviation of the DHCP message type. An unknown type
   gives the five-digit decimal value of the code.
+- A BOOTP message that carries no option 53 gives no value.
 - The size is the maximum message size of option 57, as four decimal digits. `ja4plus`
-  caps it at 9999, and it writes `0000` when the option is absent.
+  caps it at 9999, and it writes `0000` when the option is absent. A message that repeats
+  option 57 keeps the first occurrence.
 - The `ip` character is `i` when option 50 is present, and `n` when it is absent.
-- The `fqdn` character is `d` when option 81 is present, and `n` when it is absent.
+- The `fqdn` character is `d` when option 81 carries a domain name, and `n` when the
+  option is absent or carries no name. RFC 4702 puts the name after one flags byte and
+  two rcode bytes.
 - The option list holds the option codes in wire order. It drops 0, 50, 53 and 81. The
   end marker 255 stops the read and never reaches the list. An empty list gives `00`.
-- The parameter list holds the contents of option 55 in wire order. An empty list gives
+- The parameter list holds the contents of option 55 in wire order, and a message that
+  splits option 55 across several occurrences reaches the list whole. An empty list gives
   `00`.
 
-**Location:** `ja4plus/fingerprinters/ja4d.py:45` and `ja4plus/fingerprinters/ja4d.py:183`.
+The user decided D1 to D6 of #231 on 2026-08-08. `tests/test_ja4d_decisions.py` holds the
+separating packet of each, because no vector carries one.
+
+**Location:** `ja4plus/fingerprinters/ja4d.py:46` and `ja4plus/fingerprinters/ja4d.py:204`.
 
 ### How ja4plus reads JA4D6
 
 The form matches JA4D, and five readings differ. The message type alone is unchanged.
 
+- `ja4plus` reads a DHCPv6 message on UDP port 546 or 547.
+  `epan/dissectors/packet-dhcpv6.c` states
+  `#define UDP_PORT_DHCPV6_RANGE      "546-547"`, which is the same set.
+- Message type 0 gives `00000`, which is the five-digit form of an unknown type. DHCPv6
+  defines no message type 0.
 - The size is the byte length of the DUID inside option 1, as four decimal digits.
-  `ja4plus` caps it at 9999, and it writes `0000` when the option is absent.
+  `ja4plus` caps it at 9999, and it writes `0000` when the option is absent. A message
+  that repeats option 1 keeps the first occurrence.
 - The `ip` character reads option 4, which is IA_TA. The `fqdn` character reads option
   39.
 - The option list holds every option code in presence order, and it drops none. The list
-  holds the codes nested inside IA_NA, IA_TA, IA_PD, IA Address and IA Prefix. The
-  parameter list holds the contents of option 6.
+  holds the codes nested inside IA_NA, IA_TA, IA_PD, IA Address, IA Prefix and Relay
+  Message. A relay message puts its options after a 34-byte header, and the walk stops at
+  32 containers so that a crafted chain raises no `RecursionError`.
+- The parameter list holds the contents of option 6, and a message that splits option 6
+  across several occurrences reaches the list whole.
 
-**Location:** `ja4plus/fingerprinters/ja4d6.py:76` and `ja4plus/fingerprinters/ja4d6.py:202`.
+`ja4plus` reads the Client DUID length, option 4, option 39 and option 6 at the top level
+alone, where the dissector reads them at any nesting depth. **#271 owns that divergence
+and #231 ruled on nothing there**, because R16, R19 and R20 stay uncertain.
+
+The user decided D7 to D11 of #231 on 2026-08-08. `tests/test_ja4d_decisions.py` holds the
+separating packet of each, because no vector carries one.
+
+**Location:** `ja4plus/fingerprinters/ja4d6.py:81` and `ja4plus/fingerprinters/ja4d6.py:276`.
 
 ---
 

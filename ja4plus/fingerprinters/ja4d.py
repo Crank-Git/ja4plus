@@ -39,16 +39,23 @@ DHCP_MESSAGE_TYPES = {
     18: "dhtls",  # DHCPTLS
 }
 
-# Options to skip in section b (per FoxIO spec PR #267/#270):
-# 0 = Pad, 53 = Message Type, 50 = Requested IP, 81 = Client FQDN
-# (255 = End breaks the parse loop, never appears in option_codes.)
+# R9 of docs/specs/foxio/JA4D.md holds the FoxIO statement of this set. The image
+# caption names codes 50, 53, 81 and 255, and zeek/ja4d/consts.zeek:25-30 names the same
+# four. R10 adds the Pad option, code 0, on the dissector alone, and R10 stays uncertain.
+# The End option, code 255, breaks the parse loop and never reaches this set.
 DHCP_SKIP_OPTIONS = {0, 53, 50, 81}
 
 # DHCP magic cookie
 _DHCP_MAGIC = b"\x63\x82\x53\x63"
 
-# UDP ports used by DHCP
-_DHCP_PORTS = {67, 68}
+# Wireshark hands the JA4 dissector a DHCP message only on the ports its DHCP dissector
+# claims, and epan/dissectors/packet-dhcp.c sets DHCP_UDP_PORT_RANGE "67-68,4011".
+# Port 4011 carries Proxy DHCP, and D1 of docs/specs/foxio/JA4D.md rules that this
+# project reads the same three ports.
+_DHCP_PORTS = {67, 68, 4011}
+
+# RFC 4702 puts the domain name of option 81 after one flags byte and two rcode bytes.
+_DHCP_FQDN_NAME_OFFSET = 3
 
 
 def build_option_list(option_codes):
@@ -102,6 +109,7 @@ def _parse_dhcp_options(raw_payload):
 
     msg_type = 0
     max_msg_size = 0
+    has_max_msg_size = False
     has_request_ip = False
     has_fqdn = False
     option_codes = []
@@ -129,15 +137,28 @@ def _parse_dhcp_options(raw_payload):
 
         if opt_code == 53 and opt_len >= 1:  # Message Type
             msg_type = opt_data[0]
-        elif opt_code == 57 and opt_len >= 2:  # Max Message Size
+        elif opt_code == 57 and opt_len >= 2 and not has_max_msg_size:  # Max Message Size
+            # D4 of docs/specs/foxio/JA4D.md: the image gives subfield 2 four characters,
+            # so one occurrence decides it. The dissector appends every occurrence, which
+            # gives an eight-digit subfield, and this project declines that defect.
             max_msg_size = (opt_data[0] << 8) | opt_data[1]
+            has_max_msg_size = True
         elif opt_code == 50:  # Requested IP Address
             has_request_ip = True
         elif opt_code == 81:  # Client FQDN
-            has_fqdn = True
+            # D3 of docs/specs/foxio/JA4D.md: the image caption reads `Has a Domain name
+            # (d) or No domain (n)`, so the name decides the character and not the
+            # option. An option 81 that carries no name therefore gives `n`.
+            has_fqdn = has_fqdn or opt_len > _DHCP_FQDN_NAME_OFFSET
         elif opt_code == 55:  # Parameter Request List
-            param_list = list(opt_data)
+            # D5 of docs/specs/foxio/JA4D.md: RFC 3396 lets a long option 55 split across
+            # several occurrences, and part c holds the whole list.
+            param_list.extend(opt_data)
 
+    # D2 of docs/specs/foxio/JA4D.md: a BOOTP message that carries no option 53 produces
+    # no JA4D value. wireshark/source/packet-ja4.c:1498 sets the emit flag inside the
+    # option 53 block alone, and zeek/ja4d/main.zeek:43-45 emits `00000`. Two references
+    # against one keep this reading.
     if msg_type == 0:
         return None
 
