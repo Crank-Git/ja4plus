@@ -194,10 +194,37 @@ holds 1000 entries at most, so the cost of the pass stays flat.
 data, so the `## Terms` table does not name it a state table. It appears above because
 it grows without a limit, and Goal 3 covers it.
 
-This file states one more target that the code does not hold today:
+#41 landed the statistics, and this section records what the code holds now.
 
-- No class reports a state table entry count, and no class counts an eviction.
-  `Processor.stats` is a target, and #41 owns it.
+- `Processor.stats` returns a dict that maps each of the ten method names to one
+  `ProcessorStats`. `ProcessorStats` is a plain object; Epic 4 makes it a typed
+  dataclass.
+- `ProcessorStats` states the packet count of the method and one `TableStats` for each
+  state table the method holds. It also states the sum of the entry counts, the sum of
+  the eviction counts and the sum of the returned connections.
+- `TableStats` states six counts: `entries`, `max_entries`, `inserts`, `evictions`,
+  `removals` and `returned_connections`. The six hold the invariant
+  `inserts == entries + evictions + removals`.
+- **The report covers fifteen state tables, and not thirteen.** Round 82 counted the
+  thirteen `BoundedStateTable` instances. `JA4HFingerprinter.reassembler` and
+  `JA4XFingerprinter.reassembler` each hold per-connection data across packets, so the
+  `## Terms` table names each one a state table too. `TCPStreamReassembler` therefore
+  inherits `StateTable` and counts the same six things.
+- `StateTable` is the base class both hold. `BaseFingerprinter.state_tables` finds a
+  state table by that type, so a new table reaches the report with no further change.
+  The search descends one level, which reaches `SynAckTracker.times`.
+- A returned connection is a connection the table evicted and then saw again. The table
+  remembers the keys it evicted, and it bounds that memory at its own entry count. A
+  key the caller removed leaves no memory, so a connection that returns after
+  `cleanup_connection` counts as a first sighting.
+- `Processor.stats` holds the lock of one fingerprinter across the read of that
+  fingerprinter, because the counts of one method describe one instant. It acquires one
+  lock at a time and holds two never.
+- The report describes ten instants and not one. A caller that needs one instant across
+  the ten methods stops the packet source first.
+- `Processor.reset` returns every packet count to zero, because a reset drops the state
+  tables that the counts describe.
+- `max_connections` and `max_connection_age` stay targets on `Processor.__init__`.
 
 #40 landed the lock, and this section records what the code holds now.
 
