@@ -108,8 +108,13 @@ def _get_packet_source(packet):
 def _close_open_windows(fingerprinters):
     """Return one result row for every window the fingerprinters hold open.
 
-    Run this function when the packet source ends. JA4SSH is the only method that holds
-    a window, and #214 decided that it emits the window a connection holds open.
+    Run this function when the packet source ends without an error. JA4SSH is the only
+    method that holds a window, and #214 decided that it emits the window a connection
+    holds open.
+
+    A read error ends the command with a message and the status 1, and the command
+    writes no trailing window then. A partial window that follows an error describes a
+    connection the command failed to read.
 
     Args:
         fingerprinters: The map of method name to fingerprinter that the command built.
