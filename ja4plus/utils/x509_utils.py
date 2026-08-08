@@ -11,13 +11,13 @@ import hashlib
 import logging
 from typing import Any
 
-# Both names stay at module scope. `extract_certificate_info` reads them below a branch,
-# and a branch-local import makes each name a local of the whole function. The parse
-# below the branch then raises `UnboundLocalError`. #309 records the defect.
+# Both names stay at module scope. `extract_certificate_from_bytes` reads them inside a
+# branch, and a branch-local import makes each name a local of the whole function. A
+# later read of either name then raises `UnboundLocalError`. #309 records the defect and
+# #314 removes the second copy of it.
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from cryptography.x509.oid import NameOID, ExtensionOID
-from scapy.all import Packet
+from cryptography.x509.oid import ExtensionOID
 
 logger = logging.getLogger(__name__)
 
@@ -134,10 +134,6 @@ def extract_certificate_from_bytes(
                             # Check if this looks like a certificate
                             if b"\x06\x03\x55\x04" in candidate:  # Common OID pattern
                                 try:
-                                    # Attempt to parse
-                                    from cryptography import x509
-                                    from cryptography.hazmat.backends import default_backend
-
                                     # The call raises on a candidate that is not a
                                     # certificate, so it is the test. The result is
                                     # unused, because the caller wants the raw bytes.
@@ -233,117 +229,3 @@ def get_cert_details(cert: x509.Certificate) -> dict[str, Any] | None:
     except (ValueError, TypeError, AttributeError) as e:
         logger.warning(f"Certificate error: {e}")
         return None
-
-
-def extract_certificate_info(packet: Packet, verbose: bool = False) -> dict[str, Any] | None:
-    """
-    Extract certificate info from a packet.
-
-    Args:
-        packet: A network packet possibly containing certificate data
-        verbose: Whether to print verbose debugging info
-
-    Returns:
-        Dictionary with certificate information or None if not applicable
-    """
-    try:
-        from scapy.all import Raw, TCP
-
-        if Raw not in packet:
-            return None
-
-        # Less restrictive approach - try to extract certificates from any TCP packet with data
-        raw_data = bytes(packet[Raw])
-
-        # Try the structured approach first
-        cert_data = extract_certificate_from_bytes(raw_data, verbose=verbose, try_asn1=True)
-
-        if not cert_data and len(raw_data) > 100:
-            # If we have substantial data, try a direct ASN.1 parse as a last resort
-            try:
-                # Some certificates might be directly in the raw data with minimal framing
-                cert = x509.load_der_x509_certificate(raw_data, default_backend())
-                return get_cert_details(cert)
-            # `load_der_x509_certificate` raises `ValueError`. `get_cert_details` holds
-            # `ValueError`, `TypeError` and `AttributeError`, and it lets the three
-            # `cryptography` errors pass. #294 names all four.
-            except (
-                ValueError,
-                x509.DuplicateExtension,
-                x509.UnsupportedGeneralNameType,
-                x509.InvalidVersion,
-            ) as e:
-                logger.debug(f"Direct certificate parsing failed: {e}")
-
-        if not cert_data:
-            if verbose:
-                print("  No certificate found in packet")
-            return None
-
-        # Parse certificate
-        try:
-            cert = x509.load_der_x509_certificate(cert_data, default_backend())
-            return get_cert_details(cert)
-        except Exception as e:
-            if verbose:
-                print(f"Direct certificate parsing failed: {e}")
-            return None
-
-    except Exception as e:
-        if verbose:
-            print(f"Error extracting certificate info: {e}")
-        return None
-
-
-def get_certificate_issuer(cert: x509.Certificate) -> str:
-    """Extract issuer information from certificate"""
-    issuer = cert.issuer
-
-    # Extract common components
-    org = get_name_attribute(issuer, NameOID.ORGANIZATION_NAME)
-    cn = get_name_attribute(issuer, NameOID.COMMON_NAME)
-    country = get_name_attribute(issuer, NameOID.COUNTRY_NAME)
-
-    components = []
-    if org:
-        components.append(f"O={org}")
-    if cn:
-        components.append(f"CN={cn}")
-    if country:
-        components.append(f"C={country}")
-
-    return ",".join(components)
-
-
-def get_certificate_subject(cert: x509.Certificate) -> str:
-    """Extract subject information from certificate"""
-    subject = cert.subject
-
-    # Extract common components
-    org = get_name_attribute(subject, NameOID.ORGANIZATION_NAME)
-    cn = get_name_attribute(subject, NameOID.COMMON_NAME)
-    country = get_name_attribute(subject, NameOID.COUNTRY_NAME)
-
-    components = []
-    if org:
-        components.append(f"O={org}")
-    if cn:
-        components.append(f"CN={cn}")
-    if country:
-        components.append(f"C={country}")
-
-    return ",".join(components)
-
-
-# `cryptography` types the attribute value `str | bytes`, and each caller reads an OID
-# that carries a string. The narrow type reports the call sites that format the value,
-# and #46 changes no behaviour, so the return type stays wide.
-def get_name_attribute(name: x509.Name, oid: x509.ObjectIdentifier) -> Any:
-    """Safely extract name attribute"""
-    try:
-        attrs = name.get_attributes_for_oid(oid)
-        if attrs:
-            return attrs[0].value
-    except (ValueError, TypeError, AttributeError) as e:
-        logger.debug(f"Failed to get name attribute: {e}")
-    return None

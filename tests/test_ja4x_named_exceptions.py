@@ -1,8 +1,9 @@
-"""Measure the three X.509 handlers that #294 narrows.
+"""Measure the two X.509 handlers of `JA4XFingerprinter` that #294 narrows.
 
 `CLAUDE.md` states the rule: a fingerprinter catches the parse errors it expects, and it
 does not catch bare `Exception`. Three handlers wrote `except (ValueError, TypeError,
-Exception)`, which catches every exception, and #294 names the errors instead.
+Exception)`, which catches every exception, and #294 names the errors instead. #314
+removed the third handler with `extract_certificate_info`, the function that held it.
 
 Every test holds one of two shapes.
 
@@ -13,13 +14,12 @@ Every test holds one of two shapes.
 
 The `cryptography` documentation names the errors. `load_der_x509_certificate` raises
 `ValueError`. `Certificate.extensions` raises `DuplicateExtension` and
-`UnsupportedGeneralNameType`. `Certificate.version` raises `InvalidVersion`.
+`UnsupportedGeneralNameType`.
 Verified against: https://cryptography.io/en/latest/x509/reference/ (cryptography 50.0.0,
 retrieved 2026-08-08).
 """
 
 import datetime
-import logging
 
 import pytest
 from cryptography import x509
@@ -28,10 +28,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
-from scapy.all import Raw
 
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
-from ja4plus.utils import x509_utils
 
 # An arbitrary extension OID. The stub certificate names it to build one error.
 KEY_USAGE_OID = x509.ObjectIdentifier("2.5.29.15")
@@ -135,82 +133,6 @@ def test_the_certificate_parser_reports_a_defect_of_this_project():
     fingerprinter.get_cert_details = raise_the_defect
     with pytest.raises(RuntimeError):
         fingerprinter.read_certificate(_one_certificate())
-
-
-# --- Site three: the direct parse of `extract_certificate_info` ----------------------
-
-# The inner handler is the one line of the function that writes this message, so the
-# record proves which handler read the error. The outer handler writes no log record.
-INNER_HANDLER_MESSAGE = "Direct certificate parsing failed"
-
-# The packet needs more than 100 bytes of payload before the direct parse runs.
-HOSTILE_PAYLOAD = b"\xff" * 200
-
-
-def _read_a_hostile_packet(caplog):
-    """Return the messages the direct parse writes for one hostile packet."""
-    with caplog.at_level(logging.DEBUG, logger="ja4plus.utils.x509_utils"):
-        result = x509_utils.extract_certificate_info(Raw(HOSTILE_PAYLOAD))
-    return result, [record.getMessage() for record in caplog.records]
-
-
-def test_the_packet_reader_returns_nothing_for_a_payload_that_holds_no_certificate(caplog):
-    """The real loader raises `ValueError`, and the inner handler holds it."""
-    result, messages = _read_a_hostile_packet(caplog)
-    assert result is None
-    assert any(message.startswith(INNER_HANDLER_MESSAGE) for message in messages)
-
-
-@pytest.mark.parametrize("build_error", NAMED_ERRORS, ids=NAMED_ERROR_IDS)
-def test_the_packet_reader_holds_every_error_the_direct_parse_names(
-    build_error, caplog, monkeypatch
-):
-    """The inner handler names every error the loader and the detail reader raise."""
-
-    def raise_the_error(data, backend=None):
-        raise build_error()
-
-    monkeypatch.setattr(x509, "load_der_x509_certificate", raise_the_error)
-    result, messages = _read_a_hostile_packet(caplog)
-    assert result is None
-    assert any(message.startswith(INNER_HANDLER_MESSAGE) for message in messages)
-
-
-def test_the_packet_reader_holds_the_invalid_version_error(caplog, monkeypatch):
-    """`Certificate.version` raises `InvalidVersion`, and the detail reader lets it pass.
-
-    The detail reader of `x509_utils` holds `ValueError`, `TypeError` and
-    `AttributeError`, and `InvalidVersion` inherits none of the three. The error
-    therefore leaves the detail reader and reaches the handler under test.
-    """
-
-    def parse_the_certificate(data, backend=None):
-        return object()
-
-    def raise_the_error(cert):
-        raise x509.InvalidVersion("unknown version", 7)
-
-    monkeypatch.setattr(x509, "load_der_x509_certificate", parse_the_certificate)
-    monkeypatch.setattr(x509_utils, "get_cert_details", raise_the_error)
-    result, messages = _read_a_hostile_packet(caplog)
-    assert result is None
-    assert any(message.startswith(INNER_HANDLER_MESSAGE) for message in messages)
-
-
-def test_the_packet_reader_reports_a_defect_of_this_project(caplog, monkeypatch):
-    """The inner handler holds no error the narrow list omits.
-
-    The outer handler of the function still returns nothing, and it writes no record, so
-    the absent record proves the inner handler read no error.
-    """
-
-    def raise_the_defect(data, backend=None):
-        raise project_defect()
-
-    monkeypatch.setattr(x509, "load_der_x509_certificate", raise_the_defect)
-    result, messages = _read_a_hostile_packet(caplog)
-    assert result is None
-    assert not any(message.startswith(INNER_HANDLER_MESSAGE) for message in messages)
 
 
 # --- The rule the repair must not break ---------------------------------------------
