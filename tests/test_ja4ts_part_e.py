@@ -110,27 +110,48 @@ class TestPartEDelays(unittest.TestCase):
 class TestPartEBounds(unittest.TestCase):
     """The delay list and the connection table both hold a bound."""
 
+    def test_the_module_holds_the_three_bounds_that_foxio_states(self):
+        """A case that reads a bound from the module cannot measure the bound itself.
+
+        The deleted file states ten retransmissions and a timeout of two minutes.
+        `MAX_TRACKED_CONNECTIONS` is this project's own bound, and
+        `MAX_HANDSHAKE_CONNECTIONS` in `ja4plus/fingerprinters/ja4ssh.py` holds the same
+        value.
+        """
+        self.assertEqual(MAX_SYN_ACK_DELAYS, 10)
+        self.assertEqual(SYN_ACK_TIMEOUT_SECONDS, 120)
+        self.assertEqual(MAX_TRACKED_CONNECTIONS, 1000)
+
     def test_part_e_counts_ten_delays_and_no_more(self):
-        """The deleted file states a maximum of ten retransmissions counted."""
+        """The deleted file states a maximum of ten retransmissions counted.
+
+        `zeek/ja4t/main.zeek:185` stops at ten delays and corroborates the count.
+        `MAX_SYN_ACK_TIMES` in `wireshark/source/packet-ja4.c:234` stores ten
+        timestamps, which holds nine delays, so the dissector reads one fewer.
+        """
         fingerprinter = JA4TSFingerprinter()
         fingerprint = None
-        for step in range(MAX_SYN_ACK_DELAYS + 5):
+        for step in range(16):
             fingerprint = fingerprinter.process_packet(syn_ack(1000.0 + step))
-        self.assertEqual(fingerprint, PARTS_A_TO_D + "_" + "-".join(["1"] * MAX_SYN_ACK_DELAYS))
+        self.assertEqual(fingerprint, PARTS_A_TO_D + "_1-1-1-1-1-1-1-1-1-1")
 
     def test_a_connection_older_than_the_timeout_starts_a_new_delay_list(self):
         """The deleted file states a timeout of two minutes after the last SYN-ACK."""
         fingerprinter = JA4TSFingerprinter()
         fingerprinter.process_packet(syn_ack(1000.0))
-        late = 1000.0 + SYN_ACK_TIMEOUT_SECONDS + 1
-        self.assertEqual(fingerprinter.process_packet(syn_ack(late)), PARTS_A_TO_D)
+        self.assertEqual(fingerprinter.process_packet(syn_ack(1121.0)), PARTS_A_TO_D)
+
+    def test_a_connection_inside_the_timeout_keeps_its_delay_list(self):
+        fingerprinter = JA4TSFingerprinter()
+        fingerprinter.process_packet(syn_ack(1000.0))
+        self.assertEqual(fingerprinter.process_packet(syn_ack(1119.0)), PARTS_A_TO_D + "_119")
 
     def test_the_connection_table_holds_a_maximum_entry_count(self):
         """A monitor reads a SYN-ACK for every connection on the wire."""
         fingerprinter = JA4TSFingerprinter()
-        for port in range(MAX_TRACKED_CONNECTIONS + 100):
+        for port in range(1100):
             fingerprinter.process_packet(syn_ack(1000.0, dport=10000 + port))
-        self.assertLessEqual(len(fingerprinter.syn_ack_times.times), MAX_TRACKED_CONNECTIONS)
+        self.assertLessEqual(len(fingerprinter.syn_ack_times.times), 1000)
 
 
 class TestPartEStateRelease(unittest.TestCase):

@@ -301,7 +301,9 @@ connection state and fingerprints every SYN, where the reference reads the first
 alone. Neither entry is `decided`: #215 decides both, and a repair removes them.
 
 **JA4TS reaches no reference value here.** No local snapshot writes a `ja4ts` field. The
-Zeek baseline holds `ja4ts 65535_00_00_00`, and #198 owns that reading.
+Zeek baselines hold ten JA4TS values, `Scripts.ja4-conn/conn.log` holds
+`ja4ts 65535_00_00_00`, and #198 owns that reading. #226 added part e and re-ran the
+comparison, which holds at 9 of 10.
 
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`,
 `docs/specs/foxio/JA4T.md`.
@@ -564,6 +566,39 @@ changelog records it at round 11.
 No expected-output file of the 37 carries a `JA4T` key or a `JA4TS` key, and the vector
 set holds many TCP handshakes. The image is the only FoxIO material for both methods, and
 no reference value settles a question the image leaves open.
+
+### JA4TS carries part e, the time since the last SYN-ACK
+
+**The user decided this on 2026-08-08, and the decision reverses the D6 and D7 ruling of
+#215 of the same day.** The image caption reads
+`TCP Retransmission Timings (only on JA4TScan)`, and three FoxIO sources contradict it:
+the deleted `technical_details/JA4T.md`, `wireshark/source/packet-ja4.c:1595` through
+`ja4t()`, and `zeek/ja4t/main.zeek:227-236`. `docs/specs/foxio/JA4T.md` states the rule
+as R12, and the `Divergence register` of `docs/specs/spec.md` holds the row.
+
+Part e holds the delay between each SYN-ACK of one connection, in whole seconds, joined
+with `-`. Four rules apply.
+
+- **A fingerprint omits part e when the server answers once.** Part e is absent, and it
+  is not `00`. Both FoxIO implementations append part e only when a delay exists.
+- **A delay rounds to the nearest whole second, and a half rounds away from zero.**
+  `timediff` in the dissector calls the C `round`. The Python built-in `round` carries a
+  half to the even number, so `ja4ts.py` calls `math.floor(delta + 0.5)` instead.
+  `zeek/ja4t/main.zeek:180` truncates, and the prose and the dissector outvote it.
+- **A fingerprint grows with each SYN-ACK.** `ja4plus` emits one value per SYN-ACK.
+- **The state holds ten retransmissions and a timeout of two minutes.** `MAX_SYN_ACK_TIMES`
+  in the dissector stores ten timestamps, which holds nine delays, so the dissector reads
+  one fewer than the prose and Zeek state.
+
+**The change moved one value in the whole vector set.** The 38 captures produce 803
+values before and 803 after. `ssh2.pcapng` packet 372 moves from
+`64240_2-1-1-4-1-3_1460_7` to `64240_2-1-1-4-1-3_1460_7_0`, and it is the one connection
+of the set that the server answered twice. The Zeek JA4TS comparison holds at 9 of 10.
+
+**The RST value of JA4TS is not built.** It separates from part e, and #246 owns it.
+
+**Location:** `ja4plus/fingerprinters/ja4ts.py`, `tests/test_ja4ts_part_e.py`,
+`docs/specs/foxio/JA4T.md`, `docs/specs/foxio/zeek.md`.
 
 ### The option list holds six option kinds
 

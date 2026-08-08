@@ -238,12 +238,24 @@ records that `wireshark/source/packet-ja4.c:1595` writes the `JA4TS` field throu
 with a connection, which appends part e. The image and `rust/ja4/src/tcp.rs` state the
 other reading.
 
-**R2 of `docs/specs/foxio/JA4T.md` already marks this uncertain for JA4TS, and it stays
-uncertain.** The deleted text is a second FoxIO-authored source for the dissector's
-reading, and the image at the pinned commit outranks it. The vector fallback stays.
+**The user decided for the deleted text on 2026-08-08, and #226 built part e.** The
+decision reverses the D6 and D7 ruling of #215 of the same day, which followed the image.
+R2 of `docs/specs/foxio/JA4T.md` now holds for JA4T alone, and R12 states the JA4TS rule.
 
-**#226 holds this decision.** It is filed untriaged, and it names #215 item 4 as the issue
-a triager may fold it into.
+**#226 read the blob rather than this page**, and it confirms every quotation above. It
+also found a third source that this page does not name: `zeek/ja4t/main.zeek:227-236`
+appends the delay list to `c$conn$ja4ts`, so two FoxIO implementations write part e on
+JA4TS and only the image withholds it. The image's own example value `1-2-4-8-R6` carries
+the `R` suffix that its caption denies.
+
+**The two sentences on the omission rule decide the absent form.** A fingerprint omits
+part e when it sees no retransmission, so part e is absent and it is not `00`. Both
+implementations corroborate it, because each appends part e only when a delay exists.
+`ja4plus` follows the rule, and it is why the Zeek comparison held at 9 of 10 across the
+change: each of the ten baseline connections holds one SYN-ACK.
+
+**The RST rules of this file stay unbuilt, and #246 owns them.** #226 measured that the
+RST value separates from part e.
 
 ### F2 — The deleted text states the empty-field form, and the image states nothing
 
