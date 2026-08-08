@@ -206,7 +206,7 @@ class TheCsvHeader(unittest.TestCase):
             "--lookup",
             "analyze",
             HTTP_CAP,
-            lookup_client=StubLookupClient({"8760_2-1-1-4_1460_0": "Test Application"}),
+            lookup_client=StubLookupClient({"8760_2-1-1-4_1460_00": "Test Application"}),
         )
         self.assertEqual(plain_code, 0)
         self.assertEqual(lookup_code, 0)
@@ -220,7 +220,7 @@ class TheCsvHeader(unittest.TestCase):
             "--lookup",
             "analyze",
             HTTP_CAP,
-            lookup_client=StubLookupClient({"8760_2-1-1-4_1460_0": "Test Application"}),
+            lookup_client=StubLookupClient({"8760_2-1-1-4_1460_00": "Test Application"}),
         )
         self.assertEqual(code, 0)
         rows = csv_rows(looked_up)
@@ -249,13 +249,13 @@ class TheCsvRows(unittest.TestCase):
         self.assertEqual(row["dst_ip"], "65.208.228.223")
         self.assertEqual(row["dst_port"], "80")
         self.assertEqual(row["type"], "ja4t")
-        self.assertEqual(row["fingerprint"], "8760_2-1-1-4_1460_0")
+        self.assertEqual(row["fingerprint"], "8760_2-1-1-4_1460_00")
 
     def test_a_column_with_no_value_is_empty_rather_than_absent(self):
         stream = io.StringIO()
         writer = CsvWriter(stream)
         writer.write_header()
-        writer.write(FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_0"))
+        writer.write(FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00"))
         rows = csv_rows(stream.getvalue())
         row = dict(zip(rows[0], rows[1]))
         self.assertEqual(row["raw"], "")
@@ -322,7 +322,7 @@ class TheJsonLinesObject(unittest.TestCase):
     def test_a_field_with_no_value_is_null_rather_than_absent(self):
         stream = io.StringIO()
         JsonLinesWriter(stream).write(
-            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_0")
+            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00")
         )
         record = json.loads(stream.getvalue())
         self.assertEqual(set(record), DOCUMENTED_FIELDS)
@@ -334,7 +334,7 @@ class TheJsonLinesObject(unittest.TestCase):
     def test_the_json_object_holds_the_identified_name_that_the_lookup_returned(self):
         stream = io.StringIO()
         JsonLinesWriter(stream).write(
-            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_0"),
+            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00"),
             identified_as="Test Application",
         )
         self.assertEqual(json.loads(stream.getvalue())["identified_as"], "Test Application")
@@ -346,7 +346,7 @@ class TheTimestamp(unittest.TestCase):
         JsonLinesWriter(stream).write(
             FingerprintResult(
                 type="ja4t",
-                fingerprint="8760_2-1-1-4_1460_0",
+                fingerprint="8760_2-1-1-4_1460_00",
                 timestamp=datetime(2026, 8, 6, 12, 34, 56, 789012, tzinfo=timezone.utc),
             )
         )
@@ -418,7 +418,7 @@ class TheTableFormat(unittest.TestCase):
         writer.write(
             FingerprintResult(
                 type="ja4t",
-                fingerprint="8760_2-1-1-4_1460_0",
+                fingerprint="8760_2-1-1-4_1460_00",
                 src_ip="145.254.160.237",
                 src_port=3372,
                 dst_ip="65.208.228.223",
@@ -428,7 +428,7 @@ class TheTableFormat(unittest.TestCase):
         lines = stream.getvalue().splitlines()
         self.assertIn("Source", lines[0])
         self.assertIn("145.254.160.237:3372 -> 65.208.228.223:80", lines[2])
-        self.assertIn("8760_2-1-1-4_1460_0", lines[2])
+        self.assertIn("8760_2-1-1-4_1460_00", lines[2])
 
 
 class TheSchemaVersion(unittest.TestCase):
