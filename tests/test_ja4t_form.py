@@ -189,6 +189,27 @@ class TestD4OneValuePerConnection:
         fingerprinter.reset()
         assert fingerprinter.process_packet(packet) is not None
 
+    def test_a_syn_the_reader_cannot_read_leaves_the_connection_open(self, monkeypatch):
+        """A packet that produces no value must not mark its connection.
+
+        The gate runs after the reader for that reason. A gate that ran first would
+        consume the connection on a packet the reader failed on, and the SYN that
+        follows would then produce nothing either.
+        """
+        import ja4plus.fingerprinters.ja4t as module
+
+        fingerprinter = JA4TFingerprinter()
+        packet = syn_with_option_bytes(bytes.fromhex("020405b4"))
+
+        def raise_once(tcp):
+            raise ValueError("the reader cannot read this packet")
+
+        monkeypatch.setattr(module, "tcp_prefix", raise_once)
+        assert fingerprinter.process_packet(packet) is None
+        monkeypatch.undo()
+
+        assert fingerprinter.process_packet(packet) == "65535_2_1460_00"
+
     def test_a_syn_ack_still_produces_one_value_for_each_packet(self):
         """D4 reaches JA4T alone. R12 states that a JA4TS value grows with each SYN-ACK."""
         first = syn_with_option_bytes(bytes.fromhex("020405b4"), flags="SA")

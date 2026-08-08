@@ -149,10 +149,15 @@ def generate_ja4t(packet, connections=None):
         if not (tcp.flags & TCP_SYN_FLAG) or (tcp.flags & TCP_ACK_FLAG):
             return None
 
+        # The reader runs before the gate marks the connection. A packet the reader
+        # cannot read produces no value, and a connection that produced no value must
+        # stay open for the SYN that follows it.
+        value = tcp_prefix(tcp)
+
         if not _first_syn_of_connection(packet, connections):
             return None
 
-        return tcp_prefix(tcp)
+        return value
 
     except (ValueError, TypeError, IndexError, AttributeError) as e:
         logger.debug(f"Packet does not contain JA4T data: {e}")
