@@ -74,7 +74,25 @@ transcription and names the two sources that name JA4LS as a separate method.
 |---|---|---|
 | JA4T and JA4TS | `docs/specs/foxio/JA4T.md` | Complete. #196 |
 | JA4H | `docs/specs/foxio/JA4H.md` | Complete. #203 |
+| JA4SSH | `docs/specs/foxio/JA4SSH.md` | Complete. #199 |
 | JA4L | `docs/specs/foxio/JA4L.md` | Complete. #200. The page covers the client form, because the image specifies no server form. |
+
+## A deleted text specification corroborates, and it never outranks the image
+
+**FoxIO published a text specification for seven methods, and commit `b6f3ff4` deleted
+all seven.** `technical_details/JA4.md` and `technical_details/JA4H.md` exist again at the
+pinned commit. `JA4L.md`, `JA4S.md`, `JA4SSH.md`, `JA4T.md` and `JA4X.md` do not.
+
+A deleted file is FoxIO-authored, so it counts as one corroboration. **It is not the
+pinned specification, so the image at the pinned commit outranks it.** Cite the path, the
+commit that holds the file, and the blob SHA-1.
+
+#199 read the deleted `JA4SSH.md`, and `docs/specs/foxio/JA4SSH.md` holds the provenance
+table to follow. **#221 reads the other five.**
+
+```bash
+git log --oneline --diff-filter=D --name-only -- 'technical_details/*.md'
+```
 
 ## How to read one image
 
