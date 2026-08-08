@@ -28,6 +28,11 @@ TODOS.md
 PYTHON_ISSUES.md
 docs/superpowers/
 
+# The mutation sweep writes a report and a checkpoint. Both describe one run on one
+# host, so neither belongs in the history.
+mutation_sweep*.json
+mutation_sweep*.jsonl
+
 # IDE / OS
 .idea/
 .vscode/
