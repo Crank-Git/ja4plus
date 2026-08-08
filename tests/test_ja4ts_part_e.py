@@ -50,9 +50,7 @@ class TestPartEOmission(unittest.TestCase):
     def test_two_connections_hold_separate_delay_lists(self):
         fingerprinter = JA4TSFingerprinter()
         fingerprinter.process_packet(syn_ack(1000.0, dport=50000))
-        self.assertEqual(
-            fingerprinter.process_packet(syn_ack(1001.0, dport=50001)), PARTS_A_TO_D
-        )
+        self.assertEqual(fingerprinter.process_packet(syn_ack(1001.0, dport=50001)), PARTS_A_TO_D)
 
 
 class TestPartEDelays(unittest.TestCase):
@@ -132,7 +130,7 @@ class TestPartEBounds(unittest.TestCase):
         fingerprinter = JA4TSFingerprinter()
         for port in range(MAX_TRACKED_CONNECTIONS + 100):
             fingerprinter.process_packet(syn_ack(1000.0, dport=10000 + port))
-        self.assertLessEqual(len(fingerprinter.syn_ack_times), MAX_TRACKED_CONNECTIONS)
+        self.assertLessEqual(len(fingerprinter.syn_ack_times.times), MAX_TRACKED_CONNECTIONS)
 
 
 class TestPartEStateRelease(unittest.TestCase):
