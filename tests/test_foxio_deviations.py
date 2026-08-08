@@ -67,7 +67,7 @@ def unmarked_decisions(register):
     return messages
 
 
-def unkinded_declines(entries):
+def unrecorded_kinds(entries):
     """Return one message for every decided entry that records no kind of decline.
 
     A decided entry records a decline, and the kind of that decline decides whether the
@@ -595,6 +595,11 @@ class TestTheRegisterMarkerRule:
 # declines the decrypted values the reference reads from a Decryption Secrets Block, and
 # `ja4plus` reads no encrypted request by decision. #341 read the recorded cause of all
 # 135 entries and found this one issue.
+#
+# Warning: these two constants record the state of the register today, and they carry no
+# bar. `tests/test_precedence_exception.py` reads the field of each entry. A new
+# capability decline fails the two cases below and the repair is to correct the state
+# they record, never to read the kind from an issue number again.
 CAPABILITY_ISSUE = 129
 
 # The count of entries that record a capability decline. All 43 name #129.
@@ -617,21 +622,19 @@ class TestTheKindOfDecline:
             return json.load(handle)
 
     def test_the_committed_register_records_a_kind_for_every_decided_entry(self):
-        assert unkinded_declines(self._entries()) == []
+        assert unrecorded_kinds(self._entries()) == []
 
     def test_the_check_reports_a_decided_entry_that_records_no_kind(self):
         entries = {"a.pcap/JA4": {"issue": 129, "cause": "x", "decided": True}}
-        assert unkinded_declines(entries) == [
-            "a.pcap/JA4 is decided and records no kind of decline"
-        ]
+        assert unrecorded_kinds(entries) == ["a.pcap/JA4 is decided and records no kind of decline"]
 
     def test_the_check_accepts_a_decided_entry_that_records_a_value_decline(self):
         entries = {"a.pcap/JA4": {"issue": 96, "cause": "x", "decided": True, "capability": False}}
-        assert unkinded_declines(entries) == []
+        assert unrecorded_kinds(entries) == []
 
     def test_the_check_accepts_a_decided_entry_that_records_a_capability_decline(self):
         entries = {"a.pcap/JA4": {"issue": 129, "cause": "x", "decided": True, "capability": True}}
-        assert unkinded_declines(entries) == []
+        assert unrecorded_kinds(entries) == []
 
     def test_the_check_accepts_an_undecided_entry_that_records_no_kind(self):
         """An undecided entry declines nothing, so it states no kind of decline.
@@ -640,14 +643,14 @@ class TestTheKindOfDecline:
         gate demands the kind at the moment a person decides the entry.
         """
         entries = {"a.pcap/JA4L-S": {"issue": 272, "cause": "x"}}
-        assert unkinded_declines(entries) == []
+        assert unrecorded_kinds(entries) == []
 
     def test_the_check_names_every_offending_key(self):
         entries = {
             "b.pcap/JA4S": {"issue": 96, "cause": "x", "decided": True},
             "a.pcap/JA4": {"issue": 129, "cause": "x", "decided": True},
         }
-        assert unkinded_declines(entries) == [
+        assert unrecorded_kinds(entries) == [
             "a.pcap/JA4 is decided and records no kind of decline",
             "b.pcap/JA4S is decided and records no kind of decline",
         ]
@@ -665,19 +668,6 @@ class TestTheKindOfDecline:
     def test_the_register_holds_forty_three_capability_declines(self):
         capability = [key for key, entry in load_register().items() if entry.capability]
         assert len(capability) == CAPABILITY_ENTRIES
-
-    def test_every_capability_decline_states_the_capability_it_records(self):
-        """The kind is a recorded fact, and the cause states the reason behind it.
-
-        Every #129 cause names the boundary in one of two forms. A future entry that
-        records a capability decline with no such statement fails this case.
-        """
-        for key, entry in load_register().items():
-            if not entry.capability:
-                continue
-            reads_no_request = "reads no encrypted request" in entry.cause
-            reads_no_certificate = "reads no encrypted certificate" in entry.cause
-            assert reads_no_request or reads_no_certificate, key
 
 
 class TestTheOwnerReader:

@@ -43,7 +43,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   named it nowhere near the decline. **`true` records a capability this project chose not
   to build, and `false` records a disagreement about the value.** `tests/foxio_deviations.py`
   reads the field beside `decided` and states the default in the schema, and
-  `unkinded_declines` requires the field on every decided entry. **43 entries record a
+  `unrecorded_kinds` requires the field on every decided entry. **43 entries record a
   capability decline, and all 43 name #129**, which the recorded cause of each of the 135
   entries decides. No entry was undeterminable. **The reach of the exception is 6 rows
   before and after**, and the six rows are unchanged. No fingerprint moves, no file under

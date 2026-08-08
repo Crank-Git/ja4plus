@@ -141,7 +141,7 @@ the reference would create 35 permanent divergences of a kind this project chose
 **The register records the kind of every decline.** Each entry carries a `"capability"`
 field: `true` records a capability this project chose not to build, and `false` records a
 disagreement about the value. `tests/foxio_deviations.py` reads it beside `decided`, and
-`unkinded_declines` in `tests/test_foxio_deviations.py` requires it on every decided
+`unrecorded_kinds` in `tests/test_foxio_deviations.py` requires it on every decided
 entry, so a new decline states its kind where the decline is recorded. **Fact 3 reads one
 field of one entry.** 43 entries record a capability decline today, and all 43 name #129.
 #334 proposed the field and #341 built it. **Never infer the kind of a decline from the

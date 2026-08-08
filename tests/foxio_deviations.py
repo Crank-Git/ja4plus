@@ -77,7 +77,7 @@ A decided entry records one of two kinds of decline, and `"capability"` states w
 entry with no field is a value decline. The reader states the default on `Deviation`, and
 no caller reads the kind from the prose of a cause.
 
-`unkinded_declines` in `tests/test_foxio_deviations.py` requires the field on every
+`unrecorded_kinds` in `tests/test_foxio_deviations.py` requires the field on every
 decided entry, so a new decline states its kind at the moment a person decides it. An
 undecided entry declines nothing, so it may omit the field.
 
