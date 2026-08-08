@@ -1,12 +1,4 @@
 {
-  "CVE-2018-6794.pcap/JA4H": {
-    "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
-    "issue": 35
-  },
-  "CVE-2018-6794.pcap/JA4H_ro": {
-    "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
-    "issue": 35
-  },
   "CVE-2018-6794.pcap/JA4L-C": {
     "cause": "ja4plus emits more JA4L-C values than the reference holds.",
     "issue": 34
@@ -167,22 +159,6 @@
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
     "decided": true,
     "issue": 105
-  },
-  "http-empty-useragent.pcap/0:57722/JA4H.1": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
-  },
-  "http-empty-useragent.pcap/0:57722/JA4H_ro.1": {
-    "cause": "ja4plus produces no JA4H value on this stream.",
-    "issue": 35
-  },
-  "http-empty-useragent.pcap/JA4H": {
-    "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
-    "issue": 35
-  },
-  "http-empty-useragent.pcap/JA4H_ro": {
-    "cause": "ja4plus produces no JA4H fingerprint the reference holds.",
-    "issue": 35
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.1": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request.",

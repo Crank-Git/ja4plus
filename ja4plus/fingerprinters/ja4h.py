@@ -10,16 +10,20 @@ JA4H fingerprints HTTP requests based on:
 
 import hashlib
 import logging
+from collections import OrderedDict
+
 from scapy.all import IP, IPv6, TCP, Raw
 
 from ja4plus.utils.http_utils import (
     REQUEST_LINE_PATTERN,
     can_become_http_request,
     extract_http_info,
+    header_block_end,
     is_http_request,
     parse_http_request,
+    split_http_lines,
 )
-from ja4plus.utils.tcp_stream import TCPStreamReassembler
+from ja4plus.utils.tcp_stream import SEQUENCE_MASK, TCPStreamReassembler, sequence_before
 from ja4plus.utils.packet_utils import get_ip_layer, packet_endpoints, packet_seconds
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -68,6 +72,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
         self.unusable_base = {}
+        self.consumed_seq = OrderedDict()
 
     def process_packet(self, packet):
         """
@@ -89,6 +94,9 @@ class JA4HFingerprinter(BaseFingerprinter):
         stream_key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
         seq = tcp.seq if hasattr(tcp, "seq") else 0
 
+        if self._segment_carries_no_new_request(stream_key, seq, len(raw_data)):
+            return None
+
         self.reassembler.add_segment(stream_key, seq, raw_data, packet_seconds(packet))
         stream_data = self.reassembler.get_stream(stream_key)
 
@@ -105,8 +113,8 @@ class JA4HFingerprinter(BaseFingerprinter):
                 return fingerprint
             return None
 
-        # Check if headers are complete (double CRLF present)
-        if b"\r\n\r\n" not in stream_data:
+        header_end = header_block_end(stream_data)
+        if header_end is None:
             return None
 
         http_info = _extract_http_info_from_bytes(stream_data)
@@ -116,10 +124,52 @@ class JA4HFingerprinter(BaseFingerprinter):
         fingerprint = _generate_ja4h_from_info(http_info)
         if fingerprint:
             self._record(fingerprint, http_info, packet)
+            self._remember_the_consumed_request(stream_key, header_end)
             self.reassembler.remove_stream(stream_key)
             return fingerprint
 
         return None
+
+    def _remember_the_consumed_request(self, stream_key, header_end):
+        """Store the sequence number that follows the request this stream just produced.
+
+        The reassembler drops the stream after a value, so a retransmitted segment
+        rebuilds the same request and produces a second value. The reference holds one
+        value for one request, and this number tells the two apart. #193 records the
+        defect.
+
+        Args:
+            stream_key: The key of the stream in the reassembler.
+            header_end: The offset of the first byte after the header block.
+        """
+        base = self.reassembler.base_seq(stream_key)
+        if base is None:
+            return
+        self.consumed_seq[stream_key] = (base + header_end) & SEQUENCE_MASK
+        self.consumed_seq.move_to_end(stream_key)
+        if len(self.consumed_seq) > self.reassembler.max_streams:
+            # The table holds one entry for each connection, and a flood of connections
+            # would otherwise grow it without a limit.
+            self.consumed_seq.popitem(last=False)
+
+    def _segment_carries_no_new_request(self, stream_key, seq, length):
+        """Report whether the stream already produced a value for these bytes.
+
+        Args:
+            stream_key: The key of the stream in the reassembler.
+            seq: The 32-bit sequence number of the first byte of the segment.
+            length: The count of payload bytes the segment carries.
+
+        Returns:
+            True when the segment ends inside the sequence range of a request that
+            already produced a value. The comparison holds across a wrap of the 32-bit
+            sequence number.
+        """
+        consumed = self.consumed_seq.get(stream_key)
+        if consumed is None:
+            return False
+        end = (seq + length) & SEQUENCE_MASK
+        return not sequence_before(consumed, end)
 
     def _drop_an_unusable_stream(self, stream_key, stream_data):
         """Remove a stream whose buffer no later segment turns into an HTTP request.
@@ -175,6 +225,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
         self.unusable_base = {}
+        self.consumed_seq = OrderedDict()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove TCP stream buffer for the given connection."""
@@ -185,6 +236,8 @@ class JA4HFingerprinter(BaseFingerprinter):
         self.reassembler.remove_stream(rev_key)
         self.unusable_base.pop(stream_key, None)
         self.unusable_base.pop(rev_key, None)
+        self.consumed_seq.pop(stream_key, None)
+        self.consumed_seq.pop(rev_key, None)
 
 
 def _extract_http_info_from_bytes(data):
@@ -211,7 +264,7 @@ def _extract_http_info_from_bytes(data):
 
         headers = {}
         header_names = []
-        lines = text.split("\r\n")
+        lines = split_http_lines(text)
 
         for line in lines[1:]:
             if not line or line.isspace():
