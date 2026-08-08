@@ -17,7 +17,8 @@ import csv
 import json
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 from ja4plus import __version__
 from ja4plus.fingerprinters.base import BaseFingerprinter

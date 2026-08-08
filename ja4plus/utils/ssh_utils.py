@@ -151,13 +151,17 @@ class SSHMessageTracker:
             when the direction already sent every byte of the segment, and when the
             segment holds no message end.
         """
-        # `add_segment` sets `_next_seq` before it calls this method, so the value is
-        # never None here.
-        assert self._next_seq is not None
+        # `add_segment` sets `_next_seq` before it calls this method, so this guard
+        # reaches no segment. It states the value for the type checker, and it returns
+        # the empty result rather than raise, because a parser that cannot read a
+        # segment returns nothing.
+        next_seq = self._next_seq
+        if next_seq is None:
+            return []
 
         # A retransmission repeats the bytes the tracker already read, so the tracker
         # reads only the part of the segment that follows them.
-        overlap = -_offset(seq, self._next_seq)
+        overlap = -_offset(seq, next_seq)
         if overlap >= len(payload):
             return []
         completed = self.completes_message(payload[overlap:])
@@ -196,10 +200,13 @@ class SSHMessageTracker:
             The payload and the sequence number of that segment, or None when the
             buffer holds no such segment.
         """
-        # `add_segment` sets `_next_seq` before it calls this method, so the value is
-        # never None here.
-        assert self._next_seq is not None
+        # `add_segment` sets `_next_seq` before it calls this method, so this guard
+        # reaches no segment. It states the value for the type checker, and it returns
+        # nothing rather than raise, because a parser that cannot read a segment returns
+        # nothing.
         next_seq = self._next_seq
+        if next_seq is None:
+            return None
 
         for seq in sorted(self._pending, key=lambda held: _offset(held, next_seq)):
             if _offset(seq, next_seq) <= 0:

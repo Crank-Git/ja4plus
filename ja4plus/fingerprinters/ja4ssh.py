@@ -133,6 +133,9 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         from ja4plus.utils.packet_utils import get_ip_layer
 
         ip = get_ip_layer(packet)
+        # The guard at the top of this method accepts an IPv4 layer or an IPv6 layer, and
+        # `get_ip_layer` reads the same two layers, so this test reaches no packet. It
+        # states the value for the type checker.
         if ip is None:
             return None
 
