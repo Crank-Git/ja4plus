@@ -13,7 +13,8 @@ eviction hook calls `Processor.cleanup_connection`, so one eviction drops the en
 this table and the per-connection state of all ten methods together. An eviction that
 dropped the entry alone would leave the leak behind a bound.
 
-Eviction runs on packet arrival. This module starts no thread.
+Eviction runs on packet arrival. The statistics thread is the only thread this module
+starts, and `report_statistics` starts it only when the operator states an interval.
 """
 
 # Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
@@ -23,7 +24,9 @@ from __future__ import annotations
 import contextlib
 import logging
 import signal
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Optional
+import threading
+import time
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Optional, TextIO
 
 from scapy.all import TCP, UDP
 
@@ -42,11 +45,18 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_MAX_CONNECTIONS",
+    "STATISTICS_THREAD_NAME",
     "Monitor",
+    "MonitorStats",
+    "StatisticsReporter",
+    "StatisticsSnapshot",
     "StopRequest",
     "connection_key",
+    "format_statistics",
     "read_interface",
+    "report_statistics",
     "stop_on_signal",
+    "write_statistics",
 ]
 
 # The two signals that stop a monitor. FR-live-capture-5 and FR-live-capture-6 name one
@@ -66,6 +76,18 @@ DEFAULT_CONNECTION_TIMEOUT = 300.0
 # The two scapy layer classes that carry a port. `innermost_layer` reads the deepest
 # one, because a tunnel carries a second port layer inside the first one.
 _PORT_LAYERS = (TCP, UDP)
+
+# The name of the statistics thread. An operator reads it in a stack dump, and a test
+# reads it from `threading.enumerate`.
+STATISTICS_THREAD_NAME = "ja4plus-statistics"
+
+# The first field of the statistics line. `features/06-live-capture.md` publishes it.
+_STATISTICS_PREFIX = "[ja4plus]"
+
+# The count of seconds `StatisticsReporter.stop` waits for its thread. The thread
+# writes one line and then reads the stop event, so a wait this long names a stream
+# that blocks rather than a thread that ignores the stop.
+_STATISTICS_JOIN_TIMEOUT = 5.0
 
 
 def connection_key(packet: Packet) -> tuple[str, str, int, str, int] | None:
@@ -104,6 +126,262 @@ def connection_key(packet: Packet) -> tuple[str, str, int, str, int] | None:
     return (proto, src_ip, src_port, dst_ip, dst_port)
 
 
+class StatisticsSnapshot:
+    """The counts one statistics line reports.
+
+    `MonitorStats.snapshot` builds one of these under its lock, so the six values
+    describe one instant.
+
+    Args:
+        packets: The count of packets the monitor read.
+        fingerprints: The count of fingerprints the monitor reported.
+        connections: The count of connections the connection table holds.
+        evicted: The count of connections the connection table evicted, on either
+            bound.
+        dropped: The count of packets the capture layer dropped, or None where the
+            capture layer reports no count.
+        uptime: The count of seconds since the monitor started.
+    """
+
+    __slots__ = ("packets", "fingerprints", "connections", "evicted", "dropped", "uptime")
+
+    def __init__(
+        self,
+        packets: int,
+        fingerprints: int,
+        connections: int,
+        evicted: int,
+        dropped: Optional[int],
+        uptime: float,
+    ) -> None:
+        self.packets = packets
+        self.fingerprints = fingerprints
+        self.connections = connections
+        self.evicted = evicted
+        self.dropped = dropped
+        self.uptime = uptime
+
+    def __repr__(self) -> str:
+        return (
+            f"StatisticsSnapshot(packets={self.packets}, "
+            f"fingerprints={self.fingerprints}, connections={self.connections}, "
+            f"evicted={self.evicted}, dropped={self.dropped}, uptime={self.uptime})"
+        )
+
+
+def format_statistics(snapshot: StatisticsSnapshot) -> str:
+    """Return the statistics line of one snapshot.
+
+    `features/06-live-capture.md` publishes the line and its six fields. The uptime
+    holds whole seconds, because a monitor runs for weeks and a fraction of a second
+    tells the operator nothing.
+
+    Args:
+        snapshot: The counts to report.
+
+    Returns:
+        One line, without a line feed.
+    """
+    dropped = "null" if snapshot.dropped is None else str(snapshot.dropped)
+    return (
+        f"{_STATISTICS_PREFIX} packets={snapshot.packets} "
+        f"fingerprints={snapshot.fingerprints} connections={snapshot.connections} "
+        f"evicted={snapshot.evicted} dropped={dropped} "
+        f"uptime={int(snapshot.uptime)}s"
+    )
+
+
+class MonitorStats:
+    """The counts of one monitor, and the lock that guards them.
+
+    The capture thread writes these counts and the statistics thread reads them. Every
+    write and every read holds one lock, so a reader reads the counts of one instant.
+    A reader that acquired nothing would read a count another thread was writing.
+
+    The capture thread publishes the two table counts through `record_packet`, so the
+    statistics thread reads this object and never the connection table. The table is a
+    dictionary that the capture thread writes on each packet, and a second reader of it
+    reads entries the writer is moving.
+
+    The `dropped` field reports a measurement, and `null` where none exists. `scapy`
+    2.7.0 gives the monitor no drop count through `sniff`, so `ja4plus watch` passes no
+    source and the field reads `null`. Two readings support that.
+
+    1. On macOS the capture socket reports a drop count, and `sniff` hides the socket.
+       `_L2bpfSocket.get_stats` reads the `BIOCGSTATS` ioctl and returns the received
+       count and the drop count. `AsyncSniffer._run` holds the socket it opens in a
+       local name, so a caller reaches that socket through the `opened_socket` argument
+       alone. #56 owns the socket the command opens.
+    2. On Linux `scapy` reads no drop count at all. It defines `PACKET_STATISTICS = 6`
+       and calls `getsockopt` with that option nowhere.
+
+    Verified against `scapy` 2.7.0, at `scapy/arch/bpf/supersocket.py:297`,
+    `scapy/arch/linux/__init__.py:95` and `scapy/sendrecv.py:1205`, read on
+    2026-08-08. Reading 1 ran on macOS 25.6.0. Reading 2 is a reading of the `scapy`
+    source, and no Linux host ran it.
+
+    Args:
+        clock: The callable that returns the current time in seconds. The default is
+            `time.monotonic`, because a host that steps its wall clock would report a
+            negative uptime.
+        dropped_source: The callable that returns the count of packets the capture
+            layer dropped, or None where no capture layer reports one.
+    """
+
+    def __init__(
+        self,
+        clock: Callable[[], float] = time.monotonic,
+        dropped_source: Optional[Callable[[], Optional[int]]] = None,
+    ) -> None:
+        self._lock = threading.Lock()
+        self._clock = clock
+        self._dropped_source = dropped_source
+        self._started = clock()
+        self._packets = 0
+        self._fingerprints = 0
+        self._connections = 0
+        self._evicted = 0
+
+    def count_fingerprints(self, count: int) -> None:
+        """Add the fingerprints of one packet to the fingerprint count.
+
+        Args:
+            count: The count of fingerprints the monitor reported for one packet.
+        """
+        with self._lock:
+            self._fingerprints += count
+
+    def record_packet(self, connections: int, evicted: int) -> None:
+        """Count one packet, and publish the two counts of the connection table.
+
+        The capture thread calls this method after it reads the table, so the
+        statistics thread reads the published counts and never the table itself.
+
+        Args:
+            connections: The count of entries the connection table holds now.
+            evicted: The count of connections the connection table evicted.
+        """
+        with self._lock:
+            self._packets += 1
+            self._connections = connections
+            self._evicted = evicted
+
+    def snapshot(self) -> StatisticsSnapshot:
+        """Return the counts of one instant.
+
+        The call reads the drop count outside the lock, because that call reaches the
+        capture layer and a slow answer would hold the capture thread.
+
+        Returns:
+            The counts, with the drop count and the uptime.
+        """
+        dropped = self._dropped_source() if self._dropped_source is not None else None
+        with self._lock:
+            return StatisticsSnapshot(
+                packets=self._packets,
+                fingerprints=self._fingerprints,
+                connections=self._connections,
+                evicted=self._evicted,
+                dropped=dropped,
+                uptime=self._clock() - self._started,
+            )
+
+
+def write_statistics(stats: MonitorStats, stream: TextIO) -> None:
+    """Write one statistics line, and flush the stream.
+
+    A monitor runs for weeks, and the operator reads the line as the monitor writes it.
+    A flush that the interpreter runs at shutdown reaches no such reader.
+
+    Args:
+        stats: The counts to report.
+        stream: The stream to write to. The command passes standard error, which
+            FR-live-capture-10 states.
+    """
+    stream.write(format_statistics(stats.snapshot()) + "\n")
+    stream.flush()
+
+
+class StatisticsReporter:
+    """The thread that writes a statistics line on a schedule.
+
+    FR-live-capture-9 asks for the schedule. The thread waits on an event rather than
+    on a sleep, so `stop` ends it inside a millisecond. A thread that slept the whole
+    interval would hold the exit of the monitor for that interval, and #54 shipped a
+    stop that returns as soon as the capture returns.
+
+    The thread reads `MonitorStats` and nothing else, so it acquires one lock and it
+    reads no state table.
+
+    Args:
+        stats: The counts to report.
+        interval: The count of seconds between two lines.
+        stream: The stream to write to.
+    """
+
+    def __init__(self, stats: MonitorStats, interval: float, stream: TextIO) -> None:
+        self._stats = stats
+        self._interval = interval
+        self._stream = stream
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, name=STATISTICS_THREAD_NAME, daemon=True)
+
+    def start(self) -> None:
+        """Start the thread."""
+        self._thread.start()
+
+    def stop(self) -> None:
+        """End the thread, and wait for the line it is writing.
+
+        A second call returns, so a caller that stops the reporter twice raises
+        nothing.
+        """
+        self._stop.set()
+        if self._thread.is_alive():
+            self._thread.join(timeout=_STATISTICS_JOIN_TIMEOUT)
+
+    def is_alive(self) -> bool:
+        """Return True while the thread runs."""
+        return self._thread.is_alive()
+
+    def _run(self) -> None:
+        """Write one line for each interval that passes, until the stop arrives.
+
+        The wait comes first, so a monitor that starts writes no line before the
+        operator's first interval passes.
+        """
+        while not self._stop.wait(self._interval):
+            write_statistics(self._stats, self._stream)
+
+
+@contextlib.contextmanager
+def report_statistics(
+    stats: MonitorStats, interval: Optional[float], stream: TextIO
+) -> Iterator[Optional[StatisticsReporter]]:
+    """Yield the statistics reporter, and stop it when the body returns.
+
+    The statistics thread is the only thread the monitor starts, and this call starts
+    it only when the operator states an interval.
+
+    Args:
+        stats: The counts to report.
+        interval: The count of seconds between two lines, or None for no thread.
+        stream: The stream to write to.
+
+    Yields:
+        The reporter, or None where the operator stated no interval.
+    """
+    if interval is None:
+        yield None
+        return
+    reporter = StatisticsReporter(stats, interval, stream)
+    reporter.start()
+    try:
+        yield reporter
+    finally:
+        reporter.stop()
+
+
 class Monitor:
     """The monitor loop of `ja4plus watch`, without the packet source.
 
@@ -128,6 +406,10 @@ class Monitor:
         eviction_interval: The count of packets between two age eviction passes. A pass
             reads every entry, so a pass on each packet costs the entry count on each
             packet.
+        stats: The counts the statistics line reports, or None to build them here. The
+            monitor counts every packet it reads, whether or not the operator asked for
+            a statistics line, because the exit summary of FR-live-capture-8 reports
+            the same counts.
 
     Raises:
         ValueError: `max_connections` is below one, or `eviction_interval` is below one.
@@ -140,9 +422,11 @@ class Monitor:
         max_connections: int = DEFAULT_MAX_CONNECTIONS,
         connection_timeout: float = DEFAULT_CONNECTION_TIMEOUT,
         eviction_interval: int = DEFAULT_EVICTION_INTERVAL,
+        stats: Optional[MonitorStats] = None,
     ) -> None:
         self._processor = processor
         self._report = report
+        self.stats = stats if stats is not None else MonitorStats()
         self._connections = BoundedStateTable(
             max_connections=max_connections,
             max_connection_age=connection_timeout,
@@ -188,6 +472,10 @@ class Monitor:
             # The write refreshes the entry of a connection that keeps sending, and it
             # evicts the least recently used entry when the table is full.
             self._connections[key] = None
+        # The capture thread is the only thread that reads the connection table, so it
+        # publishes the two table counts here. The publication precedes the report,
+        # because the report counts the fingerprints of this packet.
+        self.stats.record_packet(len(self._connections), self._connections.evictions)
         self._report(packet)
 
     def _drop_connection(self, key: Any) -> None:
