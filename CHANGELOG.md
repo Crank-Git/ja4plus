@@ -8,6 +8,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **JA4SSH emits the window a connection holds open when the capture ends**
+  (#214). Every fingerprinter and the processor now carry `close_open_windows()`.
+  Call it when the packet source ends. `ja4plus analyze` calls it after the file
+  reader, and `ja4plus live` calls it after the capture stops. JA4SSH is the only
+  method that holds a window, so every other method returns an empty list. A
+  connection that sends no FIN+ACK packet held its last window open, and no rule
+  emitted it. `ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK
+  packet, so it now produces a second value, `c36s52_c42s76_c51s2`, which the
+  FoxIO Rust snapshot and the FoxIO Zeek baseline both hold. Five other captures
+  gain one trailing value each: `ssh.pcapng`, `ssh-scp-1050.pcap`,
+  `ssh2-malformed.pcap`, `ssh2-moloch-crash.pcap` and `tcpdump-geneve.pcap`. No
+  value of another method moved. **This is a behaviour change for a caller that
+  reads JA4SSH.** A window that holds no SSH packet still emits nothing, so the
+  value `c0s0` that #97 declines does not return. `docs/specs/foxio/JA4SSH.md`
+  R11 records that the specification states no rule here, and the user decided it
+  on 2026-08-08.
+
 - **JA4H computes its raw form** (#131). FoxIO publishes one raw key for JA4H,
   `JA4H_ro`, and `ja4plus` computed none, so 89 reference values reached no
   comparison. Every JA4H result now carries `raw_original_order`, and the

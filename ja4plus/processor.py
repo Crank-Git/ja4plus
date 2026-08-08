@@ -97,6 +97,35 @@ class Processor:
             )
         return results
 
+    def close_open_windows(self):
+        """Emit every window the fingerprinters hold open, and return the results.
+
+        Run this method when the packet source ends. JA4SSH is the only method that
+        holds a window, and #214 decided that it emits the window a connection holds
+        open at the end of a capture.
+
+        Returns:
+            A list of result dicts. Each dict holds the method name, the fingerprint
+            and the connection key of the window. It holds no packet endpoint, because
+            no packet produces the value.
+        """
+        results = []
+        for fp_type, fp in self.fingerprinters.items():
+            try:
+                entries = fp.close_open_windows()
+            except Exception as e:
+                logger.debug(f"{fp_type} close_open_windows failed: {e}")
+                continue
+            for entry in entries:
+                results.append(
+                    {
+                        "type": fp_type,
+                        "fingerprint": entry["fingerprint"],
+                        "connection": entry.get("connection"),
+                    }
+                )
+        return results
+
     def reset(self):
         """Reset every underlying fingerprinter."""
         for fp in self.fingerprinters.values():

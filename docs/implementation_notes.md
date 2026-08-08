@@ -981,11 +981,67 @@ window the first FIN packet emptied and adds no value.
 
 `ssh-r.pcap` confirms the reading. Stream 1 holds 11 SSH packets and one
 occurrence, `c64s64_c6s5_c4s5`. Stream 2 holds 931 SSH packets, four full windows,
-and a fifth occurrence of 131 packets. `ssh-scp-1050.pcap` and `ssh2.pcapng` carry
-no FIN packet, and each keeps its full windows alone.
+and a fifth occurrence of 131 packets.
 
 Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/python/ja4.py
 (retrieved 2026-08-06).
+
+### The end of the capture closes the last window
+
+`close_open_windows` emits the window every connection holds open. The caller runs it
+when the packet source ends. `tests/conformance_index.py` runs it after the last packet
+of a capture, and `ja4plus/cli.py` runs it after the file reader and after a live
+capture stops.
+
+**The specification states no rule that closes the last window.**
+`docs/specs/foxio/JA4SSH.md` R11 records the gap. #199 read the deleted
+`technical_details/JA4SSH.md`, which `rust/ja4/src/ssh.rs:283` cites, and it names no
+FIN packet, no connection that closes, and no end of a capture.
+
+**The references split two against two.** `python/ja4.py:554-556` and
+`wireshark/source/packet-ja4.c:1399-1404` close the last window on a FIN+ACK packet.
+`rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` close it at the end of
+the capture. `python/ja4.py:610` runs no end-of-capture step at all, because the line
+`#finalize_ja4ssh() if 'ja4ssh' in output_types else None` is commented out.
+
+**Two FoxIO references agree on the value, and this repository holds the proof.**
+`ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK packet, so no FIN+ACK
+rule fires on it. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217`
+holds `c36s52_c42s76_c51s2`, and the Zeek baseline holds the same value. The user decided
+on 2026-08-08 that `ja4plus` emits it, and #214 holds the decision. The decision is
+reversible.
+
+**A window that holds no SSH packet still emits nothing.** #97 declines
+`c36s36_c0s0_c2s0`, whose window holds no SSH packet, and the new rule reaches the same
+guard. `tests/test_ja4ssh_windows.py` holds two cases that prove it: a connection of bare
+ACKs alone, and the empty window that follows a full window.
+
+**Six JA4SSH comparisons moved, and no other value moved.**
+
+| Vector | Value the end of the capture adds |
+|---|---|
+| `ssh2.pcapng` | `c36s52_c42s76_c51s2` |
+| `ssh.pcapng` | `c36s52_c42s76_c0s0` |
+| `ssh-scp-1050.pcap` | `c0s1460_c0s53_c6s0` |
+| `ssh2-malformed.pcap` | `c16s23_c7s6_c3s4` |
+| `ssh2-moloch-crash.pcap` | `c16s23_c7s6_c3s4` |
+| `tcpdump-geneve.pcap` | `c144s48_c10s11_c6s4` |
+
+`gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` already produced a trailing value, because
+each one carries a FIN+ACK packet. The rule is now one rule for every capture.
+
+**The register moved by four keys.** It lost `ssh2.pcapng/JA4SSH`, whose occurrence keys
+now equal the reference, and it gained one entry under #214 for each of the five other
+vectors. The FoxIO Python reference emits no trailing window for a connection that sends
+no FIN+ACK packet, so each of those five is a decided divergence.
+
+**The state table holds no entry longer.** `close_open_windows` emits the open window and
+evicts nothing, so `JA4SSHFingerprinter.connections` holds the same keys after the call.
+That table is one of the six unbounded state tables #179 records, and Epic 3 owns its
+bound.
+
+Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/rust/ja4/src/ssh.rs
+(retrieved 2026-08-08).
 
 ### Three defects of the reference
 

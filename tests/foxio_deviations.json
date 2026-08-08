@@ -97,6 +97,14 @@
     "issue": 151,
     "decided": true
   },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
     "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
@@ -429,10 +437,42 @@
     "decided": true,
     "issue": 96
   },
+  "ssh-scp-1050.pcap/JA4SSH": {
+    "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
+    "decided": true,
+    "issue": 214
+  },
+  "ssh.pcapng/JA4SSH": {
+    "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
+    "decided": true,
+    "issue": 214
+  },
+  "ssh2-malformed.pcap/JA4SSH": {
+    "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
+    "decided": true,
+    "issue": 214
+  },
+  "ssh2-moloch-crash.pcap/JA4SSH": {
+    "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
+    "decided": true,
+    "issue": 214
+  },
   "ssh2.pcapng/14:57377/JA4SSH.2": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets.",
     "decided": true,
     "issue": 97
+  },
+  "ssh2.pcapng/33:51810/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "ssh2.pcapng/36:61861/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "ssh2.pcapng/36:61861/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
   },
   "ssh2.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
@@ -447,11 +487,6 @@
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. It also reads no ServerHello whose handshake record spans several TCP segments, which omits the two streams #151 names. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
     "decided": true
-  },
-  "ssh2.pcapng/JA4SSH": {
-    "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets.",
-    "decided": true,
-    "issue": 97
   },
   "ssh2.pcapng/JA4S_r": {
     "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake, and it reads no ServerHello whose handshake record spans several TCP segments. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
@@ -481,6 +516,11 @@
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
     "decided": true,
     "issue": 105
+  },
+  "tcpdump-geneve.pcap/JA4SSH": {
+    "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
+    "decided": true,
+    "issue": 214
   },
   "tls-handshake.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
@@ -535,6 +575,50 @@
     "cause": "ja4plus produces a JA4_ro value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
     "decided": true
+  },
+  "tls3.pcapng/21:62481/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/21:62481/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/22:61732/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/22:61732/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/23:49791/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/23:49791/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/24:56684/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/24:56684/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/25:61884/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/28:58117/JA4L-C.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
+  },
+  "tls3.pcapng/28:58117/JA4L-S.1": {
+    "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision.",
+    "issue": 225
   },
   "tls3.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",

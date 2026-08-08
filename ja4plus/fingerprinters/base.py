@@ -53,6 +53,18 @@ class BaseFingerprinter:
         """Reset the fingerprinter state."""
         self.fingerprints = []
 
+    def close_open_windows(self):
+        """Emit every window this fingerprinter holds open, and return the new entries.
+
+        The caller runs this method when the packet source ends. JA4SSH is the only
+        method that holds a window, so every other fingerprinter uses this no-op.
+
+        Returns:
+            A list of the fingerprint entries the call appended. The list is empty when
+            the fingerprinter holds no open window.
+        """
+        return []
+
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """
         Remove internal state for the given completed or evicted connection.

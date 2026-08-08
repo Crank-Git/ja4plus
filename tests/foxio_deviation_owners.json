@@ -40,10 +40,20 @@
       "state": "open",
       "title": "Record the settled JA4 ALPN readings and measure the divergence"
     },
+    "214": {
+      "epic": false,
+      "state": "open",
+      "title": "Decide whether JA4SSH emits the trailing window on ssh2.pcapng"
+    },
     "215": {
       "epic": false,
       "state": "open",
       "title": "Decide the JA4T and JA4TS form where this project disagrees with FoxIO"
+    },
+    "225": {
+      "epic": false,
+      "state": "open",
+      "title": "Decide the JA4L form: the part count, the protocol part and the duplicate server value"
     },
     "34": {
       "epic": false,
