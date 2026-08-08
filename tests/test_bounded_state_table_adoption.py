@@ -337,7 +337,7 @@ def test_the_synack_table_holds_its_entry_count():
     tracker.times.max_connections = 4
 
     for port in range(50000, 50020):
-        tracker.record(f"10.0.0.2:443-10.0.0.1:{port}", 1000.0)
+        tracker.record(f"10.0.0.2:443-10.0.0.1:{port}", 1000.0, "64240_2_1460_0")
 
     assert len(tracker.times) == 4
 
@@ -348,8 +348,8 @@ def test_the_synack_table_evicts_a_connection_that_passes_the_maximum_age():
     tracker.times.max_connection_age = 60
     tracker.times.eviction_interval = 1
 
-    tracker.record("first", 1000.0)
-    tracker.record("second", 1100.0)
+    tracker.record("first", 1000.0, "64240_2_1460_0")
+    tracker.record("second", 1100.0, "64240_2_1460_0")
 
     assert "first" not in tracker.times
     assert "second" in tracker.times
