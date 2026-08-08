@@ -47,6 +47,46 @@ The `table` format carries no stability promise, and it writes no `schema_versio
 packs the four endpoint values into one `Source` column for a person to read. A tool
 reads the `json` format or the `csv` format instead.
 
+## Where the output goes
+
+The command writes results to standard output and every diagnostic to standard error, so
+a pipe that reads standard output reads results alone. A progress message, a warning and
+an error each go to standard error.
+
+`--output FILE` writes the results to a file instead, and standard output stays empty.
+The diagnostics still go to standard error. When the file exists, the command writes one
+line to standard error and exits with the status 1:
+
+```
+Error: the output file exists: results.json. Pass --force to overwrite it.
+```
+
+`--force` overwrites the file. The command reads the file never. Without `--force` the
+command creates the file and fails when the path already holds one, so it writes through
+no symbolic link and it loses no file to a second writer.
+
+A capture that the command cannot read leaves a partial file. The command writes the
+header first and the results as it reads them, which is what a shell redirection of
+standard output also produces. Read the exit status before you read the file.
+
+A reader that closes the pipe early ends the run. `ja4plus analyze capture.pcap | head -1`
+writes no traceback and no shutdown message. The command exits with the status 1.
+
+The header of each format belongs to the results, so it goes to standard output or to
+the file that `--output` names. The `csv` header is a row a parser reads. The `table`
+header is the first line a person reads.
+
+A capture that produces no fingerprint therefore writes nothing in the `json` format. It
+writes the header alone in the `csv` format. It writes the header in the `table` format,
+plus one line on standard error:
+
+```
+No fingerprint was produced.
+```
+
+Every option runs before the subcommand name and after it. `ja4plus --format json analyze
+capture.pcap` and `ja4plus analyze capture.pcap --format json` do the same thing.
+
 ## Fields
 
 The output line holds eleven fields. The CSV format writes them as eleven columns in

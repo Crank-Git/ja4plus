@@ -60,7 +60,17 @@ ja4plus cert server.der
 
 # Identify known fingerprints
 ja4plus --lookup analyze capture.pcap
+
+# Write the results to a file
+ja4plus analyze capture.pcap --format json --output results.json
+
+# Overwrite a file that exists
+ja4plus analyze capture.pcap --format json --output results.json --force
 ```
+
+Every option runs before the subcommand name and after it.
+`ja4plus --format json analyze capture.pcap` and
+`ja4plus analyze capture.pcap --format json` do the same thing.
 
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 
@@ -85,6 +95,17 @@ Warning: ja4h could not read a packet: the parser read a length field it cannot 
 
 The command runs every method whatever `--types` names, and it selects the results it
 reports. It therefore reports the error of a method that `--types` leaves out.
+
+`--output FILE` writes the results to a file and leaves standard output empty. The
+command refuses to overwrite a file that exists, and it exits with the status 1:
+
+```
+Error: the output file exists: results.json. Pass --force to overwrite it.
+```
+
+`--force` overwrites that file. Without `--force` the command creates the file, so it
+writes through no symbolic link. A reader that closes the pipe early, such as `head -1`,
+ends the run without a traceback.
 
 ## Fingerprint Lookup
 
