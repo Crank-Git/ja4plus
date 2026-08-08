@@ -4,9 +4,14 @@ Behaviors in the Python ja4plus library that are not documented in the
 FoxIO JA4+ specification. The Go implementation MUST match these behaviors
 to produce identical fingerprints.
 
-FoxIO publishes seven of the twelve methods as an image. Where an image leaves a question
-open, the expected-output file decides, and the reading goes here. An entry names the
-vector that supports the reading, or it states that no FoxIO material validates it.
+Eleven of the twelve methods carry no complete text specification at the pinned commit.
+Only JA4 holds one, in `technical_details/JA4.md`. `technical_details/JA4H.md` is 278
+bytes and states one rule, the header count, so JA4H is an image method too.
+`docs/specs/foxio/README.md` holds the inventory, every byte count and every SHA-256.
+
+Where an image leaves a question open, the expected-output file decides, and the reading
+goes here. An entry names the vector that supports the reading, or it states that no
+FoxIO material validates it.
 
 ---
 
