@@ -7,8 +7,8 @@ case that reads its input from the constant passes at any value of that constant
 
 `ssh-r.pcap` sets the maximum age. It holds the longest gap between two segments of one
 connection across `tests/foxio_vectors/`, at 320.714503 seconds. Two cases replay that
-capture: one at 600 seconds, which loses no entry, and one at 300 seconds, which loses
-the connection that holds the gap.
+capture. The case at 600 seconds loses no entry. The case at 300 seconds loses the
+connection that holds the gap.
 """
 
 import types

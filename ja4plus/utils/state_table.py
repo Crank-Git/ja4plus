@@ -46,8 +46,8 @@ _LAST_SEEN = 1
 class BoundedStateTable(MutableMapping):
     """A mapping that evicts an entry on the entry count and on the entry age.
 
-    The table answers the operations a fingerprinter performs on a dictionary, so #39
-    replaces a dictionary with it and changes nothing else at the call site.
+    The table answers the operations a fingerprinter performs on a dictionary. #39
+    therefore replaces a dictionary with it and changes nothing else at the call site.
 
     A read of one key counts as a read of that entry: `__getitem__`, `get` and the `in`
     operator each hold the entry against both bounds. A pass over the whole table holds
