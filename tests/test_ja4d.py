@@ -46,9 +46,11 @@ def _build_dhcp_payload(
     if request_ip:
         opts += bytes([50, 4, 0, 0, 0, 0])
 
-    # Option 81: Client FQDN (flag only — minimal 3-byte data)
+    # Option 81: Client FQDN. RFC 4702 puts the name after one flags byte and two rcode
+    # bytes, and D3 of docs/specs/foxio/JA4D.md reads the name rather than the option.
+    # tests/test_ja4d_decisions.py holds the option 81 that carries no name.
     if fqdn:
-        opts += bytes([81, 3, 0, 0, 0])
+        opts += bytes([81, 7, 0, 0, 0]) + b"host"
 
     # Option 55: Parameter Request List
     if param_request:
