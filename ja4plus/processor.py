@@ -88,9 +88,10 @@ class Processor:
         src_ip, dst_ip, src_port, dst_port = _packet_endpoints(packet)
 
         for fp_type, fp in self.fingerprinters.items():
-            # `last_raw` describes the value the call above produced, so the read and
-            # that call form one operation. A second thread that runs between the two
-            # pairs the raw form of its own packet with this fingerprint.
+            # `last_raw` describes the value the call below produces, so that call and
+            # the read of `last_raw` form one operation. A second thread that runs
+            # between the two pairs the raw form of its own packet with this
+            # fingerprint.
             with fp.lock:
                 try:
                     fingerprint = fp.process_packet(packet)
