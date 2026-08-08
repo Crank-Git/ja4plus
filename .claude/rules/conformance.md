@@ -96,8 +96,76 @@ question:
 - A fingerprinter catches the parse errors it expects. It does not catch bare
   `Exception`.
 
+## Ask whether a case can fail
+
+A comparison that is never made reads as a comparison that passes. The project has found
+twelve of them, and a worker who worked on something else found every one.
+
+Coverage answers a different question. Coverage reports which line runs. This question
+asks whether a line that runs is measured. #172 built a sweep that asks it.
+
+`tests/mutation_sweep.py` changes one expression in one module under `ja4plus/`, runs the
+suite, and records which cases fail. The change is a measurement, and the sweep reverts
+it. A case that no mutation makes fail is a candidate.
+
+**Warning: the sweep writes to a module file. Commit or stash your work first.** The
+sweep refuses to start when `ja4plus/` holds an uncommitted change, and it restores every
+file it changes. A stop signal reaches the restore, and `SIGKILL` does not. If a killed
+sweep leaves a change behind, the next sweep refuses to start; run
+`git checkout -- ja4plus/` to drop it.
+
+**A checkpoint belongs to one commit.** It keys each result on the position of the
+expression in the file, so a code change moves the key. Delete the checkpoint file when
+the code changes.
+
+Run the sweep from the repository root:
+
+```bash
+python tests/mutation_sweep.py --max-per-module 12 --report mutation_sweep.json
+python tests/mutation_sweep.py --dry-run --max-per-module 0     # count the mutations
+python tests/mutation_sweep.py --module "ja4plus/utils/tls_utils.py" --max-per-module 0
+```
+
+One run of the whole suite takes about 17 seconds, so 12 mutations for each module cost
+about 80 minutes. Raise `--max-per-module` to sharpen the answer, and name one module to
+sweep it whole.
+
+The report holds three parts.
+
+- `modules` names every module, and every mutation the sweep applied to it. A mutation
+  records the line, the text before, the text after, and the count of the cases it killed.
+- A mutation whose status is `survived` killed no case. A mutation whose status is
+  `unusable` failed the whole suite, because it broke an import, and the sweep drops it.
+- `candidates` names every case that no mutation killed.
+
+Read a candidate this way.
+
+1. Read the case first. A case may be correct and the mutation wrong.
+2. If the mutations reach no code the case names, sweep that module whole with
+   `--max-per-module 0`, and read the report again.
+3. If the case cannot fail, repair it. Apply by hand the mutation that exposed it, run
+   the repaired case, and record the failure in the pull request.
+
+**Read an acceptance criterion as a candidate too.** #32 and #177 each held the vacuous
+comparison in a criterion rather than in a test. #177's first two criteria passed on the
+unchanged base commit, so the gate would have reported the issue met with no change made.
+Before you report a criterion met, state what would fail if the code were wrong.
+
 ## Parity
 
 Where FoxIO specifies nothing — a field name, a default, a subcommand — the Go port at
 `Crank-Git/ja4plus-go` has already shipped a choice. Adopt it. Where FoxIO does specify,
 FoxIO wins, even against the port. `docs/specs/spec.md` holds the divergence register.
+
+## Measuring coverage
+
+Use the **directory** form, `--cov=ja4plus`. For one file, use the **path** form,
+`--cov=ja4plus/utils/tcp_stream.py`.
+
+**Never pass a dotted module name.** `--cov=ja4plus.utils.tcp_stream` makes 48 JA4L and
+QUIC cases fail, and the cause is not in this project. `coverage` resolves a dotted source
+name inside a `sys_modules_saved()` block, which imports `ja4plus`, scapy and
+`cryptography` and then deletes them. The second `cryptography` import builds Python
+classes the loaded Rust extension does not recognise, so every AES cipher raises
+`UnsupportedAlgorithm`, and the second scapy import changes the dissection of a committed
+capture. #177 holds the measurement, and Changelog round 47 records it.
