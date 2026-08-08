@@ -98,6 +98,17 @@ def test_ja4d_reads_a_dhcp_message_on_the_proxy_dhcp_port():
     assert generate_ja4d(packet) == "disco0000nn_00_00"
 
 
+def test_ja4d_reads_a_dhcp_message_that_each_reference_port_carries_alone():
+    """Each of the three ports decides on its own.
+
+    A case that pairs two ports of the set measures one of them, because either satisfies
+    the test. Each pair below holds one port of the set and one ephemeral port.
+    """
+    for port in (67, 68, 4011):
+        packet = _dhcp_packet(_dhcp_option(53, b"\x01"), sport=port, dport=1234)
+        assert generate_ja4d(packet) is not None, "port {} carries no value".format(port)
+
+
 def test_ja4d_reads_no_dhcp_message_on_a_port_the_reference_omits():
     """Wireshark claims no DHCP on port 9999, so this project emits nothing there."""
     packet = _dhcp_packet(_dhcp_option(53, b"\x01"), sport=1234, dport=9999)
@@ -229,6 +240,22 @@ def test_ja4d6_reads_a_dhcpv6_message_on_both_reference_ports():
     message = _dhcpv6_message(1)
     assert generate_ja4d6(_dhcpv6_packet(message, sport=546, dport=547)) is not None
     assert generate_ja4d6(_dhcpv6_packet(message, sport=547, dport=546)) is not None
+
+
+def test_ja4d6_reads_a_dhcpv6_message_that_port_546_alone_carries():
+    """Port 546 decides on its own.
+
+    A message that pairs 546 with an ephemeral port measures the 546 branch. A case that
+    holds 546 and 547 together measures 547 alone, because either port satisfies the test.
+    """
+    message = _dhcpv6_message(1)
+    assert generate_ja4d6(_dhcpv6_packet(message, sport=546, dport=1234)) is not None
+
+
+def test_ja4d6_reads_a_dhcpv6_message_that_port_547_alone_carries():
+    """Port 547 decides on its own."""
+    message = _dhcpv6_message(1)
+    assert generate_ja4d6(_dhcpv6_packet(message, sport=1234, dport=547)) is not None
 
 
 def test_ja4d6_reads_no_dhcpv6_message_on_a_port_the_reference_omits():

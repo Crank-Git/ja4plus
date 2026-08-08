@@ -435,8 +435,12 @@ vector fallback. #231 landed the rulings and Changelog round 78 records them.
 
 **No ruling changes a value on any vector this repository holds.** Each item below names
 the packet that separates the two readings, and `tests/test_ja4d_decisions.py` holds that
-packet as a case. **The conformance suite therefore proves none of them**, and the revert
-count in each item is the evidence instead.
+packet as a case. **The conformance suite therefore proves none of them**, and the count of
+cases that a reversal of each ruling fails is the evidence instead.
+
+**A case that pairs two ports of one set measures one port of that set.** The port cases
+therefore hold one port of the set against one ephemeral port. Without them, a mutation of
+the JA4D6 port test failed no case at all.
 
 **D1 — the port set. Ruling: read UDP ports 67, 68 and 4011.**
 
