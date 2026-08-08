@@ -48,20 +48,25 @@ shasum -a 256 technical_details/*
    header count that omits `Cookie` and `Referer`. It builds no fingerprint. Treat JA4H as
    an image method.
 3. **Three methods hold no image: JA4LS, JA4TS and JA4TScan.** `technical_details/README.md`
-   lists twelve methods and embeds nine images.
+   lists twelve methods and embeds nine images. **#196 found JA4TS inside `JA4T.png`, and
+   #200 found no JA4LS inside `JA4L.png`.** JA4LS therefore reaches no image at all, and
+   the reference implementations state every rule it follows.
 4. **`JA4SSH.png` and `JA4X.png` report the same rounded size, 90.1K, and they are
    different files.** Their byte counts differ by 43 and their hashes differ. This note
    exists so that the next reader does not measure it again.
 
-## The open question this page held
+## The open question this page held, and its two answers
 
-`JA4L.png` presumably carries the JA4LS form, and `JA4T.png` presumably carries the JA4TS
-form.
+`JA4L.png` presumably carried the JA4LS form, and `JA4T.png` presumably carried the JA4TS
+form. **The two halves have opposite answers, so read no image by the pattern of another.**
 
 **#196 confirmed the JA4T half.** `JA4T.png` titles itself `JA4T/S: TCP Fingerprint`, so it
 specifies JA4TS as well as JA4T. `docs/specs/foxio/JA4T.md` holds the transcription.
 
-`JA4L.png` stays unconfirmed. #200 answers it.
+**#200 refuted the JA4L half.** `JA4L.png` titles itself
+`JA4L: Light Distance/Location Fingerprint`, it labels its one example `JA4L=`, and it
+states no server rule. **No image specifies JA4LS.** `docs/specs/foxio/JA4L.md` holds the
+transcription and names the two sources that name JA4LS as a separate method.
 
 ## The transcriptions
 
@@ -70,6 +75,7 @@ specifies JA4TS as well as JA4T. `docs/specs/foxio/JA4T.md` holds the transcript
 | JA4T and JA4TS | `docs/specs/foxio/JA4T.md` | Complete. #196 |
 | JA4H | `docs/specs/foxio/JA4H.md` | Complete. #203 |
 | JA4SSH | `docs/specs/foxio/JA4SSH.md` | Complete. #199 |
+| JA4L | `docs/specs/foxio/JA4L.md` | Complete. #200. The page covers the client form, because the image specifies no server form. |
 
 ## A deleted text specification corroborates, and it never outranks the image
 
