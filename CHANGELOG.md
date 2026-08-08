@@ -8,6 +8,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The command-line program writes the addresses and the ports as separate fields**
+  (#49). Round TBD. The `json` and the `csv` formats replace the composite `source`
+  field of version 0.6.0 with `src_ip`, `src_port`, `dst_ip` and `dst_port`, so a
+  downstream tool parses no composite string. The CSV header is now fixed at
+  `schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as`,
+  and it no longer changes with `--lookup`. Every field is present in every record: a
+  field with no value is `null` in the `json` format and empty in the `csv` format.
+  `identified_as` is therefore present without `--lookup`, where version 0.6.0 omitted
+  it. Each record also carries the packet `timestamp` in RFC 3339 form. New module
+  `ja4plus/output.py` holds one writer per format. #50 documents the schema and its
+  version.
+
 - **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round TBD.
   The method returned a list of dictionaries through version 0.6.0. A caller who reads
   `result["fingerprint"]` keeps working for one major version, and item access emits a
