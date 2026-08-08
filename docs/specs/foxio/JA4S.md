@@ -255,7 +255,7 @@ table does not name is a field nobody read.**
 | Part a composition | R2 | `ja4s.py:298` | Agrees. `f"{proto}{version_str}{ext_count}{alpn_value}"` carries no separator. |
 | Protocol character `t` | R3 | `ja4s.py:276` | Agrees. 97 of the 126 measured values open with `t`. |
 | Protocol character `q` | R3 | `ja4s.py:276`, `ja4s.py:258` | Agrees. 29 of the 126 measured values open with `q`, and `tests/test_foxio_rust_parity.py` matches them against the Rust snapshots. |
-| Version characters | R4 | `ja4s.py:285`, `ja4s.py:385-398` | Agrees for `13`, `12`, `11`, `10`, `s3`, `d1`, `d2`, `d3` and the `00` fallback. The `0x0200` row is D5. |
+| Version characters | R4 | `ja4s.py:285`, `ja4s.py:385-398` | Agrees for `13`, `12`, `11`, `10`, `s3`, `d1`, `d2`, `d3` and the `00` fallback. D5 held the `0x0200` row, and #227 repaired it. |
 | Version from supported_versions | R5 | `ja4s.py:279-284`, `tls_utils.py:266-269` | Agrees for a ServerHello that names one version. D2 covers a ServerHello that names more. |
 | Extension count digits | R6 | `ja4s.py:287` | Agrees. `f"{min(len(extensions), 99):02d}"`. |
 | GREASE in the extension list | R13 | `tls_utils.py:256` | Agrees with the Python and the Rust references, which R13 marks uncertain. Disagrees with the dissector and the Zeek script. |
@@ -323,9 +323,9 @@ demonstrates it.** Measured on 2026-08-08 across the 38 captures of
 `tests/foxio_vectors/`: the reader parses 97 TCP ServerHello messages and 0 of them name no
 cipher.
 
-**D5 — `ja4s.py:393` maps `0x0200` to `s2`, and the pinned specification states `0x0002`.**
+**D5 — `ja4s.py:393` mapped `0x0200` to `s2`, and the pinned specification states `0x0002`.**
 
-**#227 owns this repair and this page changes no file under `ja4plus/`.**
+**#227 repaired this on 2026-08-08, and this page changed no file under `ja4plus/`.**
 `technical_details/JA4.md:65` states `0x0002 = SSL 2.0 = “s2”`, and
 `wireshark/source/packet-ja4.c:77` holds `{0x0002, "s2"}`.
 `docs/specs/foxio/deleted-text-specifications.md` records the measurement and names the
@@ -467,5 +467,5 @@ or it records that a rule no vector measures. **This page changes no fingerprint
    what does a ServerHello whose supported versions are all GREASE produce?
 4. **D4.** Does a ServerHello that names no cipher produce a value with an empty part b, or
    no value?
-5. **D5.** `ja4s.py:393` maps the retracted `0x0200`. **#227 owns it and this page only
-   cites it.**
+5. **D5.** `ja4s.py:393` mapped the retracted `0x0200`. **#227 repaired it on 2026-08-08.**
+   The table now holds `0x0002`, and `0x0200` reaches the `00` fallback.

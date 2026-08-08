@@ -509,6 +509,26 @@ def test_the_collected_vector_set_equals_the_manifest():
     )
 
 
+def collected_register_keys():
+    """Return every register key the cases of this module carry.
+
+    `tests/test_foxio_rust_parity.py` reads this set, because it keys its JA4X cases into
+    the same register and one entry that matches a case of each module marks both.
+
+    Returns:
+        A set of register keys, in both key forms.
+    """
+    keys = {
+        value_key(pcap_path.name, stream.index, stream.src_port, method, occurrence)
+        for pcap_path, stream, method, occurrence, _ in (param.values for param in _value_params())
+    }
+    keys.update(
+        occurrence_key(pcap_path.name, method)
+        for pcap_path, _, method in (param.values for param in _method_params())
+    )
+    return keys
+
+
 @pytest.mark.spec_validation
 @pytest.mark.skipif(not have_vectors(), reason="FoxIO test vectors not downloaded")
 def test_the_register_key_of_every_case_is_unique():
@@ -532,15 +552,15 @@ def test_every_register_entry_matches_a_collected_case():
     A deleted vector drops its cases from the suite. Without this check the suite still
     reports green, and the deviations of that vector stop being measured. An entry that
     matches nothing is also what a landed fix leaves behind when it removes a case.
+
+    `tests/test_foxio_rust_parity.py` keys its JA4T cases and one JA4X stream into the
+    same register, so the check reads both lists. An entry of that module matches no
+    case of this one.
     """
-    collected = {
-        value_key(pcap_path.name, stream.index, stream.src_port, method, occurrence)
-        for pcap_path, stream, method, occurrence, _ in (param.values for param in _value_params())
-    }
-    collected.update(
-        occurrence_key(pcap_path.name, method)
-        for pcap_path, _, method in (param.values for param in _method_params())
-    )
+    from tests.test_foxio_rust_parity import register_keys
+
+    collected = set(collected_register_keys())
+    collected.update(register_keys())
     orphans = sorted(set(DEVIATIONS) - collected)
     assert not orphans, "{} register entr(ies) match no collected case: {}".format(
         len(orphans), orphans

@@ -31,6 +31,13 @@ disappears.
 
 A run that measures the deviations the register already holds therefore changes no byte
 of `tests/foxio_deviations.json`.
+
+**Warning: this program runs `tests/test_spec_validation.py` alone, and two register
+entries belong to another module.** `tests/test_foxio_rust_parity.py` keys its JA4T cases
+into the same register, and this program collects none of them, so a run drops
+`chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` and `ssh2.pcapng/JA4T`. Read
+the difference and restore the two entries. The loss is loud rather than silent: each
+dropped entry makes its case fail the conformance suite by name.
 """
 
 import json

@@ -21,6 +21,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **JA4 and JA4S write `s2` for the SSL 2.0 version value `0x0002`** (#227).
+  `ja4.py:127`, `ja4.py:250` and `ja4s.py:393` wrote `s2` for `0x0200`, which is the
+  value FoxIO retracted. `technical_details/JA4.md:65` at the pinned commit states
+  `0x0002 = SSL 2.0 = “s2”`, and FoxIO commit `3e02a27`, dated 2024-08-23, is titled
+  `Fix SSL version fields: SSL 2.0 is 0x0002, SSL 1.0 never existed`. The three sites
+  now hold `0x0002`, and `0x0200` reaches the `00` fallback that the same specification
+  line states. The dissector table `ssl_versions[]` and the `TLS_MAPPER` of the FoxIO
+  Python reference both hold `0x0002` and neither holds `0x0200`, so the repair adds no
+  alias. `ja4plus` held no `0x0100` row, so the SSL 1.0 half of the correction needed
+  nothing. **No fingerprint of the vector set moves**: no capture under
+  `tests/foxio_vectors/` carries an SSL 2.0 hello, the 38 captures produce 1494 values
+  before and 1494 after, and zero values differ. Two parser paths present the value —
+  the legacy version field and the `supported_versions` extension — and the SSL 2.0
+  record format reaches none, because `parse_tls_handshake` reads a TLS record header.
+  `tests/test_ja4_ssl2_version.py` holds the measurements, and #221 found the defect.
+
 - **The QUIC CRYPTO fragment buffer of JA4 holds a limit** (#122).
   `reassemble_crypto_fragments` allocated a buffer that reached the highest fragment
   offset, and RFC 9000 Section 16 lets a CRYPTO frame offset reach

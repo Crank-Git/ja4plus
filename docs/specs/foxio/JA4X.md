@@ -426,13 +426,15 @@ Measured on 2026-08-08 in this worktree, with `JA4XFingerprinter` over each capt
 | `https-connect.pcap` | `7d5dbb3783b4_2bab15409345_5e17a2514980` and `7d5dbb3783b4_7d5dbb3783b4_9c5875a5c227` | The Rust snapshot holds both values, in that order. |
 | `socks4-https.pcap` | `14f85a9f494d_3f8190b6b671_80ea7ef3b044`, `14f85a9f494d_14f85a9f494d_be007da94c85` and `e7bc7ebc3d9e_14f85a9f494d_9c8ed4a87d4b` | No FoxIO implementation holds a value. |
 
-**The `https-connect.pcap` entry states one thing this repository does not do.** Its cause
-reads `tests/test_foxio_rust_parity.py measures the match.` The harness compares two
-methods, and `tests/test_foxio_rust_parity.py:72` reads
+**The `https-connect.pcap` entry stated one thing this repository did not do.** Its cause
+reads `tests/test_foxio_rust_parity.py measures the match.` When this page first shipped,
+the harness compared two methods and `tests/test_foxio_rust_parity.py:72` read
 `SNAPSHOT_METHODS = (("JA4", "ja4"), ("JA4S", "ja4s"))`. A `ja4x` line sits inside the
-`tls_certs` block of the snapshot, at a deeper indent, and `read_rust_snapshot` skips it by
-design. **No test in this repository compares a JA4X value against a Rust snapshot.** The
-measurement in the table above is the first one, and #229 owns the harness change.
+`tls_certs` block of the snapshot, at a deeper indent, and `read_rust_snapshot` skipped it
+by design, so no test compared a JA4X value against a Rust snapshot.
+
+**#229 built the comparison, and the sentence is now true.** "The comparison the harness
+now runs" below holds the result.
 
 ## The search for a reference value
 
@@ -473,17 +475,56 @@ The deleted text carries three findings for this page.
 **The deleted text settles nothing about the empty list.** It states no rule for a
 certificate that carries no extension, so it corroborates neither form of R8.
 
-## The conformance evidence a later issue can build
+## The comparison the harness now runs
 
-**#229 owns this work.** This page changes no test.
+**#229 built it.** `read_rust_snapshot` enters the `tls_certs` block, and
+`TestTheJa4xValuesTheRustSnapshotHolds` compares every JA4X value the local snapshots
+hold. This page changes no fingerprinter.
 
-1. **A `ja4x` comparison needs a nested reader.** `read_rust_snapshot` takes the two-space
-   level of a snapshot alone, and every `ja4x` value sits under `tls_certs:` at a deeper
-   indent. The reader needs one more level before `SNAPSHOT_METHODS` can hold `JA4X`.
-2. **`https-connect.pcap` is the case the register already claims.** The two values are in
-   the local snapshot, and the measurement above shows the match.
-3. **No local vector reaches R8.** A certificate with no extension would settle which empty
-   form this project must write, and this repository holds none.
+| Measurement | Count |
+|---|---|
+| Local Rust snapshots | 10 |
+| Snapshots that hold a JA4X value | 5 |
+| Streams that hold at least one | 19 |
+| JA4X values in those streams | 43 |
+| Values `ja4plus` reproduces exactly, in snapshot order | 43 |
+| Values that differ | 0 |
+| Streams whose value count differs | 0 |
+
+The five snapshots that hold a value are `browsers-x509.pcapng` with 7,
+`https-connect.pcap` with 2, `latest.pcapng` with 8, `ssh2.pcapng` with 12 and
+`tls-handshake.pcapng` with 14.
+
+**The revert proves the cases run.** Remove the `tls_certs` branch of the reader, and 48
+cases stop running: 43 value cases and 5 count cases. Three checks then fail and name the
+loss.
+
+```
+FAILED TestTheJa4xValuesTheRustSnapshotHolds::test_the_local_snapshots_hold_the_forty_three_values_the_reading_counts
+FAILED TestTheJa4xValuesTheRustSnapshotHolds::test_the_suite_collects_one_case_for_every_value_the_snapshots_hold
+FAILED TestTheJa4xValuesTheRustSnapshotHolds::test_the_https_connect_stream_is_the_one_stream_the_python_file_omits
+```
+
+**The register gains no entry.** Every value agrees, so the register holds 116 keys
+before and 116 after, against 116 `xfailed` cases.
+
+**One stream carries a register key of this module.** `tests/test_spec_validation.py`
+builds the key form `<capture>/<stream>:<port>/JA4X.<n>` from the FoxIO Python file, and
+that file holds a JA4X value for 18 of the 19 streams. `certificate_key` keys the one
+stream that file omits, which is `https-connect.pcap` stream 0 on port 54723. A check
+keeps the two key sets apart, because one entry that matches a case of each module marks
+both and neither fix reports itself.
+
+**D1 and D2 stay unmeasured, and neither is a mismatch.** D1 is the raw form, which no
+snapshot field holds. D2 is a certificate with a duplicate attribute, which no capture in
+this repository carries. **No local vector reaches R8** either: a certificate with no
+extension would settle which empty form this project must write, and this repository
+holds none.
+
+**The `ja4ssh` values of the snapshots stay unread.**
+`tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215` holds a `ja4ssh:`
+block with two values, and no other local snapshot holds the field. #199 reports the gap
+and it owns the reading. #229 changes nothing there.
 
 ## The decisions this page raises
 
