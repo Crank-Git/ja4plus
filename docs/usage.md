@@ -492,8 +492,11 @@ The signal handler sets a flag, and it exits never. The monitor reads that flag 
 reports a packet, so it finishes the line it writes. The command then flushes the output
 and exits, and the output file holds every fingerprint the monitor reported.
 
-The monitor reads the flag on packet arrival. An interface that carries no traffic
-therefore holds the monitor until the next packet arrives. Issue #320 records that gap.
+The monitor reads the flag every 0.25 seconds too, so an interface that carries no
+traffic stops it within one second of the signal. The capture socket stays open across
+those reads, so the monitor loses no packet that arrives between two of them. Version
+0.6.0 and the first form of this command read the flag on packet arrival alone, and a
+monitor on a quiet interface there waited for the next packet.
 
 ### How to read the statistics
 

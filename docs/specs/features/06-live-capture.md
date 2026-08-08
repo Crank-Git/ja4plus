@@ -114,6 +114,10 @@ The statistics line, written to standard error:
   when `--stats-interval` is passed.
 - A signal handler sets a flag. It does not call `sys.exit`, because a signal may
   arrive while the output buffer is half written.
+- The command reads the flag after each packet and after each poll interval, so an
+  interface that carries no traffic stops the monitor within one second of the signal.
+- The command opens the capture socket and holds it open across the `sniff` calls, so
+  it loses no packet between two calls.
 - The privilege check uses a failed capture attempt, not `os.geteuid`. A Linux host
   may grant the capability without granting the user identity zero.
 - Dropped-packet counts come from the capture layer when it reports them, and are
@@ -128,6 +132,8 @@ The statistics line, written to standard error:
 - Removed file `examples/monitoring_daemon.py`, replaced by documentation of the
   supported command.
 - New file `tests/test_watch.py`.
+- New file `tests/test_watch_stop.py`, holding the stop on an interface that carries no
+  traffic.
 
 ## Interfaces
 
@@ -135,12 +141,19 @@ The monitor reads packets through `scapy`. Two entry points matter.
 
 | What | Call | Note |
 |---|---|---|
-| Read from an interface | `scapy.all.sniff(prn=..., iface=..., store=0, filter=...)` | `store=0` is required. Without it `scapy` keeps every packet. |
-| Stop reading | `sniff(stop_filter=...)` | The stop filter reads the flag the signal handler set. |
+| Open the socket | `resolve_iface(name).l2listen()(type=ETH_P_ALL, iface=name, filter=...)` | The command opens the socket, in the order `AsyncSniffer._run` holds. `libpcap` compiles the filter here. |
+| Read from an interface | `scapy.all.sniff(prn=..., store=0, opened_socket=..., timeout=...)` | `store=0` is required. Without it `scapy` keeps every packet. |
+| Stop reading | `sniff(stop_filter=...)`, and the loop that reads the flag | The stop filter reads the flag after a packet. The loop reads it after each timeout, because `scapy` applies the filter to a packet and to nothing else. |
 | List the interfaces | `scapy.all.get_if_list()` | The call needs no privilege, so an error message reads the list. |
 
+`AsyncSniffer._run` closes the sockets it opened itself and no other socket, so a socket
+the command opened stays open across the `sniff` calls and the host buffer holds every
+packet that arrives between two calls. #320 records the reading.
+
 Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
-(scapy 2.6, retrieved 2026-08-06).
+(scapy 2.6, retrieved 2026-08-06). The `opened_socket` reading comes from `scapy` 2.7.0,
+at `scapy/sendrecv.py:1140`, `scapy/sendrecv.py:1205` and `scapy/sendrecv.py:1263`, read
+on 2026-08-08.
 
 Opening a capture interface needs elevated privileges. On Linux the capability is
 `CAP_NET_RAW`. On macOS the operator needs read access to the `/dev/bpf*` devices.
@@ -169,6 +182,8 @@ name a refused privilege, and `ENODEV` names an interface the host does not hold
 | The connection table reaches its maximum. | The least recently used connection is evicted, and the eviction count rises. |
 | `SIGTERM` arrives while a line is half written. | The handler sets the flag. The loop finishes the line, then exits. |
 | The interface produces no traffic. | The command reports statistics with zero counts and keeps waiting. |
+| `SIGTERM` arrives while the interface produces no traffic. | The loop reads the flag after the poll interval, and the command exits within one second. |
+| A packet arrives as one poll interval expires. | The host buffers it on the open socket, and the next `sniff` call reports it. |
 | The disk fills while writing the output file. | The command reports the error on standard error and exits with status 1. |
 | The command runs on Windows. | The command reports that Windows is not supported and exits with status 1. |
 
@@ -181,6 +196,9 @@ name a refused privilege, and `ENODEV` names an interface the host does not hold
 - [ ] A connection that stops sending is absent from the connection table after
       `--connection-timeout` seconds of capture time.
 - [ ] Sending `SIGTERM` to the monitor produces exit status zero.
+- [ ] A monitor on an interface that carries no traffic exits within one second of
+      `SIGTERM`.
+- [ ] The monitor loses no packet that arrives at the boundary of two `sniff` calls.
 - [ ] The output file written before `SIGTERM` holds every fingerprint the monitor
       reported.
 - [ ] The final statistics line reports the packet count, the fingerprint count,

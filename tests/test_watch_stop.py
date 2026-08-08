@@ -284,29 +284,63 @@ class TheMonitorHoldsOneSocketAcrossTheCalls(unittest.TestCase):
     """
 
     def test_a_packet_that_arrives_as_the_timeout_expires_still_reaches_the_report(self):
+        """Each open builds a new socket, as a capture that reopened one would receive.
+
+        The packet reaches the queue of the first socket at the instant its timeout
+        expires. A second socket holds an empty queue, so a capture that opened one
+        reports the packet never.
+        """
         packet = tcp_packet(src_port=1024, when=1.0)
         reported = []
-        opens = []
+        sockets = []
+        waits = []
         stop = StopRequest()
+        deliver = deliver_once(packet)
+
+        def count_the_wait(capture):
+            waits.append(capture)
+            if len(waits) >= 4:
+                # The bound ends a build that reports the packet never, so that build
+                # fails this case rather than runs without an end.
+                stop.request(signal.SIGTERM, None)
+
+        def open_socket(interface, capture_filter):
+            capture = SilentSocket(before_wait=count_the_wait, after_wait=deliver)
+            sockets.append(capture)
+            return capture
 
         def report(read):
             reported.append(read)
             # The monitor stops after this packet, so the case ends rather than waits.
             stop.request(signal.SIGTERM, None)
 
-        capture = SilentSocket(after_wait=deliver_once(packet))
         read_interface(
             "eth0",
             report,
             stop.stop_after,
             stop_requested=stop.requested,
             poll_interval=TEST_POLL_INTERVAL,
-            open_socket=one_socket(capture, opens),
+            open_socket=open_socket,
         )
 
         self.assertEqual(len(reported), 1, "the loop boundary lost the packet")
-        self.assertEqual(opens, [("eth0", None)], "the loop opened a second socket")
-        self.assertGreaterEqual(capture.waits, 1, "the case delivered no timeout")
+        self.assertEqual(len(sockets), 1, "the loop opened a second socket")
+        self.assertGreaterEqual(sockets[0].waits, 1, "the case delivered no timeout")
+
+    def test_the_call_opens_one_socket_with_the_interface_and_the_filter(self):
+        opens = []
+        stop = StopRequest()
+        stop.request(signal.SIGTERM, None)
+        read_interface(
+            "eth0",
+            lambda packet: None,
+            stop.stop_after,
+            capture_filter="tcp port 443",
+            stop_requested=stop.requested,
+            poll_interval=TEST_POLL_INTERVAL,
+            open_socket=one_socket(SilentSocket(), opens),
+        )
+        self.assertEqual(opens, [("eth0", "tcp port 443")])
 
     def test_the_capture_closes_the_socket_it_opened(self):
         stop = StopRequest()

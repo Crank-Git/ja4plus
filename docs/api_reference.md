@@ -677,7 +677,9 @@ starts, and `report_statistics` starts it only when the caller states an interva
 | `Monitor.tracked_connections()` | Return the key of every connection the table holds |
 | `Monitor.evictions` | The count of connections the monitor evicted |
 | `connection_key(packet)` | Return the key of the connection the packet belongs to, or None |
-| `read_interface(interface, handle_packet, stop_filter, capture_filter)` | Read packets from one interface until the capture stops |
+| `read_interface(interface, handle_packet, stop_filter, capture_filter, stop_requested, poll_interval, open_socket)` | Read packets from one interface until the capture stops |
+| `open_capture_socket(interface, capture_filter)` | Return an open capture socket for one interface |
+| `DEFAULT_POLL_INTERVAL` | The count of seconds one `sniff` call reads before the loop reads the stop request |
 | `CAPTURE_FAILURES` | The exception classes the capture layer raises when it refuses an interface |
 | `available_interfaces()` | Return the name of every interface the host holds |
 | `describe_capture_failure(error, ...)` | Return the message the operator reads for one capture failure |
@@ -711,6 +713,15 @@ signal arrives at any point, including the point where the output holds half a l
 `scapy` reads the stop request through the `stop_filter` argument of `sniff`, and it
 applies that filter after it reports a packet. The monitor therefore finishes the line it
 writes, and the command flushes the output before it exits.
+
+`scapy` applies `stop_filter` to a packet and to nothing else, so an interface that
+carries no traffic reaches that filter never. `read_interface` therefore opens the
+capture socket itself and calls `sniff` with `opened_socket` and a timeout of
+`DEFAULT_POLL_INTERVAL` seconds, in a loop. It reads `stop_requested` after each call, so
+a monitor on a quiet interface stops within one second of the signal. The socket stays
+open across the calls, because `AsyncSniffer._run` closes the sockets it opened itself
+and no other socket; a loop that reopened the socket would lose every packet the host
+buffered between two calls. Issue #320 records the whole reading.
 
 `describe_capture_failure` reads the failure the capture layer reported and returns one
 message. It calls no capture function, so it classifies the failure of any capture layer
