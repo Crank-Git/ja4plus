@@ -103,6 +103,25 @@ def test_a_repeated_segment_produces_no_second_value():
     assert len(fingerprinter.get_fingerprints()) == 1
 
 
+@pytest.mark.parametrize(
+    "first_sequence,second_sequence",
+    [(2000000000, 1000000000), (1000, 500), (3000000000, 2000000000)],
+)
+def test_a_new_connection_on_one_address_pair_still_produces_a_value(
+    first_sequence, second_sequence
+):
+    """A second connection carries its own initial sequence number.
+
+    That number sits below the stored one about half the time, and the guard must not
+    read the first request of the second connection as a retransmission.
+    """
+    fingerprinter = JA4HFingerprinter()
+    payload = _request("/one")
+    fingerprinter.process_packet(_segment(first_sequence, payload))
+    fingerprinter.process_packet(_segment(second_sequence, payload))
+    assert len(fingerprinter.get_fingerprints()) == 2
+
+
 def test_the_consumed_request_table_stays_inside_the_stream_cap():
     """`CLAUDE.md` states that every state table holds a maximum entry count."""
     fingerprinter = JA4HFingerprinter()

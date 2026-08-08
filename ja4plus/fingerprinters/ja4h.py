@@ -148,7 +148,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         base = self.reassembler.base_seq(stream_key)
         if base is None:
             return
-        self.consumed_seq[stream_key] = ((base + header_end) & SEQUENCE_MASK, now)
+        self.consumed_seq[stream_key] = (base, (base + header_end) & SEQUENCE_MASK, now)
         self.consumed_seq.move_to_end(stream_key)
         if len(self.consumed_seq) > self.reassembler.max_streams:
             # The table holds one entry for each connection, and a flood of connections
@@ -165,7 +165,7 @@ class JA4HFingerprinter(BaseFingerprinter):
             now: The packet timestamp of the current segment, in seconds.
         """
         # `max_streams` bounds this scan at 100 entries, so the cost per packet is flat.
-        for key, (_, seen) in list(self.consumed_seq.items()):
+        for key, (_, _, seen) in list(self.consumed_seq.items()):
             if seen is not None and now - seen > self.reassembler.max_stream_age:
                 del self.consumed_seq[key]
 
@@ -180,7 +180,7 @@ class JA4HFingerprinter(BaseFingerprinter):
                 packet carries no time.
 
         Returns:
-            True when the segment ends inside the sequence range of a request that
+            True when the segment lies inside the sequence range of a request that
             already produced a value. The comparison holds across a wrap of the 32-bit
             sequence number.
         """
@@ -189,9 +189,16 @@ class JA4HFingerprinter(BaseFingerprinter):
         entry = self.consumed_seq.get(stream_key)
         if entry is None:
             return False
-        consumed, _ = entry
-        end = (seq + length) & SEQUENCE_MASK
-        return not sequence_before(consumed, end)
+        start, consumed, _ = entry
+        if sequence_before(seq, start):
+            # A second connection reuses the address pair and the port pair, and it
+            # starts at its own initial sequence number. That number sits below the
+            # stored one about half the time, so a rule that reads the end alone loses
+            # the first request of the second connection. A retransmission repeats bytes
+            # the request carried, so it starts at or after the request.
+            del self.consumed_seq[stream_key]
+            return False
+        return not sequence_before(consumed, (seq + length) & SEQUENCE_MASK)
 
     def _drop_an_unusable_stream(self, stream_key, stream_data):
         """Remove a stream whose buffer no later segment turns into an HTTP request.
