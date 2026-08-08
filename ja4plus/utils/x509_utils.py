@@ -25,8 +25,10 @@ logger = logging.getLogger(__name__)
 def extract_certificate_from_bytes(
     data: bytes, verbose: bool = False, try_asn1: bool = False
 ) -> bytes | None:
-    """
-    Extract X.509 certificate from TLS Certificate message.
+    """Return the DER form of the first certificate the data carries.
+
+    Every packet is hostile input, so the reader returns nothing for data it cannot
+    read. It raises nothing for a byte string.
 
     Args:
         data: Byte data possibly containing a certificate
@@ -34,7 +36,8 @@ def extract_certificate_from_bytes(
         try_asn1: Whether to try direct ASN.1 parsing (usually noisy)
 
     Returns:
-        Certificate data as bytes or None if not found
+        Certificate data as bytes, or None when the data carries no certificate.
+        Input that is no sequence of bytes also returns None.
     """
     try:
         # Method 1: Look for TLS handshake certificate message
@@ -145,13 +148,23 @@ def extract_certificate_from_bytes(
                                         print(f"  Found ASN.1 certificate at position {i}")
 
                                     return candidate
-                                except Exception as e:
+                                # The `cryptography` documentation names `ValueError`
+                                # for data the loader cannot parse. A measurement of
+                                # 10000 malformed certificates also raised
+                                # `InvalidVersion`, which inherits `Exception` and not
+                                # `ValueError`, so a list of `ValueError` alone drops
+                                # it. #316 holds the measurement.
+                                except (ValueError, x509.InvalidVersion) as e:
                                     if verbose:
                                         print(f"  ASN.1 parse error: {e}")
                 i += 1
 
         return None
-    except Exception as e:
+    # The scan reads one byte at a time and guards every index, so it raises nothing
+    # for a byte string. `len()` raises `TypeError` for input that is no sequence, and
+    # `JA4XFingerprinter.read_certificate` names `TypeError` for the same reason. The
+    # loader errors stay inside the ASN.1 branch above. #316 names the list.
+    except TypeError as e:
         if verbose:
             print(f"  Error finding certificate: {e}")
         return None
