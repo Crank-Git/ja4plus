@@ -13,25 +13,17 @@ Subcommands:
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import os
 import sys
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ja4plus import __version__
 from ja4plus.output import OutputWriter, build_writer
+from ja4plus.processor import Processor
 from ja4plus.types import FingerprintResult
-from ja4plus.fingerprinters.base import BaseFingerprinter
-from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
-from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
-from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
-from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
-from ja4plus.fingerprinters.ja4t import JA4TFingerprinter
-from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
-from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
-from ja4plus.fingerprinters.ja4d import JA4DFingerprinter
-from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
 
 if TYPE_CHECKING:
     # Each command imports scapy and the lookup client where it needs them, so an
@@ -53,19 +45,6 @@ VALID_TYPES = [
     "ja4d6",
 ]
 
-ALL_FINGERPRINTERS: dict[str, type[BaseFingerprinter]] = {
-    "ja4": JA4Fingerprinter,
-    "ja4s": JA4SFingerprinter,
-    "ja4h": JA4HFingerprinter,
-    "ja4l": JA4LFingerprinter,
-    "ja4t": JA4TFingerprinter,
-    "ja4ts": JA4TSFingerprinter,
-    "ja4x": JA4XFingerprinter,
-    "ja4ssh": JA4SSHFingerprinter,
-    "ja4d": JA4DFingerprinter,
-    "ja4d6": JA4D6Fingerprinter,
-}
-
 
 def _parse_types(types_str: str) -> list[str]:
     """Parse and validate --types argument. Returns list of type names."""
@@ -79,51 +58,6 @@ def _parse_types(types_str: str) -> list[str]:
         )
         sys.exit(1)
     return types
-
-
-def _build_fingerprinters(types: list[str]) -> dict[str, BaseFingerprinter]:
-    """Instantiate fingerprinters for the given type names."""
-    return {name: ALL_FINGERPRINTERS[name]() for name in types}
-
-
-def _packet_endpoints(packet: Packet) -> tuple[str, int, str, int]:
-    """Return the source address, the source port, the destination address and the port.
-
-    FR-structured-output-1 asks every output format to carry the four values as separate
-    fields, so the command reads them apart rather than as one string.
-
-    Every packet is hostile input, so a layer this call cannot read produces the empty
-    address and the port zero.
-
-    Args:
-        packet: The packet to read.
-
-    Returns:
-        A tuple of the source address, the source port, the destination address and the
-        destination port. The address is empty and the port is zero where the packet
-        carries no value.
-    """
-    src_ip = dst_ip = ""
-    src_port = dst_port = 0
-    try:
-        from scapy.all import IP, IPv6, TCP, UDP
-
-        if packet.haslayer(IP):
-            src_ip = str(packet[IP].src)
-            dst_ip = str(packet[IP].dst)
-        elif packet.haslayer(IPv6):
-            src_ip = str(packet[IPv6].src)
-            dst_ip = str(packet[IPv6].dst)
-
-        if packet.haslayer(TCP):
-            src_port = int(packet[TCP].sport)
-            dst_port = int(packet[TCP].dport)
-        elif packet.haslayer(UDP):
-            src_port = int(packet[UDP].sport)
-            dst_port = int(packet[UDP].dport)
-    except (AttributeError, IndexError, TypeError, ValueError):
-        pass
-    return src_ip, src_port, dst_ip, dst_port
 
 
 def _packet_timestamp(packet: Packet) -> datetime | None:
@@ -189,8 +123,59 @@ def _split_endpoint(endpoint: str) -> tuple[str, int]:
     return address, int(port)
 
 
-def _close_open_windows(fingerprinters: dict[str, BaseFingerprinter]) -> list[FingerprintResult]:
-    """Return one result for every window the fingerprinters hold open.
+def _reporting_order(types: list[str]) -> dict[str, int]:
+    """Return the position each method holds in the output, keyed by the method name.
+
+    The processor runs the ten methods in one fixed order, and FR-typed-api-3 states
+    that the order is part of the library interface. The command reports the order the
+    user asked for instead, so `--types ja4t,ja4` writes the JA4T value first.
+
+    Args:
+        types: The method names the user asked for, in the order the user wrote them.
+
+    Returns:
+        A dict that maps the method name to its position.
+    """
+    return {name: position for position, name in enumerate(types)}
+
+
+def _select(results: list[FingerprintResult], order: dict[str, int]) -> list[FingerprintResult]:
+    """Return the results of the methods the user asked for, in the order the user wrote.
+
+    The processor runs every method whatever `--types` names, so it evicts the
+    connections of a method the user filtered out and it reports that method's errors.
+    The command therefore selects from the results rather than from the methods.
+
+    Args:
+        results: The results one call to the processor produced.
+        order: The map `_reporting_order` built.
+
+    Returns:
+        A list of `FingerprintResult`. The list is empty when no result names a method
+        the user asked for.
+    """
+    selected = [result for result in results if result.type in order]
+    selected.sort(key=lambda result: order[result.type])
+    return selected
+
+
+def _report_errors(errors: list[tuple[str, Exception]]) -> None:
+    """Write one line to standard error for every method that raised.
+
+    FR-structured-output-12 asks the command to report a fingerprinter error rather than
+    to swallow it. The command writes each error and keeps none. An exception that the
+    command kept would hold the error chain of every packet it read, and nothing that
+    survives across packets grows without a limit.
+
+    Args:
+        errors: The pairs of method name and exception that the processor returned.
+    """
+    for method, error in errors:
+        print(f"Warning: {method} could not read a packet: {error}", file=sys.stderr)
+
+
+def _close_open_windows(processor: Processor, order: dict[str, int]) -> list[FingerprintResult]:
+    """Return one result for every window the processor holds open.
 
     Run this function when the packet source ends without an error. JA4SSH is the only
     method that holds a window, and #214 decided that it emits the window a connection
@@ -201,73 +186,61 @@ def _close_open_windows(fingerprinters: dict[str, BaseFingerprinter]) -> list[Fi
     connection the command failed to read.
 
     Args:
-        fingerprinters: The map of method name to fingerprinter that the command built.
+        processor: The processor the command built.
+        order: The map `_reporting_order` built.
 
     Returns:
-        A list of `FingerprintResult`, in the order the fingerprinters emitted them. The
-        endpoints read the connection key of the window, because no packet produces
-        them. The timestamp is None for the same reason.
+        A list of `FingerprintResult`, in the order the user wrote. The endpoints read
+        the connection key of the window, because no packet produces them. The timestamp
+        is None for the same reason.
     """
+    entries: list[dict[str, Any]] = [
+        entry for entry in processor.close_open_windows() if entry["type"] in order
+    ]
+    entries.sort(key=lambda entry: order[str(entry["type"])])
     results: list[FingerprintResult] = []
-    for fp_type, fp in fingerprinters.items():
-        for entry in fp.close_open_windows():
-            src_ip, src_port, dst_ip, dst_port = _endpoints_from_connection(
-                entry.get("connection", "")
-            )
-            results.append(
-                FingerprintResult(
-                    type=fp_type,
-                    fingerprint=entry["fingerprint"],
-                    src_ip=src_ip,
-                    src_port=src_port,
-                    dst_ip=dst_ip,
-                    dst_port=dst_port,
-                )
-            )
-    return results
-
-
-def _fingerprint_one_packet(
-    packet: Packet, fingerprinters: dict[str, BaseFingerprinter]
-) -> list[FingerprintResult]:
-    """Return one result for every method that reads a fingerprint from the packet.
-
-    The command reads the endpoints and the time once, because every method that reads
-    the same packet reports the same four endpoint values and the same time.
-
-    Args:
-        packet: The packet to read.
-        fingerprinters: The map of method name to fingerprinter that the command built.
-
-    Returns:
-        A list of `FingerprintResult`, in the order the fingerprinters ran. The list is
-        empty when the packet produces no fingerprint.
-    """
-    results: list[FingerprintResult] = []
-    src_ip, src_port, dst_ip, dst_port = _packet_endpoints(packet)
-    timestamp = _packet_timestamp(packet)
-    for fp_type, fp in fingerprinters.items():
-        try:
-            fingerprint = fp.process_packet(packet)
-        except Exception:
-            # #51 replaces this silent pass with a diagnostic on standard error.
-            continue
-        if not fingerprint:
-            continue
+    for entry in entries:
+        src_ip, src_port, dst_ip, dst_port = _endpoints_from_connection(
+            entry.get("connection") or ""
+        )
         results.append(
             FingerprintResult(
-                type=fp_type,
-                fingerprint=fingerprint,
-                raw=getattr(fp, "last_raw", None),
-                raw_original_order=getattr(fp, "last_raw_original_order", None),
+                type=str(entry["type"]),
+                fingerprint=str(entry["fingerprint"]),
                 src_ip=src_ip,
                 src_port=src_port,
                 dst_ip=dst_ip,
                 dst_port=dst_port,
-                timestamp=timestamp,
             )
         )
     return results
+
+
+def _fingerprint_one_packet(
+    packet: Packet, processor: Processor, order: dict[str, int]
+) -> list[FingerprintResult]:
+    """Return one result for every method the user asked for that reads the packet.
+
+    The call writes one line to standard error for every method that raises, and the run
+    continues. Version 0.6.0 caught the error and continued without a word.
+
+    The processor sets no timestamp, because it reads no packet timestamp. The command
+    adds the time, because the output schema of
+    `docs/specs/features/05-structured-output.md` holds a `timestamp` field.
+
+    Args:
+        packet: The packet to read.
+        processor: The processor the command built.
+        order: The map `_reporting_order` built.
+
+    Returns:
+        A list of `FingerprintResult`. The list is empty when the packet produces no
+        fingerprint of a method the user asked for.
+    """
+    results, errors = processor.process_packet_with_method_errors(packet)
+    _report_errors(errors)
+    timestamp = _packet_timestamp(packet)
+    return [dataclasses.replace(result, timestamp=timestamp) for result in _select(results, order)]
 
 
 def _write_results(
@@ -311,8 +284,11 @@ def cmd_analyze(args: argparse.Namespace) -> None:
         print(f"Error: file not found: {pcap_file}", file=sys.stderr)
         sys.exit(1)
 
-    types = _parse_types(args.types) if args.types else list(ALL_FINGERPRINTERS.keys())
-    fingerprinters = _build_fingerprinters(types)
+    types = _parse_types(args.types) if args.types else list(VALID_TYPES)
+    order = _reporting_order(types)
+    # FR-structured-output-11 asks for one processor. The processor runs every method,
+    # so the command gets the connection eviction of Epic 3 and the errors of Epic 4.
+    processor = Processor()
     ja4db_client = _init_lookup(args)
 
     # FR-structured-output-4 asks for the same columns whatever flags the user passed, so
@@ -329,12 +305,12 @@ def cmd_analyze(args: argparse.Namespace) -> None:
     try:
         with PcapReader(pcap_file) as reader:
             for packet in reader:
-                batch = _fingerprint_one_packet(packet, fingerprinters)
+                batch = _fingerprint_one_packet(packet, processor, order)
                 if batch:
                     _write_results(batch, writer, ja4db_client)
             # The capture ends here, and a connection that never closes still holds a
             # window open. #214 decided that JA4SSH emits that window.
-            trailing = _close_open_windows(fingerprinters)
+            trailing = _close_open_windows(processor, order)
             if trailing:
                 _write_results(trailing, writer, ja4db_client)
     except FileNotFoundError:
@@ -359,8 +335,11 @@ def cmd_live(args: argparse.Namespace) -> None:
         )
         sys.exit(1)
 
-    types = _parse_types(args.types) if args.types else list(ALL_FINGERPRINTERS.keys())
-    fingerprinters = _build_fingerprinters(types)
+    types = _parse_types(args.types) if args.types else list(VALID_TYPES)
+    order = _reporting_order(types)
+    # FR-structured-output-11 asks for one processor. A live capture runs without an
+    # end, so the connection eviction of Epic 3 matters most here.
+    processor = Processor()
     ja4db_client = _init_lookup(args)
 
     # FR-structured-output-4 asks for the same columns whatever flags the user passed, so
@@ -371,7 +350,7 @@ def cmd_live(args: argparse.Namespace) -> None:
     print(f"Starting live capture on '{args.interface}'... (Ctrl-C to stop)", file=sys.stderr)
 
     def process_packet(packet: Packet) -> None:
-        batch = _fingerprint_one_packet(packet, fingerprinters)
+        batch = _fingerprint_one_packet(packet, processor, order)
         if batch:
             _write_results(batch, writer, ja4db_client)
             sys.stdout.flush()
@@ -392,7 +371,7 @@ def cmd_live(args: argparse.Namespace) -> None:
 
     # The capture ends here, and a connection that never closes still holds a window
     # open. #214 decided that JA4SSH emits that window.
-    trailing = _close_open_windows(fingerprinters)
+    trailing = _close_open_windows(processor, order)
     if trailing:
         _write_results(trailing, writer, ja4db_client)
         sys.stdout.flush()

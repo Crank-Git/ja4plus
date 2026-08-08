@@ -8,6 +8,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The command-line program runs on `Processor` and reports a fingerprinter error**
+  (#51). Round TBD. The program built its own dictionary of fingerprinters and ran its
+  own per-packet loop in `analyze` and in `live`. Both loops caught every error with
+  `except Exception` and continued without a word. The program now builds one
+  `Processor`, so it gets the connection eviction of Epic 3 and the errors of Epic 4. A
+  method that fails to read a packet writes one line to standard error that names the
+  method, and the run continues. The program keeps no exception, because an exception it
+  kept would hold the error chain of every packet it read. `--types` now selects which
+  methods the program reports rather than which methods it builds, so the program evicts
+  the connections of a method you filtered out and it reports that method's errors. The
+  reported order is still the order you wrote in `--types`. No fingerprint value moved:
+  the program writes the same 863 records over the 43 committed captures, byte for byte,
+  and the conformance suite reports the same 1531 passed, 143 skipped and 135 xfailed.
+
 - **The command-line program writes the addresses and the ports as separate fields**
   (#49). Round TBD. The `json` and the `csv` formats replace the composite `source`
   field of version 0.6.0 with `src_ip`, `src_port`, `dst_ip` and `dst_port`, so a
@@ -33,6 +47,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `docs/specs/features/04-typed-api.md` states FR-typed-api-3.
 
 ### Added
+
+- **`Processor.process_packet_with_method_errors` names the method that raised** (#51).
+  Round TBD. It returns the same results as `process_packet_with_errors`, and one pair
+  of the method name and the exception for each method that raised. An exception names
+  no method, so `process_packet_with_errors` alone cannot tell a caller which method
+  failed. Every returned exception still carries no traceback, for the reason #45
+  records. `process_packet_with_errors` keeps its signature and drops the name.
 
 - **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
   The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as

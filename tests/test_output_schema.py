@@ -274,31 +274,36 @@ class TheTimestamp(unittest.TestCase):
 
 
 class TheEndpointReaders(unittest.TestCase):
-    """`ja4plus/cli.py` reads the four endpoint values from a packet or a window key."""
+    """The program reads the four endpoint values from a packet or a window key.
+
+    #51 moved the command-line program onto `Processor`, so the processor now reads the
+    endpoints of a packet and `ja4plus/cli.py` reads the endpoints of a window key. The
+    processor returns the two addresses first and the two ports second.
+    """
 
     def test_the_reader_returns_the_four_values_of_an_ipv4_tcp_packet(self):
         from scapy.all import IP, TCP
 
-        from ja4plus.cli import _packet_endpoints
+        from ja4plus.processor import _packet_endpoints
 
         packet = IP(src="1.2.3.4", dst="5.6.7.8") / TCP(sport=54321, dport=443)
-        self.assertEqual(_packet_endpoints(packet), ("1.2.3.4", 54321, "5.6.7.8", 443))
+        self.assertEqual(_packet_endpoints(packet), ("1.2.3.4", "5.6.7.8", 54321, 443))
 
     def test_the_reader_returns_the_four_values_of_an_ipv6_udp_packet(self):
         from scapy.all import IPv6, UDP
 
-        from ja4plus.cli import _packet_endpoints
+        from ja4plus.processor import _packet_endpoints
 
         packet = IPv6(src="2001:db8::1", dst="2001:db8::2") / UDP(sport=443, dport=54321)
-        self.assertEqual(_packet_endpoints(packet), ("2001:db8::1", 443, "2001:db8::2", 54321))
+        self.assertEqual(_packet_endpoints(packet), ("2001:db8::1", "2001:db8::2", 443, 54321))
 
     def test_the_reader_returns_the_port_zero_for_a_packet_that_carries_no_port(self):
         from scapy.all import IP
 
-        from ja4plus.cli import _packet_endpoints
+        from ja4plus.processor import _packet_endpoints
 
         self.assertEqual(
-            _packet_endpoints(IP(src="1.2.3.4", dst="5.6.7.8")), ("1.2.3.4", 0, "5.6.7.8", 0)
+            _packet_endpoints(IP(src="1.2.3.4", dst="5.6.7.8")), ("1.2.3.4", "5.6.7.8", 0, 0)
         )
 
     def test_the_reader_splits_a_connection_key_that_holds_ipv4_addresses(self):
