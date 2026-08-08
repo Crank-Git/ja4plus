@@ -171,7 +171,7 @@ The measurement below states the size of the disagreement.
 |---|---|---|
 | `python/test/testdata/` | 2 | `"JA4L-S": "18861_59"` |
 | `rust/ja4/src/snapshots/` | 2 | `ja4l_c: 62_128`, `ja4l_s: 33804_227` |
-| `wireshark/test/testdata/` | 3 | `45_64_66`, under the `ja4.ja4l` key of `https-connect.pcap.json` |
+| `wireshark/test/testdata/` | 3 on all 44 `ja4.ja4l` values and all 44 `ja4.ja4ls` values | `45_64_66`, under the `ja4.ja4l` key of `https-connect.pcap.json` |
 | `zeek/tests/Traces/Scripts.ja4-conn/conn.log` | 3 | `ja4ls 18862_59_14792` |
 
 **Every JA4L value this repository holds carries two parts.** Measured on 2026-08-08 across
@@ -439,21 +439,52 @@ a value for one method on one connection. Here the Python file holds none.
 |---|---|
 | `python/test/testdata/` | **114 `JA4L-C` and `JA4L-S` values, in 24 files.** Every value holds two parts, and none holds three. |
 | `rust/ja4/src/snapshots/` | `ja4l_c` and `ja4l_s` values in 27 files. Every value holds two parts, and none holds three. |
-| `wireshark/test/testdata/` | **88 `ja4.ja4l` and `ja4.ja4ls` values, in 15 files. Every one of the 88 holds three parts.** 18 of them carry the literal `quic` as the third part, and the other 70 carry a latency. |
+| `wireshark/test/testdata/` | **44 `ja4.ja4l` values and 44 `ja4.ja4ls` values, 88 in all, in 15 files. Every one of the 88 holds three parts.** 9 of each key carry the literal `quic` as the third part, so 18 do, and the other 70 carry a latency. |
 | `README.md` at the pinned commit | Lines 49 and 50 name the two methods. No example value. |
 | `technical_details/README.md` | Lines 8 and 9 name the two methods. Line 34 embeds the image. No example value. |
 | `zeek/` | Not searched here. #198 owns that survey, and it reports `ja4l` and `ja4ls` columns of three parts in the `conn.log` baselines. |
 
 Reproduce the part counts from a checkout at the pinned commit.
 
-**Warning: a file under `wireshark/test/testdata/` prints one JSON value on its own line, so
-a single-line pattern matches no value there.** Read the following line.
-
 ```bash
 grep -rhoE '"JA4L-[CS]": "[^"]+"' python/test/testdata/ | wc -l
 grep -rhoE 'ja4l_[cs]: [^ ]+' rust/ja4/src/snapshots/ | sort | uniq -c
-grep -rhA1 '"ja4\.ja4ls\?":' wireshark/test/testdata/ | grep -oE '"[0-9]+_[0-9a-z]+_[0-9a-z]+"' | wc -l
 ```
+
+**Count the Wireshark values by walking the JSON, and not with a line pattern.** A file
+under `wireshark/test/testdata/` prints one JSON value on its own line, and it carries two
+keys, `ja4.ja4l` and `ja4.ja4ls`. A line pattern therefore reports a number whose key set
+the reader cannot see, and two readers then disagree over one measurement. **Name the key
+beside the number.**
+
+```bash
+python - <<'PY'
+import collections, glob, json, os
+per = collections.defaultdict(list)
+def walk(node, name):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key in ("ja4.ja4l", "ja4.ja4ls"):
+                for one in (value if isinstance(value, list) else [value]):
+                    per[key].append((name, one))
+            else:
+                walk(value, name)
+    elif isinstance(node, list):
+        for item in node:
+            walk(item, name)
+for path in sorted(glob.glob("wireshark/test/testdata/*.json")):
+    try:
+        walk(json.load(open(path)), os.path.basename(path))
+    except ValueError:
+        continue
+for key, values in per.items():
+    parts = collections.Counter(len(str(v).split("_")) for _, v in values)
+    print(key, len(values), "values in", len({f for f, _ in values}), "files", dict(parts))
+PY
+```
+
+Measured on 2026-08-08 at the pinned commit: `ja4.ja4l` reports 44 values in 15 files, and
+`ja4.ja4ls` reports 44 values in 15 files. Each key reports `{3: 44}`.
 
 **This repository already holds 114 JA4L values**, in `tests/foxio_vectors/*.json`, across 24
 captures. Reproduce that count from the root of this repository.

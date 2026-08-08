@@ -218,9 +218,11 @@ follows the Python reference.
 - The image labels three parts, and it captions the third `One-way application handshake
   latency`. `docs/specs/foxio/JA4L.md` holds the transcription, and #200 read the image.
 - `wireshark/test/testdata/https-connect.pcap.json:58-59` holds
-  `"ja4.ja4l": [` and `"45_64_66"`. **Every one of the 88 values under
-  `wireshark/test/testdata/` holds three parts**, in 15 files. 18 of them carry the
-  literal `quic` as the third part.
+  `"ja4.ja4l": [` and `"45_64_66"`. **Every `ja4.ja4l` value and every `ja4.ja4ls` value
+  under `wireshark/test/testdata/` holds three parts**: 44 of each key, 88 in all, in 15
+  files. 9 of each key carry the literal `quic` as the third part. Measured on 2026-08-08
+  by walking the JSON of each file, and not with a line pattern.
+  `docs/specs/foxio/JA4L.md` holds the command and states why the method matters.
 - `zeek/ja4l/main.zeek:191-192` appends half the interval from the ClientHello to the
   ServerHello to `ja4ls`, for example `18862_59_14792`. `zeek/ja4l/main.zeek:132-133`
   appends a third part to `ja4l` in the same way, and that part is half the interval from
