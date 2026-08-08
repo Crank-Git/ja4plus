@@ -40,6 +40,11 @@
       "state": "open",
       "title": "Record the settled JA4 ALPN readings and measure the divergence"
     },
+    "215": {
+      "epic": false,
+      "state": "open",
+      "title": "Decide the JA4T and JA4TS form where this project disagrees with FoxIO"
+    },
     "34": {
       "epic": false,
       "state": "open",
@@ -61,6 +66,6 @@
       "title": "Emit the JA4SSH occurrence a bare ACK produces after a window closes"
     }
   },
-  "retrieved": "2026-08-07",
+  "retrieved": "2026-08-08",
   "source": "gh issue list --state all --limit 500 --json number,state,labels,title"
 }

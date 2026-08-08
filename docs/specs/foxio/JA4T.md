@@ -310,35 +310,119 @@ of the 64 values.
 | `ssh2.pcapng` | 19 |
 | `tls3.pcapng` | 8 |
 
-## Why the suite reports no deviation
+## Why the suite reported no deviation, and what #216 changed
 
-`tests/test_foxio_rust_parity.py:72` reads two methods from a snapshot.
+**#216 closed this gap on 2026-08-08.** The text below records both states, because the
+gap is the finding and the repair is the evidence.
+
+Before #216, `tests/test_foxio_rust_parity.py:72` read two methods from a snapshot.
 
 ```python
 SNAPSHOT_METHODS = (("JA4", "ja4"), ("JA4S", "ja4s"))
 ```
 
-**The snapshots this project already holds carry `ja4t` values, and the harness never reads
-the field.** No other test compares a JA4T value or a JA4TS value against a FoxIO value, so
-`tests/foxio_deviations.json` holds no entry for either method. The JA4T cases in
+**The snapshots this project already held carried `ja4t` values, and the harness never read
+the field.** No other test compared a JA4T value or a JA4TS value against a FoxIO value, so
+`tests/foxio_deviations.json` held no entry for either method. The JA4T cases in
 `tests/test_comprehensive.py` build a packet with scapy and assert this project's own
 format, so no reference decides them.
 
 This is the shape `.claude/rules/conformance.md` names under "Ask whether a case can fail".
 
+`tests/test_foxio_rust_parity.py` now reads three methods.
+
+```python
+SNAPSHOT_METHODS = (("JA4", "ja4"), ("JA4S", "ja4s"), ("JA4T", "ja4t"))
+```
+
+`TestTheJa4tValuesTheRustSnapshotHolds` collects 38 value cases and 6 occurrence-key
+cases from the six local snapshots. Each case carries a register key, so a disagreement
+another issue owns reports as `xfailed`.
+
+**The revert proves the cases run.** Remove `("JA4T", "ja4t")` from `SNAPSHOT_METHODS` and
+44 cases stop running, 38 value cases and 6 occurrence-key cases. Three checks then fail
+and name the loss.
+
+| Check that fails on the revert | What it reports |
+|---|---|
+| `test_the_local_snapshots_hold_the_thirty_eight_values_the_reading_counts` | The snapshot reader finds no JA4T value. |
+| `test_the_suite_collects_one_case_for_every_value_the_snapshots_hold` | The parameter list is empty. |
+| `test_every_register_entry_matches_a_collected_case` | The two JA4T register entries match no case. |
+
+## What the comparison reports
+
+**37 of the 38 values reproduce exactly, and one differs.** No value the register does
+not name disagrees. #216
+changed no file under `ja4plus/`, and #215 owns both entries.
+
+| Capture | Values | Result |
+|---|---|---|
+| `browsers-x509.pcapng` | 3 | Each value matches. |
+| `chrome-cloudflare-quic-with-secrets.pcapng` | 1 | D2. The value differs by one `0`. |
+| `https-connect.pcap` | 1 | The value matches. |
+| `latest.pcapng` | 6 | Each value matches. |
+| `ssh2.pcapng` | 19 | Each value matches, and D4 makes 10 streams carry more than one. |
+| `tls3.pcapng` | 8 | Each value matches. |
+
+The two register entries are these.
+
+| Key | Issue | The reading it records |
+|---|---|---|
+| `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` | 215 | D2 |
+| `ssh2.pcapng/JA4T` | 215 | D4 |
+
+**D1, D3 and D5 reach no local snapshot value.** D1 needs
+`ja4__insta@gre-erspan-vxlan.pcap.snap`, which the "The snapshot the comparison cannot
+reach" section below covers. D3 and D5 need a SYN that no local capture carries.
+
+## JA4TS stays uncovered
+
+**No local Rust snapshot holds a `ja4ts` field.** The measurement of 2026-08-08 reads all
+ten files under `tests/foxio_vectors/rust_expected/` and finds none, which confirms the
+count in "The search for a reference value" above. No FoxIO Python expected-output file
+holds a `JA4T` key or a `JA4TS` key either.
+
+**JA4TS therefore reaches no FoxIO reference value in this repository.** Its only
+reference value is the Zeek baseline `ja4ts 65535_00_00_00`, which #198 owns.
+`TestTheLocalSnapshotsHoldNoJa4tsValue` states both facts as checks, so a vector refresh
+that adds a `ja4ts` field fails and names the file.
+
+## The snapshot the comparison cannot reach
+
+**`ja4__insta@gre-erspan-vxlan.pcap.snap` measures D1, and this repository does not hold
+it.** #216 read the file at the pinned commit and did not commit it, because the two
+references name the stream by different addresses.
+
+| Reference | Addresses it names |
+|---|---|
+| `python/test/testdata/gre-erspan-vxlan.pcap.json` | `100.20.9.2` and `100.20.9.1` |
+| `rust/ja4/src/snapshots/ja4__insta@gre-erspan-vxlan.pcap.snap` | `10.16.27.12` and `10.16.27.131` |
+
+The capture carries ERSPAN and VXLAN, so one packet holds two address pairs. `ja4plus`
+reads the outer pair, which is the pair the FoxIO Python file names. The harness matches
+a stream by its address pair, so a case built from this snapshot compares against a
+stream identity `ja4plus` never produces, and the failure would report the address layer
+rather than D1.
+
+**The D1 measurement stands on its own.** `ja4plus` produces `8192_0_0_0` for the SYN of
+`tests/foxio_vectors/gre-erspan-vxlan.pcap`, and the snapshot holds `8192__0_0`. #215 item
+1 owns the decision, and #216 raises the address question as separate work.
+
 ## The conformance evidence a later issue can build
 
-**#216 owns this work.**
+**#216 owned this work, and it landed on 2026-08-08.**
 
-1. **JA4T needs no new file.** Add `("JA4T", "ja4t")` to `SNAPSHOT_METHODS` and compare the
-   38 local values. D1 and D2 fail immediately, so the change lands with a deviation entry
-   or with a repair.
+1. **JA4T needs no new file. Done.** `SNAPSHOT_METHODS` holds `("JA4T", "ja4t")` and the
+   suite compares the 38 local values. D2 and D4 report, and each one is a register entry
+   that names #215.
 2. **Twenty more snapshots reach the remaining 26 values.** The captures are in the FoxIO
-   `pcap/` directory and this repository holds several of them already.
+   `pcap/` directory and this repository holds several of them already. This work is open.
 3. **`gre-erspan-vxlan.pcap` is the one case that measures the empty part b.** The capture
-   is local and the snapshot is not.
-4. **JA4TS reaches no FoxIO reference value except the Zeek baseline.** No Rust snapshot and
-   no Wireshark expected-output file holds one. #198 owns the Zeek reading.
+   is local and the snapshot is not. #216 declined to commit the snapshot, and "The
+   snapshot the comparison cannot reach" above states the mechanism.
+4. **JA4TS reaches no FoxIO reference value except the Zeek baseline. Measured.** No Rust
+   snapshot and no Wireshark expected-output file holds one. #198 owns the Zeek reading,
+   and "JA4TS stays uncovered" above holds the measurement.
 
 ## What the deleted text specification adds
 

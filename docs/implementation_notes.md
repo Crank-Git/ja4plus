@@ -272,6 +272,40 @@ register entries stay. Each one is `decided`, because no fix removes it.
 
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`.
 
+### The Rust snapshot is the only FoxIO reference this project holds for JA4T
+
+The FoxIO Python implementation writes no JA4T value and no JA4TS value, so
+`tests/foxio_vectors/*.json` decides neither method. The six Rust snapshots this
+repository holds carry 38 `ja4t` values between them.
+
+**The gap.** `tests/test_foxio_rust_parity.py` read `ja4` and `ja4s` from a snapshot and
+never read `ja4t`. No test compared a JA4T value against a FoxIO value, so the suite
+reported green on a comparison it never made. #216 closed it, and
+`docs/specs/foxio/JA4T.md` holds the whole reading.
+
+**The measurement.** `TestTheJa4tValuesTheRustSnapshotHolds` holds it.
+
+| Measurement | Count |
+|---|---|
+| JA4T values in `python/test/testdata/` | 0 |
+| JA4T values in the six local Rust snapshots | 38 |
+| Values `ja4plus` reproduces exactly | 37 |
+| Values that differ | 1 |
+| Streams on which `ja4plus` emits more than one value | 10 |
+| Cases that stop running when `("JA4T", "ja4t")` leaves `SNAPSHOT_METHODS` | 44 |
+
+**The two entries.** `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` records
+that scapy reports one `EOL` entry for the two pad bytes of the SYN, so part b holds one
+`0` where the reference holds two. `ssh2.pcapng/JA4T` records that `ja4plus` holds no
+connection state and fingerprints every SYN, where the reference reads the first SYN
+alone. Neither entry is `decided`: #215 decides both, and a repair removes them.
+
+**JA4TS reaches no reference value here.** No local snapshot writes a `ja4ts` field. The
+Zeek baseline holds `ja4ts 65535_00_00_00`, and #198 owns that reading.
+
+**Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`,
+`docs/specs/foxio/JA4T.md`.
+
 ### JA4X scans the record layer whatever tunnel carries it
 
 `socks4-https.pcap` carries TLS inside a SOCKS4 tunnel on port 9901. No FoxIO

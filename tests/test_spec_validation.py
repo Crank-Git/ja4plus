@@ -532,7 +532,12 @@ def test_every_register_entry_matches_a_collected_case():
     A deleted vector drops its cases from the suite. Without this check the suite still
     reports green, and the deviations of that vector stop being measured. An entry that
     matches nothing is also what a landed fix leaves behind when it removes a case.
+
+    `tests/test_foxio_rust_parity.py` keys its JA4T cases into the same register, so the
+    check reads both lists. An entry of that module matches no case of this one.
     """
+    from tests.test_foxio_rust_parity import register_keys
+
     collected = {
         value_key(pcap_path.name, stream.index, stream.src_port, method, occurrence)
         for pcap_path, stream, method, occurrence, _ in (param.values for param in _value_params())
@@ -541,6 +546,7 @@ def test_every_register_entry_matches_a_collected_case():
         occurrence_key(pcap_path.name, method)
         for pcap_path, _, method in (param.values for param in _method_params())
     )
+    collected.update(register_keys())
     orphans = sorted(set(DEVIATIONS) - collected)
     assert not orphans, "{} register entr(ies) match no collected case: {}".format(
         len(orphans), orphans
