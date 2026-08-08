@@ -382,13 +382,11 @@ METHOD_FILTER_KEYS = (
 # The one entry of the six that compares two measured counts.
 DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
 
-# The three entries that await the #215 decision on the JA4T form. #242 added the
-# `gre-erspan-vxlan.pcap` entry, which is the one local case that reaches D1.
-TCP_OPTION_KEYS = (
-    "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1",
-    "gre-erspan-vxlan.pcap/0:65174/JA4T.1",
-    "ssh2.pcapng/JA4T",
-)
+# The three entries that awaited the #215 decision on the JA4T form left the open set.
+# #215 landed the decision: the D2 entry and the D4 entry resolve to a pass and leave the
+# register, and the `gre-erspan-vxlan.pcap` entry stays as a decided divergence from the
+# FoxIO Rust implementation.
+TCP_OPTION_KEYS = ()
 
 # The six JA4L entries together. #34 owned them, and #34 is closed, so a worker can act
 # on none of them. #272 is open and it holds the question the user answers.
@@ -396,8 +394,8 @@ JA4L_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,)
 
 JA4L_OWNER = 272
 
-# Every entry that stays open. #272 owns the six JA4L entries, and #215 owns the three
-# JA4T entries.
+# Every entry that stays open. #272 owns the six JA4L entries, and no JA4T entry stays
+# open after #215.
 OPEN_KEYS = JA4L_KEYS + TCP_OPTION_KEYS
 
 
@@ -414,10 +412,10 @@ class TestTheOpenRegisterEntries:
             key: deviation for key, deviation in load_register().items() if not deviation.decided
         }
 
-    def test_the_register_holds_nine_undecided_entries(self):
-        assert len(self._undecided()) == 9
+    def test_the_register_holds_six_undecided_entries(self):
+        assert len(self._undecided()) == 6
 
-    def test_the_undecided_keys_are_the_nine_no_round_settled(self):
+    def test_the_undecided_keys_are_the_six_no_round_settled(self):
         assert sorted(self._undecided()) == sorted(OPEN_KEYS)
 
     def test_every_undecided_entry_names_the_issue_that_decides_it(self):

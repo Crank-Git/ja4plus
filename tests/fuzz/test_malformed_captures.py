@@ -28,6 +28,10 @@ NAMED_PARSER = {
 # that read a packet payload, and it pins JA4T and JA4TS because they read the TCP
 # header. It pins no JA4L value, because register row 5 stays open and JA4L still
 # emits a second client value.
+#
+# #215 moved two JA4T values and one JA4TS value here. `badcurveball.pcap` gains the
+# second End of Option List entry that D2 counts, and `CVE-2018-6794.pcap` takes the
+# two-digit form that D1 states for a SYN-ACK that carries no option.
 RECORDED_FINGERPRINTS = {
     "ssh2-malformed.pcap": {
         "ja4t": {"14600_2-1-1-4-1-3_1460_9"},
@@ -38,7 +42,7 @@ RECORDED_FINGERPRINTS = {
         "ja4ts": {"5840_2-1-1-4-1-3_1460_2"},
     },
     "badcurveball.pcap": {
-        "ja4t": {"65535_2-1-3-1-1-8-4-0_1386_6"},
+        "ja4t": {"65535_2-1-3-1-1-8-4-0-0_1386_6"},
         "ja4ts": {"26847_2-4-8-1-3_1460_7"},
         "ja4": {"t13d1615h2_46e7e9700bed_45f260be83e2"},
         "ja4s": {"t1205h1_c02b_845f7282a956"},
@@ -46,7 +50,7 @@ RECORDED_FINGERPRINTS = {
     },
     "CVE-2018-6794.pcap": {
         "ja4t": {"8192_2-1-3-1-1-4_1460_8"},
-        "ja4ts": {"15500_0_0_0"},
+        "ja4ts": {"15500_00_00_00"},
         "ja4h": {
             "ge11nn07ruru_6cd0fb54989b_000000000000_000000000000",
             "ge11nr06ruru_cc6ec9a91856_000000000000_000000000000",

@@ -296,6 +296,11 @@ table: `solct`, `advrt`, `reqst`, `reply` and `relse`.
 - `README.md:155` holds `0010` and states no meaning for it. That value is consistent with
   a DUID of ten bytes, and it corroborates the width and not the source.
 
+**D1 of #271 settles the nesting depth of this rule, and the rule stays uncertain.** The
+field reaches an inner relay message, because the dissector matches on the field name
+alone. The mark stays, because the mark counts corroborations and this decision adds no
+second FoxIO implementation.
+
 ### R17 — Part b of JA4D6 lists every DHCPv6 option code in the order Wireshark reports it, and omits none
 
 - Corroboration 1: `wireshark/source/packet-ja4.c:1566-1573` appends every
@@ -314,6 +319,9 @@ no such clause.
   `dhcpv6.requested_option_code` value with `"%d-"`.
 - Corroboration 2: `README.md:155` holds `24-23`, which is not in ascending order.
 
+**D2 of #271 settles the nesting depth of this rule.** Part c reads the Option Request
+List of an inner relay message, because the dissector matches on the field name alone.
+
 ### R19 — The ip character of JA4D6 is `i` when the message carries an IA_TA option
 
 **This rule is uncertain. It holds one corroboration.** Keep the vector fallback.
@@ -324,6 +332,9 @@ no such clause.
 - All six values of `wireshark/test/testdata/dhcpv6.pcap.json` hold `n`, so no reference
   value exercises `i`.
 
+**D1 of #271 settles the nesting depth of this rule, and the rule stays uncertain.** An
+IA_TA option inside a relay message gives `i`. The mark stays for the reason R16 states.
+
 ### R20 — The domain character of JA4D6 is `d` when the message carries a client domain
 
 **This rule is uncertain. It holds one corroboration.** Keep the vector fallback.
@@ -332,6 +343,9 @@ no such clause.
   `dhcpv6.client_domain` exists. That field belongs to DHCPv6 option 39, Client FQDN.
 - All six values of `wireshark/test/testdata/dhcpv6.pcap.json` hold `n`, so no reference
   value exercises `d`.
+
+**D1 of #271 settles the nesting depth of this rule, and the rule stays uncertain.** A
+Client FQDN inside a relay message gives `d`. The mark stays for the reason R16 states.
 
 ### R21 — An empty part b or an empty part c of JA4D6 gives `00`
 
@@ -507,26 +521,27 @@ instead, and both fail against the base.
 
 | Field | Rule | `ja4d6.py` | Reading |
 |---|---|---|---|
-| Part count and separator | R14 | `ja4d6.py:287` | Agrees. `f"{section_a}_{section_b}_{section_c}"`. |
-| Part a layout | R14 | `ja4d6.py:283` | Agrees. Eleven characters, four subfields, no separator. |
-| Message type table | R15 | `ja4d6.py:35-72` | Agrees. The same thirty-seven names against the same thirty-seven codes as `wireshark/source/packet-ja4.c:833-879`. |
-| Unknown message type | R15 | `ja4d6.py:277` | Agrees. `f"{msg_type:05d}"`. D11 rules that message type 0 reaches this path. |
-| Size source | R16 | `ja4d6.py:206-211` | Agrees. The length of the option 1 data. D9 rules that the first occurrence decides it. |
-| Size width and cap | R16 | `ja4d6.py:277-278` | Agrees. `min(..., 9999)` and `f"{duid_len:04d}"`. |
-| Size when absent | R16 | `ja4d6.py:190` | Agrees. `duid_len = 0` gives `0000`. |
-| ip character | R19 | `ja4d6.py:212-213`, `ja4d6.py:280` | Agrees. Option 4, IA_TA. R19 is uncertain. |
-| Domain character | R20 | `ja4d6.py:214-215`, `ja4d6.py:281` | Agrees. Option 39. R20 is uncertain. |
-| Part b order | R17 | `ja4d6.py:125-161` | Agrees. `_walk_options` appends in wire order and nothing sorts the list. |
-| Part b skip set | R17 | `ja4d6.py:233-236` | Agrees. The builder omits no code. |
-| Part b separator | R17 | `ja4d6.py:236` | Agrees. `"-".join(...)`. |
-| Empty part b | R21 | `ja4d6.py:234-235` | Agrees. `"00"`. |
-| Empty part c | R21 | `ja4d6.py:240-241` | Agrees. `"00"`. |
-| Part c source | R18 | `ja4d6.py:216-221` | Agrees. Option 6, read as two-byte codes. D10 rules that every occurrence reaches part c. |
-| Part c order and separator | R18 | `ja4d6.py:242` | Agrees. Wire order, joined with `-`. |
+| Part count and separator | R14 | `ja4d6.py:292` | Agrees. `f"{section_a}_{section_b}_{section_c}"`. |
+| Part a layout | R14 | `ja4d6.py:288` | Agrees. Eleven characters, four subfields, no separator. |
+| Message type table | R15 | `ja4d6.py:41-78` | Agrees. The same thirty-seven names against the same thirty-seven codes as `wireshark/source/packet-ja4.c:833-879`. |
+| Unknown message type | R15 | `ja4d6.py:282` | Agrees. `f"{msg_type:05d}"`. D11 rules that message type 0 reaches this path. |
+| Message type source | R15 | `ja4d6.py:280`, `ja4d6.py:222-226` | Agrees with the image after D3 of #271. Subfield 1 holds the outer message type alone. |
+| Size source | R16 | `ja4d6.py:184-189` | Agrees. The length of the option 1 data, at any nesting depth after D1 of #271. D9 rules that the first occurrence decides it. |
+| Size width and cap | R16 | `ja4d6.py:283-284` | Agrees. `min(..., 9999)` and `f"{duid_len:04d}"`. |
+| Size when absent | R16 | `ja4d6.py:228` | Agrees. `duid_len = 0` gives `0000`. |
+| ip character | R19 | `ja4d6.py:190-191`, `ja4d6.py:285` | Agrees. Option 4, IA_TA, at any nesting depth after D1 of #271. R19 is uncertain. |
+| Domain character | R20 | `ja4d6.py:192-193`, `ja4d6.py:286` | Agrees. Option 39, at any nesting depth after D1 of #271. R20 is uncertain. |
+| Part b order | R17 | `ja4d6.py:131-168` | Agrees. `_walk_options` appends in wire order and nothing sorts the list. |
+| Part b skip set | R17 | `ja4d6.py:238-241` | Agrees. The builder omits no code. |
+| Part b separator | R17 | `ja4d6.py:241` | Agrees. `"-".join(...)`. |
+| Empty part b | R21 | `ja4d6.py:239-240` | Agrees. `"00"`. |
+| Empty part c | R21 | `ja4d6.py:245-246` | Agrees. `"00"`. |
+| Part c source | R18 | `ja4d6.py:194-199` | Agrees. Option 6, read as two-byte codes, at any nesting depth after D2 of #271. D10 rules that every occurrence reaches part c. |
+| Part c order and separator | R18 | `ja4d6.py:247` | Agrees. Wire order, joined with `-`. |
 | Field name of the reference | R22 | `tests/test_ja4d6_foxio.py:39` | Agrees. The test reads the key `ja4.ja4d`. |
-| State | R14 | `ja4d6.py:293-299` | Agrees. `process_packet` reads one packet and `cleanup_connection` is a no-op. |
-| Port set | — | `ja4d6.py:264` | Agrees with the dissector after D7. The two ports are 546 and 547. |
-| Nesting bound | — | `ja4d6.py:104`, `ja4d6.py:138-139` | The walk stops at 32 containers, because a crafted chain would raise `RecursionError`. No vector nests a container. |
+| State | R14 | `ja4d6.py:298-304` | Agrees. `process_packet` reads one packet and `cleanup_connection` is a no-op. |
+| Port set | — | `ja4d6.py:269` | Agrees with the dissector after D7. The two ports are 546 and 547. |
+| Nesting bound | — | `ja4d6.py:110`, `ja4d6.py:144-145` | The walk stops at 32 containers, because a crafted chain would raise `RecursionError`. No vector nests a container. |
 
 **Measured on 2026-08-08, before #231 and after it. Every value below is unchanged.** All
 six values of `tests/foxio_vectors/dhcpv6.pcap` match the six reference values, and this
@@ -578,12 +593,9 @@ not build. Wireshark reports a vendor sub-option under another field name, so no
 `ja4d6.py:75-80` now states that reason. **This page still rules on nothing else about
 option 17.**
 
-**Two divergences stay open, and #271 owns them.** The dissector reads
-`dhcpv6.duid.bytes`, `dhcpv6.iata`, `dhcpv6.client_domain` and
-`dhcpv6.requested_option_code` at any nesting depth, and this project reads them at the
-top level alone. It also appends the message type of every `dhcpv6.msgtype` field, so a
-relay message gives it a ten-character subfield 1 and breaks R2. **R16, R19 and R20 stay
-uncertain, so this page resolves none of them by choosing a nested reading.**
+**#231 left two divergences open, and #271 closed both.** The section
+`JA4D6 — the rulings of #271` below holds the three readings the user decided on
+2026-08-08.
 
 **D9 — a repeated option 1. Ruling: keep the first occurrence.**
 
@@ -602,6 +614,57 @@ This is the JA4D6 form of D5. `wireshark/source/packet-ja4.c:1574-1578` appends 
 `dhcpv6.msgtype` field, so a type of 0 gives `00000`. R15 states the five-digit form for
 a code the table does not hold, and DHCPv6 defines no message type 0. `ja4d6.py:272-275`
 no longer returns early, and the case packet gives `000000000nn_00_00`.
+
+### JA4D6 — the rulings of #271
+
+**The user decided the three readings on 2026-08-08.** This section numbers them D1 to D3
+of #271, and those numbers name a different set from the D1 to D11 of #231 above.
+
+**Every one of the three rests on one source, and this page states that plainly.** No
+FoxIO implementation other than the Wireshark dissector writes a JA4D6 value.
+`zeek/README.md:15` states `JA4D6 &rarr; ja4d.log (awaiting Zeek DHCPv6 suppport)`. FoxIO
+ships no Python and no Rust for the method. No deleted text file covers the method.
+**The dissector and the image are the whole of the reference material.** On subfield 1 the
+two contradict each other.
+
+**No vector separates any of the three.** `tests/foxio_vectors/dhcpv6.pcap` carries no
+relay message, and all six reference values match before the change and after it.
+`tests/test_ja4d_decisions.py` holds the separating packet of each reading instead, and
+the count of cases that a reversal of each reading fails is the evidence.
+
+**D1 of #271 — the three part a subfield fields. Ruling: read them at any nesting depth.**
+
+`wireshark/source/packet-ja4.c:967-969` calls `proto_all_finfos(tree)` and walks every
+field of the whole dissection tree. Each test matches on the field name alone. Three tests
+therefore reach an inner relay message.
+
+- `dhcpv6.duid.bytes` at `wireshark/source/packet-ja4.c:1547-1559`.
+- `dhcpv6.iata` at `wireshark/source/packet-ja4.c:1560-1562`.
+- `dhcpv6.client_domain` at `wireshark/source/packet-ja4.c:1563-1565`.
+
+**#231 already made part b recurse into DHCPv6 option 9.** All three parts now read the
+same way, and the inconsistency leaves. A reversal of this ruling fails 3 cases.
+
+**D2 of #271 — the Option Request List. Ruling: read it at any nesting depth.**
+
+This is the part c form of D1. `wireshark/source/packet-ja4.c:1574-1578` matches
+`dhcpv6.requested_option_code` on the field name alone. A reversal of this ruling fails 2
+cases.
+
+**D3 of #271 — subfield 1 of a relay message. Ruling: write the outer message type alone.**
+
+`wireshark/source/packet-ja4.c:1537-1546` appends a five-character name for every
+`dhcpv6.msgtype` field, and a relay message holds two: the outer type and the inner type.
+The dissector therefore writes `rlayfsolct` and a part a of sixteen characters. **R2 gives
+part a eleven characters and gives subfield 1 five of them, so the dissector breaks the
+schema the image states.** This project declines that as a provable reference defect, under
+the authority rule of `.claude/rules/conformance.md` and rule 1 of `CLAUDE.md`. Here no
+vector exists, so no bytes decide, and the schema stands. A consumer that reads part a by
+position keeps working. `ja4plus` writes `rlayf`. A reversal of this ruling fails 5 cases.
+
+**One consequence follows for a reader who compares the two tools.** A relay message is
+the one case where the two JA4D6 values differ. The divergence register of
+`docs/specs/spec.md` holds the row.
 
 ## The register
 
@@ -663,4 +726,6 @@ reaches one FoxIO implementation, and a second implementation would settle all t
 second implementation may arrive. **The uncertainty is structural rather than temporary,
 and the user decided knowing that.**
 
-#271 holds the two JA4D6 divergences that D8 uncovered and did not rule on.
+**#271 ruled on the two JA4D6 divergences that D8 uncovered, and it cleared no uncertain
+mark.** R16, R19 and R20 each gained a settled nesting depth and no second corroboration.
+All three stay uncertain, and all three keep the vector fallback.

@@ -29,7 +29,8 @@ about another method, so each row below names its own evidence. The counts come 
 | JA4 | `JA4_r`, `JA4_ro` | `JA4_r` sorts the ciphers and the extensions. It holds the signature algorithms in wire order. `JA4_ro` holds every list in wire order. | 160 `JA4_r` values. 156 of them carry a signature-algorithm section, and all 156 hold the ciphers and the extensions in numeric order and the signature algorithms in an order that is not numeric. The other four carry no extension and no signature algorithm. No `JA4_ro` value equals its `JA4_r` value. |
 | JA4S | `JA4S_r` | The extensions stay in wire order. JA4S sorts no list. | 84 `JA4S_r` values. 35 of them hold the extensions in an order that is not numeric order, and `badcurveball.pcap.json` gives `t1205h1_c02b_0000,ff01,000b,0023,0010`. No file carries a `JA4S_ro` key. |
 | JA4H | `JA4H_ro` | Every list holds the wire order. `JA4H_ro` holds the header names, the cookie names and the cookie name-and-value pairs as the request carries them. | 89 `JA4H_ro` values, and no `JA4H_r` value. `http1-with-cookies.pcapng.json` gives `yummy_cookie,tasty_cookie`, which is not sorted order, and the hashed form of the same request sorts the two names. 79 of the 89 values match after #131. |
-| JA4X, JA4SSH, JA4L, JA4T, JA4TS, JA4D, JA4D6 | None | Not applicable. | No expected-output file carries a raw key for these methods. |
+| JA4X | `JA4X_r` | Every list holds the wire order. JA4X sorts no list. | 0 `JA4X_r` values in the expected-output files, because the FoxIO Python implementation writes none. `rust/ja4x/src/lib.rs` writes `let ja4x_r = with_raw.then(\|\| parts.join("_"));`, and `wireshark/source/packet-ja4.c:1726` registers `ja4.ja4x_r`. R10 of `docs/specs/foxio/JA4X.md` states the order rule. #267 decided the form. |
+| JA4SSH, JA4L, JA4T, JA4TS, JA4D, JA4D6 | None | Not applicable. | No expected-output file carries a raw key for these methods. |
 
 **Location:** `ja4plus/fingerprinters/ja4.py`, `ja4plus/fingerprinters/ja4s.py`.
 
@@ -1199,6 +1200,35 @@ Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/J
 ---
 
 ## JA4X - X.509 Certificates
+
+### The raw form is the preimage of the fingerprint
+
+`ja4plus` writes `JA4X_r`. The value holds the three unhashed lists of the fingerprint,
+joined with `_`. Each list holds the hex object identifiers in wire order, joined with
+`,`. The user decided the form on 2026-08-08, and #267 holds the decision.
+
+Two FoxIO implementations publish the value. `rust/ja4x/src/lib.rs` builds one list of
+three parts, hashes each part for `ja4x` and joins the same three parts for `ja4x_r`.
+`wireshark/source/packet-ja4.c:1726` registers the field `ja4.ja4x_r`. The FoxIO Python
+implementation writes no raw form for JA4X, so no expected-output file under
+`tests/foxio_vectors/` holds a `JA4X_r` key.
+
+**The raw form reaches its reference value through the hash.** The first certificate of
+`https-connect.pcap` gives
+`550406,55040a,55040b,550403_550406,550408,550407,55040a,550403_551d23,551d0e,551d11,551d0f,551d25,551d1f,551d20,2b06010505070101,551d13`.
+The first 12 characters of the SHA-256 of each part give
+`7d5dbb3783b4_2bab15409345_5e17a2514980`, which
+`tests/foxio_vectors/rust_expected/ja4__insta@https-connect.pcap.snap` holds.
+`TestTheJa4xRawFormTheRustSnapshotImplies` in `tests/test_foxio_rust_parity.py` runs that
+comparison over all 43 values the five local snapshots hold.
+
+**An empty list reaches the raw form as an empty part.** R8 gives the zero sentinel
+`000000000000` to the hashed form alone, because `hash12` of the FoxIO Rust
+implementation runs on the hashed form alone.
+
+**A JA4X result holds one raw value under two keys.** R10 sorts no list, so `raw` and
+`raw_original_order` are equal. FoxIO publishes `JA4X_r` and no `JA4X_ro`, and JA4S holds
+the same shape for the same reason.
 
 ### The scan reads the record layer, then the handshake messages
 

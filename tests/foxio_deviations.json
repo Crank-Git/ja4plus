@@ -117,10 +117,6 @@
     "issue": 129,
     "decided": true
   },
-  "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1": {
-    "cause": "The FoxIO Rust snapshot holds 65535_2-1-3-1-1-8-4-0-0_1440_6 and ja4plus produces 65535_2-1-3-1-1-8-4-0_1440_6. The SYN carries two End of Option List bytes, and scapy reports one EOL entry for the pair, so part b holds one 0 where the reference holds two. docs/specs/foxio/JA4T.md records the reading as D2, and #215 decides whether ja4plus reads the raw option bytes.",
-    "issue": 215
-  },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1": {
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
@@ -178,7 +174,8 @@
   },
   "gre-erspan-vxlan.pcap/0:65174/JA4T.1": {
     "issue": 215,
-    "cause": "ja4t.py:85 writes 0 for an empty option list, so ja4plus writes 8192_0_0_0 and the FoxIO Rust snapshot holds 8192__0_0. D1 of docs/specs/foxio/JA4T.md records the reading, and #215 decides the form. This stream is the one local case that reaches D1, and #242 committed the snapshot that measures it."
+    "cause": "The FoxIO Rust snapshot holds 8192__0_0 and ja4plus writes 8192_00_00_00. The SYN carries no TCP option, and the three FoxIO forms disagree: rust/ja4/src/tcp.rs writes one digit, wireshark/source/packet-ja4.c:664 and zeek/ja4t/main.zeek:195-211 write the two-digit form. The user chose the two-digit form on 2026-08-08, so this divergence is decided and it stays. #215 records the decision, D1 of docs/specs/foxio/JA4T.md states the reading, and the Divergence register in docs/specs/spec.md holds the cost.",
+    "decided": true
   },
   "gre-sample.pcap/JA4SSH": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
@@ -501,10 +498,6 @@
     "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake, and it reads no ServerHello whose handshake record spans several TCP segments. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
     "decided": true
-  },
-  "ssh2.pcapng/JA4T": {
-    "cause": "The FoxIO Rust snapshot holds one JA4T value for each of the 19 streams, and ja4plus produces more than one on 10 of them. ja4plus holds no connection state, so it fingerprints every SYN, and the capture carries repeated SYN packets. The distinct values agree, so the count differs and the value does not. docs/specs/foxio/JA4T.md records the reading as D4, and #215 decides whether ja4plus reads the first SYN alone.",
-    "issue": 215
   },
   "ssh2.pcapng/JA4_o": {
     "cause": "ja4plus produces a JA4_o value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",

@@ -27,6 +27,7 @@ from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
+from ja4plus.fingerprinters.ja4t import JA4TFingerprinter
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter, SynAckTracker
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.utils.state_table import BoundedStateTable
@@ -47,6 +48,7 @@ TABLES = [
     (JA4XFingerprinter, "scan_offsets", 50, 600),
     (JA4SSHFingerprinter, "connections", 10000, 600),
     (JA4SSHFingerprinter, "_handshake_clients", 1000, 600),
+    (JA4TFingerprinter, "connections", 10000, 600),
     (SynAckTracker, "times", 1000, 120),
     (SynAckTracker, "prefixes", 1000, 120),
 ]
@@ -401,10 +403,55 @@ def test_no_state_table_passes_its_entry_count_under_a_flood_of_connections():
                     counted += 1
                     assert len(table) <= table.max_connections, f"{name}.{attribute}"
 
-    # The processor holds ten fingerprinters and fourteen bounded tables, so the loop
+    # The processor holds ten fingerprinters and fifteen bounded tables, so the loop
     # reads every table rather than nothing. #285 added the fourteenth,
-    # `SynAckTracker.prefixes`.
-    assert counted == 14
+    # `SynAckTracker.prefixes`, and #215 added the fifteenth, `JA4TFingerprinter
+    # .connections`.
+    assert counted == 15
+
+
+def test_the_ja4t_connection_table_holds_its_entry_count():
+    """A flood of connections leaves the JA4T table at the count the caller states."""
+    fingerprinter = JA4TFingerprinter()
+    fingerprinter.connections.max_connections = 4
+
+    for port in range(50000, 50020):
+        fingerprinter.process_packet(_tcp("10.0.0.1", port, "10.0.0.2", 443, "S", 1000.0))
+
+    assert len(fingerprinter.connections) == 4
+
+
+def test_the_ja4t_connection_table_evicts_an_entry_that_passes_the_maximum_age():
+    """A connection that receives no packet for longer than the age leaves the table."""
+    fingerprinter = JA4TFingerprinter()
+    fingerprinter.connections.max_connection_age = 60
+    fingerprinter.connections.eviction_interval = 1
+
+    fingerprinter.process_packet(_tcp("10.0.0.1", 50000, "10.0.0.2", 443, "S", 1000.0))
+    assert len(fingerprinter.connections) == 1
+
+    fingerprinter.process_packet(_tcp("10.0.0.3", 50001, "10.0.0.4", 443, "S", 1100.0))
+
+    assert len(fingerprinter.connections) == 1
+    assert ("10.0.0.1", 50000, "10.0.0.2", 443) not in fingerprinter.connections
+
+
+def test_ja4t_reads_one_syn_of_a_connection_whose_span_passes_the_maximum_age():
+    """A connection that repeats its SYN across 1000 seconds still holds one value.
+
+    Each gap is 500 seconds and the maximum age is 600 seconds, so the entry survives
+    every gap and the second SYN and the third SYN produce nothing.
+    """
+    fingerprinter = JA4TFingerprinter()
+    fingerprinter.connections.eviction_interval = 1
+
+    first = fingerprinter.process_packet(_tcp("10.0.0.1", 50000, "10.0.0.2", 443, "S", 1000.0))
+    second = fingerprinter.process_packet(_tcp("10.0.0.1", 50000, "10.0.0.2", 443, "S", 1500.0))
+    third = fingerprinter.process_packet(_tcp("10.0.0.1", 50000, "10.0.0.2", 443, "S", 2000.0))
+
+    assert first is not None
+    assert second is None
+    assert third is None
 
 
 def test_ja4ts_reads_two_synack_packets_whose_gap_stays_inside_the_maximum_age():
