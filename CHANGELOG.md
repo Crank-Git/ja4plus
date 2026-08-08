@@ -8,6 +8,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The command-line program runs on `Processor` and reports a fingerprinter error**
+  (#51). Round TBD. The program built its own dictionary of fingerprinters and ran its
+  own per-packet loop in `analyze` and in `live`. Both loops caught every error with
+  `except Exception` and continued without a word. The program now builds one
+  `Processor`, so it gets the connection eviction of Epic 3 and the errors of Epic 4. A
+  method that fails to read a packet writes one line to standard error that names the
+  method, and the run continues. The program keeps no exception, because an exception it
+  kept would hold the error chain of every packet it read. `--types` now selects which
+  methods the program reports rather than which methods it builds, so the program evicts
+  the connections of a method you filtered out and it reports that method's errors. The
+  reported order is still the order you wrote in `--types`, and a name you write twice
+  keeps its first position. No fingerprint value moved:
+  the program writes the same 863 records over the 43 committed captures, byte for byte,
+  and the conformance suite reports the same 1531 passed, 143 skipped and 135 xfailed.
+  The unit suite rises from 1801 passed to 1814 passed, which is the 13 cases the change
+  adds.
+
 - **The command-line program writes the addresses and the ports as separate fields**
   (#49). Round TBD. The `json` and the `csv` formats replace the composite `source`
   field of version 0.6.0 with `src_ip`, `src_port`, `dst_ip` and `dst_port`, so a
@@ -34,6 +51,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`Processor.process_packet_with_method_errors` names the method that raised** (#51).
+  Round TBD. It returns the same results as `process_packet_with_errors`, and one pair
+  of the method name and the exception for each method that raised. An exception names
+  no method, so `process_packet_with_errors` alone cannot tell a caller which method
+  failed. Every returned exception still carries no traceback, for the reason #45
+  records. `process_packet_with_errors` keeps its signature and drops the name.
+
 - **The output schema carries a version, and `docs/output-schema.md` records it** (#50).
   Round TBD. The new page states the schema version, the eleven fields, the raw form
   each of the ten methods writes, and the rule that raises the version. **The rule is a
@@ -57,6 +81,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   carries none**, which the page states and a check reads back. The page records that
   `ja4`, `ja4s`, `ja4h` and `ja4x` write a raw form and the other six methods write
   `null`; `ja4x` now writes `JA4X_r`, which #267 added.
+
 - **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
   The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as
   package data. A caller who runs `mypy --strict` against their own code now resolves

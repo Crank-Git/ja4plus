@@ -75,6 +75,17 @@ schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port
 A field with no value is `null` in the `json` format and empty in the `csv` format. The
 `table` format is for a person reading a terminal, and it carries no stability promise.
 
+The command writes results to standard output and diagnostics to standard error, so a
+pipe that reads standard output reads results alone. A method that fails to read a
+packet writes one line that names the method, and the run continues:
+
+```
+Warning: ja4h could not read a packet: the parser read a length field it cannot trust
+```
+
+The command runs every method whatever `--types` names, and it selects the results it
+reports. It therefore reports the error of a method that `--types` leaves out.
+
 ## Fingerprint Lookup
 
 ja4plus includes a bundled database of known JA4+ fingerprints from FoxIO's [ja4plus-mapping.csv](https://github.com/FoxIO-LLC/ja4/blob/main/ja4plus-mapping.csv). Identifies Chrome, Firefox, Safari, Python, Cobalt Strike, Sliver, IcedID, and more.
