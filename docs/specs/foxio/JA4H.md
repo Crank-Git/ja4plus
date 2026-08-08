@@ -275,6 +275,38 @@ The image settles nothing here. Its example carries 13 headers.
 `wireshark/source/packet-ja4.c:489` also writes a non-alpha character as two hexadecimal
 digits, and neither other reference does.
 
+### R24 — The references disagree on an HTTP/2 pseudo-header
+
+**This rule is uncertain.** Keep the vector fallback.
+
+A pseudo-header name begins with `:`. HTTP/2 carries four of them: `:method`,
+`:authority`, `:scheme` and `:path`.
+
+- `python/ja4h.py:47` splits each name on `:` and keeps the first half, so `:method`
+  becomes the empty string. `python/ja4h.py:49` tests `not h.startswith(':')` and
+  `python/ja4h.py:50` ends the filter with `and h`, which drops the empty name.
+- `wireshark/source/packet-ja4.c:1200` splits the name on `:`, and
+  `wireshark/source/packet-ja4.c:1203` drops the name when the first half is empty, which
+  is the pseudo-header case.
+- `rust/ja4/src/http.rs:127` to `rust/ja4/src/http.rs:144` tests for `cookie` and
+  `referer` alone, so it keeps every pseudo-header.
+
+Measured on 2026-08-08 against `http2-with-cookies.pcapng` at the pinned commit. **The
+Rust count is four higher than the Python count on every request of the capture**, which
+is the number of pseudo-headers.
+
+```
+rust/ja4/src/snapshots/ja4__insta@http2-with-cookies.pcapng.snap : ge20cn17enus  ge20cn23enus  ge20cr22enus
+python/test/testdata/http2-with-cookies.pcapng.json              : ge20cn13enus  ge20cn19enus  ge20cr18enus
+```
+
+The two readers therefore write a different field a5 and a different part b for one
+request. The image settles nothing here, because its example is an HTTP/2 request and it
+states no pseudo-header rule.
+
+`python/test/testdata/` decides, under the rule `.claude/rules/external-apis.md` states.
+This project follows the Python reader.
+
 ## The comparison against this project
 
 The comparison below reads `ja4plus/fingerprinters/ja4h.py` and
@@ -296,10 +328,10 @@ This page raises no bound question.
 | a1, method code | R3 | `ja4h.py:285` and `ja4h.py:305` | Agrees. `method[:2].lower()` writes the same two characters as the reference for each of the nine methods the parser reads. |
 | a2, version code | R4 | `ja4h.py:29` to `ja4h.py:50`, used at `ja4h.py:286` | Agrees. `HTTP/1.0` writes `10`, `HTTP/1.1` writes `11`, `HTTP/2` writes `20`, `HTTP/3` writes `30`. |
 | a2, version token | R4 | `http_utils.py:18` | Agrees. The pattern reads `HTTP/<major>.<minor>`, `HTTP/2` and `HTTP/3`, and it reads no other token. |
-| a5, the two omitted names | R7 | `ja4h.py:293` | Agrees. The count drops `cookie` and `referer`, matched without case. |
+| a5, the two omitted names | R7 | `ja4h.py:293` | Agrees. The count drops `cookie` and `referer`, and it ignores the case of the name. |
 | a5, the cap | R8 | `ja4h.py:295` | Agrees. `min(header_count, 99)`. |
 | a5, the width | R7 | `ja4h.py:296` | Agrees. `f"{header_count:02d}"`. |
-| a6, the language token | R10 | `ja4h.py:301` | Agrees. The line matches `python/ja4h.py:13` character for character in effect. |
+| a6, the language token | R10 | `ja4h.py:301` | Agrees. The line applies the four operations of `python/ja4h.py:13`: it removes each `-`, it replaces `;` with `,`, it lowercases the value, and it takes the part before the first `,`. |
 | a6, the pad | R10 | `ja4h.py:302` and `ja4h.py:303` | Agrees. Four characters, padded with `0`. |
 | a6, no Accept-Language | R11 | `ja4h.py:299` | Agrees. `lang_code = "0000"` is the default. |
 | Field order | R2 | `ja4h.py:305` | Agrees. The format string writes the six fields in the image's order. |
@@ -311,7 +343,7 @@ This page raises no bound question.
 | b, join and hash | R12 | `ja4h.py:354` to `ja4h.py:356` | Agrees. `",".join(...)` and `sha256(...).hexdigest()[:12]`. |
 | b, wire order | R14 | `ja4h.py:321` to `ja4h.py:325` | Agrees. The comprehension keeps the order of `header_names`, and nothing sorts it. |
 | b, the two omitted names | R13 | `ja4h.py:324` | Agrees. The list drops `cookie` and `referer`. |
-| b, a pseudo-header | R13 | `ja4h.py:324` | Agrees with all three references, which drop a name that begins with `:`. The branch is unreachable, because `http_utils.py:208` requires one non-colon character before the colon. |
+| b, a pseudo-header | R24 | `ja4h.py:324` | Agrees with the Python reader and the dissector, which both drop a name that begins with `:`. Disagrees with `rust/ja4/src/http.rs:127`, which R24 marks uncertain. The branch is unreachable here, because `http_utils.py:208` requires one non-colon character before the colon. |
 | c, the sort | R15 | `ja4h.py:364` | Agrees. `sorted(name for name, _ in cookie_pairs)`. |
 | c, join and hash | R15 | `ja4h.py:364` to `ja4h.py:366` | Agrees. |
 | c, no cookie | R17 | `ja4h.py:367` to `ja4h.py:369` | Agrees. `"000000000000"`. |
@@ -542,5 +574,7 @@ changes no fingerprinter and no register entry.**
 5. **D1.** Does this project read a request method outside the nine the pattern names?
 6. **The register cause of `CVE-2018-6794.pcap/JA4H` and `/JA4H_ro` is wrong.** The
    measurement shows extra values, and the entry states that this project produces none.
-7. **R19 to R23 stay uncertain.** Each holds a disagreement between two FoxIO
-   implementations, and the image settles none of them. The vector fallback stays.
+7. **R19 to R24 stay uncertain.** Each holds a disagreement between two FoxIO
+   implementations, and the image settles none of them. The vector fallback stays. R24 is
+   the widest: the Rust reader counts and hashes the four HTTP/2 pseudo-headers, and the
+   other two readers drop them, so the two disagree on every HTTP/2 request.
