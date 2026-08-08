@@ -21,8 +21,8 @@ shasum -a 256 technical_details/JA4S.png
 ## JA4S is the method with the most reference values
 
 JA4T and JA4TS reach few reference values, so #196 reasoned from source code. JA4S reaches
-329 published values across four FoxIO implementations, and this repository already holds
-194 of them. **This page therefore measures where the earlier pages reasoned.** "The search
+329 published values across three FoxIO implementations, and the Zeek baseline adds 20
+more. This repository already holds 194 of them. **This page therefore measures where the earlier pages reasoned.** "The search
 for a reference value" holds the counts.
 
 ## The field layout
@@ -332,9 +332,9 @@ page reads, so this page cites it.
 
 ## What the register holds
 
-`tests/foxio_deviations.json` holds 120 entries. **14 of them name JA4S**, and none names
-JA4S_r alone without a JA4S entry beside it, except `https-connect.pcap` and
-`socks4-https.pcap`.
+`tests/foxio_deviations.json` holds 120 entries. **14 of them name JA4S.** Twelve form six
+pairs, each pair holding one `JA4S` entry and one `JA4S_r` entry. `https-connect.pcap` and
+`socks4-https.pcap` hold a `JA4S` entry and no `JA4S_r` entry.
 
 | Entry | Owner | Explained by the specification |
 |---|---|---|
