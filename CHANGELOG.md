@@ -66,7 +66,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **`ja4plus watch` stops on an interface that carries no traffic** (#320). Round TBD.
+- **`ja4plus watch` stops on an interface that carries no traffic** (#320). Round 105.
   A monitor on a quiet interface exits within one second of `SIGINT` or of `SIGTERM`.
   `scapy` applies the `stop_filter` argument of `sniff` to a packet and to nothing else,
   and its capture loop waits in `select` without an end, so the monitor read the stop
@@ -93,7 +93,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the run with the status 1. `examples/monitoring_daemon.py` is removed, because
   `ja4plus watch` is the supported monitor and `docs/usage.md` documents it.
 
-- **`ja4plus watch` reports statistics on exit and on a schedule** (#55). Round TBD. The
+- **`ja4plus watch` reports statistics on exit and on a schedule** (#55). Round 103. The
   monitor writes one statistics line when it exits, and `--stats-interval SECONDS` adds
   a line for each interval that passes. Every line goes to standard error, so a pipe
   that reads standard output reads fingerprints alone. The line reports the packet
@@ -121,7 +121,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   filter never; the entry for #320 records the loop that repairs it.
 
 - **`ja4plus watch <interface>` reads an interface and bounds its connection table**
-  (#53). Round TBD. `ja4plus live` stays as an alias of it, so a version 0.6.0 script
+  (#53). Round 101. `ja4plus live` stays as an alias of it, so a version 0.6.0 script
   keeps working. The command owns the connection table, and that table holds a maximum
   entry count and a maximum age. `--max-connections COUNT` sets the entry count, and it
   defaults to 10000. `--connection-timeout SECONDS` sets the age, and it defaults to
