@@ -119,17 +119,20 @@ class JA4HFingerprinter(BaseFingerprinter):
             return None
 
         http_info = _extract_http_info_from_bytes(stream_data)
-        if not http_info:
+        fingerprint = _generate_ja4h_from_info(http_info) if http_info else None
+        if fingerprint is None:
+            # The buffer holds a complete header block, so no later byte changes this
+            # parse. A buffer that stays makes every later packet of the connection read
+            # the whole buffer again, and the buffer grows to `max_stream_bytes`. #190
+            # measures 420036 bytes over 300 packets.
+            self._drop_a_stream_whose_base_holds(stream_key)
             return None
 
-        fingerprint = _generate_ja4h_from_info(http_info)
-        if fingerprint:
-            self._record(fingerprint, http_info, packet)
-            self._remember_the_consumed_request(stream_key, len(stream_data), now)
-            self.reassembler.remove_stream(stream_key)
-            return fingerprint
-
-        return None
+        self._record(fingerprint, http_info, packet)
+        self._remember_the_consumed_request(stream_key, len(stream_data), now)
+        self.reassembler.remove_stream(stream_key)
+        self.unusable_base.pop(stream_key, None)
+        return fingerprint
 
     def _remember_the_consumed_request(self, stream_key, length, now):
         """Store the sequence range this stream read to produce its value.
@@ -222,6 +225,23 @@ class JA4HFingerprinter(BaseFingerprinter):
 
         if can_become_http_request(stream_data):
             self.unusable_base.pop(stream_key, None)
+            return
+
+        self._drop_a_stream_whose_base_holds(stream_key)
+
+    def _drop_a_stream_whose_base_holds(self, stream_key):
+        """Remove the stream once a second packet leaves its base sequence number alone.
+
+        The caller states that no later byte turns this buffer into a value. A segment
+        that arrives out of order puts the middle of a request at the start of the
+        buffer, and the missing head lowers the base sequence number when it arrives. The
+        removal waits for one further packet for that reason, and the wait keeps the
+        value of a request whose head arrives late.
+
+        Args:
+            stream_key: The key of the stream in the reassembler.
+        """
+        if stream_key not in self.reassembler.streams:
             return
 
         base = self.reassembler.base_seq(stream_key)
