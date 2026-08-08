@@ -1234,10 +1234,17 @@ recorded that as `ja4plus produces no JA4H fingerprint the reference holds`, and
 measurement contradicts the direction: both values matched, and ten extra occurrence keys
 failed the case.
 
-`JA4HFingerprinter.consumed_seq` now holds the sequence number that follows a request
-each stream produced a value for. A segment that ends at or before that number produces
-nothing. The comparison holds across a wrap of the 32-bit sequence number, and a
-pipelined request sits above the number, so it still produces a second value.
+`JA4HFingerprinter.consumed_seq` now holds the sequence range of the request each stream
+produced a value for. A segment that lies inside that range produces nothing. The
+comparison holds across a wrap of the 32-bit sequence number, and a pipelined request sits
+above the range, so it still produces a second value.
+
+**The range holds the start as well as the end, and the start is what a self-review
+added.** A second connection on one address pair and one port pair starts at its own
+initial sequence number, and that number sits below the stored one about half the time. A
+rule that reads the end alone loses the first request of the second connection. A
+retransmission repeats bytes the request carried, so it starts at or after the request,
+and a segment that starts before the request names a new connection.
 
 ---
 
