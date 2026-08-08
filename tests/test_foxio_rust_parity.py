@@ -99,7 +99,7 @@ TUNNEL_OUTER_IDENTITY = stream_identity("100.20.9.2", "65174", "100.20.9.1", "80
 # the port pair alone, would match every stream on ports 65174 and 80, and `ssh2.pcapng`
 # alone holds 19 JA4T streams. A wrong address here finds no entry, so the case reports
 # `ja4plus=<none>` and fails.
-SNAPSHOT_ADDRESS_ALIASES = {}
+SNAPSHOT_ADDRESS_ALIASES = {TUNNEL_INNER_IDENTITY: TUNNEL_OUTER_IDENTITY}
 
 # The streams on which the server coalesces the ServerHello, the Certificate and the
 # ServerHelloDone into one handshake record that spans several TCP segments. The FoxIO
@@ -129,7 +129,7 @@ COALESCED_RECORD_STREAMS = (
 # The method name the reference uses, beside the field name the Rust snapshot writes.
 # The FoxIO Python expected-output file holds no JA4T value for any capture, so the Rust
 # snapshot is the only FoxIO reference this repository holds for the method. #216 added
-# `JA4T`, and the six local snapshots carry 38 values.
+# `JA4T`, and #242 added the seventh snapshot. The seven local snapshots carry 39 values.
 SNAPSHOT_METHODS = (("JA4", "ja4"), ("JA4S", "ja4s"), ("JA4T", "ja4t"))
 
 # The method the register-keyed cases below compare, and the field name it reads. No
@@ -183,10 +183,13 @@ def read_rust_snapshot(path):
     Returns:
         A map of stream identity to a RustStream. The index and the source port of the
         first block win, because the register key names the stream a reader sees first.
+        A stream that `SNAPSHOT_ADDRESS_ALIASES` names reaches the identity ja4plus
+        produces for it.
 
     Raises:
-        AssertionError: The snapshot holds no JA4 value. An empty result compares equal
-            to an empty produced list, and the caller then reports a pass on nothing.
+        AssertionError: The snapshot holds no value this module compares. An empty
+            result compares equal to an empty produced list, and the caller then reports
+            a pass on nothing.
     """
     streams = {}
     block = None
@@ -198,6 +201,9 @@ def read_rust_snapshot(path):
         if not all(block.get(field) for field in SNAPSHOT_ADDRESS_FIELDS):
             return
         identity = stream_identity(block["src"], block["src_port"], block["dst"], block["dst_port"])
+        # A tunneled capture carries several address layers, and the snapshot reads a
+        # layer ja4plus does not report. The alias names the pair ja4plus produces.
+        identity = SNAPSHOT_ADDRESS_ALIASES.get(identity, identity)
         held = streams.get(identity)
         if held is None:
             streams[identity] = RustStream(
@@ -243,8 +249,10 @@ def read_rust_snapshot(path):
                 block["values"][method] = value.strip()
     close(block)
 
-    assert any("JA4" in stream.values for stream in streams.values()), (
-        "{} holds no JA4 value".format(path)
+    # `gre-erspan-vxlan.pcap` holds a JA4T value and no handshake value, so a check for
+    # the `JA4` name alone rejects it. Every method this module compares counts here.
+    assert any(stream.values or stream.certs for stream in streams.values()), (
+        "{} holds no value this module compares".format(path)
     )
     return streams
 
@@ -347,7 +355,7 @@ def tcp_cases(capture):
 
 def tcp_captures():
     """Return every capture whose local Rust snapshot holds a JA4T value."""
-    return tuple(capture for capture in DIVERGENT_CAPTURES if tcp_cases(capture))
+    return tuple(capture for capture in SNAPSHOT_CAPTURES if tcp_cases(capture))
 
 
 def _tcp_value_params():
@@ -437,7 +445,7 @@ def certificate_cases(capture):
 
 def certificate_captures():
     """Return every capture whose local Rust snapshot holds a JA4X value."""
-    return tuple(capture for capture in DIVERGENT_CAPTURES if certificate_cases(capture))
+    return tuple(capture for capture in SNAPSHOT_CAPTURES if certificate_cases(capture))
 
 
 def certificate_key(capture, case):
@@ -671,10 +679,14 @@ class TestTheJa4tValuesTheRustSnapshotHolds:
     Each value carries the register key `<capture>/<stream>:<port>/JA4T.1`, and the
     occurrence keys of each capture carry `<capture>/JA4T`. A mismatch that #215 owns
     reports as `xfailed`, and a mismatch the register does not name fails the suite.
+
+    #242 added `gre-erspan-vxlan.pcap`, which is the one local case that measures D1 of
+    `docs/specs/foxio/JA4T.md`. `SNAPSHOT_ADDRESS_ALIASES` names its stream, because the
+    two FoxIO references name it by different addresses.
     """
 
-    def test_the_local_snapshots_hold_the_thirty_eight_values_the_reading_counts(self):
-        """`docs/specs/foxio/JA4T.md` counts 38 JA4T values in the six local snapshots.
+    def test_the_local_snapshots_hold_the_thirty_nine_values_the_reading_counts(self):
+        """`docs/specs/foxio/JA4T.md` counts 39 JA4T values in the seven local snapshots.
 
         A snapshot that leaves the repository takes its cases away, and the suite still
         reports green. This check makes that loss as loud as a mismatch.
@@ -683,12 +695,13 @@ class TestTheJa4tValuesTheRustSnapshotHolds:
         assert counts == {
             "browsers-x509.pcapng": 3,
             "chrome-cloudflare-quic-with-secrets.pcapng": 1,
+            "gre-erspan-vxlan.pcap": 1,
             "https-connect.pcap": 1,
             "latest.pcapng": 6,
             "ssh2.pcapng": 19,
             "tls3.pcapng": 8,
         }
-        assert sum(counts.values()) == 38
+        assert sum(counts.values()) == 39
 
     def test_the_suite_collects_one_case_for_every_value_the_snapshots_hold(self):
         """Fail when a snapshot value carries no case.
@@ -696,7 +709,7 @@ class TestTheJa4tValuesTheRustSnapshotHolds:
         The parameter list is the comparison. A reader who removes `JA4T` from
         `SNAPSHOT_METHODS` empties the list, and this check names the loss.
         """
-        assert len(_tcp_value_params()) == 38
+        assert len(_tcp_value_params()) == 39
 
     def test_no_two_cases_share_one_register_key(self):
         """One entry that matches two cases marks both, so neither fix reports itself."""
@@ -1000,7 +1013,7 @@ class TestTheLocalSnapshotsHoldNoJa4tsValue:
         ]
         assert not holders, "\n".join(holders)
         # Without this check, an empty snapshot directory would pass the check above.
-        assert len(list(RUST_DIR.glob("*.snap"))) == 10
+        assert len(list(RUST_DIR.glob("*.snap"))) == 11
 
     def test_no_foxio_python_expected_output_holds_a_ja4t_or_a_ja4ts_key(self):
         """The FoxIO Python implementation writes neither method, so it decides neither."""

@@ -176,6 +176,10 @@
     "issue": 138,
     "decided": true
   },
+  "gre-erspan-vxlan.pcap/0:65174/JA4T.1": {
+    "issue": 215,
+    "cause": "ja4t.py:85 writes 0 for an empty option list, so ja4plus writes 8192_0_0_0 and the FoxIO Rust snapshot holds 8192__0_0. D1 of docs/specs/foxio/JA4T.md records the reading, and #215 decides the form. This stream is the one local case that reaches D1, and #242 committed the snapshot that measures it."
+  },
   "gre-sample.pcap/JA4SSH": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
     "decided": true,

@@ -793,6 +793,25 @@ key cannot hold both measurement points of the connection.
 The expected-output file holds `JA4L-S` `997_64` and `JA4L-C` `953_64` on the
 stream `100.20.9.2:65174` to `100.20.9.1:80`. Read #101 for the measurement.
 
+### The stream identity of a tunneled capture
+
+The two FoxIO references name the stream of `gre-erspan-vxlan.pcap` by
+different addresses. `python/test/testdata/gre-erspan-vxlan.pcap.json` names the
+outer pair `100.20.9.2` and `100.20.9.1`, and
+`rust/ja4/src/snapshots/ja4__insta@gre-erspan-vxlan.pcap.snap` names the inner
+pair `10.16.27.12` and `10.16.27.131`. Both name the inner ports `65174` and
+`80`.
+
+`ja4plus` reports the outer pair with the inner ports, which is the pair the
+FoxIO Python file reports. No vector separates the two rules, so rule 1 of
+`CLAUDE.md` keeps that behaviour. #242 decided it.
+
+`SNAPSHOT_ADDRESS_ALIASES` in `tests/test_foxio_rust_parity.py` records the pair.
+The map holds the identity the Rust snapshot names, and it returns the identity
+`ja4plus` produces, so the case compares the value rather than the address layer.
+A wrong address on either side finds no entry, and the case then fails.
+`docs/specs/foxio/JA4T.md` holds the whole reading.
+
 ### The QUIC measurement points
 
 The reference reads four QUIC packets, and it reads the direction from port 443:
