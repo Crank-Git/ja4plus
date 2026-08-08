@@ -15,10 +15,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The re-run against the pinned FoxIO checkout prints 98 rows, of which 63 match and 35
   differ, where round 52 read 98 rows, 62 match and 36 differ. **The page now names the
   Changelog round of every run it cites**, so a reader can tell a stale count from a
-  current one. **One value rating no longer follows from its evidence and reads
+  current one. **One value rating no longer follows from its evidence, and #327 leaves it
   `Undecided`**: the JA4SSH baseline was `Blocked` on #214, and the replacement rating is
-  a precedence question the user decides. No file under `ja4plus/` changes, no
-  fingerprint moves, and the register holds 135 keys against 135 xfailed.
+  a precedence question the user decides. **#332 answers that question.** No file under
+  `ja4plus/` changes, no fingerprint moves, and the register holds 135 keys against 135
+  xfailed.
 
 - **The Zeek baseline comparison script runs again, and a case now runs it** (#324).
   Round TBD. `tests/compare_zeek_baselines.py` read the composite `source` field that
@@ -33,6 +34,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   silence. No fingerprint moves, no output field changes, and the schema version stays 1.
 
 ### Changed
+
+- **A declined FoxIO Python value forfeits its precedence** (#332). Round TBD.
+  `.claude/rules/external-apis.md` states that `python/test/testdata/` decides where it
+  and a Zeek baseline both hold a value for one method on one connection, and it named no
+  exception for a value this project already ruled wrong. The rule now carries one
+  exception: where `tests/foxio_deviations.json` declines the Python value under a decided
+  entry, a Zeek baseline may hold the reference value for that method on that connection.
+  **Python keeps its precedence everywhere else.** **The condition is one recorded decline
+  that names an issue, and no reading of which value looks right reaches it.** An
+  undecided entry is an open question, and the exception passes over it.
+  `docs/specs/foxio/zeek.md` now rates `Scripts.ja4-ssh2/ja4ssh.log` Medium and states the
+  reason, where #327 left it `Undecided`. `tests/test_zeek_precedence_exception.py`
+  measures the reach: the exception reaches 1 row of the 135 the register holds, and that
+  row is `ssh2.pcapng/14:57377/JA4SSH.2` under #97. **No baseline is adopted as a vector**,
+  no file under `ja4plus/` changes, and no fingerprint moves.
 
 - **The vocabulary settles one word for the serialized output line** (#306). Round TBD.
   The `## Terms` table of `docs/specs/spec.md` listed `record` in the `Do not use`

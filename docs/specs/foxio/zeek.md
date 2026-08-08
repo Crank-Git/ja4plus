@@ -318,8 +318,8 @@ declined.**
 Zeek script always writes the window a connection holds open when it closes.
 
 **This page held one open decision, and #214 closed it.** The value rating of the JA4SSH
-baseline rested on that decision, and "The rating this baseline now needs" below states
-what the closure leaves open.
+baseline rested on that decision, and "The rating this baseline now carries" below states
+the rating #332 settled.
 
 ### The Zeek log columns `ja4l_delta` and `ja4ls_delta` are ratios, not fingerprints
 
@@ -366,7 +366,7 @@ seven captures, so all seven baselines are usable. The value of each one differs
 | `Scripts.ja4-dhcp/ja4d.log` | JA4D | Low. `tests/foxio_vectors/wireshark_expected/` already holds the same four values, and `.claude/rules/external-apis.md` records the match. |
 | `Scripts.ja4-http1-with-cookies/http.log` | JA4H | Low. One value that `python/test/testdata/` already holds. |
 | `Scripts.ja4-conn/conn.log` | none | **None.** Its JA4T and JA4TS values come from the `DLT_NULL` defect, and its JA4L values come from the Zeek rounding rule. |
-| `Scripts.ja4-ssh2/ja4ssh.log` | JA4SSH | **Undecided.** #214 closed, so this baseline is no longer blocked. "The rating this baseline now needs" below states the question, and the user decides it. |
+| `Scripts.ja4-ssh2/ja4ssh.log` | JA4SSH | Medium. #332 lets it hold the reference second JA4SSH value of `ssh2.pcapng`, because the register declines the Python value under #97. It corroborates two values that `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` already holds. "The rating this baseline now carries" below states the reason. |
 
 **A later issue adds them. This issue adds none.** Three things are needed to add one.
 
@@ -380,29 +380,47 @@ seven captures, so all seven baselines are usable. The value of each one differs
 **A JA4L or JA4LS value of any Zeek baseline is not usable as a vector.** The Zeek
 rounding rule and the Zeek third part both diverge from the Python reference.
 
-### The rating this baseline now needs
+### The rating this baseline now carries
 
 **The `Blocked` rating of `Scripts.ja4-ssh2/ja4ssh.log` rested on #214, and #214 closed.**
-The rating no longer follows from its evidence. #327 states that and writes no
-replacement, because the replacement is a precedence question and not a count. The user
-decides it.
+#327 read that, wrote no replacement, and returned the precedence question. **The user
+answered it on 2026-08-08, and #332 records the answer.**
 
-Three measured facts frame the question, and the run of #327 holds each one.
+**A FoxIO Python value that the register declines under a decided entry forfeits its
+precedence.** Where the register declines it, a Zeek baseline may hold the reference value
+for that method on that connection. **Python keeps its precedence everywhere else.**
+`.claude/rules/external-apis.md` states the exception and its condition.
+
+**The reason is that precedence breaks a tie between two sources this project trusts.** A
+value this project already ruled wrong is not a tie. The rule named no exception because
+the case had not arisen when the rule was written.
+
+Three measured facts frame the row, and the run of #327 holds each one.
 
 1. `ja4plus` and the Zeek baseline agree on both JA4SSH values of `ssh2.pcapng`, so the
    baseline corroborates the method that #214 settled.
 2. `python/test/testdata/ssh2.pcapng.json` holds `c36s36_c0s0_c2s0` as the second value,
    and `tests/foxio_deviations.json` declines it under #97 at the key
    `ssh2.pcapng/14:57377/JA4SSH.2`.
-3. `.claude/rules/external-apis.md` states that `python/test/testdata/` decides where it
-   and a Zeek baseline both hold a value for one method on one connection. It names no
-   exception for a value the register declines.
+3. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` holds both
+   values that the Zeek baseline holds, so a third FoxIO reference corroborates them. The
+   rating is therefore Medium and not High.
 
-**The question is whether a Zeek baseline may hold the reference JA4SSH value for a
-connection whose Python value the register declines.** Fact 3 answers no, and facts 1 and
-2 are the case that rule did not anticipate. **No baseline of the seven is adopted as a
-vector today**, which the section above already states. The open question therefore stops
-no work that this project has built.
+**Warning: read the condition from the register, and not from the values.** The condition
+is one recorded decline that names an issue, which a reader checks in
+`tests/foxio_deviations.json`. **A reading of which value looks right reaches no row.** An
+entry the register leaves undecided is an open question, and the exception passes over it.
+
+**The exception reaches this one row of the 135 the register holds.**
+`tests/test_zeek_precedence_exception.py` measures the reach, and #332 records the search.
+The 13 other keys that name a method a Zeek baseline covers are JA4L keys under #225, and
+the standing bar on a JA4L or JA4LS value of a Zeek baseline holds them out. The six
+`tls-handshake.pcapng` keys under #138 carry the occurrence form, which records a stream
+the Python file omits and declines no value.
+
+**No baseline of the seven is adopted as a vector today**, which the section above already
+states. The exception states which source may hold a reference value, and adoption is its
+own decision.
 
 ## The Zeek reading of each method
 

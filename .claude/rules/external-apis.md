@@ -101,6 +101,40 @@ reference.
 2. It appends a third part that the Python reference does not publish.
 3. It marks a QUIC connection with a `q` part.
 
+**A declined FoxIO Python value forfeits its precedence.** The precedence above breaks a
+tie between two sources this project trusts. A value this project already ruled wrong is
+not a tie. Where `tests/foxio_deviations.json` declines the Python value for one method on
+one connection, under a decided entry, a Zeek baseline may hold the reference value for
+that method on that connection. #332 records the decision, and #97 is the decline that
+raised it.
+
+**Read the condition from the register alone.** Three facts state it, and a reader checks
+each one.
+
+1. The register key is the value form `<vector>/<stream>:<port>/<method>.<occurrence>`,
+   so the FoxIO Python file holds a value to decline. The occurrence form
+   `<vector>/<method>` records a stream that file omits, and the Rust snapshot rule above
+   decides that case.
+2. The entry carries `"decided": true`, so a recorded decision names the issue.
+   `tests/foxio_deviations.py` states the marker rule.
+3. A Zeek baseline holds a value for the same method on the same connection.
+
+**Warning: no reading of which value looks right reaches this exception.** An entry the
+register leaves undecided is an open question, and the exception does not reach it. An
+entry that names the issue that will decide it stays undecided.
+
+**The bar on a JA4L or JA4LS value stands above this exception.** The three rules above
+part the Zeek script from the Python reference, so no such value is a reference value,
+whatever the register holds.
+
+**This exception adopts no baseline as a vector.** It states which source may hold a
+reference value, and adoption is its own decision. "Which baselines are usable as vectors"
+in `docs/specs/foxio/zeek.md` holds that decision.
+
+**The exception reaches one row of the 135 the register holds.**
+`tests/test_zeek_precedence_exception.py` measures the reach, and the one row is
+`ssh2.pcapng/14:57377/JA4SSH.2`.
+
 **`FoxIO-LLC/ja4tscan` holds prose and no baseline.** Its `README.md` gives eight
 JA4TScan example values against named operating systems, and two of them record TCP
 option kind 0 inside the JA4T option list. #197 owns the scope decision.
