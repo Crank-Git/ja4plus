@@ -41,27 +41,37 @@ BASELINES = [
 # difference.
 ZEEK_COLUMNS = ["ja4", "ja4s", "ja4h", "ja4l", "ja4ls", "ja4t", "ja4ts", "ja4ssh", "ja4d"]
 
-# A Zeek `conn.log` row reports the connection once. A `ja4plus` record reports the
-# direction it observed. This map states the direction each method reports, so that both
-# readings reach the same connection key.
-CLIENT_METHODS = {"ja4", "ja4h", "ja4l", "ja4t", "ja4d"}
-
 
 def read_zeek_log(path: Path) -> list[dict[str, str]]:
     """Return the rows of a Zeek TSV log, one dictionary per row.
 
-    A btest baseline opens with comment lines. The `#fields` line names the columns.
+    Args:
+        path: The path of one baseline.
+
+    Returns:
+        One dictionary for each data row, keyed by the column names of the `#fields`
+        line.
+
+    Raises:
+        ValueError: A data row holds a different column count from the `#fields` line,
+            or the file holds a data row before the `#fields` line. Either one makes
+            every value of that row reach the wrong column, so the reader stops.
     """
     fields: list[str] = []
     rows: list[dict[str, str]] = []
-    for line in path.read_text().splitlines():
+    for number, line in enumerate(path.read_text().splitlines(), 1):
         if line.startswith("#fields"):
             fields = line.split("\t")[1:]
             continue
         # A btest baseline opens with a `###` line, and a Zeek log opens with `#` lines.
         if line.startswith("#") or not line:
             continue
-        rows.append(dict(zip(fields, line.split("\t"))))
+        values = line.split("\t")
+        if len(values) != len(fields):
+            raise ValueError(
+                f"{path}:{number} holds {len(values)} values against {len(fields)} fields"
+            )
+        rows.append(dict(zip(fields, values)))
     return rows
 
 
@@ -96,7 +106,13 @@ def split_source(source: str) -> tuple[str, str]:
 
 
 def zeek_readings(rows: list[dict[str, str]]) -> dict[tuple[str, str], dict[str, list[str]]]:
-    """Return the Zeek fingerprints, keyed by connection and then by method."""
+    """Return the Zeek fingerprints, keyed by connection and then by method.
+
+    Warning: the key rests on one assumption. Zeek and `ja4plus` must write an address in
+    the same form. Both write the compressed form of an IPv6 address on the seven
+    captures of `BASELINES`. A capture where the two forms differ produces `(none)` in
+    the `ja4plus` column of every method on that connection, and no parse error.
+    """
     out: dict[tuple[str, str], dict[str, list[str]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         key = connection_key(
@@ -113,7 +129,18 @@ def zeek_readings(rows: list[dict[str, str]]) -> dict[tuple[str, str], dict[str,
 
 
 def ja4plus_readings(capture: Path) -> dict[tuple[str, str], dict[str, list[str]]]:
-    """Return the `ja4plus` fingerprints for one capture, keyed as `zeek_readings` is."""
+    """Return the `ja4plus` fingerprints for one capture, keyed as `zeek_readings` is.
+
+    Args:
+        capture: The path of one capture under `tests/foxio_vectors/`.
+
+    Returns:
+        The fingerprints, keyed by connection and then by method.
+
+    Raises:
+        subprocess.CalledProcessError: The command-line program failed. `compare` catches
+            it, prints the standard error stream, and reads the next baseline.
+    """
     result = subprocess.run(
         [sys.executable, "-m", "ja4plus.cli", "--format", "json", "analyze", str(capture)],
         capture_output=True,
@@ -151,7 +178,14 @@ def compare(reference: Path) -> int:
             print(f"MISSING capture: {capture}")
             continue
         zeek = zeek_readings(read_zeek_log(log))
-        mine = ja4plus_readings(capture)
+        # One capture that fails must not hide the other six, so the loop reports the
+        # failure and reads the next baseline.
+        try:
+            mine = ja4plus_readings(capture)
+        except subprocess.CalledProcessError as error:
+            print(f"FAILED to read {capture}: exit {error.returncode}")
+            print(error.stderr)
+            continue
         print("| Connection | Method | Zeek | ja4plus | Same |")
         print("|---|---|---|---|---|")
         for key in sorted(zeek):

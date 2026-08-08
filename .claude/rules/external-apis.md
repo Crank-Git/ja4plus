@@ -93,9 +93,12 @@ names its capture, and this project holds all seven captures.
 `tests/compare_zeek_baselines.py` reproduces the comparison. Where
 `python/test/testdata/` and a Zeek baseline both hold a value for one method on one
 connection, `python/test/testdata/` decides. **Read no JA4L or JA4LS value of a Zeek
-baseline as a reference value.** The Zeek script rounds the halved latency where the
-Python reference truncates it, it appends a third part the Python reference does not
-publish, and it marks a QUIC connection with a `q` part.
+baseline as a reference value.** Three rules of the Zeek script diverge from the Python
+reference.
+
+1. It rounds the halved latency, where the Python reference truncates it.
+2. It appends a third part that the Python reference does not publish.
+3. It marks a QUIC connection with a `q` part.
 
 **`FoxIO-LLC/ja4tscan` holds prose and no baseline.** Its `README.md` gives eight
 JA4TScan example values against named operating systems, and two of them record TCP

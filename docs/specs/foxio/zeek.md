@@ -163,9 +163,15 @@ Eight values differ by one microsecond. `zeek/ja4l/main.zeek:158` converts the h
 interval with `double_to_count`, and `ja4plus/fingerprinters/ja4l.py:324` truncates it
 toward zero.
 
+The eight values sit on five connections. `ipv6.pcapng` holds one, on `ja4ls`.
+`chrome-cloudflare-quic-with-secrets.pcapng` holds one, on `ja4ls`. `tls3.pcapng` holds
+six, two on each of `172.253.122.95:443`, `192.168.1.169:63250` and
+`192.168.1.169:63251`.
+
 A measurement of the eight TCP connections of `tls3.pcapng` settles the rule Zeek
-applies. Four half-intervals land exactly on `.5`, and Zeek rounds each one to the even
-value.
+applies. The table below holds every connection whose half-interval lands exactly on
+`.5`, and Zeek rounds each one to the even value. Two of the four therefore round down,
+and the `ja4plus` value matches those two.
 
 | Connection | Exact half-interval | Truncated | Rounded half to even | Zeek |
 |---|---|---|---|---|
