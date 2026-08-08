@@ -9,7 +9,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **The command-line program separates results from diagnostics and gains `--output`**
-  (#52). Round TBD. The program writes results to standard output and every diagnostic
+  (#52). Round 95. The program writes results to standard output and every diagnostic
   to standard error, so a pipe that reads standard output reads results alone. The
   progress line of `db update` moves to standard error. `--output FILE` writes the
   results to a file and leaves standard output empty. The program refuses to overwrite a
@@ -24,7 +24,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and `csv` formats keep the output the schema promises.
 
 - **The command-line program runs on `Processor` and reports a fingerprinter error**
-  (#51). Round TBD. The program built its own dictionary of fingerprinters and ran its
+  (#51). Round 94. The program built its own dictionary of fingerprinters and ran its
   own per-packet loop in `analyze` and in `live`. Both loops caught every error with
   `except Exception` and continued without a word. The program now builds one
   `Processor`, so it gets the connection eviction of Epic 3 and the errors of Epic 4. A
@@ -41,7 +41,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   adds.
 
 - **The command-line program writes the addresses and the ports as separate fields**
-  (#49). Round TBD. The `json` and the `csv` formats replace the composite `source`
+  (#49). Round 96. The `json` and the `csv` formats replace the composite `source`
   field of version 0.6.0 with `src_ip`, `src_port`, `dst_ip` and `dst_port`, so a
   downstream tool parses no composite string. The CSV header is now fixed at
   `schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as`,
@@ -67,14 +67,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - **`Processor.process_packet_with_method_errors` names the method that raised** (#51).
-  Round TBD. It returns the same results as `process_packet_with_errors`, and one pair
+  Round 94. It returns the same results as `process_packet_with_errors`, and one pair
   of the method name and the exception for each method that raised. An exception names
   no method, so `process_packet_with_errors` alone cannot tell a caller which method
   failed. Every returned exception still carries no traceback, for the reason #45
   records. `process_packet_with_errors` keeps its signature and drops the name.
 
 - **The output schema carries a version, and `docs/output-schema.md` records it** (#50).
-  Round TBD. The new page states the schema version, the eleven fields, the raw form
+  Round 96. The new page states the schema version, the eleven fields, the raw form
   each of the ten methods writes, and the rule that raises the version. **The rule is a
   check and not prose alone.** `SCHEMA_HISTORY` in `tests/test_output_schema.py` freezes
   the column list of each released version, and `TheSchemaVersionRule` fails when a
