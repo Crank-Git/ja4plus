@@ -33,6 +33,16 @@ SOAK_CAPTURE = "latest.pcapng"
 # measures a method that holds state across many packets.
 WINDOW_CAPTURE = "ssh2.pcapng"
 
+# The captures the contract cases replay. The five carry TCP, TLS, HTTP, SSH, X.509 and
+# QUIC traffic, and together they hold 2047 packets and 309 values.
+CONTRACT_CAPTURES = [
+    "latest.pcapng",
+    "ssh2.pcapng",
+    "browsers-x509.pcapng",
+    "http1.pcapng",
+    "tls-sni.pcapng",
+]
+
 # The seconds the soak case runs. The acceptance criterion of #40 states 60 seconds, and
 # a 60-second case in the unit suite costs every later run of that suite. The default
 # holds the case cheap, and the pull request records one run at 60.
@@ -109,6 +119,44 @@ def eight_thread_values(packets, partition_by_connection=True):
         thread.join(JOIN_TIMEOUT)
     values.extend(result["fingerprint"] for result in processor.close_open_windows())
     return sorted(values), errors
+
+
+def read_capture(name):
+    """Return the packets of one capture. Each call reads the file again.
+
+    A caller that moves a packet timestamp changes the packet object, so a cached list
+    would carry that change into the next case.
+    """
+    return list(rdpcap(str(VECTORS / name)))
+
+
+def concatenate(names, one_timeline):
+    """Return the packets of several captures, in the order the names state.
+
+    The five captures were recorded across 183 days, so a concatenation of them jumps
+    the packet timestamp by months. `BoundedStateTable` evicts on the timestamp of the
+    most recent packet, so that jump ages out entries the next capture still needs.
+
+    Args:
+        names: The capture file names, in the order to read them.
+        one_timeline: True moves each capture so that it starts one second after the
+            capture before it, which gives the whole list one timeline. False holds the
+            timestamp each capture carries.
+
+    Returns:
+        A list of packets.
+    """
+    packets = []
+    offset = 0.0
+    for name in names:
+        block = read_capture(name)
+        if one_timeline:
+            base = min(float(packet.time) for packet in block)
+            for packet in block:
+                packet.time = float(packet.time) - base + offset
+            offset = max(float(packet.time) for packet in block) + 1.0
+        packets.extend(block)
+    return packets
 
 
 def handshake(client_ip, client_port, server_ip="10.0.0.1", server_port=443, start=1000.0):
@@ -650,6 +698,88 @@ class TestResetWhileEightThreadsProcessPackets:
             connection["client_entry"] for connection in fingerprinter.connections.values()
         )
         assert stored == [2, 3], f"two connections stored the positions {stored}"
+
+
+class TestTheConcurrencyContract:
+    """The contract `README.md` states, measured, FR-concurrency-safety-15.
+
+    The contract is narrower than "thread safe", and the three cases below measure each
+    clause of it.
+
+    1. A caller who gives each thread whole connections reads the value set one thread
+       reads. `Processor.get_shard_key` exists for that arrangement.
+    2. Clause 1 holds across several captures too, as long as every packet shares one
+       timeline.
+    3. A caller who feeds one processor two clocks reads a different value set, and one
+       thread reads a different set as well. The cause is the age eviction pass and not
+       a race, so the case runs on one thread.
+
+    #40 read the third case as a consequence of the entry count bound. A re-measurement
+    for #43 disproves that reading: the age bound alone causes it. With the age bound
+    raised and the entry count bound as shipped, eight sharded threads match one thread
+    on 5 of 5 runs. The entry count bound still evicts 168 entries of
+    `ja4x.scan_offsets` on that run.
+
+    Warning: no case in this class measures a lock. #43 removed every fingerprinter lock
+    and ran this class 20 times, and 0 of 20 runs failed. It removed the lock of
+    `Processor.process_packet` and read 1 of 20. The reason is the arrangement itself.
+    A thread that owns whole connections touches keys no other thread touches, so the
+    lock guards nothing that these cases read. `TestOneFingerprinterAdmitsOneThread` and
+    the two forced cases of `TestResetWhileEightThreadsProcessPackets` measure the locks,
+    and round 84 records 20 of 20 for each one.
+
+    The two removals that do fail this class name what it measures.
+
+    - The direction sort of `Processor.get_shard_key` removed: 20 of 20 runs fail, and 4
+      of the 7 cases fail on each run. Clause 1 and clause 2 measure that one connection
+      reaches one thread.
+    - The age eviction pass of `BoundedStateTable.evict_aged` removed: 20 of 20 runs
+      fail. Clause 3 measures the age bound.
+    """
+
+    @pytest.mark.parametrize("name", CONTRACT_CAPTURES)
+    def test_eight_sharded_threads_read_the_set_one_thread_reads(self, name):
+        """Clause 1. Each thread owns whole connections, and the two lists are equal."""
+        packets = read_capture(name)
+        expected = one_thread_values(packets)
+        assert expected, f"{name} produced no fingerprint, so the case cannot fail"
+
+        values, errors = eight_thread_values(packets)
+        assert errors == []
+        assert values == expected
+
+    def test_eight_sharded_threads_read_one_timeline_the_way_one_thread_reads_it(self):
+        """Clause 2. Five captures on one timeline hold the equality of clause 1."""
+        packets = concatenate(CONTRACT_CAPTURES, one_timeline=True)
+        expected = one_thread_values(packets)
+        assert expected
+
+        values, errors = eight_thread_values(packets)
+        assert errors == []
+        assert values == expected
+
+    def test_one_processor_that_reads_two_clocks_produces_a_shorter_value_set(self):
+        """Clause 3. A timestamp jump ages out state the next capture still needs.
+
+        The case runs on one thread, so no interleaving reaches the result. It compares
+        the same five captures against themselves, and the only difference between the
+        two lists is the packet timestamp. `BoundedStateTable.evict_aged` reads that
+        timestamp, so the concatenation that jumps 183 days loses a value.
+
+        A caller therefore feeds one processor the packets of one timeline. This case
+        guards the paragraph of `README.md` that states it. If the library later reads a
+        clock for each connection, this case fails and the contract needs a new reading.
+        """
+        jumping = one_thread_values(concatenate(CONTRACT_CAPTURES, one_timeline=False))
+        continuous = one_thread_values(concatenate(CONTRACT_CAPTURES, one_timeline=True))
+
+        assert jumping != continuous, (
+            "the two clocks produced one value set, so the age pass reads no timestamp"
+        )
+        assert len(jumping) < len(continuous), (
+            f"the jump produced {len(jumping)} values and one timeline produced "
+            f"{len(continuous)}, so the jump lost no value"
+        )
 
 
 def ja4l_packet_endpoints():
