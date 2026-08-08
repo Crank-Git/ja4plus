@@ -411,12 +411,19 @@ is one recorded decline that names an issue, which a reader checks in
 `tests/foxio_deviations.json`. **A reading of which value looks right reaches no row.** An
 entry the register leaves undecided is an open question, and the exception passes over it.
 
-**The exception reaches this one row of the 135 the register holds.**
-`tests/test_zeek_precedence_exception.py` measures the reach, and #332 records the search.
-The 13 other keys that name a method a Zeek baseline covers are JA4L keys under #225, and
-the standing bar on a JA4L or JA4LS value of a Zeek baseline holds them out. The six
-`tls-handshake.pcapng` keys under #138 carry the occurrence form, which records a stream
-the Python file omits and declines no value.
+**This is the one row of the exception that a Zeek baseline reaches.**
+`tests/test_precedence_exception.py` measures the reach. The 13 other keys that name a
+method a Zeek baseline covers are JA4L keys under #225, and the standing bar on a JA4L or
+JA4LS value of a Zeek baseline holds them out. The six `tls-handshake.pcapng` keys under
+#138 carry the occurrence form, which records a stream the Python file omits and declines
+no value.
+
+**#334 made the exception source-neutral, and the whole exception now reaches 6 rows of
+the 135.** Any other FoxIO implementation may hold the reference value, so the Rust
+snapshot and the Wireshark dissector reach 5 rows a Zeek baseline does not.
+`.claude/rules/external-apis.md` holds the table, and two bars stand above the rule: a
+decline that records a capability reaches no row, and a disagreement between the
+remaining sources leaves the row declined.
 
 **No baseline of the seven is adopted as a vector today**, which the section above already
 states. The exception states which source may hold a reference value, and adoption is its
