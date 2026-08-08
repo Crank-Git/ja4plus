@@ -22,6 +22,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   keeps its first position. No fingerprint value moved:
   the program writes the same 863 records over the 43 committed captures, byte for byte,
   and the conformance suite reports the same 1531 passed, 143 skipped and 135 xfailed.
+  The unit suite rises from 1801 passed to 1814 passed, which is the 13 cases the change
+  adds.
 
 - **The command-line program writes the addresses and the ports as separate fields**
   (#49). Round TBD. The `json` and the `csv` formats replace the composite `source`
