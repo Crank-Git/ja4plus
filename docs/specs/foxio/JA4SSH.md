@@ -226,7 +226,10 @@ on one side.
 
 ### R11 — The specification states no rule that closes the last window
 
-**This rule is uncertain, and it is the rule #214 needs.** Keep the vector fallback.
+**This rule is uncertain, and #214 settled the behaviour without it.** The specification
+states nothing, so the user decided. `ja4plus` closes the last window at the end of the
+capture, as the FoxIO Rust implementation and the FoxIO Zeek package do. The section "The
+trailing window" holds the measurement, and the decision is reversible.
 
 The image states one boundary, the 200 SSH packets of R7. It states nothing about these
 three things.
@@ -261,7 +264,7 @@ reads them, and this project reads them only in `interpret_fingerprint`.
 A reader of the image alone cannot answer these questions. Each one reaches the vector
 fallback under `.claude/rules/conformance.md`.
 
-1. **What closes the last window.** R11 holds it. This is the open decision on #214.
+1. **What closes the last window.** R11 holds it. #214 decided it on 2026-08-08.
 2. **Which endpoint is the client.** The image writes `client` and `server` and states no
    rule that decides them.
 3. **Which connection JA4SSH reads.** The image names no port. `python/ja4.py:549`
@@ -361,10 +364,10 @@ terminates`, and it applies no test on the stream index.
 shape rule alone, and it stands.** Three references contradict the reference behaviour, and no reference supports
 it.
 
-## The trailing window, and the reading #214 needs
+## The trailing window, and the reading #214 needed
 
-**This page states what the specification holds. It rules on nothing.** #214 is the
-user's decision.
+**This page states what the specification holds.** #214 held the user's decision, and the
+user decided it on 2026-08-08. The section "The decision #214 made" records the result.
 
 ### What the specification states
 
@@ -385,15 +388,15 @@ capture. R11 records this, and it is the answer to the first half of #214's ques
 | FoxIO Rust | The end of the capture, for every connection | `rust/ja4/src/ssh.rs:45-55` |
 | FoxIO Wireshark | A FIN+ACK packet, when one endpoint uses port 22 | `wireshark/source/packet-ja4.c:1399-1404` |
 | FoxIO Zeek | The removal of the connection state, which the end of the capture reaches | `zeek/ja4ssh/main.zeek:160-164`, per `docs/specs/foxio/zeek.md` |
-| `ja4plus` | A FIN+ACK packet | `ja4plus/fingerprinters/ja4ssh.py:221-222` |
+| `ja4plus` | A FIN+ACK packet, or the end of the capture | `ja4plus/fingerprinters/ja4ssh.py:221-222`, `ja4plus/fingerprinters/ja4ssh.py:328-351` |
 
 **The FoxIO Python implementation runs no end-of-capture step for JA4SSH.**
 `python/ja4.py:610` reads
 `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, and the line is commented out.
 
 **The references split two against two.** Python and Wireshark close the last window on a
-FIN+ACK packet. Rust and Zeek close it at the end of the capture. `ja4plus` follows Python
-and Wireshark.
+FIN+ACK packet. Rust and Zeek close it at the end of the capture. **`ja4plus` applies both
+rules, so it emits the window whichever event comes first.** #214 decided it.
 
 ### The measurement on `ssh2.pcapng`
 
@@ -452,19 +455,55 @@ that holds the two `ja4ssh` values and never reads the field.** This is the same
 `docs/specs/foxio/JA4T.md` reports for `ja4t`, and `.claude/rules/conformance.md` names it
 under "Ask whether a case can fail".
 
-### The question #214 holds
+### The decision #214 made
 
-**Does `ja4plus` close the last window at the end of a capture, as the Rust and Zeek
-references do?** The specification does not answer it. This page states the consequences.
-The user decides.
+**`ja4plus` closes the last window at the end of a capture, as the Rust and Zeek
+references do.** The user decided it on 2026-08-08, and the decision is reversible.
 
-- A change would add one fingerprint to `ssh2.pcapng`, `c36s52_c42s76_c51s2`, which two
-  FoxIO references hold.
-- `tests/foxio_vectors/ssh2.pcapng.json` holds a different second value. That value is the
-  declined #97 defect. `.claude/rules/external-apis.md` states that `python/test/testdata/`
-  decides where it and a Rust snapshot both carry a value for one method on one stream.
-- A change would also add a trailing fingerprint to every capture whose SSH connection
-  never closes, and this page measures no other such capture.
+Two reasons carry the decision.
+
+1. **The specification cannot settle it, and the reference values can.** #199 read the
+   deleted `technical_details/JA4SSH.md`, and it states nothing about a FIN packet, a
+   connection that closes, the end of a capture or a trailing window.
+2. **Two FoxIO references agree on the value, and this repository already held the
+   proof.** `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` and
+   the Zeek baseline both hold `c36s52_c42s76_c51s2`, and the `ja4plus` counters already
+   held that value.
+
+**`tests/foxio_vectors/ssh2.pcapng.json` holds a different second value, and the conflict
+resolves.** `.claude/rules/external-apis.md` states that `python/test/testdata/` decides
+where it and a Rust snapshot both carry a value for one method on one stream. Here the
+Python value is `c36s36_c0s0_c2s0`, which #97 declines, so the precedence rule points at a
+value this project already declined. The decline outranks it, and the Rust snapshot
+decides.
+
+**#97 stays declined, and its reasoning is unchanged.** A window that holds no SSH packet
+describes no traffic. `ja4plus/fingerprinters/ja4ssh.py:368-369` holds the guard, and the
+new rule reaches it. `tests/test_ja4ssh_windows.py` holds three cases that prove the value
+`c0s0` never returns.
+
+### What the change moved
+
+**Six JA4SSH comparisons moved, and no value of another method moved.** The measurement
+replayed all 38 committed captures.
+
+| Vector | Value the end of the capture adds |
+|---|---|
+| `ssh2.pcapng` | `c36s52_c42s76_c51s2` |
+| `ssh.pcapng` | `c36s52_c42s76_c0s0` |
+| `ssh-scp-1050.pcap` | `c0s1460_c0s53_c6s0` |
+| `ssh2-malformed.pcap` | `c16s23_c7s6_c3s4` |
+| `ssh2-moloch-crash.pcap` | `c16s23_c7s6_c3s4` |
+| `tcpdump-geneve.pcap` | `c144s48_c10s11_c6s4` |
+
+**`gre-sample.pcap`, `sshv1.pcap` and `v6.pcap` did not move.** Each one carries a FIN+ACK
+packet, so each already produced a trailing value. The rule is now one rule for every
+capture.
+
+**The register moved by four keys, from 116 to 120.** It lost `ssh2.pcapng/JA4SSH`,
+because the occurrence keys of that vector now equal the reference. It gained one entry
+under #214 for each of the five other vectors, because the FoxIO Python reference emits no
+trailing window for a connection that sends no FIN+ACK packet.
 
 ## The comparison against this project
 
@@ -494,16 +533,18 @@ field is named. A field this table does not name is a field nobody read.**
 | One connection produces several fingerprints | R9 | `ja4ssh.py:347` | Agrees. Each window appends to `self.fingerprints`. |
 | The empty window | #97 | `ja4ssh.py:342-343` | Agrees with `rust/ja4/src/ssh.rs:271-274`. Both emit nothing when the window holds no SSH packet. |
 | FIN+ACK closes a window | R11, uncertain | `ja4ssh.py:221-222` | Agrees with `python/ja4.py:554-556` and `wireshark/source/packet-ja4.c:1400`. |
+| The end of the capture closes a window | R11, uncertain | `ja4ssh.py:328-351` | Agrees with `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164`. #214 decided it. |
 
 ### The disagreements
 
-**D1 — `ja4ssh.py:221-222` closes the last window on a FIN+ACK packet alone, and two
-references also close it at the end of the capture.**
+**D1 — closed by #214.** `ja4ssh.py:221-222` closed the last window on a FIN+ACK packet
+alone, and two references also close it at the end of the capture.
 
 `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` emit the held window when
-the capture ends. `ja4plus` emits nothing then, so `ssh2.pcapng` produces one fingerprint
-here and two in both references. The section "The trailing window" holds the measurement
-and the values. **#214 owns this decision, and this page rules on nothing.**
+the capture ends. `ja4plus` emitted nothing then, so `ssh2.pcapng` produced one
+fingerprint here and two in both references. **The user decided on 2026-08-08 that
+`ja4plus` emits the trailing window.** `ja4ssh.py:328-351`, `close_open_windows`, holds
+the rule. The section "The trailing window" holds the measurement and the values.
 
 **D2 — `ja4ssh.py:135` reads a connection that carries SSH data on any port, and
 `python/ja4.py:549` reads only a connection with port 22 on one endpoint.**

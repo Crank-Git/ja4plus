@@ -139,6 +139,10 @@ for packet in packets:
     for r in p.process_packet(packet):
         print(r["type"], r["fingerprint"], r.get("raw"))
 
+# The packet source ends here. JA4SSH emits the window each connection holds open.
+for r in p.close_open_windows():
+    print(r["type"], r["fingerprint"], r["connection"])
+
 # Use get_shard_key to bucket packets per connection
 shard_key = p.get_shard_key(packet)
 

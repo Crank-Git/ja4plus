@@ -11,6 +11,39 @@ All fingerprinters inherit from `BaseFingerprinter` and share a common interface
 | `process_packet(packet)` | `str` or `None` | Process a scapy packet. Returns fingerprint string if one is generated. |
 | `get_fingerprints()` | `list[dict]` | Returns all collected fingerprints as `{"fingerprint": str, ...}` dicts. |
 | `reset()` | `None` | Clears all collected fingerprints and internal state. |
+| `close_open_windows()` | `list[dict]` | Emits the window every connection holds open, and returns the new entries. |
+
+#### When to call `close_open_windows`
+
+Call this method when the packet source ends. A file reader reaches the last packet, and
+a live capture stops. JA4SSH is the only method that holds a window, so every other
+fingerprinter returns an empty list.
+
+A connection that sends no FIN+ACK packet holds its last window open, and no other rule
+emits it. `ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK packet, so this
+method produces its second value, `c36s52_c42s76_c51s2`. #214 holds the decision.
+
+A window that holds no SSH packet emits nothing. A fingerprint of an empty window
+describes no traffic, and #97 declines the same value in the FoxIO Python reference.
+
+The method emits the window and evicts no entry, so the state table holds the same keys
+after the call. A second call emits nothing, because the first call cleared the counters.
+
+```python
+from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
+from scapy.all import PcapReader
+
+fp = JA4SSHFingerprinter()
+with PcapReader("ssh2.pcapng") as reader:
+    for packet in reader:
+        fp.process_packet(packet)
+trailing = fp.close_open_windows()   # [{"fingerprint": "c36s52_c42s76_c51s2", ...}]
+```
+
+`Processor.close_open_windows()` runs the same method on every fingerprinter it holds,
+and it returns one result dict for each window. Each dict holds the keys `type`,
+`fingerprint` and `connection`. It holds no packet endpoint, because no packet produces
+the value.
 
 #### The fields of one entry
 
