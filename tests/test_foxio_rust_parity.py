@@ -961,6 +961,9 @@ class TestTheStreamIdentityOfTheTunneledCapture:
         and both ports, so each substitution below reaches nothing. The last one is the
         outer pair, which the map holds as a value and never as a key.
         """
+        # An empty map passes every substitution below, so the check would report a pass
+        # on nothing. The one key the map holds makes each substitution a comparison.
+        assert TUNNEL_INNER_IDENTITY in SNAPSHOT_ADDRESS_ALIASES
         assert stream_identity(src, src_port, dst, dst_port) not in SNAPSHOT_ADDRESS_ALIASES
 
     def test_the_alias_moves_no_other_capture(self):
