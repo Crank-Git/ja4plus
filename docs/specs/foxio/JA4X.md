@@ -24,6 +24,9 @@ the same text, and this page records the size so that nobody measures it again.
 
 ## What the image holds
 
+**`JA4X.png` is the specification of JA4X.** No text file at the pinned commit states a
+JA4X rule, so this page writes "the specification" and "the image" for the same file.
+
 The image titles itself `JA4X: X509 Fingerprint`, under the subtitle
 `(fingerprints how a cert is created)`. It draws one example string, three captions, six
 named example values and one closing sentence. It holds nothing else.
@@ -98,7 +101,8 @@ each register entry.
 proxy writes its own handshake into the TCP payload, and the TLS record layer follows it in
 the same byte stream. `ja4plus/utils/tunnels.py` reads a different case: Geneve, VXLAN and
 ERSPAN each carry a second address layer that scapy dissects. `ja4x.py` reads no tunnel
-header of either kind, and `ja4x.py:182` states the one behaviour the register records:
+header of either kind, and `ja4x.py:180` to `ja4x.py:182` state the one behaviour the
+register records:
 
 ```python
 # A proxy writes its own handshake before the TLS record layer starts,
@@ -216,6 +220,11 @@ certificate.** Line 146 at the pinned commit reads
 ```JA4X=2bab15409345_af684594efb4_000000000000```. The first two parts match the image's
 Qakbot row exactly, and the third part does not.
 
+**This repository holds no Qakbot certificate, so one step of the reading is an
+inference.** The
+arithmetic above is a measurement, and the reading that the certificate carries no extension
+follows from it. A reader who obtains the certificate can settle the step.
+
 `python/ja4x.py` explains the image. It writes
 `sha256(",".join(hex_strings).encode('utf8')).hexdigest()[:12]` with no test on the empty
 list, so the FoxIO Python implementation writes `e3b0c44298fc` for a certificate that
@@ -227,7 +236,7 @@ records the FoxIO Rust output and the Wireshark output.**
 sentinel. Measured on 2026-08-08 with `grep -rl "e3b0c44298fc" tests/foxio_vectors/`, which
 matched no file.
 
-### R9 — JA4X reads the certificates of the TLS Certificate handshake message
+### R9 — JA4X reads the certificates of the Certificate handshake message
 
 The image states no packet. This rule rests on the references alone, and this page records
 it because R10 of the comparison needs it.
@@ -269,8 +278,8 @@ file under `tests/foxio_vectors/` holds a `JA4X_r` key. Measured on 2026-08-08 w
 ## The comparison against this project
 
 The comparison below reads `ja4plus/fingerprinters/ja4x.py` and
-`ja4plus/utils/x509_utils.py` at commit `edfc7b2`. **Every field is named. A field this
-table does not name is a field nobody read.**
+`ja4plus/utils/x509_utils.py` at commit `edfc7b2`. **This page names every field. A field
+this table does not name is a field nobody read.**
 
 ### The fields that agree
 
@@ -295,7 +304,7 @@ that the next reader does not mistake them for fields nobody read.
 
 | Field | `ja4x.py` | Reading |
 |---|---|---|
-| The address layer the stream key reads | `ja4x.py:116`, through `packet_utils.py:60` | The image states no rule. `get_ip_layer` returns the outer address layer, and `ja4l.py:106` reads the inner one through `innermost_layer`. The two methods therefore key a mirrored capture differently. |
+| The address layer the stream key reads | `ja4x.py:116`, through `packet_utils.py:60` | The image states no rule. `get_ip_layer` returns the outer address layer, and `ja4l.py:108` reads the inner one through `innermost_layer`. The two methods therefore key a mirrored capture differently. |
 | The state bound of the certificate table | `ja4x.py:36`, `ja4x.py:291` to `ja4x.py:302` | The image states no rule. `MAX_PROCESSED_CERTS` is a rule of this project, under the state rules of `CLAUDE.md`. |
 
 ### The measurement that proves the order rule
@@ -346,7 +355,8 @@ RDN, and the FoxIO readers accept it.**
 
 `.venv/lib/python3.14/site-packages/cryptography/x509/name.py:241` raises
 `ValueError("duplicate attributes are not allowed")`. `ja4x.py:412` catches the error and
-returns `None`, so the certificate produces no fingerprint. The FoxIO Rust implementation
+`ja4x.py:414` returns `None`, so the certificate produces no fingerprint. The FoxIO Rust
+implementation
 reads an attribute iterator with no such test, and the Wireshark dissector appends every
 `x509if.oid` field it sees. **No vector in this repository carries such a certificate**, so
 no measurement demonstrates D2. The reading is a code reading, and it names a parse
@@ -377,17 +387,21 @@ table states each one as explained or unexplained by the specification.
 `JA4X on a stream that a proxy tunnel carries`. **The image explains that row no better
 than it explains the nine keys.**
 
-**The image explains none of the nine.** It states the schema of one value. It states no
-rule about which packet produces a value, no rule about a certificate that a capture holds
-only in encrypted form, and no rule about the transport. "The named question" above holds
-the full reading of the last point.
+**The image explains none of the nine.** It states the schema of one value, and it states
+no rule for any of these three subjects.
+
+- The packet that produces a value.
+- A certificate that a capture holds in encrypted form alone.
+- The transport that carries the certificate.
+
+"The named question" above holds the full reading of the third subject.
 
 **The deleted text explains the seven #129 entries, and the image does not.** The deleted
 `technical_details/JA4X.md` states
 `These certificates are encrypted in TLS 1.3 but are sent in clear text in TLS 1.2.`
 `docs/specs/foxio/deleted-text-specifications.md` holds the provenance. Nothing at the
 pinned commit corrects that sentence, so it stands as FoxIO-authored evidence under the
-rule #221 set. **It names the mechanism the seven entries record**, and it supports the
+rule that #221 set. **It names the mechanism the seven entries record**, and it supports the
 #129 decision that decryption is out of scope. It changes no fingerprint.
 
 ### The measurement that supports the two #138 entries
@@ -414,8 +428,13 @@ measurement in the table above is the first one, and #229 owns the harness chang
 | `tests/foxio_vectors/*.json` | **60 `JA4X.<n>` values in 11 files.** The conformance suite already compares every one. |
 | `rust/ja4/src/snapshots/` at the pinned commit | Many `ja4x` values, inside the `tls_certs` block of each stream. `tests/foxio_vectors/rust_expected/` holds ten of the snapshots. |
 | `README.md` at the pinned commit | Six documented values, at lines 143 to 147. |
-| `zeek/` at the pinned commit | **None.** `zeek/ja4x/__load__.zeek` holds the single line `# empty`, and `zeek/config.zeek:29` sets `option JA4X_enabled: bool = F`. `docs/specs/foxio/zeek.md:39` records the reading, and #198 owns it. |
+| `zeek/` at the pinned commit | **None.** `zeek/ja4x/__load__.zeek` holds the single line `# empty`, and `zeek/config.zeek:24` sets `option JA4X_enabled:   bool = F;`. `docs/specs/foxio/zeek.md:39` records the reading, and #198 owns it. |
 | `python/test/testdata/` at the pinned commit | The local copies under `tests/foxio_vectors/` are the same files. |
+
+**One line number of `docs/specs/foxio/zeek.md` is stale, and this page corrects it.**
+`docs/specs/foxio/zeek.md:41` names `zeek/config.zeek:29`. The file holds 27 lines at the
+pinned commit, and line 24 holds the option. The reading that page records is correct, and
+the line number alone is wrong. **The correction changes no reading and no fingerprint.**
 
 **JA4X is not a method that lacks a reference value.** The conformance suite compares 60 of
 them, and that is why nine register entries exist. The contrast is JA4T, where
