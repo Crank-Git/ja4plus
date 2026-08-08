@@ -370,7 +370,7 @@
     "decided": true
   },
   "https-connect.pcap/JA4X": {
-    "cause": "The FoxIO Rust snapshot and the Wireshark dissector both hold the exact JA4X value ja4plus produces. The FoxIO Python implementation reads no TLS on port 8080, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
+    "cause": "The FoxIO Rust snapshot and the Wireshark dissector both hold the exact JA4X value ja4plus produces. The FoxIO Python implementation reads no TLS on port 8080, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match. #229 built that comparison, and TestTheJa4xValuesTheRustSnapshotHolds names both values.",
     "issue": 138,
     "decided": true
   },
