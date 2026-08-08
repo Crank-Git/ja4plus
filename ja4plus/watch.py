@@ -228,7 +228,7 @@ class StopRequest:
         """Return True after a termination signal arrived."""
         return self._requested
 
-    def request(self, signal_number: int = 0, frame: Optional[FrameType] = None) -> None:
+    def request(self, signal_number: int, frame: Optional[FrameType]) -> None:
         """Set the flag, and return.
 
         `signal.signal` calls this method with the signal number and the frame. The
