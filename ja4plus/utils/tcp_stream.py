@@ -4,10 +4,15 @@ Used by JA4H (HTTP) and JA4X (certificates) to handle multi-segment
 payloads and out-of-order TCP delivery.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import logging
 from collections import OrderedDict
+from typing import Any
 
-from ja4plus.utils.state_table import StateTable
+from ja4plus.utils.state_table import StateTable, TableStats
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +22,7 @@ SEQUENCE_MASK = 0xFFFFFFFF
 _SEQ_HALF = 0x80000000
 
 
-def sequence_before(a, b):
+def sequence_before(a: int, b: int) -> bool:
     """Report whether sequence number a comes before sequence number b.
 
     The two numbers must lie within 2**31 of each other. A stream holds at most
@@ -65,19 +70,19 @@ class TCPStreamReassembler(StateTable):
 
     def __init__(
         self,
-        max_streams=100,
-        max_stream_bytes=1048576,
-        max_stream_segments=DEFAULT_MAX_STREAM_SEGMENTS,
-        max_stream_age=DEFAULT_MAX_STREAM_AGE,
-    ):
+        max_streams: int = 100,
+        max_stream_bytes: int = 1048576,
+        max_stream_segments: int = DEFAULT_MAX_STREAM_SEGMENTS,
+        max_stream_age: float = DEFAULT_MAX_STREAM_AGE,
+    ) -> None:
         StateTable.__init__(self, max_evicted_keys=max_streams)
-        self.streams = OrderedDict()
+        self.streams: OrderedDict[Any, dict[str, Any]] = OrderedDict()
         self.max_streams = max_streams
         self.max_stream_bytes = max_stream_bytes
         self.max_stream_segments = max_stream_segments
         self.max_stream_age = max_stream_age
 
-    def _evict_aged_streams(self, now):
+    def _evict_aged_streams(self, now: float) -> None:
         """Remove every stream that receives no segment for `max_stream_age` seconds.
 
         The removal drops the whole entry, so the segment list, the set of seen
@@ -94,7 +99,7 @@ class TCPStreamReassembler(StateTable):
                 del self.streams[key]
                 self.count_eviction(key)
 
-    def add_segment(self, key, seq, data, timestamp=None):
+    def add_segment(self, key: Any, seq: int, data: bytes, timestamp: float | None = None) -> None:
         """Add a TCP segment to a stream.
 
         The stream refuses the segment once it holds `max_stream_bytes` bytes, or
@@ -150,7 +155,7 @@ class TCPStreamReassembler(StateTable):
         stream["bytes"] += len(data)
         self.streams.move_to_end(key)
 
-    def _ordered_segments(self, stream):
+    def _ordered_segments(self, stream: dict[str, Any]) -> list[tuple[int, bytes]]:
         """Return the segments of a stream in sequence order, earliest first.
 
         The order holds across a wrap of the 32-bit sequence number. The order depends
@@ -185,7 +190,7 @@ class TCPStreamReassembler(StateTable):
 
         return by_seq[start:] + by_seq[:start]
 
-    def get_stream(self, key):
+    def get_stream(self, key: Any) -> bytes:
         """Reassemble and return contiguous stream data from base_seq.
 
         Returns data from the earliest sequence number up to the first gap. The order
@@ -217,7 +222,7 @@ class TCPStreamReassembler(StateTable):
         # more than the stream stores, so this method needs no bound of its own.
         return bytes(result)
 
-    def base_seq(self, key):
+    def base_seq(self, key: Any) -> int | None:
         """Return the sequence number the reassembled stream starts at, or None.
 
         `get_stream` starts at the earliest sequence number the stream holds, and a
@@ -239,7 +244,7 @@ class TCPStreamReassembler(StateTable):
             return None
         return segments[0][0]
 
-    def remove_stream(self, key):
+    def remove_stream(self, key: Any) -> None:
         """Remove a stream from tracking.
 
         The removal belongs to the caller, so it evicts nothing. A stream that arrives
@@ -251,7 +256,7 @@ class TCPStreamReassembler(StateTable):
         if self.streams.pop(key, None) is not None:
             self.count_removals()
 
-    def stats(self):
+    def stats(self) -> TableStats:
         """Return the counts this reassembler reports.
 
         Returns:
@@ -260,7 +265,7 @@ class TCPStreamReassembler(StateTable):
         """
         return self.build_stats(len(self.streams), self.max_streams)
 
-    def trim_stream(self, key, up_to_seq):
+    def trim_stream(self, key: Any, up_to_seq: int) -> None:
         """Remove the segments that end at or before up_to_seq, to free memory.
 
         The comparison holds across a wrap of the 32-bit sequence number, the way

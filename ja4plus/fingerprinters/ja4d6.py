@@ -23,9 +23,14 @@ Section b: ALL DHCPv6 option types in PRESENCE ORDER (no exclusions).
 Section c: items from option 6 (Option Request) in original order. Default "00".
 """
 
-import logging
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
 
-from scapy.all import UDP
+import logging
+from typing import Any
+
+from scapy.all import UDP, Packet
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -104,7 +109,7 @@ _DHCPV6_MESSAGE_HEADER_LEN = 4
 _DHCPV6_MAX_NESTING_DEPTH = 32
 
 
-def _options_offset(data, start, end):
+def _options_offset(data: bytes, start: int, end: int) -> int:
     """Return the offset of the first option of the DHCPv6 message at ``start``.
 
     Args:
@@ -122,7 +127,7 @@ def _options_offset(data, start, end):
     return start + _DHCPV6_MESSAGE_HEADER_LEN
 
 
-def _walk_options(data, start, end, out, depth=0):
+def _walk_options(data: bytes, start: int, end: int, out: list[int], depth: int = 0) -> None:
     """Append the code of every DHCPv6 option between ``start`` and ``end`` to ``out``.
 
     Args:
@@ -161,7 +166,7 @@ def _walk_options(data, start, end, out, depth=0):
         pos += opt_len
 
 
-def _parse_dhcpv6_payload(payload):
+def _parse_dhcpv6_payload(payload: bytes) -> dict[str, Any] | None:
     """Return the JA4D6 inputs the DHCPv6 UDP payload carries.
 
     Part b reads the options of an inner relay message. The four subfield inputs read
@@ -183,7 +188,7 @@ def _parse_dhcpv6_payload(payload):
     # type puts them after a 4-byte header.
     options_start = _options_offset(payload, 0, end)
 
-    options_in_order = []
+    options_in_order: list[int] = []
     _walk_options(payload, options_start, end, options_in_order)
 
     # Walk options non-recursively at top level to extract specific fields
@@ -191,7 +196,7 @@ def _parse_dhcpv6_payload(payload):
     has_duid = False
     has_iata = False
     has_fqdn = False
-    request_list = []
+    request_list: list[int] = []
 
     pos = options_start
     while pos + 4 <= end:
@@ -230,19 +235,19 @@ def _parse_dhcpv6_payload(payload):
     }
 
 
-def _build_option_list(options_in_order):
+def _build_option_list(options_in_order: list[int]) -> str:
     if not options_in_order:
         return "00"
     return "-".join(str(c) for c in options_in_order)
 
 
-def _build_request_list(request_list):
+def _build_request_list(request_list: list[int]) -> str:
     if not request_list:
         return "00"
     return "-".join(str(c) for c in request_list)
 
 
-def generate_ja4d6(packet):
+def generate_ja4d6(packet: Packet) -> str | None:
     """
     Generate a JA4D6 fingerprint from a packet.
 
@@ -290,11 +295,13 @@ def generate_ja4d6(packet):
 class JA4D6Fingerprinter(BaseFingerprinter):
     """Fingerprinter for JA4D6 (DHCPv6)."""
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         fingerprint = generate_ja4d6(packet)
         if fingerprint:
             self.add_fingerprint(fingerprint, packet)
         return fingerprint
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """No-op: JA4D6 is stateless (per-packet fingerprinter)."""

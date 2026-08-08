@@ -2,10 +2,16 @@
 JA4 TLS Client Hello Fingerprinting implementation.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import hashlib
 import logging
 import time
-from scapy.all import TCP, UDP, Raw, IP
+from typing import Any
+
+from scapy.all import TCP, UDP, Raw, IP, Packet
 
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.utils.packet_utils import packet_endpoints
@@ -25,7 +31,7 @@ MAX_QUIC_FRAGMENT_CONNECTIONS = 1000
 MAX_QUIC_FRAGMENT_AGE_SECONDS = 30
 
 
-def quic_fragment_table():
+def quic_fragment_table() -> BoundedStateTable:
     """Return one bounded table for the QUIC CRYPTO fragments of one fingerprinter.
 
     The age pass runs on each packet, because the maximum age is 30 seconds and the
@@ -42,17 +48,17 @@ def quic_fragment_table():
     )
 
 
-def _is_alnum_byte(b):
+def _is_alnum_byte(b: int) -> bool:
     """Return True when the byte is an ASCII alphanumeric: 0-9, A-Z, a-z."""
     return (0x30 <= b <= 0x39) or (0x41 <= b <= 0x5A) or (0x61 <= b <= 0x7A)
 
 
-def _is_printable_ascii_byte(b):
+def _is_printable_ascii_byte(b: int) -> bool:
     """Return True when the byte is printable ASCII: 0x20-0x7E."""
     return 0x20 <= b <= 0x7E
 
 
-def compute_alpn_value(first_alpn_bytes):
+def compute_alpn_value(first_alpn_bytes: bytes | None) -> str:
     """Return the two-character ALPN value that JA4 and JA4S carry.
 
     The value is `00` for an absent ALPN extension. The value is the first byte and
@@ -102,7 +108,7 @@ def compute_alpn_value(first_alpn_bytes):
     return "99"
 
 
-def generate_ja4(tls_info, original_order=False):
+def generate_ja4(tls_info: dict[str, Any] | None, original_order: bool = False) -> str | None:
     """Return the JA4 fingerprint of one TLS Client Hello.
 
     Args:
@@ -231,7 +237,9 @@ def generate_ja4(tls_info, original_order=False):
         return None
 
 
-def get_raw_fingerprint(tls_info, original_order=False):
+def get_raw_fingerprint(
+    tls_info: dict[str, Any] | None, original_order: bool = False
+) -> str | None:
     """
     Generate a raw JA4 fingerprint with all values visible.
 
@@ -358,18 +366,18 @@ class JA4Fingerprinter(BaseFingerprinter):
     one is on ``last_fingerprint_original_order``.
     """
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         super().__init__(thread_safe=thread_safe)
-        self.last_raw = None
-        self.last_raw_original_order = None
-        self.last_fingerprint_original_order = None
+        self.last_raw: str | None = None
+        self.last_raw_original_order: str | None = None
+        self.last_fingerprint_original_order: str | None = None
         # DCID -> list[(offset, data)] for multi-datagram QUIC CRYPTO reassembly.
         # Keyed by DCID hex so packets with the same connection ID accumulate
         # together regardless of UDP 5-tuple changes.
         self._quic_fragments = quic_fragment_table()
         self._quic_dcid_to_tuple = quic_fragment_table()
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """Process a packet and extract JA4 fingerprint if applicable.
 
         For QUIC Initials larger than one datagram, CRYPTO frame fragments
@@ -391,7 +399,7 @@ class JA4Fingerprinter(BaseFingerprinter):
                 self.last_raw = raw
                 self.last_raw_original_order = raw_oo
                 self.last_fingerprint_original_order = fingerprint_oo
-                entry = {
+                entry: dict[str, Any] = {
                     "fingerprint": fingerprint,
                     "fingerprint_original_order": fingerprint_oo,
                     "raw": raw,
@@ -402,7 +410,7 @@ class JA4Fingerprinter(BaseFingerprinter):
 
             return fingerprint
 
-    def _try_quic_multi_packet(self, packet):
+    def _try_quic_multi_packet(self, packet: Packet) -> dict[str, Any] | None:
         """Accumulate QUIC CRYPTO fragments per DCID; return tls_info if a
         full ClientHello has been reassembled."""
         from ja4plus.utils.quic_utils import (
@@ -440,18 +448,20 @@ class JA4Fingerprinter(BaseFingerprinter):
             tuple_key = f"{ip.src}:{int(udp.sport)}-{ip.dst}:{int(udp.dport)}"
             self._quic_dcid_to_tuple[dcid_key] = tuple_key
 
-        tls_info = client_hello_from_crypto_fragments(existing)
+        # scapy and the untyped QUIC reader each give this value as `Any`. The local
+        # annotation states the type the value holds, and it changes no value.
+        tls_info: dict[str, Any] | None = client_hello_from_crypto_fragments(existing)
         if tls_info is not None:
             # ClientHello is complete — release the buffer.
             self._drop_quic_fragments(dcid_key)
         return tls_info
 
-    def _drop_quic_fragments(self, dcid_key):
+    def _drop_quic_fragments(self, dcid_key: str) -> None:
         """Drop every table entry one connection holds."""
         self._quic_fragments.pop(dcid_key, None)
         self._quic_dcid_to_tuple.pop(dcid_key, None)
 
-    def reset(self):
+    def reset(self) -> None:
         with self._lock:
             super().reset()
             self.last_raw = None
@@ -460,7 +470,9 @@ class JA4Fingerprinter(BaseFingerprinter):
             self._quic_fragments = quic_fragment_table()
             self._quic_dcid_to_tuple = quic_fragment_table()
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Drop any accumulated QUIC CRYPTO fragments for the given 5-tuple."""
         with self._lock:
             tuple_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
@@ -469,7 +481,7 @@ class JA4Fingerprinter(BaseFingerprinter):
                 if tup == tuple_key or tup == rev_key:
                     self._drop_quic_fragments(dcid_key)
 
-    def get_raw_fingerprint(self, packet, original_order=False):
+    def get_raw_fingerprint(self, packet: Packet, original_order: bool = False) -> str | None:
         """
         Get raw JA4 fingerprint with visible components.
 

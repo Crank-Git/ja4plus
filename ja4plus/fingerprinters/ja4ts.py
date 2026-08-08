@@ -2,10 +2,15 @@
 JA4TS TCP Server Response Fingerprinting implementation.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import logging
 import math
+from typing import Any
 
-from scapy.all import TCP
+from scapy.all import TCP, Packet
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.packet_utils import packet_endpoints, packet_seconds
@@ -35,7 +40,7 @@ TCP_RST_FLAG = 0x04
 TCP_SYN_ACK_FLAGS = 0x12
 
 
-def _delay_seconds(later, earlier):
+def _delay_seconds(later: float, earlier: float) -> int:
     """Return the delay between two capture timestamps, in whole seconds.
 
     `timediff` in `wireshark/source/packet-ja4.c` calls the C `round`, which carries a
@@ -58,7 +63,7 @@ def _delay_seconds(later, earlier):
     return int(math.copysign(math.floor(abs(delay) + 0.5), delay))
 
 
-def _delay_list(stamps):
+def _delay_list(stamps: list[float]) -> list[int]:
     """Return the delay between each stored SYN-ACK, in whole seconds.
 
     Args:
@@ -69,6 +74,11 @@ def _delay_list(stamps):
         the server answered once.
     """
     return [_delay_seconds(stamps[i], stamps[i - 1]) for i in range(1, len(stamps))]
+
+
+# The key names one connection: the source address and port, then the destination
+# address and port. `_connection_key` builds it, and every table below stores it.
+ConnectionKey = tuple[str, int, str, int]
 
 
 class SynAckTracker:
@@ -90,7 +100,7 @@ class SynAckTracker:
     The eviction count of `prefixes` therefore reports what the hook removed.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # The age pass runs on each SYN-ACK packet, because a connection sends few of
         # them and the default pass of `BoundedStateTable` waits for 1000 packets.
         self.times = BoundedStateTable(
@@ -104,7 +114,7 @@ class SynAckTracker:
             max_connection_age=SYN_ACK_TIMEOUT_SECONDS,
         )
 
-    def _drop_prefix(self, key):
+    def _drop_prefix(self, key: ConnectionKey) -> None:
         """Remove the stored parts of a connection that `times` evicted.
 
         Args:
@@ -112,17 +122,17 @@ class SynAckTracker:
         """
         self.prefixes.evict_key(key)
 
-    def clear(self):
+    def clear(self) -> None:
         """Drop every connection."""
         self.times.clear()
         self.prefixes.clear()
 
-    def drop(self, key):
+    def drop(self, key: ConnectionKey) -> None:
         """Drop one connection."""
         self.times.pop(key, None)
         self.prefixes.pop(key, None)
 
-    def record(self, key, now, prefix):
+    def record(self, key: ConnectionKey, now: float, prefix: str) -> list[int]:
         """Store one SYN-ACK and return the delay list that part e writes.
 
         Args:
@@ -152,7 +162,7 @@ class SynAckTracker:
             stamps.append(now)
         return _delay_list(stamps)
 
-    def reset_value(self, key, now):
+    def reset_value(self, key: ConnectionKey, now: float) -> str | None:
         """Return the JA4TS value that a RST on one connection produces, or None.
 
         The deleted FoxIO file states the rule: "the final TCP packet, a RST packet,
@@ -195,14 +205,14 @@ class JA4TSFingerprinter(BaseFingerprinter):
     connection, because a RST packet carries neither a window size nor an option.
     """
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         """Initialize the fingerprinter and its SYN-ACK table."""
         super().__init__(thread_safe=thread_safe)
         # The tracker holds no lock of its own. Every caller of it runs inside a method
         # of this fingerprinter, and that method holds the lock of this fingerprinter.
         self.syn_ack_times = SynAckTracker()
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and extract JA4TS fingerprint if applicable.
 
@@ -219,13 +229,15 @@ class JA4TSFingerprinter(BaseFingerprinter):
                 return fingerprint
             return None
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the collected fingerprints and the connection table."""
         with self._lock:
             super().reset()
             self.syn_ack_times.clear()
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Remove the stored SYN-ACK times and stored parts of the given connection.
 
         The key names the server first, because every SYN-ACK travels from the server.
@@ -236,7 +248,7 @@ class JA4TSFingerprinter(BaseFingerprinter):
             self.syn_ack_times.drop((dst_ip, dst_port, src_ip, src_port))
 
 
-def _connection_key(packet):
+def _connection_key(packet: Packet) -> ConnectionKey | None:
     """Return the connection key of one SYN-ACK packet or one RST packet, or None.
 
     Every SYN-ACK of one connection travels from the server to the client, so the
@@ -250,7 +262,7 @@ def _connection_key(packet):
     return (endpoints["src"], endpoints["srcport"], endpoints["dst"], endpoints["dstport"])
 
 
-def _part_e(packet, tracker, prefix):
+def _part_e(packet: Packet, tracker: SynAckTracker | None, prefix: str) -> str:
     """Return part e of the fingerprint, with its leading `_`, or an empty string.
 
     Args:
@@ -276,7 +288,7 @@ def _part_e(packet, tracker, prefix):
     return "_" + "-".join(str(delay) for delay in delays)
 
 
-def _reset_value(packet, tracker):
+def _reset_value(packet: Packet, tracker: SynAckTracker | None) -> str | None:
     """Return the JA4TS value that one RST packet produces, or None.
 
     Args:
@@ -297,7 +309,7 @@ def _reset_value(packet, tracker):
     return tracker.reset_value(key, now)
 
 
-def generate_ja4ts(packet, tracker=None):
+def generate_ja4ts(packet: Packet, tracker: SynAckTracker | None = None) -> str | None:
     """
     Generate JA4TS fingerprint from TCP SYN-ACK packet.
 
@@ -337,7 +349,7 @@ def generate_ja4ts(packet, tracker=None):
         window_size = str(tcp.window)
 
         # Parse TCP options - preserve order as seen
-        options = []
+        options: list[str] = []
         mss = "0"
         wscale = "0"
 

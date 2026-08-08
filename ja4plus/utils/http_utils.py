@@ -2,9 +2,15 @@
 HTTP utility functions for JA4+ fingerprinting.
 """
 
-from scapy.all import Raw, TCP, IP
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import re
 import logging
+from typing import Any
+
+from scapy.all import Raw, TCP, IP, Packet
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +43,7 @@ LINE_ENDING_PATTERN = re.compile(r"\r\n|\n")
 HEADER_BLOCK_TERMINATORS = (b"\r\n\r\n", b"\n\n")
 
 
-def split_http_lines(text):
+def split_http_lines(text: str) -> list[str]:
     """Return the lines of an HTTP message head.
 
     Args:
@@ -50,7 +56,7 @@ def split_http_lines(text):
     return LINE_ENDING_PATTERN.split(text)
 
 
-def header_block_end(data):
+def header_block_end(data: bytes) -> int | None:
     """Return the offset of the first byte after the header block of an HTTP message.
 
     Args:
@@ -69,7 +75,7 @@ def header_block_end(data):
     return min(ends)
 
 
-def parse_http_request(data):
+def parse_http_request(data: bytes | str) -> dict[str, Any] | None:
     """
     Parse an HTTP request from raw data.
 
@@ -176,7 +182,7 @@ HTTP_METHOD_TOKENS = (
 REQUEST_LINE_LIMIT = 8192
 
 
-def is_http_request(data):
+def is_http_request(data: bytes | str) -> bool:
     """
     Check if the data appears to be an HTTP request.
 
@@ -202,7 +208,7 @@ def is_http_request(data):
     return re.match(REQUEST_LINE_PATTERN, text) is not None
 
 
-def can_become_http_request(data):
+def can_become_http_request(data: bytes | str) -> bool:
     """Report whether a later byte can make the buffer an HTTP request.
 
     A caller holds a buffer that grows one TCP segment at a time. The buffer is the
@@ -228,7 +234,7 @@ def can_become_http_request(data):
     return False
 
 
-def extract_http_info(packet):
+def extract_http_info(packet: Packet) -> dict[str, Any] | None:
     """Extract HTTP information from a packet"""
     if Raw not in packet:
         return None

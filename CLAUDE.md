@@ -44,7 +44,7 @@ pytest tests/ -m "not spec_validation"        # unit suite
 pytest tests/ -m spec_validation              # FoxIO conformance suite
 ruff check ja4plus/ tests/                    # lint
 ruff format ja4plus/ tests/                   # format
-mypy ja4plus/                                 # type check
+mypy --strict ja4plus/                        # type check
 python -m build                               # build the package
 ```
 

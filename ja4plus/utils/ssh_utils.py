@@ -2,9 +2,14 @@
 SSH utility functions for JA4+ fingerprinting.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import struct
 import hashlib
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +54,7 @@ MAX_PENDING_BYTES = 65536
 SEQ_SPACE = 1 << 32
 
 
-def _offset(seq, base):
+def _offset(seq: int, base: int) -> int:
     """Return the signed distance from the base sequence number to the sequence number.
 
     A sequence number wraps at 2**32, so a plain comparison reads a wrapped number as a
@@ -84,19 +89,19 @@ class SSHMessageTracker:
     `completes_message`, which reads the segments in the order they arrive.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Build the tracker of one direction, positioned before the version banner."""
         self._state = _BANNER
         self._banner = b""
         self._length_field = b""
         self._remaining = 0
         self._body_position = 0
-        self._message_code = None
-        self._next_seq = None
-        self._pending = {}
+        self._message_code: int | None = None
+        self._next_seq: int | None = None
+        self._pending: dict[int, bytes] = {}
         self._pending_bytes = 0
 
-    def add_segment(self, payload, seq):
+    def add_segment(self, payload: bytes, seq: int) -> list[int]:
         """Return the lengths of the segments that complete an SSH message.
 
         The tracker reads the payload of the direction in sequence order. It drops a
@@ -134,7 +139,7 @@ class SSHMessageTracker:
             self._release()
         return counted
 
-    def _read_segment(self, payload, seq):
+    def _read_segment(self, payload: bytes, seq: int) -> list[int]:
         """Return the length of the segment when it completes an SSH message.
 
         Args:
@@ -146,16 +151,24 @@ class SSHMessageTracker:
             when the direction already sent every byte of the segment, and when the
             segment holds no message end.
         """
+        # `add_segment` sets `_next_seq` before it calls this method, so this guard
+        # reaches no segment. It states the value for the type checker, and it returns
+        # the empty result rather than raise, because a parser that cannot read a
+        # segment returns nothing.
+        next_seq = self._next_seq
+        if next_seq is None:
+            return []
+
         # A retransmission repeats the bytes the tracker already read, so the tracker
         # reads only the part of the segment that follows them.
-        overlap = -_offset(seq, self._next_seq)
+        overlap = -_offset(seq, next_seq)
         if overlap >= len(payload):
             return []
         completed = self.completes_message(payload[overlap:])
         self._next_seq = (seq + len(payload)) % SEQ_SPACE
         return [len(payload)] if completed else []
 
-    def _hold(self, payload, seq):
+    def _hold(self, payload: bytes, seq: int) -> list[int]:
         """Hold a segment that arrives before its predecessor.
 
         Args:
@@ -180,26 +193,34 @@ class SSHMessageTracker:
             return [len(payload)]
         return []
 
-    def _take_ready(self):
+    def _take_ready(self) -> tuple[bytes, int] | None:
         """Return the held segment that starts at or before the next sequence number.
 
         Returns:
             The payload and the sequence number of that segment, or None when the
             buffer holds no such segment.
         """
-        for seq in sorted(self._pending, key=lambda held: _offset(held, self._next_seq)):
-            if _offset(seq, self._next_seq) <= 0:
+        # `add_segment` sets `_next_seq` before it calls this method, so this guard
+        # reaches no segment. It states the value for the type checker, and it returns
+        # nothing rather than raise, because a parser that cannot read a segment returns
+        # nothing.
+        next_seq = self._next_seq
+        if next_seq is None:
+            return None
+
+        for seq in sorted(self._pending, key=lambda held: _offset(held, next_seq)):
+            if _offset(seq, next_seq) <= 0:
                 payload = self._pending.pop(seq)
                 self._pending_bytes -= len(payload)
                 return payload, seq
         return None
 
-    def _release(self):
+    def _release(self) -> None:
         """Drop every held segment."""
         self._pending.clear()
         self._pending_bytes = 0
 
-    def completes_message(self, payload):
+    def completes_message(self, payload: bytes) -> bool:
         """Return True when at least one SSH message ends in this segment.
 
         Args:
@@ -218,7 +239,7 @@ class SSHMessageTracker:
             return self._read_banner(payload)
         return self._read_messages(payload)
 
-    def _read_banner(self, payload):
+    def _read_banner(self, payload: bytes) -> bool:
         """Return True when the version line ends in this segment.
 
         Args:
@@ -251,7 +272,7 @@ class SSHMessageTracker:
             self._read_messages(rest)
         return True
 
-    def _read_messages(self, payload):
+    def _read_messages(self, payload: bytes) -> bool:
         """Return True when at least one message ends in this segment.
 
         Args:
@@ -304,7 +325,7 @@ class SSHMessageTracker:
         return completed
 
 
-def parse_ssh_packet(data):
+def parse_ssh_packet(data: bytes) -> dict[str, Any] | None:
     """
     Parse SSH packet and extract information.
 
@@ -370,7 +391,7 @@ def parse_ssh_packet(data):
         return None
 
 
-def _parse_test_kexinit(data):
+def _parse_test_kexinit(data: bytes) -> dict[str, Any] | None:
     """Parse simplified KEXINIT format used in tests."""
     try:
         content = data.split(b"SSH_MSG_KEXINIT")[1]
@@ -389,7 +410,7 @@ def _parse_test_kexinit(data):
     return None
 
 
-def _parse_kexinit(data):
+def _parse_kexinit(data: bytes) -> dict[str, Any] | None:
     """
     Parse a real SSH KEXINIT message.
 
@@ -445,7 +466,7 @@ def _parse_kexinit(data):
     return None
 
 
-def extract_hassh(data):
+def extract_hassh(data: bytes) -> str | None:
     """
     Extract HASSH from an SSH KEXINIT packet.
 
@@ -480,7 +501,7 @@ def extract_hassh(data):
     return None
 
 
-def is_ssh_packet(data):
+def is_ssh_packet(data: bytes) -> bool:
     """
     Check if a packet is an SSH packet.
 

@@ -91,6 +91,12 @@ ignore = [
 [tool.mypy]
 # `python_version` stays unset. `mypy` 2.x rejects the value `3.9`, so the 3.9 gate is
 # the test job for Python 3.9, not the type check.
+#
+# FR-typed-api-8 states `mypy --strict ja4plus/`. This key holds the same setting, so an
+# editor that reads the configuration reports what the gate reports. `files` keeps the
+# test suite out, because FR-typed-api-7 covers `ja4plus/` alone.
+strict = true
+files = ["ja4plus"]
 
 [[tool.mypy.overrides]]
 # `scapy.all` builds its namespace at import time, so mypy reads no attribute on it.

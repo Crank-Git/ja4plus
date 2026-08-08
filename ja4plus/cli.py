@@ -8,13 +8,20 @@ Subcommands:
   cert <cert_file>     Fingerprint an X.509 certificate (DER or PEM)
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import argparse
 import csv
 import json
 import os
 import sys
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 from ja4plus import __version__
+from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
@@ -25,6 +32,18 @@ from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 from ja4plus.fingerprinters.ja4d import JA4DFingerprinter
 from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
+
+if TYPE_CHECKING:
+    # Each command imports scapy and the lookup client where it needs them, so an
+    # import at the top would load both for a caller that reads `--version` alone.
+    from scapy.packet import Packet
+
+    from ja4plus.ja4db import JA4DBClient
+
+# One row the command writes. A row holds the source, the method name and the
+# fingerprint, and the raw form and the original-order raw form where the method
+# publishes them.
+ResultRow = tuple[Any, ...]
 
 VALID_TYPES = [
     "ja4",
@@ -39,7 +58,7 @@ VALID_TYPES = [
     "ja4d6",
 ]
 
-ALL_FINGERPRINTERS = {
+ALL_FINGERPRINTERS: dict[str, type[BaseFingerprinter]] = {
     "ja4": JA4Fingerprinter,
     "ja4s": JA4SFingerprinter,
     "ja4h": JA4HFingerprinter,
@@ -53,7 +72,7 @@ ALL_FINGERPRINTERS = {
 }
 
 
-def _parse_types(types_str):
+def _parse_types(types_str: str) -> list[str]:
     """Parse and validate --types argument. Returns list of type names."""
     types = [t.strip().lower() for t in types_str.split(",") if t.strip()]
     invalid = [t for t in types if t not in VALID_TYPES]
@@ -67,12 +86,12 @@ def _parse_types(types_str):
     return types
 
 
-def _build_fingerprinters(types):
+def _build_fingerprinters(types: list[str]) -> dict[str, BaseFingerprinter]:
     """Instantiate fingerprinters for the given type names."""
     return {name: ALL_FINGERPRINTERS[name]() for name in types}
 
 
-def _get_packet_source(packet):
+def _get_packet_source(packet: Packet) -> str:
     """Return a source string like src_ip:src_port -> dst_ip:dst_port."""
     try:
         from scapy.all import IP, IPv6, TCP, UDP
@@ -105,7 +124,7 @@ def _get_packet_source(packet):
     return "unknown"
 
 
-def _close_open_windows(fingerprinters):
+def _close_open_windows(fingerprinters: dict[str, BaseFingerprinter]) -> list[ResultRow]:
     """Return one result row for every window the fingerprinters hold open.
 
     Run this function when the packet source ends without an error. JA4SSH is the only
@@ -124,7 +143,7 @@ def _close_open_windows(fingerprinters):
         fingerprinters emitted them. The source reads the connection key of the window,
         because no packet produces the value.
     """
-    rows = []
+    rows: list[ResultRow] = []
     for fp_type, fp in fingerprinters.items():
         for entry in fp.close_open_windows():
             connection = entry.get("connection", "")
@@ -136,7 +155,13 @@ def _close_open_windows(fingerprinters):
     return rows
 
 
-def _output_results(results, fmt, writer=None, ja4db_client=None):
+def _output_results(
+    results: Sequence[ResultRow],
+    fmt: str,
+    # typeshed publishes no public name for the object `csv.writer` returns.
+    writer: Any = None,
+    ja4db_client: JA4DBClient | None = None,
+) -> None:
     """
     Output a list of result tuples in the requested format.
 
@@ -160,7 +185,7 @@ def _output_results(results, fmt, writer=None, ja4db_client=None):
                 identified = match.get("application", "")
 
         if fmt == "json":
-            obj = {"source": source, "type": fp_type, "fingerprint": fingerprint}
+            obj: dict[str, Any] = {"source": source, "type": fp_type, "fingerprint": fingerprint}
             if raw is not None:
                 obj["raw"] = raw
             if raw_oo is not None:
@@ -180,7 +205,7 @@ def _output_results(results, fmt, writer=None, ja4db_client=None):
                 print(f"{source:<50}  {fp_type:<10}  {fingerprint}")
 
 
-def _init_lookup(args):
+def _init_lookup(args: argparse.Namespace) -> JA4DBClient | None:
     """Initialize ja4db client if --lookup is set."""
     if not getattr(args, "lookup", False):
         return None
@@ -193,7 +218,7 @@ def _init_lookup(args):
         return None
 
 
-def cmd_analyze(args):
+def cmd_analyze(args: argparse.Namespace) -> None:
     """Handle the 'analyze' subcommand."""
     pcap_file = args.pcap_file
     if not os.path.exists(pcap_file):
@@ -229,7 +254,7 @@ def cmd_analyze(args):
         with PcapReader(pcap_file) as reader:
             for packet in reader:
                 source = _get_packet_source(packet)
-                row_batch = []
+                row_batch: list[ResultRow] = []
                 for fp_type, fp in fingerprinters.items():
                     try:
                         result = fp.process_packet(packet)
@@ -258,7 +283,7 @@ def cmd_analyze(args):
         sys.exit(1)
 
 
-def cmd_live(args):
+def cmd_live(args: argparse.Namespace) -> None:
     """Handle the 'live' subcommand."""
     if os.geteuid() != 0:
         print(
@@ -288,9 +313,9 @@ def cmd_live(args):
 
     print(f"Starting live capture on '{args.interface}'... (Ctrl-C to stop)", file=sys.stderr)
 
-    def process_packet(packet):
+    def process_packet(packet: Packet) -> None:
         source = _get_packet_source(packet)
-        row_batch = []
+        row_batch: list[ResultRow] = []
         for fp_type, fp in fingerprinters.items():
             try:
                 result = fp.process_packet(packet)
@@ -326,7 +351,7 @@ def cmd_live(args):
         sys.stdout.flush()
 
 
-def cmd_cert(args):
+def cmd_cert(args: argparse.Namespace) -> None:
     """Handle the 'cert' subcommand."""
     cert_file = args.cert_file
     if not os.path.exists(cert_file):
@@ -362,7 +387,7 @@ def cmd_cert(args):
         sys.exit(1)
 
     source = os.path.basename(cert_file)
-    results = [(source, "ja4x", fingerprint)]
+    results: list[ResultRow] = [(source, "ja4x", fingerprint)]
     ja4db_client = _init_lookup(args)
 
     csv_writer = None
@@ -382,7 +407,7 @@ def cmd_cert(args):
     _output_results(results, args.format, csv_writer, ja4db_client)
 
 
-def cmd_db(args):
+def cmd_db(args: argparse.Namespace) -> None:
     """Handle the 'db' subcommand."""
     import csv as csv_mod
     from ja4plus.ja4db import _BUNDLED_CSV, _MAPPING_URL, _load_bundled_db
@@ -433,7 +458,7 @@ def cmd_db(args):
     print(f"Updated: {entry_count} fingerprint entries written to {_BUNDLED_CSV}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         prog="ja4plus",
         description="JA4+ Network Fingerprinting Tool",
