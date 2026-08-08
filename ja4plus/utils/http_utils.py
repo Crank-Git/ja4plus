@@ -18,6 +18,103 @@ REQUEST_LINE_PATTERN = (
     r"\s+(\S+)\s+(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
 )
 
+# The largest number of cookie pairs one request contributes. The largest reading across
+# `tests/foxio_vectors/` is 14 pairs on one request, so this bound sits 36 times above
+# every vector and no vector reaches it.
+MAX_COOKIE_PAIRS = 512
+
+# The largest cookie name and the largest cookie value one request carries, in UTF-8
+# bytes. The largest readings across `tests/foxio_vectors/` are 41 name bytes and 264
+# value bytes.
+MAX_COOKIE_NAME_BYTES = 256
+MAX_COOKIE_VALUE_BYTES = 4096
+
+
+def _cookie_segments(cookie_header):
+    """Produce the semicolon-separated segments of a Cookie header, one at a time.
+
+    A caller reads a bounded number of segments and stops. `str.split` would build one
+    entry for every segment first, which is the growth the bounds exist to stop.
+
+    Args:
+        cookie_header: The value of the Cookie header.
+
+    Yields:
+        Each segment, without the semicolon that ends it.
+    """
+    start = 0
+    while True:
+        end = cookie_header.find(";", start)
+        if end < 0:
+            yield cookie_header[start:]
+            return
+        yield cookie_header[start:end]
+        start = end + 1
+
+
+def _exceeds_byte_length(text, limit):
+    """Report whether the UTF-8 form of the text is longer than the limit.
+
+    Args:
+        text: The cookie name or the cookie value.
+        limit: The maximum number of bytes.
+
+    Returns:
+        True when the UTF-8 form holds more than `limit` bytes.
+    """
+    if len(text) > limit:
+        # Every character takes one byte or more, so the byte length passes the limit.
+        # This test also bounds the `str.encode` call below to four times the limit.
+        return True
+    return len(text.encode("utf-8", errors="ignore")) > limit
+
+
+def parse_cookie_header(cookie_header):
+    """Return the cookies of one Cookie header, or None when the header passes a bound.
+
+    Past any bound this function produces no result, and the caller therefore produces
+    no JA4H value. It never truncates. The JA4H cookie hash reads the content and the
+    order of the list. A truncated list therefore produces a value that compares equal
+    to a different sender's. A tool whose purpose is to compare one output against
+    another must not emit a value that describes traffic the sender did not send. The
+    user decided this on 2026-08-08, on #175.
+
+    A segment that holds no equals sign contributes no entry, and it counts against no
+    bound.
+
+    Args:
+        cookie_header: The value of the Cookie header.
+
+    Returns:
+        A tuple of the cookie dictionary, the cookie names in wire order, and the cookie
+        values in wire order. The two lists keep every occurrence of a repeated cookie
+        name, which the dictionary drops. Returns None when the header holds more than
+        `MAX_COOKIE_PAIRS` pairs, a name longer than `MAX_COOKIE_NAME_BYTES`, or a value
+        longer than `MAX_COOKIE_VALUE_BYTES`.
+    """
+    cookies = {}
+    cookie_fields = []
+    cookie_values = []
+    for segment in _cookie_segments(cookie_header):
+        name, separator, value = segment.partition("=")
+        if not separator:
+            continue
+        name = name.strip()
+        value = value.strip()
+        if len(cookie_fields) == MAX_COOKIE_PAIRS:
+            logger.debug("Cookie header holds more than %d pairs", MAX_COOKIE_PAIRS)
+            return None
+        if _exceeds_byte_length(name, MAX_COOKIE_NAME_BYTES):
+            logger.debug("Cookie name holds more than %d bytes", MAX_COOKIE_NAME_BYTES)
+            return None
+        if _exceeds_byte_length(value, MAX_COOKIE_VALUE_BYTES):
+            logger.debug("Cookie value holds more than %d bytes", MAX_COOKIE_VALUE_BYTES)
+            return None
+        cookies[name] = value
+        cookie_fields.append(name)
+        cookie_values.append(value)
+    return cookies, cookie_fields, cookie_values
+
 
 def parse_http_request(data):
     """
@@ -94,17 +191,11 @@ def parse_http_request(data):
         cookie_fields = []
         cookie_values = []
         if "cookie" in headers:
-            cookie_str = headers["cookie"]
-            cookie_pairs = cookie_str.split(";")
-            for pair in cookie_pairs:
-                if "=" in pair:
-                    cookie_parts = pair.split("=", 1)
-                    if len(cookie_parts) == 2:
-                        cookie_name = cookie_parts[0].strip()
-                        cookie_value = cookie_parts[1].strip()
-                        cookies[cookie_name] = cookie_value
-                        cookie_fields.append(cookie_name)
-                        cookie_values.append(cookie_value)
+            parsed_cookies = parse_cookie_header(headers["cookie"])
+            if parsed_cookies is None:
+                # A header past a bound produces no request. #175 states the reason.
+                return None
+            cookies, cookie_fields, cookie_values = parsed_cookies
 
         return {
             "method": method,
@@ -218,17 +309,11 @@ def extract_http_info(packet):
         cookie_values = []
 
         if "cookie" in headers:
-            cookie_str = headers["cookie"]
-            cookie_pairs = cookie_str.split(";")
-
-            for pair in cookie_pairs:
-                if "=" in pair:
-                    name, value = pair.split("=", 1)
-                    name = name.strip()
-                    value = value.strip()
-                    cookies[name] = value
-                    cookie_fields.append(name)
-                    cookie_values.append(value)
+            parsed_cookies = parse_cookie_header(headers["cookie"])
+            if parsed_cookies is None:
+                # A header past a bound produces no request. #175 states the reason.
+                return None
+            cookies, cookie_fields, cookie_values = parsed_cookies
 
         # Extract language
         language = headers.get("accept-language", "")

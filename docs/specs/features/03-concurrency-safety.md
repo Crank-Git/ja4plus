@@ -166,6 +166,34 @@ FR-concurrency-safety-7 and FR-concurrency-safety-8 own that gap, and Epic 3 clo
 data, so the `## Terms` table does not name it a state table. It appears above because
 it grows without a limit, and Goal 3 covers it.
 
+## Per-request bounds the code holds today
+
+One request builds one cookie list, so the memory returns when the request ends. The
+`CLAUDE.md` state rule still binds the list, because a sender chooses its size. #175
+measured the bounds against `tests/foxio_vectors/` and built them.
+
+| Bound | Value | Largest vector reading |
+|---|---|---|
+| `MAX_COOKIE_PAIRS` | 512 | 14 pairs |
+| `MAX_COOKIE_NAME_BYTES` | 256 | 41 bytes |
+| `MAX_COOKIE_VALUE_BYTES` | 4096 | 264 bytes |
+
+The three bounds sit in `ja4plus/utils/http_utils.py`. Three parsers read them:
+`parse_http_request`, `extract_http_info` and
+`ja4plus/fingerprinters/ja4h.py:_extract_http_info_from_bytes`.
+
+Past any bound the cookie parse produces no result, and the request therefore produces
+no JA4H value. The parse never truncates. The JA4H cookie hash reads the content and the
+order of the list. A truncated list therefore produces a value that compares equal to a
+different sender's. `ja4plus/utils/ssh_utils.py` holds the same shape past
+`MAX_SSH_BANNER_BYTES`. The user decided this on 2026-08-08.
+
+The accepted cost is stated: a sender suppresses its own JA4H value with a large Cookie
+header. The `MAX_SSH_BANNER_BYTES` bound already carries the same cost.
+
+The header list of the same three parsers holds no bound. #188 owns it, and it takes the
+same policy.
+
 This file states four more targets that the code does not hold today:
 
 - `Processor.__init__` accepts no argument. The `thread_safe`, `max_connections` and
