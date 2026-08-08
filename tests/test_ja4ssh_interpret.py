@@ -69,6 +69,39 @@ def test_a_fingerprint_that_is_none_returns_an_error_dictionary(fingerprinter):
     assert "error" in result, f"None returned no error: {result}"
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        "36s36_c50s50_c70s30",
+        "c36s36_50s50_c70s30",
+        "c36s36_c50s50_70s30",
+        "x36s36_c50s50_c70s30",
+        "c36s36_y50s50_c70s30",
+    ],
+    ids=[
+        "a packet size part that carries no client prefix",
+        "an SSH ratio part that carries no client prefix",
+        "an ACK ratio part that carries no client prefix",
+        "a packet size part that carries a wrong client prefix",
+        "an SSH ratio part that carries a wrong client prefix",
+    ],
+)
+def test_a_part_that_carries_no_client_prefix_returns_an_error_dictionary(fingerprinter, value):
+    """A part that carries no `c` prefix returns an error dictionary."""
+    result = fingerprinter.interpret_fingerprint(value)
+    assert "error" in result, f"{value!r} returned no error: {result}"
+
+
+def test_a_part_that_carries_no_client_prefix_reports_no_client_number(fingerprinter):
+    """The method reports no client packet size for a part that carries no `c` prefix.
+
+    Issue #182 records the defect. The part `36s36` reported a client packet size of 6,
+    because the method removed the digit `3` as though it were the prefix `c`.
+    """
+    result = fingerprinter.interpret_fingerprint("36s36_c50s50_c70s30")
+    assert result == {"error": "Invalid JA4SSH format"}
+
+
 def test_a_valid_fingerprint_still_reports_the_session_type(fingerprinter):
     """A valid fingerprint reports the session type it reported before the change."""
     result = fingerprinter.interpret_fingerprint("c36s36_c50s50_c70s30")
