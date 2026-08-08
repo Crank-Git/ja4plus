@@ -286,8 +286,8 @@ class TestTheResetCapture(unittest.TestCase):
         self.values = []
         for packet in rdpcap(str(path)):
             for result in processor.process_packet(packet):
-                if result["type"] == "ja4ts":
-                    self.values.append(result["fingerprint"])
+                if result.type == "ja4ts":
+                    self.values.append(result.fingerprint)
 
     def test_the_capture_produces_the_six_values_the_deleted_file_states(self):
         self.assertEqual(

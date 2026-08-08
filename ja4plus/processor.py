@@ -3,25 +3,21 @@
 Mirrors the API of ja4plus-go's ja4plus.Processor:
 
     p = Processor()
-    results = p.process_packet(pkt)            # list of result dicts
+    results = p.process_packet(pkt)            # list of FingerprintResult
+    results, errors = p.process_packet_with_errors(pkt)
     p.cleanup_connection(src_ip, src_port, dst_ip, dst_port, "tcp")
     key = p.get_shard_key(pkt)                 # stable connection key
     p.reset()                                  # clear all state
 
-Each result dict contains:
-    {
-        "type":        "ja4" | "ja4s" | "ja4h" | ...,
-        "fingerprint": "<the fingerprint string>",
-        "raw":         "<unhashed form>" or None,
-        "raw_original_order": "<unhashed original-order form>" or None,
-        "src_ip":      "...",
-        "src_port":    int,
-        "dst_ip":      "...",
-        "dst_port":    int,
-    }
+`ja4plus/types.py` states the fields of a `FingerprintResult`.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `list[str]`
+# without this import.
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
@@ -33,6 +29,12 @@ from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 from ja4plus.fingerprinters.ja4d import JA4DFingerprinter
 from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
+from ja4plus.types import FingerprintResult
+
+if TYPE_CHECKING:
+    # The module reads scapy inside the two functions that need it, so an import at the
+    # top would load scapy for a caller that only builds a `Processor`.
+    from scapy.packet import Packet
 
 logger = logging.getLogger(__name__)
 
@@ -125,14 +127,50 @@ class Processor:
             return self.__dict__["fingerprinters"][name]
         raise AttributeError(name)
 
-    def process_packet(self, packet):
-        """Run every fingerprinter; return a list of result dicts.
+    def process_packet(self, packet: Packet) -> list[FingerprintResult]:
+        """Run every fingerprinter on one packet, and return the results.
 
-        Errors from individual fingerprinters are logged at DEBUG and
-        swallowed so one misbehaving fingerprinter cannot poison the
-        whole aggregation.
+        The results follow the fixed method order of `_SPEC`. The order is part of the
+        interface, and FR-typed-api-3 states it.
+
+        A fingerprinter that raises produces no result, and the processor logs the error
+        at DEBUG. One method that raises poisons no other method. A caller who needs the
+        errors calls `process_packet_with_errors` instead. FR-typed-api-4 states that.
+
+        Args:
+            packet: The packet to read.
+
+        Returns:
+            A list of `FingerprintResult`. The list is empty when the packet produces no
+            fingerprint.
         """
-        results = []
+        results, _ = self.process_packet_with_errors(packet)
+        return results
+
+    def process_packet_with_errors(
+        self, packet: Packet
+    ) -> tuple[list[FingerprintResult], list[Exception]]:
+        """Run every fingerprinter on one packet, and return the results and the errors.
+
+        The port returns both from one call, and parity rule 2 keeps the pair. Python
+        has no multiple-return form that reads well as a default, so `process_packet`
+        returns the results alone and this method returns both.
+
+        Every returned exception carries no traceback. A traceback holds the frame of
+        every call it passed, and those frames hold the packet. `CLAUDE.md` states that
+        no code holds a reference to a packet object after `process_packet` returns. The
+        type, the message and the error chain stay.
+
+        Args:
+            packet: The packet to read.
+
+        Returns:
+            A tuple of two lists. The first holds one `FingerprintResult` for each
+            method that produced a fingerprint, in the fixed method order. The second
+            holds one exception for each method that raised, in the same order.
+        """
+        results: list[FingerprintResult] = []
+        errors: list[Exception] = []
         src_ip, dst_ip, src_port, dst_port = _packet_endpoints(packet)
 
         for fp_type, fp in self.fingerprinters.items():
@@ -148,22 +186,23 @@ class Processor:
                     fingerprint = fp.process_packet(packet)
                 except Exception as e:
                     logger.debug(f"{fp_type} processing failed: {e}")
+                    errors.append(_drop_traceback(e))
                     continue
                 if not fingerprint:
                     continue
                 results.append(
-                    {
-                        "type": fp_type,
-                        "fingerprint": fingerprint,
-                        "raw": getattr(fp, "last_raw", None),
-                        "raw_original_order": getattr(fp, "last_raw_original_order", None),
-                        "src_ip": src_ip,
-                        "src_port": src_port,
-                        "dst_ip": dst_ip,
-                        "dst_port": dst_port,
-                    }
+                    FingerprintResult(
+                        type=fp_type,
+                        fingerprint=fingerprint,
+                        raw=getattr(fp, "last_raw", None),
+                        raw_original_order=getattr(fp, "last_raw_original_order", None),
+                        src_ip=src_ip,
+                        src_port=src_port,
+                        dst_ip=dst_ip,
+                        dst_port=dst_port,
+                    )
                 )
-        return results
+        return results, errors
 
     def close_open_windows(self):
         """Emit every window the fingerprinters hold open, and return the results.
@@ -276,6 +315,44 @@ class Processor:
             sport, dport = dport, sport
 
         return f"{proto}:{src_ip}:{sport}->{dst_ip}:{dport}"
+
+
+def _drop_traceback(error: Exception) -> Exception:
+    """Return the error with no traceback on it or on any error it followed.
+
+    `CLAUDE.md` states that no code holds a reference to a packet object after
+    `process_packet` returns. A traceback holds the frame of every call it passed, and
+    those frames hold the packet as a local. A caller that keeps the error of every
+    packet would therefore hold every packet it read.
+
+    The call walks `__cause__` and `__context__`, because a fingerprinter that raises
+    inside an `except` block chains a second error whose traceback holds its own frames.
+    The type, the message and the chain stay, so the caller reads what failed.
+
+    The traceback is the one path this call clears. An error that carries the packet in
+    `args`, or on an attribute of its own, still holds it. No fingerprinter of this
+    project builds such an error, and a new fingerprinter must not.
+
+    Args:
+        error: The error one fingerprinter raised.
+
+    Returns:
+        The same error object.
+    """
+    # The list holds a reference to every error it cleared, so the walk compares
+    # identities and no freed object returns the identity of a later one.
+    cleared: list[BaseException] = []
+    pending: list[BaseException | None] = [error]
+    while pending:
+        current = pending.pop()
+        # A chain can hold a cycle, so the walk records what it already cleared.
+        if current is None or any(current is done for done in cleared):
+            continue
+        cleared.append(current)
+        current.__traceback__ = None
+        pending.append(current.__cause__)
+        pending.append(current.__context__)
+    return error
 
 
 def _packet_endpoints(packet):

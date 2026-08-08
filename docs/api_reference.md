@@ -233,8 +233,9 @@ result["method"]        # KeyError. The field is `type`.
 The item access covers reading only. `result["fingerprint"] = "x"` raises `TypeError`,
 and `result.fingerprint = "x"` raises `dataclasses.FrozenInstanceError`.
 
-`Processor.process_packet` still returns a list of dictionaries. #45 changes it to
-return a list of `FingerprintResult`.
+`Processor.process_packet` returns a list of `FingerprintResult`, and #45 changed it.
+`Processor.close_open_windows` still returns a list of dictionaries, because a window
+carries a connection key and no `FingerprintResult` field holds one.
 
 ## Processor
 
@@ -243,13 +244,44 @@ return a list of `FingerprintResult`.
 | Class/Function | Description |
 |----------------|-------------|
 | `Processor(thread_safe=True)` | Build one processor and the ten fingerprinters it drives |
-| `.process_packet(packet)` | Run every fingerprinter on one packet, and return a list of result dicts |
+| `.process_packet(packet)` | Run every fingerprinter on one packet, and return a list of `FingerprintResult` |
+| `.process_packet_with_errors(packet)` | Return the same list, and the errors the fingerprinters raised |
 | `.close_open_windows()` | Emit every window the fingerprinters hold open |
 | `.get_shard_key(packet)` | Return one stable key for the connection of a packet |
 | `.cleanup_connection(src_ip, src_port, dst_ip, dst_port, proto)` | Drop the state of one connection across every fingerprinter |
 | `.reset()` | Reset every fingerprinter, and return every count to zero |
 | `.stats()` | Return one `ProcessorStats` for each of the ten methods |
 | `.thread_safe` | The value the constructor read |
+
+#### How to read the parse failures
+
+`process_packet` returns the results alone. A fingerprinter that raises produces no
+result, and the processor logs the error at DEBUG. One method that raises poisons no
+other method.
+
+`process_packet_with_errors` returns the results and the errors together. Call it to
+tell a packet that produces no fingerprint from a packet that failed a parse.
+FR-typed-api-4 states the requirement.
+
+```python
+results, errors = processor.process_packet_with_errors(packet)
+for error in errors:
+    print(f"one method failed to read the packet: {error!r}")
+```
+
+The results follow the fixed method order `ja4`, `ja4s`, `ja4h`, `ja4t`, `ja4ts`,
+`ja4l`, `ja4x`, `ja4ssh`, `ja4d`, `ja4d6`. The order is part of the interface. The
+errors follow the same order.
+
+Warning: every returned exception carries no traceback. A traceback holds the frame of
+every call it passed, and those frames hold the packet. A monitor that keeps the errors
+of every packet would therefore hold every packet it read. `CLAUDE.md` states that no
+code holds a reference to a packet object after `process_packet` returns. The type, the
+message and the error chain stay, so `repr(error)` reads the same. If the stack matters,
+log the error inside the loop that reads it.
+
+`process_packet_with_errors` sets no `timestamp` on a result, because the processor
+reads no packet timestamp. The field holds `None`.
 
 `stats()` reports what the state tables hold, and #41 built it. One processor holds
 **sixteen** state tables across the ten methods: the fourteen `BoundedStateTable`
