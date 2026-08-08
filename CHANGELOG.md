@@ -35,6 +35,26 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The precedence exception is source-neutral** (#334). Round TBD.
+  `.claude/rules/external-apis.md` wrote the exception of #332 for the Zeek baseline
+  alone, because that was the case #327 raised. Where `tests/foxio_deviations.json`
+  declines the FoxIO Python value under a decided entry, **any other FoxIO implementation
+  may hold the reference value** for that method on that connection. **Two bars stand
+  above the rule.** A decline that records a capability this project chose not to build
+  reaches no row, and #129 is that case: `ja4plus` reads no encrypted request by
+  decision. Where the remaining FoxIO sources hold different values, no source holds the
+  reference and the row stays declined. **The exception reaches 6 rows of the 135 the
+  register holds**, where the widened rule before the bars reaches 58.
+  `tests/test_zeek_precedence_exception.py` becomes `tests/test_precedence_exception.py`
+  and measures the reach against every source. **Three findings came out of the search.**
+  The register records no field that separates a value decline from a capability decline,
+  and the rule states a proposal for one. `gre-erspan-vxlan.pcap/0:65174/JA4T.1` carries
+  the value form and declines no Python value, so the rule now reads that fact from the
+  vectors. The Wireshark dissector appends the third part that bars a Zeek JA4L value,
+  which the bar does not name; #225 records that this project adopted the `quic` marker
+  from the dissector on purpose, so nothing there changed. **No vector is adopted, no
+  register entry changes, no file under `ja4plus/` changes, and no fingerprint moves.**
+
 - **A declined FoxIO Python value forfeits its precedence** (#332). Round TBD.
   `.claude/rules/external-apis.md` states that `python/test/testdata/` decides where it
   and a Zeek baseline both hold a value for one method on one connection, and it named no
