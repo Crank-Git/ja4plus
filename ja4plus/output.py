@@ -1,4 +1,4 @@
-"""The writers that turn a `FingerprintResult` into an output record.
+"""The writers that turn a `FingerprintResult` into an output line.
 
 `docs/specs/features/05-structured-output.md` defines this module. The JSON Lines
 format and the CSV format carry a stability promise, so both write the same field set
@@ -118,7 +118,7 @@ class OutputWriter:
         """Write the header of the format. The base class writes nothing."""
 
     def write(self, result: FingerprintResult, identified_as: str | None = None) -> None:
-        """Write one record.
+        """Write one output line.
 
         Args:
             result: The fingerprint and the endpoints that produced it.
@@ -126,7 +126,7 @@ class OutputWriter:
                 user passed no `--lookup` or the lookup found no match.
 
         Raises:
-            NotImplementedError: The base class writes no record.
+            NotImplementedError: The base class writes no output line.
         """
         raise NotImplementedError
 
@@ -148,7 +148,7 @@ class JsonLinesWriter(OutputWriter):
             result: The fingerprint and the endpoints that produced it.
             identified_as: The application name the lookup returned, or None.
         """
-        record: dict[str, Any] = {
+        json_object: dict[str, Any] = {
             "schema_version": SCHEMA_VERSION,
             "timestamp": format_timestamp(result.timestamp),
             "type": result.type,
@@ -161,7 +161,7 @@ class JsonLinesWriter(OutputWriter):
             "dst_port": result.dst_port,
             "identified_as": identified_as or None,
         }
-        self.stream.write(json.dumps(record) + "\n")
+        self.stream.write(json.dumps(json_object) + "\n")
 
 
 class CsvWriter(OutputWriter):
@@ -209,7 +209,7 @@ class CsvWriter(OutputWriter):
 
 
 class TableWriter(OutputWriter):
-    """The writer that aligns the records for a person reading a terminal.
+    """The writer that aligns the output lines for a person reading a terminal.
 
     FR-structured-output-7 gives this format no stability promise, so it writes the
     endpoints as one source column. A tool reads the JSON or the CSV format instead.

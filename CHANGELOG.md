@@ -8,6 +8,29 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The vocabulary settles one word for the serialized output line** (#306). Round TBD.
+  The `## Terms` table of `docs/specs/spec.md` listed `record` in the `Do not use`
+  column of `result`, and `ja4plus/output.py` used it as a noun in five places. #50
+  found that and reworded its own page rather than the shared table. The table now holds
+  the term `output line`, whose `Do not use` column names `record`, `result` and
+  `entry`. **A result and an output line are two things.** A result is one fingerprint
+  one method produced. An output line carries every field of the result, plus
+  `schema_version` and `identified_as`, which the command-line program owns. The word
+  now reads the same way in `ja4plus/output.py`, `ja4plus/cli.py`, `README.md`,
+  `tests/test_output_schema.py`, `tests/test_cli.py`, `tests/test_parity.py`,
+  `tests/compare_zeek_baselines.py` and `examples/monitoring_daemon.py`.
+  `docs/output-schema.md` already used it and needs no change. The `json` format writes
+  one output line as one JSON object, and the `csv` format writes it as one row, so the
+  identifier for a parsed line is now `json_object`. **The word `record` keeps two other
+  meanings that this term does not touch**: the verb, as in `#215 records the reading`,
+  and the TLS record of RFC 8446. **No field name and no column name moved.**
+  `schema_version` stays 1, `CSV_COLUMNS` holds the same eleven names in the same order,
+  and `ja4plus.__all__` names the same 25 entries. A replay of the 38 committed captures
+  in all three formats produces 114 runs, 2466 output lines and 0 differing bytes
+  against the base. Both suites report the counts of the base: 1839 passed and 8
+  xfailed in the unit suite, and 1531 passed, 143 skipped and 135 xfailed in the
+  conformance suite, against 135 keys in `tests/foxio_deviations.json`.
+
 - **The command-line program separates results from diagnostics and gains `--output`**
   (#52). Round 95. The program writes results to standard output and every diagnostic
   to standard error, so a pipe that reads standard output reads results alone. The
@@ -35,7 +58,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the connections of a method you filtered out and it reports that method's errors. The
   reported order is still the order you wrote in `--types`, and a name you write twice
   keeps its first position. No fingerprint value moved:
-  the program writes the same 863 records over the 43 committed captures, byte for byte,
+  the program writes the same 863 output lines over the 43 committed captures, byte for
+  byte,
   and the conformance suite reports the same 1531 passed, 143 skipped and 135 xfailed.
   The unit suite rises from 1801 passed to 1814 passed, which is the 13 cases the change
   adds.
@@ -45,10 +69,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   field of version 0.6.0 with `src_ip`, `src_port`, `dst_ip` and `dst_port`, so a
   downstream tool parses no composite string. The CSV header is now fixed at
   `schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as`,
-  and it no longer changes with `--lookup`. Every field is present in every record: a
-  field with no value is `null` in the `json` format and empty in the `csv` format.
+  and it no longer changes with `--lookup`. Every field is present in every output line:
+  a field with no value is `null` in the `json` format and empty in the `csv` format.
   `identified_as` is therefore present without `--lookup`, where version 0.6.0 omitted
-  it. Each record also carries the packet `timestamp` in RFC 3339 form. New module
+  it. Each output line also carries the packet `timestamp` in RFC 3339 form. New module
   `ja4plus/output.py` holds one writer per format. #50 documents the schema and its
   version.
 

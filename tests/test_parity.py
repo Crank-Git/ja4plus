@@ -97,8 +97,8 @@ def test_the_command_line_program_accepts_every_type_name_and_reports_two_refere
     for line in out.splitlines():
         if not line.strip():
             continue
-        record = json.loads(line)
-        produced.setdefault(record["type"], []).append(record["fingerprint"])
+        json_object = json.loads(line)
+        produced.setdefault(json_object["type"], []).append(json_object["fingerprint"])
 
     assert expected["JA4.1"] in produced["ja4"]
     assert expected["JA4S"] in produced["ja4s"]

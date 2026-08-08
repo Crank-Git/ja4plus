@@ -93,7 +93,7 @@ def split_source(source: str) -> tuple[str, str]:
     joins the host and the port in the same way.
 
     Args:
-        source: The `source` field of one `ja4plus` JSON record.
+        source: The `source` field of one `ja4plus` output line.
 
     Returns:
         The sender endpoint and the receiver endpoint.
@@ -151,10 +151,10 @@ def ja4plus_readings(capture: Path) -> dict[tuple[str, str], dict[str, list[str]
     for line in result.stdout.splitlines():
         if not line.startswith("{"):
             continue
-        record = json.loads(line)
-        left, right = split_source(record["source"])
-        method = record["type"]
-        value = record["fingerprint"]
+        json_object = json.loads(line)
+        left, right = split_source(json_object["source"])
+        method = json_object["type"]
+        value = json_object["fingerprint"]
         # A JA4L fingerprint carries its side as a prefix. The Zeek log holds two columns
         # instead, so the prefix becomes the method name here.
         if method == "ja4l" and "=" in value:
