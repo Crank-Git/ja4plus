@@ -368,8 +368,13 @@ def test_the_produced_index_holds_every_raw_form_ja4plus_computes():
 def test_the_suite_collects_one_case_for_every_raw_key_of_the_reference():
     """Fail when a raw key the reference publishes carries no case.
 
-    The reference publishes a raw key for JA4, JA4S and JA4H. A raw form no case reads
-    is a value this project never compares, which is the defect #121 records.
+    The FoxIO Python implementation publishes a raw key for JA4, JA4S and JA4H, and this
+    check reads its expected-output files alone. A raw form no case reads is a value this
+    project never compares, which is the defect #121 records.
+
+    `JA4X_r` is absent here because no expected-output file holds the key.
+    `TestTheJa4xRawFormTheRustSnapshotImplies` in `tests/test_foxio_rust_parity.py`
+    compares it against the FoxIO Rust snapshot through the hash, so it is no such value.
     """
     collected = {
         method

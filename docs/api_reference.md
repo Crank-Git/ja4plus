@@ -169,9 +169,15 @@ from ja4plus import JA4XFingerprinter
 
 fp = JA4XFingerprinter()
 result = fp.fingerprint_certificate(der_bytes)  # From DER-encoded cert
+value, raw = fp.read_certificate(der_bytes)     # The value and the JA4X_r raw form
 result = fp.process_packet(packet)               # From TLS packet
 details = fp.get_cert_details(x509_cert)         # Extract OID details
 ```
+
+A JA4X entry holds the `raw` key, which carries the `JA4X_r` value. It holds the three
+unhashed lists of the fingerprint, joined with `_`. JA4X sorts no list, so
+`raw_original_order` holds the same value. #267 decided the form, and
+`docs/implementation_notes.md` holds the reading.
 
 ### JA4SSHFingerprinter
 
