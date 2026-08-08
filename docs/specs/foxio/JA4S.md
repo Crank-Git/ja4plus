@@ -102,7 +102,7 @@ characters and two ALPN characters.
 
 **This rule is uncertain for DTLS. Keep the vector fallback.** The image names two values
 and the four implementations name three between them. `wireshark/source/packet-ja4.c:729`
-sets the character to `t` or `q`, `packet-ja4.c:732` overwrites it with `d` for DTLS, and
+sets the character to `t` or `q`. `packet-ja4.c:732` overwrites it with `d` for DTLS.
 `packet-ja4.c:979` passes that same record to `ja4s()`, so the dissector writes a `d` JA4S
 value. `technical_details/JA4.md:24` and `JA4.md:46` state the same three values for JA4.
 The other three implementations write `t` or `q` alone. `rust/ja4/src/tls.rs:434` reads
@@ -288,7 +288,7 @@ Two FoxIO sources contradict it for JA4S. `rust/ja4/src/tls.rs:434` reads `is_qu
 DTLS carries. `python/ja4.py:173` writes `q` or `t` alone.
 
 **No vector measures it.** Measured on 2026-08-08 across the 38 captures of
-`tests/foxio_vectors/`: `ja4plus` produces 126 JA4S values, of which 97 open with `t`, 29
+`tests/foxio_vectors/`: `ja4plus` produces 126 JA4S values. 97 of them open with `t`, 29
 open with `q`, and 0 open with `d`. No expected-output file in this repository holds a JA4S
 value that opens with `d`.
 
@@ -385,7 +385,7 @@ ja4plus JA4S on alpn-condition.pcap            : 0 values
 
 **The capture carries client traffic alone**, so no implementation writes a JA4S value for
 it and the ALPN disagreement of #162 never reaches this method. R7 marks the
-non-alphanumeric ALPN byte uncertain for JA4S, and it stays uncertain: the image states
+non-alphanumeric ALPN byte uncertain for JA4S, and it stays uncertain. The image states
 only the absent case, and no FoxIO JA4S value measures any other case.
 
 ## The search for a reference value
@@ -441,9 +441,9 @@ The deleted text carries three findings for this page.
    no sorted form.
 2. **It agrees with the image on the protocol character**, and both name `(q or t)` alone.
    #221 read the deleted `(q or t)` as a file that predates the DTLS addition. **The image
-   at the pinned commit states the same two values**, so the reading that the list is
-   merely old now rests on `technical_details/JA4.md` and the Wireshark dissector rather
-   than on the age of the deleted file. D1 records the whole split.
+   at the pinned commit states the same two values.** That reading therefore rests on
+   `technical_details/JA4.md` and the Wireshark dissector, and not on the age of the
+   deleted file. D1 records the whole split.
 3. **It states the raw form the image does not draw.** `JA4S_r = t120400_c030_0005,0017,ff01,0000`
    is the exact value this project produces for the capture the image's example names.
 
