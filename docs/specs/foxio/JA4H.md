@@ -641,15 +641,15 @@ outside the nine. The repair therefore holds two measurements.
 - The conformance suite reports 114 `xfailed` before the repair and 114 after, and
   `tests/foxio_deviations.json` holds 114 keys before and after.
 
-`tests/test_ja4h_part_a_readings.py` holds 35 constructed cases, and each repair is proven
-by reverting it.
+`tests/test_ja4h_part_a_readings.py` holds 42 constructed cases, and 28 of them fail on the
+base commit. Each repair is also proven by reverting it alone.
 
 | Ruling | What changed | Cases that fail when the repair is reverted |
 |---|---|---|
 | **D2.** Field a3 reads the Cookie header, and it does not read the parsed cookie list. R5 states the rule, and all three references read the header. This is a defect, so the `Divergence register` gains no row. | `ja4h.py:_ja4h_part_a` reads the header name list. | 3 |
 | **D3.** Field a4 reads the Referer header, and it does not read the header value. R6 states the rule. This is a defect, so the `Divergence register` gains no row. | `ja4h.py:_ja4h_part_a` reads the header name list. | 5 |
 | **D4.** Field a5 counts the list part b hashes. R9 states the rule, and a value that reports two headers while it hashes one contradicts itself. | `ja4h.py:_ja4h_part_a` counts `_ja4h_header_names`. | 5 |
-| **D1.** Field a1 reads the first two characters of any method, as `python/ja4h.py:9` does. The three references disagree, so the `Divergence register` of `docs/specs/spec.md` holds a row. | `http_utils.py:REQUEST_LINE_PATTERN` reads a method token and names no method. The three parse paths read that one pattern. | 12 |
+| **D1.** Field a1 reads the first two characters of any method, as `python/ja4h.py:9` does. The three references disagree, so the `Divergence register` of `docs/specs/spec.md` holds a row. | `http_utils.py:REQUEST_LINE_PATTERN` reads a method token and names no method. The three parse paths read that one pattern. | 15 |
 
 The reassembly gate keeps a narrow test. `is_http_request` admits a method the nine tokens
 omit only when the buffer holds a whole request line. `ja4l.py:365` reads the same gate, and
