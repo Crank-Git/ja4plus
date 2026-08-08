@@ -36,16 +36,24 @@ from ja4plus.utils import x509_utils
 # An arbitrary extension OID. The stub certificate names it to build one error.
 KEY_USAGE_OID = x509.ObjectIdentifier("2.5.29.15")
 
-# The errors that `cryptography` documents for the calls the three handlers make.
+# The errors that `cryptography` documents for the calls the three handlers make. Each
+# entry builds one error, because a raised instance holds the traceback of every frame
+# it passed and a shared instance would keep those frames for the whole run.
 NAMED_ERRORS = [
-    ValueError("error parsing asn1 value"),
-    x509.DuplicateExtension("duplicate extension", KEY_USAGE_OID),
-    x509.UnsupportedGeneralNameType("unsupported general name type"),
+    lambda: ValueError("error parsing asn1 value"),
+    lambda: x509.DuplicateExtension("duplicate extension", KEY_USAGE_OID),
+    lambda: x509.UnsupportedGeneralNameType("unsupported general name type"),
 ]
+NAMED_ERROR_IDS = ["ValueError", "DuplicateExtension", "UnsupportedGeneralNameType"]
 
-# An error that no documented call raises. It stands for a defect of this project, and
-# the repair lets it reach a reader.
-PROJECT_DEFECT = RuntimeError("a defect of this project")
+
+def project_defect() -> RuntimeError:
+    """Return an error that no documented call raises.
+
+    The error stands for a defect of this project. The wide form held it, and the narrow
+    form lets it reach a reader.
+    """
+    return RuntimeError("a defect of this project")
 
 
 class _RaisingCertificate:
@@ -92,16 +100,16 @@ def _one_certificate() -> bytes:
 # --- Site one: `JA4XFingerprinter.get_cert_details` ---------------------------------
 
 
-@pytest.mark.parametrize("error", NAMED_ERRORS, ids=lambda e: type(e).__name__)
-def test_the_certificate_reader_returns_nothing_for_an_error_it_names(error):
+@pytest.mark.parametrize("build_error", NAMED_ERRORS, ids=NAMED_ERROR_IDS)
+def test_the_certificate_reader_returns_nothing_for_an_error_it_names(build_error):
     """The reader holds every error the narrow list names."""
-    assert JA4XFingerprinter().get_cert_details(_RaisingCertificate(error)) is None
+    assert JA4XFingerprinter().get_cert_details(_RaisingCertificate(build_error())) is None
 
 
 def test_the_certificate_reader_reports_a_defect_of_this_project():
     """The reader holds no error the narrow list omits, so a defect reaches a reader."""
     with pytest.raises(RuntimeError):
-        JA4XFingerprinter().get_cert_details(_RaisingCertificate(PROJECT_DEFECT))
+        JA4XFingerprinter().get_cert_details(_RaisingCertificate(project_defect()))
 
 
 # --- Site two: `JA4XFingerprinter.read_certificate` ----------------------------------
@@ -122,7 +130,7 @@ def test_the_certificate_parser_reports_a_defect_of_this_project():
     fingerprinter = JA4XFingerprinter()
 
     def raise_the_defect(cert):
-        raise PROJECT_DEFECT
+        raise project_defect()
 
     fingerprinter.get_cert_details = raise_the_defect
     with pytest.raises(RuntimeError):
@@ -153,12 +161,14 @@ def test_the_packet_reader_returns_nothing_for_a_payload_that_holds_no_certifica
     assert any(message.startswith(INNER_HANDLER_MESSAGE) for message in messages)
 
 
-@pytest.mark.parametrize("error", NAMED_ERRORS, ids=lambda e: type(e).__name__)
-def test_the_packet_reader_holds_every_error_the_direct_parse_names(error, caplog, monkeypatch):
+@pytest.mark.parametrize("build_error", NAMED_ERRORS, ids=NAMED_ERROR_IDS)
+def test_the_packet_reader_holds_every_error_the_direct_parse_names(
+    build_error, caplog, monkeypatch
+):
     """The inner handler names every error the loader and the detail reader raise."""
 
     def raise_the_error(data, backend=None):
-        raise error
+        raise build_error()
 
     monkeypatch.setattr(x509, "load_der_x509_certificate", raise_the_error)
     result, messages = _read_a_hostile_packet(caplog)
@@ -167,12 +177,21 @@ def test_the_packet_reader_holds_every_error_the_direct_parse_names(error, caplo
 
 
 def test_the_packet_reader_holds_the_invalid_version_error(caplog, monkeypatch):
-    """`Certificate.version` raises `InvalidVersion`, and the detail reader lets it pass."""
+    """`Certificate.version` raises `InvalidVersion`, and the detail reader lets it pass.
 
-    def raise_the_error(data, backend=None):
+    The detail reader of `x509_utils` holds `ValueError`, `TypeError` and
+    `AttributeError`, and `InvalidVersion` inherits none of the three. The error
+    therefore leaves the detail reader and reaches the handler under test.
+    """
+
+    def parse_the_certificate(data, backend=None):
+        return object()
+
+    def raise_the_error(cert):
         raise x509.InvalidVersion("unknown version", 7)
 
-    monkeypatch.setattr(x509, "load_der_x509_certificate", raise_the_error)
+    monkeypatch.setattr(x509, "load_der_x509_certificate", parse_the_certificate)
+    monkeypatch.setattr(x509_utils, "get_cert_details", raise_the_error)
     result, messages = _read_a_hostile_packet(caplog)
     assert result is None
     assert any(message.startswith(INNER_HANDLER_MESSAGE) for message in messages)
@@ -186,7 +205,7 @@ def test_the_packet_reader_reports_a_defect_of_this_project(caplog, monkeypatch)
     """
 
     def raise_the_defect(data, backend=None):
-        raise PROJECT_DEFECT
+        raise project_defect()
 
     monkeypatch.setattr(x509, "load_der_x509_certificate", raise_the_defect)
     result, messages = _read_a_hostile_packet(caplog)
