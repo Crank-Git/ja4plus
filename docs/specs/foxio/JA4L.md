@@ -146,8 +146,31 @@ server SYN-ACK.
 
 ### R4 — The image states three parts, and two FoxIO implementations write three
 
-**This rule is uncertain. Keep the vector fallback.** Two FoxIO implementations write three
-parts and two write two parts. "The decisions this page raises" holds the question.
+**#225 settled this rule on 2026-08-08. `ja4plus` writes two timing parts.** The rule keeps
+the vector fallback, and it now states the reason rather than an open question. Two FoxIO
+implementations write three parts and two write two parts.
+
+The user decided on the conformance evidence. Every one of the 114 JA4L values in
+`tests/foxio_vectors/*.json` holds two parts, and `tests/foxio_vectors/wireshark_expected/`
+holds two files that carry no JA4L key. A three-part form deviates from all 114
+comparisons, which moves the register from 116 entries to 230 and leaves no case that
+measures any JA4L value. **20 of the 114 sit on 10 captures that the Wireshark dissector
+publishes no JA4L value for**, so those 20 would carry a third part that no reference
+verifies.
+
+A second reading blocks the adoption, and it is a finding of #225. **The Wireshark part c
+is not computable where `ja4plus` writes a value.** `wireshark/source/packet-ja4.c:1370`
+reads the interval from D to E for `ja4ls`, and
+`wireshark/source/packet-ja4.c:1382` reads the interval from E to F for `ja4l`.
+`wireshark/source/packet-ja4.c:1328`, `wireshark/source/packet-ja4.c:1343` and
+`wireshark/source/packet-ja4.c:1366` set D, E and F on application packets. `ja4l.py`
+emits the server value on the SYN-ACK and the client value on the first packet that carries
+both relative numbers, and both points lead D. **Adopting part c is an emission-model
+change and not a format change.** The dissector also publishes 44 values on each key where
+the Python reference publishes 46 `JA4L-C` and 48 `JA4L-S`, so the two references emit on
+different connections.
+
+`docs/specs/spec.md` holds the `Divergence register` row.
 
 - Corroboration 1: `wireshark/source/packet-ja4.c:1371` to
   `wireshark/source/packet-ja4.c:1374` writes the `JA4LS` field with `"%d_%d_%d"`, from the
@@ -190,10 +213,37 @@ corrects that section, and #198's measurement itself stands.
 
 ### R5 — The references disagree on what a connection with no application handshake writes
 
-**This rule is uncertain. Keep the vector fallback.**
+**#225 settled the QUIC half of this rule on 2026-08-08. `ja4plus` writes the `quic`
+marker on a QUIC connection.** The HTTP half stays open, and `ja4plus` writes no `tcp`
+literal.
 
 The image draws one example, and that example carries all three parts. It states no rule
 for a connection whose application handshake the reader cannot measure.
+
+**The marker spells `quic`, and the spelling follows Wireshark.** Two FoxIO
+implementations write a marker and they spell it differently.
+`.claude/rules/external-apis.md:95` reads "Read no JA4L or JA4LS value of a Zeek baseline
+as a reference value", and `.claude/rules/external-apis.md:101` names the `q` marker as one
+of three Zeek divergences. The rule declines the Zeek spelling, so the Wireshark spelling
+is the one published reading that remains.
+
+| Source | Marker | Published values that carry it |
+|---|---|---|
+| `wireshark/source/packet-ja4.c:1441` and `:1447` | `quic` | 9 of the 44 `ja4.ja4l` values, and 9 of the 44 `ja4.ja4ls` values. |
+| `zeek/ja4l/main.zeek:233` and `:252` | `q` | 14 values across the `conn.log` baselines. |
+| `python/ja4.py:165` | none | Two parts on every connection. |
+| `rust/ja4/src/time.rs` | none | Two parts on every connection. |
+
+**The `tcp` literal is not adopted.** `wireshark/source/packet-ja4.c:1348` and
+`wireshark/source/packet-ja4.c:1354` write it on an HTTP connection, and **none of the 88
+published Wireshark values carries it**. The reading rests on the source alone, and no
+vector proves it.
+
+The change moves 36 values, all on a QUIC connection.
+`chrome-cloudflare-quic-with-secrets.pcapng` holds 2, `ssh2.pcapng` holds 3,
+`tls-handshake.pcapng` holds 20 and `tls3.pcapng` holds 11. **No TCP value moves.** The
+register gains 16 entries, because `tls-handshake.pcapng` carries no JA4L key in its
+expected-output file and the existing occurrence entry already covers its 20 values.
 
 - `wireshark/source/packet-ja4.c:1348` and `wireshark/source/packet-ja4.c:1354` write
   `"%d_%d_tcp"` on an HTTP connection, and `wireshark/source/packet-ja4.c:1441` and
@@ -332,9 +382,8 @@ ja4plus JA4L-C on tests/foxio_vectors/https-connect.pcap          : 45_64
 Part a and part b agree. This project publishes no part c.
 
 **The Python reference and the Rust reference agree with this project**, and every one of
-the 114 JA4L values in `tests/foxio_vectors/*.json` holds two parts. The authority rule
-therefore keeps the two-part form today, and the question the image raises stays open. **No
-fingerprint moves in this issue.**
+the 114 JA4L values in `tests/foxio_vectors/*.json` holds two parts. **#225 settled this on
+2026-08-08: the two timing parts stay.** R4 holds the reason.
 
 **D2 — `ja4l.py:227` computes no distance for the VPN case the image works.**
 
@@ -360,8 +409,8 @@ ja4plus JA4L-C                      : 113_64
 foxio python/test/testdata/chrome-cloudflare-quic-with-secrets.pcapng.json : 113_64
 ```
 
-This project matches the Python reference. R5 marks the rule uncertain, and #198 already
-recorded the Zeek half.
+**#225 settled this on 2026-08-08. `ja4plus` now writes `113_64_quic` on this connection.**
+R5 holds the reason and the spelling reading, and #198 already recorded the Zeek half.
 
 **D4 — `ja4l.py:416` to `ja4l.py:425` write a second server value for a retransmitted
 SYN-ACK.**
@@ -384,6 +433,11 @@ that emits more fingerprints than the reference is a defect. The image states no
 rule, so the specification does not decide D4.
 
 ## The register
+
+**#225 added 16 entries on 2026-08-08, and the register now holds 22 JA4L entries.** Each
+of the 16 names a QUIC connection where the marker is the whole difference, and each one
+names #225. The register moved from 116 entries to 132, and the `xfailed` count moved with
+it. The six entries below are the ones that predate #225, and all six stand unchanged.
 
 `tests/foxio_deviations.json` holds 114 entries as of #193, and **six of them name this
 method**. #193 removed six JA4H entries and no JA4L entry. The count of six is therefore
@@ -530,13 +584,16 @@ those of #203. Each one needs the user, because each one changes a fingerprint t
 project publishes or changes a recorded cause. **This page changes no fingerprinter and no
 register entry.**
 
-1. **D1.** Does this project publish part c? The image labels three parts, the Wireshark
-   dissector and the Zeek script write three, and the Python reference, the Rust reference
-   and every local vector hold two. R4 is uncertain and the vector fallback holds the
-   two-part form today.
-2. **D2.** If part c stays absent, does `calculate_distance` keep an interface that cannot
-   compute the VPN case the image works?
-3. **D4.** Does a retransmitted SYN-ACK produce a second `JA4L-S`?
+1. **D1. Settled on 2026-08-08. `ja4plus` writes two timing parts.** R4 holds the reason
+   and `docs/specs/spec.md` holds the `Divergence register` row.
+2. **D3. Settled on 2026-08-08. A QUIC connection carries the `quic` marker.** R5 holds
+   the reason and the spelling reading. A TCP connection carries no marker.
+3. **D2. Open.** If part c stays absent, does `calculate_distance` keep an interface that
+   cannot compute the VPN case the image works? #225 ruled on the part count and on the
+   marker, and it ruled on neither D2 nor D4. **Both await a decision.**
+4. **D4. Open.** Does a retransmitted SYN-ACK produce a second `JA4L-S`?
+   `tests/foxio_deviations.json` holds `ssh2.pcapng/JA4L-S` under #34, and that entry
+   stands unchanged.
 4. **Five register entries compare against an expected-output file that publishes no JA4L
    key.** `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng` hold no JA4L
    value, because the file was produced with a method filter. An entry of that shape records

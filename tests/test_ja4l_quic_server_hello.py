@@ -65,7 +65,7 @@ def test_the_server_point_skips_an_initial_packet_that_carries_no_server_hello()
     )
 
     assert first is None
-    assert second == "JA4L-S=10000_64"
+    assert second == "JA4L-S=10000_64_quic"
 
 
 def test_the_server_point_waits_for_the_fragment_that_completes_the_server_hello():
@@ -83,7 +83,7 @@ def test_the_server_point_waits_for_the_fragment_that_completes_the_server_hello
     )
 
     assert first is None
-    assert second == "JA4L-S=15000_64"
+    assert second == "JA4L-S=15000_64_quic"
 
 
 def test_the_server_point_reads_an_initial_packet_that_a_handshake_packet_follows():
@@ -102,7 +102,7 @@ def test_the_server_point_reads_an_initial_packet_that_a_handshake_packet_follow
         )
     )
 
-    assert result == "JA4L-S=6000_64"
+    assert result == "JA4L-S=6000_64_quic"
 
 
 def test_the_fingerprinter_reports_no_server_value_when_the_initial_packet_does_not_decrypt():
@@ -174,7 +174,7 @@ def test_the_fingerprinter_reads_the_server_hello_after_it_drops_a_huge_offset()
         )
     )
 
-    assert result == "JA4L-S=10000_64"
+    assert result == "JA4L-S=10000_64_quic"
 
 
 def test_the_fingerprinter_reports_no_server_value_when_the_client_sends_no_initial_packet():
