@@ -69,7 +69,8 @@ class BaseFingerprinter:
         """
         Remove internal state for the given completed or evicted connection.
 
-        Stateless fingerprinters (JA4, JA4T, JA4TS, JA4D) use this no-op.
+        Stateless fingerprinters (JA4, JA4T, JA4D) use this no-op. JA4TS is stateful,
+        because part e reads the delay between two SYN-ACK packets.
         Stateful subclasses override to evict per-connection data and prevent
         memory leaks in long-running monitors.
 

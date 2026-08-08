@@ -139,6 +139,11 @@ fp = JA4TSFingerprinter()
 result = fp.process_packet(packet)
 ```
 
+The fingerprinter holds the SYN-ACK times of each connection, because part e reads the
+delay between two SYN-ACK packets. It counts ten retransmissions for one connection, and
+it drops a connection two minutes after the last SYN-ACK. Call `cleanup_connection` when
+a connection ends, or `reset` to drop every entry.
+
 ### JA4LFingerprinter
 
 Network latency estimation from TCP handshake timing.
@@ -203,7 +208,7 @@ result = generate_ja4(packet)
 | `generate_ja4s(packet)` | scapy packet | JA4S TLS server fingerprint |
 | `generate_ja4h(packet)` | scapy packet | JA4H HTTP fingerprint |
 | `generate_ja4t(packet)` | scapy packet | JA4T TCP client fingerprint |
-| `generate_ja4ts(packet)` | scapy packet | JA4TS TCP server fingerprint |
+| `generate_ja4ts(packet, tracker=None)` | scapy packet | JA4TS TCP server fingerprint. One packet names no retransmission, so a call with no tracker writes four parts. `JA4TSFingerprinter` passes its own tracker and writes part e. |
 | `generate_ja4l(packet)` | scapy packet | JA4L latency fingerprint |
 | `generate_ja4x(cert_info)` | dict | JA4X certificate fingerprint (takes cert_info dict) |
 | `generate_ja4ssh(packet)` | scapy packet | JA4SSH session fingerprint |

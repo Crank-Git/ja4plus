@@ -69,11 +69,27 @@ The fingerprint is `<window size>_<options>_<mss>_<window scale>`.
   value on line 152 holds four.
 - Corroboration 2: `rust/ja4/src/tcp.rs` emits four parts and no timing part.
 
-**This rule is uncertain for JA4TS.** The image states that part e appears only on
-JA4TScan. The Wireshark dissector contradicts the image: `wireshark/source/packet-ja4.c`
-appends part e inside `ja4t()` whenever the caller passes a connection, and the two call
-sites that pass a connection are the two that write the `JA4TS` field. Keep the vector
-fallback for part e on JA4TS. See "The decisions this page raises".
+**This rule holds for JA4T alone. JA4TS carries part e, and the user decided that on
+2026-08-08.** The decision reverses the D6 and D7 ruling of #215, which followed the
+image. #226 holds the decision and the measurement, and R12 below states the reading.
+`ja4plus/fingerprinters/ja4ts.py` writes part e.
+
+The image is the one source that keeps part e off JA4TS. Three FoxIO sources put it
+there, and no source ever corrected them.
+
+- The deleted `technical_details/JA4T.md` heads its form
+  `__JA4TS and JA4TScan Fingerprint formats:__` and writes
+  `WindowSize_TCPOptions_MSSValue_WindowScale_TimeSinceLastSYNACK`. `b6f3ff4` deleted
+  the file on 2024-02-22 and no commit restored it, so the statement stands as
+  FoxIO-authored under the rule #221 established.
+- `wireshark/source/packet-ja4.c:1595` writes the `JA4TS` field through `ja4t()` with a
+  connection, and `ja4t()` appends part e at line 684 whenever the connection holds more
+  than one SYN-ACK.
+- `zeek/ja4t/main.zeek:227-236` appends the delay list to `c$conn$ja4ts`.
+
+**The image's own example contradicts its caption.** The caption reads
+`TCP Retransmission Timings (only on JA4TScan)`, and the example value `1-2-4-8-R6`
+carries the `R` suffix that the deleted file defines for a JA4TS RST.
 
 ### R3 — Part a is the raw window size
 
@@ -160,6 +176,63 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
 
 The image settles none of this. It draws one example, and that example carries options, a
 Maximum Segment Size and a non-zero window scale.
+
+### R12 — JA4TS carries part e, and the fingerprint omits part e when the server answers once
+
+**The user decided this on 2026-08-08, and the decision reverses the D6 and D7 ruling of
+#215.** R2 above names the three FoxIO sources. #226 built the reading.
+
+Part e holds the delay between each SYN-ACK of one connection, in whole seconds, joined
+with `-`. The deleted `technical_details/JA4T.md` states four rules, and this project
+adopts all four.
+
+1. **The fingerprint omits part e when it sees no retransmission.** The file reads: "If
+   no retransmissions are seen, as there shouldn't be in normal network communications,
+   the fingerprint will omit section e. If retransmissions are seen, the fingerprint
+   will fill out section e." Part e is absent, and it is not `00`.
+   `wireshark/source/packet-ja4.c:684` appends part e only when `syn_ack_count > 1`, and
+   `zeek/ja4t/main.zeek:227` appends it only when the delay list holds a value. Both
+   corroborate the omission.
+2. **Each delay is the interval since the last SYN-ACK, rounded to the nearest whole
+   second.** The file reads: "we start with the timestamp of the first SYNACK and
+   subtract it from the next SYNACK, rounding the result to the nearest whole number in
+   seconds." `timediff` in `wireshark/source/packet-ja4.c` calls the C `round`, which
+   carries a half away from zero, and `ja4plus` reads the same rule. A negative half
+   rounds away from zero too, because a capture that holds a SYN-ACK out of order
+   produces a negative delay.
+   **`zeek/ja4t/main.zeek:180` truncates instead**, because it divides an integer count
+   of microseconds. The prose and the dissector agree, so `ja4plus` follows them.
+3. **A fingerprint grows with each SYN-ACK.** The file lists the value that each SYN-ACK
+   of its example produces, from `62727_2_8961_00` through `62727_2_8961_00_1-2-4-8-16`.
+   `ja4plus` emits one JA4TS value for each SYN-ACK, so it reproduces the sequence.
+4. **The state holds ten retransmissions and a timeout of two minutes.** The file reads:
+   "The max is 10 retransmissions counted and the timeout is 2 minutes after the last
+   SYNACK." `zeek/ja4t/main.zeek:185` stops at ten delays and corroborates the count.
+   **`MAX_SYN_ACK_TIMES` in `wireshark/source/packet-ja4.c:234` stores ten timestamps,
+   which holds nine delays**, so the dissector reads one fewer than the prose states.
+   The prose and Zeek agree at ten, and `ja4plus` follows them. No vector reaches the
+   bound, because the largest reading in `tests/foxio_vectors/` is two SYN-ACKs.
+
+**The RST suffix stays out of this rule.** R13 records it.
+
+### R13 — The RST value of JA4TS is not built, and #246 owns it
+
+The deleted file states that a RST appends `R` and its delay to part e, and that a RST
+packet carries no window size and no option, so the reader needs the previous JA4TS.
+`wireshark/source/packet-ja4.c:1608` writes a second `JA4TS` value on the RST, and it
+rebuilds part a through part d from the stored connection.
+
+**The RST value separates from part e, and #226 measured the separation.** Both
+implementations nest the RST branch inside the delay branch:
+`wireshark/source/packet-ja4.c:693` reads `rst_time` only when `syn_ack_count > 1`, and
+`zeek/ja4t/main.zeek:233` reads `rst_ts` only when the delay list holds a value. A delay
+list is therefore complete and correct with no RST, which the deleted file's own second
+example shows: it ends at `62727_2_8961_00_1-2-4-8-16` and carries no RST. The RST value
+also needs two things part e does not: a reader of RST packets, and stored part a
+through part d for a packet that carries neither.
+
+No vector reaches this rule. `tests/foxio_vectors/` holds one connection with more than
+one SYN-ACK, and the server sent no RST on it.
 
 ## The comparison against this project
 
@@ -249,33 +322,40 @@ a repeated option, so no measurement demonstrates D5.
 
 | Field | Rule | `ja4ts.py` | Reading |
 |---|---|---|---|
-| Part count and separator | R1 | `ja4ts.py:89` | Agrees. The four-part format matches JA4T. |
-| Part a, raw window | R3 | `ja4ts.py:60` | Agrees. |
-| Part b order | R4 | `ja4ts.py:68` | Agrees. |
-| Part b separator | R4 | `ja4ts.py:86` | Agrees. |
-| Part c absent | R6 | `ja4ts.py:64` | Agrees. |
-| Part d absent | R7 | `ja4ts.py:65` | Agrees. |
-| Packet selection | R8 | `ja4ts.py:56` | Agrees. `tcp.flags & 0x12 == 0x12` selects the SYN-ACK. |
+| Part count and separator | R1 | `ja4ts.py:253` | Agrees. Part a through part d match JA4T, and part e follows them. |
+| Part a, raw window | R3 | `ja4ts.py:224` | Agrees. |
+| Part b order | R4 | `ja4ts.py:232` | Agrees. |
+| Part b separator | R4 | `ja4ts.py:250` | Agrees. |
+| Part c absent | R6 | `ja4ts.py:228` | Agrees. |
+| Part d absent | R7 | `ja4ts.py:229` | Agrees. |
+| Packet selection | R8 | `ja4ts.py:220` | Agrees. `tcp.flags & 0x12 == 0x12` selects the SYN-ACK. |
+| Part e, delay list | R12 | `ja4ts.py:169` | Agrees. `_part_e` writes the delay list and omits it when the server answers once. |
+| Part e, state bound | R12 | `ja4ts.py:18` | Agrees. Ten delays, and a timeout of two minutes. |
+| RST value | R13 | none | **Absent.** #246 owns it. |
 
 ### JA4TS — the disagreements
 
 `ja4ts.py` repeats the body of `ja4t.py`, so it repeats D1, D2, D3 and D5 at
-`ja4ts.py:86`, `ja4ts.py:68`, `ja4ts.py:70` to `ja4ts.py:83`, and `ja4ts.py:72` with
-`ja4ts.py:77`. Two disagreements belong to JA4TS alone.
+`ja4ts.py:250`, `ja4ts.py:232`, `ja4ts.py:234` to `ja4ts.py:247`, and `ja4ts.py:236` with
+`ja4ts.py:241`. Two disagreements belong to JA4TS alone. **#226 added part e above that
+body, so every line number in this section moved.**
 
-**D6 — `ja4ts.py` writes no part e, and the Wireshark dissector writes one.**
+**D6 — repaired. `ja4ts.py` writes part e.**
 
 `wireshark/source/packet-ja4.c:1595` writes the `JA4TS` field through `ja4t()` with a
 connection, so the dissector appends the SYN-ACK retransmission intervals when the
 connection holds more than one SYN-ACK. The image states that part e appears only on
-JA4TScan. R2 marks this uncertain.
+JA4TScan. **The user decided against the image on 2026-08-08**, and #226 built part e.
+R12 states the rule and R2 names the three FoxIO sources.
 
-**D7 — `ja4ts.py` writes no value on a RST, and the Wireshark dissector writes one.**
+**D7 — open. `ja4ts.py` writes no value on a RST, and the Wireshark dissector writes one.**
 
 `wireshark/source/packet-ja4.c:1295` marks a RST, and line 1608 writes a second `JA4TS`
 value from the stored connection values, with the `-R<interval>` suffix. The image's
-example part e ends with `R6`, which corroborates the suffix shape. `ja4ts.py:56` reads the
+example part e ends with `R6`, which corroborates the suffix shape. `ja4ts.py` reads the
 SYN-ACK alone and reaches no RST.
+
+**#226 measured that D7 separates from D6, so #246 owns D7.** R13 states the measurement.
 
 ## The search for a reference value
 
@@ -383,9 +463,13 @@ count in "The search for a reference value" above. No FoxIO Python expected-outp
 holds a `JA4T` key or a `JA4TS` key either.
 
 **JA4TS therefore reaches no FoxIO reference value in this repository.** Its only
-reference value is the Zeek baseline `ja4ts 65535_00_00_00`, which #198 owns.
-`TestTheLocalSnapshotsHoldNoJa4tsValue` states both facts as checks, so a vector refresh
-that adds a `ja4ts` field fails and names the file.
+reference values are the Zeek baselines, which #198 owns and `docs/specs/foxio/zeek.md`
+records. `TestTheLocalSnapshotsHoldNoJa4tsValue` states both facts as checks, so a vector
+refresh that adds a `ja4ts` field fails and names the file.
+
+**This is why part e moved no conformance case.** #226 added part e, and the conformance
+suite reported 116 `xfailed` before the change and 116 after, against 116 keys in
+`tests/foxio_deviations.json`. No case compares a JA4TS value, so none could move.
 
 ## The snapshot the comparison cannot reach
 
@@ -436,9 +520,9 @@ The deleted text carries two findings for this page.
 1. **It contradicts the image on part e of JA4TS.** Its form for JA4TS reads
    `WindowSize_TCPOptions_MSSValue_WindowScale_TimeSinceLastSYNACK`, and the image's caption
    reads `TCP Retransmission Timings (only on JA4TScan)`. The deleted text agrees with the
-   Wireshark dissector, which D6 records. **R2 stays uncertain and the vector fallback
-   stays.** **#226 holds the decision**, and it names #215 item 4 as the issue a triager
-   may fold it into.
+   Wireshark dissector, which D6 records. **The user decided for the deleted text on
+   2026-08-08, and #226 built part e.** R12 states the rule. The decision reverses the
+   #215 ruling of the same day, which followed the image.
 2. **It states the empty-field form that R11 records the image does not settle.** It reads
    `If any field does not exist, then the output is 00.` and it gives
    `JA4T = 1024_00_00_00`. `wireshark/source/packet-ja4.c:664` and the Zeek baseline both
@@ -449,8 +533,37 @@ The deleted text carries two findings for this page.
 The deleted text also states four rules the image does not state: the interval of part e
 rounds to the nearest second, a RST appends an `R` and its delay, a RST carries no window
 size or option, and the state bound is 10 retransmissions with a timeout of 2 minutes.
-**The state bound rests on the deleted file alone**, so it stays uncertain and it specifies
-no bound of this project.
+**#226 read the blob again and found a second corroboration for three of the four**, so
+R12 adopts them and states each source. `zeek/ja4t/main.zeek:185` stops at ten delays,
+which corroborates the retransmission count. The two-minute timeout still rests on the
+deleted file alone, and `ja4plus` adopts it because no other source states any timeout.
+The two RST rules stay unbuilt, and #246 owns them.
+
+## What part e moved
+
+#226 replayed all 38 captures under `tests/foxio_vectors/` through `Processor`, before
+the change and after it, and compared every value.
+
+| Reading | Before | After |
+|---|---|---|
+| Values the 38 captures produce | 803 | 803 |
+| Values that differ | — | **1** |
+| Zeek JA4TS rows that match | 9 of 10 | 9 of 10 |
+| Keys in `tests/foxio_deviations.json` | 116 | 116 |
+| `xfailed` in the conformance suite | 116 | 116 |
+
+**One value moved, and it is a JA4TS value.** `ssh2.pcapng` packet index 372, which is frame 373 in a one-based reader, moves from
+`64240_2-1-1-4-1-3_1460_7` to `64240_2-1-1-4-1-3_1460_7_0`. No value of another method
+moved, so part e reaches nothing it should not reach.
+
+**One connection in the whole vector set carries more than one SYN-ACK.** It is
+`184.150.157.177:80` to `172.16.225.48:57380` in `ssh2.pcapng`. The server answered at
+1688672871.347960 and again at 1688672871.353789, and the interval of 0.005829 s rounds
+to `0`. Packet 369 is the first SYN-ACK and keeps four parts, which R12 rule 1 requires.
+
+**The bounds of R12 reach no vector.** The largest reading is two SYN-ACKs, against a
+bound of ten, and the largest interval is 0.005829 s, against a timeout of two minutes.
+`tests/test_ja4ts_part_e.py` therefore carries the constructed cases that measure them.
 
 ## The decisions this page raises
 
@@ -463,4 +576,7 @@ fingerprinter.
 2. **D2.** Reading the raw option bytes rather than scapy's parsed list repairs the pad-byte
    count. That changes a published fingerprint.
 3. **D4.** Holding one JA4T value per connection changes the count this project emits.
-4. **D6 and D7.** Does JA4TS carry part e? The image and the Wireshark dissector disagree.
+4. **D6 — decided on 2026-08-08, and #226 built it.** JA4TS carries part e. The user
+   read #221's finding and reversed the #215 ruling of the same day. R12 states the
+   rule. **D7 stays open**, and #246 owns it, because #226 measured that the RST value
+   separates from part e. R13 states the measurement.
