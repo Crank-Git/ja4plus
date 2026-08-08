@@ -149,8 +149,8 @@ Field a4 is `r` when the request carries a Referer header, whatever the header v
 
 ### R10 — Field a6 is the first four characters of the primary Accept-Language value
 
-The reader takes the value up to the first `,`, removes each `-`, lowercases the result,
-keeps four characters and pads with `0`.
+Field a6 takes the value up to the first `,`. It removes each `-`, it lowercases the
+result, it keeps four characters, and it pads the result with `0`.
 
 - Corroboration 1: `python/ja4h.py:12` to `python/ja4h.py:15`. Measured at the pinned
   commit: `http_language('en-US,en;q=0.9')` returns `'enus'`, and
@@ -170,13 +170,13 @@ field is `0000`.
 
 ### R12 — Part b is the first 12 hexadecimal characters of one SHA-256 hash
 
-The reader joins the header names with `,`, in wire order, and hashes the joined string.
+Part b joins the header names with `,`, in wire order, and it hashes the joined string.
 
 - Corroboration 1: `python/common.py:125` to `python/common.py:129` defines `sha_encode`.
   Measured at the pinned commit: `sha_encode(['User-Agent'])` returns `'b8bcd45ac095'`,
   which is the part b of `python/test/testdata/https-connect.pcap.json`.
 - Corroboration 2: `rust/ja4/src/http.rs:191` joins with `,` and
-  `rust/ja4/src/lib.rs:180` truncates the hash to 12 characters.
+  `rust/ja4/src/lib.rs:188` truncates the hash to 12 characters.
 
 ### R13 — Part b omits Cookie and Referer, which are the two names field a5 omits
 
@@ -269,8 +269,8 @@ The image settles nothing here. Its example carries 13 headers.
 - `python/ja4h.py:13` replaces `;` with `,` before the split, so `en;q=0.9` writes `en00`.
   Measured at the pinned commit: `http_language('en;q=0.9')` returns `'en00'`.
 - `wireshark/source/packet-ja4.c:478` ends the token at `;`, which agrees with the Python
-  reader.
-- `rust/ja4/src/http.rs:289` splits on `,` alone, so `en;q=0.9` writes `en;q`.
+  reference.
+- `rust/ja4/src/http.rs:293` splits on `,` alone, so `en;q=0.9` writes `en;q`.
 
 `wireshark/source/packet-ja4.c:489` also writes a non-alpha character as two hexadecimal
 digits, and neither other reference does.
@@ -300,12 +300,12 @@ rust/ja4/src/snapshots/ja4__insta@http2-with-cookies.pcapng.snap : ge20cn17enus 
 python/test/testdata/http2-with-cookies.pcapng.json              : ge20cn13enus  ge20cn19enus  ge20cr18enus
 ```
 
-The two readers therefore write a different field a5 and a different part b for one
+The two references therefore write a different field a5 and a different part b for one
 request. The image settles nothing here, because its example is an HTTP/2 request and it
 states no pseudo-header rule.
 
 `python/test/testdata/` decides, under the rule `.claude/rules/external-apis.md` states.
-This project follows the Python reader.
+This project follows the Python reference.
 
 ## The comparison against this project
 
@@ -314,7 +314,7 @@ The comparison below reads `ja4plus/fingerprinters/ja4h.py` and
 table does not name is a field nobody read.**
 
 `#193` landed two changes on `batch/193-register-and-state-rule`, which is not the base of
-this page: `ja4h.py` there reads a request that ends with LF, and it holds the consumed
+this page. There, `ja4h.py` reads a request that ends with LF, and it holds the consumed
 sequence position. This page reads the base of Epic 10 and cites #193 rather than
 re-deriving either reading.
 
@@ -343,7 +343,7 @@ This page raises no bound question.
 | b, join and hash | R12 | `ja4h.py:354` to `ja4h.py:356` | Agrees. `",".join(...)` and `sha256(...).hexdigest()[:12]`. |
 | b, wire order | R14 | `ja4h.py:321` to `ja4h.py:325` | Agrees. The comprehension keeps the order of `header_names`, and nothing sorts it. |
 | b, the two omitted names | R13 | `ja4h.py:324` | Agrees. The list drops `cookie` and `referer`. |
-| b, a pseudo-header | R24 | `ja4h.py:324` | Agrees with the Python reader and the dissector, which both drop a name that begins with `:`. Disagrees with `rust/ja4/src/http.rs:127`, which R24 marks uncertain. The branch is unreachable here, because `http_utils.py:208` requires one non-colon character before the colon. |
+| b, a pseudo-header | R24 | `ja4h.py:324` | Agrees with the Python reference and the dissector, which both drop a name that begins with `:`. Disagrees with `rust/ja4/src/http.rs:127`, which R24 marks uncertain. The branch is unreachable here, because `http_utils.py:208` requires one non-colon character before the colon. |
 | c, the sort | R15 | `ja4h.py:364` | Agrees. `sorted(name for name, _ in cookie_pairs)`. |
 | c, join and hash | R15 | `ja4h.py:364` to `ja4h.py:366` | Agrees. |
 | c, no cookie | R17 | `ja4h.py:367` to `ja4h.py:369` | Agrees. `"000000000000"`. |
@@ -353,9 +353,9 @@ This page raises no bound question.
 | d, no cookie | R17 | `ja4h.py:375` to `ja4h.py:379` | Agrees. `"000000000000"`. |
 | One value per request | R18 | `ja4h.py:116` to `ja4h.py:120` | Agrees for a request the parser reads once. D5 below reports the retransmission case. |
 | b, no header | R19 | `ja4h.py:356` | Agrees with `rust/ja4/src/lib.rs:184`. Disagrees with `python/common.py:127`, which R19 marks uncertain. |
-| b, `Cookie2` | R22 | `ja4h.py:324` | Agrees with the Rust reader and the dissector. Disagrees with `python/ja4h.py:49`, which R22 marks uncertain. |
+| b, `Cookie2` | R22 | `ja4h.py:324` | Agrees with the Rust reference and the dissector. Disagrees with `python/ja4h.py:49`, which R22 marks uncertain. |
 | d, a cookie with no equals sign | R20 | `http_utils.py:100` and `ja4h.py:231` | Agrees with `wireshark/source/packet-ja4.c:1177`. Disagrees with the other two references, which R20 marks uncertain. |
-| The language token end | R23 | `ja4h.py:301` | Agrees with the Python reader and the dissector. Disagrees with `rust/ja4/src/http.rs:289`, which R23 marks uncertain. |
+| The language token end | R23 | `ja4h.py:301` | Agrees with the Python reference and the dissector. Disagrees with `rust/ja4/src/http.rs:293`, which R23 marks uncertain. |
 
 ### Two whole captures agree, value for value
 
@@ -473,19 +473,19 @@ The docstring reads `FoxIO publishes no JA4H_r key, so this fingerprinter comput
 sorted raw form: a sorted value matches no reference value and no other implementation.`
 
 `wireshark/test/testdata/http1-with-cookies.pcapng.json` holds a `ja4.ja4h_r` key at the
-pinned commit, and `wireshark/source/packet-ja4.c:603` builds it with sorted cookie fields.
+pinned commit, and `wireshark/source/packet-ja4.c:609` builds it with the sorted cookie fields.
 `python/ja4h.py:78` builds `JA4H_r` as well, and the files under `python/test/testdata/`
 publish no such key.
 
 The claim holds for `python/test/testdata/` and it does not hold for the Wireshark expected
-output. This changes no fingerprint. It changes what a reader believes the reference
-publishes.
+output. This changes no fingerprint. It changes what a person reading `ja4h.py` believes
+the reference publishes.
 
-### One further reading, which changes no fingerprint
+### One more finding that changes no fingerprint
 
 `ja4h.py:20` imports `parse_http_request`, and no line of `ja4h.py` calls it.
-`ja4h.py:254`, `_convert_parsed_to_extract_format`, is reached from
-`tests/test_ja4h_cookie_list.py` and from no line under `ja4plus/`. That function reads
+`tests/test_ja4h_cookie_list.py` reaches `ja4h.py:254`, `_convert_parsed_to_extract_format`.
+No line under `ja4plus/` reaches it. That function reads
 `parsed["headers"]`, which `http_utils.py:86` keys on the lowercased name, so it would drop
 both the wire casing and a repeated header name. No fingerprint reads it today.
 
@@ -497,9 +497,9 @@ four captures and three issues. Each row states whether the specification explai
 | Capture | Key | Entries | Issue | Explained by the specification |
 |---|---|---|---|---|
 | `CVE-2018-6794.pcap` | `JA4H`, `JA4H_ro` | 2 | #35 | **Yes, and the stated cause is wrong.** R18 states one fingerprint for each request. The measurement above shows 10 extra occurrence keys and 0 missing keys, so the values match and the count does not. The entry states `ja4plus produces no JA4H fingerprint the reference holds.` |
-| `http-empty-useragent.pcap` | `JA4H`, `JA4H_ro`, and the two stream keys | 4 | #35 | **No.** The specification states no line-terminator rule and no rule about an empty header value. #193 owns the cause and landed the reader on `batch/193-register-and-state-rule`. The reference value is `ge10nn010000_b8bcd45ac095_000000000000_000000000000`, so R7 and R12 confirm that a header with an empty value still counts and still hashes. |
-| `chrome-cloudflare-quic-with-secrets.pcapng` | `JA4H`, `JA4H_ro`, and the two stream keys | 4 | #129 | **No.** The specification states the schema of a request and states nothing about how a reader reaches a request inside QUIC. The reference decrypts the traffic with the secrets the capture carries. |
-| `http2-with-cookies.pcapng` | `JA4H` and `JA4H_ro`, 16 each | 32 | #129 | **Partly.** R4 states that an HTTP/2 request writes version `20`, so the specification does cover HTTP/2 as a source. It states nothing about how a reader reaches a request inside TLS 1.3. The reference decrypts the traffic with the secrets the capture carries. |
+| `http-empty-useragent.pcap` | `JA4H`, `JA4H_ro`, and the two stream keys | 4 | #35 | **No.** The specification states no line-terminator rule and no rule about an empty header value. #193 owns the cause, and its fix landed on `batch/193-register-and-state-rule`. The reference value is `ge10nn010000_b8bcd45ac095_000000000000_000000000000`, so R7 and R12 confirm that a header with an empty value still counts and still hashes. |
+| `chrome-cloudflare-quic-with-secrets.pcapng` | `JA4H`, `JA4H_ro`, and the two stream keys | 4 | #129 | **No.** The specification states the schema of a request and states nothing about how an implementation reaches a request inside QUIC. The reference decrypts the traffic with the secrets the capture carries. |
+| `http2-with-cookies.pcapng` | `JA4H` and `JA4H_ro`, 16 each | 32 | #129 | **Partly.** R4 states that an HTTP/2 request writes version `20`, so the specification does cover HTTP/2 as a source. It states nothing about how an implementation reaches a request inside TLS 1.3. The reference decrypts the traffic with the secrets the capture carries. |
 
 No register entry names a rule this page transcribes as a value disagreement. **The two
 value disagreements this page finds, D2 and D3, reach no vector**, so the register holds no
@@ -576,5 +576,5 @@ changes no fingerprinter and no register entry.**
    measurement shows extra values, and the entry states that this project produces none.
 7. **R19 to R24 stay uncertain.** Each holds a disagreement between two FoxIO
    implementations, and the image settles none of them. The vector fallback stays. R24 is
-   the widest: the Rust reader counts and hashes the four HTTP/2 pseudo-headers, and the
-   other two readers drop them, so the two disagree on every HTTP/2 request.
+   the widest. The Rust reference counts and hashes the four HTTP/2 pseudo-headers, and
+   the other two references drop them, so the two disagree on every HTTP/2 request.
