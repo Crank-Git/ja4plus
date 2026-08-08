@@ -36,11 +36,22 @@ The suite reads the four committed FoxIO captures under `tests/foxio_vectors/`.
 The suite generates every malformed copy at test time. **Never commit a generated
 capture.** A committed copy stops following the capture it came from.
 
+`test_synthetic_hostile_input.py` reads no capture. It builds each payload in the case,
+because the six shapes that #338 names describe bytes and not a session. The shapes are
+an empty payload, a truncated TLS record, a record that declares more bytes than the
+packet holds, a long run of `0x00`, a long run of `0xff`, and a ClientHello with one
+corrupted byte. Its ClientHello comes from the `client_hello_packet` fixture.
+
 ## The rule that governs every case
 
 A case that asserts "no exception" passes when no parser runs. A truncated capture that
 no fingerprinter opens raises nothing and proves nothing. Every case therefore states
 what it produced, and every case proves that the parser read the mutated bytes.
+
+The contract has two halves, and a case that reads one half accepts a defect. A parser
+that cannot read a packet returns nothing, **and** it does not raise. A case that reads
+the second half alone accepts a fabricated fingerprint, which names a client that does
+not exist. #338 records the reading.
 
 The suite proves reachability in three ways:
 
