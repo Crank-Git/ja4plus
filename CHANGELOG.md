@@ -34,6 +34,29 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **The output schema carries a version, and `docs/output-schema.md` records it** (#50).
+  Round TBD. The new page states the schema version, the eleven fields, the raw form
+  each of the ten methods writes, and the rule that raises the version. **The rule is a
+  check and not prose alone.** `SCHEMA_HISTORY` in `tests/test_output_schema.py` freezes
+  the column list of each released version, and `TheSchemaVersionRule` fails when a
+  released column moves, changes name or goes away while `SCHEMA_VERSION` stays the
+  same. A new column appends to the end of the row and raises no version.
+  `TheSchemaDocument` parses the page and compares its field table against the written
+  CSV header and the written JSON object, so the page and the code cannot drift apart.
+  Two further cases read the value of each field, because a swap of two values changes
+  the meaning of both fields and moves no name. **Ten mutations each make the file
+  fail**, measured on 2026-08-08 against a baseline of 41 passed: a swap of two CSV
+  columns fails 7 cases, an appended column fails 4, a dropped JSON field fails 5, a
+  raise of `SCHEMA_VERSION` with no history entry fails 6, a renamed column in the page
+  alone fails 3, a changed stability promise fails 1, a deleted rule sentence fails 1, a
+  swap of two JSON values fails 1, a swap of two CSV values fails 2, and a write of
+  `src_port` into `dst_port` fails 2. The appended column is the case that proves the
+  rule: it fails the page checks, because a new field must be documented, and it leaves
+  the version checks green, because a new field raises no version.
+  **The `json` and `csv` formats carry the stability promise, and the `table` format
+  carries none**, which the page states and a check reads back. The page records that
+  `ja4`, `ja4s`, `ja4h` and `ja4x` write a raw form and the other six methods write
+  `null`; `ja4x` now writes `JA4X_r`, which #267 added.
 - **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
   The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as
   package data. A caller who runs `mypy --strict` against their own code now resolves
