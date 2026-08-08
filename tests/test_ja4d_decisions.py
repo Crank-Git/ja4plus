@@ -130,6 +130,35 @@ def test_ja4d_reads_no_domain_from_an_option_81_that_carries_no_name():
     assert generate_ja4d(_dhcp_packet(options))[10] == "n"
 
 
+def test_ja4d_reads_no_domain_from_a_truncated_option_81():
+    """A length byte the payload does not honour gives `n`, not `d`.
+
+    No parser trusts a length field it read from the packet. The option below claims ten
+    bytes and the payload ends after one, so it carries no name.
+    """
+    payload = bytes(236) + DHCP_MAGIC + _dhcp_option(53, b"\x01") + bytes([81, 10, 0])
+    packet = IP() / UDP(sport=68, dport=67) / Raw(load=payload)
+    assert generate_ja4d(packet)[10] == "n"
+
+
+def test_ja4d_reads_a_truncated_option_57_without_a_raise():
+    """A truncated Maximum DHCP Message Size returns a value rather than an IndexError.
+
+    The option claims two bytes and the payload ends after one. A parser that cannot read
+    a packet returns nothing; it does not raise.
+    """
+    payload = bytes(236) + DHCP_MAGIC + _dhcp_option(53, b"\x01") + bytes([57, 2, 5])
+    packet = IP() / UDP(sport=68, dport=67) / Raw(load=payload)
+    assert generate_ja4d(packet)[5:9] == "0000"
+
+
+def test_ja4d_reads_a_truncated_option_53_without_a_raise():
+    """A truncated DHCP Message Type returns nothing rather than an IndexError."""
+    payload = bytes(236) + DHCP_MAGIC + bytes([53, 1])
+    packet = IP() / UDP(sport=68, dport=67) / Raw(load=payload)
+    assert generate_ja4d(packet) is None
+
+
 def test_ja4d_reads_a_domain_from_an_option_81_that_carries_a_name():
     """A Client FQDN that holds a name gives `d`."""
     options = _dhcp_option(53, b"\x01") + _dhcp_option(81, b"\x00\x00\x00host")

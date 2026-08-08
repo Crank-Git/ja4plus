@@ -130,6 +130,13 @@ def _parse_dhcp_options(raw_payload):
         opt_len = raw_payload[pos]
         pos += 1
 
+        # A truncated option claims more bytes than the payload holds. The slice below
+        # would shorten silently, and a later read of opt_data[1] would raise. No parser
+        # trusts a length field it read from the packet, so the parse stops here.
+        # ja4d6.py:143-144 applies the same guard to a DHCPv6 option.
+        if pos + opt_len > len(raw_payload):
+            break
+
         opt_data = raw_payload[pos : pos + opt_len]
         pos += opt_len
 
@@ -149,7 +156,7 @@ def _parse_dhcp_options(raw_payload):
             # D3 of docs/specs/foxio/JA4D.md: the image caption reads `Has a Domain name
             # (d) or No domain (n)`, so the name decides the character and not the
             # option. An option 81 that carries no name therefore gives `n`.
-            has_fqdn = has_fqdn or opt_len > _DHCP_FQDN_NAME_OFFSET
+            has_fqdn = has_fqdn or len(opt_data) > _DHCP_FQDN_NAME_OFFSET
         elif opt_code == 55:  # Parameter Request List
             # D5 of docs/specs/foxio/JA4D.md: RFC 3396 lets a long option 55 split across
             # several occurrences, and part c holds the whole list.
