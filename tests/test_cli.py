@@ -59,7 +59,13 @@ class TestAnalyzePcap(unittest.TestCase):
         self.assertGreater(len(lines), 0, "Expected at least one JSON line")
         for line in lines:
             obj = json.loads(line)
-            self.assertIn("source", obj)
+            # #49 replaced the composite `source` field with the four endpoint fields.
+            # `tests/test_output_schema.py` holds the whole field set.
+            self.assertNotIn("source", obj)
+            self.assertIn("src_ip", obj)
+            self.assertIn("src_port", obj)
+            self.assertIn("dst_ip", obj)
+            self.assertIn("dst_port", obj)
             self.assertIn("type", obj)
             self.assertIn("fingerprint", obj)
 
@@ -70,11 +76,16 @@ class TestAnalyzePcap(unittest.TestCase):
         reader = csv.reader(io.StringIO(out))
         rows = list(reader)
         self.assertGreater(len(rows), 1, "Expected header + at least one data row")
-        self.assertEqual(rows[0], ["source", "type", "fingerprint"])
-        # All data rows should have 3 columns
+        # #49 fixed the column order. `tests/test_output_schema.py` compares the header
+        # against the documented list.
+        from ja4plus.output import CSV_COLUMNS
+
+        self.assertEqual(rows[0], list(CSV_COLUMNS))
         for row in rows[1:]:
             if row:  # skip blank lines
-                self.assertEqual(len(row), 3, f"Expected 3 columns, got: {row}")
+                self.assertEqual(
+                    len(row), len(CSV_COLUMNS), f"Expected {len(CSV_COLUMNS)} columns, got: {row}"
+                )
 
     def test_analyze_types_filter(self):
         """--types ja4t restricts output to JA4T fingerprints only."""
@@ -157,7 +168,12 @@ class TestTheTrailingJA4SSHWindow(unittest.TestCase):
         records = [json.loads(line) for line in out.strip().splitlines() if line.strip()]
         values = [record["fingerprint"] for record in records]
         self.assertEqual(values, ["c36s36_c76s124_c74s5", "c36s52_c42s76_c51s2"])
-        self.assertEqual(records[1]["source"], "172.16.225.48:57377 -> 54.160.114.75:22")
+        # No packet closes this window, so #49 reads the four endpoint fields back from
+        # the connection key that the fingerprinter reported.
+        self.assertEqual(records[1]["src_ip"], "172.16.225.48")
+        self.assertEqual(records[1]["src_port"], 57377)
+        self.assertEqual(records[1]["dst_ip"], "54.160.114.75")
+        self.assertEqual(records[1]["dst_port"], 22)
 
 
 class TestInvalidTypes(unittest.TestCase):
