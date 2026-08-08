@@ -79,11 +79,11 @@ def test_a_fingerprint_that_is_none_returns_an_error_dictionary(fingerprinter):
         "c36s36_y50s50_c70s30",
     ],
     ids=[
-        "a packet size part that carries no side prefix",
-        "an SSH ratio part that carries no side prefix",
-        "an ACK ratio part that carries no side prefix",
-        "a packet size part that carries a wrong side prefix",
-        "an SSH ratio part that carries a wrong side prefix",
+        "a packet size part that carries no client prefix",
+        "an SSH ratio part that carries no client prefix",
+        "an ACK ratio part that carries no client prefix",
+        "a packet size part that carries a wrong client prefix",
+        "an SSH ratio part that carries a wrong client prefix",
     ],
 )
 def test_a_part_that_carries_no_client_prefix_returns_an_error_dictionary(fingerprinter, value):

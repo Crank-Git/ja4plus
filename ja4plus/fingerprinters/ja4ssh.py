@@ -477,7 +477,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
 
             # Every part names its client value with a `c` prefix. The parser removes
             # the first character to read that value, so a part that carries no prefix
-            # reports the number that follows its first digit. The part `36s36` then
+            # reports the number that follows its first character. The part `36s36` then
             # reports a client packet size of 6, and the caller reads a number the
             # fingerprint does not hold. Issue #182 records the defect.
             if not all(part.startswith("c") for part in (packet_sizes, ssh_ratio, ack_ratio)):
