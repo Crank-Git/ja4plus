@@ -75,7 +75,9 @@ PARSE_PATHS = pytest.mark.parametrize("parse", [_from_stream, _from_packet])
 @PARSE_PATHS
 def test_writes_c_for_a_cookie_header_whose_value_holds_no_pair(parse):
     """R5. A Cookie header writes `c`, whatever the header value holds."""
-    assert parse(VALUELESS_COOKIE) == "ge11cn010000_{}_{}_{}".format(HOST_HASH, NO_COOKIE, NO_COOKIE)
+    assert parse(VALUELESS_COOKIE) == "ge11cn010000_{}_{}_{}".format(
+        HOST_HASH, NO_COOKIE, NO_COOKIE
+    )
 
 
 def test_the_processor_writes_c_for_a_cookie_header_whose_value_holds_no_pair():
