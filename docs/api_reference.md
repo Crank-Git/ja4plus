@@ -275,10 +275,10 @@ errors follow the same order.
 
 Warning: every returned exception carries no traceback. A traceback holds the frame of
 every call it passed, and those frames hold the packet. A monitor that keeps the errors
-of every packet would therefore hold every packet it read, and `CLAUDE.md` states that
-no code holds a reference to a packet object after `process_packet` returns. The type,
-the message and the error chain stay, so `repr(error)` reads the same. Log the error
-inside the loop that reads it when the stack matters.
+of every packet would therefore hold every packet it read. `CLAUDE.md` states that no
+code holds a reference to a packet object after `process_packet` returns. The type, the
+message and the error chain stay, so `repr(error)` reads the same. If the stack matters,
+log the error inside the loop that reads it.
 
 `process_packet_with_errors` sets no `timestamp` on a result, because the processor
 reads no packet timestamp. The field holds `None`.

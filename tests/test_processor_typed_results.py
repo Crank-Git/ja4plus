@@ -204,8 +204,8 @@ class TestProcessPacketWithErrors:
         """`CLAUDE.md` states the rule that this case measures.
 
         A monitor that keeps the errors of every packet would hold every packet it read.
-        An exception reaches the caller with its traceback, and the frames of that
-        traceback hold the packet as a local, so the processor clears the traceback.
+        An exception reaches the caller with its traceback. The frames of that traceback
+        hold the packet as a local, so the processor clears the traceback.
         """
         processor = Processor()
         make_one_method_raise(processor, "ja4")

@@ -133,7 +133,7 @@ class Processor:
         The results follow the fixed method order of `_SPEC`. The order is part of the
         interface, and FR-typed-api-3 states it.
 
-        A fingerprinter that raises produces no result, and this method logs the error
+        A fingerprinter that raises produces no result, and the processor logs the error
         at DEBUG. One method that raises poisons no other method. A caller who needs the
         errors calls `process_packet_with_errors` instead. FR-typed-api-4 states that.
 
@@ -328,6 +328,10 @@ def _drop_traceback(error: Exception) -> Exception:
     The call walks `__cause__` and `__context__`, because a fingerprinter that raises
     inside an `except` block chains a second error whose traceback holds its own frames.
     The type, the message and the chain stay, so the caller reads what failed.
+
+    The traceback is the one path this call clears. An error that carries the packet in
+    `args`, or on an attribute of its own, still holds it. No fingerprinter of this
+    project builds such an error, and a new fingerprinter must not.
 
     Args:
         error: The error one fingerprinter raised.
