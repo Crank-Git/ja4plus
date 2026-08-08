@@ -60,9 +60,52 @@ ja4plus cert server.der
 
 # Identify known fingerprints
 ja4plus --lookup analyze capture.pcap
+
+# Write the results to a file
+ja4plus analyze capture.pcap --format json --output results.json
+
+# Overwrite a file that exists
+ja4plus analyze capture.pcap --format json --output results.json --force
 ```
 
+Every option runs before the subcommand name and after it.
+`ja4plus --format json analyze capture.pcap` and
+`ja4plus analyze capture.pcap --format json` do the same thing.
+
 Output formats: `--format table` (default), `json` (JSONL), `csv`
+
+The `json` and the `csv` formats write the same fields whatever flags you pass. Each
+record carries the source address, the source port, the destination address and the
+destination port as separate fields, in this order:
+
+```
+schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as
+```
+
+A field with no value is `null` in the `json` format and empty in the `csv` format. The
+`table` format is for a person reading a terminal, and it carries no stability promise.
+
+The command writes results to standard output and diagnostics to standard error, so a
+pipe that reads standard output reads results alone. A method that fails to read a
+packet writes one line that names the method, and the run continues:
+
+```
+Warning: ja4h could not read a packet: the parser read a length field it cannot trust
+```
+
+The command runs every method whatever `--types` names, and it selects the results it
+reports. It therefore reports the error of a method that `--types` leaves out.
+
+`--output FILE` writes the results to a file and leaves standard output empty. The
+command refuses to overwrite a file that exists, and it exits with the status 1:
+
+```
+Error: the output file exists: results.json. Pass --force to overwrite it.
+```
+
+`--force` overwrites that file. Without `--force` the command creates the file, so it
+writes through no symbolic link. A reader that closes the pipe early, such as `head -1`,
+ends the run without a traceback.
 
 ## Fingerprint Lookup
 

@@ -8,6 +8,50 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The command-line program separates results from diagnostics and gains `--output`**
+  (#52). Round 95. The program writes results to standard output and every diagnostic
+  to standard error, so a pipe that reads standard output reads results alone. The
+  progress line of `db update` moves to standard error. `--output FILE` writes the
+  results to a file and leaves standard output empty. The program refuses to overwrite a
+  file that exists and exits with the status 1, and `--force` overwrites it. Without
+  `--force` the program creates the file, so it writes through no symbolic link and it
+  loses no file to a second writer. A reader
+  that closes the pipe early, such as `head -1`, ends the run with no traceback and no
+  shutdown message. Every option now runs before the subcommand name and after it, so
+  `ja4plus analyze capture.pcap --format csv` does what
+  `ja4plus --format csv analyze capture.pcap` does. A capture that produces no
+  fingerprint writes one line to standard error in the `table` format, and the `json`
+  and `csv` formats keep the output the schema promises.
+
+- **The command-line program runs on `Processor` and reports a fingerprinter error**
+  (#51). Round 94. The program built its own dictionary of fingerprinters and ran its
+  own per-packet loop in `analyze` and in `live`. Both loops caught every error with
+  `except Exception` and continued without a word. The program now builds one
+  `Processor`, so it gets the connection eviction of Epic 3 and the errors of Epic 4. A
+  method that fails to read a packet writes one line to standard error that names the
+  method, and the run continues. The program keeps no exception, because an exception it
+  kept would hold the error chain of every packet it read. `--types` now selects which
+  methods the program reports rather than which methods it builds, so the program evicts
+  the connections of a method you filtered out and it reports that method's errors. The
+  reported order is still the order you wrote in `--types`, and a name you write twice
+  keeps its first position. No fingerprint value moved:
+  the program writes the same 863 records over the 43 committed captures, byte for byte,
+  and the conformance suite reports the same 1531 passed, 143 skipped and 135 xfailed.
+  The unit suite rises from 1801 passed to 1814 passed, which is the 13 cases the change
+  adds.
+
+- **The command-line program writes the addresses and the ports as separate fields**
+  (#49). Round 96. The `json` and the `csv` formats replace the composite `source`
+  field of version 0.6.0 with `src_ip`, `src_port`, `dst_ip` and `dst_port`, so a
+  downstream tool parses no composite string. The CSV header is now fixed at
+  `schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as`,
+  and it no longer changes with `--lookup`. Every field is present in every record: a
+  field with no value is `null` in the `json` format and empty in the `csv` format.
+  `identified_as` is therefore present without `--lookup`, where version 0.6.0 omitted
+  it. Each record also carries the packet `timestamp` in RFC 3339 form. New module
+  `ja4plus/output.py` holds one writer per format. #50 documents the schema and its
+  version.
+
 - **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round TBD.
   The method returned a list of dictionaries through version 0.6.0. A caller who reads
   `result["fingerprint"]` keeps working for one major version, and item access emits a
@@ -21,6 +65,37 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `docs/specs/features/04-typed-api.md` states FR-typed-api-3.
 
 ### Added
+
+- **`Processor.process_packet_with_method_errors` names the method that raised** (#51).
+  Round 94. It returns the same results as `process_packet_with_errors`, and one pair
+  of the method name and the exception for each method that raised. An exception names
+  no method, so `process_packet_with_errors` alone cannot tell a caller which method
+  failed. Every returned exception still carries no traceback, for the reason #45
+  records. `process_packet_with_errors` keeps its signature and drops the name.
+
+- **The output schema carries a version, and `docs/output-schema.md` records it** (#50).
+  Round 96. The new page states the schema version, the eleven fields, the raw form
+  each of the ten methods writes, and the rule that raises the version. **The rule is a
+  check and not prose alone.** `SCHEMA_HISTORY` in `tests/test_output_schema.py` freezes
+  the column list of each released version, and `TheSchemaVersionRule` fails when a
+  released column moves, changes name or goes away while `SCHEMA_VERSION` stays the
+  same. A new column appends to the end of the row and raises no version.
+  `TheSchemaDocument` parses the page and compares its field table against the written
+  CSV header and the written JSON object, so the page and the code cannot drift apart.
+  Two further cases read the value of each field, because a swap of two values changes
+  the meaning of both fields and moves no name. **Ten mutations each make the file
+  fail**, measured on 2026-08-08 against a baseline of 41 passed: a swap of two CSV
+  columns fails 7 cases, an appended column fails 4, a dropped JSON field fails 5, a
+  raise of `SCHEMA_VERSION` with no history entry fails 6, a renamed column in the page
+  alone fails 3, a changed stability promise fails 1, a deleted rule sentence fails 1, a
+  swap of two JSON values fails 1, a swap of two CSV values fails 2, and a write of
+  `src_port` into `dst_port` fails 2. The appended column is the case that proves the
+  rule: it fails the page checks, because a new field must be documented, and it leaves
+  the version checks green, because a new field raises no version.
+  **The `json` and `csv` formats carry the stability promise, and the `table` format
+  carries none**, which the page states and a check reads back. The page records that
+  `ja4`, `ja4s`, `ja4h` and `ja4x` write a raw form and the other six methods write
+  `null`; `ja4x` now writes `JA4X_r`, which #267 added.
 
 - **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
   The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as

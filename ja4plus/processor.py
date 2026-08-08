@@ -5,6 +5,7 @@ Mirrors the API of ja4plus-go's ja4plus.Processor:
     p = Processor()
     results = p.process_packet(pkt)            # list of FingerprintResult
     results, errors = p.process_packet_with_errors(pkt)
+    results, errors = p.process_packet_with_method_errors(pkt)   # each error names its method
     p.cleanup_connection(src_ip, src_port, dst_ip, dst_port, "tcp")
     key = p.get_shard_key(pkt)                 # stable connection key
     p.reset()                                  # clear all state
@@ -179,8 +180,33 @@ class Processor:
             method that produced a fingerprint, in the fixed method order. The second
             holds one exception for each method that raised, in the same order.
         """
+        results, errors = self.process_packet_with_method_errors(packet)
+        return results, [error for _, error in errors]
+
+    def process_packet_with_method_errors(
+        self, packet: Packet
+    ) -> tuple[list[FingerprintResult], list[tuple[str, Exception]]]:
+        """Run every fingerprinter on one packet, and name the method of every error.
+
+        `process_packet_with_errors` returns the exceptions alone, and an exception
+        names no method. A caller that reports an error to a person needs the name, and
+        #51 needs it for the command-line program. This method returns the pair, and
+        `process_packet_with_errors` drops the name.
+
+        Every returned exception carries no traceback, for the reason
+        `process_packet_with_errors` states.
+
+        Args:
+            packet: The packet to read.
+
+        Returns:
+            A tuple of two lists. The first holds one `FingerprintResult` for each
+            method that produced a fingerprint, in the fixed method order. The second
+            holds one pair for each method that raised, in the same order. Each pair
+            holds the method name and the exception.
+        """
         results: list[FingerprintResult] = []
-        errors: list[Exception] = []
+        errors: list[tuple[str, Exception]] = []
         src_ip, dst_ip, src_port, dst_port = _packet_endpoints(packet)
 
         for fp_type, fp in self.fingerprinters.items():
@@ -196,7 +222,7 @@ class Processor:
                     fingerprint = fp.process_packet(packet)
                 except Exception as e:
                     logger.debug(f"{fp_type} processing failed: {e}")
-                    errors.append(_drop_traceback(e))
+                    errors.append((fp_type, _drop_traceback(e)))
                     continue
                 if not fingerprint:
                     continue

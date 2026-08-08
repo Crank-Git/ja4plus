@@ -348,4 +348,7 @@ class TestCLILookupFlag:
         if result.returncode == 0 and result.stdout.strip():
             for line in result.stdout.strip().split("\n"):
                 obj = json.loads(line)
-                assert "identified_as" not in obj  # Not present without --lookup
+                # FR-structured-output-5 asks for a field that is present and null
+                # rather than absent, so the field set reads no flag. #49 changed this
+                # expectation from the absent field of version 0.6.0.
+                assert obj["identified_as"] is None
