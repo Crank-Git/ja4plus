@@ -390,9 +390,15 @@ TCP_OPTION_KEYS = (
     "ssh2.pcapng/JA4T",
 )
 
-# Every entry that stays open. #34 owns the six JA4L entries, and #215 owns the three
+# The six JA4L entries together. #34 owned them, and #34 is closed, so a worker can act
+# on none of them. #272 is open and it holds the question the user answers.
+JA4L_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,)
+
+JA4L_OWNER = 272
+
+# Every entry that stays open. #272 owns the six JA4L entries, and #215 owns the three
 # JA4T entries.
-OPEN_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,) + TCP_OPTION_KEYS
+OPEN_KEYS = JA4L_KEYS + TCP_OPTION_KEYS
 
 
 class TestTheOpenRegisterEntries:
@@ -417,6 +423,15 @@ class TestTheOpenRegisterEntries:
     def test_every_undecided_entry_names_the_issue_that_decides_it(self):
         for key, deviation in self._undecided().items():
             assert "#{}".format(deviation.issue) in deviation.cause, key
+
+    def test_every_ja4l_entry_names_the_open_issue_that_holds_the_question(self):
+        """#34 closed on 2026-08-07 and left the six entries with no owner.
+
+        An entry whose owner is closed names nobody a worker can reach. #272 is open, it
+        carries the question the user answers, and it decides none of the six.
+        """
+        for key in JA4L_KEYS:
+            assert load_register()[key].issue == JA4L_OWNER, key
 
     def test_every_method_filter_entry_names_the_reference_line_that_deletes_the_key(self):
         for key in METHOD_FILTER_KEYS:
