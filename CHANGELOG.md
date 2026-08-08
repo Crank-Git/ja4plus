@@ -22,6 +22,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
+  The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as
+  package data. A caller who runs `mypy --strict` against their own code now resolves
+  the annotations of `ja4plus`: `unzip -l dist/*.whl` lists `ja4plus/py.typed`, and a
+  consumer installed from that wheel reads `result.fingerprint` as `str`.
+  **`ja4plus.__all__` names the 25 promised names**, and version 1.0.0 keeps each one
+  until version 2.0.0. A name absent from `__all__` is not promised. The list holds the
+  typed result, the processor, the ten fingerprinter classes, the ten one-shot
+  functions, the two certificate helpers and `__version__`. `bind_loopback_ipv6`,
+  `register_tunnel_dissectors`, `__author__` and `__license__` stay out: the package
+  calls the first two at import time, and the last two describe the project and not the
+  interface.
+  **`ProcessorStats` is public at `ja4plus.processor.ProcessorStats`**, because
+  `Processor.stats` returns `dict[str, ProcessorStats]`; the class moves nowhere.
+  `docs/specs/features/04-typed-api.md` states FR-typed-api-9, FR-typed-api-10,
+  FR-typed-api-12 and FR-typed-api-13.
+
 - **`Processor.process_packet_with_errors` returns the results and the errors** (#45).
   Round TBD. `process_packet` logs a fingerprinter error at DEBUG and returns the
   results alone, so a caller could not tell a packet that produces no fingerprint from a

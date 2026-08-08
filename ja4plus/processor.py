@@ -40,6 +40,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# `Processor.stats` returns `dict[str, ProcessorStats]`, so a caller who annotates the
+# report names the class. Both names are therefore public, and #47 states the reading.
+# `ja4plus/__init__.py` exports `Processor` alone, so `ProcessorStats` is public at
+# `ja4plus.processor.ProcessorStats`, which is the path `docs/api_reference.md` documents.
+__all__ = ["Processor", "ProcessorStats"]
+
 
 class ProcessorStats:
     """The counts one method reports.

@@ -1,5 +1,49 @@
 # API Reference
 
+## Public interface
+
+`ja4plus.__all__` names the interface the project promises. Version 1.0.0 promises that
+a name in that list stays until version 2.0.0. A name absent from the list is not
+promised, and the project may change it in any release.
+
+```python
+import ja4plus
+
+ja4plus.__all__   # the 25 promised names
+```
+
+| Group | Names |
+|---|---|
+| Result and processor | `FingerprintResult`, `Processor` |
+| Fingerprinter classes | `JA4Fingerprinter`, `JA4SFingerprinter`, `JA4HFingerprinter`, `JA4LFingerprinter`, `JA4XFingerprinter`, `JA4SSHFingerprinter`, `JA4TFingerprinter`, `JA4TSFingerprinter`, `JA4DFingerprinter`, `JA4D6Fingerprinter` |
+| One-shot functions | `generate_ja4`, `generate_ja4s`, `generate_ja4h`, `generate_ja4l`, `generate_ja4x`, `generate_ja4ssh`, `generate_ja4t`, `generate_ja4ts`, `generate_ja4d`, `generate_ja4d6` |
+| Certificate helpers | `compute_ja4x_from_der`, `compute_ja4x_from_pem` |
+| Version | `__version__` |
+
+A module states its own public names in its own `__all__`. `ja4plus.types` names
+`FingerprintResult`, and `ja4plus.processor` names `Processor` and `ProcessorStats`.
+`Processor.stats` returns `dict[str, ProcessorStats]`, so a caller who annotates the
+report imports the class from `ja4plus.processor`.
+
+Four names of the top-level namespace are not promised. `bind_loopback_ipv6` and
+`register_tunnel_dissectors` are the two calls the package makes at import time, so a
+caller needs neither name. `__author__` and `__license__` describe the project and not
+the interface, and the distribution metadata carries the license.
+
+### Type checking
+
+The package ships a `py.typed` marker, and the wheel carries it. A caller who runs
+`mypy --strict` against their own code therefore resolves the annotations of `ja4plus`.
+
+```python
+from ja4plus import FingerprintResult
+
+result = FingerprintResult(type="ja4", fingerprint="t13d1516h2_8daaf6152771_b0da82dd1658")
+name: str = result.fingerprint   # mypy reads `str`
+```
+
+Verified against: https://peps.python.org/pep-0561/ (retrieved 2026-08-08).
+
 ## Fingerprinter Classes
 
 All fingerprinters inherit from `BaseFingerprinter` and share a common interface.
