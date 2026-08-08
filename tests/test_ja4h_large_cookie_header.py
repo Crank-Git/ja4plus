@@ -105,7 +105,11 @@ def test_a_cookie_header_of_5000_pairs_keeps_the_parts_that_read_no_cookie():
 
 
 def test_a_1024_byte_cookie_name_reaches_both_cookie_hashes():
-    """A cookie name of 1024 bytes produces a part c and a part d that are not the sentinel."""
+    """A cookie name of 1024 bytes reaches part c and part d of the JA4H value.
+
+    A parser that refuses the name produces no JA4H value. A parser that shortens the
+    name to 256 bytes produces two hashes that this case does not expect.
+    """
     pairs = [("n" * LONG_NAME_BYTES, "1")]
 
     fingerprint = generate_ja4h(_packet(_request(pairs)))
@@ -113,12 +117,14 @@ def test_a_1024_byte_cookie_name_reaches_both_cookie_hashes():
     assert fingerprint is not None
     part_c, part_d = fingerprint.split("_")[2:4]
     assert (part_c, part_d) == _expected_cookie_hashes(pairs)
-    assert part_c != "000000000000"
-    assert part_d != "000000000000"
 
 
 def test_a_8192_byte_cookie_value_reaches_both_cookie_hashes():
-    """A cookie value of 8192 bytes produces a part c and a part d that are not the sentinel."""
+    """A cookie value of 8192 bytes reaches part c and part d of the JA4H value.
+
+    A parser that refuses the value produces no JA4H value. A parser that shortens the
+    value to 4096 bytes produces a part d that this case does not expect.
+    """
     pairs = [("a", "v" * LONG_VALUE_BYTES)]
 
     fingerprint = generate_ja4h(_packet(_request(pairs)))
@@ -126,8 +132,6 @@ def test_a_8192_byte_cookie_value_reaches_both_cookie_hashes():
     assert fingerprint is not None
     part_c, part_d = fingerprint.split("_")[2:4]
     assert (part_c, part_d) == _expected_cookie_hashes(pairs)
-    assert part_c != "000000000000"
-    assert part_d != "000000000000"
 
 
 def test_every_parser_site_reads_all_5000_pairs_of_a_large_cookie_header():

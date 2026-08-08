@@ -144,12 +144,13 @@ all of them and no vector exercises the handshake. No JA4SSH value moves.
 ## The cookie list carries no bound
 
 The cookie list of one HTTP request holds no maximum entry count and no maximum length.
-The user decided that on 2026-08-08, on #175. This file held no cookie bound paragraph
-before that decision, and it holds none after it.
+The user decided that on 2026-08-08, on #175. The cookie bound paragraph sat in
+`docs/specs/features/03-concurrency-safety.md`, and the revert `042e8c3` removed it. This
+file held none, and it holds none now.
 
-The FoxIO reference caps nothing. `docs/implementation_notes.md` quotes `python/ja4h.py`,
-which sorts the cookie pairs and caps nothing. The Go port caps nothing. `ja4plus`
-matches both.
+The FoxIO reference holds no cookie bound. `docs/implementation_notes.md` quotes
+`python/ja4h.py`, which sorts the cookie pairs and holds no bound. The Go port holds no
+cookie bound. `ja4plus` matches both.
 
 A bound merged as `be3604f`, and the user reverted it as `042e8c3`. Past the bound the
 cookie parse produced no result, so the request produced no JA4H value. Part a and part b
@@ -169,7 +170,7 @@ Every reading below comes from the base commit `b6468dc`, before any change.
 
 The first two sites are `parse_http_request` and `extract_http_info`, both in
 `ja4plus/utils/http_utils.py`. The JA4H reassembled-stream path reads the third site. No
-FoxIO vector reaches any candidate bound, so no vector exercises the over-bound path.
+FoxIO vector reaches any candidate bound, so no vector exercises the path past a bound.
 
 ### The state rule does not reach this list
 
