@@ -261,7 +261,7 @@ table does not name is a field nobody read.**
 | GREASE in the extension list | R13 | `tls_utils.py:256` | Agrees with the Python and the Rust references, which R13 marks uncertain. Disagrees with the dissector and the Zeek script. |
 | ALPN, the absent case | R7 | `ja4s.py:413` | Agrees. `_get_alpn_value` returns `00`. |
 | ALPN, the first and the last character | R7 | `ja4s.py:297`, `ja4.py:74-75` | Agrees. 12 of the 126 measured values carry an ALPN. |
-| ALPN, a byte that is not alphanumeric | R7 | `ja4.py:37-95` | Uncertain. No FoxIO JA4S value measures it. |
+| ALPN, a byte that is not alphanumeric | R7 | `ja4.py:37-84` | Uncertain. No FoxIO JA4S value measures it. |
 | Cipher, four lowercase hex digits | R8 | `ja4s.py:303` | Agrees. `f"{cipher:04x}"`. |
 | Cipher, one value | R8 | `tls_utils.py:229-230` | Agrees. The reader takes the two bytes the ServerHello holds. |
 | Extension hash | R9 | `ja4s.py:305-307` | Agrees. `hashlib.sha256(ext_str.encode()).hexdigest()[:12]` over `",".join(f"{e:04x}")`. |
@@ -319,7 +319,9 @@ the Python reference writes an empty part b.**
 `x['ciphers'] = x['ciphers'][0][2:] if x['ciphers'] else ''`, which produces a value of the
 form `t130200__a56c5b993250`. Rule 2 of `CLAUDE.md` states that a parser which cannot read
 a packet returns nothing, so this project holds the shape it holds. **No vector
-demonstrates it**, because every ServerHello in `tests/foxio_vectors/` names a cipher.
+demonstrates it.** Measured on 2026-08-08 across the 38 captures of
+`tests/foxio_vectors/`: the reader parses 97 TCP ServerHello messages and 0 of them name no
+cipher.
 
 **D5 — `ja4s.py:393` maps `0x0200` to `s2`, and the pinned specification states `0x0002`.**
 
