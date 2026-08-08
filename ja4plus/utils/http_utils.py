@@ -168,6 +168,13 @@ HTTP_METHOD_TOKENS = (
     b"TRACE ",
 )
 
+# The count of leading bytes that hold a request line. The request-line test below reads
+# no more, because `ja4l.py:365` calls it for every TCP payload and a stream buffer grows
+# to 1048576 bytes. A decode of the whole buffer would cost that much work for each
+# packet of every stream that carries no HTTP. The bound is the request-line limit that
+# common servers apply.
+REQUEST_LINE_LIMIT = 8192
+
 
 def is_http_request(data):
     """
@@ -191,7 +198,7 @@ def is_http_request(data):
     # of the same shape would admit an SSH banner, which starts with method characters
     # and one space. `ja4l.py:365` reads this function, so a payload it admits by mistake
     # moves a JA4L measurement point. #219 records the decision.
-    text = data.decode("utf-8", errors="ignore")
+    text = data[:REQUEST_LINE_LIMIT].decode("utf-8", errors="ignore")
     return re.match(REQUEST_LINE_PATTERN, text) is not None
 
 

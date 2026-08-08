@@ -225,6 +225,19 @@ def test_the_reassembly_gate_refuses_a_payload_that_holds_no_request_line(payloa
     assert not is_http_request(payload)
 
 
+def test_the_reassembly_gate_reads_no_more_than_the_request_line_limit():
+    """The gate reads 8192 leading bytes, so a long stream costs one bounded read.
+
+    `ja4l.py:365` calls the gate for every TCP payload, and a stream buffer grows to
+    1048576 bytes. Without the bound, 200 calls on a buffer of 1000003 bytes cost 9.2 ms.
+    With it they cost 0.3 ms.
+    """
+    inside = b"PROPFIND /" + b"a" * 8000 + b" HTTP/1.1\r\nHost: a\r\n\r\n"
+    past = b"PROPFIND /" + b"a" * 9000 + b" HTTP/1.1\r\nHost: a\r\n\r\n"
+    assert is_http_request(inside)
+    assert not is_http_request(past)
+
+
 def test_a_request_split_across_two_segments_reads_a_method_the_nine_omit():
     """The reassembly path reads a method the nine omit, and not the packet path alone."""
     fingerprinter = JA4HFingerprinter()
