@@ -156,3 +156,16 @@ Before you report a criterion met, state what would fail if the code were wrong.
 Where FoxIO specifies nothing — a field name, a default, a subcommand — the Go port at
 `Crank-Git/ja4plus-go` has already shipped a choice. Adopt it. Where FoxIO does specify,
 FoxIO wins, even against the port. `docs/specs/spec.md` holds the divergence register.
+
+## Measuring coverage
+
+Use the **directory** form, `--cov=ja4plus`. For one file, use the **path** form,
+`--cov=ja4plus/utils/tcp_stream.py`.
+
+**Never pass a dotted module name.** `--cov=ja4plus.utils.tcp_stream` makes 48 JA4L and
+QUIC cases fail, and the cause is not in this project. `coverage` resolves a dotted source
+name inside a `sys_modules_saved()` block, which imports `ja4plus`, scapy and
+`cryptography` and then deletes them. The second `cryptography` import builds Python
+classes the loaded Rust extension does not recognise, so every AES cipher raises
+`UnsupportedAlgorithm`, and the second scapy import changes the dissection of a committed
+capture. #177 holds the measurement, and Changelog round 47 records it.
