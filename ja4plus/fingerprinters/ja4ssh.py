@@ -325,6 +325,31 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             return src_ip, src_port, dst_ip, dst_port, "guess"
         return dst_ip, dst_port, src_ip, src_port, "guess"
 
+    def close_open_windows(self):
+        """Emit the window every connection holds open, and return the new entries.
+
+        The caller runs this method when the packet source ends. A connection that
+        never sends a FIN+ACK packet holds its last window open, and no other rule
+        emits it. `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` both
+        emit that window, and the two agree on its value for `ssh2.pcapng`. #214 holds
+        the decision.
+
+        A window that holds no SSH packet emits nothing, because `_close_window`
+        declines it. #97 declines the same value in the FoxIO Python reference.
+
+        The method reads the state table in insertion order, and it evicts no entry.
+        A repeated call therefore emits nothing, because `_close_window` clears the
+        counters of the window it emits.
+
+        Returns:
+            A list of the fingerprint entries the call appended to `self.fingerprints`.
+        """
+        emitted = []
+        for conn_key in list(self.connections):
+            if self._close_window(conn_key) is not None:
+                emitted.append(self.fingerprints[-1])
+        return emitted
+
     def _close_window(self, conn_key):
         """Emit the open window of one connection, and start a new window.
 
@@ -333,10 +358,11 @@ class JA4SSHFingerprinter(BaseFingerprinter):
 
         Returns:
             The JA4SSH fingerprint, or None when the window holds no SSH packet. A
-            fingerprint of an empty window describes no traffic. Two connection states
-            reach this guard: the second FIN packet of a close finds the window the
-            first FIN packet emptied, and a connection that closes right after a full
-            window holds no SSH packet either.
+            fingerprint of an empty window describes no traffic. Three connection
+            states reach this guard: the second FIN packet of a close finds the window
+            the first FIN packet emptied, a connection that closes right after a full
+            window holds no SSH packet either, and the end of a capture reaches a
+            connection of bare ACKs alone.
         """
         conn = self.connections[conn_key]
         if not conn["ssh_packets"]["client"] and not conn["ssh_packets"]["server"]:

@@ -186,6 +186,9 @@ def index_produced(pcap_path):
     The result is cached on the capture path, because one capture carries many test
     cases and a capture is read once for all of them. Do not change the result.
 
+    The function closes the open windows after the last packet, so the result holds the
+    trailing JA4SSH window of every connection that never closes. #214 decided it.
+
     Args:
         pcap_path: The path of the capture file.
 
@@ -224,6 +227,11 @@ def index_produced(pcap_path):
                 fingerprinter.process_packet(packet)
             except Exception as error:  # noqa: BLE001 - a parser crash is a finding
                 logger.debug("%s raised on a packet of %s: %s", name, pcap_path.name, error)
+
+    # The capture ends here, so a connection that never sent a FIN+ACK packet still
+    # holds a window open. #214 decided that JA4SSH emits that window.
+    for name, fingerprinter in fingerprinters.items():
+        fingerprinter.close_open_windows()
 
     produced = {}
     for name, fingerprinter in fingerprinters.items():
