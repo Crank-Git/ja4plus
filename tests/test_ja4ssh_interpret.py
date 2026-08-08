@@ -20,6 +20,14 @@ class RaisesOnSplit:
         raise RuntimeError("a defect inside ja4plus, not a malformed fingerprint")
 
 
+class SplitsIntoBytes:
+    """A stand-in for a fingerprint whose `split` returns three parts of type bytes."""
+
+    def split(self, separator):
+        """Return three parts that the part guard cannot read."""
+        return [b"c36s36", b"c50s50", b"c70s30"]
+
+
 @pytest.fixture
 def fingerprinter():
     """Return one JA4SSH fingerprinter."""
@@ -67,6 +75,41 @@ def test_a_fingerprint_that_is_none_returns_an_error_dictionary(fingerprinter):
     """
     result = fingerprinter.interpret_fingerprint(None)
     assert "error" in result, f"None returned no error: {result}"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        b"c36s36_c50s50_c70s30",
+        bytearray(b"c36s36_c50s50_c70s30"),
+        b"",
+    ],
+    ids=[
+        "a bytes fingerprint",
+        "a bytearray fingerprint",
+        "an empty bytes fingerprint",
+    ],
+)
+def test_a_fingerprint_of_a_bytes_like_type_returns_an_error_dictionary(fingerprinter, value):
+    """A fingerprint that holds bytes returns an error dictionary and raises nothing.
+
+    Issue #262 records the defect. `bytes.split` denies the separator `"_"` and raises
+    `TypeError`, so the error reached the caller as a stack trace. A value of the wrong
+    type is a malformed fingerprint, and the method already answers None that way.
+    """
+    result = fingerprinter.interpret_fingerprint(value)
+    assert "error" in result, f"{value!r} returned no error: {result}"
+
+
+def test_a_fingerprint_whose_parts_hold_bytes_returns_an_error_dictionary(fingerprinter):
+    """A fingerprint whose `split` returns parts of type bytes returns an error dictionary.
+
+    The part guard holds a string pattern, so `fullmatch` raises `TypeError` on a part of
+    type bytes. That is the second place issue #262 covers, and `fingerprint.split` is the
+    first.
+    """
+    result = fingerprinter.interpret_fingerprint(SplitsIntoBytes())
+    assert "error" in result, f"three parts of type bytes returned no error: {result}"
 
 
 @pytest.mark.parametrize(

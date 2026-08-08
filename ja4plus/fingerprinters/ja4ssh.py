@@ -491,13 +491,16 @@ class JA4SSHFingerprinter(BaseFingerprinter):
 
     def interpret_fingerprint(self, fingerprint):
         """
-        Interpret a JA4SSH fingerprint to determine session type.
+        Return the session type that a JA4SSH fingerprint describes.
 
         Args:
-            fingerprint: A JA4SSH fingerprint string
+            fingerprint: A JA4SSH fingerprint string.
 
         Returns:
-            Dict with session type information
+            A dictionary that holds the session type, the description and the details.
+            A malformed fingerprint returns a dictionary that holds the key `error`. A
+            value that is not a string is a malformed fingerprint, and None, bytes and
+            bytearray each return the error dictionary.
         """
         try:
             parts = fingerprint.split("_")
@@ -558,14 +561,19 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             }
 
         # `AttributeError` names a value that is not a string, and `_close_window`
-        # returns None, so a caller reaches this method with None. `ValueError` names a
-        # part that holds more than 4300 digits, which matches the pattern and exceeds
-        # the CPython limit on an integer conversion. `IndexError` reaches this handler
-        # from no input the part guard admits, and it stays because #36 and the
-        # correctness audit set the handler to the parse errors this method expects. A
-        # wider handler would report a defect inside this project as a malformed
-        # fingerprint, and the caller would read a wrong answer instead of a stack trace.
-        except (AttributeError, IndexError, ValueError) as e:
+        # returns None, so a caller reaches this method with None. `TypeError` names a
+        # value of type bytes or bytearray, which holds a `split` method that denies the
+        # separator `"_"`, and it also names a part of type bytes, which the string
+        # pattern of the part guard denies. Issue #262 records the decision: a value of
+        # the wrong type is a malformed fingerprint, and the method answers None that way
+        # already. `ValueError` names a part that holds more than 4300 digits, which
+        # matches the pattern and exceeds the CPython limit on an integer conversion.
+        # `IndexError` reaches this handler from no input the part guard admits, and it
+        # stays because #36 and the correctness audit set the handler to the parse errors
+        # this method expects. A wider handler would report a defect inside this project
+        # as a malformed fingerprint, and the caller would read a wrong answer instead of
+        # a stack trace.
+        except (AttributeError, IndexError, TypeError, ValueError) as e:
             return {"error": f"Failed to interpret: {str(e)}"}
 
     def lookup_hassh(self, hassh_value):
