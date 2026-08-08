@@ -6,6 +6,7 @@ import logging
 import threading
 
 from ja4plus.utils.packet_utils import packet_endpoints
+from ja4plus.utils.state_table import StateTable
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,34 @@ class BaseFingerprinter:
             and a `NullLock` otherwise.
         """
         return self._lock
+
+    def state_tables(self):
+        """Return every state table this fingerprinter holds, keyed by its name.
+
+        The method reads the attributes of the fingerprinter rather than a list each
+        subclass writes. A list in ten files goes stale, and #39 found that a list
+        written in an issue named six tables where the code held thirteen. A table that
+        inherits `StateTable` reaches `Processor.stats` with no further change.
+
+        The search descends one level. `JA4TSFingerprinter` holds a `SynAckTracker`,
+        and that tracker holds the table, so the name of that table reads
+        `syn_ack_times.times`. No fingerprinter nests a table deeper.
+
+        Returns:
+            A dict that maps the attribute name to the state table.
+        """
+        tables = {}
+        for name, value in vars(self).items():
+            if isinstance(value, StateTable):
+                tables[name] = value
+                continue
+            inner = getattr(value, "__dict__", None)
+            if not inner:
+                continue
+            for inner_name, inner_value in inner.items():
+                if isinstance(inner_value, StateTable):
+                    tables[f"{name}.{inner_name}"] = inner_value
+        return tables
 
     def process_packet(self, packet):
         """
