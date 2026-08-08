@@ -7,6 +7,7 @@ even when the content is encrypted. Also includes HASSH support.
 
 import hashlib
 import logging
+import re
 from collections import Counter
 from scapy.all import TCP, Raw, IP, IPv6
 import time
@@ -44,6 +45,12 @@ FIN_FLAG = 0x01
 # SSH. The handshake table therefore holds a maximum entry count, and it drops the
 # oldest half when it fills.
 MAX_HANDSHAKE_CONNECTIONS = 1000
+
+# The form of one JA4SSH part. A part names its client value after the `c` prefix and its
+# server value after the `s` separator, and it holds ASCII digits alone. `re.ASCII` binds
+# `\d` to the ten ASCII digits, because `int()` reads any Unicode digit and `c٦s36` then
+# reports a client packet size of 6. Issue #186 records the readings.
+JA4SSH_PART = re.compile(r"c(\d+)s(\d+)", re.ASCII)
 
 
 class JA4SSHFingerprinter(BaseFingerprinter):
@@ -501,23 +508,21 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             ssh_ratio = parts[1]  # c55s75
             ack_ratio = parts[2]  # c70s0
 
-            # Every part names its client value with a `c` prefix. The parser removes
-            # the first character to read that value, so a part that carries no prefix
-            # reports the number that follows its first character. The part `36s36` then
-            # reports a client packet size of 6, and the caller reads a number the
-            # fingerprint does not hold. Issue #182 records the defect.
-            if not all(part.startswith("c") for part in (packet_sizes, ssh_ratio, ack_ratio)):
-                return {"error": "Invalid JA4SSH format"}
+            # One regular expression reads every part, because an earlier parser removed
+            # the first character and split on `s` without a check. A part that carries
+            # no prefix, a wrong prefix, a second separator, or a character that is not
+            # an ASCII digit then reported a number the fingerprint does not hold.
+            # Issue #182 records the prefix, and issue #186 records the other three.
+            # `fullmatch` is the comparison, because `$` matches before a line feed and
+            # `c70s30\n` passes an anchored `match`.
+            values = []
+            for part in (packet_sizes, ssh_ratio, ack_ratio):
+                match = JA4SSH_PART.fullmatch(part)
+                if match is None:
+                    return {"error": "Invalid JA4SSH format"}
+                values.append((int(match.group(1)), int(match.group(2))))
 
-            # Parse client and server values
-            c_size = int(packet_sizes.split("s")[0][1:])
-            s_size = int(packet_sizes.split("s")[1])
-
-            c_ssh = int(ssh_ratio.split("s")[0][1:])
-            s_ssh = int(ssh_ratio.split("s")[1])
-
-            c_ack = int(ack_ratio.split("s")[0][1:])
-            s_ack = int(ack_ratio.split("s")[1])
+            (c_size, s_size), (c_ssh, s_ssh), (c_ack, s_ack) = values
 
             # Interpret session type
             session_type = "Unknown"
@@ -552,11 +557,14 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 },
             }
 
-        # A malformed fingerprint produces one of these three errors. `AttributeError`
-        # names a value that is not a string, `IndexError` names a part that holds no
-        # server field, and `ValueError` names a field that holds no number. A wider
-        # handler would report a defect inside this project as a malformed fingerprint,
-        # and the caller would read a wrong answer instead of a stack trace.
+        # `AttributeError` names a value that is not a string, and `_close_window`
+        # returns None, so a caller reaches this method with None. `ValueError` names a
+        # part that holds more than 4300 digits, which matches the pattern and exceeds
+        # the CPython limit on an integer conversion. `IndexError` reaches this handler
+        # from no input the part guard admits, and it stays because #36 and the
+        # correctness audit set the handler to the parse errors this method expects. A
+        # wider handler would report a defect inside this project as a malformed
+        # fingerprint, and the caller would read a wrong answer instead of a stack trace.
         except (AttributeError, IndexError, ValueError) as e:
             return {"error": f"Failed to interpret: {str(e)}"}
 
