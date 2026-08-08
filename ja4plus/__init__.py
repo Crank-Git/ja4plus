@@ -89,3 +89,48 @@ def compute_ja4x_from_pem(cert_pem_bytes: bytes | str) -> str | None:
 __version__ = "0.6.0"
 __author__ = "ja4plus contributors"
 __license__ = "BSD-3-Clause"
+
+# FR-typed-api-12 and FR-typed-api-13 of `docs/specs/features/04-typed-api.md` make this
+# list the interface version 1.0.0 promises. A name here stays until version 2.0.0, and a
+# name absent from here is not promised. The list therefore names what a caller may
+# import from `ja4plus`, and a module states its own public names in its own `__all__`.
+#
+# `bind_loopback_ipv6` and `register_tunnel_dissectors` stay out. This module calls both
+# at import time, so a caller needs neither name.
+#
+# `__author__` and `__license__` stay out. Both describe the project and not the
+# interface, and the distribution metadata carries the license. `__version__` stays in,
+# because `ja4plus --version` reads it and a caller reads it to test compatibility.
+__all__ = [
+    # The typed result and the aggregator that returns it.
+    "FingerprintResult",
+    "Processor",
+    # One fingerprinter class for each of the ten methods. The Go port exports the same
+    # ten types, under parity rule 2.
+    "JA4Fingerprinter",
+    "JA4SFingerprinter",
+    "JA4HFingerprinter",
+    "JA4LFingerprinter",
+    "JA4XFingerprinter",
+    "JA4SSHFingerprinter",
+    "JA4TFingerprinter",
+    "JA4TSFingerprinter",
+    "JA4DFingerprinter",
+    "JA4D6Fingerprinter",
+    # The one-shot form of each method. The port names these `ComputeJA4` and so on.
+    "generate_ja4",
+    "generate_ja4s",
+    "generate_ja4h",
+    "generate_ja4l",
+    "generate_ja4x",
+    "generate_ja4ssh",
+    "generate_ja4t",
+    "generate_ja4ts",
+    "generate_ja4d",
+    "generate_ja4d6",
+    # The certificate helpers. The port names these `ComputeJA4XFromDER` and
+    # `ComputeJA4XFromPEM`.
+    "compute_ja4x_from_der",
+    "compute_ja4x_from_pem",
+    "__version__",
+]
