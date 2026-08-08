@@ -333,8 +333,12 @@ reversible.** #267 holds the decision comment. `ja4plus` writes `JA4X_r`, which 
 three unhashed lists joined with `_`. The name follows the `JA4S_r` form this package
 already publishes.
 
-**Two of the three FoxIO implementations publish the value, and FoxIO specifies it**, so
-parity rule 1 decides the form and the Go port does not outrank it.
+**Two of the three FoxIO implementations publish the value.** The decision comment of
+#267 states the reading in the user's words:
+`Two of the three FoxIO implementations publish it, and FoxIO specifies the value, so
+parity rule 1 decides it and the port does not outrank it.` Read "FoxIO specifies the
+value" as the two implementations and not as the image. The image states nothing, which
+is the heading of this rule.
 
 **The zero sentinel of R8 reaches no raw form.** `rust/ja4x/src/lib.rs` builds
 `let parts = [issuer_rdns, subject_rdns, extensions];`, runs `hash12` on the hashed form

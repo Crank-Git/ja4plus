@@ -496,8 +496,8 @@ class JA4XFingerprinter(BaseFingerprinter):
             from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
             self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
-            # A reader that resets the fingerprinter reads no value of the capture
-            # before, and the raw form of the last value is such a value.
+            # The reset drops these two attributes too. Each one holds a value of the
+            # capture the reset discards, and a later reader would read it as its own.
             self.last_raw = None
             self.last_raw_original_order = None
             # The table holds one entry for each certificate on each stream, and the
