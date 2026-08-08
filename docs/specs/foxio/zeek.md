@@ -80,15 +80,27 @@ with the path to a `FoxIO-LLC/ja4` checkout at the pinned commit.
 python tests/compare_zeek_baselines.py <path-to-FoxIO-ja4-checkout>
 ```
 
-The run of 2026-08-08 printed 98 rows. 62 match and 36 differ.
+**The current reading is 98 rows, of which 63 match and 35 differ.** #327 ran the script
+on 2026-08-08 against a checkout at the pinned commit, and it read those counts.
 
-**#324 repaired the script on 2026-08-08 and re-ran it. The re-run prints 98 rows, of
-which 63 match and 35 differ.** #49 removed the composite `source` field the reader read,
-so the script raised `KeyError` on the first output line between the two runs. The reader
-now reads `src_ip`, `src_port`, `dst_ip` and `dst_port`, which `docs/output-schema.md`
-states. The one row that moved is JA4SSH, because #214 landed and `ssh2.pcapng` now
-produces the second value the Zeek baseline holds. Every other method reads the same as
-the table below.
+**Every count this page states for this comparison rests on the run of #327.** The table
+below names the round that records each run, so a reader can tell a current count from a
+stale one. A count of this comparison that names no round is a stale count.
+
+| Run | Rows | Match | Differ | Changelog round |
+|---|---|---|---|---|
+| The first run, on #198 | 98 | 62 | 36 | 52 |
+| The re-run of #324 | 98 | 63 | 35 | `TBD`, the row of #324 |
+| The re-run of #327 | 98 | 63 | 35 | `TBD`, the row of #327 |
+
+**#324 repaired the script on 2026-08-08, and the repair is why the two later runs could
+run.** #49 removed the composite `source` field the reader read, so the script raised
+`KeyError` on the first output line between round 52 and the repair. The reader now reads
+`src_ip`, `src_port`, `dst_ip` and `dst_port`, which `docs/output-schema.md` states.
+
+**One row moved since round 52, and it is JA4SSH.** #214 landed, so `ssh2.pcapng` now
+produces `c36s52_c42s76_c51s2` as its second value, which the Zeek baseline holds. Every
+other method reads the same as the table below.
 
 **`tests/test_compare_zeek_baselines.py` runs the script over `dhcp.pcapng`, so a later
 change to the output schema fails a case instead of breaking the script in silence.** The
@@ -98,7 +110,8 @@ baseline.
 ## What the comparison measured
 
 One row holds one connection and one method. A row holds every value that connection
-produced for that method, so the two JA4D rows carry four values.
+produced for that method, so the two JA4D rows carry four values. **The run of #327
+produced this table**, and the round table above names the round that records the run.
 
 | Method | Rows compared | Rows that match |
 |---|---|---|
@@ -108,13 +121,18 @@ produced for that method, so the two JA4D rows carry four values.
 | JA4D | 2 | 2 |
 | JA4T | 10 | 8 |
 | JA4TS | 10 | 9 |
-| JA4SSH | 1 | 0 |
+| JA4SSH | 1 | 1 |
 | JA4L | 17 | 1 |
 | JA4LS | 17 | 1 |
 
 **JA4, JA4S, JA4H and JA4D match on every value.** The 20 JA4 values and the 20 JA4S
 values of `tls-handshake.pcapng` are the largest independent corroboration this project
 holds for the two methods outside `python/test/testdata/`.
+
+**JA4SSH matches on its one row.** #214 made `ja4plus` emit the window a connection holds
+open when the capture ends, so both values now equal the two the Zeek baseline holds.
+"JA4SSH: `ssh2.pcapng` produces two values here, and the Zeek baseline holds both" below
+states the reading.
 
 **JA4TS matches on nine of ten rows, and this is the first external comparison the method
 has ever had.** #196 cites this reading.
@@ -273,27 +291,35 @@ fingerprint moves.
 and holds no `JA4L-C`. `ja4plus` emits no client value for it, so `ja4plus` matches the
 Python reference. This page records the Zeek value and asks for no change.
 
-### JA4SSH: `ssh2.pcapng` produces one value here and two in both references
+### JA4SSH: `ssh2.pcapng` produces two values here, and the Zeek baseline holds both
 
 | Source | First value | Second value |
 |---|---|---|
 | `python/test/testdata/ssh2.pcapng.json` | `c36s36_c76s124_c74s5` | `c36s36_c0s0_c2s0` |
 | Zeek baseline | `c36s36_c76s124_c74s5` | `c36s52_c42s76_c51s2` |
-| `ja4plus` | `c36s36_c76s124_c74s5` | none |
+| `ja4plus` | `c36s36_c76s124_c74s5` | `c36s52_c42s76_c51s2` |
 
 The first value matches across all three implementations.
 
-**The two references disagree about the second value, and the disagreement matters.**
-`tests/foxio_deviations.json` declines the Python second value under #97. `c0s0` states
-that the window holds no SSH packet. A fingerprint that describes no traffic is one of
-the two shapes `.claude/rules/conformance.md` declines. The Zeek second
-value holds 42 client packets and 76 server packets, so **it describes real traffic and
-falls outside the shape #97 declined.**
+**#214 closed and this row now matches.** #214 made JA4SSH emit the window a connection
+holds open when the capture ends, so `ja4plus` writes the second value the Zeek baseline
+holds. The run of #327 reads the row as a match. "What the comparison measured" above
+therefore reads one JA4SSH row compared and one matched.
+
+**The two references still disagree about the second value, and `ja4plus` follows the
+Zeek script.** `tests/foxio_deviations.json` declines the Python second value under #97,
+at the key `ssh2.pcapng/14:57377/JA4SSH.2`. `c0s0` states that the window holds no SSH
+packet. A fingerprint that describes no traffic is one of the two shapes
+`.claude/rules/conformance.md` declines. The Zeek second value holds 42 client packets
+and 76 server packets, so **it describes real traffic and falls outside the shape #97
+declined.**
 
 `zeek/ja4ssh/main.zeek:160-164` emits the value from `connection_state_remove`, so the
 Zeek script always writes the window a connection holds open when it closes.
 
-**This is the one open decision this issue found.** #214 carries it.
+**This page held one open decision, and #214 closed it.** The value rating of the JA4SSH
+baseline rested on that decision, and "The rating this baseline now needs" below states
+what the closure leaves open.
 
 ### The Zeek log columns `ja4l_delta` and `ja4ls_delta` are ratios, not fingerprints
 
@@ -340,7 +366,7 @@ seven captures, so all seven baselines are usable. The value of each one differs
 | `Scripts.ja4-dhcp/ja4d.log` | JA4D | Low. `tests/foxio_vectors/wireshark_expected/` already holds the same four values, and `.claude/rules/external-apis.md` records the match. |
 | `Scripts.ja4-http1-with-cookies/http.log` | JA4H | Low. One value that `python/test/testdata/` already holds. |
 | `Scripts.ja4-conn/conn.log` | none | **None.** Its JA4T and JA4TS values come from the `DLT_NULL` defect, and its JA4L values come from the Zeek rounding rule. |
-| `Scripts.ja4-ssh2/ja4ssh.log` | JA4SSH | Blocked. Its second value is the open decision on #214. |
+| `Scripts.ja4-ssh2/ja4ssh.log` | JA4SSH | **Undecided.** #214 closed, so this baseline is no longer blocked. "The rating this baseline now needs" below states the question, and the user decides it. |
 
 **A later issue adds them. This issue adds none.** Three things are needed to add one.
 
@@ -353,6 +379,30 @@ seven captures, so all seven baselines are usable. The value of each one differs
 
 **A JA4L or JA4LS value of any Zeek baseline is not usable as a vector.** The Zeek
 rounding rule and the Zeek third part both diverge from the Python reference.
+
+### The rating this baseline now needs
+
+**The `Blocked` rating of `Scripts.ja4-ssh2/ja4ssh.log` rested on #214, and #214 closed.**
+The rating no longer follows from its evidence. #327 states that and writes no
+replacement, because the replacement is a precedence question and not a count. The user
+decides it.
+
+Three measured facts frame the question, and the run of #327 holds each one.
+
+1. `ja4plus` and the Zeek baseline agree on both JA4SSH values of `ssh2.pcapng`, so the
+   baseline corroborates the method that #214 settled.
+2. `python/test/testdata/ssh2.pcapng.json` holds `c36s36_c0s0_c2s0` as the second value,
+   and `tests/foxio_deviations.json` declines it under #97 at the key
+   `ssh2.pcapng/14:57377/JA4SSH.2`.
+3. `.claude/rules/external-apis.md` states that `python/test/testdata/` decides where it
+   and a Zeek baseline both hold a value for one method on one connection. It names no
+   exception for a value the register declines.
+
+**The question is whether a Zeek baseline may hold the reference JA4SSH value for a
+connection whose Python value the register declines.** Fact 3 answers no, and facts 1 and
+2 are the case that rule did not anticipate. **No baseline of the seven is adopted as a
+vector today**, which the section above already states. The open question therefore stops
+no work that this project has built.
 
 ## The Zeek reading of each method
 
