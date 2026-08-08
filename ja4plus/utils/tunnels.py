@@ -14,16 +14,20 @@ here. The fingerprinter then reads no value for that capture, which is the same
 result as before the import.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import logging
 
-from scapy.packet import NoPayload
+from scapy.packet import NoPayload, Packet
 
 logger = logging.getLogger(__name__)
 
 TUNNEL_MODULES = ("scapy.contrib.geneve", "scapy.layers.vxlan", "scapy.contrib.erspan")
 
 
-def register_tunnel_dissectors():
+def register_tunnel_dissectors() -> tuple[str, ...]:
     """Import every tunnel dissector and return the names that loaded.
 
     Returns:
@@ -32,7 +36,7 @@ def register_tunnel_dissectors():
     """
     import importlib
 
-    loaded = []
+    loaded: list[str] = []
     for name in TUNNEL_MODULES:
         try:
             importlib.import_module(name)
@@ -43,7 +47,7 @@ def register_tunnel_dissectors():
     return tuple(loaded)
 
 
-def innermost_layer(packet, layer_classes):
+def innermost_layer(packet: Packet, layer_classes: tuple[type[Packet], ...]) -> Packet | None:
     """Return the deepest layer of one packet that has one of the classes, or None.
 
     A tunnel carries a second address layer and a second port layer inside the first

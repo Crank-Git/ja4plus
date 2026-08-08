@@ -1,6 +1,12 @@
 """Packet utility helpers for IPv4/IPv6 support."""
 
-from scapy.all import IP, IPv6, TCP, UDP
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
+from typing import Any
+
+from scapy.all import IP, IPv6, TCP, UDP, Packet
 
 from ja4plus.utils.tunnels import innermost_layer
 
@@ -16,7 +22,7 @@ HANDSHAKE_ACK_FLAG = 0x10
 RST_FLAG = 0x04
 
 
-def opens_a_connection(port_layer, proto):
+def opens_a_connection(port_layer: Packet, proto: str) -> bool:
     """Report whether the packet is a TCP SYN that carries no acknowledgement.
 
     The sender of that packet is the client of the connection.
@@ -36,7 +42,7 @@ def opens_a_connection(port_layer, proto):
     return bool(flags & SYN_FLAG) and not bool(flags & HANDSHAKE_ACK_FLAG)
 
 
-def accepts_a_connection(port_layer, proto):
+def accepts_a_connection(port_layer: Packet, proto: str) -> bool:
     """Report whether the packet is a TCP SYN that carries an acknowledgement.
 
     The sender of that packet is the server of the connection. A capture that starts
@@ -57,7 +63,7 @@ def accepts_a_connection(port_layer, proto):
     return bool(flags & SYN_FLAG) and bool(flags & HANDSHAKE_ACK_FLAG)
 
 
-def get_ip_layer(packet):
+def get_ip_layer(packet: Packet) -> Packet | None:
     """Return the IP layer (v4 or v6) from a packet, or None.
 
     Checks IPv4 first (most common), then IPv6.
@@ -69,7 +75,7 @@ def get_ip_layer(packet):
     return None
 
 
-def packet_endpoints(packet):
+def packet_endpoints(packet: Packet) -> dict[str, Any]:
     """Return the address pair and the port pair of one packet.
 
     A fingerprint result carries these four fields instead of the packet that produced
@@ -107,7 +113,7 @@ def packet_endpoints(packet):
     }
 
 
-def packet_seconds(packet):
+def packet_seconds(packet: Packet) -> float | None:
     """Return the capture timestamp of one packet, in seconds, or None.
 
     A caller ages a state table on this value. It reads no wall clock, because a
@@ -125,10 +131,14 @@ def packet_seconds(packet):
     return float(packet.time)
 
 
-def get_ttl(packet):
+def get_ttl(packet: Packet) -> int | None:
     """Return TTL (IPv4) or Hop Limit (IPv6), or None."""
+    # scapy ships no type information, so each field reads as `Any`. The local
+    # annotation states the type the scapy field holds, and it changes no value.
     if IP in packet:
-        return packet[IP].ttl
+        ttl: int = packet[IP].ttl
+        return ttl
     if IPv6 in packet:
-        return packet[IPv6].hlim
+        hop_limit: int = packet[IPv6].hlim
+        return hop_limit
     return None
