@@ -457,7 +457,11 @@ class JA4XFingerprinter(BaseFingerprinter):
                 "subject_rdns": subject_rdns,
                 "extensions": extensions,
             }
-        except (ValueError, TypeError, Exception) as e:
+        # `cert.extensions` raises the two `cryptography` errors, and neither one
+        # inherits `ValueError`. `oid_to_hex` raises `ValueError` for an OID that holds
+        # a component which is no integer. #294 names them, because a wide catch hides
+        # a defect of this project beside a defect of the packet.
+        except (ValueError, x509.DuplicateExtension, x509.UnsupportedGeneralNameType) as e:
             logger.warning(f"Certificate error: {e}")
             return None
 
@@ -487,7 +491,11 @@ class JA4XFingerprinter(BaseFingerprinter):
 
             # Generate fingerprint
             return generate_ja4x(cert_info), generate_ja4x_raw(cert_info)
-        except (ValueError, TypeError, Exception) as e:
+        # `load_der_x509_certificate` raises `ValueError` for a certificate it cannot
+        # parse, and `TypeError` for input that is no byte string. `bytes()` raises
+        # `TypeError` for the same input. `get_cert_details` returns nothing rather than
+        # raise, and the two value writers hold their own errors. #294 names the list.
+        except (ValueError, TypeError) as e:
             logger.warning(f"Certificate error: {e}")
             return None, None
 

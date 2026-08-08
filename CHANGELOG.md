@@ -91,6 +91,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The three X.509 handlers name the errors they expect** (#294). Round TBD.
+  `ja4x.py:460`, `ja4x.py:490` and `x509_utils.py:267` each wrote
+  `except (ValueError, TypeError, Exception) as e:`. `Exception` is a superclass of the
+  other two names, so each handler caught every error while it read as a narrow catch.
+  `CLAUDE.md` states that a fingerprinter catches the parse errors it expects and catches
+  no bare `Exception`. The three lists now name the errors the `cryptography`
+  documentation states for the calls inside them: `ValueError` for
+  `load_der_x509_certificate`, `DuplicateExtension` and `UnsupportedGeneralNameType` for
+  `Certificate.extensions`, and `InvalidVersion` for `Certificate.version`.
+  `read_certificate` keeps `TypeError`, because `bytes()` raises it for input that is no
+  byte string. **A defect of this project now reaches a reader**, where the wide catch
+  logged it and returned nothing. **No fingerprint moves**: the conformance suite reports
+  1531 passed, 143 skipped and 135 xfailed before the change and after it.
+  `tests/test_ja4x_named_exceptions.py` holds 18 cases, and three of them failed against
+  the base.
+
 - **JA4 and JA4S write `s2` for the SSL 2.0 version value `0x0002`** (#227).
   `ja4.py:127`, `ja4.py:250` and `ja4s.py:393` wrote `s2` for `0x0200`, which is the
   value FoxIO retracted. `technical_details/JA4.md:65` at the pinned commit states
