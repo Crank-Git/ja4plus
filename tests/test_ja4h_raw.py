@@ -32,13 +32,20 @@ MANY_REQUEST_VECTOR = "http1.pcapng"
 
 
 def _info(method="GET", version="HTTP/1.1", headers=None, cookie_pairs=None, language=""):
-    """Return one http_info dict, with the cookies in the order given."""
+    """Return one http_info dict, with the cookies in the order given.
+
+    A request that carries a cookie carries a Cookie header, so the header list holds
+    that name. Field a3 reads the header list, and #219 records the reading.
+    """
     cookie_pairs = cookie_pairs or []
+    header_names = list(headers or [])
+    if cookie_pairs:
+        header_names.append("Cookie")
     return {
         "method": method,
         "path": "/",
         "version": version,
-        "headers": headers or [],
+        "headers": header_names,
         "cookies": dict(cookie_pairs),
         "cookie_fields": [name for name, _ in cookie_pairs],
         "cookie_values": [value for _, value in cookie_pairs],
