@@ -165,6 +165,11 @@ result = fp.process_packet(packet)
 
 TCP client fingerprinting from SYN packets.
 
+One connection produces one value, from its first SYN. The fingerprinter holds a
+connection table that carries 10000 entries at most and evicts an entry after 600
+seconds. Call `cleanup_connection` when a connection ends, or `reset` to drop every
+entry. #215 records the decision.
+
 ```python
 from ja4plus import JA4TFingerprinter
 
@@ -213,9 +218,15 @@ from ja4plus import JA4XFingerprinter
 
 fp = JA4XFingerprinter()
 result = fp.fingerprint_certificate(der_bytes)  # From DER-encoded cert
+value, raw = fp.read_certificate(der_bytes)     # The value and the JA4X_r raw form
 result = fp.process_packet(packet)               # From TLS packet
 details = fp.get_cert_details(x509_cert)         # Extract OID details
 ```
+
+A JA4X entry holds the `raw` key, which carries the `JA4X_r` value. It holds the three
+unhashed lists of the fingerprint, joined with `_`. JA4X sorts no list, so
+`raw_original_order` holds the same value. #267 decided the form, and
+`docs/implementation_notes.md` holds the reading.
 
 ### JA4SSHFingerprinter
 
@@ -328,7 +339,7 @@ log the error inside the loop that reads it.
 reads no packet timestamp. The field holds `None`.
 
 `stats()` reports what the state tables hold, and #41 built it. One processor holds
-**sixteen** state tables across the ten methods: the fourteen `BoundedStateTable`
+**seventeen** state tables across the ten methods: the fifteen `BoundedStateTable`
 instances and the two `TCPStreamReassembler` instances of JA4H and JA4X. A method that
 holds no state reports an empty `tables` list.
 
@@ -381,8 +392,8 @@ one processor without that arrangement, and it guards a `reset` that runs beside
 
 #### The memory bound of the processor
 
-One processor holds sixteen state tables: fourteen `BoundedStateTable` instances and two
-`TCPStreamReassembler` instances. `features/03-concurrency-safety.md` states the maximum
+One processor holds seventeen state tables: fifteen `BoundedStateTable` instances and
+two `TCPStreamReassembler` instances. `features/03-concurrency-safety.md` states the maximum
 entry count and the maximum age of each one. A table that reaches its maximum entry count
 evicts the least recently used entry. A long capture can therefore evict a connection
 that later returns, and the fingerprint of a returned connection may be incomplete.
@@ -476,13 +487,12 @@ caller removed with `cleanup_connection` counts as a first sighting when it retu
 because the caller asked for that removal.
 
 A table remembers the keys it evicted, so that it can recognise a return. The memory
-holds the entry bound of its own table. The sixteen tables of one processor hold 47400
-remembered keys between them, at 187 bytes for one key, so the memory costs 8.5 MiB
+holds the entry bound of its own table. The seventeen tables of one processor hold 57400
+remembered keys between them, at 187 bytes for one key, so the memory costs 10.2 MiB
 when every table is full and every entry of every table has been replaced.
 
-Ten methods hold sixteen state tables between them. `JA4TFingerprinter`,
-`JA4DFingerprinter` and `JA4D6Fingerprinter` hold none, and each reports an empty
-`tables` dict.
+Ten methods hold seventeen state tables between them. `JA4DFingerprinter` and
+`JA4D6Fingerprinter` hold none, and each reports an empty `tables` dict.
 
 `stats()` holds the lock of one fingerprinter across the read of that fingerprinter, so
 the counts of one method describe one instant. The report describes ten instants and not

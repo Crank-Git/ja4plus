@@ -115,7 +115,17 @@ result = fp.process_packet(packet)
 
 **TCP option codes:** 2=MSS, 3=Window Scale, 4=SACK Permitted, 8=Timestamps, 1=NOP, 0=EOL
 
-Options are listed in their **original packet order** (never sorted).
+Options are listed in their **original packet order** (never sorted). The reader takes the
+raw TCP option bytes, so each End of Option List byte adds one `0` to the list.
+
+**An absent field and a zero field each write two digits.** A SYN that carries no option
+writes `8192_00_00_00`. A window scale of zero writes `00`, and a maximum segment size of
+zero writes `00`. The FoxIO Wireshark dissector and the FoxIO Zeek package write the same
+form, and #215 records the decision.
+
+**One connection produces one JA4T value.** The fingerprinter reads the first SYN of a
+connection and reads no later SYN of it. Call `cleanup_connection` when a connection ends,
+or `reset` to drop every entry.
 
 **Common OS patterns:**
 - Linux: `29200_2-4-8-1-3_1460_7`
@@ -137,7 +147,7 @@ from ja4plus import JA4TSFingerprinter
 
 fp = JA4TSFingerprinter()
 result = fp.process_packet(packet)
-# Example: 14600_2-4-8-1-3_1460_0
+# Example: 14600_2-4-8-1-3_1460_00
 ```
 
 Part a through part d match JA4T, and the fingerprinter reads the server's SYN-ACK
@@ -150,14 +160,14 @@ value grows with each retransmission.
 
 ```python
 # The server answered once. The fingerprint omits part e.
-# 62727_2_8961_0
+# 62727_2_8961_00
 #
 # The server retransmitted five times, at 1, 2, 4, 8 and 16 seconds.
-# 62727_2_8961_0_1-2-4-8-16
+# 62727_2_8961_00_1-2-4-8-16
 ```
 
 **The fingerprint omits part e when the server answers once**, which is the normal case.
-Part e is absent, and it is not `0`.
+Part e is absent, and it is not `00`.
 
 `JA4TSFingerprinter` holds one entry for each connection it tracks. Call
 `cleanup_connection` when a connection ends, or `reset` to drop every entry. The

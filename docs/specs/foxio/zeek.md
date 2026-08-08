@@ -438,6 +438,36 @@ script builds. Cite the file path and the pinned commit when you use one.
 values comes from a connection the server answered once. This project emits the
 four-part form, and the Zeek baselines corroborate the four-part form alone.
 
+### The two-digit form of #215
+
+**#215 gave JA4T and JA4TS the two-digit form on 2026-08-08, which is the form this Zeek
+script writes.** `zeek/ja4t/main.zeek:198-202` writes `00` for an empty option list, line
+204 writes the maximum segment size with `%02d`, and lines 206 to 210 write `00` for a
+window scale of zero. `ja4plus` wrote `0` in all three places until #215.
+
+**This comparison was not re-run, because it needs a `FoxIO-LLC/ja4` checkout that the
+worktree of #215 does not hold.** The reading below therefore states what the row-level
+evidence on this page already settles, and it states no measured number of its own.
+
+**No row of the ten JA4T rows or the ten JA4TS rows changes its verdict.** The three
+`conn.log` baselines read `ipv6.pcapng`, `tls3.pcapng` and
+`chrome-cloudflare-quic-with-secrets.pcapng`. #215 moved one JA4T value on `ipv6.pcapng`,
+one JA4T value on `chrome-cloudflare-quic-with-secrets.pcapng` and no value on
+`tls3.pcapng`. Both moved rows already differed, and each keeps the cause this page
+records: the `DLT_NULL` defect for `ipv6.pcapng`, and TCP option kind 0 for
+`chrome-cloudflare-quic-with-secrets.pcapng`. The two-digit form reaches none of the
+twenty rows, because every SYN and every SYN-ACK of the three captures carries a window
+scale above zero.
+
+**#215 widened the kind 0 difference by one entry and changed no verdict.**
+`chrome-cloudflare-quic-with-secrets.pcapng` now gives `65535_2-1-3-1-1-8-4-0-0_1440_6`
+where it gave `65535_2-1-3-1-1-8-4-0_1440_6`, and the Zeek baseline holds
+`65535_2-1-3-1-1-8-4_1440_6`. `zeek/ja4t/main.zeek:95-98` leaves the option loop at kind
+0, and both other FoxIO implementations count one entry for each such byte.
+
+**Re-run the comparison at the next refresh.** The command is above, and it needs the path
+to a checkout at the pinned commit.
+
 ### The part e reading of #226
 
 **#226 added part e to JA4TS on 2026-08-08, and the comparison above did not move.** The

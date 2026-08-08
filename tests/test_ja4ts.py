@@ -58,21 +58,21 @@ class TestJA4TS(unittest.TestCase):
         fp = generate_ja4ts(self.bigip_to_win)
         print(f"BIG-IP -> Windows 10: {fp}")
         self.assertEqual(
-            fp, "14600_2-1-3-4-1-1_1460_0", "Incorrect fingerprint for BIG-IP response to Windows"
+            fp, "14600_2-1-3-4-1-1_1460_00", "Incorrect fingerprint for BIG-IP response to Windows"
         )
 
         # Test response to Linux
         fp = generate_ja4ts(self.bigip_to_linux)
         print(f"BIG-IP -> Linux: {fp}")
         self.assertEqual(
-            fp, "14600_2-1-3-4-8_1460_0", "Incorrect fingerprint for BIG-IP response to Linux"
+            fp, "14600_2-1-3-4-8_1460_00", "Incorrect fingerprint for BIG-IP response to Linux"
         )
 
         # Test response to Linux Proxy
         fp = generate_ja4ts(self.bigip_to_proxy)
         print(f"BIG-IP -> Linux Proxy: {fp}")
         self.assertEqual(
-            fp, "13960_2-1-3-4-8_1460_0", "Incorrect fingerprint for BIG-IP response to Proxy"
+            fp, "13960_2-1-3-4-8_1460_00", "Incorrect fingerprint for BIG-IP response to Proxy"
         )
 
     def test_fingerprinter_collection(self):

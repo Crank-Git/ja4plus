@@ -26,7 +26,9 @@ from ja4plus.fingerprinters.ja4ts import (
 # packet, so part a through part d never changes and part e alone carries the reading.
 SERVER = "10.0.0.1"
 CLIENT = "10.0.0.2"
-PARTS_A_TO_D = "62727_2_8961_0"
+# The deleted file writes `62727_2_8961_00` for these four parts, with the two-digit
+# window scale the user decided on 2026-08-08. #215 records the reading as D1.
+PARTS_A_TO_D = "62727_2_8961_00"
 
 
 def syn_ack(time, server=SERVER, client=CLIENT, sport=443, dport=50000):
