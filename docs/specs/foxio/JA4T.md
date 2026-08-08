@@ -353,7 +353,8 @@ The deleted text carries two findings for this page.
    `WindowSize_TCPOptions_MSSValue_WindowScale_TimeSinceLastSYNACK`, and the image's caption
    reads `TCP Retransmission Timings (only on JA4TScan)`. The deleted text agrees with the
    Wireshark dissector, which D6 records. **R2 stays uncertain and the vector fallback
-   stays.** #215 item 4 owns the decision.
+   stays.** **#226 holds the decision**, and it names #215 item 4 as the issue a triager
+   may fold it into.
 2. **It states the empty-field form that R11 records the image does not settle.** It reads
    `If any field does not exist, then the output is 00.` and it gives
    `JA4T = 1024_00_00_00`. `wireshark/source/packet-ja4.c:664` and the Zeek baseline both

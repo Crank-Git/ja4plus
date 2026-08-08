@@ -242,6 +242,9 @@ other reading.
 uncertain.** The deleted text is a second FoxIO-authored source for the dissector's
 reading, and the image at the pinned commit outranks it. The vector fallback stays.
 
+**#226 holds this decision.** It is filed untriaged, and it names #215 item 4 as the issue
+a triager may fold it into.
+
 ### F2 — The deleted text states the empty-field form, and the image states nothing
 
 **This is a rule the image does not state.** `docs/specs/foxio/JA4T.md` R11 reads
@@ -409,7 +412,7 @@ it writes no `s1`, which the deleted form does carry. **The stale value is one r
 table, and it is the only row.**
 
 **No vector measures it.** No capture in `tests/foxio_vectors/` carries an SSL 2.0 hello,
-so no conformance case fails today and no register entry names it. **A new issue owns the
+so no conformance case fails today and no register entry names it. **#227 owns the
 repair.**
 
 ## JA4S — the deleted text states nothing the material does not
@@ -522,11 +525,11 @@ already builds, and it settles neither the rounding divergence nor the third Zee
 
 | Finding | Subject | Owner |
 |---|---|---|
-| F1 | JA4TS part e. The deleted `JA4T.md` states that JA4TS carries part e, and the image states that part e appears only on JA4TScan | A new decision issue, related to #215 item 4 |
+| F1 | JA4TS part e. The deleted `JA4T.md` states that JA4TS carries part e, and the image states that part e appears only on JA4TScan | **#226.** It names #215 item 4 as the issue a triager may fold it into |
 | F2 | The empty JA4T field is `00`. The deleted `JA4T.md` states the form the image does not state, and Wireshark and Zeek corroborate it. `rust/ja4/src/tcp.rs` writes another form and `ja4plus` writes a third | #215 item 1, which lacked FoxIO prose |
 | F3 | The deleted `JA4H.md` names exactly nine request methods, and the image ends its caption with `etc` | #219 item 5 |
 | F4 | The FoxIO JA4H worked example computes 11 headers and publishes 13. The image repeats the value | No issue. It changes no fingerprint |
-| F5 | `ja4plus` writes `0x0200` for SSL 2.0, and the pinned `JA4.md` states `0x0002` | A new issue |
+| F5 | `ja4plus` writes `0x0200` for SSL 2.0, and the pinned `JA4.md` states `0x0002` | **#227** |
 | F6 | The JA4L image changed after the deletion, from 198175 bytes to 162323 bytes | #200, which reads the current image |
 
 ## What this page does not do
