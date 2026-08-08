@@ -26,7 +26,7 @@ from tests.foxio_deviations import (
 # tense, because a decision that was made is the only evidence that somebody read the
 # entry. The present tense names the issue that will decide, as `#215 decides whether
 # ja4plus reads the raw option bytes` does, and that names no decision. The lookbehind
-# drops a denied citation, because the six #34 entries close with `no Changelog round
+# drops a denied citation, because the six JA4L entries hold `no Changelog round
 # settled it`. The guard reads the word before the citation alone. A cause that denies a
 # citation in other words fails the gate, and the repair is to reword the cause, because
 # a gate that misses a decision costs more than a gate that asks a question.
@@ -515,10 +515,11 @@ class TestTheRegisterMarkerRule:
         assert unmarked_decisions(register) == []
 
     def test_the_check_accepts_an_open_entry_that_states_no_round_settled_it(self):
-        """The six #34 entries close their cause with this sentence."""
+        """The six JA4L entries hold this sentence."""
         register = {
             "a.pcap/JA4L-S": Deviation(
-                issue=34, cause="The entry stays open under #34, and no Changelog round settled it."
+                issue=272,
+                cause="The entry stays open under #272, and no Changelog round settled it.",
             )
         }
         assert unmarked_decisions(register) == []
@@ -526,11 +527,11 @@ class TestTheRegisterMarkerRule:
     def test_the_check_accepts_an_open_entry_that_denies_a_numbered_round(self):
         """A denied citation is not a citation.
 
-        The #34 sentence names no number today. A future author who writes the number
+        The JA4L sentence names no number today. A future author who writes the number
         into it must not make the gate demand a marker on an open entry.
         """
         register = {
-            "a.pcap/JA4L-S": Deviation(issue=34, cause="No Changelog round 76 settled the entry.")
+            "a.pcap/JA4L-S": Deviation(issue=272, cause="No Changelog round 76 settled the entry.")
         }
         assert unmarked_decisions(register) == []
 
