@@ -66,6 +66,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`ja4plus watch` stops on a termination signal and flushes its output** (#54). Round
+  TBD. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
+  status zero. The handler sets a flag and returns. It calls `sys.exit` never, because a
+  signal arrives at any point, including the point where the output holds half a line.
+  `scapy` reads the flag through the `stop_filter` argument of `sniff`, and it applies
+  that filter after it reports a packet, so the monitor finishes the line it writes. The
+  command then flushes the output and exits, so the output file holds every fingerprint
+  the monitor reported. The command flushed the output only when it wrote a result, so a
+  monitor that produced no fingerprint left its header in the buffer. `scapy` applies the
+  filter on packet arrival alone, so an interface that carries no traffic holds the
+  monitor until the next packet arrives. #320 records that gap.
+
 - **`ja4plus watch <interface>` reads an interface and bounds its connection table**
   (#53). Round TBD. `ja4plus live` stays as an alias of it, so a version 0.6.0 script
   keeps working. The command owns the connection table, and that table holds a maximum

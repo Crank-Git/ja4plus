@@ -6,6 +6,9 @@
 - FR-live-capture-2 asks the command to evict a connection that stops sending.
 - FR-live-capture-3 asks for the `--max-connections` option.
 - FR-live-capture-4 asks for the `--connection-timeout` option.
+- FR-live-capture-5 asks for a clean exit on `SIGINT`.
+- FR-live-capture-6 asks for a clean exit on `SIGTERM`.
+- FR-live-capture-7 asks the command to flush its output before it exits.
 - FR-live-capture-14 keeps `ja4plus live` as an alias of `ja4plus watch`.
 
 Version 0.6.0 called `cleanup_connection` never, so a monitor grew until the host
@@ -16,7 +19,11 @@ packet source, so the measured behaviour is the loop and not the capture layer.
 """
 
 import io
+import json
+import os
+import signal
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -27,7 +34,9 @@ from ja4plus.watch import (
     DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_MAX_CONNECTIONS,
     Monitor,
+    StopRequest,
     connection_key,
+    stop_on_signal,
 )
 
 
@@ -243,9 +252,18 @@ def run_cli(*argv, source=None, monitor_factory=None):
     """
     from ja4plus.cli import main
 
-    def read_interface(interface, handle_packet):
+    def read_interface(interface, handle_packet, stop_filter=None):
+        """Replay the packets the test states, the way `scapy` reads an interface.
+
+        `scapy` reports one packet through `prn` and then applies `stop_filter` to the
+        same packet, and it ends the capture when the filter returns True.
+        `scapy/sendrecv.py` holds that order in `AsyncSniffer._run`, at the line
+        `if (stop_filter and stop_filter(p))`, which follows the `prn` call.
+        """
         for packet in source or []:
             handle_packet(packet)
+            if stop_filter is not None and stop_filter(packet):
+                break
 
     captured_out = io.StringIO()
     captured_err = io.StringIO()
@@ -340,6 +358,265 @@ class TheCommandPassesTheBoundsToTheMonitor(unittest.TestCase):
         _, err, status = run_cli("watch", "eth0", "--connection-timeout", "-1")
         self.assertNotEqual(status, 0)
         self.assertIn("--connection-timeout", err)
+
+
+class TheHandlerSetsTheFlagAndReturns(unittest.TestCase):
+    """FR-live-capture-5 and FR-live-capture-6 — the handler sets a flag and returns.
+
+    A handler that called `sys.exit` would end the run at the point the signal arrived,
+    and that point holds half a line whenever the signal arrives during a write. Version
+    0.6.0 called `sys.exit` inside the handler of `ja4plus/collector.py`.
+    """
+
+    def test_the_flag_is_clear_before_a_signal_arrives(self):
+        self.assertFalse(StopRequest().requested())
+
+    def test_the_handler_sets_the_flag(self):
+        stop = StopRequest()
+        stop.request(signal.SIGTERM, None)
+        self.assertTrue(stop.requested())
+
+    def test_the_handler_raises_no_system_exit(self):
+        """A handler that exits truncates the line the command holds half written."""
+        stop = StopRequest()
+        try:
+            self.assertIsNone(stop.request(signal.SIGTERM, None))
+        except SystemExit:  # pragma: no cover - the failure of this case
+            self.fail("the handler called sys.exit")
+
+    def test_the_stop_filter_reads_the_flag(self):
+        stop = StopRequest()
+        packet = tcp_packet()
+        self.assertFalse(stop.stop_after(packet))
+        stop.request(signal.SIGINT, None)
+        self.assertTrue(stop.stop_after(packet))
+
+
+class SignalGuard(unittest.TestCase):
+    """A case that installs a handler of its own for each termination signal.
+
+    Each case below sends a real signal to this process. The default handler of `SIGTERM`
+    ends the process, so a build that installs no handler would end the test run rather
+    than fail one case. The guard replaces both handlers first, and restores them after.
+    """
+
+    def setUp(self):
+        self.previous = {
+            number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)
+        }
+        for number in self.previous:
+            signal.signal(number, lambda number, frame: None)
+
+    def tearDown(self):
+        for number, handler in self.previous.items():
+            signal.signal(number, handler)
+
+
+class TheCommandInstallsTheTwoHandlers(SignalGuard):
+    """FR-live-capture-5 and FR-live-capture-6 — `SIGINT` and `SIGTERM` both stop it."""
+
+    def test_a_real_sigterm_sets_the_flag(self):
+        with stop_on_signal() as stop:
+            os.kill(os.getpid(), signal.SIGTERM)
+            self.assertTrue(stop.requested())
+
+    def test_a_real_sigint_sets_the_flag(self):
+        with stop_on_signal() as stop:
+            os.kill(os.getpid(), signal.SIGINT)
+            self.assertTrue(stop.requested())
+
+    def test_the_call_restores_the_handler_it_replaced(self):
+        """A monitor that ran twice in one process must leave no handler behind."""
+        previous = signal.getsignal(signal.SIGTERM)
+        with stop_on_signal():
+            self.assertNotEqual(signal.getsignal(signal.SIGTERM), previous)
+        self.assertEqual(signal.getsignal(signal.SIGTERM), previous)
+
+    def test_the_call_restores_the_handler_after_an_error(self):
+        previous = signal.getsignal(signal.SIGINT)
+        with self.assertRaises(ValueError):
+            with stop_on_signal():
+                raise ValueError("the capture failed")
+        self.assertEqual(signal.getsignal(signal.SIGINT), previous)
+
+
+def packets_with_a_signal_at(number, packets, index):
+    """Return a packet source that sends one signal to this process, then continues.
+
+    Args:
+        number: The signal number to send.
+        packets: The packets the source replays.
+        index: The position of the packet the signal arrives before.
+
+    Yields:
+        Each packet in turn. The signal arrives while the loop holds the packet at
+        `index`, so a handler that stops the loop early loses the rest.
+    """
+    for position, packet in enumerate(packets):
+        if position == index:
+            os.kill(os.getpid(), number)
+        yield packet
+
+
+class TheMonitorStopsOnATerminationSignal(SignalGuard):
+    """FR-live-capture-5 and FR-live-capture-6 — the command exits cleanly on a signal.
+
+    Each case sends a real signal to this process while the loop reads a packet.
+    """
+
+    def read_three_packets(self, number):
+        """Run the command against three packets, with one signal before the third.
+
+        Args:
+            number: The signal number the source sends.
+
+        Returns:
+            A tuple of the ports the output names and the exit status.
+        """
+        packets = [tcp_packet(src_port=port, when=1.0) for port in (1024, 1025, 1026)]
+        source = packets_with_a_signal_at(number, packets, 2)
+        out, err, status = run_cli("--format", "json", "watch", "eth0", source=source)
+        ports = [json.loads(line)["src_port"] for line in out.splitlines() if line.strip()]
+        return ports, status, err
+
+    def test_sigterm_ends_the_run_with_the_status_zero(self):
+        _, status, err = self.read_three_packets(signal.SIGTERM)
+        self.assertEqual(status, 0, err)
+
+    def test_sigint_ends_the_run_with_the_status_zero(self):
+        _, status, err = self.read_three_packets(signal.SIGINT)
+        self.assertEqual(status, 0, err)
+
+    def test_the_capture_reads_the_packet_the_signal_arrives_during(self):
+        """The loop finishes the packet it holds, so the output holds its fingerprint."""
+        ports, _, err = self.read_three_packets(signal.SIGTERM)
+        self.assertIn(1026, ports, err)
+
+    def test_the_capture_reads_no_packet_after_the_signal(self):
+        """The stop filter ends the capture, so the source keeps its last packet."""
+        packets = [tcp_packet(src_port=port, when=1.0) for port in (1024, 1025, 1026)]
+        source = packets_with_a_signal_at(signal.SIGTERM, packets, 1)
+        out, err, status = run_cli("--format", "json", "watch", "eth0", source=source)
+        ports = [json.loads(line)["src_port"] for line in out.splitlines() if line.strip()]
+        self.assertEqual(status, 0, err)
+        self.assertEqual(ports, [1024, 1025])
+
+    def test_the_capture_reads_every_packet_when_no_signal_arrives(self):
+        """The control of the case above: the same three packets, and no signal."""
+        packets = [tcp_packet(src_port=port, when=1.0) for port in (1024, 1025, 1026)]
+        out, err, status = run_cli("--format", "json", "watch", "eth0", source=packets)
+        ports = [json.loads(line)["src_port"] for line in out.splitlines() if line.strip()]
+        self.assertEqual(status, 0, err)
+        self.assertEqual(ports, [1024, 1025, 1026])
+
+
+class RecordingStream(io.StringIO):
+    """A stream that records the order of the write calls, the flush call and the close.
+
+    Python flushes every stream when the interpreter shuts down. A case that ends the
+    program and then reads a complete file therefore passes against a command that
+    flushes never. This stream records the calls themselves, so a case reads the order:
+    the last line, then the flush, then the close.
+
+    Attributes:
+        events: One name for each call, in the order the calls arrived.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.events = []
+
+    def write(self, text):
+        self.events.append("write")
+        return super().write(text)
+
+    def flush(self):
+        self.events.append("flush")
+        return super().flush()
+
+    def close(self):
+        # The buffer stays open, because a closed `StringIO` answers `getvalue` never.
+        self.events.append("close")
+
+
+def run_cli_against_a_recorded_file(*argv, source=None):
+    """Run the command with `--output`, and return the stream that recorded the calls.
+
+    The call replaces the builtin `open`, so the command opens the real
+    `_result_stream` path and writes to the recorder. Standard output records nothing
+    here: `main` flushes standard output for every subcommand, and a recorder in that
+    position would report that flush as the flush of this feature.
+
+    Args:
+        argv: The arguments to pass, without the program name and without `--output`.
+        source: The packets the fake capture replays.
+
+    Returns:
+        A tuple of the recorder and the exit status.
+    """
+    recorder = RecordingStream()
+    with tempfile.TemporaryDirectory() as directory:
+        path = os.path.join(directory, "results")
+        with patch("builtins.open", lambda *args, **kwargs: recorder):
+            _, err, status = run_cli(*argv, "--output", path, source=source)
+    return recorder, status, err
+
+
+class TheCommandFlushesTheOutputBeforeItExits(unittest.TestCase):
+    """FR-live-capture-7 — the command flushes its output before it exits.
+
+    The interpreter flushes a stream at shutdown and `close` flushes a file, so neither
+    a complete file nor a green exit proves that this command flushes. Each case below
+    reads the recorded call order instead.
+    """
+
+    def test_the_command_flushes_the_output_that_holds_no_fingerprint(self):
+        """The case that fails without the flush this issue adds.
+
+        The header is the one line the run writes, and no fingerprint follows it, so the
+        per-result flush of the report call never runs.
+        """
+        recorder, status, err = run_cli_against_a_recorded_file(
+            "--format", "csv", "watch", "eth0", source=[]
+        )
+        self.assertEqual(status, 0, err)
+        self.assertIn("flush", recorder.events)
+        self.assertEqual(recorder.events[-2:], ["flush", "close"])
+
+    def test_the_command_flushes_after_the_last_line_it_writes(self):
+        packets = [tcp_packet(src_port=1024, when=1.0)]
+        recorder, status, err = run_cli_against_a_recorded_file(
+            "--format", "json", "watch", "eth0", source=packets
+        )
+        self.assertEqual(status, 0, err)
+        self.assertEqual(recorder.events[-2:], ["flush", "close"])
+        self.assertGreater(recorder.events.index("write"), -1)
+
+    def test_the_flush_precedes_the_close_of_the_output_file(self):
+        """A flush that the close performs is the close, and not this command."""
+        packets = [tcp_packet(src_port=1024, when=1.0)]
+        recorder, _, _ = run_cli_against_a_recorded_file(
+            "--format", "json", "watch", "eth0", source=packets
+        )
+        self.assertLess(recorder.events.index("flush"), recorder.events.index("close"))
+
+
+class TheOutputFileHoldsEveryFingerprintTheMonitorReported(SignalGuard):
+    """The third acceptance criterion of #54, read from a real file on disk."""
+
+    def test_the_file_written_before_sigterm_holds_every_fingerprint(self):
+        packets = [tcp_packet(src_port=port, when=1.0) for port in (1024, 1025, 1026)]
+        source = packets_with_a_signal_at(signal.SIGTERM, packets, 2)
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "results.jsonl")
+            out, err, status = run_cli(
+                "--format", "json", "watch", "eth0", "--output", path, source=source
+            )
+            with open(path, encoding="utf-8") as handle:
+                lines = [line for line in handle.read().splitlines() if line.strip()]
+        self.assertEqual(status, 0, err)
+        self.assertEqual(out, "")
+        self.assertEqual([json.loads(line)["src_port"] for line in lines], [1024, 1025, 1026])
 
 
 if __name__ == "__main__":

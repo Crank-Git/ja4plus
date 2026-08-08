@@ -20,8 +20,10 @@ Eviction runs on packet arrival. This module starts no thread.
 # without this import.
 from __future__ import annotations
 
+import contextlib
 import logging
-from typing import TYPE_CHECKING, Any, Callable
+import signal
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Optional
 
 from scapy.all import TCP, UDP
 
@@ -31,6 +33,8 @@ from ja4plus.utils.state_table import DEFAULT_EVICTION_INTERVAL, BoundedStateTab
 from ja4plus.utils.tunnels import innermost_layer
 
 if TYPE_CHECKING:
+    from types import FrameType
+
     from scapy.packet import Packet
 
 logger = logging.getLogger(__name__)
@@ -39,9 +43,15 @@ __all__ = [
     "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_MAX_CONNECTIONS",
     "Monitor",
+    "StopRequest",
     "connection_key",
     "read_interface",
+    "stop_on_signal",
 ]
+
+# The two signals that stop a monitor. FR-live-capture-5 and FR-live-capture-6 name one
+# each.
+_TERMINATION_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 
 # The maximum count of connections the monitor tracks. `--max-connections` changes it.
 # `features/06-live-capture.md` states the value.
@@ -191,7 +201,93 @@ class Monitor:
         logger.debug("the monitor evicts the connection %r", key)
 
 
-def read_interface(interface: str, handle_packet: Callable[[Packet], None]) -> None:
+class StopRequest:
+    """The flag that a termination signal sets and that the capture loop reads.
+
+    The handler sets the flag and returns. It calls `sys.exit` never, because a signal
+    arrives at any point, including the point where the output holds half a line. An exit
+    there truncates that line. Version 0.6.0 called `sys.exit` inside the handler of
+    `ja4plus/collector.py`, and Epic 4 removed that module.
+
+    `scapy` reads the flag through the `stop_filter` argument of `sniff`. It applies that
+    filter to each packet after it reports the packet, so the loop finishes the packet it
+    holds and the command flushes the output after the loop returns.
+
+    Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
+    (scapy 2.6 and later, retrieved 2026-08-08).
+
+    Warning: `scapy` applies the filter on packet arrival alone. An interface that carries
+    no traffic therefore holds the loop until the next packet arrives. #320 records that
+    gap.
+    """
+
+    def __init__(self) -> None:
+        self._requested = False
+
+    def requested(self) -> bool:
+        """Return True after a termination signal arrived."""
+        return self._requested
+
+    def request(self, signal_number: int, frame: Optional[FrameType]) -> None:
+        """Set the flag, and return.
+
+        `signal.signal` calls this method with the signal number and the frame. The
+        method reads neither, because it does the least work a handler can do.
+
+        Args:
+            signal_number: The number of the signal that arrived.
+            frame: The stack frame the signal interrupted.
+        """
+        self._requested = True
+
+    def stop_after(self, packet: Packet) -> bool:
+        """Return True when the capture stops after this packet.
+
+        Args:
+            packet: The packet the capture just reported. The answer reads no packet,
+                because a signal and not a packet stops a monitor.
+
+        Returns:
+            True after a termination signal arrived, and False before it.
+        """
+        return self._requested
+
+
+@contextlib.contextmanager
+def stop_on_signal(
+    signal_numbers: Iterable[int] = _TERMINATION_SIGNALS,
+) -> Iterator[StopRequest]:
+    """Yield the stop request, with a handler installed for each signal number.
+
+    The call restores the handler it replaced, whether the body returns or raises. A
+    library caller that runs a monitor twice therefore leaves no handler behind.
+
+    Args:
+        signal_numbers: The signal numbers to handle. The default is `SIGINT` and
+            `SIGTERM`, which FR-live-capture-5 and FR-live-capture-6 name.
+
+    Yields:
+        The stop request that each handler sets.
+
+    Raises:
+        ValueError: The caller runs outside the main thread. `signal.signal` raises it.
+    """
+    stop = StopRequest()
+    replaced: list[tuple[int, Any]] = []
+    try:
+        for number in signal_numbers:
+            replaced.append((number, signal.signal(number, stop.request)))
+        yield stop
+    finally:
+        for number, handler in replaced:
+            signal.signal(number, handler)
+
+
+def read_interface(
+    interface: str,
+    handle_packet: Callable[[Packet], None],
+    stop_filter: Optional[Callable[[Packet], bool]] = None,
+) -> None:
     """Read packets from one interface, and call the handler with each one.
 
     The call returns when the capture stops. `store=0` is required: without it `scapy`
@@ -199,12 +295,20 @@ def read_interface(interface: str, handle_packet: Callable[[Packet], None]) -> N
     bounds.
 
     Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
-    (scapy 2.6, retrieved 2026-08-08).
+    (scapy 2.6 and later, retrieved 2026-08-08).
 
     Args:
         interface: The interface name. The name `any` reads every interface.
         handle_packet: The callable that reads one packet.
+        stop_filter: The callable that ends the capture when it returns True for a
+            packet, or None to read until the process ends. `StopRequest.stop_after` is
+            the callable the command passes.
     """
     from scapy.all import sniff
 
-    sniff(prn=handle_packet, iface=interface if interface != "any" else None, store=0)
+    sniff(
+        prn=handle_packet,
+        iface=interface if interface != "any" else None,
+        store=0,
+        stop_filter=stop_filter,
+    )
