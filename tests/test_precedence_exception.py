@@ -15,9 +15,12 @@ which value looks right.
    the Python file omits, and the Rust snapshot rule already decides that case.
 2. The entry carries `decided`, so a recorded decision names the issue. An undecided
    entry is an open question, and this exception does not reach it.
-3. The decline records a disagreement about the value. A decline that records a
-   capability this project chose not to build bars the row, because no implementation
-   change could ever close the difference.
+3. The entry carries `capability: false`, so the decline records a disagreement about the
+   value. A decline that records a capability this project chose not to build bars the
+   row, because no implementation change could ever close the difference. #334 held this
+   fact as a set of issue numbers in this file, and #341 moved it into the register.
+   `tests/foxio_deviations.py` states the field, and `tests/test_foxio_deviations.py`
+   requires it on every decided entry.
 4. Another FoxIO source holds a value for the same method, the same connection and the
    same occurrence.
 5. The remaining sources hold one value between them. Where they hold different values,
@@ -43,7 +46,7 @@ import json
 from pathlib import Path
 
 from tests.conformance_index import index_expected
-from tests.foxio_deviations import load_register
+from tests.foxio_deviations import REGISTER_PATH, load_register
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -54,16 +57,6 @@ RULE_PAGE = REPO_ROOT / ".claude" / "rules" / "external-apis.md"
 ZEEK_PAGE = REPO_ROOT / "docs" / "specs" / "foxio" / "zeek.md"
 
 JA4SSH_PAGE = REPO_ROOT / "docs" / "specs" / "foxio" / "JA4SSH.md"
-
-# The issues whose decline records a capability this project chose not to build. #129
-# declines the decrypted values of an encrypted request, and `ja4plus` reads no encrypted
-# request by decision. Naming a decrypted value as the reference would create a
-# divergence no implementation change could ever close.
-#
-# The register records no field that separates the two kinds of decline, so this set
-# names the issue. `.claude/rules/external-apis.md` states the proposal that would make
-# the register record it.
-CAPABILITY_DECLINES = {129}
 
 # The value every other FoxIO source holds for one register key, keyed by the register
 # key. The run of #334 measured it, and it holds every decided value-form key that a
@@ -313,7 +306,7 @@ def exception_reach(register):
             continue
         if not deviation.decided:
             continue
-        if deviation.issue in CAPABILITY_DECLINES:
+        if deviation.capability:
             continue
         if python_value(key) is None:
             continue
@@ -343,11 +336,11 @@ class TestTheReachOfTheException:
             assert key in register, "{} names no register entry".format(key)
             assert register[key].decided, "{} names an undecided entry".format(key)
 
-    def test_no_measured_row_names_a_capability_decline(self):
+    def test_no_measured_row_records_a_capability_decline(self):
         register = load_register()
         for key in SOURCE_VALUES:
-            assert register[key].issue not in CAPABILITY_DECLINES, (
-                "{} names a capability decline, which bars the row".format(key)
+            assert not register[key].capability, (
+                "{} records a capability decline, which bars the row".format(key)
             )
 
 
@@ -356,8 +349,8 @@ class TestTheBarsOnTheException:
 
     def test_the_exception_passes_over_a_capability_decline(self):
         register = load_register()
-        capability = {key for key, entry in register.items() if entry.issue in CAPABILITY_DECLINES}
-        assert capability, "the register names no capability decline"
+        capability = {key for key, entry in register.items() if entry.capability}
+        assert capability, "the register records no capability decline"
         assert not capability & exception_reach(register)
 
     def test_the_capability_bar_holds_out_thirty_seven_value_form_keys(self):
@@ -365,9 +358,26 @@ class TestTheBarsOnTheException:
         held = {
             key
             for key, entry in register.items()
-            if split_key(key) is not None and entry.decided and entry.issue in CAPABILITY_DECLINES
+            if split_key(key) is not None and entry.decided and entry.capability
         }
         assert len(held) == CAPABILITY_VALUE_KEYS
+
+    def test_the_bar_reads_the_field_and_not_the_issue_number(self, tmp_path):
+        """The register records the kind, so a new capability decline needs no test edit.
+
+        The row is a #96 value decline the exception reaches. The copy records a
+        capability decline against the same issue and the same cause, and the exception
+        passes over it. #341 built the field for this reason, and this case is the proof
+        that the field carries the bar.
+        """
+        key = "ssh-r.pcap/2:46396/JA4SSH.1"
+        with open(REGISTER_PATH) as handle:
+            entry = json.load(handle)[key]
+        path = tmp_path / "register.json"
+        path.write_text(json.dumps({key: dict(entry, capability=False)}))
+        assert exception_reach(load_register(path)) == {key}
+        path.write_text(json.dumps({key: dict(entry, capability=True)}))
+        assert exception_reach(load_register(path)) == set()
 
     def test_the_exception_passes_over_a_row_whose_sources_disagree(self):
         register = load_register()

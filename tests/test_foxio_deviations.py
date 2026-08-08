@@ -67,6 +67,30 @@ def unmarked_decisions(register):
     return messages
 
 
+def unkinded_declines(entries):
+    """Return one message for every decided entry that records no kind of decline.
+
+    A decided entry records a decline, and the kind of that decline decides whether the
+    source-neutral precedence exception reaches the row. An entry that omits the
+    `capability` field states no kind, so the reader falls back on the default and the
+    exception rests on an absence rather than on a fact somebody recorded.
+
+    Args:
+        entries: The register file as `json.load` returns it, key to table.
+
+    Returns:
+        A list of messages, sorted by key. An empty list means every decided entry
+        records the kind of its decline.
+    """
+    messages = []
+    for key, entry in sorted(entries.items()):
+        if not entry.get("decided"):
+            continue
+        if "capability" not in entry:
+            messages.append("{} is decided and records no kind of decline".format(key))
+    return messages
+
+
 def unusable_owners(register, owners):
     """Return one message for every entry whose owner no worker can act on.
 
@@ -184,6 +208,23 @@ class TestTheRegisterReader:
     def test_the_reader_rejects_a_decided_flag_that_is_not_a_boolean(self, tmp_path):
         path = self._write(
             tmp_path, {"a.pcap/0/JA4.1": {"issue": 13, "cause": "x", "decided": "yes"}}
+        )
+        with pytest.raises(ValueError, match="a.pcap/0/JA4.1"):
+            load_register(path)
+
+    def test_the_reader_reads_no_capability_flag_as_false(self, tmp_path):
+        path = self._write(tmp_path, {"a.pcap/0/JA4.1": {"issue": 13, "cause": "x"}})
+        assert load_register(path)["a.pcap/0/JA4.1"].capability is False
+
+    def test_the_reader_reads_the_capability_flag(self, tmp_path):
+        path = self._write(
+            tmp_path, {"a.pcap/0/JA4.1": {"issue": 13, "cause": "x", "capability": True}}
+        )
+        assert load_register(path)["a.pcap/0/JA4.1"].capability is True
+
+    def test_the_reader_rejects_a_capability_flag_that_is_not_a_boolean(self, tmp_path):
+        path = self._write(
+            tmp_path, {"a.pcap/0/JA4.1": {"issue": 13, "cause": "x", "capability": "yes"}}
         )
         with pytest.raises(ValueError, match="a.pcap/0/JA4.1"):
             load_register(path)
@@ -548,6 +589,95 @@ class TestTheRegisterMarkerRule:
         assert unmarked_decisions(register) == [
             "a.pcap/JA4 names decided on 2026-08-07, and the entry carries no decided marker"
         ]
+
+
+# The one issue whose entries record a capability this project chose not to build. #129
+# declines the decrypted values the reference reads from a Decryption Secrets Block, and
+# `ja4plus` reads no encrypted request by decision. #341 read the recorded cause of all
+# 135 entries and found this one issue.
+CAPABILITY_ISSUE = 129
+
+# The count of entries that record a capability decline. All 43 name #129.
+CAPABILITY_ENTRIES = 43
+
+
+class TestTheKindOfDecline:
+    """Check the field that separates a value decline from a capability decline.
+
+    The source-neutral precedence exception reaches a value decline and passes over a
+    capability decline. #334 shipped that bar as a set of issue numbers in
+    `tests/test_precedence_exception.py`, and reported that the register recorded no
+    field the check could read. A rule stated where nothing checks it is the failure mode
+    this project keeps meeting, so #341 moved the fact into the register and this gate
+    holds it there.
+    """
+
+    def _entries(self):
+        with open(REGISTER_PATH) as handle:
+            return json.load(handle)
+
+    def test_the_committed_register_records_a_kind_for_every_decided_entry(self):
+        assert unkinded_declines(self._entries()) == []
+
+    def test_the_check_reports_a_decided_entry_that_records_no_kind(self):
+        entries = {"a.pcap/JA4": {"issue": 129, "cause": "x", "decided": True}}
+        assert unkinded_declines(entries) == [
+            "a.pcap/JA4 is decided and records no kind of decline"
+        ]
+
+    def test_the_check_accepts_a_decided_entry_that_records_a_value_decline(self):
+        entries = {"a.pcap/JA4": {"issue": 96, "cause": "x", "decided": True, "capability": False}}
+        assert unkinded_declines(entries) == []
+
+    def test_the_check_accepts_a_decided_entry_that_records_a_capability_decline(self):
+        entries = {"a.pcap/JA4": {"issue": 129, "cause": "x", "decided": True, "capability": True}}
+        assert unkinded_declines(entries) == []
+
+    def test_the_check_accepts_an_undecided_entry_that_records_no_kind(self):
+        """An undecided entry declines nothing, so it states no kind of decline.
+
+        The six #272 entries carry the field today, and a new open entry may omit it. The
+        gate demands the kind at the moment a person decides the entry.
+        """
+        entries = {"a.pcap/JA4L-S": {"issue": 272, "cause": "x"}}
+        assert unkinded_declines(entries) == []
+
+    def test_the_check_names_every_offending_key(self):
+        entries = {
+            "b.pcap/JA4S": {"issue": 96, "cause": "x", "decided": True},
+            "a.pcap/JA4": {"issue": 129, "cause": "x", "decided": True},
+        }
+        assert unkinded_declines(entries) == [
+            "a.pcap/JA4 is decided and records no kind of decline",
+            "b.pcap/JA4S is decided and records no kind of decline",
+        ]
+
+    def test_the_encryption_boundary_owns_every_capability_decline(self):
+        register = load_register()
+        owners = {entry.issue for entry in register.values() if entry.capability}
+        assert owners == {CAPABILITY_ISSUE}
+
+    def test_every_entry_of_the_encryption_boundary_records_a_capability_decline(self):
+        for key, entry in load_register().items():
+            if entry.issue == CAPABILITY_ISSUE:
+                assert entry.capability is True, key
+
+    def test_the_register_holds_forty_three_capability_declines(self):
+        capability = [key for key, entry in load_register().items() if entry.capability]
+        assert len(capability) == CAPABILITY_ENTRIES
+
+    def test_every_capability_decline_states_the_capability_it_records(self):
+        """The kind is a recorded fact, and the cause states the reason behind it.
+
+        Every #129 cause names the boundary in one of two forms. A future entry that
+        records a capability decline with no such statement fails this case.
+        """
+        for key, entry in load_register().items():
+            if not entry.capability:
+                continue
+            reads_no_request = "reads no encrypted request" in entry.cause
+            reads_no_certificate = "reads no encrypted certificate" in entry.cause
+            assert reads_no_request or reads_no_certificate, key
 
 
 class TestTheOwnerReader:
