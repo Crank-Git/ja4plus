@@ -47,6 +47,13 @@ LATENCY_DIVISOR = 2
 # another port carries no JA4L value, because neither endpoint is then the server.
 QUIC_PORT = 443
 
+# A QUIC connection carries a protocol marker as the third part. The Wireshark dissector
+# writes `quic` at `packet-ja4.c:1441` and `packet-ja4.c:1447`, and
+# `wireshark/test/testdata/` publishes that spelling on 18 values. The Zeek script writes
+# `q`, and `.claude/rules/external-apis.md:95` declines every JA4L value of a Zeek
+# baseline as a reference value. #225 holds the decision.
+QUIC_MARKER = "quic"
+
 # A TCP sequence number and acknowledgement number are 32 bits wide, so a relative
 # number needs this mask.
 SEQUENCE_MASK = 0xFFFFFFFF
@@ -501,7 +508,9 @@ def _quic_server_initial(conn, udp_payload, ttl, now):
     conn.pop("server_crypto", None)
     timestamps["B"] = now
     conn["ttls"]["server"] = ttl
-    return "JA4L-S={}_{}".format(_one_way_latency(timestamps["A"], timestamps["B"]), ttl)
+    return "JA4L-S={}_{}_{}".format(
+        _one_way_latency(timestamps["A"], timestamps["B"]), ttl, QUIC_MARKER
+    )
 
 
 def _quic_ja4l(packet, conn, ttl, now):
@@ -546,8 +555,10 @@ def _quic_ja4l(packet, conn, ttl, now):
 
     if to_server and "C" in timestamps and "D" not in timestamps:
         timestamps["D"] = now
-        return "JA4L-C={}_{}".format(
-            _one_way_latency(timestamps["C"], timestamps["D"]), ttls.get("client", ttl)
+        return "JA4L-C={}_{}_{}".format(
+            _one_way_latency(timestamps["C"], timestamps["D"]),
+            ttls.get("client", ttl),
+            QUIC_MARKER,
         )
     return None
 
