@@ -436,3 +436,20 @@ thread for it.
 
 The command needs the privilege to open the interface. On Linux the capability is
 `CAP_NET_RAW`. On macOS the operator needs read access to the `/dev/bpf*` devices.
+
+### How to stop a monitor
+
+`SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
+`Ctrl-C` sends `SIGINT`, and `kill` sends `SIGTERM`.
+
+```bash
+# Stop the monitor that runs under the process identity 4213
+kill 4213
+```
+
+The signal handler sets a flag, and it exits never. The monitor reads that flag after it
+reports a packet, so it finishes the line it writes. The command then flushes the output
+and exits, and the output file holds every fingerprint the monitor reported.
+
+The monitor reads the flag on packet arrival. An interface that carries no traffic
+therefore holds the monitor until the next packet arrives. Issue #320 records that gap.

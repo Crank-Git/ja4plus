@@ -667,7 +667,18 @@ Eviction runs on packet arrival. The module starts no thread.
 | `Monitor.tracked_connections()` | Return the key of every connection the table holds |
 | `Monitor.evictions` | The count of connections the monitor evicted |
 | `connection_key(packet)` | Return the key of the connection the packet belongs to, or None |
-| `read_interface(interface, handle_packet)` | Read packets from one interface until the capture stops |
+| `read_interface(interface, handle_packet, stop_filter)` | Read packets from one interface until the capture stops |
+| `StopRequest` | The flag a termination signal sets and the capture reads |
+| `StopRequest.requested()` | Return True after a termination signal arrived |
+| `StopRequest.stop_after(packet)` | Return True when the capture stops after this packet |
+| `stop_on_signal(signal_numbers)` | Yield the stop request, with a handler installed for each signal |
+
+`SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
+The handler sets the stop request and returns. It calls `sys.exit` never, because a
+signal arrives at any point, including the point where the output holds half a line.
+`scapy` reads the stop request through the `stop_filter` argument of `sniff`, and it
+applies that filter after it reports a packet. The monitor therefore finishes the line it
+writes, and the command flushes the output before it exits.
 
 ## Lookup Module
 

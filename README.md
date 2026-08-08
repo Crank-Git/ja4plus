@@ -82,6 +82,10 @@ The five output options run before the subcommand name and after it.
 `--max-connections` and `--connection-timeout` belong to `watch` alone, so they run
 after the subcommand name.
 
+`SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
+The monitor finishes the line it writes, flushes the output, and exits, so the output
+file holds every fingerprint it reported.
+
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 
 The `json` and the `csv` formats write the same fields whatever flags you pass. Each
