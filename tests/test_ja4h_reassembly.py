@@ -110,6 +110,56 @@ class TestJA4HReassembly(unittest.TestCase):
         self.assertIn("10.0.0.1:12345-10.0.0.2:80", fp.reassembler.streams)
 
 
+class TestJA4HUnreadableRequest(unittest.TestCase):
+    """Tests the removal of a stream whose complete header block produces no value."""
+
+    KEY = "10.0.0.1:12345-10.0.0.2:80"
+
+    # The version token `HTTP/11` names no HTTP version, so the request line matches no
+    # pattern and the parse produces nothing. #35 records the reading.
+    REFUSED_REQUEST = b"GET / HTTP/11\r\nHost: example.com\r\nAccept: text/html\r\n\r\n"
+
+    def _packet(self, payload, seq):
+        return (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=80, seq=seq)
+            / Raw(load=payload)
+        )
+
+    def test_a_complete_header_block_that_produces_nothing_leaves_no_entry(self):
+        fp = JA4HFingerprinter()
+        self.assertIsNone(fp.process_packet(self._packet(self.REFUSED_REQUEST, 100)))
+        # The removal waits for one packet that leaves the base sequence number in place,
+        # because a segment that arrives out of order lowers that number.
+        fp.process_packet(self._packet(b"x" * 40, 100 + len(self.REFUSED_REQUEST)))
+        self.assertEqual(fp.reassembler.streams, {})
+
+    def test_the_buffer_of_a_refused_request_stops_growing(self):
+        fp = JA4HFingerprinter()
+        seq = 100
+        fp.process_packet(self._packet(self.REFUSED_REQUEST, seq))
+        seq += len(self.REFUSED_REQUEST)
+        widest = 0
+        for _ in range(300):
+            fp.process_packet(self._packet(b"x" * 1400, seq))
+            seq += 1400
+            stream = fp.reassembler.streams.get(self.KEY)
+            if stream is not None:
+                widest = max(widest, stream["bytes"])
+        # The base behaviour holds every byte of the connection, which is 420036 bytes
+        # over 300 packets. #190 records the measurement.
+        self.assertLess(widest, 8192)
+
+    def test_a_reordered_request_whose_head_arrives_late_produces_a_fingerprint(self):
+        fp = JA4HFingerprinter()
+        head = b"POST /a HTTP/1.1\r\nX-Note: "
+        # The tail starts with a method token and ends a header block, so the buffer it
+        # forms on its own reads as a complete request that produces nothing.
+        tail = b"GET / HTTP/11\r\n\r\n"
+        self.assertIsNone(fp.process_packet(self._packet(tail, 100 + len(head))))
+        self.assertIsNotNone(fp.process_packet(self._packet(head, 100)))
+
+
 class TestJA4HStreamAge(unittest.TestCase):
     """Tests that JA4H states the packet time to the reassembler."""
 
