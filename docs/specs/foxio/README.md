@@ -68,6 +68,7 @@ specifies JA4TS as well as JA4T. `docs/specs/foxio/JA4T.md` holds the transcript
 | Method | Page | State |
 |---|---|---|
 | JA4T and JA4TS | `docs/specs/foxio/JA4T.md` | Complete. #196 |
+| JA4H | `docs/specs/foxio/JA4H.md` | Complete. #203 |
 | JA4SSH | `docs/specs/foxio/JA4SSH.md` | Complete. #199 |
 
 ## A deleted text specification corroborates, and it never outranks the image
