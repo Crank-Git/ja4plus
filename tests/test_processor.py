@@ -122,10 +122,18 @@ def test_processor_close_open_windows_emits_the_held_ja4ssh_window():
     assert results[0]["connection"] == "10.0.0.1:50000-10.0.0.2:22"
 
 
-def test_processor_close_open_windows_returns_nothing_without_state():
+def test_processor_close_open_windows_declines_a_window_with_no_ssh_packet():
+    """A port scan builds a connection that holds no SSH packet. #97 declines the value
+    `c0s0` that such a window would carry, and the processor must not report it."""
     from ja4plus import Processor
+    from scapy.all import IP, TCP
 
-    assert Processor().close_open_windows() == []
+    p = Processor()
+    for _ in range(20):
+        p.process_packet(IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=50000, dport=22, flags="A"))
+
+    assert p.ja4ssh.connections, "the state table holds the connection the scan built"
+    assert p.close_open_windows() == []
 
 
 def test_processor_get_shard_key_is_direction_independent():

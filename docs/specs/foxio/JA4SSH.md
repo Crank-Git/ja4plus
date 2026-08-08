@@ -479,8 +479,16 @@ decides.
 
 **#97 stays declined, and its reasoning is unchanged.** A window that holds no SSH packet
 describes no traffic. `ja4plus/fingerprinters/ja4ssh.py:368-369` holds the guard, and the
-new rule reaches it. `tests/test_ja4ssh_windows.py` holds three cases that prove the value
-`c0s0` never returns.
+new rule reaches it.
+
+**The guard is proven by its removal.** Replace the guard condition with `False` and 11
+cases fail. Five of the eleven are new cases of #214. Four cases name the decline
+directly.
+
+- `test_the_end_of_the_capture_emits_nothing_for_a_connection_of_bare_acks_alone`
+- `test_the_end_of_the_capture_emits_nothing_when_the_open_window_holds_no_ssh_packet`
+- `test_processor_close_open_windows_declines_a_window_with_no_ssh_packet`
+- `test_the_long_capture_produces_no_declined_empty_window`
 
 ### What the change moved
 
