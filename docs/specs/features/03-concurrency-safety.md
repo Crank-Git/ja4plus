@@ -155,7 +155,7 @@ reader does not read a target as a description. #179 measured it against the cod
 | `JA4SFingerprinter._quic_dcids` | none | none |
 | `JA4LFingerprinter.connections` | none | none |
 | `JA4SSHFingerprinter.connections` | none | none |
-| `JA4DBClient._cache` | none | none |
+| `JA4DBClient._cache` | 100000 | 600 seconds |
 | `BaseFingerprinter.fingerprints` | none | none |
 
 `TCPStreamReassembler` carries two more per-stream bounds: `max_stream_bytes` is
@@ -173,15 +173,21 @@ FR-concurrency-safety-7 and FR-concurrency-safety-8 own that gap, and Epic 3 clo
 data, so the `## Terms` table does not name it a state table. It appears above because
 it grows without a limit, and Goal 3 covers it.
 
-This file states four more targets that the code does not hold today:
+This file states three more targets that the code does not hold today:
 
 - `Processor.__init__` accepts no argument. The `thread_safe`, `max_connections` and
   `max_connection_age` arguments are targets.
-- The library holds no lock. `threading` reaches no module under `ja4plus/`.
+- No fingerprinter holds a lock. `threading` reaches one module under `ja4plus/`,
+  and that module is `ja4plus/ja4db.py`.
 - No class reports a state table entry count, and no class counts an eviction.
   `Processor.stats` is a target.
-- `JA4DBClient` builds no client once for every thread, and its lookup cache holds no
-  maximum entry count.
+
+#42 built the lookup client, and this paragraph records what the code holds now.
+`ja4plus.ja4db.lookup` builds one client, and every thread that calls it receives
+that client. The lookup cache holds 100000 entries at most, and
+`features/07-db-enrichment.md` states that entry count. The `## Terms` table names
+the lookup cache no state table, so the 10000 above describes a different object. The
+lookup cache is a `BoundedStateTable`, and one lookup drives its age pass.
 
 ## Data touched
 
