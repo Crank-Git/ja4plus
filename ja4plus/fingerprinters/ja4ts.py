@@ -9,6 +9,7 @@ from scapy.all import TCP
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.packet_utils import packet_endpoints, packet_seconds
+from ja4plus.utils.state_table import BoundedStateTable
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,13 @@ class SynAckTracker:
     """
 
     def __init__(self):
-        self.times = {}
+        # The age pass runs on each SYN-ACK packet, because a connection sends few of
+        # them and the default pass of `BoundedStateTable` waits for 1000 packets.
+        self.times = BoundedStateTable(
+            max_connections=MAX_TRACKED_CONNECTIONS,
+            max_connection_age=SYN_ACK_TIMEOUT_SECONDS,
+            eviction_interval=1,
+        )
 
     def clear(self):
         """Drop every connection."""
@@ -77,10 +84,11 @@ class SynAckTracker:
             The delay of each SYN-ACK after the first, in whole seconds. The list is
             empty for the first SYN-ACK of a connection.
         """
-        self._expire(now)
+        # The packet announces its own time, and the announcement runs the age pass.
+        # A capture replays faster than real time, so the table reads no wall clock.
+        self.times.on_packet(now)
         stamps = self.times.get(key)
         if stamps is None:
-            self._evict()
             stamps = []
             self.times[key] = stamps
         # FoxIO counts ten retransmissions and no more, so the eleventh timestamp is the
@@ -89,28 +97,6 @@ class SynAckTracker:
         if len(stamps) <= MAX_SYN_ACK_DELAYS:
             stamps.append(now)
         return [_delay_seconds(stamps[i], stamps[i - 1]) for i in range(1, len(stamps))]
-
-    def _expire(self, now):
-        """Drop every connection whose last SYN-ACK is older than the timeout.
-
-        The age reads the capture timestamp and no wall clock, because a capture file
-        replays faster than real time.
-        """
-        stale = [
-            key for key, stamps in self.times.items() if now - stamps[-1] > SYN_ACK_TIMEOUT_SECONDS
-        ]
-        for key in stale:
-            del self.times[key]
-
-    def _evict(self):
-        """Drop the oldest half of the table when the table is full.
-
-        A dictionary keeps its insertion order, so the oldest entry comes first.
-        """
-        if len(self.times) < MAX_TRACKED_CONNECTIONS:
-            return
-        for key in list(self.times)[: MAX_TRACKED_CONNECTIONS // 2]:
-            del self.times[key]
 
 
 class JA4TSFingerprinter(BaseFingerprinter):

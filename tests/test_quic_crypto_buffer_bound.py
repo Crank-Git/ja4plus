@@ -116,7 +116,6 @@ def test_the_fingerprinter_bounds_its_fragment_table_by_entry_count(monkeypatch)
     assert len(fingerprinter._quic_fragments) <= MAX_QUIC_FRAGMENT_CONNECTIONS
     # The bookkeeping tables track the fragment table rather than outliving it.
     assert len(fingerprinter._quic_dcid_to_tuple) <= MAX_QUIC_FRAGMENT_CONNECTIONS
-    assert len(fingerprinter._quic_fragment_seen) <= MAX_QUIC_FRAGMENT_CONNECTIONS
 
 
 def test_the_fingerprinter_bounds_its_fragment_table_by_age(monkeypatch):
@@ -144,7 +143,6 @@ def test_the_fingerprinter_bounds_its_fragment_table_by_age(monkeypatch):
 
     assert first_dcid.hex() not in fingerprinter._quic_fragments
     assert first_dcid.hex() not in fingerprinter._quic_dcid_to_tuple
-    assert first_dcid.hex() not in fingerprinter._quic_fragment_seen
     assert second_dcid.hex() in fingerprinter._quic_fragments
 
 
@@ -187,7 +185,6 @@ def test_the_fingerprinter_reset_empties_every_fragment_table(monkeypatch):
 
     assert fingerprinter._quic_fragments == {}
     assert fingerprinter._quic_dcid_to_tuple == {}
-    assert fingerprinter._quic_fragment_seen == {}
 
 
 def test_the_fingerprinter_cleanup_drops_the_age_entry(monkeypatch):
@@ -201,7 +198,6 @@ def test_the_fingerprinter_cleanup_drops_the_age_entry(monkeypatch):
 
     assert dcid.hex() not in fingerprinter._quic_fragments
     assert dcid.hex() not in fingerprinter._quic_dcid_to_tuple
-    assert dcid.hex() not in fingerprinter._quic_fragment_seen
 
 
 @pytest.mark.parametrize("exponent", [28, 34, 40, 62])

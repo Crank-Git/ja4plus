@@ -21,7 +21,8 @@ from scapy.all import IP, IPv6, TCP, UDP
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.http_utils import is_http_request
-from ja4plus.utils.packet_utils import opens_a_connection, packet_endpoints
+from ja4plus.utils.packet_utils import opens_a_connection, packet_endpoints, packet_seconds
+from ja4plus.utils.state_table import BoundedStateTable
 from ja4plus.utils.quic_utils import (
     QUIC_HANDSHAKE,
     QUIC_INITIAL,
@@ -90,11 +91,11 @@ class JA4LFingerprinter(BaseFingerprinter):
     def __init__(self):
         """Initialize the fingerprinter."""
         super().__init__()
-        self.connections = {}
+        self.connections = BoundedStateTable()
         # A caller of `cleanup_connection` holds the address pair this fingerprinter
         # reports, and a tunnelled connection groups under its inner address pair. This
         # map reads the grouping key from the reported key.
-        self.grouping_keys = {}
+        self.grouping_keys = BoundedStateTable()
 
     def process_packet(self, packet):
         """
@@ -108,6 +109,12 @@ class JA4LFingerprinter(BaseFingerprinter):
         """
         if (IP not in packet and IPv6 not in packet) or (TCP not in packet and UDP not in packet):
             return None
+
+        # The two tables age against the capture clock, so every packet announces its
+        # own timestamp. A table that reads the wall clock evicts state a replay needs.
+        seconds = packet_seconds(packet)
+        self.connections.on_packet(seconds)
+        self.grouping_keys.on_packet(seconds)
 
         from ja4plus.utils.packet_utils import get_ip_layer
         from ja4plus.utils.tunnels import innermost_layer
@@ -179,8 +186,8 @@ class JA4LFingerprinter(BaseFingerprinter):
     def reset(self):
         """Reset all fingerprints and connection tracking."""
         super().reset()
-        self.connections = {}
-        self.grouping_keys = {}
+        self.connections = BoundedStateTable()
+        self.grouping_keys = BoundedStateTable()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored timing state for the given connection."""

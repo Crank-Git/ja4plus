@@ -10,7 +10,6 @@ JA4H fingerprints HTTP requests based on:
 
 import hashlib
 import logging
-from collections import OrderedDict
 
 from scapy.all import IP, IPv6, TCP, Raw
 
@@ -25,6 +24,7 @@ from ja4plus.utils.http_utils import (
 )
 from ja4plus.utils.tcp_stream import SEQUENCE_MASK, TCPStreamReassembler, sequence_before
 from ja4plus.utils.packet_utils import get_ip_layer, packet_endpoints, packet_seconds
+from ja4plus.utils.state_table import DEFAULT_EVICTION_INTERVAL, BoundedStateTable
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -71,8 +71,28 @@ class JA4HFingerprinter(BaseFingerprinter):
         super().__init__()
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
-        self.unusable_base = {}
-        self.consumed_seq = OrderedDict()
+        self.unusable_base = self._stream_shadow_table()
+        # The base code ran the age pass of this one table on each packet, and the
+        # table holds 100 entries at most, so the pass keeps that schedule.
+        self.consumed_seq = self._stream_shadow_table(eviction_interval=1)
+
+    def _stream_shadow_table(self, eviction_interval=DEFAULT_EVICTION_INTERVAL):
+        """Return one bounded table that holds one entry for each live stream.
+
+        The two bounds read the reassembler, so one number bounds the stream and the
+        state that describes it.
+
+        Args:
+            eviction_interval: The count of packets between two age passes.
+
+        Returns:
+            A `BoundedStateTable` whose bounds match the reassembler.
+        """
+        return BoundedStateTable(
+            max_connections=self.reassembler.max_streams,
+            max_connection_age=self.reassembler.max_stream_age,
+            eviction_interval=eviction_interval,
+        )
 
     def process_packet(self, packet):
         """
@@ -84,6 +104,12 @@ class JA4HFingerprinter(BaseFingerprinter):
         if not (packet.haslayer(TCP) and packet.haslayer(Raw)):
             return None
 
+        # The two tables age against the capture clock, so every packet announces its
+        # own timestamp. A table that reads the wall clock evicts state a replay needs.
+        now = packet_seconds(packet)
+        self.consumed_seq.on_packet(now)
+        self.unusable_base.on_packet(now)
+
         ip_layer = get_ip_layer(packet)
         if ip_layer is None:
             return None
@@ -94,8 +120,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         stream_key = f"{ip_layer.src}:{tcp.sport}-{ip_layer.dst}:{tcp.dport}"
         seq = tcp.seq if hasattr(tcp, "seq") else 0
 
-        now = packet_seconds(packet)
-        if self._segment_carries_no_new_request(stream_key, seq, len(raw_data), now):
+        if self._segment_carries_no_new_request(stream_key, seq, len(raw_data)):
             return None
 
         self.reassembler.add_segment(stream_key, seq, raw_data, now)
@@ -129,12 +154,12 @@ class JA4HFingerprinter(BaseFingerprinter):
             return None
 
         self._record(fingerprint, http_info, packet)
-        self._remember_the_consumed_request(stream_key, len(stream_data), now)
+        self._remember_the_consumed_request(stream_key, len(stream_data))
         self.reassembler.remove_stream(stream_key)
         self.unusable_base.pop(stream_key, None)
         return fingerprint
 
-    def _remember_the_consumed_request(self, stream_key, length, now):
+    def _remember_the_consumed_request(self, stream_key, length):
         """Store the sequence range this stream read to produce its value.
 
         The reassembler drops the stream after a value, so a retransmitted segment
@@ -150,54 +175,31 @@ class JA4HFingerprinter(BaseFingerprinter):
         Args:
             stream_key: The key of the stream in the reassembler.
             length: The count of contiguous bytes the stream held.
-            now: The packet timestamp of the segment that completed the request, in
-                seconds, or None when the packet carries no time.
         """
         base = self.reassembler.base_seq(stream_key)
         if base is None:
             return
-        self.consumed_seq[stream_key] = (base, (base + length) & SEQUENCE_MASK, now)
-        self.consumed_seq.move_to_end(stream_key)
-        if len(self.consumed_seq) > self.reassembler.max_streams:
-            # The table holds one entry for each connection, and a flood of connections
-            # would otherwise grow it without a limit.
-            self.consumed_seq.popitem(last=False)
+        # The table holds the entry count and the entry age, so the entry carries the
+        # sequence range alone.
+        self.consumed_seq[stream_key] = (base, (base + length) & SEQUENCE_MASK)
 
-    def _evict_the_aged_consumed_requests(self, now):
-        """Remove every consumed-request entry older than the maximum stream age.
-
-        The age reads the packet timestamp and never the wall clock, because a capture
-        file replays faster than real time.
-
-        Args:
-            now: The packet timestamp of the current segment, in seconds.
-        """
-        # `max_streams` bounds this scan at 100 entries, so the cost per packet is flat.
-        for key, (_, _, seen) in list(self.consumed_seq.items()):
-            if seen is not None and now - seen > self.reassembler.max_stream_age:
-                del self.consumed_seq[key]
-
-    def _segment_carries_no_new_request(self, stream_key, seq, length, now):
+    def _segment_carries_no_new_request(self, stream_key, seq, length):
         """Report whether the stream already produced a value for these bytes.
 
         Args:
             stream_key: The key of the stream in the reassembler.
             seq: The 32-bit sequence number of the first byte of the segment.
             length: The count of payload bytes the segment carries.
-            now: The packet timestamp of the segment, in seconds, or None when the
-                packet carries no time.
 
         Returns:
             True when the segment lies inside the sequence range of a request that
             already produced a value. The comparison holds across a wrap of the 32-bit
             sequence number.
         """
-        if now is not None:
-            self._evict_the_aged_consumed_requests(now)
         entry = self.consumed_seq.get(stream_key)
         if entry is None:
             return False
-        start, consumed, _ = entry
+        start, consumed = entry
         if sequence_before(seq, start):
             # A second connection reuses the address pair and the port pair, and it
             # starts at its own initial sequence number. That number sits below the
@@ -252,16 +254,9 @@ class JA4HFingerprinter(BaseFingerprinter):
             self.unusable_base.pop(stream_key, None)
             return
 
+        # The table holds the entry count and the entry age, and it evicts the least
+        # recently read entry on its own.
         self.unusable_base[stream_key] = base
-        if len(self.unusable_base) > self.reassembler.max_streams:
-            # The reassembler evicts a stream on its own. A base sequence number that
-            # names an evicted stream is state that nothing reads again, and a flood of
-            # streams would otherwise grow the table without a limit.
-            self.unusable_base = {
-                key: value
-                for key, value in self.unusable_base.items()
-                if key in self.reassembler.streams
-            }
 
     def _record(self, fingerprint, http_info, packet):
         """Append one JA4H result, with the raw original-order form beside the hash."""
@@ -278,8 +273,10 @@ class JA4HFingerprinter(BaseFingerprinter):
         super().reset()
         self.reassembler = TCPStreamReassembler(max_streams=100)
         self.last_raw_original_order = None
-        self.unusable_base = {}
-        self.consumed_seq = OrderedDict()
+        self.unusable_base = self._stream_shadow_table()
+        # The base code ran the age pass of this one table on each packet, and the
+        # table holds 100 entries at most, so the pass keeps that schedule.
+        self.consumed_seq = self._stream_shadow_table(eviction_interval=1)
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove TCP stream buffer for the given connection."""
