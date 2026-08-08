@@ -19,11 +19,9 @@ from ja4plus.utils.quic_utils import (
     server_hello_is_complete,
 )
 from ja4plus.utils.packet_utils import packet_endpoints
+from ja4plus.utils.state_table import BoundedStateTable
 from ja4plus.fingerprinters.base import BaseFingerprinter
-from ja4plus.fingerprinters.ja4 import (
-    MAX_QUIC_FRAGMENT_AGE_SECONDS,
-    MAX_QUIC_FRAGMENT_CONNECTIONS,
-)
+from ja4plus.fingerprinters.ja4 import quic_fragment_table
 
 logger = logging.getLogger(__name__)
 
@@ -47,17 +45,16 @@ class JA4SFingerprinter(BaseFingerprinter):
     Format: <proto><version><ext_count><alpn>_<cipher>_<ext_hash>
     """
 
-    def __init__(self):
-        super().__init__()
-        # Maps "srcIP:srcPort-dstIP:dstPort" -> client DCID bytes
-        self._quic_dcids = {}
+    def __init__(self, thread_safe=True):
+        super().__init__(thread_safe=thread_safe)
+        # Maps "srcIP:srcPort-dstIP:dstPort" -> client DCID bytes. The connection ID
+        # outlives the fragments, because a server answers a client Initial packet
+        # after a round trip, so this table holds the default age of 600 seconds.
+        self._quic_dcids = BoundedStateTable()
         # Maps the same connection key -> the CRYPTO fragments the server sent. RFC 9000
         # Section 12.2 lets a server split the ServerHello across two Initial packets,
         # and neither packet then holds the whole message.
-        self._quic_server_crypto = {}
-        # Maps the same connection key -> the time of the last packet that added a
-        # fragment.
-        self._quic_server_crypto_seen = {}
+        self._quic_server_crypto = quic_fragment_table()
         self.last_raw = None
         self.last_raw_original_order = None
         self.last_fingerprint_original_order = None
@@ -76,24 +73,25 @@ class JA4SFingerprinter(BaseFingerprinter):
         Returns:
             The extracted fingerprint if successful, None otherwise
         """
-        # Try QUIC path first (UDP packets)
-        udp = packet.getlayer(UDP)
-        if udp is not None:
-            udp_payload = bytes(udp.payload)
-            if udp_payload and long_header_packet_type(udp_payload) == QUIC_INITIAL:
-                return self._quic_initial(packet, udp, udp_payload)
+        with self._lock:
+            # Try QUIC path first (UDP packets)
+            udp = packet.getlayer(UDP)
+            if udp is not None:
+                udp_payload = bytes(udp.payload)
+                if udp_payload and long_header_packet_type(udp_payload) == QUIC_INITIAL:
+                    return self._quic_initial(packet, udp, udp_payload)
 
-        # TCP/TLS path
-        from ja4plus.utils.tls_utils import extract_tls_info as _extract
+            # TCP/TLS path
+            from ja4plus.utils.tls_utils import extract_tls_info as _extract
 
-        tls_info = _extract(packet)
-        if not tls_info or tls_info.get("handshake_type") != "server_hello":
+            tls_info = _extract(packet)
+            if not tls_info or tls_info.get("handshake_type") != "server_hello":
+                return None
+            fingerprint = _generate_ja4s_from_tls_info(tls_info)
+            if fingerprint:
+                self._record(fingerprint, tls_info, packet)
+                return fingerprint
             return None
-        fingerprint = _generate_ja4s_from_tls_info(tls_info)
-        if fingerprint:
-            self._record(fingerprint, tls_info, packet)
-            return fingerprint
-        return None
 
     def _quic_initial(self, packet, udp, udp_payload):
         """Return the JA4S value one QUIC Initial packet gives, or None.
@@ -117,6 +115,12 @@ class JA4SFingerprinter(BaseFingerprinter):
             Returns None when the fingerprinter holds no client connection ID, and
             while the collected fragments hold no whole ServerHello.
         """
+        # `ja4.py` reads the packet clock the same way. A capture file replays faster
+        # than real time, so a wall clock would evict state the capture still needs.
+        seconds = float(packet.time) if hasattr(packet, "time") else time.time()
+        self._quic_dcids.on_packet(seconds)
+        self._quic_server_crypto.on_packet(seconds)
+
         src_ip, dst_ip = _get_ip_pair(packet)
         src_port = int(udp.sport)
         dst_port = int(udp.dport)
@@ -145,11 +149,6 @@ class JA4SFingerprinter(BaseFingerprinter):
         collected = collect_crypto_fragments(
             self._quic_server_crypto.setdefault(connection_key, []), fragments
         )
-        # `ja4.py` reads the packet clock the same way. A capture file replays faster
-        # than real time, so a wall clock would evict state the capture still needs.
-        seconds = float(packet.time) if hasattr(packet, "time") else time.time()
-        self._quic_server_crypto_seen[connection_key] = seconds
-        self._evict_quic_server_crypto(seconds)
         if not server_hello_is_complete(collected):
             return None
 
@@ -165,29 +164,8 @@ class JA4SFingerprinter(BaseFingerprinter):
         return fingerprint
 
     def _drop_quic_server_crypto(self, connection_key):
-        """Drop every fragment table entry one connection holds."""
+        """Drop the fragment table entry one connection holds."""
         self._quic_server_crypto.pop(connection_key, None)
-        self._quic_server_crypto_seen.pop(connection_key, None)
-
-    def _evict_quic_server_crypto(self, now):
-        """Drop the connections that passed the maximum age, then the oldest half.
-
-        The eviction runs on each packet, because a run that a wall clock gates lets the
-        table grow without a limit between two runs. `ja4._evict_quic_fragments` states
-        the same reason, and both tables share the two limits.
-
-        Args:
-            now: The time of the packet that is being processed, in seconds.
-        """
-        for connection_key, seen in list(self._quic_server_crypto_seen.items()):
-            if now - seen > MAX_QUIC_FRAGMENT_AGE_SECONDS:
-                self._drop_quic_server_crypto(connection_key)
-        if len(self._quic_server_crypto) <= MAX_QUIC_FRAGMENT_CONNECTIONS:
-            return
-        # A dict keeps its insertion order, so the oldest entry comes first.
-        oldest = list(self._quic_server_crypto)[: MAX_QUIC_FRAGMENT_CONNECTIONS // 2]
-        for connection_key in oldest:
-            self._drop_quic_server_crypto(connection_key)
 
     def _record(self, fingerprint, tls_info, packet):
         """Append a JA4S fingerprint result with raw / raw_original_order."""
@@ -212,22 +190,23 @@ class JA4SFingerprinter(BaseFingerprinter):
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored QUIC DCID state for the given connection."""
-        fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-        rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
-        self._quic_dcids.pop(fwd, None)
-        self._quic_dcids.pop(rev, None)
-        self._drop_quic_server_crypto(fwd)
-        self._drop_quic_server_crypto(rev)
+        with self._lock:
+            fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+            rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+            self._quic_dcids.pop(fwd, None)
+            self._quic_dcids.pop(rev, None)
+            self._drop_quic_server_crypto(fwd)
+            self._drop_quic_server_crypto(rev)
 
     def reset(self):
         """Reset all state."""
-        super().reset()
-        self._quic_dcids = {}
-        self._quic_server_crypto = {}
-        self._quic_server_crypto_seen = {}
-        self.last_raw = None
-        self.last_raw_original_order = None
-        self.last_fingerprint_original_order = None
+        with self._lock:
+            super().reset()
+            self._quic_dcids = BoundedStateTable()
+            self._quic_server_crypto = quic_fragment_table()
+            self.last_raw = None
+            self.last_raw_original_order = None
+            self.last_fingerprint_original_order = None
 
 
 def _server_hello_from_crypto_fragments(fragments):

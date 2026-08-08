@@ -37,6 +37,51 @@ from ja4plus.fingerprinters.ja4d6 import JA4D6Fingerprinter
 logger = logging.getLogger(__name__)
 
 
+class ProcessorStats:
+    """The counts one method reports.
+
+    FR-concurrency-safety-11 and FR-concurrency-safety-12 ask the processor to report
+    the entry count of each state table and the count of entries it evicted. One method
+    holds up to four state tables, so this object holds the count of each table and the
+    sum across them.
+
+    Epic 4 makes this a typed dataclass. #41 ships a plain object.
+
+    Args:
+        method: The method name, such as `ja4h`.
+        packets: The count of packets the processor gave this method. The count rises
+            for a packet the method reads and for a packet it ignores, and
+            `Processor.reset` returns it to zero.
+        tables: A dict that maps the state table name to its `TableStats`.
+
+    Attributes:
+        entries: The sum of the entry counts of the tables.
+        evictions: The sum of the eviction counts of the tables.
+        returned_connections: The sum of the counts of connections that returned after
+            an eviction. A returned connection produces a fingerprint that may be
+            incomplete, because its new entry holds none of the packets that came
+            before the eviction.
+    """
+
+    __slots__ = ("method", "packets", "tables", "entries", "evictions", "returned_connections")
+
+    def __init__(self, method, packets, tables):
+        self.method = method
+        self.packets = packets
+        self.tables = tables
+        self.entries = sum(table.entries for table in tables.values())
+        self.evictions = sum(table.evictions for table in tables.values())
+        self.returned_connections = sum(table.returned_connections for table in tables.values())
+
+    def __repr__(self):
+        return (
+            f"ProcessorStats(method={self.method!r}, packets={self.packets}, "
+            f"entries={self.entries}, evictions={self.evictions}, "
+            f"returned_connections={self.returned_connections}, "
+            f"tables={sorted(self.tables)})"
+        )
+
+
 class Processor:
     """Aggregator that runs every JA4+ fingerprinter on each packet."""
 
@@ -54,8 +99,23 @@ class Processor:
         ("ja4d6", JA4D6Fingerprinter),
     ]
 
-    def __init__(self):
-        self.fingerprinters = {name: cls() for name, cls in self._SPEC}
+    def __init__(self, thread_safe=True):
+        """Build one processor and the ten fingerprinters it drives.
+
+        Args:
+            thread_safe: True makes every fingerprinter guard its own state with a
+                reentrant lock, and several threads may then call `process_packet` on
+                one processor. False makes every fingerprinter acquire no lock, and the
+                caller then promises that one thread at a time calls this processor. A
+                caller that breaks the promise gets undefined results.
+        """
+        self.thread_safe = bool(thread_safe)
+        # One fingerprinter holds one lock, so ten threads work at once on ten methods.
+        # A single lock over the processor would serialize all ten.
+        self.fingerprinters = {name: cls(thread_safe=thread_safe) for name, cls in self._SPEC}
+        # `stats` reports this count, and no fingerprinter holds it. A method that reads
+        # no packet still receives every packet, and the count records that.
+        self._packet_counts = {name: 0 for name, _ in self._SPEC}
 
     def __getattr__(self, name):
         # Convenience: processor.ja4 returns the underlying fingerprinter.
@@ -76,25 +136,33 @@ class Processor:
         src_ip, dst_ip, src_port, dst_port = _packet_endpoints(packet)
 
         for fp_type, fp in self.fingerprinters.items():
-            try:
-                fingerprint = fp.process_packet(packet)
-            except Exception as e:
-                logger.debug(f"{fp_type} processing failed: {e}")
-                continue
-            if not fingerprint:
-                continue
-            results.append(
-                {
-                    "type": fp_type,
-                    "fingerprint": fingerprint,
-                    "raw": getattr(fp, "last_raw", None),
-                    "raw_original_order": getattr(fp, "last_raw_original_order", None),
-                    "src_ip": src_ip,
-                    "src_port": src_port,
-                    "dst_ip": dst_ip,
-                    "dst_port": dst_port,
-                }
-            )
+            # `last_raw` describes the value the call below produces, so that call and
+            # the read of `last_raw` form one operation. A second thread that runs
+            # between the two pairs the raw form of its own packet with this
+            # fingerprint.
+            with fp.lock:
+                # The read, the addition and the write are three steps, so a second
+                # thread that runs between them loses a packet from the count.
+                self._packet_counts[fp_type] += 1
+                try:
+                    fingerprint = fp.process_packet(packet)
+                except Exception as e:
+                    logger.debug(f"{fp_type} processing failed: {e}")
+                    continue
+                if not fingerprint:
+                    continue
+                results.append(
+                    {
+                        "type": fp_type,
+                        "fingerprint": fingerprint,
+                        "raw": getattr(fp, "last_raw", None),
+                        "raw_original_order": getattr(fp, "last_raw_original_order", None),
+                        "src_ip": src_ip,
+                        "src_port": src_port,
+                        "dst_ip": dst_ip,
+                        "dst_port": dst_port,
+                    }
+                )
         return results
 
     def close_open_windows(self):
@@ -126,10 +194,44 @@ class Processor:
                 )
         return results
 
+    def stats(self):
+        """Return the counts each method reports, keyed by the method name.
+
+        The report holds one entry for each of the ten methods. Each entry states the
+        packet count of that method and the counts of every state table it holds.
+        FR-concurrency-safety-11 and FR-concurrency-safety-12 state the requirement.
+
+        The call holds the lock of one fingerprinter across the read of that
+        fingerprinter, because the counts of one method describe one instant. A read
+        that acquires nothing catches a table between the store of a new entry and the
+        count of it, and the report then breaks the invariant
+        `inserts == entries + evictions + removals`. The call acquires one lock at a
+        time, so it stops no other method and it holds two locks never.
+
+        The report describes ten instants and not one. A caller that needs one instant
+        across the ten methods stops the packet source first.
+
+        Returns:
+            A dict that maps the method name to a `ProcessorStats`.
+        """
+        report = {}
+        for fp_type, fp in self.fingerprinters.items():
+            with fp.lock:
+                tables = {name: table.stats() for name, table in fp.state_tables().items()}
+                packets = self._packet_counts[fp_type]
+            report[fp_type] = ProcessorStats(fp_type, packets, tables)
+        return report
+
     def reset(self):
-        """Reset every underlying fingerprinter."""
-        for fp in self.fingerprinters.values():
-            fp.reset()
+        """Reset every underlying fingerprinter, and return every packet count to zero.
+
+        A reset drops the state tables, and a count that survives the drop describes
+        entries no table holds. The packet counts therefore start again.
+        """
+        for fp_type, fp in self.fingerprinters.items():
+            with fp.lock:
+                fp.reset()
+                self._packet_counts[fp_type] = 0
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Drop per-connection state across all fingerprinters.

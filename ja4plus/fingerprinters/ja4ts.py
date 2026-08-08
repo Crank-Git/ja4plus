@@ -9,6 +9,7 @@ from scapy.all import TCP
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.packet_utils import packet_endpoints, packet_seconds
+from ja4plus.utils.state_table import BoundedStateTable
 
 logger = logging.getLogger(__name__)
 
@@ -75,13 +76,41 @@ class SynAckTracker:
 
     `times` holds the capture timestamps of one connection, which part e reads.
     `prefixes` holds part a through part d of the first SYN-ACK, which the RST value
-    reads. The two maps hold the same keys. The entry count and the entry age both hold a
-    bound, because a monitor runs for weeks.
+    reads. The entry count and the entry age both hold a bound, because a monitor runs
+    for weeks.
+
+    The two tables hold the same keys, and #285 states the one mechanism that keeps them
+    so: `times` evicts, and its eviction hook removes the same key from `prefixes`. Every
+    other path writes both tables in the same call. `record` stores into `times` before
+    it stores into `prefixes`, so the hook runs before the new prefix arrives and
+    `prefixes` never passes the count of `times`.
+
+    `prefixes` receives no packet, so its own age pass never runs and its own count bound
+    never fires. Both bounds are a second limit that the hook keeps the table away from.
+    The eviction count of `prefixes` therefore reports what the hook removed.
     """
 
     def __init__(self):
-        self.times = {}
-        self.prefixes = {}
+        # The age pass runs on each SYN-ACK packet, because a connection sends few of
+        # them and the default pass of `BoundedStateTable` waits for 1000 packets.
+        self.times = BoundedStateTable(
+            max_connections=MAX_TRACKED_CONNECTIONS,
+            max_connection_age=SYN_ACK_TIMEOUT_SECONDS,
+            eviction_interval=1,
+            on_eviction=self._drop_prefix,
+        )
+        self.prefixes = BoundedStateTable(
+            max_connections=MAX_TRACKED_CONNECTIONS,
+            max_connection_age=SYN_ACK_TIMEOUT_SECONDS,
+        )
+
+    def _drop_prefix(self, key):
+        """Remove the stored parts of a connection that `times` evicted.
+
+        Args:
+            key: The connection key that `times` removed.
+        """
+        self.prefixes.evict_key(key)
 
     def clear(self):
         """Drop every connection."""
@@ -105,10 +134,11 @@ class SynAckTracker:
             The delay of each SYN-ACK after the first, in whole seconds. The list is
             empty for the first SYN-ACK of a connection.
         """
-        self._expire(now)
+        # The packet announces its own time, and the announcement runs the age pass.
+        # A capture replays faster than real time, so the table reads no wall clock.
+        self.times.on_packet(now)
         stamps = self.times.get(key)
         if stamps is None:
-            self._evict()
             stamps = []
             self.times[key] = stamps
             # A RST packet carries no window size and no option, so the connection keeps
@@ -137,34 +167,16 @@ class SynAckTracker:
             nest the RST branch inside the delay branch, so a connection the server
             answered once carries no RST suffix.
         """
-        self._expire(now)
+        # A RST packet is a packet, and the announcement runs the age pass on it too.
+        self.times.on_packet(now)
         stamps = self.times.get(key)
         if stamps is None or len(stamps) < 2:
             return None
         delays = "-".join(str(delay) for delay in _delay_list(stamps))
+        # The read holds no fallback on purpose. A key that `times` holds and `prefixes`
+        # does not is a broken lockstep, and #285 states that no path produces one. A
+        # fallback here would hide that state rather than report it.
         return f"{self.prefixes[key]}_{delays}-R{_delay_seconds(now, stamps[-1])}"
-
-    def _expire(self, now):
-        """Drop every connection whose last SYN-ACK is older than the timeout.
-
-        The age reads the capture timestamp and no wall clock, because a capture file
-        replays faster than real time.
-        """
-        stale = [
-            key for key, stamps in self.times.items() if now - stamps[-1] > SYN_ACK_TIMEOUT_SECONDS
-        ]
-        for key in stale:
-            self.drop(key)
-
-    def _evict(self):
-        """Drop the oldest half of the table when the table is full.
-
-        A dictionary keeps its insertion order, so the oldest entry comes first.
-        """
-        if len(self.times) < MAX_TRACKED_CONNECTIONS:
-            return
-        for key in list(self.times)[: MAX_TRACKED_CONNECTIONS // 2]:
-            self.drop(key)
 
 
 class JA4TSFingerprinter(BaseFingerprinter):
@@ -183,9 +195,11 @@ class JA4TSFingerprinter(BaseFingerprinter):
     connection, because a RST packet carries neither a window size nor an option.
     """
 
-    def __init__(self):
+    def __init__(self, thread_safe=True):
         """Initialize the fingerprinter and its SYN-ACK table."""
-        super().__init__()
+        super().__init__(thread_safe=thread_safe)
+        # The tracker holds no lock of its own. Every caller of it runs inside a method
+        # of this fingerprinter, and that method holds the lock of this fingerprinter.
         self.syn_ack_times = SynAckTracker()
 
     def process_packet(self, packet):
@@ -198,16 +212,18 @@ class JA4TSFingerprinter(BaseFingerprinter):
         Returns:
             The extracted fingerprint if successful, None otherwise
         """
-        fingerprint = generate_ja4ts(packet, self.syn_ack_times)
-        if fingerprint:
-            self.add_fingerprint(fingerprint, packet)
-            return fingerprint
-        return None
+        with self._lock:
+            fingerprint = generate_ja4ts(packet, self.syn_ack_times)
+            if fingerprint:
+                self.add_fingerprint(fingerprint, packet)
+                return fingerprint
+            return None
 
     def reset(self):
         """Reset the collected fingerprints and the connection table."""
-        super().reset()
-        self.syn_ack_times.clear()
+        with self._lock:
+            super().reset()
+            self.syn_ack_times.clear()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove the stored SYN-ACK times and stored parts of the given connection.
@@ -215,8 +231,9 @@ class JA4TSFingerprinter(BaseFingerprinter):
         The key names the server first, because every SYN-ACK travels from the server.
         The caller names either direction, so both orderings are dropped.
         """
-        self.syn_ack_times.drop((src_ip, src_port, dst_ip, dst_port))
-        self.syn_ack_times.drop((dst_ip, dst_port, src_ip, src_port))
+        with self._lock:
+            self.syn_ack_times.drop((src_ip, src_port, dst_ip, dst_port))
+            self.syn_ack_times.drop((dst_ip, dst_port, src_ip, src_port))
 
 
 def _connection_key(packet):

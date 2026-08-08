@@ -7,6 +7,8 @@ payloads and out-of-order TCP delivery.
 import logging
 from collections import OrderedDict
 
+from ja4plus.utils.state_table import StateTable
+
 logger = logging.getLogger(__name__)
 
 # A TCP sequence number is 32 bits and wraps back to zero. RFC 1982 orders two such
@@ -43,7 +45,7 @@ DEFAULT_MAX_STREAM_SEGMENTS = 4096
 DEFAULT_MAX_STREAM_AGE = 600
 
 
-class TCPStreamReassembler:
+class TCPStreamReassembler(StateTable):
     """Reassembles TCP streams using sequence numbers.
 
     Handles out-of-order segments, duplicates, and overlaps.
@@ -53,6 +55,12 @@ class TCPStreamReassembler:
     `max_stream_age` seconds. The age reads the packet timestamp the caller states, and
     this module imports no clock. A capture file replays faster than real time, so a
     wall clock would evict state the capture still needs.
+
+    The class holds per-connection data across packets, so the `## Terms` table of
+    `docs/specs/spec.md` names it a state table. It therefore reports the six counts
+    every state table reports, and `Processor.stats` collects them under #41. Its
+    bounds predate `BoundedStateTable`, and #39 left them where they are, so this class
+    counts its own evictions rather than inheriting the count.
     """
 
     def __init__(
@@ -62,6 +70,7 @@ class TCPStreamReassembler:
         max_stream_segments=DEFAULT_MAX_STREAM_SEGMENTS,
         max_stream_age=DEFAULT_MAX_STREAM_AGE,
     ):
+        StateTable.__init__(self, max_evicted_keys=max_streams)
         self.streams = OrderedDict()
         self.max_streams = max_streams
         self.max_stream_bytes = max_stream_bytes
@@ -83,6 +92,7 @@ class TCPStreamReassembler:
             last_seen = stream["last_seen"]
             if last_seen is not None and now - last_seen > self.max_stream_age:
                 del self.streams[key]
+                self.count_eviction(key)
 
     def add_segment(self, key, seq, data, timestamp=None):
         """Add a TCP segment to a stream.
@@ -106,9 +116,12 @@ class TCPStreamReassembler:
             self._evict_aged_streams(timestamp)
 
         if key not in self.streams:
+            returned = self.take_evicted_key(key)
             if len(self.streams) >= self.max_streams:
-                self.streams.popitem(last=False)
+                evicted_key, _ = self.streams.popitem(last=False)
+                self.count_eviction(evicted_key)
             self.streams[key] = {"segments": [], "seen": set(), "bytes": 0, "last_seen": None}
+            self.count_insert(returned)
 
         stream = self.streams[key]
 
@@ -227,8 +240,25 @@ class TCPStreamReassembler:
         return segments[0][0]
 
     def remove_stream(self, key):
-        """Remove a stream from tracking."""
-        self.streams.pop(key, None)
+        """Remove a stream from tracking.
+
+        The removal belongs to the caller, so it evicts nothing. A stream that arrives
+        again after this call counts as a first sighting.
+
+        Args:
+            key: The stream key. A key the reassembler does not hold removes nothing.
+        """
+        if self.streams.pop(key, None) is not None:
+            self.count_removals()
+
+    def stats(self):
+        """Return the counts this reassembler reports.
+
+        Returns:
+            A `TableStats`. The caller holds the lock of the fingerprinter across this
+            call, because the six counts describe one instant.
+        """
+        return self.build_stats(len(self.streams), self.max_streams)
 
     def trim_stream(self, key, up_to_seq):
         """Remove the segments that end at or before up_to_seq, to free memory.

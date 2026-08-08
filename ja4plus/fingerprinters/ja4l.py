@@ -21,7 +21,8 @@ from scapy.all import IP, IPv6, TCP, UDP
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.http_utils import is_http_request
-from ja4plus.utils.packet_utils import opens_a_connection, packet_endpoints
+from ja4plus.utils.packet_utils import opens_a_connection, packet_endpoints, packet_seconds
+from ja4plus.utils.state_table import BoundedStateTable
 from ja4plus.utils.quic_utils import (
     QUIC_HANDSHAKE,
     QUIC_INITIAL,
@@ -87,14 +88,14 @@ class JA4LFingerprinter(BaseFingerprinter):
     JA4L measures latency between client and server to estimate physical distance.
     """
 
-    def __init__(self):
+    def __init__(self, thread_safe=True):
         """Initialize the fingerprinter."""
-        super().__init__()
-        self.connections = {}
+        super().__init__(thread_safe=thread_safe)
+        self.connections = BoundedStateTable()
         # A caller of `cleanup_connection` holds the address pair this fingerprinter
         # reports, and a tunnelled connection groups under its inner address pair. This
         # map reads the grouping key from the reported key.
-        self.grouping_keys = {}
+        self.grouping_keys = BoundedStateTable()
 
     def process_packet(self, packet):
         """
@@ -106,91 +107,105 @@ class JA4LFingerprinter(BaseFingerprinter):
         Returns:
             The extracted fingerprint if successful, None otherwise
         """
-        if (IP not in packet and IPv6 not in packet) or (TCP not in packet and UDP not in packet):
-            return None
+        with self._lock:
+            if (IP not in packet and IPv6 not in packet) or (
+                TCP not in packet and UDP not in packet
+            ):
+                return None
 
-        from ja4plus.utils.packet_utils import get_ip_layer
-        from ja4plus.utils.tunnels import innermost_layer
+            # The two tables age against the capture clock, so every packet announces its
+            # own timestamp. A table that reads the wall clock evicts state a replay needs.
+            seconds = packet_seconds(packet)
+            self.connections.on_packet(seconds)
+            self.grouping_keys.on_packet(seconds)
 
-        port_layer = innermost_layer(packet, (TCP, UDP))
-        outer_layer = get_ip_layer(packet)
-        if port_layer is None or outer_layer is None:
-            return None
-        proto = "tcp" if isinstance(port_layer, TCP) else "udp"
-        sport = int(port_layer.sport)
-        dport = int(port_layer.dport)
+            from ja4plus.utils.packet_utils import get_ip_layer
+            from ja4plus.utils.tunnels import innermost_layer
 
-        # The reference reports the outer address pair, and it groups by the inner one.
-        # A mirror sends both directions of one session from one outer address to one
-        # other outer address, so the outer pair separates no direction there.
-        inner_layer = innermost_layer(packet, (IP, IPv6)) or outer_layer
-        src_ip = inner_layer.src
-        dst_ip = inner_layer.dst
+            port_layer = innermost_layer(packet, (TCP, UDP))
+            outer_layer = get_ip_layer(packet)
+            if port_layer is None or outer_layer is None:
+                return None
+            proto = "tcp" if isinstance(port_layer, TCP) else "udp"
+            sport = int(port_layer.sport)
+            dport = int(port_layer.dport)
 
-        # Normalize connection key (ordered src/dst)
-        if src_ip < dst_ip or (src_ip == dst_ip and sport < dport):
-            conn_key = f"{proto}_{src_ip}:{sport}_{dst_ip}:{dport}"
-            direction = "forward"
-        else:
-            conn_key = f"{proto}_{dst_ip}:{dport}_{src_ip}:{sport}"
-            direction = "reverse"
+            # The reference reports the outer address pair, and it groups by the inner
+            # one. A mirror sends both directions of one session from one outer address
+            # to one other outer address, so the outer pair separates no direction there.
+            inner_layer = innermost_layer(packet, (IP, IPv6)) or outer_layer
+            src_ip = inner_layer.src
+            dst_ip = inner_layer.dst
 
-        if conn_key not in self.connections:
-            self.connections[conn_key] = {
-                "proto": proto,
-                "direction": direction,
-                "conn_key": conn_key,
-                "reported_key": None,
-                "timestamps": {},
-                "ttls": {},
-                "isns": {},
-            }
+            # Normalize connection key (ordered src/dst)
+            if src_ip < dst_ip or (src_ip == dst_ip and sport < dport):
+                conn_key = f"{proto}_{src_ip}:{sport}_{dst_ip}:{dport}"
+                direction = "forward"
+            else:
+                conn_key = f"{proto}_{dst_ip}:{dport}_{src_ip}:{sport}"
+                direction = "reverse"
 
-        conn = self.connections[conn_key]
-        # The reference pairs the source address of a packet with the source port of
-        # that packet, and it names the client first. The SYN carries that direction, so
-        # a SYN replaces the pair the first packet of the connection gave.
-        if conn.get("reported_key") is None or _opens_a_connection(port_layer, proto):
-            self.grouping_keys.pop(conn.get("reported_key"), None)
-            conn["reported_key"] = _reported_key(proto, outer_layer, sport, dport)
-            self.grouping_keys[conn["reported_key"]] = conn_key
-        fingerprint = generate_ja4l(packet, conn)
+            if conn_key not in self.connections:
+                self.connections[conn_key] = {
+                    "proto": proto,
+                    "direction": direction,
+                    "conn_key": conn_key,
+                    "reported_key": None,
+                    "timestamps": {},
+                    "ttls": {},
+                    "isns": {},
+                }
 
-        if not fingerprint:
-            return None
+            conn = self.connections[conn_key]
+            # The reference pairs the source address of a packet with the source port of
+            # that packet, and it names the client first. The SYN carries that direction,
+            # so a SYN replaces the pair the first packet of the connection gave.
+            if conn.get("reported_key") is None or _opens_a_connection(port_layer, proto):
+                self.grouping_keys.pop(conn.get("reported_key"), None)
+                conn["reported_key"] = _reported_key(proto, outer_layer, sport, dport)
+                self.grouping_keys[conn["reported_key"]] = conn_key
+            fingerprint = generate_ja4l(packet, conn)
 
-        # The reference holds one client value for one connection and overwrites it
-        # while the measurement point moves. A later packet therefore replaces the
-        # value this fingerprinter already reported, and it adds no second value.
-        endpoints = packet_endpoints(packet)
-        if fingerprint.startswith("JA4L-C="):
-            index = conn.get("client_entry")
-            if index is not None:
-                self.fingerprints[index]["fingerprint"] = fingerprint
-                self.fingerprints[index].update(endpoints)
-                return fingerprint
-            conn["client_entry"] = len(self.fingerprints)
+            if not fingerprint:
+                return None
 
-        entry = {"fingerprint": fingerprint, "connection": conn["reported_key"]}
-        entry.update(endpoints)
-        self.fingerprints.append(entry)
-        return fingerprint
+            # The reference holds one client value for one connection and overwrites it
+            # while the measurement point moves. A later packet therefore replaces the
+            # value this fingerprinter already reported, and it adds no second value.
+            endpoints = packet_endpoints(packet)
+            if fingerprint.startswith("JA4L-C="):
+                index = conn.get("client_entry")
+                if index is not None:
+                    self.fingerprints[index]["fingerprint"] = fingerprint
+                    self.fingerprints[index].update(endpoints)
+                    return fingerprint
+                # The stored index names a position in `self.fingerprints`, so the read
+                # of the length and the append that follows form one operation. A second
+                # thread that appends between the two gives two connections one entry.
+                conn["client_entry"] = len(self.fingerprints)
+
+            entry = {"fingerprint": fingerprint, "connection": conn["reported_key"]}
+            entry.update(endpoints)
+            self.fingerprints.append(entry)
+            return fingerprint
 
     def reset(self):
         """Reset all fingerprints and connection tracking."""
-        super().reset()
-        self.connections = {}
-        self.grouping_keys = {}
+        with self._lock:
+            super().reset()
+            self.connections = BoundedStateTable()
+            self.grouping_keys = BoundedStateTable()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored timing state for the given connection."""
-        # JA4L normalizes the key so we must try both orderings
-        fwd = f"{proto}_{src_ip}:{src_port}_{dst_ip}:{dst_port}"
-        rev = f"{proto}_{dst_ip}:{dst_port}_{src_ip}:{src_port}"
-        for reported in (fwd, rev):
-            # The caller names the address pair this fingerprinter reports. A tunnelled
-            # connection groups under another key, and the map holds that key.
-            self.connections.pop(self.grouping_keys.pop(reported, reported), None)
+        with self._lock:
+            # JA4L normalizes the key so we must try both orderings
+            fwd = f"{proto}_{src_ip}:{src_port}_{dst_ip}:{dst_port}"
+            rev = f"{proto}_{dst_ip}:{dst_port}_{src_ip}:{src_port}"
+            for reported in (fwd, rev):
+                # The caller names the address pair this fingerprinter reports. A
+                # tunnelled connection groups under another key, and the map holds it.
+                self.connections.pop(self.grouping_keys.pop(reported, reported), None)
 
     def _propagation_factor(self, ttl, propagation_factor):
         """Return the propagation factor one distance call uses.

@@ -1,0 +1,465 @@
+"""A state table that holds a maximum entry count and a maximum age.
+
+Every stateful fingerprinter holds per-connection data across packets, and
+`CLAUDE.md` states the rule: nothing that survives across packets grows without a
+limit. #179 records six tables that hold no bound today. #39 moves them, and this
+class is the shape four of them take.
+
+The table evicts on two conditions.
+
+- The count bound removes the least recently used entry as soon as the table reaches
+  `max_connections`. A count bound that waits overshoots the count it states.
+- The age bound removes every entry that receives no read for `max_connection_age`
+  seconds. `on_packet` runs that pass, and it runs it once for every
+  `eviction_interval` packets, so the eviction cost stays proportional to the traffic.
+
+The library starts no thread. Eviction runs on packet arrival.
+
+Two of the six tables that #179 records need something else, and #39 owns the answer
+for each.
+
+- `BaseFingerprinter.fingerprints` is a list. It holds one result for each fingerprint
+  and no per-connection data, so the `## Terms` table names it no state table.
+  `ja4l.py` overwrites an entry at a stored index, and `ja4ssh.py` reads the entry at
+  index -1. A mapping keyed by connection serves neither call site.
+- `JA4DBClient._cache` reads no packet. #42 built the answer: `JA4DBClient.lookup`
+  calls `on_packet` on every lookup, so one lookup counts as one arrival and the age
+  pass runs on the lookup schedule. Its count bound holds whatever the caller does,
+  because `__setitem__` applies that bound at once. A caller that drives neither a
+  packet nor a lookup calls `evict_aged` to age an entry out.
+"""
+
+import logging
+import time
+from collections import OrderedDict
+from collections.abc import MutableMapping
+
+logger = logging.getLogger(__name__)
+
+# The maximum entry count of one state table. `features/03-concurrency-safety.md` sets
+# it as the Epic 3 target. No state table of the committed captures reaches it.
+DEFAULT_MAX_CONNECTIONS = 10000
+
+# The maximum age of one entry, in seconds. `ssh-r.pcap` holds the longest gap between
+# two segments of one connection across `tests/foxio_vectors/`, at 320.714503 seconds.
+# This age sits above that gap. The value 300 sits below it, and #179 records why that
+# number survived: no comparison ever read it.
+DEFAULT_MAX_CONNECTION_AGE = 600
+
+# The count of packets between two eviction passes. A pass reads every entry, so a pass
+# on each packet costs the entry count on each packet.
+DEFAULT_EVICTION_INTERVAL = 1000
+
+# The positions inside one stored entry. The entry is a list rather than a tuple,
+# because a read rewrites the timestamp and a tuple allocates a new object each time.
+_VALUE = 0
+_LAST_SEEN = 1
+
+
+class TableStats:
+    """The counts one state table reports.
+
+    `Processor.stats` collects one of these for every state table of every method.
+    FR-concurrency-safety-11 asks for the entry count, and FR-concurrency-safety-12
+    asks for the eviction count. The other four counts make the report readable: a
+    reader who sees 10000 entries cannot tell a table that filled once from a table
+    that evicted a million connections.
+
+    The six counts hold one invariant, `inserts == entries + evictions + removals`. A
+    reader who sees it broken read the table while another thread wrote it.
+
+    Args:
+        entries: The count of entries the table holds now.
+        max_entries: The maximum entry count of the table.
+        inserts: The count of keys the table ever added.
+        evictions: The count of entries the table itself removed, on either bound.
+        removals: The count of entries the caller removed, through `del`, `pop`,
+            `clear` or `cleanup_connection`.
+        returned_connections: The count of connections the table evicted and then saw
+            again. The fingerprint of such a connection may be incomplete, because the
+            new entry holds none of the packets that came before the eviction.
+    """
+
+    __slots__ = (
+        "entries",
+        "max_entries",
+        "inserts",
+        "evictions",
+        "removals",
+        "returned_connections",
+    )
+
+    def __init__(self, entries, max_entries, inserts, evictions, removals, returned_connections):
+        self.entries = entries
+        self.max_entries = max_entries
+        self.inserts = inserts
+        self.evictions = evictions
+        self.removals = removals
+        self.returned_connections = returned_connections
+
+    def __repr__(self):
+        return (
+            f"TableStats(entries={self.entries}, max_entries={self.max_entries}, "
+            f"inserts={self.inserts}, evictions={self.evictions}, "
+            f"removals={self.removals}, "
+            f"returned_connections={self.returned_connections})"
+        )
+
+
+class StateTable:
+    """The counters every state table keeps, and the keys the table evicted.
+
+    Two classes hold per-connection data across packets: `BoundedStateTable` and
+    `TCPStreamReassembler`. Both count the same six things, so both inherit this class.
+    `BaseFingerprinter.state_tables` finds a state table by this type, so a new state
+    table reaches `Processor.stats` as soon as it inherits this class.
+
+    A subclass raises `inserts`, `evictions` and `removals` itself, through
+    `count_insert`, `count_eviction` and `count_removals`. It builds its report with
+    `build_stats`.
+
+    A subclass that adds a key calls `take_evicted_key` first, then evicts, then stores
+    the entry, then calls `count_insert`. The order matters: an insert can evict, and
+    an eviction can drop the memory of the key that arrives.
+
+    Args:
+        max_evicted_keys: The count of evicted keys the table remembers. The memory of
+            an evicted key costs one key, so this bound matches the entry bound of the
+            table.
+    """
+
+    def __init__(self, max_evicted_keys):
+        self.inserts = 0
+        self.evictions = 0
+        self.removals = 0
+        self.returned_connections = 0
+        self.max_evicted_keys = max_evicted_keys
+
+        # The keys the table evicted and has not seen again, least recent first. A set
+        # answers the membership question, and it gives no order to drop the oldest
+        # key by. Nothing that survives across packets grows without a limit, so this
+        # memory holds the same bound the table holds.
+        self._evicted_keys = OrderedDict()
+
+    def take_evicted_key(self, key):
+        """Report whether this table evicted the key, and drop the memory of it.
+
+        A first sighting and a return look the same at the call site: both add a key
+        the table does not hold. The two differ in the memory of the evicted keys. A
+        key this table evicted returns; a key it never evicted arrives for the first
+        time. A key the caller removed returns nothing, because the caller asked for
+        that removal and no eviction lost its packets.
+
+        Call this method before the eviction that the arrival of the key drives. That
+        eviction adds a key to the memory, and it drops the oldest key of the memory,
+        which can be the key that arrives.
+
+        Args:
+            key: The key that arrives.
+
+        Returns:
+            True when this table evicted the key and has not seen it since.
+        """
+        if key not in self._evicted_keys:
+            return False
+        del self._evicted_keys[key]
+        return True
+
+    def count_insert(self, returned=False):
+        """Count one new key, and count a connection that returned after an eviction.
+
+        Args:
+            returned: The value `take_evicted_key` returned for this key.
+        """
+        self.inserts += 1
+        if returned:
+            self.returned_connections += 1
+
+    def count_eviction(self, key):
+        """Count one entry the table itself removed, and remember its key.
+
+        Args:
+            key: The key the table removed.
+        """
+        self.evictions += 1
+        self._evicted_keys[key] = None
+        # A fresh key lands at the end already. This call covers a key the memory still
+        # holds, which happens when a subclass evicts a key that no `take_evicted_key`
+        # call removed. Without it the memory would drop the newest key first.
+        self._evicted_keys.move_to_end(key)
+        while len(self._evicted_keys) > self.max_evicted_keys:
+            self._evicted_keys.popitem(last=False)
+
+    def count_removals(self, count=1):
+        """Count the entries the caller removed.
+
+        Args:
+            count: The count of entries the caller removed.
+        """
+        self.removals += count
+
+    def forget_evicted_keys(self):
+        """Drop the memory of every evicted key.
+
+        The caller runs this method when it empties the table. A key that arrives after
+        the table is emptied describes a new run, so it counts as a first sighting.
+        """
+        self._evicted_keys.clear()
+
+    def build_stats(self, entries, max_entries):
+        """Return the counts this table reports.
+
+        Args:
+            entries: The count of entries the table holds now.
+            max_entries: The maximum entry count of the table.
+
+        Returns:
+            A `TableStats`.
+        """
+        return TableStats(
+            entries=entries,
+            max_entries=max_entries,
+            inserts=self.inserts,
+            evictions=self.evictions,
+            removals=self.removals,
+            returned_connections=self.returned_connections,
+        )
+
+    def stats(self):
+        """Return the counts this table reports.
+
+        Raises:
+            NotImplementedError: The subclass states no count. Every subclass overrides
+                this method.
+        """
+        raise NotImplementedError("A state table reports its counts.")
+
+
+class BoundedStateTable(StateTable, MutableMapping):
+    """A mapping that evicts an entry on the entry count and on the entry age.
+
+    The table answers the operations a fingerprinter performs on a dictionary. #39
+    therefore replaces a dictionary with it and changes nothing else at the call site.
+
+    A read of one key counts as a read of that entry: `__getitem__`, `get` and the `in`
+    operator each hold the entry against both bounds. A pass over the whole table holds
+    no entry, because `keys`, `values`, `items` and iteration describe the table rather
+    than one connection.
+
+    Two operations of a dictionary read differently here, and neither reaches a call
+    site today.
+
+    - `dict(table)` reads each key through `__getitem__`, so it holds every entry
+      against both bounds. Call `items` for a pass that holds none.
+    - `popitem` removes the least recently used entry. A dictionary removes the entry
+      it received last.
+
+    Args:
+        max_connections: The maximum entry count. The name matches the `Processor`
+            argument that `features/03-concurrency-safety.md` publishes.
+        max_connection_age: The maximum age of one entry, in seconds.
+        eviction_interval: The count of packets between two age eviction passes.
+        on_eviction: A callable the table calls with the key of every entry it evicts,
+            on either bound. The table calls it after it removes the entry. A caller
+            that removes an entry itself receives no call, because that caller already
+            knows. The hook exists for a second table that holds the same keys, and
+            #285 is the first: `SynAckTracker` keeps its prefix table in lockstep with
+            its time table through it. A hook that writes to this table produces
+            undefined results, because the table calls it inside an eviction.
+
+    Raises:
+        ValueError: `max_connections` is below one, or `eviction_interval` is below one.
+    """
+
+    def __init__(
+        self,
+        max_connections=DEFAULT_MAX_CONNECTIONS,
+        max_connection_age=DEFAULT_MAX_CONNECTION_AGE,
+        eviction_interval=DEFAULT_EVICTION_INTERVAL,
+        on_eviction=None,
+    ):
+        if max_connections < 1:
+            raise ValueError(f"max_connections must be 1 or more, and it is {max_connections}")
+        if eviction_interval < 1:
+            raise ValueError(f"eviction_interval must be 1 or more, and it is {eviction_interval}")
+
+        # `evictions` counts the entries the table itself removed. `pop` and `del`
+        # belong to the caller, so neither raises that count. #41 reports it.
+        StateTable.__init__(self, max_evicted_keys=max_connections)
+
+        self.max_connections = max_connections
+        self.max_connection_age = max_connection_age
+        self.eviction_interval = eviction_interval
+        self.on_eviction = on_eviction
+
+        self._entries = OrderedDict()
+        self._packets = 0
+        self._now = None
+
+    def on_packet(self, timestamp=None):
+        """Announce one packet to the table, and run the age eviction pass on schedule.
+
+        A stated timestamp holds until the next packet arrives, and every operation
+        between the two reads it. A capture file replays faster than real time, so a
+        wall clock evicts state the capture still needs.
+
+        Warning: one call that states no timestamp moves the table to the wall clock
+        for that packet. A replay of a capture recorded in the past then ages out
+        whole. A caller states the timestamp on every packet of one capture, or on
+        none of them.
+
+        Args:
+            timestamp: The packet timestamp, in seconds since the epoch. A caller that
+                states None makes the table read the wall clock for each operation,
+                until a later packet states a timestamp.
+        """
+        self._now = timestamp
+        self._packets += 1
+        if self._packets % self.eviction_interval == 0:
+            self.evict_aged()
+
+    def evict_aged(self, now=None):
+        """Remove every entry that receives no read for `max_connection_age` seconds.
+
+        Args:
+            now: The current time, in seconds. A caller that states None makes the
+                table read the timestamp of the most recent packet, or the wall clock
+                when no packet carried one.
+
+        Returns:
+            The count of entries this pass removed.
+        """
+        if now is None:
+            now = self._read_clock()
+
+        # A packet timestamp and the wall clock can disagree, so the entry order does
+        # not follow the entry age. The pass therefore reads every entry.
+        removed = 0
+        for key, entry in list(self._entries.items()):
+            if now - entry[_LAST_SEEN] > self.max_connection_age:
+                self.evict_key(key)
+                removed += 1
+
+        return removed
+
+    def evict_key(self, key):
+        """Remove one entry, count it as an eviction, and call the eviction hook.
+
+        The eviction count and the removal count answer two different questions, and
+        FR-concurrency-safety-12 asks for the first. This method raises the eviction
+        count, so a table that another table drives reports the entries it lost. `pop`
+        and `del` raise the removal count instead, because the caller asked for those.
+
+        Args:
+            key: The key to remove.
+
+        Returns:
+            True when the table held the key, and False when it held no such key.
+        """
+        if key not in self._entries:
+            return False
+        del self._entries[key]
+        self.count_eviction(key)
+        if self.on_eviction is not None:
+            self.on_eviction(key)
+        return True
+
+    def _read_clock(self):
+        """Return the time the table measures an age against, in seconds.
+
+        Returns:
+            The timestamp of the most recent packet, or the wall clock reading when no
+            packet carried one. Both read seconds since the epoch, so the two compare.
+        """
+        if self._now is None:
+            return time.time()
+        return self._now
+
+    def __getitem__(self, key):
+        entry = self._entries[key]
+        entry[_LAST_SEEN] = self._read_clock()
+        self._entries.move_to_end(key)
+        return entry[_VALUE]
+
+    def __setitem__(self, key, value):
+        now = self._read_clock()
+
+        entry = self._entries.get(key)
+        if entry is not None:
+            entry[_VALUE] = value
+            entry[_LAST_SEEN] = now
+            self._entries.move_to_end(key)
+            return
+
+        # The loop rather than one removal covers a caller that lowered the bound after
+        # the table filled.
+        returned = self.take_evicted_key(key)
+
+        while len(self._entries) >= self.max_connections:
+            evicted_key = next(iter(self._entries))
+            self.evict_key(evicted_key)
+            logger.debug("state table evicts %r on its entry count", evicted_key)
+
+        self._entries[key] = [value, now]
+        self.count_insert(returned)
+
+    def __delitem__(self, key):
+        del self._entries[key]
+        self.count_removals()
+
+    def __iter__(self):
+        # A caller that reads a value inside this loop moves that entry to the end, and
+        # an OrderedDict refuses that move during its own iteration.
+        return iter(list(self._entries))
+
+    def __len__(self):
+        return len(self._entries)
+
+    def __contains__(self, key):
+        entry = self._entries.get(key)
+        if entry is None:
+            return False
+        entry[_LAST_SEEN] = self._read_clock()
+        self._entries.move_to_end(key)
+        return True
+
+    def keys(self):
+        """Return the keys, least recently read first. The pass holds no entry.
+
+        The result is a list and not a view. A caller that reads a value inside a loop
+        over a live view moves that entry. An OrderedDict refuses that move during its
+        own iteration.
+        """
+        return list(self._entries.keys())
+
+    def values(self):
+        """Return the values, least recently read first. The pass holds no entry."""
+        return [entry[_VALUE] for entry in self._entries.values()]
+
+    def items(self):
+        """Return the pairs, least recently read first. The pass holds no entry."""
+        return [(key, entry[_VALUE]) for key, entry in self._entries.items()]
+
+    def clear(self):
+        """Remove every entry. The removal belongs to the caller, so it evicts none."""
+        self.count_removals(len(self._entries))
+        self._entries.clear()
+        # A key that arrives after this call describes a new run of the table, so it
+        # counts as a first sighting and not as a connection that returned.
+        self.forget_evicted_keys()
+
+    def stats(self):
+        """Return the counts this table reports.
+
+        Returns:
+            A `TableStats`. The caller holds the lock of the fingerprinter across this
+            call, because the six counts describe one instant.
+        """
+        return self.build_stats(len(self._entries), self.max_connections)
+
+    def __repr__(self):
+        return (
+            f"BoundedStateTable(entries={len(self._entries)}, "
+            f"max_connections={self.max_connections}, "
+            f"max_connection_age={self.max_connection_age})"
+        )

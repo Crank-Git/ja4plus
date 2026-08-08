@@ -150,6 +150,31 @@ shard_key = p.get_shard_key(packet)
 p.cleanup_connection(src_ip, src_port, dst_ip, dst_port, "tcp")
 ```
 
+#### The concurrency contract
+
+Several threads may share one `Processor()`, and each fingerprinter guards its own state
+with a reentrant lock. Give each thread whole connections, which is what `get_shard_key`
+returns, and eight threads read the value set one thread reads. A caller that splits the
+packets of one connection across threads gets undefined results. The state of that
+connection then advances out of capture order. A caller that runs one processor for each
+shard constructs `Processor(thread_safe=False)` to acquire no lock. `thread_safe=False`
+is a promise the caller makes, not a mode the library checks. Feed one processor the
+packets of one timeline. Every state table evicts an entry that receives no packet for
+its maximum age. Two packet sources whose clocks sit far apart therefore age out state
+that the later source still needs.
+
+#### The memory bound
+
+Every state table holds a maximum entry count and a maximum age. A monitor that runs for
+a day therefore stops growing rather than running out of memory.
+[`docs/specs/features/03-concurrency-safety.md`](docs/specs/features/03-concurrency-safety.md)
+states both numbers for each table. A table that reaches its maximum entry count evicts
+the least recently used entry. A connection can therefore leave a long capture and
+return, and the fingerprint of a returned connection may be incomplete.
+`Processor.stats()` reports the count of returned connections for each method. Eviction
+runs on packet arrival and the library starts no thread. This package states no memory
+ceiling.
+
 JA4 and JA4S result dicts include the unhashed `raw` and
 `raw_original_order` variants — useful for human-readable output and
 fingerprint debugging.
