@@ -9,16 +9,19 @@ import csv
 import io
 import json
 import os
+import re
 import unittest
 from contextlib import ExitStack
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-from ja4plus.output import CSV_COLUMNS, CsvWriter, JsonLinesWriter, TableWriter
+from ja4plus.output import CSV_COLUMNS, SCHEMA_VERSION, CsvWriter, JsonLinesWriter, TableWriter
 from ja4plus.types import FingerprintResult
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 HTTP_CAP = os.path.join(DATA_DIR, "http.cap")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCHEMA_DOC = os.path.join(REPO_ROOT, "docs", "output-schema.md")
 
 # `docs/specs/features/05-structured-output.md` states this order, and the mockup
 # `docs/specs/mockups/01-cli-output.html` repeats it. The test holds its own copy, so a
@@ -40,6 +43,94 @@ DOCUMENTED_COLUMNS = [
 # The JSON object carries one field for each CSV column. FR-structured-output-5 asks for
 # a value that is present and null rather than absent.
 DOCUMENTED_FIELDS = set(DOCUMENTED_COLUMNS)
+
+# The frozen record of what each schema version published. #50 owns it. A released
+# version never loses an entry here, because the entry is the evidence a downstream
+# parser relies on. Add a key when the version rises, and change no key that exists.
+SCHEMA_HISTORY = {
+    1: [
+        "schema_version",
+        "timestamp",
+        "type",
+        "fingerprint",
+        "raw",
+        "raw_original_order",
+        "src_ip",
+        "src_port",
+        "dst_ip",
+        "dst_port",
+        "identified_as",
+    ],
+}
+
+
+def released_columns(version):
+    """Return the frozen column list of the schema version.
+
+    Args:
+        version: The schema version the module writes.
+
+    Returns:
+        The column list `SCHEMA_HISTORY` records for that version.
+
+    Raises:
+        KeyError: `SCHEMA_HISTORY` records no list for that version.
+            `test_the_history_records_the_version_the_module_writes` names the cause.
+    """
+    return SCHEMA_HISTORY[version]
+
+
+def schema_document():
+    """Return the text of `docs/output-schema.md`.
+
+    Returns:
+        The whole file as one string.
+
+    Raises:
+        AssertionError: The file does not exist. FR-structured-output-13 requires it.
+    """
+    assert os.path.exists(SCHEMA_DOC), f"{SCHEMA_DOC} does not exist"
+    with open(SCHEMA_DOC, encoding="utf-8") as handle:
+        return handle.read()
+
+
+def document_table(heading):
+    """Return the rows of the first Markdown table below the heading.
+
+    The document is the contract a downstream parser reads, so a test reads it back
+    rather than trusting a constant that the same commit could change.
+
+    Args:
+        heading: The exact heading line, for example `## Fields`.
+
+    Returns:
+        A list of rows. Each row is a list of the stripped cell values, and the header
+        row and the rule row of the table are removed.
+
+    Raises:
+        AssertionError: The document holds no such heading, or no table below it.
+    """
+    text = schema_document()
+    # The match is one whole line, so a longer heading that starts with the same words
+    # selects no table. A substring match would read the wrong section.
+    anchor = f"\n{heading}\n"
+    assert text.count(anchor) == 1, f"the document holds no one heading line {heading!r}"
+    body = text.split(anchor, 1)[1]
+    rows = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("|"):
+            rows.append([cell.strip() for cell in stripped.strip("|").split("|")])
+        elif rows:
+            break
+    assert len(rows) > 2, f"the section {heading!r} holds no table"
+    # Row 0 names the columns and row 1 is the rule of dashes.
+    return rows[2:]
+
+
+def documented_columns():
+    """Return the field names the document lists, in the order it lists them."""
+    return [row[1].strip("`") for row in document_table("## Fields")]
 
 
 class StubLookupClient:
@@ -120,7 +211,7 @@ class TheCsvHeader(unittest.TestCase):
             "--lookup",
             "analyze",
             HTTP_CAP,
-            lookup_client=StubLookupClient({"8760_2-1-1-4_1460_0": "Test Application"}),
+            lookup_client=StubLookupClient({"8760_2-1-1-4_1460_00": "Test Application"}),
         )
         self.assertEqual(plain_code, 0)
         self.assertEqual(lookup_code, 0)
@@ -134,7 +225,7 @@ class TheCsvHeader(unittest.TestCase):
             "--lookup",
             "analyze",
             HTTP_CAP,
-            lookup_client=StubLookupClient({"8760_2-1-1-4_1460_0": "Test Application"}),
+            lookup_client=StubLookupClient({"8760_2-1-1-4_1460_00": "Test Application"}),
         )
         self.assertEqual(code, 0)
         rows = csv_rows(looked_up)
@@ -163,13 +254,13 @@ class TheCsvRows(unittest.TestCase):
         self.assertEqual(row["dst_ip"], "65.208.228.223")
         self.assertEqual(row["dst_port"], "80")
         self.assertEqual(row["type"], "ja4t")
-        self.assertEqual(row["fingerprint"], "8760_2-1-1-4_1460_0")
+        self.assertEqual(row["fingerprint"], "8760_2-1-1-4_1460_00")
 
     def test_a_column_with_no_value_is_empty_rather_than_absent(self):
         stream = io.StringIO()
         writer = CsvWriter(stream)
         writer.write_header()
-        writer.write(FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_0"))
+        writer.write(FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00"))
         rows = csv_rows(stream.getvalue())
         row = dict(zip(rows[0], rows[1]))
         self.assertEqual(row["raw"], "")
@@ -236,7 +327,7 @@ class TheJsonLinesObject(unittest.TestCase):
     def test_a_field_with_no_value_is_null_rather_than_absent(self):
         stream = io.StringIO()
         JsonLinesWriter(stream).write(
-            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_0")
+            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00")
         )
         record = json.loads(stream.getvalue())
         self.assertEqual(set(record), DOCUMENTED_FIELDS)
@@ -248,7 +339,7 @@ class TheJsonLinesObject(unittest.TestCase):
     def test_the_json_object_holds_the_identified_name_that_the_lookup_returned(self):
         stream = io.StringIO()
         JsonLinesWriter(stream).write(
-            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_0"),
+            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00"),
             identified_as="Test Application",
         )
         self.assertEqual(json.loads(stream.getvalue())["identified_as"], "Test Application")
@@ -260,7 +351,7 @@ class TheTimestamp(unittest.TestCase):
         JsonLinesWriter(stream).write(
             FingerprintResult(
                 type="ja4t",
-                fingerprint="8760_2-1-1-4_1460_0",
+                fingerprint="8760_2-1-1-4_1460_00",
                 timestamp=datetime(2026, 8, 6, 12, 34, 56, 789012, tzinfo=timezone.utc),
             )
         )
@@ -337,7 +428,7 @@ class TheTableFormat(unittest.TestCase):
         writer.write(
             FingerprintResult(
                 type="ja4t",
-                fingerprint="8760_2-1-1-4_1460_0",
+                fingerprint="8760_2-1-1-4_1460_00",
                 src_ip="145.254.160.237",
                 src_port=3372,
                 dst_ip="65.208.228.223",
@@ -347,7 +438,197 @@ class TheTableFormat(unittest.TestCase):
         lines = stream.getvalue().splitlines()
         self.assertIn("Source", lines[0])
         self.assertIn("145.254.160.237:3372 -> 65.208.228.223:80", lines[2])
-        self.assertIn("8760_2-1-1-4_1460_0", lines[2])
+        self.assertIn("8760_2-1-1-4_1460_00", lines[2])
+
+
+class TheSchemaVersion(unittest.TestCase):
+    """#50 owns the rule that raises the schema version."""
+
+    def test_the_module_writes_the_schema_version_the_specification_states(self):
+        self.assertEqual(SCHEMA_VERSION, 1)
+
+    def test_every_json_object_holds_the_schema_version(self):
+        out, err, code = run_cli("--format", "json", "analyze", HTTP_CAP)
+        self.assertEqual(code, 0, f"the command exited with {code}. stderr: {err}")
+        records = json_records(out)
+        self.assertGreater(len(records), 0)
+        for record in records:
+            self.assertEqual(record["schema_version"], SCHEMA_VERSION)
+
+    def test_every_csv_row_holds_the_schema_version(self):
+        out, err, code = run_cli("--format", "csv", "analyze", HTTP_CAP)
+        self.assertEqual(code, 0, f"the command exited with {code}. stderr: {err}")
+        rows = csv_rows(out)
+        self.assertGreater(len(rows), 1, "the capture produces no data row")
+        column = rows[0].index("schema_version")
+        for row in rows[1:]:
+            self.assertEqual(row[column], str(SCHEMA_VERSION))
+
+    def test_the_table_format_writes_no_schema_version(self):
+        """FR-structured-output-7 gives the table format no stability promise."""
+        stream = io.StringIO()
+        writer = TableWriter(stream)
+        writer.write_header()
+        writer.write(FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00"))
+        self.assertNotIn("schema_version", stream.getvalue())
+
+
+class TheSchemaVersionRule(unittest.TestCase):
+    """The rule of `docs/output-schema.md`, held so that a change of the schema fails.
+
+    A new column appends to the end and raises no version. A removal, a rename or an
+    insertion moves a released column, and it raises the version.
+    """
+
+    def test_a_released_column_keeps_its_position_until_the_version_rises(self):
+        released = released_columns(SCHEMA_VERSION)
+        current = list(CSV_COLUMNS)
+        self.assertEqual(
+            current[: len(released)],
+            released,
+            "a released column moved, changed name or went away. Append a new column to "
+            "the end of CSV_COLUMNS, or raise SCHEMA_VERSION and record the new version "
+            "in SCHEMA_HISTORY.",
+        )
+
+    def test_a_released_field_stays_in_the_json_object_until_the_version_rises(self):
+        stream = io.StringIO()
+        JsonLinesWriter(stream).write(
+            FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00")
+        )
+        present = set(json.loads(stream.getvalue()))
+        released = set(released_columns(SCHEMA_VERSION))
+        self.assertEqual(
+            released - present,
+            set(),
+            "the JSON object lost a released field. Raise SCHEMA_VERSION and record the "
+            "new version in SCHEMA_HISTORY.",
+        )
+
+    def test_every_json_field_carries_the_value_of_the_field_it_names(self):
+        """A swap of two values changes the meaning of both fields and moves no name.
+
+        The name checks above read the keys alone, so a writer that put `raw` under
+        `raw_original_order` would pass them. This case reads the values.
+        """
+        result = FingerprintResult(
+            type="ja4",
+            fingerprint="t13d1516h2_8daaf6152771_02713d6af862",
+            raw="the raw value",
+            raw_original_order="the original order value",
+            src_ip="145.254.160.237",
+            src_port=3372,
+            dst_ip="65.208.228.223",
+            dst_port=80,
+            timestamp=datetime(2026, 8, 6, 12, 34, 56, 789012, tzinfo=timezone.utc),
+        )
+        stream = io.StringIO()
+        JsonLinesWriter(stream).write(result, identified_as="Test Application")
+        record = json.loads(stream.getvalue())
+        self.assertEqual(record["schema_version"], SCHEMA_VERSION)
+        self.assertEqual(record["timestamp"], "2026-08-06T12:34:56.789012Z")
+        self.assertEqual(record["type"], result.type)
+        self.assertEqual(record["fingerprint"], result.fingerprint)
+        self.assertEqual(record["raw"], result.raw)
+        self.assertEqual(record["raw_original_order"], result.raw_original_order)
+        self.assertEqual(record["src_ip"], result.src_ip)
+        self.assertEqual(record["src_port"], result.src_port)
+        self.assertEqual(record["dst_ip"], result.dst_ip)
+        self.assertEqual(record["dst_port"], result.dst_port)
+        self.assertEqual(record["identified_as"], "Test Application")
+
+    def test_every_csv_column_carries_the_value_of_the_column_it_names(self):
+        """The CSV counterpart of the case above. A swap of two values fails here."""
+        result = FingerprintResult(
+            type="ja4",
+            fingerprint="t13d1516h2_8daaf6152771_02713d6af862",
+            raw="the raw value",
+            raw_original_order="the original order value",
+            src_ip="145.254.160.237",
+            src_port=3372,
+            dst_ip="65.208.228.223",
+            dst_port=80,
+            timestamp=datetime(2026, 8, 6, 12, 34, 56, 789012, tzinfo=timezone.utc),
+        )
+        stream = io.StringIO()
+        writer = CsvWriter(stream)
+        writer.write_header()
+        writer.write(result, identified_as="Test Application")
+        rows = csv_rows(stream.getvalue())
+        row = dict(zip(rows[0], rows[1]))
+        self.assertEqual(row["schema_version"], str(SCHEMA_VERSION))
+        self.assertEqual(row["timestamp"], "2026-08-06T12:34:56.789012Z")
+        self.assertEqual(row["type"], result.type)
+        self.assertEqual(row["fingerprint"], result.fingerprint)
+        self.assertEqual(row["raw"], result.raw)
+        self.assertEqual(row["raw_original_order"], result.raw_original_order)
+        self.assertEqual(row["src_ip"], result.src_ip)
+        self.assertEqual(row["src_port"], str(result.src_port))
+        self.assertEqual(row["dst_ip"], result.dst_ip)
+        self.assertEqual(row["dst_port"], str(result.dst_port))
+        self.assertEqual(row["identified_as"], "Test Application")
+
+    def test_the_history_records_the_version_the_module_writes(self):
+        self.assertIn(
+            SCHEMA_VERSION,
+            SCHEMA_HISTORY,
+            "SCHEMA_VERSION rose and SCHEMA_HISTORY records no column list for it",
+        )
+
+    def test_the_history_holds_no_version_above_the_version_the_module_writes(self):
+        self.assertEqual(max(SCHEMA_HISTORY), SCHEMA_VERSION)
+
+
+class TheSchemaDocument(unittest.TestCase):
+    """FR-structured-output-13 asks the documentation to record the schema."""
+
+    def test_the_repository_holds_the_schema_document(self):
+        self.assertTrue(os.path.exists(SCHEMA_DOC), f"{SCHEMA_DOC} does not exist")
+
+    def test_the_document_lists_every_column_in_the_written_order(self):
+        self.assertEqual(documented_columns(), list(CSV_COLUMNS))
+
+    def test_the_csv_header_matches_the_documented_column_list(self):
+        """The acceptance criterion of #50, read from the document rather than a constant."""
+        out, err, code = run_cli("--format", "csv", "analyze", HTTP_CAP)
+        self.assertEqual(code, 0, f"the command exited with {code}. stderr: {err}")
+        self.assertEqual(csv_rows(out)[0], documented_columns())
+
+    def test_the_json_object_holds_exactly_the_documented_fields(self):
+        out, _, code = run_cli("--format", "json", "analyze", HTTP_CAP)
+        self.assertEqual(code, 0)
+        records = json_records(out)
+        self.assertGreater(len(records), 0)
+        for record in records:
+            self.assertEqual(list(record), documented_columns())
+
+    def test_the_document_describes_every_field(self):
+        for row in document_table("## Fields"):
+            field = row[1]
+            for cell in row:
+                self.assertNotEqual(cell, "", f"the row for {field} holds an empty cell")
+
+    def test_the_document_states_the_schema_version_the_module_writes(self):
+        match = re.search(r"The current schema version is (\d+)\.", schema_document())
+        self.assertIsNotNone(match, "the document states no current schema version")
+        self.assertEqual(int(match.group(1)), SCHEMA_VERSION)
+
+    def test_the_document_states_which_format_carries_a_stability_promise(self):
+        promises = {row[0].strip("`"): row[1] for row in document_table("## Stability")}
+        self.assertEqual(set(promises), {"json", "csv", "table"})
+        self.assertEqual(promises["json"], "Yes")
+        self.assertEqual(promises["csv"], "Yes")
+        self.assertEqual(promises["table"], "No")
+
+    def test_the_document_states_the_rule_that_raises_the_version(self):
+        text = schema_document()
+        for sentence in (
+            "The schema version rises when a field goes away or its meaning changes.",
+            "A new field raises no version.",
+            "A new CSV column appends to the end of the row.",
+            "A JSON object omits no field, and a field with no value is `null`.",
+        ):
+            self.assertIn(sentence, text, f"the document does not state: {sentence}")
 
 
 if __name__ == "__main__":
