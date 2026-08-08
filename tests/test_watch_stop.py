@@ -504,8 +504,10 @@ class TheCaptureFilterReachesTheSocket(unittest.TestCase):
             names.append(name)
             return Interface()
 
+        # `conf.iface` is a descriptor of the `Conf` class, and a write to the instance
+        # resolves the name it receives. The class attribute holds a plain name.
         with patch("scapy.interfaces.resolve_iface", resolve):
-            with patch.object(conf, "iface", "en9"):
+            with patch.object(type(conf), "iface", "en9"):
                 open_capture_socket("any")
         self.assertEqual(names, ["en9"])
 

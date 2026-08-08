@@ -48,6 +48,7 @@ __all__ = [
     "CAPTURE_FAILURES",
     "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_MAX_CONNECTIONS",
+    "DEFAULT_POLL_INTERVAL",
     "STATISTICS_THREAD_NAME",
     "Monitor",
     "MonitorStats",
@@ -58,6 +59,7 @@ __all__ = [
     "connection_key",
     "describe_capture_failure",
     "format_statistics",
+    "open_capture_socket",
     "read_interface",
     "report_statistics",
     "stop_on_signal",
@@ -78,6 +80,12 @@ DEFAULT_MAX_CONNECTIONS = 10000
 # state tables the ten methods hold, so the monitor sheds an idle connection before
 # those tables do.
 DEFAULT_CONNECTION_TIMEOUT = 300.0
+
+# The count of seconds one `sniff` call reads before it returns to the monitor loop. The
+# loop reads the stop request there, so an operator waits at most this long after the
+# signal. #320 states a bound of one second, and this value holds a margin below it.
+# A smaller value costs one control pipe and one `select` call for each interval.
+DEFAULT_POLL_INTERVAL = 0.25
 
 # The two scapy layer classes that carry a port. `innermost_layer` reads the deepest
 # one, because a tunnel carries a second port layer inside the first one.
@@ -507,12 +515,12 @@ class StopRequest:
     filter to each packet after it reports the packet, so the loop finishes the packet it
     holds and the command flushes the output after the loop returns.
 
+    `scapy` applies the filter on packet arrival alone, so an interface that carries no
+    traffic reaches that filter never. `read_interface` therefore reads `requested`
+    after each poll interval, and #320 shipped that loop.
+
     Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
     (scapy 2.6 and later, retrieved 2026-08-08).
-
-    Warning: `scapy` applies the filter on packet arrival alone. An interface that carries
-    no traffic therefore holds the loop until the next packet arrives. #320 records that
-    gap.
     """
 
     def __init__(self) -> None:
@@ -725,33 +733,94 @@ def describe_capture_failure(
     return f"Error during capture on the interface {interface!r}: {error}"
 
 
+def open_capture_socket(interface: str, capture_filter: Optional[str] = None) -> Any:
+    """Return an open capture socket for one interface.
+
+    The call resolves the interface and opens the listening socket of that interface, in
+    the order `AsyncSniffer._run` holds. `libpcap` compiles the capture filter here,
+    because the socket attaches the filter as it opens.
+
+    The name `any` reads the default interface of the capture layer. `AsyncSniffer._run`
+    reads `iface or conf.iface`, so a `sniff` call that stated no interface read the same
+    one.
+
+    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1140` and
+    `scapy/arch/bpf/supersocket.py:213`, read on 2026-08-08.
+
+    Args:
+        interface: The interface name. The name `any` reads the default interface of the
+            capture layer.
+        capture_filter: The Berkeley Packet Filter expression the socket attaches, or
+            None to read every packet.
+
+    Returns:
+        The open capture socket. The caller closes it.
+
+    Raises:
+        Scapy_Exception: The host refuses the `/dev/bpf` device, or `libpcap` refuses
+            the capture filter.
+        OSError: The host refuses the capture socket.
+        ValueError: The host holds no interface of that name.
+    """
+    from scapy.config import conf
+    from scapy.data import ETH_P_ALL
+    from scapy.interfaces import resolve_iface
+
+    name = interface if interface != "any" else conf.iface
+    socket_class = resolve_iface(name).l2listen()
+    return socket_class(type=ETH_P_ALL, iface=name, filter=capture_filter)
+
+
 def read_interface(
     interface: str,
     handle_packet: Callable[[Packet], None],
     stop_filter: Optional[Callable[[Packet], bool]] = None,
     capture_filter: Optional[str] = None,
+    stop_requested: Optional[Callable[[], bool]] = None,
+    poll_interval: float = DEFAULT_POLL_INTERVAL,
+    open_socket: Callable[[str, Optional[str]], Any] = open_capture_socket,
 ) -> None:
     """Read packets from one interface, and call the handler with each one.
 
-    The call returns when the capture stops. `store=0` is required: without it `scapy`
-    keeps every packet it read, and the monitor then grows whatever the connection table
-    bounds.
+    The call opens the capture socket and then calls `sniff` with that socket and a
+    short timeout, in a loop. The socket stays open across the calls, because
+    `AsyncSniffer._run` closes the sockets it opened itself and no other socket. A loop
+    that reopened the socket would lose every packet the host buffered between two
+    calls.
+
+    The loop reads the stop request after each timeout, so an operator waits at most one
+    poll interval after the signal. #54 shipped `stop_filter` alone, and `scapy` applies
+    that filter to a packet and to nothing else: an interface that carries no traffic
+    therefore held the monitor until the next packet arrived. #320 records that gap.
+
+    `store=0` is required: without it `scapy` keeps every packet it read, and the monitor
+    then grows whatever the connection table bounds.
+
+    The call passes no `filter` to `sniff`. `AsyncSniffer._run` reads that argument only
+    where it opens the socket itself, so a filter stated there would reach no socket.
 
     The call raises what the capture layer raises. `describe_capture_failure` reads that
-    failure, so this call classifies nothing and a change to the way it opens the socket
-    leaves the classification where it is. #320 owns that change.
+    failure, so this call classifies nothing.
 
-    Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
-    (scapy 2.6 and later, retrieved 2026-08-08).
+    Verified against `scapy` 2.7.0, at `scapy/sendrecv.py:1140`, `scapy/sendrecv.py:1205`
+    and `scapy/sendrecv.py:1263`, read on 2026-08-08.
 
     Args:
-        interface: The interface name. The name `any` reads every interface.
+        interface: The interface name. The name `any` reads the default interface of the
+            capture layer.
         handle_packet: The callable that reads one packet.
         stop_filter: The callable that ends the capture when it returns True for a
-            packet, or None to read until the process ends. `StopRequest.stop_after` is
-            the callable the command passes.
+            packet, or None to read until the stop request arrives.
+            `StopRequest.stop_after` is the callable the command passes.
         capture_filter: The Berkeley Packet Filter expression the capture applies, or
             None to read every packet. FR-live-capture-11 asks for it.
+        stop_requested: The callable that reports True after a termination signal
+            arrived, or None to read until the process ends. `StopRequest.requested` is
+            the callable the command passes.
+        poll_interval: The count of seconds one `sniff` call reads before it returns to
+            the loop.
+        open_socket: The callable that opens the capture socket. A caller states one to
+            read a socket it supplies, and a test states one to open no interface.
 
     Raises:
         Scapy_Exception: The host refuses the `/dev/bpf` device, or `libpcap` refuses
@@ -761,10 +830,41 @@ def read_interface(
     """
     from scapy.all import sniff
 
-    sniff(
-        prn=handle_packet,
-        iface=interface if interface != "any" else None,
-        store=0,
-        stop_filter=stop_filter,
-        filter=capture_filter,
-    )
+    stopped = False
+
+    def stop_after(packet: Packet) -> bool:
+        """Return True when the stop filter ends the capture at this packet.
+
+        The loop reads the answer too, because `sniff` reports the reason it returned to
+        no caller.
+
+        Args:
+            packet: The packet the capture just reported.
+
+        Returns:
+            True when the capture stops after this packet, and False before it.
+        """
+        nonlocal stopped
+        if stop_filter is not None and stop_filter(packet):
+            stopped = True
+        return stopped
+
+    capture_socket = open_socket(interface, capture_filter)
+    try:
+        while not stopped:
+            sniff(
+                prn=handle_packet,
+                store=0,
+                opened_socket=capture_socket,
+                timeout=poll_interval,
+                stop_filter=stop_after,
+            )
+            if stop_requested is not None and stop_requested():
+                return
+            # `AsyncSniffer._run` closes a socket whose read raised and it drops that
+            # socket from its list. A loop that called `sniff` again would wait on a
+            # closed socket for as long as the monitor runs.
+            if capture_socket.closed:
+                return
+    finally:
+        capture_socket.close()

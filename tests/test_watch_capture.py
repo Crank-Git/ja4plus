@@ -62,7 +62,9 @@ def run_watch(*argv, source=None, failure=None, calls=None, platform=None, euid=
     """
     from ja4plus.cli import main
 
-    def read_interface_stub(interface, handle_packet, stop_filter=None, capture_filter=None):
+    def read_interface_stub(
+        interface, handle_packet, stop_filter=None, capture_filter=None, stop_requested=None
+    ):
         if calls is not None:
             calls.append(
                 {
@@ -76,6 +78,9 @@ def run_watch(*argv, source=None, failure=None, calls=None, platform=None, euid=
         for packet in source or []:
             handle_packet(packet)
             if stop_filter is not None and stop_filter(packet):
+                break
+            # #320 added the loop that reads the stop request after each poll interval.
+            if stop_requested is not None and stop_requested():
                 break
 
     captured_out = io.StringIO()
@@ -405,18 +410,27 @@ class TheCaptureFilterReachesTheCaptureLayer(unittest.TestCase):
         self.assertEqual(status, 0, err)
         self.assertEqual([call["capture_filter"] for call in calls], [None])
 
-    def test_the_capture_call_passes_the_filter_to_sniff(self):
-        """`read_interface` calls `sniff(filter=...)`, and it opens no interface here."""
-        seen = {}
+    def test_the_capture_call_passes_the_filter_to_the_socket_it_opens(self):
+        """`read_interface` opens the socket with the filter, and it opens no interface.
 
-        def sniff(**kwargs):
-            seen.update(kwargs)
+        #320 moved the socket out of `sniff`, so `libpcap` compiles the expression when
+        the socket opens. `AsyncSniffer._run` reads the `filter` argument only where it
+        opens the socket itself, so an expression stated there would reach no socket.
+        """
+        seen = []
 
-        with patch("scapy.all.sniff", sniff):
-            read_interface("eth0", lambda packet: None, capture_filter="tcp port 443")
-        self.assertEqual(seen["filter"], "tcp port 443")
-        self.assertEqual(seen["store"], 0)
-        self.assertEqual(seen["iface"], "eth0")
+        def open_socket(interface, capture_filter):
+            seen.append((interface, capture_filter))
+            raise Scapy_Exception("the case reads the open and opens no interface")
+
+        with self.assertRaises(Scapy_Exception):
+            read_interface(
+                "eth0",
+                lambda packet: None,
+                capture_filter="tcp port 443",
+                open_socket=open_socket,
+            )
+        self.assertEqual(seen, [("eth0", "tcp port 443")])
 
 
 class TheCaptureFailuresNameTheClassesTheCaptureLayerRaises(unittest.TestCase):
