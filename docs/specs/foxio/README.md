@@ -53,11 +53,21 @@ shasum -a 256 technical_details/*
    different files.** Their byte counts differ by 43 and their hashes differ. This note
    exists so that the next reader does not measure it again.
 
-## The open question this page does not answer
+## The open question this page held
 
 `JA4L.png` presumably carries the JA4LS form, and `JA4T.png` presumably carries the JA4TS
-form. Nobody has confirmed either presumption. #196 and #200 answer it. Until one of them
-lands, treat both as unconfirmed.
+form.
+
+**#196 confirmed the JA4T half.** `JA4T.png` titles itself `JA4T/S: TCP Fingerprint`, so it
+specifies JA4TS as well as JA4T. `docs/specs/foxio/JA4T.md` holds the transcription.
+
+`JA4L.png` stays unconfirmed. #200 answers it.
+
+## The transcriptions
+
+| Method | Page | State |
+|---|---|---|
+| JA4T and JA4TS | `docs/specs/foxio/JA4T.md` | Complete. #196 |
 
 ## How to read one image
 
