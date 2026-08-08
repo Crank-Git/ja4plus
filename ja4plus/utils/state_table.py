@@ -183,6 +183,9 @@ class StateTable:
         """
         self.evictions += 1
         self._evicted_keys[key] = None
+        # A fresh key lands at the end already. This call covers a key the memory still
+        # holds, which happens when a subclass evicts a key that no `take_evicted_key`
+        # call removed. Without it the memory would drop the newest key first.
         self._evicted_keys.move_to_end(key)
         while len(self._evicted_keys) > self.max_evicted_keys:
             self._evicted_keys.popitem(last=False)

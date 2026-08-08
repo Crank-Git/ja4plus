@@ -261,6 +261,11 @@ states that the bounds of the table are too small for the traffic. A connection 
 caller removed with `cleanup_connection` counts as a first sighting when it returns,
 because the caller asked for that removal.
 
+A table remembers the keys it evicted, so that it can recognise a return. The memory
+holds the entry bound of its own table. The fifteen tables of one processor hold 46400
+remembered keys between them, at 187 bytes for one key, so the memory costs 8.3 MiB
+when every table is full and every entry of every table has been replaced.
+
 Ten methods hold fifteen state tables between them. `JA4TFingerprinter`,
 `JA4DFingerprinter` and `JA4D6Fingerprinter` hold none, and each reports an empty
 `tables` dict.

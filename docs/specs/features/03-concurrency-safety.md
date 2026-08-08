@@ -216,7 +216,9 @@ it grows without a limit, and Goal 3 covers it.
 - A returned connection is a connection the table evicted and then saw again. The table
   remembers the keys it evicted, and it bounds that memory at its own entry count. A
   key the caller removed leaves no memory, so a connection that returns after
-  `cleanup_connection` counts as a first sighting.
+  `cleanup_connection` counts as a first sighting. The fifteen tables hold 46400
+  remembered keys between them, at 187 bytes for one key, so the memory costs 8.3 MiB
+  at its worst.
 - `Processor.stats` holds the lock of one fingerprinter across the read of that
   fingerprinter, because the counts of one method describe one instant. It acquires one
   lock at a time and holds two never.

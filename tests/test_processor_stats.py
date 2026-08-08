@@ -213,6 +213,24 @@ class TestTheEvictionCount:
         assert stats.removals == 1
         assert snapshot_holds(stats)
 
+    def test_the_dictionary_operations_the_table_inherits_count_their_removals(self):
+        # `BoundedStateTable` inherits `pop`, `popitem`, `setdefault` and `update` from
+        # `MutableMapping`, and each reaches `__setitem__` or `__delitem__`. A count
+        # that sits in one of those four instead would miss these call sites.
+        # `SynAckTracker.drop` calls `pop`, at `ja4plus/fingerprinters/ja4ts.py:74`.
+        table = BoundedStateTable(max_connections=4)
+        table.update({"a": 1, "b": 2})
+        table.setdefault("c", 3)
+        table.setdefault("c", 4)
+        table.pop("a")
+        table.pop("absent", None)
+        table.popitem()
+        stats = table.stats()
+        assert stats.inserts == 3
+        assert stats.removals == 2
+        assert stats.evictions == 0
+        assert snapshot_holds(stats)
+
     def test_clear_removes_every_entry_and_evicts_none(self):
         table = BoundedStateTable()
         table["a"] = 1
