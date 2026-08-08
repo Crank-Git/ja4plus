@@ -336,14 +336,16 @@ METHOD_FILTER_KEYS = (
 # The one entry of the six that compares two measured counts.
 DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
 
-# The two entries that await the #215 decision on the JA4T form.
+# The three entries that await the #215 decision on the JA4T form. #242 added the
+# `gre-erspan-vxlan.pcap` entry, which is the one local case that reaches D1.
 TCP_OPTION_KEYS = (
     "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1",
+    "gre-erspan-vxlan.pcap/0:65174/JA4T.1",
     "ssh2.pcapng/JA4T",
 )
 
-# Every entry that stays open. #34 owns the six JA4L entries, and #215 owns the two JA4T
-# entries.
+# Every entry that stays open. #34 owns the six JA4L entries, and #215 owns the three
+# JA4T entries.
 OPEN_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,) + TCP_OPTION_KEYS
 
 
@@ -360,10 +362,10 @@ class TestTheOpenRegisterEntries:
             key: deviation for key, deviation in load_register().items() if not deviation.decided
         }
 
-    def test_the_register_holds_eight_undecided_entries(self):
-        assert len(self._undecided()) == 8
+    def test_the_register_holds_nine_undecided_entries(self):
+        assert len(self._undecided()) == 9
 
-    def test_the_undecided_keys_are_the_eight_no_round_settled(self):
+    def test_the_undecided_keys_are_the_nine_no_round_settled(self):
         assert sorted(self._undecided()) == sorted(OPEN_KEYS)
 
     def test_every_undecided_entry_names_the_issue_that_decides_it(self):
