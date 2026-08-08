@@ -555,6 +555,22 @@ page reads them.
 - `generate_ja4ssh`, at `ja4ssh.py:571`. It builds a fingerprinter with a window of one
   packet, which R7 contradicts. No vector reads it.
 
+## What the deleted text specification adds
+
+**#221 read the deleted `technical_details/JA4SSH.md` again, and it changes no rule of this
+page.** `docs/specs/foxio/deleted-text-specifications.md` holds that reading, with the
+provenance of all seven deleted files.
+
+**Every statement of the deleted file corroborates this page, and none contradicts it.**
+Its three worked values equal the three the image gives, and its top example equals the
+image's example.
+
+**R11 gains its corroboration, and it gains it as a negative result.** #221 read the file
+for a statement about the window boundary, and the file names no FIN packet, no connection
+that closes, no end of a capture and no trailing window. **A source that states nothing is
+not a source that states a rule**, so R11 stays uncertain and the vector fallback stays.
+**#214 is still the user's decision.**
+
 ## What this page does not do
 
 - It adds no vector, and it moves no fingerprint.
