@@ -163,6 +163,26 @@ class TestPartEBounds(unittest.TestCase):
             fingerprinter.process_packet(syn_ack(1000.0, dport=10000 + port))
         self.assertLessEqual(len(fingerprinter.syn_ack_times.times), 1000)
 
+    def test_a_capture_with_decreasing_timestamps_bounds_the_connection_table(self):
+        """The two bounds are independent, and every packet is hostile input.
+
+        The timeout reads the capture timestamp of the packet, so a capture whose
+        timestamps decrease never ages an entry out. The entry count still bounds the
+        table.
+        """
+        fingerprinter = JA4TSFingerprinter()
+        for step in range(5000):
+            fingerprinter.process_packet(syn_ack(1e9 - step, dport=10000 + step % 50000))
+        self.assertLessEqual(len(fingerprinter.syn_ack_times.times), 1000)
+
+    def test_one_connection_stores_eleven_timestamps_at_most(self):
+        """Ten delays need eleven timestamps, and a flood adds no more."""
+        fingerprinter = JA4TSFingerprinter()
+        for step in range(5000):
+            fingerprinter.process_packet(syn_ack(1000.0 + step, dport=40000))
+        stored = sum(len(v) for v in fingerprinter.syn_ack_times.times.values())
+        self.assertEqual(stored, 11)
+
 
 class TestPartEStateRelease(unittest.TestCase):
     """The delay state answers `reset` and `cleanup_connection`."""
