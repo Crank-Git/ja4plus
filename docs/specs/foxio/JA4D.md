@@ -395,26 +395,26 @@ every line number below is re-measured against the code #231 landed.
 
 | Field | Rule | `ja4d.py` | Reading |
 |---|---|---|---|
-| Part count and separator | R1 | `ja4d.py:215` | Agrees. The format string is `f"{section_a}_{section_b}_{section_c}"`. |
-| Part a layout | R2 | `ja4d.py:207` | Agrees. `f"{msg_type_str}{max_msg_size:04d}{request_ip_flag}{fqdn_flag}"` joins four subfields with nothing. |
+| Part count and separator | R1 | `ja4d.py:223` | Agrees. The format string is `f"{section_a}_{section_b}_{section_c}"`. |
+| Part a layout | R2 | `ja4d.py:215` | Agrees. `f"{msg_type_str}{max_msg_size:04d}{request_ip_flag}{fqdn_flag}"` joins four subfields with nothing. |
 | Message type table | R3 | `ja4d.py:21-40` | Agrees. The same eighteen names against the same eighteen codes. |
-| Unknown message type | R4 | `ja4d.py:204` | Agrees. `f"{msg_type:05d}"`. |
-| Size width | R5 | `ja4d.py:207` | Agrees. `{max_msg_size:04d}`. |
-| Size cap | R5 | `ja4d.py:199` | Agrees. `min(parsed["max_msg_size"], 9999)`. |
-| Size when absent | R5 | `ja4d.py:111` | Agrees. `max_msg_size = 0` gives `0000`. |
-| Size source | R5 | `ja4d.py:140-145` | Agrees. Option 57, read as two bytes, big-endian. D4 rules that the first occurrence decides it. |
-| ip character | R6 | `ja4d.py:146-147`, `ja4d.py:205` | Agrees with the Zeek reading. Option 50 presence gives `i`. |
-| Domain character | R7 | `ja4d.py:148-152`, `ja4d.py:206` | Agrees with the dissector after D3. A name inside option 81 gives `d`. |
-| Part b order | R8 | `ja4d.py:136`, `ja4d.py:72` | Agrees. The parse loop appends in wire order and nothing sorts the list. |
-| Part b separator | R8 | `ja4d.py:73` | Agrees. `"-".join(parts)`. |
-| Part b skip set | R9 | `ja4d.py:46`, `ja4d.py:123` | Agrees on the result. `DHCP_SKIP_OPTIONS = {0, 53, 50, 81}` and the loop breaks at 255, so all five codes leave the list. |
-| Pad option | R10 | `ja4d.py:125-126`, `ja4d.py:46` | Agrees with the dissector. R10 is uncertain. |
-| Empty part b | R11 | `ja4d.py:73` | Agrees. `"00"`. |
-| Empty part c | R11 | `ja4d.py:87-88` | Agrees. `"00"`. |
-| Part c source | R12 | `ja4d.py:153-156` | Agrees. Option 55, byte for byte. D5 rules that every occurrence reaches part c. |
-| Part c order and separator | R12 | `ja4d.py:89` | Agrees. Wire order, joined with `-`. |
-| State | R13 | `ja4d.py:221-229` | Agrees. `process_packet` reads one packet and `cleanup_connection` is a no-op. |
-| Port set | — | `ja4d.py:55` | Agrees with the dissector after D1. `_DHCP_PORTS = {67, 68, 4011}`. |
+| Unknown message type | R4 | `ja4d.py:212` | Agrees. `f"{msg_type:05d}"`. |
+| Size width | R5 | `ja4d.py:215` | Agrees. `{max_msg_size:04d}`. |
+| Size cap | R5 | `ja4d.py:207` | Agrees. `min(parsed["max_msg_size"], 9999)`. |
+| Size when absent | R5 | `ja4d.py:112` | Agrees. `max_msg_size = 0` gives `0000`. |
+| Size source | R5 | `ja4d.py:148-153` | Agrees. Option 57, read as two bytes, big-endian. D4 rules that the first occurrence decides it. |
+| ip character | R6 | `ja4d.py:154-155`, `ja4d.py:213` | Agrees with the Zeek reading. Option 50 presence gives `i`. |
+| Domain character | R7 | `ja4d.py:156-160`, `ja4d.py:214` | Agrees with the dissector after D3. A name inside option 81 gives `d`. |
+| Part b order | R8 | `ja4d.py:144`, `ja4d.py:73` | Agrees. The parse loop appends in wire order and nothing sorts the list. |
+| Part b separator | R8 | `ja4d.py:74` | Agrees. `"-".join(parts)`. |
+| Part b skip set | R9 | `ja4d.py:46`, `ja4d.py:124` | Agrees on the result. `DHCP_SKIP_OPTIONS = {0, 53, 50, 81}` and the loop breaks at 255, so all five codes leave the list. |
+| Pad option | R10 | `ja4d.py:126-127`, `ja4d.py:46` | Agrees with the dissector. R10 is uncertain. |
+| Empty part b | R11 | `ja4d.py:74` | Agrees. `"00"`. |
+| Empty part c | R11 | `ja4d.py:88-89` | Agrees. `"00"`. |
+| Part c source | R12 | `ja4d.py:161-164` | Agrees. Option 55, byte for byte. D5 rules that every occurrence reaches part c. |
+| Part c order and separator | R12 | `ja4d.py:90` | Agrees. Wire order, joined with `-`. |
+| State | R13 | `ja4d.py:229-236` | Agrees. `process_packet` reads one packet and `cleanup_connection` is a no-op. |
+| Port set | — | `ja4d.py:56` | Agrees with the dissector after D1. `_DHCP_PORTS = {67, 68, 4011}`. |
 
 **Measured on 2026-08-08, before #231 and after it. Every value below is unchanged.** All
 four values of `tests/foxio_vectors/dhcp.pcapng` match the four reference values, and this
@@ -440,20 +440,25 @@ count in each item is the evidence instead.
 
 **D1 — the port set. Ruling: read UDP ports 67, 68 and 4011.**
 
-`ja4d.py:55` held `_DHCP_PORTS = {67, 68}`. **The premise that the reference applies no
-port test is true of `packet-ja4.c` and false of the reference as a whole.** The dissector
-reads a field that Wireshark already produced, and Wireshark hands it a DHCP message only
-on the ports its DHCP dissector claims. `epan/dissectors/packet-dhcp.c` states
+`ja4d.py:51` held `_DHCP_PORTS = {67, 68}` on the base commit `a5e9f8e`, and `ja4d.py:56`
+now holds `_DHCP_PORTS = {67, 68, 4011}`. **The premise that the reference applies no port
+test is true of `packet-ja4.c` and false of the reference as a whole.** The dissector reads
+a field that Wireshark already produced, and Wireshark hands it a DHCP message only on the
+ports its DHCP dissector claims. `epan/dissectors/packet-dhcp.c` states
 `#define DHCP_UDP_PORT_RANGE  "67-68,4011"`, where 4011 carries Proxy DHCP. The image
-states no port, so the reference decides, and the reference reads three ports. This
-project now reads the same three. A reading that removes the test entirely would emit a
-value the reference does not emit.
+states no port, so the reference decides, and the reference reads three ports. This project
+now reads the same three. A reading that removes the test entirely would emit a value the
+reference does not emit.
 
-Verified against: https://gitlab.com/wireshark/wireshark/-/raw/master/epan/dissectors/packet-dhcp.c (retrieved 2026-08-08)
+**Warning: the pinned FoxIO checkout carries no core Wireshark dissector.** Its
+`wireshark/` directory holds the FoxIO plugin alone. This citation therefore reads the
+Wireshark repository, and it names a release tag.
+
+Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.4.2/epan/dissectors/packet-dhcp.c (Wireshark 4.4.2, retrieved 2026-08-08)
 
 **D2 — a BOOTP message that carries no option 53. Ruling: emit nothing. No change.**
 
-`ja4d.py:162` holds `if msg_type == 0: return None`.
+`ja4d.py:170-171` holds `if msg_type == 0:` and `return None`.
 `wireshark/source/packet-ja4.c:1498` sets `ja4d_data.proto` only inside the option 53
 block, so the dissector emits nothing either, and the `00000` default at
 `wireshark/source/packet-ja4.c:705` stays unreachable for DHCP. `zeek/ja4d/main.zeek:43-45`
@@ -466,7 +471,7 @@ possible since you need at least option 53 to be DHCP and not just BOOTP`.
 R7 records that the image caption sides with the dissector, and the caption reads
 `Has a Domain name (d) or No domain (n)`. `wireshark/source/packet-ja4.c:1521` reads
 `dhcp.fqdn.name`. RFC 4702 puts the name after one flags byte and two rcode bytes, so
-`ja4d.py:148-152` now gives `d` when the option holds more than three bytes. An option 81
+`ja4d.py:156-160` now gives `d` when the option holds more than three bytes. An option 81
 that carries no name gave `d` before and gives `n` now.
 
 **D4 — a repeated option 57. Ruling: keep the first occurrence.**
@@ -484,12 +489,12 @@ first Client DUID length by an explicit guard. `zeek/ja4d/main.zeek:55-63` reads
 RFC 3396 allows a long option to split across several occurrences, and part c holds the
 `DHCP Parameter Request List` the image names — one list, not one occurrence.
 `wireshark/source/packet-ja4.c:1530-1534` appends every `dhcp.option.request_list_item`.
-`ja4d.py:153-156` now extends the list rather than replacing it.
+`ja4d.py:161-164` now extends the list rather than replacing it.
 
 **D6 — the citation of the skip set. Ruling: cite R9.**
 
 The comment read `Options to skip in section b (per FoxIO spec PR #267/#270)`. Neither
-number reads from a checkout at the pinned commit. `ja4d.py:42-45` now cites R9 of this
+number reads from a checkout at the pinned commit. `ja4d.py:42-46` now cites R9 of this
 page, and `ja4d6.py:1-5` drops the same citation. **No packet separates this item, because
 it changes no behaviour.** `tests/test_ja4d_decisions.py` holds two source-text cases
 instead, and both fail against the base.
@@ -498,16 +503,16 @@ instead, and both fail against the base.
 
 | Field | Rule | `ja4d6.py` | Reading |
 |---|---|---|---|
-| Part count and separator | R14 | `ja4d6.py:286` | Agrees. `f"{section_a}_{section_b}_{section_c}"`. |
-| Part a layout | R14 | `ja4d6.py:282` | Agrees. Eleven characters, four subfields, no separator. |
-| Message type table | R15 | `ja4d6.py:35-73` | Agrees. The same thirty-seven names against the same thirty-seven codes as `wireshark/source/packet-ja4.c:833-879`. |
-| Unknown message type | R15 | `ja4d6.py:276` | Agrees. `f"{msg_type:05d}"`. D11 rules that message type 0 reaches this path. |
+| Part count and separator | R14 | `ja4d6.py:287` | Agrees. `f"{section_a}_{section_b}_{section_c}"`. |
+| Part a layout | R14 | `ja4d6.py:283` | Agrees. Eleven characters, four subfields, no separator. |
+| Message type table | R15 | `ja4d6.py:35-72` | Agrees. The same thirty-seven names against the same thirty-seven codes as `wireshark/source/packet-ja4.c:833-879`. |
+| Unknown message type | R15 | `ja4d6.py:277` | Agrees. `f"{msg_type:05d}"`. D11 rules that message type 0 reaches this path. |
 | Size source | R16 | `ja4d6.py:206-211` | Agrees. The length of the option 1 data. D9 rules that the first occurrence decides it. |
 | Size width and cap | R16 | `ja4d6.py:277-278` | Agrees. `min(..., 9999)` and `f"{duid_len:04d}"`. |
 | Size when absent | R16 | `ja4d6.py:190` | Agrees. `duid_len = 0` gives `0000`. |
-| ip character | R19 | `ja4d6.py:212-213`, `ja4d6.py:279` | Agrees. Option 4, IA_TA. R19 is uncertain. |
-| Domain character | R20 | `ja4d6.py:214-215`, `ja4d6.py:280` | Agrees. Option 39. R20 is uncertain. |
-| Part b order | R17 | `ja4d6.py:125-159` | Agrees. `_walk_options` appends in wire order and nothing sorts the list. |
+| ip character | R19 | `ja4d6.py:212-213`, `ja4d6.py:280` | Agrees. Option 4, IA_TA. R19 is uncertain. |
+| Domain character | R20 | `ja4d6.py:214-215`, `ja4d6.py:281` | Agrees. Option 39. R20 is uncertain. |
+| Part b order | R17 | `ja4d6.py:125-161` | Agrees. `_walk_options` appends in wire order and nothing sorts the list. |
 | Part b skip set | R17 | `ja4d6.py:233-236` | Agrees. The builder omits no code. |
 | Part b separator | R17 | `ja4d6.py:236` | Agrees. `"-".join(...)`. |
 | Empty part b | R21 | `ja4d6.py:234-235` | Agrees. `"00"`. |
@@ -515,9 +520,9 @@ instead, and both fail against the base.
 | Part c source | R18 | `ja4d6.py:216-221` | Agrees. Option 6, read as two-byte codes. D10 rules that every occurrence reaches part c. |
 | Part c order and separator | R18 | `ja4d6.py:242` | Agrees. Wire order, joined with `-`. |
 | Field name of the reference | R22 | `tests/test_ja4d6_foxio.py:39` | Agrees. The test reads the key `ja4.ja4d`. |
-| State | R14 | `ja4d6.py:292-299` | Agrees. `process_packet` reads one packet and `cleanup_connection` is a no-op. |
-| Port set | — | `ja4d6.py:263` | Agrees with the dissector after D7. The two ports are 546 and 547. |
-| Nesting bound | — | `ja4d6.py:104`, `ja4d6.py:137-138` | The walk stops at 32 containers, because a crafted chain would raise `RecursionError`. No vector nests a container. |
+| State | R14 | `ja4d6.py:293-299` | Agrees. `process_packet` reads one packet and `cleanup_connection` is a no-op. |
+| Port set | — | `ja4d6.py:264` | Agrees with the dissector after D7. The two ports are 546 and 547. |
+| Nesting bound | — | `ja4d6.py:104`, `ja4d6.py:138-139` | The walk stops at 32 containers, because a crafted chain would raise `RecursionError`. No vector nests a container. |
 
 **Measured on 2026-08-08, before #231 and after it. Every value below is unchanged.** All
 six values of `tests/foxio_vectors/dhcpv6.pcap` match the six reference values, and this
@@ -541,13 +546,13 @@ frame 12  ja4plus reply0014nn_1-2-13_00              FoxIO reply0014nn_1-2-13_00
 **The measurement disproves the premise that the reference reads DHCPv6 on another port.**
 `epan/dissectors/packet-dhcpv6.c` states
 `#define UDP_PORT_DHCPV6_RANGE      "546-547" /* Downstream + Upstream */`, which is the
-set `ja4d6.py:263` already holds. The dissector reads a field Wireshark already produced,
+set `ja4d6.py:264` already holds. The dissector reads a field Wireshark already produced,
 and Wireshark produces `dhcpv6.msgtype` on those two UDP ports. **D7 is therefore not the
 JA4D6 form of D1**, because D1 found a third port and D7 finds none. The same file
 registers TCP port 547 for DHCPv6 over TCP, which RFC 7653 defines; this project reads
 UDP alone, and no vector carries DHCPv6 over TCP.
 
-Verified against: https://gitlab.com/wireshark/wireshark/-/raw/master/epan/dissectors/packet-dhcpv6.c (retrieved 2026-08-08)
+Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.4.2/epan/dissectors/packet-dhcpv6.c (Wireshark 4.4.2, retrieved 2026-08-08)
 
 **D8 — the containers part b recurses into. Ruling: add option 9, Relay Message.**
 
@@ -559,11 +564,11 @@ because it carries a whole inner DHCPv6 message, and the issue names it.
 `ja4d6.py:89-99` now names option 9 and the relay header. A RELAY-FORW or a RELAY-REPL
 message puts its options after `msg-type(1) + hop-count(1) + link-address(16) +
 peer-address(16)`, which is 34 bytes, and every other message type puts them after 4
-bytes. `_options_offset` at `ja4d6.py:107-122` reads that, at the top level and inside
+bytes. `_options_offset` at `ja4d6.py:107-119` reads that, at the top level and inside
 option 9. **Before the ruling, a relay message read its link address as options** and part
 b of the case packet held `0-0-0-0-0-0-0-0`; it now holds `18-9-1-6`.
 
-**The comment that named option 17 is repaired.** It described a behaviour the table does
+**#231 repairs the comment that named option 17.** It described a behaviour the table does
 not build. Wireshark reports a vendor sub-option under another field name, so no
 `dhcpv6.option.type` field exists for it, and the table is right to hold no entry.
 `ja4d6.py:75-80` now states that reason. **This page still rules on nothing else about
@@ -591,7 +596,7 @@ This is the JA4D6 form of D5. `wireshark/source/packet-ja4.c:1574-1578` appends 
 
 `wireshark/source/packet-ja4.c:1537-1538` sets `ja4d_data.proto = '6'` for any
 `dhcpv6.msgtype` field, so a type of 0 gives `00000`. R15 states the five-digit form for
-a code the table does not hold, and DHCPv6 defines no message type 0. `ja4d6.py:270-274`
+a code the table does not hold, and DHCPv6 defines no message type 0. `ja4d6.py:272-275`
 no longer returns early, and the case packet gives `000000000nn_00_00`.
 
 ## The register

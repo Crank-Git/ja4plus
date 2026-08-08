@@ -704,7 +704,7 @@ reading, and #231 moved none of them.
 The user decided D1 to D6 of #231 on 2026-08-08. `tests/test_ja4d_decisions.py` holds the
 separating packet of each, because no vector carries one.
 
-**Location:** `ja4plus/fingerprinters/ja4d.py:46` and `ja4plus/fingerprinters/ja4d.py:204`.
+**Location:** `ja4plus/fingerprinters/ja4d.py:46` and `ja4plus/fingerprinters/ja4d.py:212`.
 
 ### How ja4plus reads JA4D6
 
@@ -734,7 +734,7 @@ and #231 ruled on nothing there**, because R16, R19 and R20 stay uncertain.
 The user decided D7 to D11 of #231 on 2026-08-08. `tests/test_ja4d_decisions.py` holds the
 separating packet of each, because no vector carries one.
 
-**Location:** `ja4plus/fingerprinters/ja4d6.py:81` and `ja4plus/fingerprinters/ja4d6.py:276`.
+**Location:** `ja4plus/fingerprinters/ja4d6.py:81` and `ja4plus/fingerprinters/ja4d6.py:277`.
 
 ---
 

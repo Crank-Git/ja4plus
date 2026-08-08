@@ -49,7 +49,8 @@ DHCP_SKIP_OPTIONS = {0, 53, 50, 81}
 _DHCP_MAGIC = b"\x63\x82\x53\x63"
 
 # Wireshark hands the JA4 dissector a DHCP message only on the ports its DHCP dissector
-# claims, and epan/dissectors/packet-dhcp.c sets DHCP_UDP_PORT_RANGE "67-68,4011".
+# claims. epan/dissectors/packet-dhcp.c sets DHCP_UDP_PORT_RANGE "67-68,4011" at
+# Wireshark 4.4.2, which .claude/rules/external-apis.md pins.
 # Port 4011 carries Proxy DHCP, and D1 of docs/specs/foxio/JA4D.md rules that this
 # project reads the same three ports.
 _DHCP_PORTS = {67, 68, 4011}
