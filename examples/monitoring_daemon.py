@@ -134,14 +134,14 @@ class MonitoringDaemon:
             if not result:
                 continue
 
-            record = {
+            json_object = {
                 "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
                 "type": name,
                 "fingerprint": result,
             }
-            record.update(meta)
+            json_object.update(meta)
 
-            self.logger.info(json.dumps(record, default=str))
+            self.logger.info(json.dumps(json_object, default=str))
 
             with self.lock:
                 self.fp_counts[name] = self.fp_counts.get(name, 0) + 1

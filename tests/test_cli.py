@@ -165,15 +165,15 @@ class TestTheTrailingJA4SSHWindow(unittest.TestCase):
     def test_analyze_writes_the_window_the_connection_holds_open(self):
         out, err, code = run_cli("--format", "json", "--types", "ja4ssh", "analyze", SSH2_VECTOR)
         self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
-        records = [json.loads(line) for line in out.strip().splitlines() if line.strip()]
-        values = [record["fingerprint"] for record in records]
+        objects = [json.loads(line) for line in out.strip().splitlines() if line.strip()]
+        values = [json_object["fingerprint"] for json_object in objects]
         self.assertEqual(values, ["c36s36_c76s124_c74s5", "c36s52_c42s76_c51s2"])
         # No packet closes this window, so #49 reads the four endpoint fields back from
         # the connection key that the fingerprinter reported.
-        self.assertEqual(records[1]["src_ip"], "172.16.225.48")
-        self.assertEqual(records[1]["src_port"], 57377)
-        self.assertEqual(records[1]["dst_ip"], "54.160.114.75")
-        self.assertEqual(records[1]["dst_port"], 22)
+        self.assertEqual(objects[1]["src_ip"], "172.16.225.48")
+        self.assertEqual(objects[1]["src_port"], 57377)
+        self.assertEqual(objects[1]["dst_ip"], "54.160.114.75")
+        self.assertEqual(objects[1]["dst_port"], 22)
 
 
 class TestInvalidTypes(unittest.TestCase):

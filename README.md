@@ -75,7 +75,7 @@ Every option runs before the subcommand name and after it.
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 
 The `json` and the `csv` formats write the same fields whatever flags you pass. Each
-record carries the source address, the source port, the destination address and the
+output line carries the source address, the source port, the destination address and the
 destination port as separate fields, in this order:
 
 ```
