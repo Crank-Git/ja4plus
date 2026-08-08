@@ -14,6 +14,7 @@ Detailed usage for each JA4+ fingerprinter.
 - [JA4SSH - SSH](#ja4ssh---ssh)
 - [PCAP Analysis](#pcap-analysis)
 - [Live Capture](#live-capture)
+- [Read a network interface](#read-a-network-interface)
 
 ---
 
@@ -394,3 +395,141 @@ sniff(filter="tcp port 443", prn=handle_packet)
 ```
 
 > Note: Live capture typically requires root privileges.
+
+The recipe above keeps the state of every connection it reads. Use the `watch` command
+below for a monitor that runs for a long time.
+
+---
+
+## Read a network interface
+
+The `ja4plus watch` command reads packets from an interface until the operator stops it.
+It owns a connection table, and that table holds two bounds. A monitor that held no
+bound would grow until the host stopped it.
+
+```bash
+# Read an interface, and write one JSON object per fingerprint to a file
+sudo ja4plus watch eth0 --format json --output /var/log/ja4.jsonl
+
+# `live` is an alias of `watch`, so version 0.6.0 scripts keep working
+sudo ja4plus live eth0
+
+# Track more connections, and shed an idle connection sooner
+sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
+
+# Read the HTTPS traffic of one host alone
+sudo ja4plus watch eth0 --bpf "tcp port 443 and host 10.0.0.5"
+```
+
+| Option | Meaning | Default |
+|---|---|---|
+| `--max-connections COUNT` | The maximum count of tracked connections. | 10000 |
+| `--connection-timeout SECONDS` | The maximum age of a connection that sends no packet. | 300 |
+| `--stats-interval SECONDS` | The count of seconds between two statistics lines. | No schedule |
+| `--bpf FILTER` | The capture filter, in Berkeley Packet Filter syntax. | No filter |
+
+The command evicts a connection on either bound.
+
+- The count bound removes the least recently used connection as soon as the table is
+  full.
+- The age bound removes a connection that sends no packet for `--connection-timeout`
+  seconds of capture time.
+
+Each eviction drops the entry of the connection table and the per-connection state of
+all ten methods together. Eviction runs on packet arrival, and the command starts no
+thread for it.
+
+### How to write a capture filter
+
+`--bpf` passes the expression to the capture layer, which drops every packet the filter
+rejects. The capture layer applies the filter before it reports a packet, so the monitor
+never reads a rejected packet and the packet count of the statistics line never holds
+it.
+
+```bash
+# Read the TLS and the QUIC traffic alone
+sudo ja4plus watch eth0 --bpf "tcp port 443 or udp port 443"
+
+# Read one subnet alone
+sudo ja4plus watch eth0 --bpf "net 10.0.0.0/8"
+```
+
+`tcpdump` and `ja4plus watch` read the same syntax. `man 7 pcap-filter` documents it.
+
+Warning: a filter that drops one direction of a connection produces an incomplete
+fingerprint. JA4S reads the ServerHello and JA4L reads both directions, so a filter such
+as `src host 10.0.0.5` removes the packets those methods need.
+
+### How to read a start-up error
+
+The command needs the privilege to read the interface. It attempts the capture and reads
+the failure, so a host that grants the privilege through a capability runs the monitor.
+Version 0.6.0 read `os.geteuid() != 0`, and that check refused a permitted operator on
+Linux and raised `AttributeError` on Windows.
+
+| Failure | What the command reports |
+|---|---|
+| The operator holds no capture privilege. | The command names `CAP_NET_RAW` for Linux and the `/dev/bpf*` devices for macOS, and ends the run with the status 1. |
+| The host holds no interface of that name. | The command lists every interface the host holds, and ends the run with the status 1. |
+| The capture layer refuses the `--bpf` expression. | The command names the expression and repeats the filter error, and ends the run with the status 1. |
+| The host runs Windows. | The command reports that it runs on Linux and on macOS, and ends the run with the status 1. |
+
+A Linux host grants `CAP_NET_RAW` to a process without granting it the user identity
+zero. The command runs under that operator, because it reads the failure of the capture
+and reads no user identity.
+
+### How to stop a monitor
+
+`SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
+`Ctrl-C` sends `SIGINT`, and `kill` sends `SIGTERM`.
+
+```bash
+# Stop the monitor that runs under the process identity 4213
+kill 4213
+```
+
+The signal handler sets a flag, and it exits never. The monitor reads that flag after it
+reports a packet, so it finishes the line it writes. The command then flushes the output
+and exits, and the output file holds every fingerprint the monitor reported.
+
+The monitor reads the flag every 0.25 seconds too, so an interface that carries no
+traffic stops it within one second of the signal. The capture socket stays open across
+those reads, so the monitor loses no packet that arrives between two of them. Version
+0.6.0 and the first form of this command read the flag on packet arrival alone, and a
+monitor on a quiet interface there waited for the next packet.
+
+### How to read the statistics
+
+The monitor writes one statistics line when it exits. `--stats-interval` adds a line for
+each interval that passes.
+
+```bash
+# Write a statistics line every 60 seconds, and one more on exit
+sudo ja4plus watch eth0 --format json --output /var/log/ja4.jsonl --stats-interval 60
+```
+
+Every statistics line goes to standard error, so a pipe that reads standard output reads
+fingerprints alone.
+
+```
+[ja4plus] packets=1284302 fingerprints=48211 connections=8134 evicted=112094 dropped=0 uptime=3600s
+```
+
+| Field | Meaning |
+|---|---|
+| `packets` | The count of packets the monitor read. |
+| `fingerprints` | The count of fingerprints the monitor wrote. |
+| `connections` | The count of connections the connection table holds now. |
+| `evicted` | The count of connections the monitor evicted, on either bound. |
+| `dropped` | The count of packets the capture layer dropped, or `null`. |
+| `uptime` | The count of whole seconds since the monitor started. |
+
+`--stats-interval` starts one thread, and it is the only thread the command starts. The
+thread ends with the capture, so a termination signal stops the monitor and the thread
+together.
+
+The `dropped` field reads `null` today. `scapy` 2.7.0 reports no drop count to a caller
+of `sniff`: on macOS the capture socket reads the count and `sniff` keeps that socket to
+itself, and on Linux `scapy` reads the count from no socket at all. Issue #326 records
+the finding and the work that reports a count. Read the interface counters of the host
+until then, with `netstat -i` on macOS or `ip -s link` on Linux.

@@ -620,7 +620,8 @@ Command-line interface for JA4+ fingerprinting. Installed as the `ja4plus` comma
 
 ```bash
 ja4plus analyze <pcap_file>   # Fingerprint a PCAP file
-ja4plus live <interface>      # Live capture (requires root)
+ja4plus watch <interface>     # Read an interface (needs the capture privilege)
+ja4plus live <interface>      # An alias of watch
 ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
 ```
 
@@ -629,7 +630,102 @@ ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
 | `--format table\|json\|csv` | Output format (default: table) |
 | `--types ja4,ja4s,...` | Filter to specific fingerprint types |
 | `--lookup` | Identify fingerprints using bundled ja4db database |
+| `--output FILE` | Write the results to FILE instead of standard output |
+| `--force` | Overwrite the file that `--output` names when it exists |
 | `--version` | Print version |
+
+The `watch` command carries four more options. The first two bound the connection table
+it owns.
+
+| Option | Description |
+|--------|-------------|
+| `--max-connections COUNT` | Maximum number of tracked connections (default: 10000) |
+| `--connection-timeout SECONDS` | Maximum age of a connection that sends no packet (default: 300) |
+| `--stats-interval SECONDS` | Write a statistics line every SECONDS seconds (default: no schedule) |
+| `--bpf FILTER` | Capture filter, in Berkeley Packet Filter syntax (default: no filter) |
+
+The command reads no user identity. It attempts the capture and reads the failure, so a
+Linux host that grants `CAP_NET_RAW` without the user identity zero runs the monitor.
+The command names the privilege, lists the interfaces of the host, or reports the filter
+error, and it ends the run with the status 1.
+
+### ja4plus.watch
+
+The monitor loop and the connection table of `ja4plus watch`.
+
+The command owns the connection table. It records the connection of every packet it
+reads, and it evicts a connection on two bounds.
+
+- The count bound removes the least recently used connection as soon as the table
+  reaches `--max-connections`.
+- The age bound removes every connection that sends no packet for
+  `--connection-timeout` seconds of capture time.
+
+Each eviction calls `Processor.cleanup_connection`, so it drops the entry of the
+connection table and the per-connection state of all ten methods together. Version 0.6.0
+called `cleanup_connection` never, and its monitor grew until the host stopped it.
+
+Eviction runs on packet arrival. The statistics thread is the only thread the module
+starts, and `report_statistics` starts it only when the caller states an interval.
+
+| Class/Function | Description |
+|----------------|-------------|
+| `Monitor(processor, report, ...)` | The monitor loop, without the packet source |
+| `Monitor.stats` | The counts the statistics line reports |
+| `Monitor.handle_packet(packet)` | Record the connection of one packet, evict, and report the packet |
+| `Monitor.tracked_connections()` | Return the key of every connection the table holds |
+| `Monitor.evictions` | The count of connections the monitor evicted |
+| `connection_key(packet)` | Return the key of the connection the packet belongs to, or None |
+| `read_interface(interface, handle_packet, stop_filter, capture_filter, stop_requested, poll_interval, open_socket)` | Read packets from one interface until the capture stops |
+| `open_capture_socket(interface, capture_filter)` | Return an open capture socket for one interface |
+| `DEFAULT_POLL_INTERVAL` | The count of seconds one `sniff` call reads before the loop reads the stop request |
+| `CAPTURE_FAILURES` | The exception classes the capture layer raises when it refuses an interface |
+| `available_interfaces()` | Return the name of every interface the host holds |
+| `describe_capture_failure(error, ...)` | Return the message the operator reads for one capture failure |
+| `unsupported_platform_message(platform, command)` | Return the reason the platform runs no monitor, or None |
+| `StopRequest` | The flag a termination signal sets and the capture reads |
+| `StopRequest.requested()` | Return True after a termination signal arrived |
+| `StopRequest.stop_after(packet)` | Return True when the capture stops after this packet |
+| `stop_on_signal(signal_numbers)` | Yield the stop request, with a handler installed for each signal |
+| `MonitorStats(clock, dropped_source)` | The counts of one monitor, and the lock that guards them |
+| `MonitorStats.count_fingerprints(count)` | Add the fingerprints of one packet to the fingerprint count |
+| `MonitorStats.record_packet(connections, evicted)` | Count one packet, and publish the two table counts |
+| `MonitorStats.snapshot()` | Return the counts of one instant |
+| `StatisticsSnapshot` | The counts one statistics line reports |
+| `format_statistics(snapshot)` | Return the statistics line of one snapshot |
+| `write_statistics(stats, stream)` | Write one statistics line, and flush the stream |
+| `StatisticsReporter(stats, interval, stream)` | The thread that writes a statistics line on a schedule |
+| `report_statistics(stats, interval, stream)` | Yield the reporter, and stop it when the body returns |
+
+The capture thread writes the counts and the statistics thread reads them. Every write
+and every read holds one lock, so a reader reads the counts of one instant. The capture
+thread publishes the two table counts through `record_packet`, so the statistics thread
+reads `MonitorStats` and never the connection table.
+
+The `dropped` field reports the count a `dropped_source` returns, and `null` where the
+caller passes none. `ja4plus watch` passes none, because `scapy` 2.7.0 reports no drop
+count to a caller of `sniff`. Issue #326 records the measurement.
+
+`SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
+The handler sets the stop request and returns. It calls `sys.exit` never, because a
+signal arrives at any point, including the point where the output holds half a line.
+`scapy` reads the stop request through the `stop_filter` argument of `sniff`, and it
+applies that filter after it reports a packet. The monitor therefore finishes the line it
+writes, and the command flushes the output before it exits.
+
+`scapy` applies `stop_filter` to a packet and to nothing else, so an interface that
+carries no traffic reaches that filter never. `read_interface` therefore opens the
+capture socket itself and calls `sniff` with `opened_socket` and a timeout of
+`DEFAULT_POLL_INTERVAL` seconds, in a loop. It reads `stop_requested` after each call, so
+a monitor on a quiet interface stops within one second of the signal. The socket stays
+open across the calls, because `AsyncSniffer._run` closes the sockets it opened itself
+and no other socket; a loop that reopened the socket would lose every packet the host
+buffered between two calls. Issue #320 records the whole reading.
+
+`describe_capture_failure` reads the failure the capture layer reported and returns one
+message. It calls no capture function, so it classifies the failure of any capture layer
+that raises one of `CAPTURE_FAILURES`. It reads the privilege first, because a host that
+refuses the privilege refuses it before it reads the interface name or the filter.
 
 ## Lookup Module
 

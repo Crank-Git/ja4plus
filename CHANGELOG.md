@@ -66,6 +66,75 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`ja4plus watch` stops on an interface that carries no traffic** (#320). Round 105.
+  A monitor on a quiet interface exits within one second of `SIGINT` or of `SIGTERM`.
+  `scapy` applies the `stop_filter` argument of `sniff` to a packet and to nothing else,
+  and its capture loop waits in `select` without an end, so the monitor read the stop
+  flag when the next packet arrived and not when the signal arrived. An operator who ran
+  `systemctl stop` on such a monitor waited for the service timeout, and the host then
+  sent `SIGKILL`, which skips the flush. The command now opens the capture socket itself
+  and calls `sniff` with `opened_socket` and a timeout of 0.25 seconds, in a loop, and it
+  reads the stop flag after each call. The socket stays open across the calls, so the
+  monitor loses no packet that arrives between two of them. `--bpf` still applies, and
+  `libpcap` now compiles the expression when the socket opens. The command still starts
+  no thread other than the one `--stats-interval` starts.
+
+- **`ja4plus watch` applies a capture filter and reads the capture failure** (#56). Round
+  TBD. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
+  which drops every packet the filter rejects. The command reads no user identity. It
+  attempts the capture and reads the failure, so a Linux host that grants `CAP_NET_RAW`
+  without granting the user identity zero runs the monitor. Version 0.6.0 read
+  `os.geteuid() != 0`, which refused that operator and raised `AttributeError` on
+  Windows, where `os.geteuid` is absent. The command now names `CAP_NET_RAW` and the
+  `/dev/bpf*` devices for a refused privilege, lists every interface the host holds for
+  an interface it does not hold, and repeats the filter error for an expression the
+  capture layer refuses. Each of the three ends the run with the status 1. The command
+  runs on Linux and on macOS, and it reports that Windows carries no monitor and ends
+  the run with the status 1. `examples/monitoring_daemon.py` is removed, because
+  `ja4plus watch` is the supported monitor and `docs/usage.md` documents it.
+
+- **`ja4plus watch` reports statistics on exit and on a schedule** (#55). Round 103. The
+  monitor writes one statistics line when it exits, and `--stats-interval SECONDS` adds
+  a line for each interval that passes. Every line goes to standard error, so a pipe
+  that reads standard output reads fingerprints alone. The line reports the packet
+  count, the fingerprint count, the connection count, the eviction count, the
+  dropped-packet count and the uptime. `MonitorStats` holds the four counts under one
+  lock, and the capture thread publishes the two table counts, so the statistics thread
+  reads no state table. The statistics thread is the only thread the command starts, and
+  the command starts it only when the operator passes `--stats-interval`. The thread
+  ends with the capture, so a termination signal stops the monitor and the thread
+  together. The `dropped` field reads `null`, because `scapy` 2.7.0 reports no drop
+  count to a caller of `sniff`; #326 records the measurement and the work that reports a
+  count. The fingerprint count holds the trailing JA4SSH window that a capture leaves
+  open, which the command writes and #214 decided.
+
+- **`ja4plus watch` stops on a termination signal and flushes its output** (#54). Round
+  TBD. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
+  status zero. The handler sets a flag and returns. It calls `sys.exit` never, because a
+  signal arrives at any point, including the point where the output holds half a line.
+  `scapy` reads the flag through the `stop_filter` argument of `sniff`, and it applies
+  that filter after it reports a packet, so the monitor finishes the line it writes. The
+  command then flushes the output and exits, so the output file holds every fingerprint
+  the monitor reported. The command flushed the output only when it wrote a result, so a
+  monitor that produced no fingerprint left its header in the buffer. `scapy` applies the
+  filter on packet arrival alone, so an interface that carries no traffic reached that
+  filter never; the entry for #320 records the loop that repairs it.
+
+- **`ja4plus watch <interface>` reads an interface and bounds its connection table**
+  (#53). Round 101. `ja4plus live` stays as an alias of it, so a version 0.6.0 script
+  keeps working. The command owns the connection table, and that table holds a maximum
+  entry count and a maximum age. `--max-connections COUNT` sets the entry count, and it
+  defaults to 10000. `--connection-timeout SECONDS` sets the age, and it defaults to
+  300. When the table is full, the monitor evicts the least recently used connection.
+  When a connection sends no packet for the stated age of capture time, the monitor
+  evicts it too. Each eviction calls `Processor.cleanup_connection`, so it drops the
+  entry of the connection table and the per-connection state of all ten methods
+  together. Version 0.6.0 called `cleanup_connection` never, so its live capture held
+  the state of every connection it ever read and a monitor on a busy interface grew
+  until the host stopped it. Eviction runs on packet arrival, and the command starts no
+  thread for it. One million packets across 50000 connections leave the monitor holding
+  10000 connections and 7.20 MiB.
+
 - **`Processor.process_packet_with_method_errors` names the method that raised** (#51).
   Round 94. It returns the same results as `process_packet_with_errors`, and one pair
   of the method name and the exception for each method that raised. An exception names
