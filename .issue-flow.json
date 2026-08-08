@@ -24,7 +24,28 @@
     "coverage": "must-not-fall",
     "commitStyle": "conventional",
     "docsWithChange": true,
-    "e2e": false
+    "e2e": false,
+    "verificationDepth": {
+      "decidedBy": "the user, 2026-08-08",
+      "always": [
+        "the five gates: both pytest markers, ruff check, ruff format --check, mypy --strict",
+        "test-driven development, with the failing case stated in the verdict",
+        "coverage must not fall",
+        "no fingerprint moves",
+        "the register invariant: the key count of tests/foxio_deviations.json equals the xfailed count"
+      ],
+      "heavyProofOnlyWhen": [
+        "a change can move a fingerprint",
+        "a change alters a published output field or the output schema",
+        "a FoxIO reading or a divergence register entry is at stake"
+      ],
+      "heavyProofMeans": [
+        "mutation reversal proofs, with the mutation proven live and discriminating in both directions",
+        "fuzz campaigns over hostile input",
+        "byte-identical replay of every committed capture"
+      ],
+      "note": "Epics 7, 8 and 9 are database enrichment, documentation and packaging. No fingerprint moves in them, so the heavy proof is not mandatory. The project manager applies it where conformance is actually at stake, and a worker may always apply more than the floor."
+    }
   },
   "docsMcp": {
     "connected": [],
@@ -34,6 +55,7 @@
     ".github/workflows/test.yml triggers on push and on pull_request for branches [master, dev]. A batch pull request into dev starts a run, so provider continuous integration is the batch gate.",
     "publish.yml triggers on a published release only, so a merge to dev deploys nothing. Stage D is skipped.",
     "Worktree policy from session 6. The harness owns every worktree. The project manager launches a worker with isolation \"worktree\" and never calls EnterWorktree. A worker never calls EnterWorktree or ExitWorktree either, because that pin is session-scoped and every live agent shares it. The project manager stays in the repository root and names an absolute path on every git command.",
-    "The system Python holds no scapy and no cryptography. A worker builds a virtual environment before it runs any gate. .venv/ and venv/ are ignored from session 6, so the environment may live in the worktree."
+    "The system Python holds no scapy and no cryptography. A worker builds a virtual environment before it runs any gate. .venv/ and venv/ are ignored from session 6, so the environment may live in the worktree.",
+    "Verification is tiered from 2026-08-08. The floor binds every issue; the heavy proof binds only conformance-affecting work. The heavy discipline found a real defect on nearly every issue of Epics 4 to 6, including two tautological assertions inside tests a worker had just written, so it is dialled back rather than dropped."
   ]
 }
