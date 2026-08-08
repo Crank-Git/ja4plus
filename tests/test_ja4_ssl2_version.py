@@ -8,7 +8,11 @@ states no meaning for `0x0200` and no meaning for `0x0100`. #227 owns the repair
 """
 
 from ja4plus.fingerprinters.ja4 import generate_ja4, get_raw_fingerprint
-from ja4plus.fingerprinters.ja4s import _version_to_str
+from ja4plus.fingerprinters.ja4s import (
+    _generate_ja4s_from_tls_info,
+    _generate_ja4s_raw_from_tls_info,
+    _version_to_str,
+)
 from ja4plus.utils.tls_utils import parse_tls_handshake
 
 SSL_2_0 = 0x0002
@@ -63,6 +67,29 @@ def _ja4_raw_version(version):
     return get_raw_fingerprint(_tls_info(version))[1:3]
 
 
+def _server_hello_info(version):
+    """Return one parsed ServerHello that names the given version."""
+    return {
+        "type": "server_hello",
+        "handshake_type": "server_hello",
+        "version": version,
+        "supported_versions": [],
+        "cipher": 0xC030,
+        "extensions": [0x0005, 0x0017],
+        "alpn_protocols": [],
+    }
+
+
+def _ja4s_version(version):
+    """Return the two version characters of the JA4S fingerprint."""
+    return _generate_ja4s_from_tls_info(_server_hello_info(version))[1:3]
+
+
+def _ja4s_raw_version(version):
+    """Return the two version characters of the raw JA4S value."""
+    return _generate_ja4s_raw_from_tls_info(_server_hello_info(version))[1:3]
+
+
 # ---------------------------------------------------------------------------
 # The value the pinned specification states
 # ---------------------------------------------------------------------------
@@ -78,6 +105,14 @@ def test_the_raw_form_writes_s2_for_the_ssl_2_0_version_value_0x0002():
 
 def test_ja4s_writes_s2_for_the_ssl_2_0_version_value_0x0002():
     assert _version_to_str(SSL_2_0) == "s2"
+
+
+def test_the_ja4s_fingerprint_writes_s2_for_the_ssl_2_0_version_value_0x0002():
+    assert _ja4s_version(SSL_2_0) == "s2"
+
+
+def test_the_raw_ja4s_value_writes_s2_for_the_ssl_2_0_version_value_0x0002():
+    assert _ja4s_raw_version(SSL_2_0) == "s2"
 
 
 def test_the_supported_versions_extension_reaches_the_ssl_2_0_version_value():
@@ -100,6 +135,10 @@ def test_the_raw_form_writes_00_for_the_retracted_version_value_0x0200():
 
 def test_ja4s_writes_00_for_the_retracted_version_value_0x0200():
     assert _version_to_str(RETRACTED_SSL_2_0) == "00"
+
+
+def test_the_ja4s_fingerprint_writes_00_for_the_retracted_version_value_0x0200():
+    assert _ja4s_version(RETRACTED_SSL_2_0) == "00"
 
 
 def test_ja4_writes_00_for_the_ssl_1_0_version_value_0x0100():
