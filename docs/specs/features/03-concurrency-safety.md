@@ -261,5 +261,19 @@ rule 2 applies only where the port has already shipped a choice.
 
 ## Open questions
 
-- The stated memory ceiling for the one-million-packet test. The first issue in
-  this epic measures the baseline and proposes the number.
+- The stated memory ceiling for the one-million-packet test. **#38 measured the
+  baseline and #279 decides the number.** The measurement forces a floor and it
+  forces no ceiling, so the distance above that floor is a product judgement. A
+  ceiling is a number this package states to its users.
+
+  An idle `Processor()` with scapy imported holds 91.03 MiB resident. One full table
+  of 10000 entries shaped like `JA4LFingerprinter.connections` holds 10.69 MiB, at
+  1121 bytes for each entry. One full table of 10000 entries shaped like
+  `JA4SSHFingerprinter.connections` holds 51.72 MiB at a 200 packet window, at 5423
+  bytes for each entry. That table is the largest of the twelve. Ten tables at the
+  default entry count therefore project 91.03 + 51.72 + 96.21 = **238.96 MiB**.
+
+  The projection holds whatever the connection count is. `BoundedStateTable` never
+  passes 10000 entries, so 100000 distinct connections reach no more than 10000
+  entries in one table. No constant in `ja4plus/` names a ceiling, and no case
+  asserts one.
