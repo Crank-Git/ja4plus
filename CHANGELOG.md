@@ -27,7 +27,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   results alone, so a caller could not tell a packet that produces no fingerprint from a
   packet that failed a parse. The new method returns both lists, and one method that
   raises poisons no other method. The Go port returns the pair from one call, and parity
-  rule 2 keeps it. `docs/specs/features/04-typed-api.md` states FR-typed-api-4.
+  rule 2 keeps it. **Every returned exception carries no traceback.** A traceback holds
+  the frame of every call it passed, and those frames hold the packet, so a monitor that
+  keeps the errors of every packet would hold every packet it read. The type, the
+  message and the error chain stay. `docs/specs/features/04-typed-api.md` states
+  FR-typed-api-4, and `CLAUDE.md` states the packet rule.
 
 - **`FingerprintResult` is the typed result of the public interface** (#44). The new
   module `ja4plus/types.py` holds a frozen dataclass with nine fields, and `ja4plus`

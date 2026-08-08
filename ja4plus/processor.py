@@ -156,6 +156,11 @@ class Processor:
         has no multiple-return form that reads well as a default, so `process_packet`
         returns the results alone and this method returns both.
 
+        Every returned exception carries no traceback. A traceback holds the frame of
+        every call it passed, and those frames hold the packet. `CLAUDE.md` states that
+        no code holds a reference to a packet object after `process_packet` returns. The
+        type, the message and the error chain stay.
+
         Args:
             packet: The packet to read.
 
@@ -181,7 +186,7 @@ class Processor:
                     fingerprint = fp.process_packet(packet)
                 except Exception as e:
                     logger.debug(f"{fp_type} processing failed: {e}")
-                    errors.append(e)
+                    errors.append(_drop_traceback(e))
                     continue
                 if not fingerprint:
                     continue
@@ -310,6 +315,40 @@ class Processor:
             sport, dport = dport, sport
 
         return f"{proto}:{src_ip}:{sport}->{dst_ip}:{dport}"
+
+
+def _drop_traceback(error: Exception) -> Exception:
+    """Return the error with no traceback on it or on any error it followed.
+
+    `CLAUDE.md` states that no code holds a reference to a packet object after
+    `process_packet` returns. A traceback holds the frame of every call it passed, and
+    those frames hold the packet as a local. A caller that keeps the error of every
+    packet would therefore hold every packet it read.
+
+    The call walks `__cause__` and `__context__`, because a fingerprinter that raises
+    inside an `except` block chains a second error whose traceback holds its own frames.
+    The type, the message and the chain stay, so the caller reads what failed.
+
+    Args:
+        error: The error one fingerprinter raised.
+
+    Returns:
+        The same error object.
+    """
+    # The list holds a reference to every error it cleared, so the walk compares
+    # identities and no freed object returns the identity of a later one.
+    cleared: list[BaseException] = []
+    pending: list[BaseException | None] = [error]
+    while pending:
+        current = pending.pop()
+        # A chain can hold a cycle, so the walk records what it already cleared.
+        if current is None or any(current is done for done in cleared):
+            continue
+        cleared.append(current)
+        current.__traceback__ = None
+        pending.append(current.__cause__)
+        pending.append(current.__context__)
+    return error
 
 
 def _packet_endpoints(packet):

@@ -4,7 +4,9 @@
 container the processor returns. It changes no fingerprint value.
 """
 
+import gc
 import warnings
+import weakref
 
 import pytest
 from scapy.all import IP, TCP, UDP, Ether, Raw
@@ -197,6 +199,62 @@ class TestProcessPacketWithErrors:
 
         assert results == []
         assert errors == [error]
+
+    def test_a_returned_error_holds_no_reference_to_the_packet(self):
+        """`CLAUDE.md` states the rule that this case measures.
+
+        A monitor that keeps the errors of every packet would hold every packet it read.
+        An exception reaches the caller with its traceback, and the frames of that
+        traceback hold the packet as a local, so the processor clears the traceback.
+        """
+        processor = Processor()
+        make_one_method_raise(processor, "ja4")
+
+        packet = dhcp_discover()
+        alive = weakref.ref(packet)
+        _, errors = processor.process_packet_with_errors(packet)
+        del packet
+        gc.collect()
+
+        assert errors, "the case measures the errors the call returned"
+        assert alive() is None, "the returned error holds the packet alive"
+
+    def test_a_returned_error_keeps_its_type_and_its_message(self):
+        """The traceback goes, and the value the caller reads stays."""
+        processor = Processor()
+        make_one_method_raise(processor, "ja4h")
+
+        _, errors = processor.process_packet_with_errors(dhcp_discover())
+
+        assert isinstance(errors[0], RaisingFingerprinterError)
+        assert str(errors[0]) == "ja4h cannot read this packet"
+        assert errors[0].__traceback__ is None
+
+    def test_a_returned_error_clears_the_traceback_of_the_error_it_followed(self):
+        """A fingerprinter that raises inside an `except` block chains two errors.
+
+        The second error holds the first under `__context__`, and the traceback of the
+        first holds frames of the fingerprinter. Those frames hold the packet.
+        """
+        processor = Processor()
+
+        def raise_a_chain(packet):
+            try:
+                raise ValueError("the parser read a length field it cannot trust")
+            except ValueError:
+                raise RaisingFingerprinterError("ja4 cannot read this packet")
+
+        processor.fingerprinters["ja4"].process_packet = raise_a_chain
+
+        packet = dhcp_discover()
+        alive = weakref.ref(packet)
+        _, errors = processor.process_packet_with_errors(packet)
+        del packet
+        gc.collect()
+
+        assert isinstance(errors[0].__context__, ValueError)
+        assert errors[0].__context__.__traceback__ is None
+        assert alive() is None, "the chained error holds the packet alive"
 
     def test_it_counts_the_packet_for_the_method_that_raised(self):
         """The packet count of a method rises for a packet it fails to read."""
