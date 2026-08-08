@@ -264,7 +264,15 @@ def extract_certificate_info(packet: Packet, verbose: bool = False) -> dict[str,
 
                 cert = x509.load_der_x509_certificate(raw_data, default_backend())
                 return get_cert_details(cert)
-            except (ValueError, TypeError, Exception) as e:
+            # `load_der_x509_certificate` raises `ValueError`. `get_cert_details` holds
+            # `ValueError`, `TypeError` and `AttributeError`, and it lets the three
+            # `cryptography` errors pass. #294 names all four.
+            except (
+                ValueError,
+                x509.DuplicateExtension,
+                x509.UnsupportedGeneralNameType,
+                x509.InvalidVersion,
+            ) as e:
                 logger.debug(f"Direct certificate parsing failed: {e}")
 
         if not cert_data:
