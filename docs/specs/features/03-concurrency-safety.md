@@ -14,8 +14,10 @@ state table, and the processor drives ten of them. `Processor.get_shard_key` exi
 so that a caller can spread traffic across workers, which tells the reader that
 concurrency is expected. Nothing states what is safe.
 
-Every state table also grows without limit. `cleanup_connection` exists, but the
-caller must call it, and a caller who does not know it exists runs out of memory.
+Every state table also grew without limit. `cleanup_connection` exists, but the
+caller must call it, and a caller who does not know it exists runs out of memory. #38
+built `BoundedStateTable` and #39 moved every fingerprinter table onto it, so the
+section below states what each table holds today.
 
 This feature set states the contract, proves it with tests, and bounds every table.
 
@@ -127,11 +129,11 @@ This feature set has no screen. The processor reports its own statistics.
   300 either, because the one connection above 300 seconds carries SSH traffic, and
   JA4H and JA4X read nothing from it. No comparison ever read the number, so the wrong
   value survived. #179 corrects it.
-- Epic 3 target: the default maximum entry count is 10000 per state table. No state
-  table holds that count today.
-- Epic 3 target: an eviction pass runs at most once per 1000 packets, so that the
-  eviction cost stays proportional to the traffic. Every eviction pass runs on each
-  packet today.
+- The default maximum entry count is 10000 per state table. #39 holds every table that
+  needs no smaller count at that number.
+- An age pass runs at most once per 1000 packets, so that the eviction cost stays
+  proportional to the traffic. A table whose maximum age sits below the default runs one
+  pass on each packet, because a pass that waits longer than the age evicts nothing.
 - `thread_safe=False` is a promise the caller makes, not a mode the library checks.
   The documentation states that a caller who breaks the promise gets undefined
   results.
@@ -140,34 +142,51 @@ This feature set has no screen. The processor reports its own statistics.
 
 ## State bounds the code holds today
 
-This feature set is unbuilt. The table below records what the code holds, so that a
-reader does not read a target as a description. #179 measured it against the code.
+The table below records what the code holds, so that a reader does not read a target as
+a description. #179 measured the first form against the code. #39 re-measured it, moved
+every fingerprinter table onto `BoundedStateTable`, and wrote this form.
 
-| State table | Maximum entry count | Maximum age |
-|---|---|---|
-| `TCPStreamReassembler.streams`, built by JA4H | 100 | 600 seconds |
-| `TCPStreamReassembler.streams`, built by JA4X | 50 | 600 seconds |
-| `JA4HFingerprinter.consumed_seq` | 100 | 600 seconds |
-| `JA4HFingerprinter.unusable_base` | 100 | none |
-| `JA4Fingerprinter._quic_fragments` | 1000 | 30 seconds |
-| `JA4SFingerprinter._quic_server_crypto` | 1000 | 30 seconds |
-| `JA4XFingerprinter.processed_certs` | 1000 | none |
-| `JA4SFingerprinter._quic_dcids` | none | none |
-| `JA4LFingerprinter.connections` | none | none |
-| `JA4SSHFingerprinter.connections` | none | none |
-| `JA4DBClient._cache` | 100000 | 600 seconds |
-| `BaseFingerprinter.fingerprints` | none | none |
+| State table | Maximum entry count | Maximum age | Packets between two age passes |
+|---|---|---|---|
+| `TCPStreamReassembler.streams`, built by JA4H | 100 | 600 seconds | 1 |
+| `TCPStreamReassembler.streams`, built by JA4X | 50 | 600 seconds | 1 |
+| `JA4Fingerprinter._quic_fragments` | 1000 | 30 seconds | 1 |
+| `JA4Fingerprinter._quic_dcid_to_tuple` | 1000 | 30 seconds | 1 |
+| `JA4SFingerprinter._quic_server_crypto` | 1000 | 30 seconds | 1 |
+| `JA4SFingerprinter._quic_dcids` | 10000 | 600 seconds | 1000 |
+| `JA4HFingerprinter.consumed_seq` | 100 | 600 seconds | 1 |
+| `JA4HFingerprinter.unusable_base` | 100 | 600 seconds | 1 |
+| `JA4LFingerprinter.connections` | 10000 | 600 seconds | 1000 |
+| `JA4LFingerprinter.grouping_keys` | 10000 | 600 seconds | 1000 |
+| `JA4XFingerprinter.processed_certs` | 1000 | 600 seconds | 1 |
+| `JA4XFingerprinter.scan_offsets` | 50 | 600 seconds | 1 |
+| `JA4SSHFingerprinter.connections` | 10000 | 600 seconds | 1000 |
+| `JA4SSHFingerprinter._handshake_clients` | 1000 | 600 seconds | 1000 |
+| `SynAckTracker.times`, held by JA4TS | 1000 | 120 seconds | 1 |
+| `JA4DBClient._cache`, held by the lookup client | 100000 | 600 seconds | 100000 reads |
+| `BaseFingerprinter.fingerprints` | none | none | none |
 
 `TCPStreamReassembler` carries two more per-stream bounds: `max_stream_bytes` is
 1048576, and `max_stream_segments` is 4096.
 
-The two `JA4HFingerprinter` tables read `TCPStreamReassembler.max_streams` and
-`max_stream_age` of the reassembler that fingerprinter holds, so one number bounds the
-stream and the state that describes it. #179 measured this table before #193 added
-`consumed_seq`, and it omitted `unusable_base`, which #33 built.
+Every row other than the first two and `BaseFingerprinter.fingerprints` is a
+`BoundedStateTable`. #39 moved thirteen tables, and it removed two companion tables,
+`_quic_fragment_seen` and `_quic_server_crypto_seen`, because the state table holds the
+age of each entry. #42 moved `JA4DBClient._cache`, which reads no packet, so its age
+pass counts reads rather than packets.
 
-A row that reads `none` relies on the caller to call `cleanup_connection`.
-FR-concurrency-safety-7 and FR-concurrency-safety-8 own that gap, and Epic 3 closes it.
+`TCPStreamReassembler.streams` stays an `OrderedDict`. It holds both bounds already, and
+`add_segment` applies two more per-stream caps that no mapping models. #39 records the
+decision and changes no behaviour of that class.
+
+The `JA4HFingerprinter` tables and `JA4XFingerprinter.scan_offsets` read
+`TCPStreamReassembler.max_streams` and `max_stream_age` of the reassembler that
+fingerprinter holds, so one number bounds the stream and the state that describes it.
+
+A table whose age is below the default runs one age pass on each packet. A pass that
+waits for 1000 packets is longer than a 30-second age on a connection that sends few
+packets, so that pass evicts nothing. Each such table holds 1000 entries at most, so
+the cost of the pass stays flat.
 
 `BaseFingerprinter.fingerprints` holds one result per fingerprint, not per-connection
 data, so the `## Terms` table does not name it a state table. It appears above because

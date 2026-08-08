@@ -217,6 +217,85 @@ def test_the_ja4s_connection_identifier_table_holds_its_entry_count():
     assert len(fingerprinter._quic_dcids) <= 4
 
 
+def _quic_client_initial(src_port, seconds):
+    """Return one QUIC client Initial packet that names a connection identifier."""
+    packet = IP(src="10.0.0.1", dst="10.0.0.2") / UDP(sport=src_port, dport=443)
+    # A long-header Initial packet with a four-byte destination connection ID.
+    packet = packet / Raw(load=b"\xc0\x00\x00\x00\x01\x04\xaa\xbb\xcc\xdd\x00" + b"\x00" * 40)
+    packet.time = seconds
+    return packet
+
+
+def test_the_ja4s_connection_identifier_table_evicts_an_entry_past_the_maximum_age():
+    """A connection whose client Initial packet ages out leaves the DCID table."""
+    fingerprinter = JA4SFingerprinter()
+    fingerprinter._quic_dcids.max_connection_age = 60
+    fingerprinter._quic_dcids.eviction_interval = 1
+
+    fingerprinter.process_packet(_quic_client_initial(50000, 1000.0))
+    assert len(fingerprinter._quic_dcids) == 1
+
+    fingerprinter.process_packet(_quic_client_initial(50001, 1100.0))
+
+    assert "10.0.0.1:50000-10.0.0.2:443" not in fingerprinter._quic_dcids
+    assert len(fingerprinter._quic_dcids) == 1
+
+
+def test_the_ja4l_grouping_key_table_evicts_an_entry_past_the_maximum_age():
+    """A connection that receives no packet for longer than the age leaves the map."""
+    fingerprinter = JA4LFingerprinter()
+    fingerprinter.grouping_keys.max_connection_age = 60
+    fingerprinter.grouping_keys.eviction_interval = 1
+
+    fingerprinter.process_packet(_tcp("10.0.0.1", 50000, "10.0.0.2", 443, "S", 1000.0))
+    assert len(fingerprinter.grouping_keys) == 1
+
+    fingerprinter.process_packet(_tcp("10.0.0.3", 50001, "10.0.0.4", 443, "S", 1100.0))
+
+    assert len(fingerprinter.grouping_keys) == 1
+
+
+def _tls_segment(client_port, seconds, seq=1):
+    """Return one TCP packet whose payload starts a TLS record and holds no request."""
+    payload = b"\x16\x03\x03\x00\x20" + b"\x00" * 32
+    return _tcp("10.0.0.1", client_port, "10.0.0.2", 443, "PA", seconds, seq=seq, payload=payload)
+
+
+def test_the_ja4x_scan_offset_table_evicts_an_entry_past_the_maximum_age():
+    """A stream that receives no segment for longer than the age leaves the map."""
+    fingerprinter = JA4XFingerprinter()
+    fingerprinter.scan_offsets.max_connection_age = 60
+    fingerprinter.scan_offsets.eviction_interval = 1
+
+    fingerprinter.process_packet(_tls_segment(50000, 1000.0))
+    assert len(fingerprinter.scan_offsets) == 1
+
+    fingerprinter.process_packet(_tls_segment(50001, 1100.0))
+
+    assert "10.0.0.1:50000-10.0.0.2:443" not in fingerprinter.scan_offsets
+    assert len(fingerprinter.scan_offsets) == 1
+
+
+def _unusable_segment(client_port, seconds, seq=1):
+    """Return one TCP packet whose payload starts no HTTP request."""
+    return _tcp("10.0.0.1", client_port, "10.0.0.2", 80, "PA", seconds, seq=seq, payload=b"zzzz")
+
+
+def test_the_ja4h_waiting_stream_table_evicts_an_entry_past_the_maximum_age():
+    """A stream that waits and then goes quiet leaves the waiting-stream table."""
+    fingerprinter = JA4HFingerprinter()
+    fingerprinter.unusable_base.max_connection_age = 60
+    fingerprinter.unusable_base.eviction_interval = 1
+
+    fingerprinter.process_packet(_unusable_segment(50000, 1000.0))
+    assert len(fingerprinter.unusable_base) == 1
+
+    fingerprinter.process_packet(_unusable_segment(50001, 1100.0))
+
+    assert "10.0.0.1:50000-10.0.0.2:80" not in fingerprinter.unusable_base
+    assert len(fingerprinter.unusable_base) == 1
+
+
 def _http_request(client_port, seconds, seq=1, body=b""):
     """Return one packet that carries a whole HTTP request."""
     request = b"GET /a HTTP/1.1\r\nHost: e.com\r\nUser-Agent: t\r\n\r\n" + body
