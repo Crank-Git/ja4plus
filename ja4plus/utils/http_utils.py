@@ -64,7 +64,7 @@ def _exceeds_byte_length(text, limit):
     """
     if len(text) > limit:
         # Every character takes one byte or more, so the byte length passes the limit.
-        # This test keeps the encoding below `limit` times four bytes.
+        # This test also bounds the `str.encode` call below to four times the limit.
         return True
     return len(text.encode("utf-8", errors="ignore")) > limit
 
@@ -74,10 +74,10 @@ def parse_cookie_header(cookie_header):
 
     Past any bound this function produces no result, and the caller therefore produces
     no JA4H value. It never truncates. The JA4H cookie hash reads the content and the
-    order of the list, so a truncated list produces a value that compares equal to a
-    different sender's. A tool whose purpose is to compare one output against another
-    must not emit a value that describes traffic the sender did not send. The user
-    decided this on 2026-08-08, on #175.
+    order of the list. A truncated list therefore produces a value that compares equal
+    to a different sender's. A tool whose purpose is to compare one output against
+    another must not emit a value that describes traffic the sender did not send. The
+    user decided this on 2026-08-08, on #175.
 
     A segment that holds no equals sign contributes no entry, and it counts against no
     bound.

@@ -184,7 +184,7 @@ The three bounds sit in `ja4plus/utils/http_utils.py`. Three parsers read them:
 
 Past any bound the cookie parse produces no result, and the request therefore produces
 no JA4H value. The parse never truncates. The JA4H cookie hash reads the content and the
-order of the list, so a truncated list produces a value that compares equal to a
+order of the list. A truncated list therefore produces a value that compares equal to a
 different sender's. `ja4plus/utils/ssh_utils.py` holds the same shape past
 `MAX_SSH_BANNER_BYTES`. The user decided this on 2026-08-08.
 

@@ -5,9 +5,9 @@ header and append one entry per pair, and none of the three held a bound before 
 
 Past any bound the cookie parse produces no result, and the request therefore produces
 no JA4H value. The user decided that on 2026-08-08. The JA4H cookie hash reads the
-content and the order of the list, so a truncated list produces a value that compares
-equal to a different sender's. A tool whose purpose is to compare one output against
-another must not emit a value that describes traffic the sender did not send.
+content and the order of the list. A truncated list therefore produces a value that
+compares equal to a different sender's. A tool whose purpose is to compare one output
+against another must not emit a value that describes traffic the sender did not send.
 """
 
 from scapy.all import IP, TCP, Raw
@@ -133,14 +133,18 @@ def test_one_pair_above_a_cap_refuses_the_whole_header():
     _every_path_refuses(header)
 
 
-def test_the_parsed_request_path_reports_no_cookie_above_a_cap():
-    """`_convert_parsed_to_extract_format` receives nothing, because the parse produces none."""
-    data = _request(_pairs(MAX_COOKIE_PAIRS + 1))
+def test_the_parsed_request_path_converts_a_header_at_the_cap_and_nothing_above_it():
+    """`_convert_parsed_to_extract_format` reads 512 pairs, and reads nothing above 512.
 
-    parsed = parse_http_request(data)
+    The converter reports the cookie list that JA4H hashes. A parse that truncated would
+    reach the converter with 512 of the 513 pairs, and the request would carry a
+    fingerprint.
+    """
+    at_cap = parse_http_request(_request(_pairs(MAX_COOKIE_PAIRS)))
+    above_cap = parse_http_request(_request(_pairs(MAX_COOKIE_PAIRS + 1)))
 
-    assert parsed is None
-    assert _convert_parsed_to_extract_format({}) is not None
+    assert above_cap is None
+    assert len(_convert_parsed_to_extract_format(at_cap)["cookie_fields"]) == MAX_COOKIE_PAIRS
 
 
 def test_the_reassembled_stream_path_produces_no_ja4h_value_above_a_cap():
