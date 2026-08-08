@@ -66,6 +66,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`ja4plus watch <interface>` reads an interface and bounds its connection table**
+  (#53). Round TBD. `ja4plus live` stays as an alias of it, so a version 0.6.0 script
+  keeps working. The command owns the connection table, and that table holds a maximum
+  entry count and a maximum age. `--max-connections COUNT` sets the entry count, and it
+  defaults to 10000. `--connection-timeout SECONDS` sets the age, and it defaults to
+  300. When the table is full, the monitor evicts the least recently used connection.
+  When a connection sends no packet for the stated age of capture time, the monitor
+  evicts it too. Each eviction calls `Processor.cleanup_connection`, so it drops the
+  entry of the connection table and the per-connection state of all ten methods
+  together. Version 0.6.0 called `cleanup_connection` never, so its live capture held
+  the state of every connection it ever read and a monitor on a busy interface grew
+  until the host stopped it. Eviction runs on packet arrival, and the command starts no
+  thread for it. One million packets across 50000 connections leave the monitor holding
+  10000 connections and 7.20 MiB.
+
 - **`Processor.process_packet_with_method_errors` names the method that raised** (#51).
   Round 94. It returns the same results as `process_packet_with_errors`, and one pair
   of the method name and the exception for each method that raised. An exception names

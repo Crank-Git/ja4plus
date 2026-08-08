@@ -732,8 +732,8 @@ def main() -> None:
         metavar="COUNT",
         help=(
             "Maximum number of tracked connections "
-            f"(default: {DEFAULT_MAX_CONNECTIONS}). The monitor evicts the least "
-            "recently used connection when the table is full."
+            f"(default: {DEFAULT_MAX_CONNECTIONS}). When the table is full, the "
+            "monitor evicts the least recently used connection."
         ),
     )
     watch_parser.add_argument(
