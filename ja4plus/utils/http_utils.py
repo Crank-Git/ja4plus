@@ -8,13 +8,22 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# The characters of a method token. RFC 9110 section 5.6.2 names the set, and it omits
+# `/`, so a response line such as `HTTP/1.1 200 OK` never reads as a request line.
+METHOD_TOKEN_CHARACTERS = r"!#$%&'*+\-.^_`|~0-9A-Za-z"
+
+# The pattern reads the first two characters of any method, as `python/ja4h.py:9` does,
+# and it names no method. A closed list of nine produced no JA4H value for a request that
+# carries a method such as `PROPFIND`. #219 records the decision and the `Divergence
+# register` of `docs/specs/spec.md` records what it departs from.
+#
 # The version token holds a minor version, or it names major version 2 or 3, which carry
 # no minor version. A token such as `HTTP/11` names no HTTP version, and a pattern that
 # reads it as `HTTP/1` reports the version code of `HTTP/1.1`. The two requests then
 # carry one fingerprint. The lookahead ends the token for that reason. #35 records both
 # defects.
 REQUEST_LINE_PATTERN = (
-    r"^(GET|POST|PUT|DELETE|HEAD|OPTIONS|CONNECT|TRACE|PATCH)"
+    r"^([" + METHOD_TOKEN_CHARACTERS + r"]+)"
     r"\s+(\S+)\s+(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
 )
 
@@ -85,30 +94,16 @@ def parse_http_request(data):
         if not lines:
             return None
 
-        # Parse request line
-        request_line = lines[0]
-        parts = request_line.split(" ")
-        if len(parts) < 3:
+        # The three parse paths read one request-line pattern, so the three read one
+        # method list and one version list. The list of methods is open. #219 records
+        # the decision.
+        request_line_match = re.match(REQUEST_LINE_PATTERN, lines[0])
+        if not request_line_match:
             return None
 
-        method = parts[0].upper()
-        path = parts[1]
-        version = parts[2]
-
-        # Check if this is an HTTP request
-        http_methods = [
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "HEAD",
-            "OPTIONS",
-            "PATCH",
-            "CONNECT",
-            "TRACE",
-        ]
-        if method not in http_methods:
-            return None
+        method = request_line_match.group(1).upper()
+        path = request_line_match.group(2)
+        version = request_line_match.group(3)
 
         # Parse headers
         headers = {}
@@ -191,7 +186,13 @@ def is_http_request(data):
         if data.startswith(method):
             return True
 
-    return False
+    # A method the nine tokens omit reaches this line, and the buffer must then hold a
+    # whole request line. The nine-token test admits `GET ` on its own, and a wider test
+    # of the same shape would admit an SSH banner, which starts with method characters
+    # and one space. `ja4l.py:365` reads this function, so a payload it admits by mistake
+    # moves a JA4L measurement point. #219 records the decision.
+    text = data.decode("utf-8", errors="ignore")
+    return re.match(REQUEST_LINE_PATTERN, text) is not None
 
 
 def can_become_http_request(data):
