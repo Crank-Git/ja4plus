@@ -334,3 +334,99 @@ def test_ja4d6_emits_a_value_for_message_type_zero():
     """
     fingerprint = generate_ja4d6(_dhcpv6_packet(_dhcpv6_message(0)))
     assert fingerprint == "000000000nn_00_00"
+
+
+# --- #271 D1 to D3 — the four JA4D6 subfield fields at any nesting depth -----------
+
+
+def _relay_forward(inner_options, outer_options=b""):
+    """Return one RELAY-FORW message that carries an inner SOLICIT message.
+
+    Args:
+        inner_options: The option bytes of the inner SOLICIT message.
+        outer_options: The option bytes the relay message holds beside option 9.
+
+    Returns:
+        The whole UDP payload, message type first.
+    """
+    inner = _dhcpv6_message(1, inner_options)
+    return bytes([12, 0]) + bytes(16) + bytes(16) + bytes(outer_options) + _dhcpv6_option(9, inner)
+
+
+def test_ja4d6_reads_the_client_duid_inside_a_relay_message():
+    """Subfield 2 holds the inner Client DUID length.
+
+    `wireshark/source/packet-ja4.c:967-969` walks every field of the whole dissection
+    tree, and `wireshark/source/packet-ja4.c:1547-1559` matches `dhcpv6.duid.bytes` on
+    the field name alone. A top-level reading gives `0000` here.
+    """
+    payload = _relay_forward(_dhcpv6_option(1, bytes(14)))
+    fingerprint = generate_ja4d6(_dhcpv6_packet(payload))
+    assert fingerprint.split("_")[0][5:9] == "0014"
+
+
+def test_ja4d6_keeps_the_outer_client_duid_length_before_the_inner_one():
+    """The outer Client DUID decides, because the walk reads the outer option first.
+
+    D9 keeps the first occurrence, and the dissection tree reports the outer option
+    before the inner one.
+    """
+    payload = _relay_forward(_dhcpv6_option(1, bytes(4)), _dhcpv6_option(1, bytes(14)))
+    fingerprint = generate_ja4d6(_dhcpv6_packet(payload))
+    assert fingerprint.split("_")[0][5:9] == "0014"
+
+
+def test_ja4d6_reads_the_ia_ta_option_inside_a_relay_message():
+    """The ip character is `i` when an inner message carries DHCPv6 option 4.
+
+    `wireshark/source/packet-ja4.c:1560-1562` matches `dhcpv6.iata` on the field name
+    alone. A top-level reading gives `n` here.
+    """
+    payload = _relay_forward(_dhcpv6_option(4, bytes(4)))
+    fingerprint = generate_ja4d6(_dhcpv6_packet(payload))
+    assert fingerprint.split("_")[0][9] == "i"
+
+
+def test_ja4d6_reads_the_client_fqdn_inside_a_relay_message():
+    """The domain character is `d` when an inner message carries DHCPv6 option 39.
+
+    `wireshark/source/packet-ja4.c:1563-1565` matches `dhcpv6.client_domain` on the
+    field name alone. A top-level reading gives `n` here.
+    """
+    payload = _relay_forward(_dhcpv6_option(39, b"\x00host"))
+    fingerprint = generate_ja4d6(_dhcpv6_packet(payload))
+    assert fingerprint.split("_")[0][10] == "d"
+
+
+def test_ja4d6_reads_the_option_request_list_inside_a_relay_message():
+    """Part c holds the Option Request List of an inner message.
+
+    `wireshark/source/packet-ja4.c:1574-1578` matches `dhcpv6.requested_option_code` on
+    the field name alone. A top-level reading gives `00` here.
+    """
+    payload = _relay_forward(_dhcpv6_option(6, b"\x00\x17\x00\x18"))
+    fingerprint = generate_ja4d6(_dhcpv6_packet(payload))
+    assert fingerprint.split("_")[2] == "23-24"
+
+
+def test_ja4d6_joins_the_outer_option_request_list_before_the_inner_one():
+    """Part c holds every Option Request List, in the order the walk reads them."""
+    payload = _relay_forward(
+        _dhcpv6_option(6, b"\x00\x17\x00\x18"), _dhcpv6_option(6, b"\x00\x11\x00\x27")
+    )
+    fingerprint = generate_ja4d6(_dhcpv6_packet(payload))
+    assert fingerprint.split("_")[2] == "17-39-23-24"
+
+
+def test_ja4d6_writes_the_outer_message_type_alone_in_subfield_1():
+    """Part a holds eleven characters, and subfield 1 holds the outer type alone.
+
+    `wireshark/source/packet-ja4.c:1537-1546` appends a five-character name for every
+    `dhcpv6.msgtype` field, so it writes `rlayfsolct` and a part a of sixteen
+    characters. R2 of `docs/specs/foxio/JA4D.md` gives part a eleven characters, so this
+    project declines that concatenation.
+    """
+    payload = _relay_forward(_dhcpv6_option(1, bytes(14)))
+    part_a = generate_ja4d6(_dhcpv6_packet(payload)).split("_")[0]
+    assert len(part_a) == 11
+    assert part_a[:5] == "rlayf"

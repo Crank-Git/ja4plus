@@ -6,9 +6,15 @@ the rules R14 to R22 that this module builds.
 
 Format: {type:5}{size:4}{ip:1}{fqdn:1}_{options}_{request_list}
 
+Every part reads the DHCPv6 options at any nesting depth. D1 and D2 of #271 rule that
+reading, because `wireshark/source/packet-ja4.c:967-969` walks every field of the whole
+dissection tree and matches on the field name alone.
+
 Section a:
 - type:  5-char abbreviation of msg-type (see DHCPV6_MESSAGE_TYPES)
          unknown -> "%05u"
+         The outer message type alone. D3 of #271 declines the concatenation the
+         dissector writes for a relay message.
 - size:  byte-length of the DUID payload inside option 1 (Client Identifier).
          "%04d", capped at 9999, "0000" if absent.
 - ip:    'i' if option 4 (IATA) is present, else 'n'
@@ -122,18 +128,18 @@ def _options_offset(data, start, end):
     return start + _DHCPV6_MESSAGE_HEADER_LEN
 
 
-def _walk_options(data, start, end, out, depth=0):
-    """Append the code of every DHCPv6 option between ``start`` and ``end`` to ``out``.
+def _walk_options(data, start, end, found, depth=0):
+    """Read every DHCPv6 option between ``start`` and ``end`` into ``found``.
 
     Args:
         data: The bytes that hold the message.
         start: The offset of the first option.
         end: The offset one past the last option byte.
-        out: The list that receives each option code, in presence order.
+        found: The record that receives the six inputs, in presence order.
         depth: The count of containers already entered.
 
     Returns:
-        None. A container deeper than _DHCPV6_MAX_NESTING_DEPTH contributes no code.
+        None. A container deeper than _DHCPV6_MAX_NESTING_DEPTH contributes no input.
     """
     if depth > _DHCPV6_MAX_NESTING_DEPTH:
         return
@@ -144,29 +150,60 @@ def _walk_options(data, start, end, out, depth=0):
         pos += 4
         if pos + opt_len > end:
             break
-        out.append(opt_code)
+        found["options_in_order"].append(opt_code)
+        _read_subfield_option(data, pos, opt_len, opt_code, found)
 
         if opt_code == _DHCPV6_RELAY_MESSAGE_OPTION:
             inner_end = pos + opt_len
             inner_start = _options_offset(data, pos, inner_end)
             if inner_start <= inner_end:
-                _walk_options(data, inner_start, inner_end, out, depth + 1)
+                _walk_options(data, inner_start, inner_end, found, depth + 1)
         elif opt_code in _DHCPV6_NESTED_OPTIONS:
             header_len = _DHCPV6_NESTED_OPTIONS[opt_code]
             inner_start = pos + header_len
             inner_end = pos + opt_len
             if inner_start <= inner_end:
-                _walk_options(data, inner_start, inner_end, out, depth + 1)
+                _walk_options(data, inner_start, inner_end, found, depth + 1)
 
         pos += opt_len
+
+
+def _read_subfield_option(data, pos, opt_len, opt_code, found):
+    """Read one DHCPv6 option into the four subfield inputs of ``found``.
+
+    Args:
+        data: The bytes that hold the message.
+        pos: The offset of the option data.
+        opt_len: The length of the option data.
+        opt_code: The option code.
+        found: The record that receives the four inputs.
+
+    Returns:
+        None. An option code outside the four contributes no input.
+    """
+    if opt_code == 1 and not found["has_duid"]:  # Client Identifier
+        # D9 of docs/specs/foxio/JA4D.md: wireshark/source/packet-ja4.c:1547-1549
+        # reads the length while the subfield is still empty, so the first
+        # occurrence decides it.
+        found["duid_len"] = opt_len
+        found["has_duid"] = True
+    elif opt_code == 4:  # IA_TA
+        found["has_iata"] = True
+    elif opt_code == 39:  # Client FQDN
+        found["has_fqdn"] = True
+    elif opt_code == 6:  # Option Request
+        # D10 of docs/specs/foxio/JA4D.md: wireshark/source/packet-ja4.c:1574-1578
+        # appends every requested option code, so a split option 6 reaches part c
+        # whole. Each code holds two bytes, big-endian.
+        for i in range(pos, pos + opt_len - 1, 2):
+            found["request_list"].append((data[i] << 8) | data[i + 1])
 
 
 def _parse_dhcpv6_payload(payload):
     """Return the JA4D6 inputs the DHCPv6 UDP payload carries.
 
-    Part b reads the options of an inner relay message. The four subfield inputs read
-    the top level alone, which is the reading R16, R19 and R20 hold, and those three
-    rules stay uncertain.
+    One walk reads all six inputs, so each one reaches an inner relay message. D1 and D2
+    of docs/specs/foxio/JA4D.md rule that reading, and #271 records it.
 
     Args:
         payload: The whole UDP payload, message type first.
@@ -177,57 +214,25 @@ def _parse_dhcpv6_payload(payload):
     if len(payload) < 4:
         return None
 
-    msg_type = payload[0]
     end = len(payload)
     # A relay message puts its options after a 34-byte header, and every other message
     # type puts them after a 4-byte header.
     options_start = _options_offset(payload, 0, end)
 
-    options_in_order = []
-    _walk_options(payload, options_start, end, options_in_order)
-
-    # Walk options non-recursively at top level to extract specific fields
-    duid_len = 0
-    has_duid = False
-    has_iata = False
-    has_fqdn = False
-    request_list = []
-
-    pos = options_start
-    while pos + 4 <= end:
-        opt_code = (payload[pos] << 8) | payload[pos + 1]
-        opt_len = (payload[pos + 2] << 8) | payload[pos + 3]
-        pos += 4
-        if pos + opt_len > end:
-            break
-        opt_data = payload[pos : pos + opt_len]
-        pos += opt_len
-
-        if opt_code == 1 and not has_duid:  # Client Identifier — DUID is the entire data
-            # D9 of docs/specs/foxio/JA4D.md: wireshark/source/packet-ja4.c:1547-1549
-            # reads the length while the subfield is still empty, so the first
-            # occurrence decides it.
-            duid_len = len(opt_data)
-            has_duid = True
-        elif opt_code == 4:  # IATA
-            has_iata = True
-        elif opt_code == 39:  # Client FQDN
-            has_fqdn = True
-        elif opt_code == 6:  # Option Request (ORO)
-            # D10 of docs/specs/foxio/JA4D.md: wireshark/source/packet-ja4.c:1574-1578
-            # appends every requested option code, so a split option 6 reaches part c
-            # whole. Each code holds two bytes, big-endian.
-            for i in range(0, len(opt_data) - 1, 2):
-                request_list.append((opt_data[i] << 8) | opt_data[i + 1])
-
-    return {
-        "msg_type": msg_type,
-        "options_in_order": options_in_order,
-        "duid_len": duid_len,
-        "has_iata": has_iata,
-        "has_fqdn": has_fqdn,
-        "request_list": request_list,
+    found = {
+        # D3 of #271: subfield 1 holds the outer message type alone. The dissector
+        # appends a name for every dhcpv6.msgtype field, which gives a relay message a
+        # sixteen-character part a and breaks the eleven characters R2 states.
+        "msg_type": payload[0],
+        "options_in_order": [],
+        "duid_len": 0,
+        "has_duid": False,
+        "has_iata": False,
+        "has_fqdn": False,
+        "request_list": [],
     }
+    _walk_options(payload, options_start, end, found)
+    return found
 
 
 def _build_option_list(options_in_order):
