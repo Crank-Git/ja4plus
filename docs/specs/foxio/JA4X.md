@@ -117,6 +117,17 @@ offset += 1
 Each rule below carries two corroborations. Neither corroboration is the image. The
 in-repository corroborations read the FoxIO material at the pinned commit.
 
+**Eleven rules reach two corroborations each, and one rule is uncertain.**
+
+| State | Rules |
+|---|---|
+| Two corroborations, and the image agrees | R1, R2, R3, R4, R5, R6, R7, R10 |
+| Two corroborations, and the image states nothing | R9, R11 |
+| Two corroborations, and the image contradicts them | **R8. It is uncertain, and it keeps the vector fallback.** |
+
+**No rule on this page holds fewer than two corroborations.** R8 is uncertain for the
+opposite reason: the image draws both forms, so the image contradicts its own example.
+
 ### R1 — JA4X holds three parts, joined with `_`
 
 The fingerprint is `<issuer hash>_<subject hash>_<extension hash>`.
