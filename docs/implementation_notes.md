@@ -306,6 +306,41 @@ Zeek baseline holds `ja4ts 65535_00_00_00`, and #198 owns that reading.
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`,
 `docs/specs/foxio/JA4T.md`.
 
+### The Rust snapshot holds 43 JA4X values, and the reader skipped every one
+
+A `ja4x` value sits inside the `tls_certs` block of a snapshot stream, at a deeper indent
+than every field above it. `read_rust_snapshot` took the two-space level alone, so the
+five local snapshots that hold a certificate carried 43 JA4X values that no case read.
+
+**The gap.** `tests/foxio_deviations.json` stated for `https-connect.pcap/JA4X` that
+`tests/test_foxio_rust_parity.py measures the match.` That sentence was false, and the
+entry was `decided` on evidence that did not exist. #229 built the comparison, so the
+sentence is now true. `docs/specs/foxio/JA4X.md` holds the whole reading.
+
+**The measurement.** `TestTheJa4xValuesTheRustSnapshotHolds` holds it.
+
+| Measurement | Count |
+|---|---|
+| JA4X values in the ten local Rust snapshots | 43 |
+| Streams that hold at least one | 19 |
+| Values `ja4plus` reproduces exactly, in snapshot order | 43 |
+| Values that differ | 0 |
+| Streams whose value count differs | 0 |
+| Cases that stop running when the `tls_certs` branch leaves the reader | 48 |
+
+**No register entry is added.** Every value agrees, so the register holds 116 keys before
+and 116 after, against 116 `xfailed` cases.
+
+**The key belongs to one module.** `tests/test_spec_validation.py` builds the key form
+`<capture>/<stream>:<port>/JA4X.<n>` from the FoxIO Python file, and that file holds a
+JA4X value for 18 of the 19 streams. `certificate_key` therefore keys the one stream that
+file omits, which is `https-connect.pcap` stream 0 on port 54723, and
+`test_no_register_key_of_this_module_belongs_to_the_spec_validation_suite` keeps the two
+key sets apart.
+
+**Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`,
+`docs/specs/foxio/JA4X.md`.
+
 ### JA4X scans the record layer whatever tunnel carries it
 
 `socks4-https.pcap` carries TLS inside a SOCKS4 tunnel on port 9901. No FoxIO
