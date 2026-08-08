@@ -21,8 +21,9 @@ shasum -a 256 technical_details/JA4SSH.png
 ## FoxIO published a text specification of JA4SSH, and then deleted it
 
 **`technical_details/JA4SSH.md` existed, and one commit deleted it.** The deleted file
-states every rule the image draws, in words. This page cites it, and this page states
-where it came from so that the next reader can weigh it.
+states the six fields of the image in words, and it states two rules the image only
+draws. This page cites it, and this page states where it came from so that the next
+reader can weigh it.
 
 | Item | Value |
 |---|---|
@@ -136,8 +137,8 @@ carries no SSH layer.
 ### R4 — Two lengths that tie for the highest count give the smaller length
 
 - Corroboration 1: `rust/ja4/src/ssh.rs:294-315`, `min_key_with_max_value`, keeps the
-  smaller key on a tie. Its unit test at line 317 asserts `Some(16)` and `Some(23)` for
-  two sets whose counts all equal 1.
+  smaller key on a tie. Its unit test asserts `Some(16)` at `rust/ja4/src/ssh.rs:334` and
+  `Some(23)` at `rust/ja4/src/ssh.rs:340`, for two sets whose counts all equal 1.
 - Corroboration 2: `python/ja4ssh.py:49-54`, `_mode_from_lengths`, returns
   `min(k for k, v in counts.items() if v == max_count)`.
 
@@ -227,11 +228,15 @@ on one side.
 
 **This rule is uncertain, and it is the rule #214 needs.** Keep the vector fallback.
 
-The image states one boundary, the 200 SSH packets of R7. It states nothing about a
-connection that closes, nothing about the end of a capture, and nothing about the window
-a connection holds open when either happens. The deleted
-`technical_details/JA4SSH.md` states nothing about them either. The section "What the
-image does not state" lists the whole gap, and "The trailing window" holds the
+The image states one boundary, the 200 SSH packets of R7. It states nothing about these
+three things.
+
+- A connection that closes.
+- The end of a capture.
+- The window a connection holds open when either happens.
+
+The deleted `technical_details/JA4SSH.md` states nothing about them either. The section
+"What the image does not state" lists the whole gap, and "The trailing window" holds the
 measurement.
 
 ## The worked examples the image gives
@@ -295,7 +300,7 @@ mode reads the 200 packets of the window, and not the packets of another connect
 builds a new map at each boundary, so two references disagree with the Python
 implementation as well.
 
-**Status: explained by the specification as a defect. The decline stands.** The behaviour
+**Status: the specification explains the behaviour as a defect. The decline stands.** The behaviour
 also meets shape 1 of `.claude/rules/conformance.md`, because the value depends on the
 composition of the capture.
 
@@ -309,9 +314,9 @@ makes FoxIO write another occurrence from a window that holds no SSH packet.`
 packet, and `python/ja4ssh.py:98-99` advances `entry['count']` only for an SSH packet. A
 bare ACK that arrives after packet 200 and before packet 201 therefore finds `count`
 still equal to 200, and it calls `to_ja4ssh` again. `python/ja4ssh.py:145` guards that
-call with `if e['client_payloads'] or e['server_payloads']`, and the shared list of #96
-defeats the guard, so the reference writes `JA4SSH.2` from a window whose packet counters
-are `c0s0` and whose mode comes from the previous window.
+call with `if e['client_payloads'] or e['server_payloads']`. The shared list of #96
+defeats the guard. The reference then writes `JA4SSH.2` from a window whose packet
+counters are `c0s0`, and whose mode comes from the previous window.
 
 `tests/foxio_vectors/ssh2.pcapng.json` holds the result on stream 14:
 `'JA4SSH.1': 'c36s36_c76s124_c74s5', 'JA4SSH.2': 'c36s36_c0s0_c2s0'`.
@@ -322,7 +327,7 @@ that part b holds the count of SSH packets, and `c0s0` states that the window ho
 it carries the comment `This doesn't seem to be an *SSH* TCP stream after all.`
 **`ja4plus/fingerprinters/ja4ssh.py:342-343` holds the same guard as the Rust reference.**
 
-**Status: explained by the specification as a defect. The decline stands.** The behaviour
+**Status: the specification explains the behaviour as a defect. The decline stands.** The behaviour
 also meets shape 2 of `.claude/rules/conformance.md`, because the fingerprint describes
 no traffic.
 
@@ -342,8 +347,8 @@ image and the deleted text state nothing about the last window. The decline ther
 rests on the shape rule and not on a statement of intent.
 
 **The behaviour meets shape 1 of `.claude/rules/conformance.md`.** The value depends on
-the position of the connection in the file: the same connection produces a trailing
-fingerprint at stream index 1 and produces none at stream index 0.
+the position of the connection in the file. The same connection produces a trailing
+fingerprint at stream index 1, and it produces none at stream index 0.
 
 **Two other references write the trailing window for every connection.**
 `rust/ja4/src/ssh.rs:45-55`, `Stream::finish`, pushes the held window with no test on the
@@ -352,8 +357,8 @@ emits from `connection_state_remove`. `wireshark/source/packet-ja4.c:1399-1404` 
 on a FIN+ACK packet, under the comment `// Fix to add JA4SSH when a connection
 terminates`, and it applies no test on the stream index.
 
-**Status: unexplained by the specification, and declined on the shape rule. The decline
-stands.** Three references contradict the reference behaviour, and no reference supports
+**Status: the specification does not explain the behaviour. The decline rests on the
+shape rule alone, and it stands.** Three references contradict the reference behaviour, and no reference supports
 it.
 
 ## The trailing window, and the reading #214 needs
@@ -450,15 +455,14 @@ under "Ask whether a case can fail".
 ### The question #214 holds
 
 **Does `ja4plus` close the last window at the end of a capture, as the Rust and Zeek
-references do?** The specification does not answer it. The consequences are stated, and
-the user decides.
+references do?** The specification does not answer it. This page states the consequences.
+The user decides.
 
 - A change would add one fingerprint to `ssh2.pcapng`, `c36s52_c42s76_c51s2`, which two
   FoxIO references hold.
-- `tests/foxio_vectors/ssh2.pcapng.json` holds a different second value, and
-  `.claude/rules/external-apis.md` states that `python/test/testdata/` decides where both
-  it and a Rust snapshot carry a value for one method on one stream. That declined value
-  is the #97 defect.
+- `tests/foxio_vectors/ssh2.pcapng.json` holds a different second value. That value is the
+  declined #97 defect. `.claude/rules/external-apis.md` states that `python/test/testdata/`
+  decides where it and a Rust snapshot both carry a value for one method on one stream.
 - A change would also add a trailing fingerprint to every capture whose SSH connection
   never closes, and this page measures no other such capture.
 
@@ -531,8 +535,8 @@ equality.**
 
 `rust/ja4/src/ssh.rs:35` tests `== sample_size` and `python/ja4ssh.py:125` tests
 `% ssh_sample_count == 0`. `ja4ssh.py:201` extends the window with every message that one
-segment completes, so one packet can advance the count by more than one, and an equality
-test would then miss the boundary. `zeek/ja4ssh/main.zeek:140` tests `>=`, per
+segment completes. One packet can therefore advance the count by more than one. An
+equality test would then miss the boundary. `zeek/ja4ssh/main.zeek:140` tests `>=`, per
 `docs/specs/foxio/zeek.md`, so `ja4plus` agrees with the Zeek reference.
 
 **This disagreement moves no measured fingerprint.** No vector in this repository crosses
