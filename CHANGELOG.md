@@ -167,7 +167,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - **The two handlers of the X.509 byte reader name the errors they expect** (#316).
-  Round TBD. `extract_certificate_from_bytes` wrote `except Exception` twice, once
+  Round 100. `extract_certificate_from_bytes` wrote `except Exception` twice, once
   around the ASN.1 parse and once around the whole function body. #294 narrowed
   neither, because it targeted the `(ValueError, TypeError, Exception)` form. The inner
   list now names `ValueError` and `InvalidVersion`. The `cryptography` documentation
@@ -181,7 +181,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   xfailed before the change and after it. `tests/test_x509_certificate_reader.py` holds
   16 cases, and one of the 12 new cases failed against the base.
 
-- **`extract_certificate_info` reads the module `x509`** (#309). Round TBD.
+- **`extract_certificate_info` reads the module `x509`** (#309). Round 98.
   `x509_utils.py:262` and `x509_utils.py:263` imported `x509` and `default_backend`
   inside one branch, which made both names locals of the whole function. The parse at
   `x509_utils.py:285` therefore raised `UnboundLocalError` for every packet whose
@@ -193,7 +193,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_x509_certificate_info.py` holds three cases, and one of them failed
   against the base.
 
-- **The three X.509 handlers name the errors they expect** (#294). Round TBD.
+- **The three X.509 handlers name the errors they expect** (#294). Round 97.
   `ja4x.py:460`, `ja4x.py:490` and `x509_utils.py:267` each wrote
   `except (ValueError, TypeError, Exception) as e:`. `Exception` is a superclass of the
   other two names, so each handler caught every error while it read as a narrow catch.
@@ -373,7 +373,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
-- **Four X.509 helpers leave `ja4plus/utils/x509_utils.py`** (#314). Round TBD. The
+- **Four X.509 helpers leave `ja4plus/utils/x509_utils.py`** (#314). Round 99. The
   user decided on 2026-08-08 that `extract_certificate_info` leaves the package before
   version 1.0.0, together with the sibling helpers no caller uses. The four are
   `extract_certificate_info`, `get_certificate_issuer`, `get_certificate_subject` and
