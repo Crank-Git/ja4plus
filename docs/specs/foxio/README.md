@@ -76,6 +76,7 @@ transcription and names the two sources that name JA4LS as a separate method.
 | JA4H | `docs/specs/foxio/JA4H.md` | Complete. #203 |
 | JA4SSH | `docs/specs/foxio/JA4SSH.md` | Complete. #199 |
 | JA4L | `docs/specs/foxio/JA4L.md` | Complete. #200. The page covers the client form, because the image specifies no server form. |
+| JA4S | `docs/specs/foxio/JA4S.md` | Complete. #201. The method reaches more published reference values than any other, so the page measures where the earlier pages reasoned. |
 | JA4D and JA4D6 | `docs/specs/foxio/JA4D.md` | Complete. #204. One page transcribes the two images |
 | The seven deleted text files | `docs/specs/foxio/deleted-text-specifications.md` | Complete. #221. It transcribes no image and it reconciles the deleted prose |
 
