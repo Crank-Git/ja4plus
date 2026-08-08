@@ -66,6 +66,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`ja4plus watch` applies a capture filter and reads the capture failure** (#56). Round
+  TBD. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
+  which drops every packet the filter rejects. The command reads no user identity. It
+  attempts the capture and reads the failure, so a Linux host that grants `CAP_NET_RAW`
+  without granting the user identity zero runs the monitor. Version 0.6.0 read
+  `os.geteuid() != 0`, which refused that operator and raised `AttributeError` on
+  Windows, where `os.geteuid` is absent. The command now names `CAP_NET_RAW` and the
+  `/dev/bpf*` devices for a refused privilege, lists every interface the host holds for
+  an interface it does not hold, and repeats the filter error for an expression the
+  capture layer refuses. Each of the three ends the run with the status 1. The command
+  runs on Linux and on macOS, and it reports that Windows carries no monitor and ends
+  the run with the status 1. `examples/monitoring_daemon.py` is removed, because
+  `ja4plus watch` is the supported monitor and `docs/usage.md` documents it.
+
 - **`ja4plus watch` reports statistics on exit and on a schedule** (#55). Round TBD. The
   monitor writes one statistics line when it exits, and `--stats-interval SECONDS` adds
   a line for each interval that passes. Every line goes to standard error, so a pipe
