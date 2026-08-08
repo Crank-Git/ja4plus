@@ -563,10 +563,10 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         # `AttributeError` names a value that is not a string, and `_close_window`
         # returns None, so a caller reaches this method with None. `TypeError` names a
         # value of type bytes or bytearray, which holds a `split` method that denies the
-        # separator `"_"`, and it also names a part of type bytes, which the string
-        # pattern of the part guard denies. Issue #262 records the decision: a value of
-        # the wrong type is a malformed fingerprint, and the method answers None that way
-        # already. `ValueError` names a part that holds more than 4300 digits, which
+        # separator `"_"`. It also names a part of type bytes, which the string pattern
+        # of the part guard denies. Issue #262 records the decision. A value of the wrong
+        # type is a malformed fingerprint, and the method answers None that way already.
+        # `ValueError` names a part that holds more than 4300 digits, which
         # matches the pattern and exceeds the CPython limit on an integer conversion.
         # `IndexError` reaches this handler from no input the part guard admits, and it
         # stays because #36 and the correctness audit set the handler to the parse errors
