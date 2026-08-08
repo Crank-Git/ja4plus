@@ -11,6 +11,9 @@ import hashlib
 import logging
 from typing import Any
 
+# Both names stay at module scope. `extract_certificate_info` reads them below a branch,
+# and a branch-local import makes each name a local of the whole function. The parse
+# below the branch then raises `UnboundLocalError`. #309 records the defect.
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import NameOID, ExtensionOID
@@ -259,9 +262,6 @@ def extract_certificate_info(packet: Packet, verbose: bool = False) -> dict[str,
             # If we have substantial data, try a direct ASN.1 parse as a last resort
             try:
                 # Some certificates might be directly in the raw data with minimal framing
-                from cryptography import x509
-                from cryptography.hazmat.backends import default_backend
-
                 cert = x509.load_der_x509_certificate(raw_data, default_backend())
                 return get_cert_details(cert)
             # `load_der_x509_certificate` raises `ValueError`. `get_cert_details` holds

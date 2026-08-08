@@ -91,6 +91,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`extract_certificate_info` reads the module `x509`** (#309). Round TBD.
+  `x509_utils.py:262` and `x509_utils.py:263` imported `x509` and `default_backend`
+  inside one branch, which made both names locals of the whole function. The parse at
+  `x509_utils.py:285` therefore raised `UnboundLocalError` for every packet whose
+  payload carried a certificate the reader found, and the wide handler below it returned
+  nothing. The module imports both names already, so the branch-local import bought
+  nothing, and this release removes it. **No caller inside `ja4plus/` calls the
+  function**, so no fingerprint moves: the conformance suite reports 1531 passed, 143
+  skipped and 135 xfailed before the change and after it.
+  `tests/test_x509_certificate_info.py` holds three cases, and one of them failed
+  against the base.
+
 - **The three X.509 handlers name the errors they expect** (#294). Round TBD.
   `ja4x.py:460`, `ja4x.py:490` and `x509_utils.py:267` each wrote
   `except (ValueError, TypeError, Exception) as e:`. `Exception` is a superclass of the
