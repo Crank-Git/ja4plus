@@ -80,21 +80,24 @@ with the path to a `FoxIO-LLC/ja4` checkout at the pinned commit.
 python tests/compare_zeek_baselines.py <path-to-FoxIO-ja4-checkout>
 ```
 
-The run of 2026-08-08 printed 82 rows and reported 36 that differ.
+The run of 2026-08-08 printed 98 rows. 62 match and 36 differ.
 
 ## What the comparison measured
+
+One row holds one connection and one method. A row holds every value that connection
+produced for that method, so the two JA4D rows carry four values.
 
 | Method | Rows compared | Rows that match |
 |---|---|---|
 | JA4 | 20 | 20 |
 | JA4S | 20 | 20 |
 | JA4H | 1 | 1 |
-| JA4D | 2 rows, 4 values | 2 rows, 4 values |
+| JA4D | 2 | 2 |
 | JA4T | 10 | 8 |
 | JA4TS | 10 | 9 |
 | JA4SSH | 1 | 0 |
-| JA4L | 9 | 1 |
-| JA4LS | 9 | 2 |
+| JA4L | 17 | 1 |
+| JA4LS | 17 | 1 |
 
 **JA4, JA4S, JA4H and JA4D match on every value.** The 20 JA4 values and the 20 JA4S
 values of `tls-handshake.pcapng` are the largest independent corroboration this project
@@ -156,7 +159,7 @@ The remaining eight JA4T rows and nine JA4TS rows match byte for byte.
 
 ### JA4L and JA4LS: Zeek rounds the halved latency and `ja4plus` truncates it
 
-Six values differ by one microsecond. `zeek/ja4l/main.zeek:158` converts the halved
+Eight values differ by one microsecond. `zeek/ja4l/main.zeek:158` converts the halved
 interval with `double_to_count`, and `ja4plus/fingerprinters/ja4l.py:324` truncates it
 toward zero.
 
