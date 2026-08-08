@@ -10,6 +10,7 @@ from scapy.all import IP, IPv6, TCP, Raw
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from ja4plus.fingerprinters.base import BaseFingerprinter
+from ja4plus.utils.state_table import BoundedStateTable
 from ja4plus.utils.x509_utils import oid_to_hex
 
 logger = logging.getLogger(__name__)
@@ -89,8 +90,17 @@ class JA4XFingerprinter(BaseFingerprinter):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
-        self.processed_certs = {}
-        self.scan_offsets = {}
+        # The table holds one entry for each certificate on each stream, and the
+        # certificate of a stream that goes quiet reaches no reader again.
+        self.processed_certs = BoundedStateTable(
+            max_connections=MAX_PROCESSED_CERTS, eviction_interval=1
+        )
+        # One entry for each live stream, so the reassembler states the entry count.
+        self.scan_offsets = BoundedStateTable(
+            max_connections=self.reassembler.max_streams,
+            max_connection_age=self.reassembler.max_stream_age,
+            eviction_interval=1,
+        )
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove the stream buffer and the certificate state of the connection."""
@@ -99,9 +109,9 @@ class JA4XFingerprinter(BaseFingerprinter):
         rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
         self.reassembler.remove_stream(rev_key)
         closed = (stream_key, rev_key)
-        self.processed_certs = {
-            key: value for key, value in self.processed_certs.items() if key[0] not in closed
-        }
+        for key in self.processed_certs.keys():
+            if key[0] in closed:
+                del self.processed_certs[key]
         for key in closed:
             self.scan_offsets.pop(key, None)
 
@@ -122,6 +132,12 @@ class JA4XFingerprinter(BaseFingerprinter):
             dst_port = packet[TCP].dport
         except (IndexError, AttributeError):
             return None
+
+        # The two tables age against the capture clock, so every packet announces its
+        # own timestamp. A table that reads the wall clock evicts state a replay needs.
+        seconds = packet_seconds(packet)
+        self.processed_certs.on_packet(seconds)
+        self.scan_offsets.on_packet(seconds)
 
         stream_id = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
         raw_data = bytes(packet[Raw])
@@ -183,16 +199,9 @@ class JA4XFingerprinter(BaseFingerprinter):
                 continue
             offset = next_offset
 
+        # The table holds the entry count and the entry age, and it evicts the least
+        # recently read entry on its own.
         self.scan_offsets[stream_id] = (base_seq, offset)
-        if len(self.scan_offsets) > self.reassembler.max_streams:
-            # The reassembler evicts a stream on its own. A scan offset that names an
-            # evicted stream is state that nothing reads again, and a flood of streams
-            # would otherwise grow the table without a limit.
-            self.scan_offsets = {
-                key: value
-                for key, value in self.scan_offsets.items()
-                if key in self.reassembler.streams
-            }
         return result
 
     def _read_handshake_run(self, stream_data, offset, limit):
@@ -280,26 +289,14 @@ class JA4XFingerprinter(BaseFingerprinter):
             key = (stream_id, hashlib.sha256(cert_bytes).hexdigest())
             if key in self.processed_certs:
                 continue
+            # The table holds the entry count and the entry age, and it evicts the
+            # least recently read entry on its own.
             self.processed_certs[key] = None
-            self._evict_processed_certs()
             fingerprint = self.fingerprint_certificate(cert_bytes)
             if fingerprint:
                 result = fingerprint
                 self.add_fingerprint(fingerprint, packet)
         return result
-
-    def _evict_processed_certs(self):
-        """Drop the oldest half of the processed certificates when the table is full.
-
-        The table holds one entry for each certificate on each stream, so a flood of
-        streams fills it. The eviction runs on each entry, because a run that a wall
-        clock gates lets the table grow without a limit between two runs.
-        """
-        if len(self.processed_certs) <= MAX_PROCESSED_CERTS:
-            return
-        # A dict keeps its insertion order, so the oldest entry comes first.
-        for key in list(self.processed_certs)[: MAX_PROCESSED_CERTS // 2]:
-            del self.processed_certs[key]
 
     def _certificates_in_message(self, message):
         """Return the certificates of one Certificate message body.
@@ -419,5 +416,14 @@ class JA4XFingerprinter(BaseFingerprinter):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
-        self.processed_certs = {}
-        self.scan_offsets = {}
+        # The table holds one entry for each certificate on each stream, and the
+        # certificate of a stream that goes quiet reaches no reader again.
+        self.processed_certs = BoundedStateTable(
+            max_connections=MAX_PROCESSED_CERTS, eviction_interval=1
+        )
+        # One entry for each live stream, so the reassembler states the entry count.
+        self.scan_offsets = BoundedStateTable(
+            max_connections=self.reassembler.max_streams,
+            max_connection_age=self.reassembler.max_stream_age,
+            eviction_interval=1,
+        )

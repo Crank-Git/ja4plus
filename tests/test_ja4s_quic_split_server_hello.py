@@ -147,7 +147,6 @@ def test_the_fingerprinter_releases_the_fragments_it_read():
     fingerprinter.process_packet(second)
 
     assert fingerprinter._quic_server_crypto == {}
-    assert fingerprinter._quic_server_crypto_seen == {}
 
 
 def test_the_fingerprinter_holds_the_fragments_of_an_incomplete_message():
@@ -172,27 +171,29 @@ def test_the_fingerprinter_bounds_its_fragment_table_by_entry_count():
         fingerprinter.process_packet(datagram(incomplete, SERVER_IP, SERVER_PORT, CLIENT_IP, port))
 
     assert len(fingerprinter._quic_server_crypto) <= MAX_QUIC_FRAGMENT_CONNECTIONS
-    assert len(fingerprinter._quic_server_crypto_seen) <= MAX_QUIC_FRAGMENT_CONNECTIONS
 
 
 def test_the_fingerprinter_bounds_its_fragment_table_by_age():
-    """A connection that adds no fragment for the maximum age leaves the table."""
+    """A connection that adds no fragment for the maximum age leaves the table.
+
+    Every packet of the case states its own time. A packet that states none moves the
+    table to the wall clock, and the entries of the packets that state a time then age
+    out at once.
+    """
     fingerprinter = JA4SFingerprinter()
     first, _ = split_server_datagrams(timestamp=1000.0)
-    fingerprinter.process_packet(client_datagram())
+    fingerprinter.process_packet(client_datagram(timestamp=1000.0))
     fingerprinter.process_packet(first)
     assert len(fingerprinter._quic_server_crypto) == 1
 
     later_port = 50001
-    later, _ = split_server_datagrams(
-        dst_port=later_port, timestamp=1000.0 + MAX_QUIC_FRAGMENT_AGE_SECONDS + 1
-    )
-    fingerprinter.process_packet(client_datagram(src_port=later_port))
+    later_time = 1000.0 + MAX_QUIC_FRAGMENT_AGE_SECONDS + 1
+    later, _ = split_server_datagrams(dst_port=later_port, timestamp=later_time)
+    fingerprinter.process_packet(client_datagram(src_port=later_port, timestamp=later_time))
     fingerprinter.process_packet(later)
 
     key = f"{CLIENT_IP}:{CLIENT_PORT}-{SERVER_IP}:{SERVER_PORT}"
     assert key not in fingerprinter._quic_server_crypto
-    assert key not in fingerprinter._quic_server_crypto_seen
     assert len(fingerprinter._quic_server_crypto) == 1
 
 
@@ -200,14 +201,13 @@ def test_the_fingerprinter_keeps_a_connection_inside_the_maximum_age():
     """A connection that is still inside the maximum age keeps its fragments."""
     fingerprinter = JA4SFingerprinter()
     first, _ = split_server_datagrams(timestamp=1000.0)
-    fingerprinter.process_packet(client_datagram())
+    fingerprinter.process_packet(client_datagram(timestamp=1000.0))
     fingerprinter.process_packet(first)
 
     later_port = 50001
-    later, _ = split_server_datagrams(
-        dst_port=later_port, timestamp=1000.0 + MAX_QUIC_FRAGMENT_AGE_SECONDS - 1
-    )
-    fingerprinter.process_packet(client_datagram(src_port=later_port))
+    later_time = 1000.0 + MAX_QUIC_FRAGMENT_AGE_SECONDS - 1
+    later, _ = split_server_datagrams(dst_port=later_port, timestamp=later_time)
+    fingerprinter.process_packet(client_datagram(src_port=later_port, timestamp=later_time))
     fingerprinter.process_packet(later)
 
     assert len(fingerprinter._quic_server_crypto) == 2
@@ -223,7 +223,6 @@ def test_the_fingerprinter_cleanup_drops_the_fragments_of_the_connection():
     fingerprinter.cleanup_connection(CLIENT_IP, CLIENT_PORT, SERVER_IP, SERVER_PORT, "udp")
 
     assert fingerprinter._quic_server_crypto == {}
-    assert fingerprinter._quic_server_crypto_seen == {}
 
 
 def test_the_fingerprinter_reset_empties_every_fragment_table():
@@ -236,4 +235,3 @@ def test_the_fingerprinter_reset_empties_every_fragment_table():
     fingerprinter.reset()
 
     assert fingerprinter._quic_server_crypto == {}
-    assert fingerprinter._quic_server_crypto_seen == {}

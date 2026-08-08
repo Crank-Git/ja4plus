@@ -19,7 +19,8 @@ from ja4plus.utils.ssh_utils import (
     extract_hassh,
 )
 from ja4plus.fingerprinters.base import BaseFingerprinter
-from ja4plus.utils.packet_utils import accepts_a_connection, opens_a_connection
+from ja4plus.utils.packet_utils import accepts_a_connection, opens_a_connection, packet_seconds
+from ja4plus.utils.state_table import BoundedStateTable
 
 logger = logging.getLogger(__name__)
 
@@ -69,13 +70,16 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 SSH packet, and it does not advance the window.
         """
         super().__init__()
-        self.connections = {}
+        self.connections = BoundedStateTable()
+        # The count of connections this fingerprinter opened. Each entry stores the
+        # value it read at its own start, and two readers publish in that order.
+        self._arrivals = 0
         self.packet_count = packet_count
         self.hassh_fingerprints = []
         # The endpoint pair of one connection -> the client endpoint the TCP handshake
         # names. The handshake arrives before any SSH data, and the connection entry
         # does not exist yet, so the answer waits here until the first SSH packet.
-        self._handshake_clients = {}
+        self._handshake_clients = BoundedStateTable(max_connections=MAX_HANDSHAKE_CONNECTIONS)
 
     def process_packet(self, packet):
         """
@@ -89,6 +93,12 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         """
         if not (packet.haslayer(TCP) and (packet.haslayer(IP) or packet.haslayer(IPv6))):
             return None
+
+        # The two tables age against the capture clock, so every packet announces its
+        # own timestamp. A table that reads the wall clock evicts state a replay needs.
+        seconds = packet_seconds(packet)
+        self.connections.on_packet(seconds)
+        self._handshake_clients.on_packet(seconds)
 
         # Check if this packet contains SSH data
         has_ssh_data = False
@@ -161,7 +171,9 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 "client_id": None,
                 "server_id": None,
                 "start_time": time.time(),
+                "arrival": self._arrivals,
             }
+            self._arrivals += 1
 
         conn = self.connections[conn_key]
 
@@ -272,21 +284,9 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         else:
             return
         key = self._endpoint_pair_key(src_ip, src_port, dst_ip, dst_port)
-        if key not in self._handshake_clients:
-            self._evict_handshake_clients()
+        # The table holds the entry count and the entry age, and it evicts the least
+        # recently read entry on its own.
         self._handshake_clients[key] = client
-
-    def _evict_handshake_clients(self):
-        """Drop the oldest half of the handshake table when the table is full.
-
-        A monitor reads a SYN for every TCP connection on the wire. A dictionary keeps
-        its insertion order, so the oldest entry comes first.
-        """
-        if len(self._handshake_clients) < MAX_HANDSHAKE_CONNECTIONS:
-            return
-        oldest = list(self._handshake_clients)[: MAX_HANDSHAKE_CONNECTIONS // 2]
-        for key in oldest:
-            del self._handshake_clients[key]
 
     def _decide_endpoints(self, src_ip, src_port, dst_ip, dst_port):
         """Return the client endpoint, the server endpoint, and how the two were decided.
@@ -332,6 +332,19 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             return src_ip, src_port, dst_ip, dst_port, "guess"
         return dst_ip, dst_port, src_ip, src_port, "guess"
 
+    def _connection_keys_in_arrival_order(self):
+        """Return the connection keys, in the order the capture opened them.
+
+        The state table orders its keys by the last read, because its entry count bound
+        evicts the least recently read entry. The published order of the windows and of
+        the HASSH values reads the capture instead, so two runs of one capture agree.
+
+        Returns:
+            A list of connection keys, earliest first.
+        """
+        pairs = sorted(self.connections.items(), key=lambda pair: pair[1]["arrival"])
+        return [key for key, _ in pairs]
+
     def close_open_windows(self):
         """Emit the window every connection holds open, and return the new entries.
 
@@ -344,15 +357,15 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         A window that holds no SSH packet emits nothing, because `_close_window`
         declines it. #97 declines the same value in the FoxIO Python reference.
 
-        The method reads the state table in insertion order, and it evicts no entry.
-        A repeated call therefore emits nothing, because `_close_window` clears the
-        counters of the window it emits.
+        The method reads the connections in the order the capture opened them, and it
+        evicts no entry. A repeated call therefore emits nothing, because
+        `_close_window` clears the counters of the window it emits.
 
         Returns:
             A list of the fingerprint entries the call appended to `self.fingerprints`.
         """
         emitted = []
-        for conn_key in list(self.connections):
+        for conn_key in self._connection_keys_in_arrival_order():
             if self._close_window(conn_key) is not None:
                 emitted.append(self.fingerprints[-1])
         return emitted
@@ -450,7 +463,8 @@ class JA4SSHFingerprinter(BaseFingerprinter):
             List of HASSH fingerprints
         """
         hassh_fps = []
-        for conn_key, conn in self.connections.items():
+        for conn_key in self._connection_keys_in_arrival_order():
+            conn = self.connections[conn_key]
             if conn.get("hassh"):
                 hassh_fps.append(
                     {
@@ -473,8 +487,9 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         """Reset fingerprinter state."""
         super().reset()
         self.hassh_fingerprints = []
-        self.connections = {}
-        self._handshake_clients = {}
+        self.connections = BoundedStateTable()
+        self._arrivals = 0
+        self._handshake_clients = BoundedStateTable(max_connections=MAX_HANDSHAKE_CONNECTIONS)
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Remove stored SSH session state for the given connection."""

@@ -9,6 +9,7 @@ from scapy.all import TCP, UDP, Raw, IP
 
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.utils.packet_utils import packet_endpoints
+from ja4plus.utils.state_table import BoundedStateTable
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,23 @@ MAX_QUIC_FRAGMENT_CONNECTIONS = 1000
 # that spans several datagrams arrives inside one round trip, so a connection that adds
 # no fragment for this long has abandoned its handshake.
 MAX_QUIC_FRAGMENT_AGE_SECONDS = 30
+
+
+def quic_fragment_table():
+    """Return one bounded table for the QUIC CRYPTO fragments of one fingerprinter.
+
+    The age pass runs on each packet, because the maximum age is 30 seconds and the
+    default pass of `BoundedStateTable` waits for 1000 packets. A pass that waits longer
+    than the age it applies evicts nothing on a connection that sends few packets.
+
+    Returns:
+        A `BoundedStateTable` that holds the two QUIC fragment limits.
+    """
+    return BoundedStateTable(
+        max_connections=MAX_QUIC_FRAGMENT_CONNECTIONS,
+        max_connection_age=MAX_QUIC_FRAGMENT_AGE_SECONDS,
+        eviction_interval=1,
+    )
 
 
 def _is_alnum_byte(b):
@@ -348,10 +366,8 @@ class JA4Fingerprinter(BaseFingerprinter):
         # DCID -> list[(offset, data)] for multi-datagram QUIC CRYPTO reassembly.
         # Keyed by DCID hex so packets with the same connection ID accumulate
         # together regardless of UDP 5-tuple changes.
-        self._quic_fragments = {}
-        self._quic_dcid_to_tuple = {}
-        # DCID -> the time of the last packet that added a fragment.
-        self._quic_fragment_seen = {}
+        self._quic_fragments = quic_fragment_table()
+        self._quic_dcid_to_tuple = quic_fragment_table()
 
     def process_packet(self, packet):
         """Process a packet and extract JA4 fingerprint if applicable.
@@ -405,14 +421,15 @@ class JA4Fingerprinter(BaseFingerprinter):
         if dcid is None or fragments is None:
             return None
 
+        # ja4l.py reads the packet clock the same way. The announcement precedes the
+        # first table operation, so the entry it writes carries the capture time.
+        seconds = float(packet.time) if hasattr(packet, "time") else time.time()
+        self._quic_fragments.on_packet(seconds)
+        self._quic_dcid_to_tuple.on_packet(seconds)
+
         dcid_key = dcid.hex()
         existing = self._quic_fragments.setdefault(dcid_key, [])
         collect_crypto_fragments(existing, fragments)
-
-        # ja4l.py reads the packet clock the same way.
-        seconds = float(packet.time) if hasattr(packet, "time") else time.time()
-        self._quic_fragment_seen[dcid_key] = seconds
-        self._evict_quic_fragments(seconds)
 
         # Track DCID -> 5-tuple for cleanup_connection.
         from ja4plus.utils.packet_utils import get_ip_layer
@@ -432,35 +449,14 @@ class JA4Fingerprinter(BaseFingerprinter):
         """Drop every table entry one connection holds."""
         self._quic_fragments.pop(dcid_key, None)
         self._quic_dcid_to_tuple.pop(dcid_key, None)
-        self._quic_fragment_seen.pop(dcid_key, None)
-
-    def _evict_quic_fragments(self, now):
-        """Drop the connections that passed the maximum age, then the oldest half.
-
-        The eviction runs on each packet, because a run that a wall clock gates lets
-        the table grow without a limit between two runs. `ja4x._evict_processed_certs`
-        states the same reason.
-
-        Args:
-            now: The time of the packet that is being processed, in seconds.
-        """
-        for dcid_key, seen in list(self._quic_fragment_seen.items()):
-            if now - seen > MAX_QUIC_FRAGMENT_AGE_SECONDS:
-                self._drop_quic_fragments(dcid_key)
-        if len(self._quic_fragments) <= MAX_QUIC_FRAGMENT_CONNECTIONS:
-            return
-        # A dict keeps its insertion order, so the oldest entry comes first.
-        for dcid_key in list(self._quic_fragments)[: MAX_QUIC_FRAGMENT_CONNECTIONS // 2]:
-            self._drop_quic_fragments(dcid_key)
 
     def reset(self):
         super().reset()
         self.last_raw = None
         self.last_raw_original_order = None
         self.last_fingerprint_original_order = None
-        self._quic_fragments = {}
-        self._quic_dcid_to_tuple = {}
-        self._quic_fragment_seen = {}
+        self._quic_fragments = quic_fragment_table()
+        self._quic_dcid_to_tuple = quic_fragment_table()
 
     def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
         """Drop any accumulated QUIC CRYPTO fragments for the given 5-tuple."""
