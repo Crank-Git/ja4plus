@@ -549,7 +549,6 @@ tables that the counts describe.
 | `oid_to_hex(oid_string)` | Convert OID dotted string to ASN.1 hex encoding |
 | `get_cert_details(cert)` | Extract issuer/subject RDNs and extensions from an x509 certificate |
 | `extract_certificate_from_bytes(data)` | Find DER certificates in raw TLS record bytes |
-| `extract_certificate_info(packet)` | Extract certificate details from a scapy packet |
 
 ### ja4plus.utils.quic_utils
 
