@@ -1,8 +1,8 @@
 """Tests for the SSL 2.0 version value that FoxIO corrected.
 
 `technical_details/JA4.md:65` at the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`
-states `0x0002 = SSL 2.0 = "s2"`, and it states `Unknown = "00"` for every value the table
-omits. FoxIO commit `3e02a27`, dated 2024-08-23, is titled
+states `0x0002 = SSL 2.0 = "s2"`. The same line states `Unknown = "00"` for every value the
+table omits. FoxIO commit `3e02a27`, dated 2024-08-23, is titled
 `Fix SSL version fields: SSL 2.0 is 0x0002, SSL 1.0 never existed`. The table therefore
 states no meaning for `0x0200` and no meaning for `0x0100`. #227 owns the repair.
 """

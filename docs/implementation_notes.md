@@ -355,9 +355,9 @@ is in `docs/specs/foxio/deleted-text-specifications.md`: rank a statement, and n
 | `wireshark/source/packet-ja4.c:72-81` | `ssl_versions[]` holds `{0x0002, "s2"}` and no `0x0200` entry |
 | `python/common.py` | `TLS_MAPPER` holds `'0x0002': "s2"` and no `'0x0200'` key |
 
-The specification states a closed table plus one fallback. A tolerated alias would make
-`ja4plus` write `s2` where all three FoxIO references write `00`, and a fingerprint exists
-so that one tool's output can be compared against another tool's output. **The repair
+The specification states a closed table plus one fallback. A tolerated alias would write
+`s2` where all three FoxIO references write `00`. A fingerprint exists so that one tool's
+output matches another tool's output, and an alias breaks that match. **The repair
 replaces the row. It adds no alias.**
 
 **`ja4plus` holds no `0x0100` row, so the SSL 1.0 half of the correction needs nothing.**
