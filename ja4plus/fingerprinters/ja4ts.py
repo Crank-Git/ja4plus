@@ -186,7 +186,7 @@ class JA4TSFingerprinter(BaseFingerprinter):
 
     JA4TS fingerprints TCP server behavior based on SYN-ACK responses.
     Format: <window_size>_<options>_<mss>_<wscale>_<synack_delays>
-    Example: 14600_2-1-3-4-1-1_1460_0
+    Example: 14600_2-1-3-4-1-1_1460_00
 
     Part e holds the delay between each SYN-ACK of the connection, and the fingerprint
     omits it when the server answers once.
@@ -303,7 +303,7 @@ def generate_ja4ts(packet, tracker=None):
     Generate JA4TS fingerprint from TCP SYN-ACK packet.
 
     Format: <window_size>_<options>_<mss>_<wscale>_<synack_delays>
-    Example: 14600_2-1-3-4-1-1_1460_0
+    Example: 14600_2-1-3-4-1-1_1460_00
 
     TCP options use IANA numbers: 0=EOL, 1=NOP, 2=MSS, 3=WScale, 4=SACK, 8=Timestamp
     Options preserve original order per spec (never sorted).

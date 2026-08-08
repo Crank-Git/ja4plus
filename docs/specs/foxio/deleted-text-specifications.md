@@ -284,7 +284,8 @@ alone.**
 **One FoxIO reference contradicts it.** `rust/ja4/src/tcp.rs` joins an empty option list
 to the empty string and pads nothing, and
 `rust/ja4/src/snapshots/ja4__insta@gre-erspan-vxlan.pcap.snap` holds `8192__0_0`.
-`ja4plus` writes a third form, `8192_0_0_0`.
+`ja4plus` wrote a third form, `8192_0_0_0`, until #215. The user decided the two-digit
+form on 2026-08-08, so `ja4plus` now writes `8192_00_00_00` and follows this prose.
 
 **#215 owns this decision and this page rules on nothing.** #215 item 1 asked which empty
 form this project writes, with three candidate forms and no FoxIO prose. **This page
