@@ -113,11 +113,11 @@ ServerHello that DTLS carries over UDP. See "The decisions this page raises".
 
 `12` is TLS 1.2 and `13` is TLS 1.3. An unknown version writes `00`.
 
-- Corroboration 1: `wireshark/source/packet-ja4.c:550` and `packet-ja4.c:567` call
+- Corroboration 1: `wireshark/source/packet-ja4.c:551` and `packet-ja4.c:567` call
   `val_to_str_const(data->version, ssl_versions, "00")`. The table `ssl_versions` at
   `packet-ja4.c:76-87` maps `0x0303` to `12` and `0x0304` to `13`, and its fallback is
   `00`.
-- Corroboration 2: `python/ja4.py:195` reads `TLS_MAPPER[x['version']]` and writes `00`
+- Corroboration 2: `python/ja4.py:196` reads `TLS_MAPPER[x['version']]` and writes `00`
   when the map holds no row.
 
 `technical_details/JA4.md:56-68` holds the whole version table, which the image does not
@@ -410,7 +410,7 @@ grep -rhoE '\bja4s: [^ ]+' rust/ja4/src/snapshots/ | sort | uniq -c | sort -rn
 
 **This repository already holds 194 of those values.**
 `tests/foxio_vectors/*.json` holds all 84 of the Python values, and
-`tests/foxio_vectors/rust_expected/` holds 110 of the 120 Rust values in 8 files.
+`tests/foxio_vectors/rust_expected/` holds 110 of the 120 Rust values in 7 files.
 
 | Capture in `tests/foxio_vectors/` | `ja4s` values in the local snapshot |
 |---|---|
