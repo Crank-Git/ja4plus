@@ -110,7 +110,13 @@ it. A case that no mutation makes fail is a candidate.
 
 **Warning: the sweep writes to a module file. Commit or stash your work first.** The
 sweep refuses to start when `ja4plus/` holds an uncommitted change, and it restores every
-file it changes.
+file it changes. A stop signal reaches the restore, and `SIGKILL` does not. If a killed
+sweep leaves a change behind, the next sweep refuses to start; run
+`git checkout -- ja4plus/` to drop it.
+
+**A checkpoint belongs to one commit.** It keys each result on the position of the
+expression in the file, so a code change moves the key. Delete the checkpoint file when
+the code changes.
 
 Run the sweep from the repository root:
 

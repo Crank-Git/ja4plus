@@ -13,7 +13,12 @@ Run it from the repository root:
     python tests/mutation_sweep.py --max-per-module 10 --report reports/sweep.json
 
 The sweep restores every file it changes. It also checks the worktree before it starts,
-so a mutation never lands on top of an uncommitted edit.
+so a mutation never lands on top of an uncommitted edit. A stop signal reaches the
+restore, and `SIGKILL` does not. If a killed sweep leaves a change behind, the next
+sweep refuses to start; run `git checkout -- ja4plus/` to drop it.
+
+A checkpoint belongs to one commit. It keys each result on the position of the
+expression in the file, so a code change moves the key.
 """
 
 from __future__ import annotations
@@ -508,8 +513,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     def stop(number, frame):
         raise SystemExit("the sweep received signal {}".format(number))
 
-    signal.signal(signal.SIGTERM, stop)
-    signal.signal(signal.SIGHUP, stop)
+    # Windows carries no SIGHUP, and the project supports every operating system.
+    for name in ("SIGTERM", "SIGHUP"):
+        number = getattr(signal, name, None)
+        if number is not None:
+            signal.signal(number, stop)
 
     started = time.time()
     checkpoint = Path(options.checkpoint)
