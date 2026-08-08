@@ -213,7 +213,7 @@ ja4plus generate_ja4t                                                 : 65535_2-
 
 This breaks R5.
 
-**D3 — `ja4t.py:69` to `ja4t.py:83` drop every option kind the loop does not name.**
+**D3 — `ja4t.py:69` to `ja4t.py:82` drop every option kind the loop does not name.**
 
 The loop maps six names: `MSS`, `NOP`, `WScale`, `SAckOK`, `Timestamp` and `EOL`. It
 appends nothing for any other kind. R4 states that both references append every kind. A SYN
@@ -253,8 +253,8 @@ a repeated option, so no measurement demonstrates D5.
 | Part a, raw window | R3 | `ja4ts.py:60` | Agrees. |
 | Part b order | R4 | `ja4ts.py:68` | Agrees. |
 | Part b separator | R4 | `ja4ts.py:86` | Agrees. |
-| Part c absent | R6 | `ja4ts.py:65` | Agrees. |
-| Part d absent | R7 | `ja4ts.py:66` | Agrees. |
+| Part c absent | R6 | `ja4ts.py:64` | Agrees. |
+| Part d absent | R7 | `ja4ts.py:65` | Agrees. |
 | Packet selection | R8 | `ja4ts.py:56` | Agrees. `tcp.flags & 0x12 == 0x12` selects the SYN-ACK. |
 
 ### JA4TS — the disagreements
