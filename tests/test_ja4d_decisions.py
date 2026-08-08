@@ -350,13 +350,7 @@ def _relay_forward(inner_options, outer_options=b""):
         The whole UDP payload, message type first.
     """
     inner = _dhcpv6_message(1, inner_options)
-    return (
-        bytes([12, 0])
-        + bytes(16)
-        + bytes(16)
-        + bytes(outer_options)
-        + _dhcpv6_option(9, inner)
-    )
+    return bytes([12, 0]) + bytes(16) + bytes(16) + bytes(outer_options) + _dhcpv6_option(9, inner)
 
 
 def test_ja4d6_reads_the_client_duid_inside_a_relay_message():
