@@ -162,11 +162,16 @@ def test_the_ja4x_helpers_produce_the_reference_value():
     certificates = []
 
     class RecordingFingerprinter(JA4XFingerprinter):
-        """Collect the certificate bytes the scan reads, then fingerprint them."""
+        """Collect the certificate bytes the scan reads, then fingerprint them.
 
-        def fingerprint_certificate(self, cert_data):
+        The scan calls `read_certificate`, because #267 made that method the reader of
+        one certificate. `fingerprint_certificate` calls it too and returns the value
+        alone.
+        """
+
+        def read_certificate(self, cert_data):
             certificates.append(cert_data)
-            return super().fingerprint_certificate(cert_data)
+            return super().read_certificate(cert_data)
 
     fingerprints_of_capture(RecordingFingerprinter())
     assert certificates, "the vector holds a Certificate message"

@@ -288,7 +288,14 @@ class TestConformanceIndex:
         assert stream.methods["JA4_r"] == {1: "t13d1715h2_002f,0035_0005,000a_0403"}
 
     def test_the_raw_method_map_names_only_a_key_the_reference_publishes(self):
-        published = {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r", "JA4H_ro"}
+        # The FoxIO Python implementation publishes the first five keys, and an
+        # expected-output file under `tests/foxio_vectors/` holds each one. It publishes
+        # no JA4X_r key, and two other FoxIO implementations do:
+        # `rust/ja4x/src/lib.rs` writes `ja4x_r` and
+        # `wireshark/source/packet-ja4.c:1726` registers `ja4.ja4x_r`. #267 decided that
+        # this project publishes it, and `tests/test_foxio_rust_parity.py` compares it
+        # against the FoxIO Rust snapshot through the hash.
+        published = {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r", "JA4H_ro", "JA4X_r"}
         named = {method for pairs in RAW_METHODS.values() for method, _ in pairs}
         assert named == published
 
@@ -345,15 +352,15 @@ class TestConformanceIndex:
 def test_the_produced_index_holds_every_raw_form_ja4plus_computes():
     """Read the raw keys of one vector out of the produced index.
 
-    `tls-alpn-h2.pcap` carries one client hello and one server hello, and
-    `http1-with-cookies.pcapng` carries one HTTP request, so the two exercise every raw
-    key ja4plus computes.
+    `tls-alpn-h2.pcap` carries one client hello and one server hello,
+    `http1-with-cookies.pcapng` carries one HTTP request, and `https-connect.pcap`
+    carries two certificates, so the three exercise every raw key ja4plus computes.
     """
     methods = set()
-    for vector in ("tls-alpn-h2.pcap", "http1-with-cookies.pcapng"):
+    for vector in ("tls-alpn-h2.pcap", "http1-with-cookies.pcapng", "https-connect.pcap"):
         for values in index_produced(VECTORS_DIR / vector).values():
             methods.update(values)
-    assert {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r", "JA4H_ro"} <= methods
+    assert {"JA4_r", "JA4_ro", "JA4_o", "JA4S_r", "JA4H_ro", "JA4X_r"} <= methods
 
 
 @pytest.mark.spec_validation

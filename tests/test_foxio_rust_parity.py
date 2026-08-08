@@ -13,6 +13,7 @@ The measurement is the proof `.claude/rules/conformance.md` requires. A reading 
 FoxIO source is not proof, so the snapshots are committed and the suite compares them.
 """
 
+import hashlib
 import json
 import logging
 from collections import Counter
@@ -142,6 +143,16 @@ SNAPSHOT_TCP_METHOD = "JA4T"
 # Certificate message carries several certificates. #229 added the reading.
 SNAPSHOT_CERT_METHOD = "JA4X"
 SNAPSHOT_CERT_FIELD = "ja4x"
+
+# The raw form of the certificate method. No snapshot field holds it, because
+# `rust/ja4x/src/lib.rs` writes `ja4x_r` only when the caller asks for it. #267 decided
+# that this project publishes the value, and the class at the end of this module compares
+# it against the snapshot through the hash.
+SNAPSHOT_CERT_RAW_METHOD = "JA4X_r"
+
+# The value R8 gives to a part whose list is empty. The hashed form writes it, and the
+# raw form writes an empty part instead.
+ZERO_SENTINEL = "000000000000"
 
 # The two lines that open the nested block the JA4X values sit in. `tls_certs:` opens the
 # block at the two-space level, and `- x509:` opens its one list at the same level. Every
@@ -495,6 +506,65 @@ def _certificate_value_params():
                 )
             )
     return params
+
+
+def _certificate_raw_params():
+    """Return one parameter set for every raw form a local Rust snapshot implies.
+
+    The list carries no register mark. The register holds no key of the raw form, and a
+    mark that the hashed case earns says nothing about the preimage.
+    """
+    return [
+        pytest.param(
+            capture,
+            case,
+            id="{}-stream{}:{}-{}.{}".format(
+                capture,
+                case.index,
+                case.src_port,
+                SNAPSHOT_CERT_RAW_METHOD,
+                case.occurrence,
+            ),
+        )
+        for capture in certificate_captures()
+        for case in certificate_cases(capture)
+    ]
+
+
+def hash12(part):
+    """Return the JA4X hash of one unhashed list.
+
+    Args:
+        part: One comma-separated list of hex object identifiers.
+
+    Returns:
+        The first 12 characters of the SHA-256 of the list. R8 of
+        `docs/specs/foxio/JA4X.md` gives the zero sentinel to an empty list.
+    """
+    if not part:
+        return ZERO_SENTINEL
+    return hashlib.sha256(part.encode()).hexdigest()[:12]
+
+
+def hashed_form(raw):
+    """Return the JA4X value that one raw form produces.
+
+    `rust/ja4x/src/lib.rs` hashes each of the three parts for `ja4x` and joins the same
+    three parts for `ja4x_r`, so this function reverses the raw form into the value the
+    FoxIO Rust snapshot holds.
+
+    Args:
+        raw: One JA4X_r value.
+
+    Returns:
+        The JA4X value of the same certificate.
+
+    Raises:
+        AssertionError: The raw form does not hold three parts.
+    """
+    parts = raw.split("_")
+    assert len(parts) == 3, "a JA4X_r value holds three parts: {}".format(raw)
+    return "_".join(hash12(part) for part in parts)
 
 
 def register_keys():
@@ -892,6 +962,129 @@ class TestTheJa4xValuesTheRustSnapshotHolds:
             "7d5dbb3783b4_2bab15409345_5e17a2514980",
             "7d5dbb3783b4_7d5dbb3783b4_9c5875a5c227",
         )
+
+
+@pytest.mark.spec_validation
+class TestTheJa4xRawFormTheRustSnapshotImplies:
+    """Compare JA4X_r against every JA4X value the local Rust snapshots hold.
+
+    No snapshot field holds the raw form, because `rust/ja4x/src/lib.rs` writes `ja4x_r`
+    only when the caller asks for it. The same function builds one list of three parts,
+    hashes each part for `ja4x` and joins the same three parts for `ja4x_r`, so the raw
+    form is the preimage of the snapshot value. This class runs that comparison: it
+    hashes each part of the produced raw form and reads the snapshot value.
+
+    The comparison fails when the raw form joins another character, when a list holds
+    another order, or when a list holds another object identifier. The two checks at the
+    end of this class measure the first two directions rather than claiming them.
+    """
+
+    def test_the_suite_collects_one_raw_case_for_every_value_the_snapshots_hold(self):
+        """The parameter list is the comparison, and a lost case is as loud as a mismatch."""
+        assert len(_certificate_raw_params()) == 43
+
+    @pytest.mark.parametrize("capture,case", _certificate_raw_params())
+    def test_the_produced_raw_form_hashes_to_the_rust_snapshot_value(self, capture, case):
+        """The JA4X_r value ja4plus produces hashes to the FoxIO Rust snapshot value."""
+        produced = index_produced(VECTORS_DIR / capture).get(case.identity, {})
+        raws = produced.get(SNAPSHOT_CERT_RAW_METHOD, ())
+        if len(raws) < case.occurrence:
+            pytest.fail(
+                "{} {} {}.{}: rust={} ja4plus=<none>".format(
+                    capture,
+                    label(case.identity),
+                    SNAPSHOT_CERT_RAW_METHOD,
+                    case.occurrence,
+                    case.value,
+                )
+            )
+        raw = raws[case.occurrence - 1]
+        hashed = hashed_form(raw)
+        if hashed != case.value:
+            pytest.fail(
+                "{} {} {}.{}: rust={} ja4plus={} from raw={}".format(
+                    capture,
+                    label(case.identity),
+                    SNAPSHOT_CERT_RAW_METHOD,
+                    case.occurrence,
+                    case.value,
+                    hashed,
+                    raw,
+                )
+            )
+
+    @pytest.mark.parametrize("capture", certificate_captures())
+    def test_the_produced_raw_form_count_equals_the_rust_snapshot_count(self, capture):
+        """ja4plus produces one raw form for each certificate the snapshot names."""
+        produced = index_produced(VECTORS_DIR / capture)
+        expected = Counter(case.identity for case in certificate_cases(capture))
+        differences = []
+        for identity, count in expected.items():
+            ours = produced.get(identity, {}).get(SNAPSHOT_CERT_RAW_METHOD, ())
+            if len(ours) != count:
+                differences.append(
+                    "{} {}: rust={} value(s) ja4plus={} value(s)".format(
+                        label(identity), SNAPSHOT_CERT_RAW_METHOD, count, len(ours)
+                    )
+                )
+        assert not differences, "{}: {} stream(s) differ\n{}".format(
+            capture, len(differences), "\n".join(differences)
+        )
+
+    def test_the_https_connect_stream_produces_both_raw_forms(self):
+        """The stream the register entry names produces both raw forms, in order.
+
+        The check names both values, so a later change that moves either one reports the
+        value it moved. `test_the_https_connect_stream_produces_both_rust_snapshot_values`
+        names the hashed value of the same two certificates.
+        """
+        identity = stream_identity("10.11.12.13", "54723", "10.9.8.7", "8080")
+        produced = index_produced(VECTORS_DIR / "https-connect.pcap")
+        assert produced.get(identity, {}).get(SNAPSHOT_CERT_RAW_METHOD, ()) == (
+            "550406,55040a,55040b,550403"
+            "_550406,550408,550407,55040a,550403"
+            "_551d23,551d0e,551d11,551d0f,551d25,551d1f,551d20,2b06010505070101,551d13",
+            "550406,55040a,55040b,550403"
+            "_550406,55040a,55040b,550403"
+            "_551d13,551d0f,551d25,2b06010505070101,551d1f,551d20,551d0e,551d23",
+        )
+
+    def test_a_sorted_list_reaches_no_rust_snapshot_value(self):
+        """A raw form that sorts a list hashes to another value, on every case.
+
+        R10 of `docs/specs/foxio/JA4X.md` states that nothing sorts a list. This check
+        measures what the comparison above would report if this project sorted one, so
+        that nobody reads the comparison as a check that cannot fail.
+
+        All 43 certificates carry at least one list that a sort moves, measured on
+        2026-08-08. A certificate whose lists are already in sorted order would measure
+        nothing, so the count states that none of them is.
+        """
+        moved = 0
+        for capture in certificate_captures():
+            produced = index_produced(VECTORS_DIR / capture)
+            for case in certificate_cases(capture):
+                raw = produced[case.identity][SNAPSHOT_CERT_RAW_METHOD][case.occurrence - 1]
+                sorted_form = "_".join(",".join(sorted(part.split(","))) for part in raw.split("_"))
+                assert sorted_form != raw
+                assert hashed_form(sorted_form) != case.value
+                moved += 1
+        assert moved == 43
+
+    def test_another_list_separator_reaches_no_rust_snapshot_value(self):
+        """A raw form that joins a list with another character hashes to another value.
+
+        R6 states that a list joins with `,`. This check measures the separator the same
+        way the check above measures the order.
+        """
+        moved = 0
+        for capture in certificate_captures():
+            produced = index_produced(VECTORS_DIR / capture)
+            for case in certificate_cases(capture):
+                raw = produced[case.identity][SNAPSHOT_CERT_RAW_METHOD][case.occurrence - 1]
+                assert hashed_form(raw.replace(",", ";")) != case.value
+                moved += 1
+        assert moved == 43
 
 
 @pytest.mark.spec_validation
