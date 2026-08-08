@@ -243,7 +243,7 @@ decision reverses the D6 and D7 ruling of #215 of the same day, which followed t
 R2 of `docs/specs/foxio/JA4T.md` now holds for JA4T alone, and R12 states the JA4TS rule.
 
 **#226 read the blob rather than this page**, and it confirms every quotation above. It
-also found a third source that this page does not name: `zeek/ja4t/main.zeek:227-236`
+also found a third source that this page does not name: `zeek/ja4t/main.zeek:229-235`
 appends the delay list to `c$conn$ja4ts`, so two FoxIO implementations write part e on
 JA4TS and only the image withholds it. The image's own example value `1-2-4-8-R6` carries
 the `R` suffix that its caption denies.

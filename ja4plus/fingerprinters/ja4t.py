@@ -2,9 +2,13 @@
 JA4T TCP Client Fingerprinting implementation.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import logging
 
-from scapy.all import TCP
+from scapy.all import TCP, Packet
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.utils.packet_utils import packet_endpoints, packet_seconds
@@ -24,6 +28,10 @@ TCP_ACK_FLAG = 0x10
 MAX_TRACKED_CONNECTIONS = 10000
 CONNECTION_TIMEOUT_SECONDS = 600
 
+# The key names one connection: the client address and port, then the server address and
+# port. `_connection_key` builds it, and `connections` stores it.
+ConnectionKey = tuple[str, int, str, int]
+
 
 class JA4TFingerprinter(BaseFingerprinter):
     """
@@ -37,7 +45,7 @@ class JA4TFingerprinter(BaseFingerprinter):
     states the rule as R9, and #215 records it as D4.
     """
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         """Initialize the fingerprinter and its connection table."""
         super().__init__(thread_safe=thread_safe)
         self.connections = BoundedStateTable(
@@ -45,7 +53,7 @@ class JA4TFingerprinter(BaseFingerprinter):
             max_connection_age=CONNECTION_TIMEOUT_SECONDS,
         )
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and extract JA4T fingerprint if applicable.
 
@@ -63,13 +71,15 @@ class JA4TFingerprinter(BaseFingerprinter):
                 return fingerprint
             return None
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the collected fingerprints and the connection table."""
         with self._lock:
             super().reset()
             self.connections.clear()
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Remove the stored connection, so a later SYN produces a value again.
 
         A SYN travels from the client to the server, so the key names the client first.
@@ -80,7 +90,7 @@ class JA4TFingerprinter(BaseFingerprinter):
             self.connections.pop((dst_ip, dst_port, src_ip, src_port), None)
 
 
-def _connection_key(packet):
+def _connection_key(packet: Packet) -> ConnectionKey | None:
     """Return the connection key of one SYN packet, or None.
 
     Every SYN of one connection travels from the client to the server, so the packet
@@ -92,7 +102,7 @@ def _connection_key(packet):
     return (endpoints["src"], endpoints["srcport"], endpoints["dst"], endpoints["dstport"])
 
 
-def _first_syn_of_connection(packet, connections):
+def _first_syn_of_connection(packet: Packet, connections: BoundedStateTable | None) -> bool:
     """Report whether this SYN is the first SYN of its connection.
 
     Args:
@@ -120,7 +130,7 @@ def _first_syn_of_connection(packet, connections):
     return True
 
 
-def generate_ja4t(packet, connections=None):
+def generate_ja4t(packet: Packet, connections: BoundedStateTable | None = None) -> str | None:
     """
     Generate JA4T fingerprint from TCP SYN packet.
 

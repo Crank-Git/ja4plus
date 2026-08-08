@@ -8,10 +8,15 @@ JA4H fingerprints HTTP requests based on:
 4. Sorted cookie fields + values hash
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import hashlib
 import logging
+from typing import Any
 
-from scapy.all import IP, IPv6, TCP, Raw
+from scapy.all import IP, IPv6, TCP, Raw, Packet
 
 from ja4plus.utils.http_utils import (
     REQUEST_LINE_PATTERN,
@@ -30,7 +35,7 @@ from ja4plus.fingerprinters.base import BaseFingerprinter
 logger = logging.getLogger(__name__)
 
 
-def _http_version_to_str(version):
+def _http_version_to_str(version: str | None) -> str:
     """Map an HTTP version string to a JA4H 2-char code per FoxIO PR #288.
 
     HTTP/1.0 -> '10', HTTP/1.1 -> '11', HTTP/2 -> '20', HTTP/3 -> '30'.
@@ -67,16 +72,18 @@ class JA4HFingerprinter(BaseFingerprinter):
     raw form: a sorted value matches no reference value and no other implementation.
     """
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         super().__init__(thread_safe=thread_safe)
         self.reassembler = TCPStreamReassembler(max_streams=100)
-        self.last_raw_original_order = None
+        self.last_raw_original_order: str | None = None
         self.unusable_base = self._stream_shadow_table()
         # The base code ran the age pass of this one table on each packet, and the
         # table holds 100 entries at most, so the pass keeps that schedule.
         self.consumed_seq = self._stream_shadow_table(eviction_interval=1)
 
-    def _stream_shadow_table(self, eviction_interval=DEFAULT_EVICTION_INTERVAL):
+    def _stream_shadow_table(
+        self, eviction_interval: int = DEFAULT_EVICTION_INTERVAL
+    ) -> BoundedStateTable:
         """Return one bounded table that holds one entry for each live stream.
 
         The two bounds read the reassembler, so one number bounds the stream and the
@@ -94,7 +101,7 @@ class JA4HFingerprinter(BaseFingerprinter):
             eviction_interval=eviction_interval,
         )
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and extract JA4H fingerprint if applicable.
 
@@ -146,7 +153,10 @@ class JA4HFingerprinter(BaseFingerprinter):
 
             http_info = _extract_http_info_from_bytes(stream_data)
             fingerprint = _generate_ja4h_from_info(http_info) if http_info else None
-            if fingerprint is None:
+            # The second test reaches no packet that the first test lets through, because
+            # the ternary above produces None for every falsy `http_info`. It states that
+            # link for the type checker, and it changes no result.
+            if fingerprint is None or http_info is None:
                 # The buffer holds a complete header block, so no later byte changes this
                 # parse. A buffer that stays makes every later packet of the connection
                 # read the whole buffer again, and the buffer grows to `max_stream_bytes`.
@@ -160,7 +170,7 @@ class JA4HFingerprinter(BaseFingerprinter):
             self.unusable_base.pop(stream_key, None)
             return fingerprint
 
-    def _remember_the_consumed_request(self, stream_key, length):
+    def _remember_the_consumed_request(self, stream_key: str, length: int) -> None:
         """Store the sequence range this stream read to produce its value.
 
         The reassembler drops the stream after a value, so a retransmitted segment
@@ -184,7 +194,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         # sequence range alone.
         self.consumed_seq[stream_key] = (base, (base + length) & SEQUENCE_MASK)
 
-    def _segment_carries_no_new_request(self, stream_key, seq, length):
+    def _segment_carries_no_new_request(self, stream_key: str, seq: int, length: int) -> bool:
         """Report whether the stream already produced a value for these bytes.
 
         Args:
@@ -211,7 +221,7 @@ class JA4HFingerprinter(BaseFingerprinter):
             return False
         return not sequence_before(consumed, (seq + length) & SEQUENCE_MASK)
 
-    def _drop_an_unusable_stream(self, stream_key, stream_data):
+    def _drop_an_unusable_stream(self, stream_key: str, stream_data: bytes) -> None:
         """Remove a stream whose buffer no later segment turns into an HTTP request.
 
         A segment that arrives out of order puts the middle of a request at the start of
@@ -232,7 +242,7 @@ class JA4HFingerprinter(BaseFingerprinter):
 
         self._drop_a_stream_whose_base_holds(stream_key)
 
-    def _drop_a_stream_whose_base_holds(self, stream_key):
+    def _drop_a_stream_whose_base_holds(self, stream_key: str) -> None:
         """Remove the stream once a second packet leaves its base sequence number alone.
 
         The caller states that no later byte turns this buffer into a value. A segment
@@ -259,18 +269,18 @@ class JA4HFingerprinter(BaseFingerprinter):
         # recently read entry on its own.
         self.unusable_base[stream_key] = base
 
-    def _record(self, fingerprint, http_info, packet):
+    def _record(self, fingerprint: str, http_info: dict[str, Any], packet: Packet) -> None:
         """Append one JA4H result, with the raw original-order form beside the hash."""
         raw_original_order = _generate_ja4h_raw_from_info(http_info)
         self.last_raw_original_order = raw_original_order
-        entry = {
+        entry: dict[str, Any] = {
             "fingerprint": fingerprint,
             "raw_original_order": raw_original_order,
         }
         entry.update(packet_endpoints(packet))
         self.fingerprints.append(entry)
 
-    def reset(self):
+    def reset(self) -> None:
         with self._lock:
             super().reset()
             self.reassembler = TCPStreamReassembler(max_streams=100)
@@ -280,7 +290,9 @@ class JA4HFingerprinter(BaseFingerprinter):
             # table holds 100 entries at most, so the pass keeps that schedule.
             self.consumed_seq = self._stream_shadow_table(eviction_interval=1)
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Remove TCP stream buffer for the given connection."""
         with self._lock:
             stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
@@ -294,7 +306,7 @@ class JA4HFingerprinter(BaseFingerprinter):
             self.consumed_seq.pop(rev_key, None)
 
 
-def _extract_http_info_from_bytes(data):
+def _extract_http_info_from_bytes(data: bytes) -> dict[str, Any] | None:
     """Extract HTTP info from raw bytes, preserving original header name casing.
 
     Mirrors extract_http_info() but operates on a bytes buffer instead of a
@@ -316,8 +328,8 @@ def _extract_http_info_from_bytes(data):
         path = request_line_match.group(2)
         version = request_line_match.group(3)
 
-        headers = {}
-        header_names = []
+        headers: dict[str, str] = {}
+        header_names: list[str] = []
         lines = split_http_lines(text)
 
         for line in lines[1:]:
@@ -330,9 +342,9 @@ def _extract_http_info_from_bytes(data):
                 headers[name.lower()] = value
                 header_names.append(name)
 
-        cookies = {}
-        cookie_fields = []
-        cookie_values = []
+        cookies: dict[str, str] = {}
+        cookie_fields: list[str] = []
+        cookie_values: list[str] = []
         if "cookie" in headers:
             for pair in headers["cookie"].split(";"):
                 if "=" in pair:
@@ -358,7 +370,7 @@ def _extract_http_info_from_bytes(data):
         return None
 
 
-def _convert_parsed_to_extract_format(parsed):
+def _convert_parsed_to_extract_format(parsed: dict[str, Any]) -> dict[str, Any]:
     """Convert parse_http_request output to extract_http_info format."""
     headers = parsed.get("headers", {})
     header_names = list(headers.keys())
@@ -379,7 +391,7 @@ def _convert_parsed_to_extract_format(parsed):
     }
 
 
-def _ja4h_part_a(http_info):
+def _ja4h_part_a(http_info: dict[str, Any]) -> str:
     """Return the first section of a JA4H fingerprint.
 
     Args:
@@ -418,7 +430,7 @@ def _ja4h_part_a(http_info):
     return f"{method[:2]}{version_str}{has_cookie}{has_referer}{header_count_str}{lang_code}"
 
 
-def _ja4h_header_names(http_info):
+def _ja4h_header_names(http_info: dict[str, Any]) -> list[str]:
     """Return the header names that the second section of a JA4H fingerprint holds.
 
     The hashed form and the raw form read one list, so the raw form explains the hash.
@@ -438,7 +450,7 @@ def _ja4h_header_names(http_info):
     ]
 
 
-def _ja4h_cookie_pairs(http_info):
+def _ja4h_cookie_pairs(http_info: dict[str, Any]) -> list[tuple[str, str]]:
     """Return the cookies of a request as one ordered list of pairs.
 
     Every section that reports a cookie reads this list, so the cookie-name hash, the
@@ -456,7 +468,7 @@ def _ja4h_cookie_pairs(http_info):
     return list(zip(names, values))
 
 
-def _generate_ja4h_from_info(http_info):
+def _generate_ja4h_from_info(http_info: dict[str, Any] | None) -> str | None:
     """Generate JA4H from an http_info dict."""
     if not http_info:
         return None
@@ -498,7 +510,7 @@ def _generate_ja4h_from_info(http_info):
         return None
 
 
-def _generate_ja4h_raw_from_info(http_info):
+def _generate_ja4h_raw_from_info(http_info: dict[str, Any] | None) -> str | None:
     """Return the JA4H raw original-order form of an http_info dict.
 
     The form is `<part a>_<header names>_<cookie names>_<cookie pairs>`. Each list holds
@@ -533,7 +545,7 @@ def _generate_ja4h_raw_from_info(http_info):
         return None
 
 
-def generate_ja4h(packet):
+def generate_ja4h(packet: Packet) -> str | None:
     """
     Generate JA4H fingerprint from HTTP request.
 

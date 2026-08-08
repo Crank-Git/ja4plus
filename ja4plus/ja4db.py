@@ -11,6 +11,10 @@ Usage:
     # {"application": "Chromium Browser", "type": "ja4"}
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import csv
 import logging
 import os
@@ -19,6 +23,10 @@ import threading
 from ja4plus.utils.state_table import DEFAULT_MAX_CONNECTION_AGE, BoundedStateTable
 
 logger = logging.getLogger(__name__)
+
+# One match the mapping file or the remote interface holds. The three keys are
+# `application`, `type` and `notes`.
+LookupResult = dict[str, str]
 
 # Bundled mapping from FoxIO's ja4plus-mapping.csv
 _MAPPING_URL = "https://raw.githubusercontent.com/FoxIO-LLC/ja4/main/ja4plus-mapping.csv"
@@ -45,9 +53,9 @@ DEFAULT_CACHE_EVICTION_INTERVAL = DEFAULT_CACHE_SIZE
 _UNCACHED = object()
 
 
-def _load_bundled_db():
+def _load_bundled_db() -> dict[str, LookupResult]:
     """Load the bundled ja4plus-mapping.csv into a lookup dict."""
-    db = {}
+    db: dict[str, LookupResult] = {}
     csv_path = _BUNDLED_CSV
     if not os.path.exists(csv_path):
         logger.debug("No bundled mapping CSV found at %s", csv_path)
@@ -58,7 +66,7 @@ def _load_bundled_db():
             reader = csv.DictReader(f)
             for row in reader:
                 # Build identification string from available fields
-                ident_parts = []
+                ident_parts: list[str] = []
                 for field in ("Application", "Library", "Device", "OS"):
                     val = row.get(field, "").strip()
                     if val:
@@ -97,7 +105,7 @@ class JA4DBClient:
         ValueError: `cache_size` is below one.
     """
 
-    def __init__(self, cache_size=DEFAULT_CACHE_SIZE):
+    def __init__(self, cache_size: int = DEFAULT_CACHE_SIZE) -> None:
         # A monitor looks every fingerprint it reads up, so a plain dictionary here holds
         # one entry for every fingerprint the traffic carries.
         self._cache = BoundedStateTable(
@@ -111,7 +119,7 @@ class JA4DBClient:
         self._db = _load_bundled_db()
         logger.debug("JA4DB client initialized with %d bundled entries", len(self._db))
 
-    def lookup(self, fingerprint):
+    def lookup(self, fingerprint: str) -> LookupResult | None:
         """
         Look up a fingerprint.
 
@@ -127,7 +135,10 @@ class JA4DBClient:
             self._cache.on_packet()
             # A read of one key holds that entry against both bounds, so one read costs
             # less than the `in` operator plus the read that follows it.
-            cached = self._cache.get(fingerprint, _UNCACHED)
+            # The lookup cache holds a result or None, and it returns `_UNCACHED` for a
+            # fingerprint it holds no entry for. The identity test below separates the
+            # two, so the annotation states the type of a value the cache holds.
+            cached: LookupResult | None = self._cache.get(fingerprint, _UNCACHED)
             if cached is not _UNCACHED:
                 return cached
 
@@ -139,7 +150,7 @@ class JA4DBClient:
             self._cache[fingerprint] = result
         return result
 
-    def _do_lookup(self, fingerprint):
+    def _do_lookup(self, fingerprint: str) -> LookupResult | None:
         """Perform the actual lookup."""
         # Check bundled database first
         if fingerprint in self._db:
@@ -152,7 +163,7 @@ class JA4DBClient:
             logger.debug("Remote lookup failed for %s: %s", fingerprint, e)
             return None
 
-    def _remote_lookup(self, fingerprint):
+    def _remote_lookup(self, fingerprint: str) -> LookupResult | None:
         """Try to look up via ja4db.com (requires requests)."""
         try:
             import requests
@@ -182,14 +193,14 @@ class JA4DBClient:
 
 
 # Module-level convenience
-_default_client = None
+_default_client: JA4DBClient | None = None
 
 # Two threads that both read no client build two clients, and each one reads the mapping
 # file again. The port guards the same construction with `sync.Once`, at `lookup.go:31`.
 _client_lock = threading.Lock()
 
 
-def lookup(fingerprint):
+def lookup(fingerprint: str) -> LookupResult | None:
     """Return the match for the fingerprint from the module-level client.
 
     The first caller builds the client. Several threads that call this function at the

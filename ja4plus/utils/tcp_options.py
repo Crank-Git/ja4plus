@@ -14,7 +14,13 @@ length that reaches past the option field stops the reader, and the reader retur
 options it read. It raises nothing.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import logging
+
+from scapy.all import Packet
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +48,7 @@ WINDOW_SCALE_LENGTH = 3
 SHORTEST_OPTION_LENGTH = 2
 
 
-def option_bytes(tcp):
+def option_bytes(tcp: Packet) -> bytes:
     """Return the raw TCP option bytes of one TCP layer.
 
     Scapy reports a parsed option list, and that list collapses several End of Option
@@ -70,7 +76,7 @@ def option_bytes(tcp):
     return raw[TCP_HEADER_BYTES:end]
 
 
-def read_options(data):
+def read_options(data: bytes) -> tuple[list[int], int, int]:
     """Return the option kinds, the maximum segment size and the window scale.
 
     Args:
@@ -83,9 +89,9 @@ def read_options(data):
         keeps the first value, which `rust/ja4/src/tcp.rs` also does. #215 records that
         reading as D5.
     """
-    kinds = []
-    mss = None
-    window_scale = None
+    kinds: list[int] = []
+    mss: int | None = None
+    window_scale: int | None = None
     offset = 0
     while offset < len(data):
         kind = data[offset]
@@ -111,7 +117,7 @@ def read_options(data):
     return kinds, mss or 0, window_scale or 0
 
 
-def tcp_prefix(tcp):
+def tcp_prefix(tcp: Packet) -> str:
     """Return part a through part d of a JA4T value or a JA4TS value.
 
     The user decided the two-digit form on 2026-08-08, and #215 records it as D1. An

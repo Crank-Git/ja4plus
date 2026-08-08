@@ -2,17 +2,26 @@
 Enhanced X.509 certificate utility functions for JA4+ fingerprinting.
 """
 
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.x509.oid import NameOID, ExtensionOID
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import binascii
 import hashlib
 import logging
+from typing import Any
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509.oid import NameOID, ExtensionOID
+from scapy.all import Packet
 
 logger = logging.getLogger(__name__)
 
 
-def extract_certificate_from_bytes(data, verbose=False, try_asn1=False):
+def extract_certificate_from_bytes(
+    data: bytes, verbose: bool = False, try_asn1: bool = False
+) -> bytes | None:
     """
     Extract X.509 certificate from TLS Certificate message.
 
@@ -149,7 +158,7 @@ def extract_certificate_from_bytes(data, verbose=False, try_asn1=False):
         return None
 
 
-def oid_to_hex(oid_string):
+def oid_to_hex(oid_string: str) -> str:
     """
     Convert OID dotted string to hex representation using ASN.1 encoding.
 
@@ -185,7 +194,7 @@ def oid_to_hex(oid_string):
     return "".join(f"{b:02x}" for b in encoded)
 
 
-def get_cert_details(cert):
+def get_cert_details(cert: x509.Certificate) -> dict[str, Any] | None:
     """Extract detailed certificate information for JA4X"""
     try:
         # Extract issuer RDNs in order
@@ -223,7 +232,7 @@ def get_cert_details(cert):
         return None
 
 
-def extract_certificate_info(packet, verbose=False):
+def extract_certificate_info(packet: Packet, verbose: bool = False) -> dict[str, Any] | None:
     """
     Extract certificate info from a packet.
 
@@ -278,7 +287,7 @@ def extract_certificate_info(packet, verbose=False):
         return None
 
 
-def get_certificate_issuer(cert):
+def get_certificate_issuer(cert: x509.Certificate) -> str:
     """Extract issuer information from certificate"""
     issuer = cert.issuer
 
@@ -298,7 +307,7 @@ def get_certificate_issuer(cert):
     return ",".join(components)
 
 
-def get_certificate_subject(cert):
+def get_certificate_subject(cert: x509.Certificate) -> str:
     """Extract subject information from certificate"""
     subject = cert.subject
 
@@ -318,7 +327,10 @@ def get_certificate_subject(cert):
     return ",".join(components)
 
 
-def get_name_attribute(name, oid):
+# `cryptography` types the attribute value `str | bytes`, and each caller reads an OID
+# that carries a string. The narrow type reports the call sites that format the value,
+# and #46 changes no behaviour, so the return type stays wide.
+def get_name_attribute(name: x509.Name, oid: x509.ObjectIdentifier) -> Any:
     """Safely extract name attribute"""
     try:
         attrs = name.get_attributes_for_oid(oid)

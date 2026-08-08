@@ -579,7 +579,7 @@ no reference value settles a question the image leaves open.
 #215 of the same day.** The image caption reads
 `TCP Retransmission Timings (only on JA4TScan)`, and three FoxIO sources contradict it:
 the deleted `technical_details/JA4T.md`, `wireshark/source/packet-ja4.c:1595` through
-`ja4t()`, and `zeek/ja4t/main.zeek:227-236`. `docs/specs/foxio/JA4T.md` states the rule
+`ja4t()`, and `zeek/ja4t/main.zeek:229-235`. `docs/specs/foxio/JA4T.md` states the rule
 as R12, and the `Divergence register` of `docs/specs/spec.md` holds the row.
 
 Part e holds the delay between each SYN-ACK of one connection, in whole seconds, joined

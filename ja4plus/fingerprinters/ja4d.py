@@ -9,9 +9,14 @@ Section b: DHCP options present (hyphen-separated decimal), skipping 53/255/50/8
 Section c: Parameter Request List contents from option 55 (hyphen-separated decimal)
 """
 
-import logging
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
 
-from scapy.all import UDP
+import logging
+from typing import Any
+
+from scapy.all import UDP, Packet
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -59,7 +64,7 @@ _DHCP_PORTS = {67, 68, 4011}
 _DHCP_FQDN_NAME_OFFSET = 3
 
 
-def build_option_list(option_codes):
+def build_option_list(option_codes: list[int]) -> str:
     """
     Format DHCP option codes as hyphen-separated decimals, skipping
     options in DHCP_SKIP_OPTIONS. Returns '00' if nothing remains.
@@ -74,7 +79,7 @@ def build_option_list(option_codes):
     return "-".join(parts) if parts else "00"
 
 
-def build_param_list(params):
+def build_param_list(params: list[int]) -> str:
     """
     Format the Parameter Request List (option 55) as hyphen-separated
     decimals. Returns '00' if empty.
@@ -90,7 +95,7 @@ def build_param_list(params):
     return "-".join(str(p) for p in params)
 
 
-def _parse_dhcp_options(raw_payload):
+def _parse_dhcp_options(raw_payload: bytes) -> dict[str, Any] | None:
     """
     Parse DHCP options from a raw UDP payload (BOOTP + magic cookie + options).
 
@@ -113,8 +118,8 @@ def _parse_dhcp_options(raw_payload):
     has_max_msg_size = False
     has_request_ip = False
     has_fqdn = False
-    option_codes = []
-    param_list = []
+    option_codes: list[int] = []
+    param_list: list[int] = []
 
     pos = 240  # start of options
     while pos < len(raw_payload):
@@ -180,7 +185,7 @@ def _parse_dhcp_options(raw_payload):
     }
 
 
-def generate_ja4d(packet):
+def generate_ja4d(packet: Packet) -> str | None:
     """
     Generate a JA4D fingerprint from a packet.
 
@@ -226,12 +231,14 @@ def generate_ja4d(packet):
 class JA4DFingerprinter(BaseFingerprinter):
     """Fingerprinter for JA4D (DHCP)."""
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """Process a packet and extract JA4D fingerprint if applicable."""
         fingerprint = generate_ja4d(packet)
         if fingerprint:
             self.add_fingerprint(fingerprint, packet)
         return fingerprint
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """No-op: JA4D is stateless (per-packet fingerprinter)."""

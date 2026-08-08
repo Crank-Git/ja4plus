@@ -137,7 +137,10 @@ from ja4plus import Processor
 p = Processor()
 for packet in packets:
     for r in p.process_packet(packet):
-        print(r["type"], r["fingerprint"], r.get("raw"))
+        print(r.type, r.fingerprint, r.raw)
+
+# Read the errors as well when a failed parse must be told from no fingerprint.
+results, errors = p.process_packet_with_errors(packet)
 
 # The packet source ends here. JA4SSH emits the window each connection holds open.
 for r in p.close_open_windows():

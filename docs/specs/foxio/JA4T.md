@@ -85,7 +85,7 @@ there, and no source ever corrected them.
 - `wireshark/source/packet-ja4.c:1595` writes the `JA4TS` field through `ja4t()` with a
   connection, and `ja4t()` appends part e at line 684 whenever the connection holds more
   than one SYN-ACK.
-- `zeek/ja4t/main.zeek:227-236` appends the delay list to `c$conn$ja4ts`.
+- `zeek/ja4t/main.zeek:229-235` appends the delay list to `c$conn$ja4ts`.
 
 **The image's own example contradicts its caption.** The caption reads
 `TCP Retransmission Timings (only on JA4TScan)`, and the example value `1-2-4-8-R6`
@@ -225,7 +225,7 @@ adopts all four.
    the fingerprint will omit section e. If retransmissions are seen, the fingerprint
    will fill out section e." Part e is absent, and it is not `00`.
    `wireshark/source/packet-ja4.c:684` appends part e only when `syn_ack_count > 1`, and
-   `zeek/ja4t/main.zeek:227` appends it only when the delay list holds a value. Both
+   `zeek/ja4t/main.zeek:229` appends it only when the delay list holds a value. Both
    corroborate the omission.
 2. **Each delay is the interval since the last SYN-ACK, rounded to the nearest whole
    second.** The file reads: "we start with the timestamp of the first SYNACK and

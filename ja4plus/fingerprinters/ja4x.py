@@ -2,10 +2,16 @@
 JA4X X.509 Certificate Fingerprinting implementation.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import hashlib
 import logging
 import struct
-from scapy.all import IP, IPv6, TCP, Raw
+from typing import Any
+
+from scapy.all import IP, IPv6, TCP, Raw, Packet
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -37,7 +43,7 @@ MAX_CERTIFICATE_BYTES = 200000
 MAX_PROCESSED_CERTS = 1000
 
 
-def generate_ja4x(cert_info):
+def generate_ja4x(cert_info: dict[str, Any] | None) -> str | None:
     """
     Generate a JA4X fingerprint from certificate info.
 
@@ -81,7 +87,7 @@ def generate_ja4x(cert_info):
         return None
 
 
-def generate_ja4x_raw(cert_info):
+def generate_ja4x_raw(cert_info: dict[str, Any] | None) -> str | None:
     """Return the JA4X_r raw form of certificate info.
 
     The raw form holds the three unhashed lists of `generate_ja4x`, joined with `_`. R11
@@ -117,7 +123,7 @@ def generate_ja4x_raw(cert_info):
 class JA4XFingerprinter(BaseFingerprinter):
     """Fingerprinter for JA4X (X.509 Certificates)."""
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         """Initialize the fingerprinter with TCP stream tracking."""
         super().__init__(thread_safe=thread_safe)
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
@@ -125,8 +131,8 @@ class JA4XFingerprinter(BaseFingerprinter):
         self.reassembler = TCPStreamReassembler(max_streams=50, max_stream_bytes=1048576)
         # `Processor.process_packet` reads these two attributes after the call that
         # writes them, and it pairs the raw form with the fingerprint of one packet.
-        self.last_raw = None
-        self.last_raw_original_order = None
+        self.last_raw: str | None = None
+        self.last_raw_original_order: str | None = None
         # The table holds one entry for each certificate on each stream, and the
         # certificate of a stream that goes quiet reaches no reader again. The age pass
         # reads up to 1000 entries, so it runs on the default schedule and not on each
@@ -138,7 +144,9 @@ class JA4XFingerprinter(BaseFingerprinter):
             max_connection_age=self.reassembler.max_stream_age,
         )
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """Remove the stream buffer and the certificate state of the connection."""
         with self._lock:
             stream_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
@@ -152,7 +160,7 @@ class JA4XFingerprinter(BaseFingerprinter):
             for key in closed:
                 self.scan_offsets.pop(key, None)
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """Process a packet and extract JA4X fingerprint if applicable."""
         with self._lock:
             if not (TCP in packet and Raw in packet):
@@ -188,7 +196,9 @@ class JA4XFingerprinter(BaseFingerprinter):
 
             return fingerprint
 
-    def _find_certificates_in_stream_data(self, stream_id, stream_data, packet):
+    def _find_certificates_in_stream_data(
+        self, stream_id: str, stream_data: bytes, packet: Packet
+    ) -> str | None:
         """Return the last JA4X value the stream yields, or None.
 
         The scan reads the TLS record layer, then the handshake messages inside it. One
@@ -212,7 +222,7 @@ class JA4XFingerprinter(BaseFingerprinter):
         Returns:
             The last JA4X value the scan produced, or None.
         """
-        result = None
+        result: str | None = None
         if not stream_data:
             return None
 
@@ -242,7 +252,9 @@ class JA4XFingerprinter(BaseFingerprinter):
         self.scan_offsets[stream_id] = (base_seq, offset)
         return result
 
-    def _read_handshake_run(self, stream_data, offset, limit):
+    def _read_handshake_run(
+        self, stream_data: bytes, offset: int, limit: int
+    ) -> tuple[bytes | None, int, bool]:
         """Return the handshake bytes of the records that start at the offset.
 
         The run holds the payload of every complete handshake record that follows the
@@ -282,7 +294,7 @@ class JA4XFingerprinter(BaseFingerprinter):
             return None, offset, truncated
         return bytes(handshake), position, truncated
 
-    def _certificate_messages(self, handshake):
+    def _certificate_messages(self, handshake: bytes) -> list[bytes]:
         """Return the body of every Certificate message in the handshake bytes.
 
         Args:
@@ -291,7 +303,7 @@ class JA4XFingerprinter(BaseFingerprinter):
         Returns:
             A list of message bodies. The body starts at the certificate list length.
         """
-        messages = []
+        messages: list[bytes] = []
         position = 0
         while position + TLS_HANDSHAKE_HEADER_LENGTH <= len(handshake):
             message_type = handshake[position]
@@ -306,7 +318,9 @@ class JA4XFingerprinter(BaseFingerprinter):
             position = end
         return messages
 
-    def _read_certificate_message(self, stream_id, message, packet):
+    def _read_certificate_message(
+        self, stream_id: str, message: bytes, packet: Packet
+    ) -> str | None:
         """Return the last JA4X value of one Certificate message, or None.
 
         FoxIO computes one JA4X value for each certificate on each stream, and its
@@ -322,7 +336,7 @@ class JA4XFingerprinter(BaseFingerprinter):
         Returns:
             The last JA4X value the message produced, or None.
         """
-        result = None
+        result: str | None = None
         for cert_bytes in self._certificates_in_message(message):
             key = (stream_id, hashlib.sha256(cert_bytes).hexdigest())
             if key in self.processed_certs:
@@ -336,7 +350,7 @@ class JA4XFingerprinter(BaseFingerprinter):
                 self._record(fingerprint, raw, packet)
         return result
 
-    def _record(self, fingerprint, raw, packet):
+    def _record(self, fingerprint: str, raw: str | None, packet: Packet) -> None:
         """Append one JA4X result, with the raw form beside the fingerprint.
 
         R10 of `docs/specs/foxio/JA4X.md` sorts no list, so one raw value serves the
@@ -354,7 +368,7 @@ class JA4XFingerprinter(BaseFingerprinter):
 
         self.last_raw = raw
         self.last_raw_original_order = raw
-        entry = {
+        entry: dict[str, Any] = {
             "fingerprint": fingerprint,
             "raw": raw,
             "raw_original_order": raw,
@@ -362,7 +376,7 @@ class JA4XFingerprinter(BaseFingerprinter):
         entry.update(packet_endpoints(packet))
         self.fingerprints.append(entry)
 
-    def _certificates_in_message(self, message):
+    def _certificates_in_message(self, message: bytes) -> list[bytes]:
         """Return the certificates of one Certificate message body.
 
         The reader trusts no length field it read from the packet. A length that runs
@@ -386,7 +400,7 @@ class JA4XFingerprinter(BaseFingerprinter):
             if list_length <= 0 or end > len(message):
                 return []
 
-            certificates = []
+            certificates: list[bytes] = []
             while position + CERTIFICATE_LENGTH_BYTES <= end:
                 length = int.from_bytes(
                     message[position : position + CERTIFICATE_LENGTH_BYTES], "big"
@@ -404,7 +418,7 @@ class JA4XFingerprinter(BaseFingerprinter):
             logger.debug(f"Failed to read the certificates of a TLS message: {e}")
             return []
 
-    def get_cert_details(self, cert):
+    def get_cert_details(self, cert: x509.Certificate | None) -> dict[str, list[str]] | None:
         """
         Extract certificate details for JA4X fingerprinting.
 
@@ -420,9 +434,9 @@ class JA4XFingerprinter(BaseFingerprinter):
             return None
 
         try:
-            issuer_rdns = []
-            subject_rdns = []
-            extensions = []
+            issuer_rdns: list[str] = []
+            subject_rdns: list[str] = []
+            extensions: list[str] = []
 
             # Process issuer - use hex-encoded OID per FoxIO spec
             for rdn in cert.issuer.rdns:
@@ -447,7 +461,7 @@ class JA4XFingerprinter(BaseFingerprinter):
             logger.warning(f"Certificate error: {e}")
             return None
 
-    def read_certificate(self, cert_data):
+    def read_certificate(self, cert_data: bytes) -> tuple[str | None, str | None]:
         """Return the JA4X value and the JA4X_r value of one certificate.
 
         The reader parses the certificate once, because the two values read the same
@@ -477,7 +491,7 @@ class JA4XFingerprinter(BaseFingerprinter):
             logger.warning(f"Certificate error: {e}")
             return None, None
 
-    def fingerprint_certificate(self, cert_data):
+    def fingerprint_certificate(self, cert_data: bytes) -> str | None:
         """
         Generate a JA4X fingerprint from raw certificate data.
 
@@ -489,7 +503,7 @@ class JA4XFingerprinter(BaseFingerprinter):
         """
         return self.read_certificate(cert_data)[0]
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the fingerprinter state."""
         with self._lock:
             self.fingerprints = []

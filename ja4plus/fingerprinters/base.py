@@ -2,8 +2,17 @@
 Base fingerprinter class for JA4+ fingerprinters.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import logging
 import threading
+from contextlib import AbstractContextManager
+from types import TracebackType
+from typing import Any, Literal
+
+from scapy.all import Packet
 
 from ja4plus.utils.packet_utils import packet_endpoints
 from ja4plus.utils.state_table import StateTable
@@ -23,19 +32,28 @@ class NullLock:
 
     __slots__ = ()
 
-    def __enter__(self):
+    def __enter__(self) -> NullLock:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> Literal[False]:
         return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "NullLock()"
 
 
 # Every fingerprinter that locks none shares this instance. The placeholder holds no
 # state, so one instance serves every caller.
 NULL_LOCK = NullLock()
+
+# The type of the guard a fingerprinter holds. Every call site uses `with` and no other
+# operation, and typeshed publishes no name for the object `threading.RLock` returns.
+Lock = AbstractContextManager[Any]
 
 
 class BaseFingerprinter:
@@ -47,19 +65,19 @@ class BaseFingerprinter:
             thread at a time calls it.
     """
 
-    def __init__(self, thread_safe=True):
+    def __init__(self, thread_safe: bool = True) -> None:
         """Initialize the fingerprinter and its lock."""
-        self.fingerprints = []
+        self.fingerprints: list[dict[str, Any]] = []
         self.thread_safe = bool(thread_safe)
         # The lock is a reentrant lock, because `Processor.process_packet` holds it and
         # then calls `process_packet` on this fingerprinter, which holds it again. A
         # `threading.Lock` deadlocks on that second acquisition, and it deadlocks on the
         # first packet. One fingerprinter holds one lock, so ten threads work at once on
         # ten methods.
-        self._lock = threading.RLock() if thread_safe else NULL_LOCK
+        self._lock: Lock = threading.RLock() if thread_safe else NULL_LOCK
 
     @property
-    def lock(self):
+    def lock(self) -> Lock:
         """Return the lock that guards the state of this fingerprinter.
 
         `Processor.process_packet` reads `last_raw` after the call that writes it, so
@@ -71,7 +89,7 @@ class BaseFingerprinter:
         """
         return self._lock
 
-    def state_tables(self):
+    def state_tables(self) -> dict[str, StateTable]:
         """Return every state table this fingerprinter holds, keyed by its name.
 
         The method reads the attributes of the fingerprinter rather than a list each
@@ -86,7 +104,7 @@ class BaseFingerprinter:
         Returns:
             A dict that maps the attribute name to the state table.
         """
-        tables = {}
+        tables: dict[str, StateTable] = {}
         for name, value in vars(self).items():
             if isinstance(value, StateTable):
                 tables[name] = value
@@ -99,7 +117,7 @@ class BaseFingerprinter:
                     tables[f"{name}.{inner_name}"] = inner_value
         return tables
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet) -> str | None:
         """
         Process a packet and extract fingerprint if applicable.
         This method should be overridden by subclasses.
@@ -112,7 +130,7 @@ class BaseFingerprinter:
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-    def add_fingerprint(self, fingerprint, packet):
+    def add_fingerprint(self, fingerprint: str, packet: Packet) -> None:
         """Add a fingerprint to the collection.
 
         The entry holds the address pair and the port pair of the packet, and it never
@@ -129,19 +147,19 @@ class BaseFingerprinter:
         # list sits in a subclass method or in `Processor.process_packet`, and each of
         # those holds the lock. `ja4l.py` holds the one composite: it reads the length
         # and appends after it.
-        entry = {"fingerprint": fingerprint}
+        entry: dict[str, Any] = {"fingerprint": fingerprint}
         entry.update(packet_endpoints(packet))
         self.fingerprints.append(entry)
 
-    def get_fingerprints(self):
+    def get_fingerprints(self) -> list[dict[str, Any]]:
         """Return all collected fingerprints."""
         return self.fingerprints
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the fingerprinter state."""
         self.fingerprints = []
 
-    def close_open_windows(self):
+    def close_open_windows(self) -> list[dict[str, Any]]:
         """Emit every window this fingerprinter holds open, and return the new entries.
 
         The caller runs this method when the packet source ends. JA4SSH is the only
@@ -153,7 +171,9 @@ class BaseFingerprinter:
         """
         return []
 
-    def cleanup_connection(self, src_ip, src_port, dst_ip, dst_port, proto):
+    def cleanup_connection(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> None:
         """
         Remove internal state for the given completed or evicted connection.
 
