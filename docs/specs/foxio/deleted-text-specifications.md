@@ -386,9 +386,14 @@ The section "JA4.md — the deletion carried no correction" holds the measuremen
 `technical_details/JA4.md` at the pinned commit is the specification of JA4, and it is
 text rather than an image. **The deleted form states no rule the pinned form omits.**
 
-### F5 — `ja4plus` writes the retracted SSL 2.0 version value
+### F5 — `ja4plus` wrote the retracted SSL 2.0 version value
 
-**This is a defect against the pinned specification, and this issue changes no file under
+**#227 repaired this on 2026-08-08.** `ja4.py` and `ja4s.py` now hold `0x0002`, and
+`0x0200` reaches the `00` fallback. `docs/implementation_notes.md` holds the reading and
+the three FoxIO sources that decide it. The section below records the measurement #221
+made, and it stays in the form #221 wrote it.
+
+**This was a defect against the pinned specification, and #221 changed no file under
 `ja4plus/`.**
 
 `technical_details/JA4.md` at the pinned commit states `0x0002 = SSL 2.0 = “s2”`. The
@@ -412,8 +417,8 @@ it writes no `s1`, which the deleted form does carry. **The stale value is one r
 table, and it is the only row.**
 
 **No vector measures it.** No capture in `tests/foxio_vectors/` carries an SSL 2.0 hello,
-so no conformance case fails today and no register entry names it. **#227 owns the
-repair.**
+so no conformance case fails today and no register entry names it. **#227 shipped the
+repair on 2026-08-08, and no fingerprint moved.**
 
 ## JA4S — the deleted text states nothing the material does not
 
@@ -529,7 +534,7 @@ already builds, and it settles neither the rounding divergence nor the third Zee
 | F2 | The empty JA4T field is `00`. The deleted `JA4T.md` states the form the image does not state, and Wireshark and Zeek corroborate it. `rust/ja4/src/tcp.rs` writes another form and `ja4plus` writes a third | #215 item 1, which lacked FoxIO prose |
 | F3 | The deleted `JA4H.md` names exactly nine request methods, and the image ends its caption with `etc` | #219 item 5 |
 | F4 | The FoxIO JA4H worked example computes 11 headers and publishes 13. The image repeats the value | No issue. It changes no fingerprint |
-| F5 | `ja4plus` writes `0x0200` for SSL 2.0, and the pinned `JA4.md` states `0x0002` | **#227** |
+| F5 | `ja4plus` wrote `0x0200` for SSL 2.0, and the pinned `JA4.md` states `0x0002` | **#227 repaired it on 2026-08-08** |
 | F6 | The JA4L image changed after the deletion, from 198175 bytes to 162323 bytes | #200, which reads the current image |
 
 ## What this page does not do

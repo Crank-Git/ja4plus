@@ -129,7 +129,11 @@ class TestJA4VersionMapping(unittest.TestCase):
         self.assertEqual(self._fp_version(0x0300), "s3")
 
     def test_ssl20(self):
-        self.assertEqual(self._fp_version(0x0200), "s2")
+        # FoxIO commit `3e02a27` corrected the value, and #227 holds the reading.
+        self.assertEqual(self._fp_version(0x0002), "s2")
+
+    def test_the_retracted_ssl20_value_reaches_the_fallback(self):
+        self.assertEqual(self._fp_version(0x0200), "00")
 
     def test_dtls10(self):
         self.assertEqual(self._fp_version(0xFEFF), "d1")
