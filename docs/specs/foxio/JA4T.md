@@ -351,7 +351,8 @@ and name the loss.
 
 ## What the comparison reports
 
-**35 of the 38 values match, and no value the register does not name disagrees.** #216
+**37 of the 38 values reproduce exactly, and one differs.** No value the register does
+not name disagrees. #216
 changed no file under `ja4plus/`, and #215 owns both entries.
 
 | Capture | Values | Result |
