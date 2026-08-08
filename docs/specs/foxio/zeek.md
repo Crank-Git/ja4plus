@@ -455,7 +455,7 @@ each SYN-ACK of a connection. `docs/specs/foxio/JA4T.md` states the rule as R12.
 **The cause is the omission rule, and the sentence above already stated it.** Each of the
 ten baseline connections holds one SYN-ACK. The deleted `technical_details/JA4T.md`
 states that a fingerprint omits part e when it sees no retransmission, so `ja4plus`
-writes the same four-part value it wrote before. `zeek/ja4t/main.zeek:227` appends the
+writes the same four-part value it wrote before. `zeek/ja4t/main.zeek:229` appends the
 delay list only when the list holds a value, so the Zeek script omits part e on the same
 ten rows for the same reason.
 
