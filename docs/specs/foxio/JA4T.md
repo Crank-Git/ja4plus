@@ -197,7 +197,9 @@ adopts all four.
    second.** The file reads: "we start with the timestamp of the first SYNACK and
    subtract it from the next SYNACK, rounding the result to the nearest whole number in
    seconds." `timediff` in `wireshark/source/packet-ja4.c` calls the C `round`, which
-   carries a half away from zero, and `ja4plus` reads the same rule.
+   carries a half away from zero, and `ja4plus` reads the same rule. A negative half
+   rounds away from zero too, because a capture that holds a SYN-ACK out of order
+   produces a negative delay.
    **`zeek/ja4t/main.zeek:180` truncates instead**, because it divides an integer count
    of microseconds. The prose and the dissector agree, so `ja4plus` follows them.
 3. **A fingerprint grows with each SYN-ACK.** The file lists the value that each SYN-ACK

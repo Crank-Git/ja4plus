@@ -582,8 +582,12 @@ with `-`. Four rules apply.
 - **A fingerprint omits part e when the server answers once.** Part e is absent, and it
   is not `00`. Both FoxIO implementations append part e only when a delay exists.
 - **A delay rounds to the nearest whole second, and a half rounds away from zero.**
-  `timediff` in the dissector calls the C `round`. The Python built-in `round` carries a
-  half to the even number, so `ja4ts.py` calls `math.floor(delta + 0.5)` instead.
+  `timediff` in the dissector calls the C `round`. Two Python expressions look right and
+  are not. The built-in `round` carries a half to the even number, so it writes `0` for
+  `0.5` where the dissector writes `1`. `math.floor(delay + 0.5)` carries a negative half
+  towards zero, so it writes `0` for `-0.5` where the dissector writes `-1`. A capture
+  that holds a SYN-ACK out of order produces a negative delay, and every packet is
+  hostile input, so `ja4ts.py` reads the sign separately with `math.copysign`.
   `zeek/ja4t/main.zeek:180` truncates, and the prose and the dissector outvote it.
 - **A fingerprint grows with each SYN-ACK.** `ja4plus` emits one value per SYN-ACK.
 - **The state holds ten retransmissions and a timeout of two minutes.** `MAX_SYN_ACK_TIMES`

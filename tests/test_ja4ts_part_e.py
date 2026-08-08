@@ -101,6 +101,16 @@ class TestPartEDelays(unittest.TestCase):
         fingerprinter.process_packet(syn_ack(1000.0))
         self.assertEqual(fingerprinter.process_packet(syn_ack(1000.5)), PARTS_A_TO_D + "_1")
 
+    def test_part_e_rounds_a_negative_half_second_delay_away_from_zero(self):
+        """A capture that holds a SYN-ACK out of order produces a negative delay.
+
+        The C `round` carries a negative half away from zero and writes `-1`.
+        `math.floor(delay + 0.5)` carries it towards zero and writes `0`.
+        """
+        fingerprinter = JA4TSFingerprinter()
+        fingerprinter.process_packet(syn_ack(1000.0))
+        self.assertEqual(fingerprinter.process_packet(syn_ack(999.5)), PARTS_A_TO_D + "_-1")
+
     def test_part_e_writes_zero_for_a_delay_below_half_a_second(self):
         fingerprinter = JA4TSFingerprinter()
         fingerprinter.process_packet(syn_ack(1000.0))

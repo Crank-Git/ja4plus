@@ -32,6 +32,11 @@ def _delay_seconds(later, earlier):
     half away from zero. The Python built-in `round` carries a half to the even number,
     so it writes `0` for a delay of half a second where the dissector writes `1`.
 
+    `math.floor(delay + 0.5)` also fails to match, because it carries a negative half
+    towards zero and writes `0` for `-0.5` where the dissector writes `-1`. A capture
+    that holds a SYN-ACK out of order produces a negative delay, and every packet is
+    hostile input, so this reads the sign separately.
+
     Args:
         later: The capture timestamp of the later packet, in seconds.
         earlier: The capture timestamp of the earlier packet, in seconds.
@@ -39,7 +44,8 @@ def _delay_seconds(later, earlier):
     Returns:
         The delay in whole seconds.
     """
-    return math.floor((later - earlier) + 0.5)
+    delay = later - earlier
+    return int(math.copysign(math.floor(abs(delay) + 0.5), delay))
 
 
 class SynAckTracker:
@@ -77,8 +83,9 @@ class SynAckTracker:
             self._evict()
             stamps = []
             self.times[key] = stamps
-        # A retransmission past the bound changes no fingerprint, so the packet only
-        # keeps the entry alive. FoxIO counts ten retransmissions and no more.
+        # FoxIO counts ten retransmissions and no more, so the eleventh timestamp is the
+        # last one this entry stores. A later SYN-ACK changes no fingerprint, and it does
+        # not renew the entry either, so the entry ages from the tenth retransmission.
         if len(stamps) <= MAX_SYN_ACK_DELAYS:
             stamps.append(now)
         return [_delay_seconds(stamps[i], stamps[i - 1]) for i in range(1, len(stamps))]
