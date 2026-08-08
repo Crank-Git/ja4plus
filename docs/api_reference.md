@@ -182,6 +182,90 @@ hassh = fp.get_hassh_fingerprints()              # HASSH fingerprints
 lookup = fp.lookup_hassh(hassh_value)            # Known HASSH lookup
 ```
 
+## Processor
+
+### ja4plus.processor
+
+| Class/Function | Description |
+|----------------|-------------|
+| `Processor(thread_safe=True)` | Build one processor and the ten fingerprinters it drives |
+| `.process_packet(packet)` | Run every fingerprinter on one packet, and return a list of result dicts |
+| `.close_open_windows()` | Emit every window the fingerprinters hold open |
+| `.get_shard_key(packet)` | Return one stable key for the connection of a packet |
+| `.cleanup_connection(src_ip, src_port, dst_ip, dst_port, proto)` | Drop the state of one connection across every fingerprinter |
+| `.reset()` | Reset every fingerprinter, and return every count to zero |
+| `.stats()` | Return one `ProcessorStats` for each of the ten methods |
+| `.thread_safe` | The value the constructor read |
+
+`stats()` reports what the state tables hold, and #41 built it. One processor holds
+**fifteen** state tables across the ten methods: the thirteen `BoundedStateTable`
+instances and the two `TCPStreamReassembler` instances of JA4H and JA4X. A method that
+holds no state reports an empty `tables` list.
+
+| Field of `ProcessorStats` | Description |
+|----------------|-------------|
+| `method` | The method name, such as `ja4l` |
+| `packets` | The count of packets the processor gave this method |
+| `entries` | The count of entries every state table of this method holds |
+| `evictions` | The count of entries those tables evicted |
+| `returned_connections` | The count of returned connections those tables saw |
+| `tables` | The name of each state table this method holds |
+
+A **returned connection** is one connection that a state table evicted and then saw
+again. Its new entry holds none of the packets that came before the eviction, so its
+fingerprint may be incomplete. A key the caller removed through `cleanup_connection`,
+`del`, `pop` or `clear` leaves no memory, so a connection that returns after that counts
+as a first sighting.
+
+`stats()` holds the lock of one fingerprinter at a time and never two, so it deadlocks
+against neither the locks of the fingerprinters nor the module lock of `ja4plus.ja4db`.
+
+#### The concurrency contract of the processor
+
+Several threads may call `process_packet` on one `Processor()`. Each fingerprinter holds
+one `threading.RLock` of its own, so ten threads work at once on ten methods rather than
+waiting on one lock. The lock is reentrant, because `Processor.process_packet` holds the
+lock of a fingerprinter and then calls a method that holds it again.
+
+The contract is narrower than "thread safe", and it has three clauses.
+
+1. Give each thread whole connections. `get_shard_key` sorts the 5-tuple, so both
+   directions of one connection return one key, and a caller routes on that key. Eight
+   threads arranged this way read the value set one thread reads.
+2. A caller that splits the packets of one connection across threads gets undefined
+   results. The state of that connection then advances out of capture order, and no lock
+   restores the order.
+3. Feed one processor the packets of one timeline. Every state table evicts an entry that
+   receives no packet for its maximum age, and the pass reads the timestamp of the most
+   recent packet. Two packet sources whose clocks sit far apart therefore age out state
+   that the later source still needs.
+
+Warning: `thread_safe=False` is a promise the caller makes, not a mode the library
+checks. `Processor(thread_safe=False)` gives every fingerprinter the shared `NULL_LOCK`
+and acquires nothing. A caller that runs one processor for each shard pays no lock, and a
+caller that breaks the promise gets undefined results and no error.
+
+Clause 1 holds whether the lock is present or absent, because a thread that owns whole
+connections touches keys no other thread touches. The lock guards the caller who shares
+one processor without that arrangement, and it guards a `reset` that runs beside a packet.
+
+#### The memory bound of the processor
+
+One processor holds fifteen state tables: thirteen `BoundedStateTable` instances and two
+`TCPStreamReassembler` instances. `features/03-concurrency-safety.md` states the maximum
+entry count and the maximum age of each one. A table that reaches its maximum entry count
+evicts the least recently used entry. A long capture can therefore evict a connection
+that later returns, and the fingerprint of a returned connection may be incomplete.
+Eviction runs on packet arrival, and the library starts no thread.
+
+`BaseFingerprinter.fingerprints` holds one result for each fingerprint rather than
+per-connection data, and it holds no bound. A caller that runs for a long time reads
+`get_fingerprints()` and calls `reset()`. A caller can instead read the return value of
+`process_packet` and never let the list grow.
+`JA4SSHFingerprinter.hassh_fingerprints` holds no bound either.
+
+This package states no memory ceiling.
+
 ## Convenience Functions
 
 One-shot fingerprinting without maintaining state:
