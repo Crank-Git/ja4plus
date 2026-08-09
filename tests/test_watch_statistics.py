@@ -381,69 +381,125 @@ class TheSnapshotReadsOneInstant(unittest.TestCase):
         self.assertEqual(snapshot.fingerprints, 16000)
 
 
+class ScriptedWait:
+    """A wait that the test scripts, in place of the wait on the stop event.
+
+    The reporter calls the wait once for each interval. It writes one line for each call
+    that returns False. This call returns False for the count of intervals the test
+    states, and True after them. The count of lines is therefore the count the test
+    states, and not the count the host delivered.
+
+    The call records every timeout it received, so a case reads the interval the
+    reporter asked for.
+
+    Args:
+        intervals: The count of intervals that pass before the stop arrives.
+    """
+
+    def __init__(self, intervals):
+        self._remaining = intervals
+        self.timeouts = []
+
+    def __call__(self, timeout):
+        self.timeouts.append(timeout)
+        if self._remaining == 0:
+            return True
+        self._remaining -= 1
+        return False
+
+
 class TheReporterWritesOneLinePerInterval(unittest.TestCase):
     """FR-live-capture-9 — `--stats-interval 1` writes a statistics line every second.
 
-    The cases below use a shorter interval, because a case that waits one second per
-    line costs the suite more than it measures. The interval reaches the wait
-    unchanged, and the gaps the second case measures state the schedule.
+    Every case here drives the reporter from a scripted wait, so it states the schedule
+    rather than samples it. #369 removed the earlier form, which slept a fraction of a
+    second and counted the lines that arrived. That form measured how promptly the host
+    scheduled a thread. The `macos-latest, 3.12` job of the run for `8ef8acc` read 2
+    lines where the case asked for 3. The sweep of #369 read 4 lines of 5 due, on an
+    idle host, at a 0.25 second sleep.
+
+    A case that waits one second per line costs the suite more than it measures. A case
+    that waits less than that reports a defect the package does not hold. **No case here
+    asserts the elapsed time between two lines**, and #369 removed that assertion on
+    purpose, because the host decides that time.
+
+    The reporter still runs on its own thread here, so the cases measure the thread and
+    not a loop the case wrote. `stop` joins that thread. The thread blocks on nothing
+    once the scripted wait returns True, so the join is a liveness bound and no
+    measurement of promptness. Each case names the end of the thread, so a join that
+    timed out reports itself rather than shortening a stream.
+
+    `TheReporterStopsCleanly` measures the default wait against the real stop event.
     """
 
-    def test_the_reporter_writes_a_line_for_each_interval_that_passes(self):
-        stream = io.StringIO()
-        reporter = StatisticsReporter(MonitorStats(), 0.05, stream)
+    def run_reporter(self, intervals, interval=0.05, stream=None):
+        """Return the stream and the scripted wait, after the reporter thread ends.
+
+        Args:
+            intervals: The count of intervals that pass before the stop arrives.
+            interval: The count of seconds the caller asks for.
+            stream: The stream to write to, or None for a plain one.
+
+        Returns:
+            A tuple of the stream and the scripted wait.
+        """
+        stream = io.StringIO() if stream is None else stream
+        wait = ScriptedWait(intervals)
+        reporter = StatisticsReporter(MonitorStats(), interval, stream, wait=wait)
         reporter.start()
-        try:
-            time.sleep(0.55)
-        finally:
-            reporter.stop()
-        self.assertGreaterEqual(len(statistics_lines(stream.getvalue())), 4)
+        reporter.stop()
+        self.assertFalse(reporter.is_alive(), "the reporter thread did not end")
+        return stream, wait
 
-    def test_the_gap_between_two_lines_holds_the_interval(self):
-        times = []
+    def test_the_reporter_writes_one_line_for_each_interval_that_passes(self):
+        stream, _ = self.run_reporter(intervals=4)
+        self.assertEqual(len(statistics_lines(stream.getvalue())), 4)
 
-        class TimingStream(io.StringIO):
-            def write(self, text):
-                if text.startswith("[ja4plus]"):
-                    times.append(time.monotonic())
-                return super().write(text)
+    def test_the_reporter_writes_no_second_line_for_one_interval(self):
+        """One interval produces one line, so a reporter that wrote a pair fails here."""
+        stream, _ = self.run_reporter(intervals=1)
+        self.assertEqual(len(statistics_lines(stream.getvalue())), 1)
 
-        reporter = StatisticsReporter(MonitorStats(), 0.05, TimingStream())
-        reporter.start()
-        try:
-            time.sleep(0.35)
-        finally:
-            reporter.stop()
-        self.assertGreaterEqual(len(times), 3)
-        gaps = [later - earlier for earlier, later in zip(times, times[1:])]
-        for gap in gaps:
-            self.assertGreaterEqual(gap, 0.025)
+    def test_the_reporter_asks_the_wait_for_the_interval_the_caller_states(self):
+        """FR-live-capture-9 — the interval reaches the wait unchanged.
+
+        The reporter asks for one timeout per interval, and one more for the call that
+        reports the stop. Two intervals run, so a reporter that holds a constant fails
+        one of them.
+        """
+        for interval in (0.05, 1.0):
+            with self.subTest(interval=interval):
+                _, wait = self.run_reporter(intervals=3, interval=interval)
+                self.assertEqual(wait.timeouts, [interval] * 4)
 
     def test_the_reporter_writes_no_line_before_the_first_interval_passes(self):
-        stream = io.StringIO()
-        reporter = StatisticsReporter(MonitorStats(), 10.0, stream)
-        reporter.start()
-        try:
-            time.sleep(0.05)
-        finally:
-            reporter.stop()
+        """The wait comes first, so a stop that arrives inside interval one writes none."""
+        stream, wait = self.run_reporter(intervals=0, interval=10.0)
         self.assertEqual(statistics_lines(stream.getvalue()), [])
+        self.assertEqual(wait.timeouts, [10.0])
 
     def test_the_reporter_flushes_each_line(self):
+        """A monitor runs for weeks, so the operator reads each line as it is written."""
         flushes = []
 
         class FlushRecorder(io.StringIO):
             def flush(self):
-                flushes.append(self.getvalue())
+                flushes.append(len(statistics_lines(self.getvalue())))
                 return super().flush()
 
-        reporter = StatisticsReporter(MonitorStats(), 0.02, FlushRecorder())
-        reporter.start()
-        try:
-            time.sleep(0.15)
-        finally:
-            reporter.stop()
-        self.assertTrue(flushes, "the reporter flushed no line")
+        self.run_reporter(intervals=3, stream=FlushRecorder())
+        self.assertEqual(flushes, [1, 2, 3])
+
+    def test_the_reporter_waits_on_the_stop_event_when_the_caller_injects_no_wait(self):
+        """The scripted wait proves nothing unless the default wait is the real one.
+
+        The cases above read the timeout the reporter passed to an injected wait. This
+        case binds that seam to the shipped path: a reporter the caller builds without a
+        wait waits on the event that `stop` sets. `TheReporterStopsCleanly` then
+        measures that the stop ends the thread.
+        """
+        reporter = StatisticsReporter(MonitorStats(), 60.0, io.StringIO())
+        self.assertEqual(reporter._wait, reporter._stop.wait)
 
 
 class TheReporterStopsCleanly(unittest.TestCase):

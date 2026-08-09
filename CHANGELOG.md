@@ -19,6 +19,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fails on the base commit `8ef8acc` and passes after the removal. `ja4plus watch` is
   the supported monitor, and `docs/usage.md` documents it. No file under `ja4plus/`
   changes, no fingerprint moves, and the register holds 135 keys against 135 xfailed.
+- **The statistics interval cases state the schedule rather than sample it** (#369).
+  Round 125. `TheReporterWritesOneLinePerInterval` started the reporter at a 0.05 second
+  interval, slept a fraction of a second, and counted the lines that arrived. That count
+  measures how promptly the host schedules a thread. The `macos-latest, 3.12` job of the
+  run for `8ef8acc` read 2 lines where the case asked for 3, and `dev` went red on a
+  package that holds no defect. `StatisticsReporter` gains a `wait` parameter, which
+  receives the interval and returns True when the stop arrives. The default waits on the
+  stop event, and `ja4plus watch` passes no other call, so the shipped behaviour is
+  unchanged. Each case now drives the reporter from a scripted wait and reads an exact
+  line count. The class asserts the interval the reporter passed to the wait, which is
+  what FR-live-capture-9 states, and it sleeps not at all.
 
 - **The Zeek reference page reads the current comparison** (#327). Round 113.
   `docs/specs/foxio/zeek.md` read as though #214 were open, in three places. #214 made

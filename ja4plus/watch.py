@@ -332,13 +332,26 @@ class StatisticsReporter:
         stats: The counts to report.
         interval: The count of seconds between two lines.
         stream: The stream to write to.
+        wait: The call that waits one interval and reports whether the stop arrived. It
+            receives the interval and returns True for a stop, which matches
+            `threading.Event.wait`. The default waits on the stop event, and no caller
+            inside this package passes another. A test passes its own call, so it
+            states the schedule rather than measures how promptly the host schedules a
+            thread. #369 added the parameter.
     """
 
-    def __init__(self, stats: MonitorStats, interval: float, stream: TextIO) -> None:
+    def __init__(
+        self,
+        stats: MonitorStats,
+        interval: float,
+        stream: TextIO,
+        wait: Optional[Callable[[float], bool]] = None,
+    ) -> None:
         self._stats = stats
         self._interval = interval
         self._stream = stream
         self._stop = threading.Event()
+        self._wait = self._stop.wait if wait is None else wait
         self._thread = threading.Thread(target=self._run, name=STATISTICS_THREAD_NAME, daemon=True)
 
     def start(self) -> None:
@@ -365,7 +378,7 @@ class StatisticsReporter:
         The wait comes first, so a monitor that starts writes no line before the
         operator's first interval passes.
         """
-        while not self._stop.wait(self._interval):
+        while not self._wait(self._interval):
             write_statistics(self._stats, self._stream)
 
 
