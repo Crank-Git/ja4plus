@@ -8,13 +8,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- **The example monitor that a merge restored is absent again** (#368). Round TBD.
+- **The example that a merge restored is absent again** (#368). Round TBD.
   #56 removed `examples/monitoring_daemon.py` and added
   `tests/test_watch_capture.py::TheExampleDaemonIsAbsent`, which asserts that the file
   stays absent. `batch/322-hygiene-two` forked from `dev` before that case landed, so
-  its own run never collected the case, and its merge restored the file. **Both parents
-  of the merge were green and the merged tree was not**, because the file and the case
-  live in different directories. `dev` then ran red across two further merges. The case
+  its own run never collected the case, and its merge `8b87c20` restored the file. **Both
+  parents of the merge were green and the merged tree was not**, because the file and the
+  case live in different directories. `dev` then ran red across `35bdfab` and `8ef8acc`.
+  The case
   fails on the base commit `8ef8acc` and passes after the removal. `ja4plus watch` is
   the supported monitor, and `docs/usage.md` documents it. No file under `ja4plus/`
   changes, no fingerprint moves, and the register holds 135 keys against 135 xfailed.
