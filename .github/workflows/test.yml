@@ -185,8 +185,8 @@ jobs:
     # Every other job of this file installs with `pip install -e ".[dev]"`, which puts
     # the source tree on the import path. A case that only imports `ja4plus` therefore
     # measures the checkout. `tests/test_installed_wheel.py` reads `ja4plus.__file__` of
-    # the created environment and fails when that path is not below the `site-packages`
-    # directory of the environment.
+    # the clean environment and fails when that path is not below the `site-packages`
+    # directory of that environment.
     #
     # This job runs one Python version. The `test` job reads `tests/`, so it runs this
     # marker on every version of the matrix and on macOS. This job names the marker, so

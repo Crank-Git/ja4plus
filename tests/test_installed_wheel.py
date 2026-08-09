@@ -20,7 +20,7 @@ the check again**, so `build_artifacts`, `create_clean_environment` and
 `package_file_of` stay public.
 
 #409 installs the source distribution. The build, the environment creation and the
-comparison each take the artefact as a parameter, so #409 passes another artefact to the
+comparison each take the artifact as a parameter, so #409 passes another artifact to the
 same three functions.
 """
 
@@ -118,7 +118,7 @@ def _binary_directory(root: pathlib.Path) -> pathlib.Path:
 
 
 def build_artifacts(destination: pathlib.Path) -> dict[str, pathlib.Path]:
-    """Return the artefacts that `python -m build` writes for this project.
+    """Return the artifacts that `python -m build` writes for this project.
 
     `build` writes the source distribution from the source tree, and it writes the wheel
     from that source distribution. `--outdir` names the directory, because the default
@@ -128,7 +128,7 @@ def build_artifacts(destination: pathlib.Path) -> dict[str, pathlib.Path]:
     (retrieved 2026-08-09).
 
     Args:
-        destination: The directory `build` writes both artefacts into.
+        destination: The directory `build` writes both artifacts into.
 
     Returns:
         The `wheel` path and the `sdist` path.
@@ -141,6 +141,7 @@ def build_artifacts(destination: pathlib.Path) -> dict[str, pathlib.Path]:
         check=True,
         capture_output=True,
         text=True,
+        env=_scrubbed_environment(),
     )
     wheels = sorted(destination.glob("*.whl"))
     sdists = sorted(destination.glob("*.tar.gz"))
@@ -151,13 +152,13 @@ def build_artifacts(destination: pathlib.Path) -> dict[str, pathlib.Path]:
 
 def create_clean_environment(
     root: pathlib.Path,
-    artefact: pathlib.Path,
+    artifact: pathlib.Path,
     pip_arguments: tuple[str, ...] = (),
 ) -> CleanEnvironment:
-    """Return one clean environment that holds the artefact.
+    """Return one clean environment that holds the artifact.
 
     The environment installs no development extra, so `pip` reads the dependency list the
-    artefact ships. `pip install <path>` installs the local file and resolves that list
+    artifact ships. `pip install <path>` installs the local file and resolves that list
     from the index.
 
     Verified against: https://pip.pypa.io/en/stable/cli/pip_install/ and
@@ -165,7 +166,7 @@ def create_clean_environment(
 
     Args:
         root: The directory `python -m venv` creates. It must not exist.
-        artefact: The wheel or the source distribution to install.
+        artifact: The wheel or the source distribution to install.
         pip_arguments: Further arguments for `pip install`. #409 passes
             `--no-binary ja4plus` here.
 
@@ -175,43 +176,79 @@ def create_clean_environment(
     Raises:
         subprocess.CalledProcessError: `venv` failed, or `pip install` failed.
     """
+    variables = _scrubbed_environment()
     subprocess.run(
         [sys.executable, "-m", "venv", str(root)],
         check=True,
         capture_output=True,
         text=True,
+        env=variables,
     )
     python = _binary_directory(root) / "python"
     install = subprocess.run(
-        [str(python), "-m", "pip", "install", *pip_arguments, str(artefact)],
+        [str(python), "-m", "pip", "install", *pip_arguments, str(artifact)],
         check=True,
         capture_output=True,
         text=True,
+        env=variables,
     )
     site_packages = subprocess.run(
         [str(python), "-c", "import sysconfig; print(sysconfig.get_paths()['purelib'])"],
         check=True,
         capture_output=True,
         text=True,
+        env=variables,
     ).stdout.strip()
-    return CleanEnvironment(
+    environment = CleanEnvironment(
         root=root,
         python=python,
         script=_binary_directory(root) / "ja4plus",
         site_packages=pathlib.Path(site_packages),
         pip_output=install.stdout,
     )
+    # **`pip` reports success when it installs the dependencies alone.** It reads the
+    # requirement as satisfied where the package already imports, and it then writes no
+    # `ja4plus` into `site-packages`. This check names that state where it happens, rather
+    # than leaving a later case to report a missing file.
+    package_directory = environment.site_packages / "ja4plus"
+    assert package_directory.is_dir(), (
+        f"pip wrote no {package_directory}, and it reported: {install.stdout}"
+    )
+    return environment
+
+
+def _scrubbed_environment() -> dict[str, str]:
+    """Return the ambient environment without the two variables that break the isolation.
+
+    **`PYTHONPATH` names a directory that every interpreter reads before `site-packages`.**
+    A shell that points it at this checkout breaks this file in two ways, and a
+    measurement of 2026-08-09 proved both.
+
+    1. `pip install <wheel>` reads the requirement as satisfied, because the package
+       already imports. It then installs the dependencies, it installs no `ja4plus`, and
+       it reports `Successfully installed` with `ja4plus` absent from the list.
+    2. A probe of the clean environment imports the source tree, so a comparison holds
+       the checkout against itself.
+
+    `PYTHONNOUSERSITE` bars the per-user directory for the same reason. Every other
+    variable stays, because `pip` reads the index settings and the proxy settings of the
+    host to resolve the dependency list.
+    """
+    variables = dict(os.environ)
+    variables.pop("PYTHONPATH", None)
+    variables["PYTHONNOUSERSITE"] = "1"
+    return variables
 
 
 def _run_environment() -> dict[str, str]:
     """Return the environment every probe runs under.
 
-    The lookup prefers the cached mapping file over the bundled one, so a cached file on
-    the host would change the result of the control case. `HOME` and `XDG_CACHE_HOME`
-    name a directory that holds no cached file, which removes that difference from both
-    sides of every comparison.
+    The lookup prefers the cached mapping file over the bundled one. A cached file on the
+    host therefore changes the result of the control case. `HOME` and `XDG_CACHE_HOME`
+    name a directory that holds no cached file. That directory removes the difference
+    from both sides of every comparison.
     """
-    variables = dict(os.environ)
+    variables = _scrubbed_environment()
     variables.pop("JA4PLUS_DB_LOOKUP", None)
     variables["PYTHONDONTWRITEBYTECODE"] = "1"
     return variables
@@ -327,7 +364,7 @@ def declared_version() -> str:
 
 
 @pytest.fixture(scope="session")
-def artefacts(tmp_path_factory: pytest.TempPathFactory) -> dict[str, pathlib.Path]:
+def artifacts(tmp_path_factory: pytest.TempPathFactory) -> dict[str, pathlib.Path]:
     """Build the wheel and the source distribution once for the whole session."""
     return build_artifacts(tmp_path_factory.mktemp("dist"))
 
@@ -348,18 +385,18 @@ def workspace(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
 
 @pytest.fixture(scope="session")
 def wheel_environment(
-    artefacts: dict[str, pathlib.Path],
+    artifacts: dict[str, pathlib.Path],
     tmp_path_factory: pytest.TempPathFactory,
 ) -> CleanEnvironment:
     """Install the wheel into one clean environment for the whole session."""
     return create_clean_environment(
-        tmp_path_factory.mktemp("wheel-env") / "env", artefacts["wheel"]
+        tmp_path_factory.mktemp("wheel-env") / "env", artifacts["wheel"]
     )
 
 
 @pytest.fixture(scope="session")
 def control_environment(
-    artefacts: dict[str, pathlib.Path],
+    artifacts: dict[str, pathlib.Path],
     tmp_path_factory: pytest.TempPathFactory,
 ) -> CleanEnvironment:
     """Install the wheel into a second environment that the control case damages.
@@ -368,7 +405,7 @@ def control_environment(
     case reads.
     """
     return create_clean_environment(
-        tmp_path_factory.mktemp("control-env") / "env", artefacts["wheel"]
+        tmp_path_factory.mktemp("control-env") / "env", artifacts["wheel"]
     )
 
 
@@ -466,10 +503,13 @@ def test_the_lookup_reports_an_empty_database_without_the_mapping_file(
     fingerprint. It runs before the removal and after it, so a passing wheel and a broken
     wheel produce two different lines.
     """
-    arguments = ["lookup_probe.py", MAPPED_FINGERPRINT]
-    before = run_probe(
-        control_environment.python, arguments, workspace, workspace / "cache"
-    ).decode("utf-8")
+    arguments = [str(workspace / "lookup_probe.py"), MAPPED_FINGERPRINT]
+    # This case damages its environment, so it reads a cache directory that no other case
+    # reads. A shared directory would carry a mapping file from one environment to the
+    # other as soon as a probe writes one.
+    cache_home = control_environment.root.parent / "cache"
+    cache_home.mkdir(exist_ok=True)
+    before = run_probe(control_environment.python, arguments, workspace, cache_home).decode("utf-8")
     count, answered = before.split()
     assert int(count) > 0, "the installed wheel holds no mapping entry before the removal"
     assert answered == "True", f"the installed wheel holds no entry for {MAPPED_FINGERPRINT}"
@@ -478,9 +518,7 @@ def test_the_lookup_reports_an_empty_database_without_the_mapping_file(
     assert mapping_file.is_file(), f"the wheel shipped no {mapping_file}"
     mapping_file.unlink()
 
-    after = run_probe(control_environment.python, arguments, workspace, workspace / "cache").decode(
-        "utf-8"
-    )
+    after = run_probe(control_environment.python, arguments, workspace, cache_home).decode("utf-8")
     assert after.split() == ["0", "False"], (
         f"the lookup reported {after.strip()!r} without the mapping file, and an empty "
         "database reports '0 False'"

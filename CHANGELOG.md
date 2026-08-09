@@ -75,15 +75,16 @@ holds every breaking change of this record against a row of that page.
 
 - **One case fingerprints a capture from the installed wheel** (#408). Round TBD. New
   file `tests/test_installed_wheel.py`, and the new `installed_wheel` marker in
-  `pyproject.toml`. The case builds both artefacts with `python -m build`, installs the
-  wheel into a clean environment, and reads three paths from that environment:
+  `pyproject.toml`. The case builds both artifacts with `python -m build`, and it installs
+  the wheel into a clean environment. It reads three paths from that environment:
   `ja4plus --version`, `ja4plus analyze --format json`, and one script that imports
   `ja4plus` and drives a `Processor`. The output of the last two equals the output of the
   source tree, byte for byte. **A run that resolves the working copy proves nothing.**
   Every other job of `.github/workflows/test.yml` installs with `pip install -e ".[dev]"`,
-  which puts the source tree on the import path, so a case that only imports `ja4plus`
-  measures the checkout. This case reads `ja4plus.__file__` of the clean environment, and
-  it fails when that path is not below the `site-packages` directory of that environment.
+  which puts the source tree on the import path. A case that only imports `ja4plus`
+  therefore measures the checkout. This case reads `ja4plus.__file__` of the clean
+  environment. It fails when that path is not below the `site-packages` directory of that
+  environment.
   **A check that cannot fail measures nothing**, so
   `test_the_import_check_fails_for_the_source_tree` holds the same check against the
   interpreter that runs the suite and asserts that it rejects that path. **The control
@@ -93,10 +94,12 @@ holds every breaking change of this record against a row of that page.
   `.github/workflows/test.yml` gains the `installed-wheel` job, which names the marker, so
   a failure is visible without a log search. **`build` joins the `dev` extra**, because
   the marker sits inside `pytest tests/ -m "not spec_validation"`, and every environment
-  that runs that gate needs the package. #409 installs the source distribution, and the
-  build, the environment creation and the comparison each take the artefact as a
-  parameter, so #409 passes another artefact to the same three functions. The marker run
-  measured 12.88 s on macOS with a warm `pip` cache. This entry changes no file under
+  that runs that gate needs the package. #409 installs the source distribution. The build,
+  the environment creation and the comparison each take the artifact as a parameter, so
+  #409 passes another artifact to the same three functions. **The case costs wall-clock
+  time on every gate run.** Four consecutive runs on macOS with a warm `pip` cache
+  measured 40.39 s, 24.25 s, 24.40 s and 22.22 s, so the settled figure is about 23 s. A
+  runner starts with a cold `pip` cache and takes longer. This entry changes no file under
   `ja4plus/` and it moves no fingerprint.
 - **The specification records Epic 11, pre-release validation** (#407). Round TBD. New
   file `docs/specs/features/11-pre-release-validation.md`. It states 33 requirements, and
