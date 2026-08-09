@@ -73,6 +73,37 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **A change set that records no round fails a case** (#429). Round 156. New file
+  `tests/test_round_entry_existence.py` reads the change set of the branch and requires one
+  new round entry in `CHANGELOG.md` and one new Changelog row in `docs/specs/spec.md`. The
+  three cases of `tests/test_changelog_round_agreement.py` hold the two records against
+  each other, and **two absent records agree**, so all three passed the change set of #412:
+  eleven sweeps, two repairs, a new test file, no entry and no row. The project manager
+  read the diff at the merge gate and caught it, and that is not a check. **The reference
+  point is the merge base of `HEAD` and the integration branch**, which `git merge-base`
+  reads against `origin/dev` and then `dev`. The change set joins two readings:
+  `git diff --name-only <merge base>`, which reports an uncommitted change to a tracked
+  file, and `git ls-files --others --exclude-standard`, which reports the new file that
+  #412 shipped. A change set of `CHANGELOG.md` and `docs/specs/spec.md` alone demands no
+  entry, because the round assignment of the project manager edits those two files alone.
+  **The case counts an unassigned entry and a numbered entry alike**, because the project
+  manager assigns the number at the batch gate on one batch and hands the number to the
+  worker on another, and a case that demanded `TBD` would fail on the second. **Where the
+  change set cannot be read, the case skips and the reason names the state.** A shallow
+  clone carries no `origin/dev` ref, and the `actions/checkout` step of
+  `.github/workflows/test.yml` makes such a clone, so the case skips on the GitHub runner
+  and runs on the local gate of a worker. #438 owns the ref the runner needs. **The case
+  was proved in both directions on this repository.** With this entry absent it reported
+  `the change set holds these paths outside the two records: tests/test_round_entry_existence.py. CHANGELOG.md holds 68 round entries against 68 at the reference commit`,
+  and with this entry and its row present it passed. Ten more cases build a scratch
+  repository with `git init` and prove the same pair over a committed change, an
+  uncommitted change, an entry that reaches one record alone, a file an ignore rule covers,
+  a repository that holds no integration branch and a directory that holds no repository.
+  **A case here cannot test that an entry is true**, only that one exists. Three more
+  limits reach the docstring of the module, and the widest one is that the count reads the
+  whole branch, so an integration branch whose members each recorded a round satisfies a
+  member that recorded none. No file under `ja4plus/` changes, no fingerprint moves, and
+  the register holds 134 keys against 134 xfailed.
 - **The package states a measured packet throughput** (#415). Round 151. New file
   `tests/throughput_run.py` feeds one `Processor` a stated packet run in an interpreter of
   its own. It writes one JSON object, and the object holds `packets`, `connections`,
