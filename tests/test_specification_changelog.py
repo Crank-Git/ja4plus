@@ -28,10 +28,11 @@ SPECIFICATION = REPO_ROOT / "docs" / "specs" / "spec.md"
 # reaches these cases.
 CHANGELOG_ROW = re.compile(r"^\|\s*(\d+)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|")
 
-# The Changelog held this many rows when #258 landed. The floor fails a regular
+# The Changelog held this many numbered rows when #258 landed. The floor fails a regular
 # expression that stops matching the rows, because a parser that reads nothing passes
-# every case below on an empty list.
-MINIMUM_ROWS = 125
+# every case below on an empty list. A row whose round is the literal `TBD` carries no
+# number, so it reaches no case here until the project manager assigns its round.
+MINIMUM_ROWS = 124
 
 
 def _round_numbers() -> list[int]:
