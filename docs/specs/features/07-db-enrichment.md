@@ -147,13 +147,13 @@ class LookupResult:
     source: str          # "bundled" | "cache" | "remote"
 ```
 
+`LookupResult` carries the port's three fields plus `source`.
+
 The constructor publishes no `timeout` parameter. The behaviour rule above refuses one
 before version 1.0.0, and the Go port publishes none either. `RemoteLookupConfig` of
-`lookup.go` names two fields, `Endpoint` and `HTTPClient`, and it names no timeout.
-`tests/test_db_offline.py` pins the parameter list, so a parameter that this file does
-not publish fails the unit suite. #354 records the reading.
-
-`LookupResult` carries the port's three fields plus `source`.
+`lookup.go` holds two fields, `Endpoint` and `HTTPClient`, and it holds no field for the
+remote timeout. `tests/test_db_offline.py` pins the parameter list, so a parameter that
+this file does not publish fails the unit suite. #354 records the reading.
 
 Verified against:
 https://github.com/Crank-Git/ja4plus-go/blob/master/lookup.go (retrieved
