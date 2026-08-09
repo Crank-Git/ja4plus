@@ -9,7 +9,7 @@
 2. **Deliberate collection of an error the caller receives.** The three sites of
    `ja4plus/processor.py` hold it. #45 made the processor hand each parse failure to its
    caller, so the wide catch is the design and #319 narrows none of them.
-3. **Top-level reporting.** The five sites of `ja4plus/cli.py` and the two of
+3. **A top-level report.** The five sites of `ja4plus/cli.py` and the two of
    `ja4plus/ja4db.py` hold it. Each one reports a failure and returns, and #319 narrows
    none of them.
 
@@ -19,11 +19,17 @@ The cases below measure four things.
   module, so the case fails on a stale `.pyc` that still holds the old handler.
 - One case reaches each named error of each group 1 site. The case fails if the clause
   drops that name, because the error then leaves the reader.
-- Every group 1 reader returns nothing and raises nothing for hostile input, over more
-  than one input.
+- Every group 1 reader returns nothing for input that reaches its handler, over more than
+  one input.
 - A group 2 or group 3 caller returns rather than raises. #319 states the rule of each
   wide catch as a condition a case tests, because prose alone stated five earlier rules
   that no case measured.
+
+**Warning: the hostile-input case below reaches no code behind the decryption.** A random
+datagram never authenticates, so the AEAD rejects it first. #382 records one datagram that
+does authenticate and makes `decrypt_quic_initial_crypto` raise `IndexError` from a call
+that sits outside the handler. That defect predates #319 and the same datagram raises the
+same error against the base commit.
 
 The three QUIC payloads are short and constructive. `_find_pn_offset` reads offset 9 for
 a header that names a zero-length connection ID, a zero-length source connection ID, a
@@ -159,8 +165,9 @@ def test_the_server_initial_reader_returns_nothing_for_each_error_it_names(error
 def test_the_quic_readers_return_nothing_and_raise_nothing_for_hostile_input():
     """Every packet is hostile input, so the three readers return nothing.
 
-    The case runs 6000 datagrams through the three readers. A narrowing that misses an
-    error the reader meets turns this case red.
+    The case runs 6000 datagrams through the three readers. A clause that misses an error
+    the reader meets turns this case red. **No datagram here authenticates**, so the case
+    measures the handler and not the code behind the decryption. #382 holds that path.
     """
     generator = random.Random(319)
     for _ in range(2000):
