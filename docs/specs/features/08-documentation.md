@@ -16,8 +16,8 @@ twelve, and counts JA4LS and JA4TScan separately. The project implements eleven 
 the twelve, and it declines JA4TScan.
 
 `JA4LFingerprinter` writes both JA4L and JA4LS, so ten fingerprinter classes carry
-eleven methods. **Read the ten as a count of classes, and never as a count of
-methods.** This paragraph stated ten of the twelve, and #387 corrected it.
+eleven methods. **Read the ten as a count of fingerprinter classes, and never as a
+count of methods.** This paragraph stated ten of the twelve, and #387 corrected it.
 `tests/test_documented_method_count.py` reads the count out of `ja4plus`, so a
 document that states another number fails a case.
 

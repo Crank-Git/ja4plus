@@ -32,8 +32,12 @@ measurement. `readable_text` cuts those three, so a correction here destroys no 
 `ProcessorStats.method` names one of ten, `ja4plus/processor.py` calls the field `method`,
 and `docs/api_reference.md` counts them. The prose of this repair therefore counts values
 and fingerprinters where it counted methods, matching the `FingerprintResult.type`
-docstring that round 139 wrote. Every case under `tests/` keeps its own wording, because
-the criteria of #387 name the prose documents alone.
+docstring that round 139 wrote.
+
+**No case here reads a Python file.** #450 owns the ten files under `tests/` and the four
+docstrings of `ja4plus/watch.py` that call the ten fingerprinters ten methods, because that
+repair reads the public field name `ProcessorStats.method`. The Markdown pages under
+`tests/` do reach the corpus.
 
 These cases read prose and the public interface of `ja4plus`. They produce no fingerprint
 and they open no capture socket.
@@ -64,9 +68,19 @@ CLASS_SUFFIX = "Fingerprinter"
 # A generator that writes more than one FoxIO method, and the value prefix that names each
 # method beyond the one its own name holds. FoxIO publishes JA4L and JA4LS as two methods
 # and `generate_ja4l` writes both, so a count of generators reads one short. **That is the
-# whole cause of #387.** A case reads the prefix out of the module source, so removing the
-# emitter drops JA4LS from the count and every document that states eleven then fails.
+# whole cause of #387.** A case reads the prefix out of the module source. A change that
+# removes the emitter drops JA4LS from the count, and every document that states eleven
+# then fails.
 SHARED_METHODS: Dict[str, Dict[str, str]] = {"generate_ja4l": {"JA4LS": "JA4L-S="}}
+
+# A line that returns a value. `emitter_lines` reads these lines alone.
+#
+# **Warning: a search of the whole module source passes on a module that emits nothing.**
+# The docstring of `ja4plus/fingerprinters/ja4l.py:6` states the format `JA4L-S=` in prose,
+# so a substring search over the module reports the prefix even where every emitter is
+# gone. The first form of this reader did that, and it would have read eleven methods out
+# of a package that writes ten.
+RETURN_LINE = re.compile(r"^\s*return\b")
 
 # The count words a document could state for this method set. The reader reads these alone,
 # so a third party's count stays out of reach: `docs/specs/foxio/zeek.md` states that the
@@ -76,25 +90,65 @@ COUNT_PATTERN = "|".join(
     [word for word in COUNT_WORDS.values()] + [str(number) for number in COUNT_WORDS]
 )
 
+# The verbs a document uses for the relation between this project and a method. **A reader
+# that anchors on `implement` alone passes on "supports ten of them"**, and the review of
+# #387 proved it against that sentence.
+CLAIM_VERB = (
+    r"implement(?:s|ed)?|support(?:s|ed)?|cover(?:s|ed)?"
+    r"|build(?:s|t)?|ship(?:s|ped)?|provide(?:s|d)?"
+)
+
+# The noun a count of methods qualifies, with the words a document writes before it. **Two
+# words of room reach an adjective that a rewording inserts**, because "ten distinct
+# methods" states the same wrong count as "ten methods". Three words of room would reach
+# the sentence "ten values carry eleven methods", which states the right count.
+METHOD_NOUN = r"(?:[\w'’]+\s+){0,2}(?:JA4\+?\s+|FoxIO\s+)?methods?"
+
+# What follows a count of methods. **A count of another thing follows the same verb**, so
+# "implemented ten fingerprinter classes" states a true fact and reaches no pattern here.
+COUNT_TAIL = r"(?=\s*(?:of\s+(?:the\s+)?(?:twelve|12)|of\s+them|" + METHOD_NOUN + r"|[.,;:)]|$))"
+
 # A claim about the count of methods this project implements. Each pattern captures the
 # count alone, so a sentence that states the published count beside the implemented count
 # yields the implemented count and not both. **A fixed sentence passes on a rewording**, so
-# the set covers the three word orders rather than the three sentences the documents hold.
+# the set covers the word orders rather than the sentences the documents hold today.
 IMPLEMENTED_COUNT_PATTERNS: Tuple["re.Pattern[str]", ...] = (
-    # "implements eleven of them", "implements ten of the twelve", "implemented only ten"
-    re.compile(r"\bimplement(?:s|ed)?\s+(?:only\s+)?(" + COUNT_PATTERN + r")\b", re.IGNORECASE),
-    # "eleven of the twelve are implemented", "eleven of them this project implements"
+    # "implements eleven of them", "supports ten of the twelve", "implemented only ten."
     re.compile(
-        r"\b(" + COUNT_PATTERN + r")\s+of\s+(?:the\s+twelve|them)\b[^.]*\bimplement",
+        r"\b(?:" + CLAIM_VERB + r")\s+(?:only\s+)?(" + COUNT_PATTERN + r")\b" + COUNT_TAIL,
         re.IGNORECASE,
     ),
-    # "eleven implemented methods"
-    re.compile(r"\b(" + COUNT_PATTERN + r")\s+implemented\s+method", re.IGNORECASE),
+    # "eleven of the twelve are implemented", "ten of twelve implemented"
+    re.compile(
+        r"\b("
+        + COUNT_PATTERN
+        + r")\s+of\s+(?:the\s+)?(?:twelve|12|them)\b[^.]*\b(?:"
+        + CLAIM_VERB
+        + r")",
+        re.IGNORECASE,
+    ),
+    # "eleven implemented methods", "ten supported methods"
+    re.compile(
+        r"\b(" + COUNT_PATTERN + r")\s+(?:" + CLAIM_VERB + r")\s+" + METHOD_NOUN,
+        re.IGNORECASE,
+    ),
 )
 
-# The count of fingerprinter classes applied to the word `method`. `JA4+` and `FoxIO` reach
-# the pattern because a document writes both between the count and the noun.
-CLASS_COUNT_OF_METHODS = r"\b{word}\s+(?:JA4\+?\s+|FoxIO\s+)?methods?\b"
+
+def class_count_pattern(word: str) -> "re.Pattern[str]":
+    """Return the pattern that reads one count word applied to the word `method`.
+
+    The pattern is built by concatenation and not by `str.format`, because `METHOD_NOUN`
+    holds the quantifier `{0,2}` and `str.format` reads a brace as a field.
+
+    Args:
+        word: The count word of the fingerprinter classes.
+
+    Returns:
+        The compiled pattern.
+    """
+    return re.compile(r"\b" + re.escape(word) + r"\s+" + METHOD_NOUN + r"\b", re.IGNORECASE)
+
 
 # A passage inside double quotation marks. `class_counts_of_methods` drops one before it
 # reads, because a quotation reproduces the words of another document and the writing
@@ -130,13 +184,31 @@ HTML_TAG = re.compile(r"<[^>]+>")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
+def emitter_lines(name: str) -> List[str]:
+    """Return the lines of one generator's module that return a value.
+
+    A docstring of the module states a value format in prose, so a search of the whole
+    source reports a prefix that no code writes. The reader therefore reads the return
+    lines alone.
+
+    Args:
+        name: The name of a generator of the public interface.
+
+    Returns:
+        Every line of the module that starts a return statement.
+    """
+    module = inspect.getmodule(getattr(ja4plus, name))
+    assert module is not None, f"{name} belongs to no module"
+    return [line for line in inspect.getsource(module).splitlines() if RETURN_LINE.match(line)]
+
+
 def implemented_methods() -> FrozenSet[str]:
     """Return the FoxIO methods `ja4plus` implements, read out of the package.
 
     A generator of the public interface names its method, and `SHARED_METHODS` names the
-    method a generator writes beside it. The reader confirms the extra method against the
-    value prefix in the module source, so a generator that stops writing the prefix drops
-    the method.
+    method a generator writes beside it. The reader confirms the extra method against a
+    return line of the module, so a generator that stops writing the prefix drops the
+    method.
 
     Returns:
         The method names, in the spelling `FOXIO_METHODS` holds.
@@ -145,13 +217,10 @@ def implemented_methods() -> FrozenSet[str]:
     for name in PUBLIC_NAMES:
         if not name.startswith(GENERATOR_PREFIX):
             continue
-        generator = getattr(ja4plus, name)
         found.add(name[len(GENERATOR_PREFIX) :].upper())
-        module = inspect.getmodule(generator)
-        assert module is not None, f"{name} belongs to no module"
-        source = inspect.getsource(module)
+        emitters = emitter_lines(name)
         for method, prefix in SHARED_METHODS.get(name, {}).items():
-            if prefix in source:
+            if any(prefix in line for line in emitters):
                 found.add(method)
     return frozenset(found)
 
@@ -228,8 +297,7 @@ def class_counts_of_methods(text: str, word: str) -> List[str]:
     Returns:
         The matching phrase of each place, in the order the text holds them.
     """
-    pattern = re.compile(CLASS_COUNT_OF_METHODS.format(word=word), re.IGNORECASE)
-    return [match.group(0) for match in pattern.finditer(_unquoted(text))]
+    return [match.group(0) for match in class_count_pattern(word).finditer(_unquoted(text))]
 
 
 def readable_text(path: Path, text: str) -> str:
@@ -259,13 +327,19 @@ def readable_text(path: Path, text: str) -> str:
 def documents() -> List[Path]:
     """Return every prose document that could state a count of methods.
 
+    The corpus holds the Markdown pages under `tests/` as well, because `tests/fuzz/README.md`
+    is prose and a count there goes as stale as a count under `docs/`. **It holds no Python
+    file.** #450 owns the ten files under `tests/` that call the ten fingerprinters ten
+    methods, because that repair reads the public field name `ProcessorStats.method`.
+
     Returns:
-        The Markdown pages under `docs/` and `.claude/`, the root Markdown pages, the
-        rendered `docs/specs/spec.html`, and `mkdocs.yml`, which carries the count in a
+        The Markdown pages under `docs/`, `.claude/` and `tests/`, the root Markdown pages,
+        the rendered `docs/specs/spec.html`, and `mkdocs.yml`, which carries the count in a
         comment.
     """
     found = sorted((REPO_ROOT / "docs").rglob("*.md"))
     found += sorted((REPO_ROOT / ".claude").rglob("*.md"))
+    found += sorted((REPO_ROOT / "tests").rglob("*.md"))
     found += sorted(REPO_ROOT.glob("*.md"))
     found.append(REPO_ROOT / "docs" / "specs" / "spec.html")
     found.append(REPO_ROOT / "mkdocs.yml")
@@ -320,12 +394,32 @@ def test_the_package_implements_every_foxio_method_but_the_declined_one() -> Non
 
 
 def test_the_shared_generator_carries_the_second_method_of_its_module() -> None:
-    """`generate_ja4l` carries JA4LS, because its module writes the `JA4L-S=` prefix."""
+    """`generate_ja4l` carries JA4LS, because a return line writes the `JA4L-S=` prefix."""
     for name, methods in SHARED_METHODS.items():
-        source = inspect.getsource(inspect.getmodule(getattr(ja4plus, name)))
+        emitters = emitter_lines(name)
         for method, prefix in methods.items():
-            assert prefix in source, f"{name} writes no {prefix} and carries no {method}"
+            assert any(prefix in line for line in emitters), (
+                f"no return line of the module of {name} writes {prefix}, so it carries no {method}"
+            )
             assert method in implemented_methods(), f"the reader misses {method}"
+
+
+def test_the_emitter_reader_reads_no_prefix_that_a_docstring_alone_states() -> None:
+    """The emitter reader reads a return line and not the prose of the module.
+
+    `ja4plus/fingerprinters/ja4l.py:6` states the format `JA4L-S=` in its docstring, so a
+    search of the whole source reports the prefix on a module whose emitters are all gone.
+    """
+    for name, methods in SHARED_METHODS.items():
+        whole = inspect.getsource(inspect.getmodule(getattr(ja4plus, name)))
+        for prefix in methods.values():
+            emitters = [line for line in emitter_lines(name) if prefix in line]
+            others = whole.count(prefix) - len(emitters)
+            assert others > 0, (
+                f"the module of {name} states {prefix} on a return line alone, so this case "
+                "proves nothing and the reader needs another shape"
+            )
+            assert emitters, f"no return line of the module of {name} writes {prefix}"
 
 
 def test_the_count_of_methods_is_above_the_count_of_fingerprinter_classes() -> None:
@@ -373,12 +467,27 @@ def test_every_document_that_states_the_count_states_the_reason_beside_it(path: 
     )
 
 
-# The sentence #387 corrects, and two rewordings of it. A reader of a fixed sentence passes
-# on a rewording, so the cases below read all three.
+# The sentence #387 corrects, and every rewording of it the review of #387 proposed. **A
+# reader of a fixed sentence passes on a rewording**, and the first form of this reader read
+# nothing in the last five of these.
 SUPERSEDED_SENTENCES = (
     "The project implements ten of the twelve, and does not implement JA4TScan.",
     "Ten of the twelve FoxIO methods are implemented here.",
     "The library ships ten implemented methods.",
+    "This project supports ten of FoxIO's methods.",
+    "The library covers ten of the FoxIO methods, and skips one.",
+    "It has ten of twelve implemented.",
+    "The package provides ten methods.",
+    "This project implements ten distinct methods.",
+)
+
+# A sentence that states a true count of something other than a method. **The verb of a
+# claim reaches a count of another thing**, so the reader needs the noun as well.
+OTHER_COUNTS = (
+    "It builds ten fingerprinters, and hands each packet to all of them.",
+    "`ja4plus` implements ten fingerprinter classes, and they carry eleven methods.",
+    "The processor implements ten distinct output fields.",
+    "The Zeek package implements eight methods, and it outranks nothing.",
 )
 
 
@@ -400,16 +509,10 @@ def test_the_reader_reads_no_count_of_the_methods_foxio_publishes() -> None:
     assert stated_counts(sentence) == ["eleven"]
 
 
-def test_the_reader_reads_no_count_of_fingerprinter_classes() -> None:
-    """The reader reads no count from a sentence that counts fingerprinter classes."""
-    sentence = "It builds ten fingerprinters, and hands each packet to all of them."
-    assert stated_counts(sentence) == []
-
-
-def test_the_reader_reads_no_count_a_third_party_states() -> None:
-    """The reader reads no count from a sentence about another implementation."""
-    sentence = "The Zeek package implements eight methods, and it outranks nothing."
-    assert stated_counts(sentence) == []
+@pytest.mark.parametrize("sentence", OTHER_COUNTS)
+def test_the_reader_reads_no_count_of_a_thing_that_is_not_a_method(sentence: str) -> None:
+    """The reader reads no count from a sentence that counts something else."""
+    assert stated_counts(sentence) == [], f"the reader reads a count in {sentence!r}"
 
 
 def test_the_class_count_reader_reads_the_word_beside_the_noun() -> None:
@@ -453,6 +556,10 @@ def test_the_class_count_reader_reads_no_count_of_values_or_classes() -> None:
     assert class_counts_of_methods(passage, "ten") == []
 
 
+# A heading of the top level of one Markdown page.
+SECTION_HEADING = re.compile(r"^## .*$", re.MULTILINE)
+
+
 def test_the_reader_reads_no_section_that_records_a_past_state() -> None:
     """`readable_text` cuts the recording sections of `docs/specs/spec.md`."""
     specification = REPO_ROOT / "docs" / "specs" / "spec.md"
@@ -462,6 +569,22 @@ def test_the_reader_reads_no_section_that_records_a_past_state() -> None:
         assert heading in whole, f"the specification holds no {heading!r} section"
         assert heading not in readable, f"{heading!r} reaches a case that reads prose"
     assert "## Overview" in readable, "the reader cut the section that states the count"
+
+
+def test_the_reader_cuts_the_two_recording_sections_and_no_other() -> None:
+    """`readable_text` removes two sections of the specification and keeps every other.
+
+    **The reader cuts one section, and the cut moves every index below it.** A reader that
+    read the second heading before the first cut would remove the wrong span, and the case
+    above passes on such a reader because both headings are absent either way.
+    """
+    specification = REPO_ROOT / "docs" / "specs" / "spec.md"
+    whole = specification.read_text(encoding="utf-8")
+    before = SECTION_HEADING.findall(whole)
+    after = SECTION_HEADING.findall(readable_text(specification, whole))
+    removed = [heading for heading in before if heading not in after]
+    assert removed == list(RECORD_SECTIONS), f"the reader removed {removed}"
+    assert "## Issue map" in after, "the reader swallowed the section below the Changelog"
 
 
 def test_the_reader_reads_no_entry_of_the_changelog_file() -> None:
