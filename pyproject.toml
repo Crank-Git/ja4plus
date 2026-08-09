@@ -51,18 +51,33 @@ lookup = [
 # changes without a commit. A site generator that changes between two runs moves the
 # build result, and a broken link that failed yesterday can pass today.
 #
-# `mkdocstrings-python` stays on the 1.x line. Version 2.0.0 requires Python 3.10 and the
-# package floor is Python 3.9. `mkdocstrings` and `griffe` are pinned too, because
-# `mkdocstrings-python` 1.15.0 accepts `mkdocstrings>=0.28` and `griffe>=0.49`, and each
-# one decides what the API reference renders.
+# `mkdocstrings-python` stays on the 1.x line, and **`mkdocstrings` therefore stays below
+# 1.0.0**. `mkdocstrings_handlers/python/handler.py` of the 1.x line imports
+# `mkdocstrings.handlers.base`, and `mkdocstrings` 1.0.0 removed that public module. The
+# pair `mkdocstrings==1.0.6` with `mkdocstrings-python==1.15.0` therefore installs and
+# then fails the build with
+# `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. #391 records the
+# measurement. **An exact pin can still be an incompatible pin**, so
+# `.github/workflows/docs-build.yml` installs this list into an empty environment and
+# builds the site.
+#
+# The declared range does not carry the constraint: `mkdocstrings-python` 1.15.0 accepts
+# `mkdocstrings>=0.28` and `griffe>=0.49`, and 1.0.6 satisfies the first one. The upper
+# bound lives here.
+#
+# **The extra needs Python 3.10 or later, and the package floor of Python 3.9 stays.** No
+# user builds the site, `griffe` 2.1.0 requires Python 3.10, and `mkdocstrings` 1.0.0
+# requires it too. The documentation job names one version, and the test matrix keeps 3.9.
 #
 # Verified against https://pypi.org/project/mkdocs-material/9.7.7/,
-# https://pypi.org/project/mkdocstrings-python/1.15.0/ and
+# https://pypi.org/project/mkdocstrings-python/1.15.0/,
+# https://pypi.org/project/mkdocstrings/0.30.1/,
+# https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md and
 # https://mkdocstrings.github.io/python/usage/, retrieved 2026-08-09.
 docs = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
-    "mkdocstrings==1.0.6",
+    "mkdocstrings==0.30.1",
     "mkdocstrings-python==1.15.0",
     "griffe==2.1.0",
 ]
