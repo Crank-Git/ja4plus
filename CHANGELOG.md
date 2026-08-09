@@ -91,6 +91,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Every entry of this file states the round its specification row states** (#302).
+  Round TBD. Three entries of Epic 4 read `Round TBD` while `docs/specs/spec.md` had
+  already assigned their round. A reader who follows such an entry reaches nothing, and
+  version 1.0.0 is close. **The three entries name round 90, and this repair invents no
+  number and adds no row.** Round 90 is the Epic 4 shipment row, and it already records
+  all three pieces of work in the words the entries use. #258 settled the shape, because
+  a repair folds a detail into the shipment row and renumbers no row. **No prose of the
+  three entries changes**, and the three lines differ by the round word alone.
+  `tests/test_changelog_round_agreement.py` holds the invariant. **It bars no `TBD`.** A
+  guard that barred the literal word would fail on every integration branch, because the
+  batch model requires a member to write it and the project manager to assign the number
+  at the batch gate. The guard instead compares the two files against each other, so the
+  nine unassigned entries of this branch stay untouched. Five mutations prove that it
+  fails on a disagreeing number, on an entry that reads `TBD` against an assigned row, on
+  an assigned entry against an unassigned row, on an entry whose row is absent, and on a
+  parser that matches nothing. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **The marker rule states the decided-entry count the register holds, and a case
   holds it there** (#345). Round `TBD`. The `## The marker rule` section of
   `tests/foxio_deviations.py` read `38 of the 128 decided entries`. The register holds

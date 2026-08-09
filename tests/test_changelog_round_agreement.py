@@ -38,10 +38,10 @@ SPECIFICATION_ROW = re.compile(r"^\|\s*(\d+|TBD)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|\s
 SPECIFICATION_ROW_NUMBER = re.compile(r"^\|\s*(\d+|TBD)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|")
 
 # An entry of `CHANGELOG.md` opens the line with `- ` and names its round in a sentence
-# of its own, as `Round 90.`. Thirty-three entries of the sixty-eight name no round, and
+# of its own, as `Round 90.`. Thirty-eight entries of the seventy-four name no round, and
 # those entries reach no case here.
-# **Two entries write the round as `Round `TBD`.`, and the backticks are optional here.**
-# A pattern that requires the bare word reads 33 entries where 35 exist, and the two it
+# **Two entries write the round inside backticks, so the backticks are optional here.**
+# A pattern that requires the bare word reads 34 entries where 36 exist, and the two it
 # drops escape every case below.
 # The closing period matters. It parts the round sentence of an entry from a citation of
 # another round inside the prose, as `Round 12 closed with`, which #258 wrote.
@@ -52,8 +52,8 @@ ISSUE_REFERENCE = re.compile(r"#(\d+)")
 # The two files held these counts when #302 landed. A parser that reads nothing passes
 # every case below on an empty list, so each floor fails such a parser. Both counts grow
 # and neither falls, because both tables are append-only.
-MINIMUM_SPECIFICATION_ROWS = 132
-MINIMUM_CHANGELOG_ENTRIES = 35
+MINIMUM_SPECIFICATION_ROWS = 133
+MINIMUM_CHANGELOG_ENTRIES = 36
 
 
 def _specification_rounds() -> tuple[set[int], dict[int, str]]:
