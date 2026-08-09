@@ -113,8 +113,9 @@ INVENTORY_FILE = re.compile(r"^\|\s*`([A-Za-z0-9_.]+)`\s*\|\s*\d+\s*\|", re.MULT
 MINIMUM_PAGES = 11
 
 # The count of breaking changes the record held when #65 landed. It grows and it never
-# falls, because a released breaking change stays breaking.
-MINIMUM_BREAKING_CHANGES = 11
+# falls, because a released breaking change stays breaking. #401 parted one row into two, so
+# the page holds twelve rows today.
+MINIMUM_BREAKING_CHANGES = 12
 
 
 def _page(method: str) -> Path:

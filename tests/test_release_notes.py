@@ -17,8 +17,9 @@ list against the record, and not against a number a reader keeps by hand.
 **The Changelog table of `docs/specs/spec.md` decides a round.** A `Round N, #M` citation of
 the notes names the row that holds `N`, and that row mentions `#M`. The first form of this
 file compared the `Record` cell of the notes against the cell of the migration page instead.
-**Two files that copy one error agree, and the comparison passed on it.** #401 holds that
-error.
+**Two files that copy one error agree, and the comparison passed on it.** #401 held that
+error. The same rule now reads the citations of the migration page against the same table,
+because a page that copies a wrong round from another document reads as correct.
 
 **These cases read one direction and not the other.** The notes hold a change the migration
 page omits. #319 narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`, so an input
@@ -73,9 +74,9 @@ ISSUE_REFERENCE = re.compile(r"#(\d+)")
 # An entry cites its own issue in a parenthesis behind its title, as `(#102).`.
 ISSUE_CITATION = re.compile(r"\(([^()]*#\d+[^()]*)\)")
 
-# A round citation of the release notes, as `Round 90, #45`. The comma parts this form from
-# the `Round 90.` sentence that `tests/test_changelog_round_agreement.py` reads, so a table
-# row of the notes never reads as a Changelog entry there.
+# A round citation, as `Round 90, #45`. The comma parts this form from the `Round 90.`
+# sentence that `tests/test_changelog_round_agreement.py` reads, so a table row of the notes
+# never reads as a Changelog entry there. The migration page cites a round in the same form.
 NOTES_ROUND = re.compile(r"Round (\d+)")
 
 # A Changelog row of the specification opens with the round and the date, as
@@ -92,7 +93,15 @@ BREAKING_ENTRY = re.compile(r"^- \*\*BREAKING\b", re.MULTILINE)
 MINIMUM_BREAKING_ENTRIES = 8
 MINIMUM_INTERFACE_ROWS = 13
 MINIMUM_FINGERPRINT_ROWS = 8
-MINIMUM_MIGRATION_ROWS = 11
+
+# The migration page held eleven breaking rows when #66 landed, and #401 parted one row into
+# two, so the page holds twelve rows today.
+MINIMUM_MIGRATION_ROWS = 12
+
+# The migration page cites this many `Round N, #M` pairs today: one for each breaking row,
+# and one in the fingerprint table. A reader that finds no citation passes the citation case
+# on an empty set, so the floor fails such a reader.
+MINIMUM_MIGRATION_CITATIONS = 13
 
 
 def _release_notes() -> str:
@@ -187,18 +196,98 @@ def _migration_section(heading: str) -> str:
     return text[start : following.start() if following else len(text)]
 
 
+def _specification_rows() -> dict[int, str]:
+    """Return the numbered Changelog rows of `docs/specs/spec.md`, by round number.
+
+    An unassigned row carries the literal `TBD` in place of the round, and this reader
+    skips it, because such a row records no round yet.
+
+    Returns:
+        The whole row text of each assigned round, keyed by the round number.
+    """
+    return {
+        int(match.group(1)): line
+        for line in SPECIFICATION.read_text(encoding="utf-8").splitlines()
+        for match in [SPECIFICATION_ROW.match(line)]
+        if match
+    }
+
+
 def _assigned_rounds() -> set[int]:
     """Return every Changelog round number that `docs/specs/spec.md` assigns.
 
     Returns:
         The set of assigned round numbers.
     """
-    return {
-        int(match.group(1))
-        for line in SPECIFICATION.read_text(encoding="utf-8").splitlines()
-        for match in [SPECIFICATION_ROW.match(line)]
-        if match
-    }
+    return set(_specification_rows())
+
+
+def _citations(text: str) -> list[tuple[int, int]]:
+    """Return every `Round N, #M` citation of a text, as a round and issue pair.
+
+    The reader takes the first round of each line and every issue behind it. An issue in
+    front of the round belongs to the prose of the row, and it cites no round.
+
+    Args:
+        text: The text to read.
+
+    Returns:
+        One pair for each cited issue, holding the round number and the issue number.
+    """
+    pairs: list[tuple[int, int]] = []
+    for line in text.splitlines():
+        opening = NOTES_ROUND.search(line)
+        if not opening:
+            continue
+        round_number = int(opening.group(1))
+        for issue in ISSUE_REFERENCE.findall(line[opening.end() :]):
+            pairs.append((round_number, int(issue)))
+    return pairs
+
+
+def _wrong_citations(text: str, source: str) -> list[str]:
+    """Return every citation of a text that names the wrong Changelog row.
+
+    **A round number alone proves nothing.** A citation that names a real round beside the
+    wrong issue reaches a row that records another change, and a reader who follows it
+    learns nothing about the change in front of them.
+
+    **This reader compares one document against the Changelog table and never against a
+    second document.** Two documents that copy one error agree, and a comparison between
+    them passes on the error. #401 is that case.
+
+    Args:
+        text: The text to read.
+        source: The name of the text, for the failure message.
+
+    Returns:
+        One string for each wrong citation, naming the round and the issue.
+    """
+    rows = _specification_rows()
+    wrong: list[str] = []
+    for round_number, issue in _citations(text):
+        if round_number not in rows:
+            wrong.append(f"{source}: round {round_number} names no row")
+        elif f"#{issue}" not in rows[round_number]:
+            wrong.append(f"{source}: round {round_number} records no #{issue}")
+    return wrong
+
+
+def _migration_breaking_rows() -> list[str]:
+    """Return the data rows of the breaking-change table of the migration page.
+
+    Returns:
+        One string for each data row, holding the whole row text.
+
+    Raises:
+        AssertionError: The table holds fewer rows than the recorded floor.
+    """
+    rows = _table_under(_migration_section(MIGRATION_BREAKING_HEADING), MIGRATION_BREAKING_HEADING)
+    assert len(rows) >= MINIMUM_MIGRATION_ROWS, (
+        f"the migration page holds {len(rows)} breaking rows, and the floor is "
+        f"{MINIMUM_MIGRATION_ROWS}"
+    )
+    return rows
 
 
 def _breaking_entries() -> list[str]:
@@ -297,12 +386,7 @@ def test_every_breaking_entry_of_the_changelog_reaches_the_release_notes() -> No
 
 def test_every_breaking_change_of_the_migration_page_reaches_the_release_notes() -> None:
     """Every issue of the migration page breaking table reaches the release notes."""
-    rows = _table_under(_migration_section(MIGRATION_BREAKING_HEADING), MIGRATION_BREAKING_HEADING)
-    assert len(rows) >= MINIMUM_MIGRATION_ROWS, (
-        f"the migration page holds {len(rows)} breaking rows, and the floor is "
-        f"{MINIMUM_MIGRATION_ROWS}"
-    )
-    missing = sorted(_issues(rows) - _notes_issues())
+    missing = sorted(_issues(_migration_breaking_rows()) - _notes_issues())
     assert missing == [], (
         f"the migration page records these breaking changes and the release notes omit them: "
         f"{missing}"
@@ -346,29 +430,40 @@ def test_every_citation_of_the_release_notes_names_the_row_that_records_it() -> 
 
     The first form of this case compared the `Record` cell of the notes against the cell of
     `docs/migration-0.6-to-1.0.md`. **Two files that copy one error agree, and the case
-    passed on it.** The page cites `Round 122, #59 and #364`, and row 123 of the
-    specification is the row that records #364. #401 holds the repair of the page. The case
-    now reads the specification, which is the authority the page and the notes both copy.
+    passed on it.** The page cited `Round 122, #59 and #364`, and row 123 of the
+    specification is the row that records #364. #401 repaired the page. The case reads the
+    specification, which is the authority the page and the notes both copy.
     """
-    rows = {
-        int(match.group(1)): line
-        for line in SPECIFICATION.read_text(encoding="utf-8").splitlines()
-        for match in [SPECIFICATION_ROW.match(line)]
-        if match
-    }
-    wrong: list[str] = []
-    for line in _breaking_subsection().splitlines():
-        opening = NOTES_ROUND.search(line)
-        if not opening:
-            continue
-        number = int(opening.group(1))
-        if number not in rows:
-            wrong.append(f"round {number} names no row")
-            continue
-        for issue in ISSUE_REFERENCE.findall(line[opening.end() :]):
-            if f"#{issue}" not in rows[number]:
-                wrong.append(f"round {number} records no #{issue}")
+    wrong = _wrong_citations(_breaking_subsection(), "the release notes")
     assert wrong == [], f"these citations of the release notes name the wrong row: {wrong}"
+
+
+def test_every_citation_of_the_migration_page_names_the_row_that_records_it() -> None:
+    """A `Round N, #M` citation of the migration page names a row that holds `N` and `#M`.
+
+    **The page is a second copy of the record, and it copied a wrong round.** It cited
+    `Round 122, #59 and #364` for the typed lookup result and for the item access, and the
+    two are different changes under different rounds. Row 122 records #59 and row 123
+    records #364, so a reader who followed the citation reached a row about `lookup_many`.
+    #401 holds the repair.
+
+    **This case reads the Changelog table of `docs/specs/spec.md` and no other document.**
+    The release notes hold the same citations, and the first citation case of #66 compared
+    the two documents against each other. Both held the error, so they agreed and the case
+    passed.
+    """
+    text = MIGRATION.read_text(encoding="utf-8")
+    citations = _citations(text)
+    assert len(citations) >= MINIMUM_MIGRATION_CITATIONS, (
+        f"the reader found {len(citations)} citations on the migration page, and the floor "
+        f"is {MINIMUM_MIGRATION_CITATIONS}"
+    )
+    orphans = sorted({int(number) for number in NOTES_ROUND.findall(text)} - _assigned_rounds())
+    assert orphans == [], (
+        f"the migration page cites rounds the specification does not hold: {orphans}"
+    )
+    wrong = _wrong_citations(text, "the migration page")
+    assert wrong == [], f"these citations of the migration page name the wrong row: {wrong}"
 
 
 def test_the_release_notes_name_the_narrowed_certificate_readers() -> None:
