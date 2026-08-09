@@ -26,7 +26,7 @@ sets of results.
 | The fields of an output line | The `json` format and the `csv` format write one composite `source` field. | They write `src_ip`, `src_port`, `dst_ip` and `dst_port`, plus `schema_version` and `identified_as`. The CSV column order is fixed. | A composite string forced every downstream tool to parse it again. | Round 96, #49 |
 | The place a diagnostic goes | The command mixes results and progress messages on standard output. | Results go to standard output, and every diagnostic goes to standard error. `--output FILE` writes the results to a file. | A pipe that reads standard output reads results alone. | Round 95, #52 |
 | The privilege check of the monitor | The monitor reads `os.geteuid()`, which raises an `AttributeError` on Windows. | The monitor opens the capture socket and reports the failure it meets, naming `CAP_NET_RAW` or `/dev/bpf*`. | The root check answered the wrong question, and it broke the import on Windows. | Round 104, #56 |
-| The Python floor | `requires-python` is `>=3.8`. | `requires-python` is `>=3.9`, and continuous integration runs Python 3.9 through Python 3.13. | Python 3.8 reached its end of life in October 2024. | #76. **No Changelog round records this change.** |
+| The Python floor | `requires-python` is `>=3.8`. | `requires-python` is `>=3.9`, and continuous integration runs Python 3.9 through Python 3.13. | Python 3.8 reached its end of life in October 2024. | Round 135, #76 |
 
 ## The fingerprints that move
 
