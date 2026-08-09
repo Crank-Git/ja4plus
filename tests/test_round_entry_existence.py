@@ -71,7 +71,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # round by definition, so neither path demands one.
 CHANGELOG_PATH = "CHANGELOG.md"
 SPECIFICATION_PATH = "docs/specs/spec.md"
-EXEMPT_PATHS = frozenset({CHANGELOG_PATH, SPECIFICATION_PATH})
+EXEMPT_RECORDS = (CHANGELOG_PATH, SPECIFICATION_PATH)
+EXEMPT_PATHS = frozenset(EXEMPT_RECORDS)
 
 # The refs that name the integration branch, in the order `reference_commit` reads them.
 # A worktree of this project carries `origin/dev`. A clone that fetched no remote ref
@@ -81,6 +82,11 @@ REFERENCE_BRANCHES = ("origin/dev", "dev")
 # A git command that reads one ref or one index answers in well under a second. The limit
 # bars a hung command from stopping the whole gate.
 GIT_TIMEOUT_SECONDS = 60
+
+# The commit #412 shipped. It carried eleven sweeps, two repairs and a new test file, and
+# it recorded no round. A case reads it to prove the reading against a real change set,
+# because a scratch repository proves the reading against a change set the case wrote.
+DEFECT_COMMIT = "46aa502"
 
 # The count of paths a failure names. A sweep changes 30 files, and a message that names
 # all of them buries the count that follows it.
@@ -418,6 +424,28 @@ def test_the_change_set_of_this_branch_records_a_round() -> None:
     assert verdict.failure is None, verdict.failure
 
 
+def test_the_reading_fails_the_change_set_of_the_defect() -> None:
+    """The reading fails commit `46aa502`, which changed six files and recorded no round."""
+    parent = _git(REPO_ROOT, "rev-parse", f"{DEFECT_COMMIT}^")
+    if parent is None:
+        pytest.skip(f"this clone holds no parent of commit {DEFECT_COMMIT}")
+    reference = parent.strip()
+    changed = _git(REPO_ROOT, "diff", "--name-only", reference, DEFECT_COMMIT)
+    if changed is None:
+        pytest.skip(f"git reports no change set of commit {DEFECT_COMMIT}")
+    base = read_record(
+        document_at(REPO_ROOT, reference, CHANGELOG_PATH),
+        document_at(REPO_ROOT, reference, SPECIFICATION_PATH),
+    )
+    head = read_record(
+        document_at(REPO_ROOT, DEFECT_COMMIT, CHANGELOG_PATH),
+        document_at(REPO_ROOT, DEFECT_COMMIT, SPECIFICATION_PATH),
+    )
+    failure = missing_round_entry(changed.splitlines(), base, head)
+    assert failure is not None
+    assert CHANGELOG_PATH in failure
+
+
 def test_a_change_set_that_edits_code_and_records_no_round_fails(tmp_path: Path) -> None:
     """A change set that edits a tracked file and adds no round entry fails."""
     repository = _scratch_repository(tmp_path / "red")
@@ -449,11 +477,14 @@ def test_a_change_set_that_records_a_numbered_round_passes(tmp_path: Path) -> No
     assert verdict.failure is None, verdict.failure
 
 
-def test_a_change_set_of_the_two_records_alone_passes(tmp_path: Path) -> None:
-    """A change set that edits `CHANGELOG.md` and `docs/specs/spec.md` alone passes."""
-    repository = _scratch_repository(tmp_path / "records")
-    _write(repository, CHANGELOG_PATH, BASE_CHANGELOG + "\nA line the round assignment adds.\n")
-    _write(repository, SPECIFICATION_PATH, BASE_SPECIFICATION + "\nA line the assignment adds.\n")
+@pytest.mark.parametrize("edited", [(CHANGELOG_PATH,), (SPECIFICATION_PATH,), EXEMPT_RECORDS])
+def test_a_change_set_of_the_records_alone_passes(tmp_path: Path, edited: Sequence[str]) -> None:
+    """A change set that edits `CHANGELOG.md` or `docs/specs/spec.md` alone passes."""
+    repository = _scratch_repository(tmp_path / "-".join(edited).replace("/", "-"))
+    # The round assignment of the project manager edits a record and adds no entry, so the
+    # text of the edit adds no round sentence and no Changelog row.
+    for path in edited:
+        _write(repository, path, document_now(repository, path) + "\nA line the edit adds.\n")
     verdict = evaluate(repository, ("dev",))
     assert verdict.skip_reason is None
     assert verdict.failure is None, verdict.failure

@@ -95,10 +95,14 @@ holds every breaking change of this record against a row of that page.
   and runs on the local gate of a worker. #438 owns the ref the runner needs. **The case
   was proved in both directions on this repository.** With this entry absent it reported
   `the change set holds these paths outside the two records: tests/test_round_entry_existence.py. CHANGELOG.md holds 68 round entries against 68 at the reference commit`,
-  and with this entry and its row present it passed. Ten more cases build a scratch
-  repository with `git init` and prove the same pair over a committed change, an
-  uncommitted change, an entry that reaches one record alone, a file an ignore rule covers,
-  a repository that holds no integration branch and a directory that holds no repository.
+  and with this entry and its row present it passed. **One case reads the change set of
+  #412 itself.** It reads commit `46aa502` against its parent and reports
+  `the change set holds these paths outside the two records: .claude/rules/conformance.md, docs/mutation_reports/412-utils.json, docs/mutation_settlements/412-utils.json and 3 more. CHANGELOG.md holds 64 round entries against 64 at the reference commit`,
+  so the new case fails the change set the whole unit gate passed. Thirteen more cases build
+  a scratch repository with `git init` and prove the same pair over a committed change, an
+  uncommitted change, an entry that reaches one record alone, a change set of each record
+  alone, a file an ignore rule covers, a repository that holds no integration branch and a
+  directory that holds no repository.
   **A case here cannot test that an entry is true**, only that one exists. Three more
   limits reach the docstring of the module, and the widest one is that the count reads the
   whole branch, so an integration branch whose members each recorded a round satisfies a
