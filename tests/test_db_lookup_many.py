@@ -125,7 +125,9 @@ class TestTheSourceOfEveryResult:
         assert result.source == "cache"
         assert result.application == "Issue 59 Client"
 
-    def test_a_hit_from_the_lookup_service_records_remote(self, cache_home, monkeypatch):
+    def test_a_hit_from_the_lookup_service_records_remote(
+        self, cache_home, no_network, monkeypatch
+    ):
         """A client that reads the source cannot report `embedded` for a name the service
         gave it."""
         payload = {"application": "Test Client", "type": "ja4", "notes": "a note"}
@@ -205,7 +207,7 @@ class TestBulkLookupDoesNotMultiplyTheNetwork:
         assert len(results) == 100000
         assert recorder.calls == []
 
-    def test_a_repeated_miss_reaches_the_service_once(self, cache_home, monkeypatch):
+    def test_a_repeated_miss_reaches_the_service_once(self, cache_home, no_network, monkeypatch):
         """The lookup cache holds a miss as well as a hit, so a repeated fingerprint costs
         one request. A call that sent one request per occurrence would turn one consent
         into a thousand disclosures."""
@@ -217,7 +219,9 @@ class TestBulkLookupDoesNotMultiplyTheNetwork:
         client.lookup_many([MISSING_FINGERPRINT] * 1000)
         assert len(recorder.calls) == 1
 
-    def test_the_service_reads_one_request_for_each_distinct_miss(self, cache_home, monkeypatch):
+    def test_the_service_reads_one_request_for_each_distinct_miss(
+        self, cache_home, no_network, monkeypatch
+    ):
         """The lookup service publishes no bulk interface, so one miss costs one request.
         A hit from the mapping file costs none."""
         payload = {"application": "Test Client", "type": "ja4", "notes": ""}
