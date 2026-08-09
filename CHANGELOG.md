@@ -398,6 +398,30 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   conformance suite, against 135 keys in `tests/foxio_deviations.json`.
 ### Added
 
+- **The documentation site builds from the Markdown files that already exist** (#64).
+  Round TBD. `mkdocs.yml` at the repository root configures MkDocs 1.6.1 with the
+  Material theme 9.7.7. `docs_dir` is `docs/`, so no page moves. Build the site with
+  `pip install -e ".[docs]"` and `mkdocs build --strict`. `docs/specs/` stays out of the
+  site, because the specification package is design material. The new `docs` extra holds
+  every generator, and no entry of it reaches the runtime dependencies, so a user who
+  installs `ja4plus` installs no site generator. Every version in the extra is exact.
+
+- **The site carries an API reference the docstrings generate** (#64). Round TBD. The
+  five pages under `docs/reference/` name objects rather than describe them, and
+  `mkdocstrings-python` 1.15.0 reads the docstrings of the source, so the reference
+  cannot fall behind the code. The reference covers `Processor`, `ProcessorStats`,
+  `FingerprintResult`, the ten fingerprinter modules and the lookup.
+
+- **A broken internal link fails the documentation build** (#64). Round TBD.
+  `strict: true` fails the build on a warning, and `validation.links.anchors: warn`
+  raises a broken anchor from information to a warning. Without the second setting the
+  site builds while an anchor is dead. A link changed to a page that does not exist and
+  a link changed to an anchor that does not exist each abort the build with exit code 1.
+  `tests/test_documentation_site.py` carries the same check inside the unit suite, which
+  installs no site generator. One of its cases is stricter than the build: a link into
+  the excluded `docs/specs/` returns a 404 on the published site, and
+  `mkdocs build --strict` reports it at the information level and still succeeds.
+
 - **A `LookupResult` supports item access by field name** (#364). Round 123. Version
   0.6.0 returned a dict with the keys `application`, `type` and `notes`, and #59 replaced
   it with a frozen `LookupResult`. A caller that reads `result["application"]` keeps
