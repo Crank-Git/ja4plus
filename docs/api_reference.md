@@ -866,7 +866,10 @@ A cache file that is empty, corrupt or unreadable falls back to the bundled file
 client writes one `WARNING` record that names the path.
 
 `ja4plus db info` reports the source, the path, the entry count and the modification time
-of the mapping file the client reads, FR-db-enrichment-11. The source is `bundled` or
-`cache`. Where the source is `bundled`, the command names the cache file as well. It
+of the mapping file the client reads, FR-db-enrichment-11. The source is `embedded` or
+`cache`. The port publishes the value `embedded` for the file that ships inside the
+package, at `lookup.go:31`, and `CLAUDE.md` parity rule 2 adopts it. The prose of this
+project still calls that file the bundled mapping file. Where the source is `embedded`,
+the command names the cache file as well. It
 reports that the cache file holds no entry, or that no cache file exists, and it names
 `ja4plus db update` in each case.

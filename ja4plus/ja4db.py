@@ -102,7 +102,7 @@ def load_mapping_file() -> tuple[dict[str, LookupResult], str, str]:
     file the user cannot read all reach that fallback.
 
     Returns:
-        The mapping, the source as `bundled` or `cache`, and the path of the file read.
+        The mapping, the source as `embedded` or `cache`, and the path of the file read.
     """
     path = cache_file_path()
     if os.path.exists(path):
@@ -114,7 +114,11 @@ def load_mapping_file() -> tuple[dict[str, LookupResult], str, str]:
             "instead. Run `ja4plus db update` to write it again.",
             path,
         )
-    return _load_bundled_db(), "bundled", _BUNDLED_CSV
+    # The prose of this project calls the file bundled, and the published value is
+    # `embedded`. `lookup.go:31` of the port sets `dbSource = "embedded"`, and `CLAUDE.md`
+    # parity rule 2 gives the port the interface. The user decided this on 2026-08-08, and
+    # `features/07-db-enrichment.md` records it.
+    return _load_bundled_db(), "embedded", _BUNDLED_CSV
 
 
 def _load_bundled_db() -> dict[str, LookupResult]:

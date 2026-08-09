@@ -345,14 +345,15 @@ class TestDbInfoReportsTheSource:
         assert status == 0
         assert ja4db._BUNDLED_CSV in out
         assert "Source:" in out
-        assert "bundled" in out
+        assert "embedded" in out
         assert "Entries:" in out
 
-    def test_db_info_reports_bundled_as_the_source_when_no_cache_file_exists(
+    def test_db_info_reports_embedded_as_the_source_when_no_cache_file_exists(
         self, cache_home, no_network
     ):
+        """The port publishes the value `embedded`, at `lookup.go:31`."""
         out, _, _ = run_cli("db", "info")
-        assert "Source:   bundled" in out
+        assert "Source:   embedded" in out
 
     def test_db_info_reports_cache_as_the_source_after_db_update(
         self, cache_home, no_network, monkeypatch
@@ -365,7 +366,7 @@ class TestDbInfoReportsTheSource:
         assert ja4db.cache_file_path() in out
         assert "Entries:  1" in out
 
-    def test_db_info_reports_bundled_as_the_source_for_a_corrupt_cache_file(
+    def test_db_info_reports_embedded_as_the_source_for_a_corrupt_cache_file(
         self, cache_home, no_network
     ):
         os.makedirs(cache_home)
@@ -373,7 +374,7 @@ class TestDbInfoReportsTheSource:
             handle.write(b"\x00\x01\x02 not a mapping file \xff\xfe")
         out, _, status = run_cli("db", "info")
         assert status == 0
-        assert "Source:   bundled" in out
+        assert "Source:   embedded" in out
 
     def test_db_info_reports_a_cache_file_that_holds_no_entry(self, cache_home, no_network):
         """A hint that names no cache file would contradict the file on disk."""

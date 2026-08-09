@@ -115,7 +115,24 @@ FR-db-enrichment-15 — A remote lookup failure returns nothing and does not rai
   read-only, and a wheel reinstall would discard the file.
 - The cache directory follows the platform convention: `$XDG_CACHE_HOME/ja4plus`
   or `~/.cache/ja4plus` on Linux, `~/Library/Caches/ja4plus` on macOS.
-- A source value is one of `bundled`, `cache` or `remote`.
+- A source value is one of `embedded`, `cache` or `remote`.
+
+**The published source value is `embedded`, and the prose of this project still calls the
+file bundled.** The two are not a contradiction. `lookup.go:31` of `Crank-Git/ja4plus-go`
+sets `dbSource = "embedded"`, and `runDBInfo` of `cmd/ja4plus/main.go:378` prints it.
+`CLAUDE.md` parity rule 2 gives the port the interface where FoxIO specifies nothing, and
+a source label is that kind of choice. An earlier form of this file published `bundled`,
+and #61 found the disagreement. The user decided on 2026-08-08 that the port wins, because
+the port already corroborates every other interface choice of this feature: the cache
+directory and the file name at `CachedDatabasePath` of `lookup.go:210`, the temporary-file
+rename at `runDBUpdate` of `cmd/ja4plus/main.go:352`, the cache preference at `loadDB` of
+`lookup.go:41`, and the `Source`, `Path` and `Entries` lines of `runDBInfo`. One
+disagreement against five agreements is a specification that drifted. Read `embedded` as
+the value alone. The word `bundled` describes the file that ships inside the package, and
+`_BUNDLED_CSV` and `_load_bundled_db` keep their names.
+
+Verified against: https://github.com/Crank-Git/ja4plus-go/blob/master/lookup.go (retrieved
+2026-08-08).
 
 ## Data touched
 
@@ -204,7 +221,7 @@ treats any unexpected shape as a miss. This is listed in the spec's
 - [ ] `ja4plus db update` writes to the platform cache directory and leaves the
       installed package unchanged.
 - [ ] After `db update`, `db info` reports `cache` as the source.
-- [ ] A corrupt cache file makes `db info` report `bundled` as the source.
+- [ ] A corrupt cache file makes `db info` report `embedded` as the source.
 
 ## Out of scope
 
