@@ -75,38 +75,38 @@ holds every breaking change of this record against a row of that page.
 
 - **The package states a measured packet throughput** (#415). Round TBD. New file
   `tests/throughput_run.py` feeds one `Processor` a stated packet run in an interpreter of
-  its own, and it writes one JSON object holding `packets`, `connections`,
+  its own. It writes one JSON object, and the object holds `packets`, `connections`,
   `elapsed_seconds`, `packets_per_second`, `fingerprints`, `python_version`, `platform`
   and `commit`. New file `tests/test_throughput.py` reads that object. New page
   `docs/performance.md` publishes the measurements, and `mkdocs.yml` lists it.
   **The clock covers `process_packet` and nothing else.** The traffic build and the
   capture parse sit outside it, so the rate reads this package and not scapy.
   **The synthetic run reads 1000000 packets across 100000 connections at 2006 packets for
-  each second**, on this laptop, `macOS-26.6.1-arm64-arm-64bit-Mach-O`, Python 3.14.3,
-  commit `be91cc4`, in 498.39 seconds for 400000 fingerprints. The run ran beside a
-  mutation sweep and the load average read 8.88 before it and 12.78 after it, so the rate
-  is a lower bound. **The capture run reads all 38 captures on both hosts, and the two
-  agree on the result and differ on the time**: 9062 packets and 777 fingerprints each,
-  at 1857 packets for each second on `bigboy` and 2183 on this laptop.
+  each second.** It took 498.39 seconds and produced 400000 fingerprints. The host is this
+  laptop, `macOS-26.6.1-arm64-arm-64bit-Mach-O`, Python 3.14.3, commit `be91cc4`. The run
+  ran beside a mutation sweep, and the load average read 8.88 before it and 12.78 after it.
+  Read the rate as a lower bound. **The capture run reads all 38 captures on both hosts.**
+  The two agree on the result and differ on the time. Each read 9062 packets and produced
+  777 fingerprints, at 1857 packets for each second on `bigboy` and 2183 on this laptop.
   **The one-million-packet synthetic run has one host only.** `bigboy` is shared, it
-  carries an Elasticsearch node, and #410 already spent a memory ceiling run there, so the
-  project manager gave it the capture run alone. `docs/performance.md` states that gap and
-  its reason, and no Linux figure for the synthetic run exists.
-  **The measurement carries three controls, and each one was proved able to fail.** A
+  carries an Elasticsearch node, and #410 already spent a memory ceiling run there. The
+  project manager therefore gave it the capture run alone. `docs/performance.md` states
+  that gap and its reason, and no Linux figure for the synthetic run exists.
+  **The measurement carries three controls, and #415 proved each one able to fail.** A
   timing case that measures the wrong thing reads as a fast package. The packet count
   control fails when the run feeds half the packets. The work control fails when the clock
   reads a constant rather than the traffic. The result control fails when the run counts no
-  fingerprint, because a processor that produced nothing reads the highest rate of all.
-  Each defect turned its own control red on `bigboy` and the restored file turned it green.
-  **The issue names the manifest as a premise, and the reading contradicts the doubt.**
+  fingerprint, because a processor that produces nothing reads the highest rate of all.
+  Each defect turned its own control red on `bigboy`, and the restored file turned it green.
+  **The issue names the manifest as a premise, and the count contradicts the doubt.**
   `tests/foxio_vector_manifest.json` holds the same 38 names the directory holds, so the
   manifest is complete and the capture set is every file under `tests/foxio_vectors/`.
   **This entry sets no target and adds no job.** `Non-goals` states that wire-speed
   performance is out of scope, `grep -rn "packets_per_second" .github/workflows/` finds
   nothing, and `test_no_workflow_names_the_rate_field` holds that. **The measurement
   becomes no floor**, because a floor derived from it cannot detect a fault in it.
-  **Two statements about throughput are not checkable, and the page marks each one rather
-  than reporting it as true.** No check tells a slow package from a slow host, and no check
+  **Two statements about throughput are not checkable, and the page marks each one.** It
+  reports neither as true. No check tells a slow package from a slow host, and no check
   states whether a rate is adequate. No file under `ja4plus/` changes and no fingerprint
   moves.
 - **The granted Linux host measured the gates for the first time** (#410). Round TBD.

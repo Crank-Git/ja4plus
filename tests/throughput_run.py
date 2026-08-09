@@ -1,25 +1,25 @@
 """Measure the packet throughput of one `Processor` and write it as JSON.
 
 `tests/test_throughput.py` runs this file as a program, in an interpreter of its own. A
-separate interpreter is part of the measurement and not a convenience: a run taken inside
-a pytest session shares its processor with every case that runs beside it, and the rate
-then reads the load of the session rather than the speed of the package.
+separate interpreter is part of the measurement and not a convenience. A run taken inside
+a pytest session shares its processor with every case that runs beside it. The rate then
+reads the load of the session rather than the speed of the package.
 
 **The clock covers `process_packet` and nothing else.** The program builds the traffic,
 or reads the capture, outside the clock. `throughput` of the `## Terms` table of
-`docs/specs/spec.md` names the count of packets one processor reads for each second, so
-the time scapy spends to build a packet or to parse a capture file belongs to scapy and
-not to this measurement. A run that timed the traffic builder as well would report the
-speed of scapy under the name of this package.
+`docs/specs/spec.md` names the count of packets one processor reads for each second. The
+seconds scapy spends to build a packet, or to parse a capture file, belong to scapy. A run
+that timed the traffic builder as well would report the speed of scapy under the name of
+this package.
 
 **The program takes no target and states no verdict.** `Non-goals` of
 `docs/specs/spec.md` states that wire-speed performance is out of scope, and that this
 project measures throughput and reports it. The program writes a number, and a reader
 decides what the number is worth against a use.
 
-**The measurement carries the fingerprint count for a reason.** A processor that produced
-nothing reads the highest rate of all, because it did no work.
-`TestTheResultControl` reads that field.
+**The measurement carries the fingerprint count for a reason.** A processor that produces
+nothing reads the highest rate of all, because it does no work. `TestTheResultControl`
+reads that field.
 
 The program has two modes.
 
@@ -101,8 +101,8 @@ def measure_synthetic(packets, connections):
     """Return the throughput measurement of one generated packet run.
 
     The clock covers `process_packet` alone. `ceiling_traffic` builds ten packets for one
-    connection with scapy, and that build costs more than the processing it feeds, so a
-    clock that spanned both would report the speed of scapy.
+    connection with scapy, and that build costs more than the work it feeds. A clock that
+    spanned both would report the speed of scapy.
 
     Args:
         packets: The count of packets to feed.
@@ -142,7 +142,7 @@ def measure_capture(path):
     """Return the throughput measurement of one capture file.
 
     The read sits outside the clock. scapy parses the whole file into packet objects
-    first, and that parse costs more than the processing that follows it.
+    first, and that parse costs more than the work that follows it.
 
     Args:
         path: The path of the capture file.
@@ -180,8 +180,8 @@ def measure_captures(names):
     """Return the throughput measurement of each named capture, and the total.
 
     One processor reads one capture. A processor shared across captures would carry the
-    state of an earlier capture into a later one, and the rate of the later capture would
-    then read the eviction work of the earlier one.
+    state of an earlier capture into a later one. The rate of the later capture would then
+    read the eviction work of the earlier one.
 
     Args:
         names: The capture file names under `tests/foxio_vectors/`.
@@ -221,7 +221,10 @@ def main(argv=None):
     """
     parser = argparse.ArgumentParser(description="Measure the packet throughput.")
     parser.add_argument("--packets", type=int, default=DEFAULT_PACKETS)
-    parser.add_argument("--connections", type=int, default=0)
+    # The default is `None` and not zero, so the program tells an absent option from an
+    # explicit `--connections 0`. A zero the caller typed reaches `parser.error` below,
+    # where a zero used as the default would silently read the computed count instead.
+    parser.add_argument("--connections", type=int, default=None)
     parser.add_argument(
         "--captures",
         nargs="*",
@@ -231,9 +234,11 @@ def main(argv=None):
     arguments = parser.parse_args(argv)
 
     if arguments.captures is None:
-        connections = arguments.connections or max(arguments.packets // PACKETS_PER_CONNECTION, 1)
         if arguments.packets < 1:
             parser.error("--packets needs at least 1")
+        connections = arguments.connections
+        if connections is None:
+            connections = max(arguments.packets // PACKETS_PER_CONNECTION, 1)
         if connections < 1:
             parser.error("--connections needs at least 1")
         measurement = measure_synthetic(arguments.packets, connections)

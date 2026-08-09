@@ -1,8 +1,8 @@
 # Packet throughput
 
 `throughput` of the `## Terms` table of `docs/specs/spec.md` names the count of packets
-one processor reads for each second of elapsed time, for one named packet run on one
-named host. This page publishes that count. #415 measured it.
+one processor reads for each second of elapsed time. The count belongs to one named packet
+run on one named host. This page publishes that count. #415 measured it.
 
 **This page states no target.** `Non-goals` of `docs/specs/spec.md` states that
 wire-speed performance is out of scope, and that this project measures throughput and
@@ -71,8 +71,8 @@ processor reads one capture. A processor shared across captures would carry the 
 an earlier capture into a later one.
 
 **The set is every capture under `tests/foxio_vectors/`.** #415 read the directory against
-`tests/foxio_vector_manifest.json` and the two hold the same 38 names, so the manifest is
-complete and the two readings agree.
+`tests/foxio_vector_manifest.json`, and the two hold the same 38 names. The manifest is
+therefore complete, and the two counts agree.
 
 | Host | Python | Commit | Captures | Packets | Fingerprints | Seconds | Packets per second |
 |---|---|---|---|---|---|---|---|
@@ -80,8 +80,8 @@ complete and the two readings agree.
 | this laptop | 3.14.3 | `be91cc4` | 38 | 9062 | 777 | 4.152 | 2183 |
 
 **The two hosts read the same 9062 packets and produced the same 777 fingerprints.** The
-elapsed time differs and the result does not, which is the reading a throughput
-measurement must show.
+elapsed time differs and the result does not. That is the result a throughput measurement
+must show.
 
 `bigboy` reports `Linux-6.11.0-29-generic-x86_64-with-glibc2.40`. Its load average read
 1.79 before the run and 1.90 after it.
@@ -169,8 +169,8 @@ measurement must show.
 
 ## What this page does not state
 
-Two statements about throughput are not checkable, and this page marks each one rather
-than reporting it as true.
+Two statements about throughput are not checkable. This page marks each one, and it
+reports neither as true.
 
 1. **No check tells a slow package from a slow host.** A rate is a measurement of one host
    at one moment, and this project holds no second instrument. The two hosts above differ

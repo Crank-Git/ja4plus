@@ -6,12 +6,12 @@ measurement it writes and states the conditions the measurement must meet.
 **A timing case that measures the wrong thing reads as a fast package.** Three controls
 close the three ways this measurement fails while it still reports a number.
 
-1. **The packet count control.** A run that fed fewer packets than the case states reads
-   a shorter elapsed time, and the rate then describes a run nobody asked for.
+1. **The packet count control.** A run that feeds fewer packets than the case states
+   reads a shorter elapsed time. The rate then describes a run nobody asked for.
 2. **The work control.** Twice the packets must report a longer elapsed time. A
-   measurement that captured the process start rather than the traffic does not rise.
-3. **The result control.** A processor that produced no fingerprint reads the highest
-   rate of all, because it did no work.
+   measurement that reads the process start rather than the traffic does not rise.
+3. **The result control.** A processor that produces no fingerprint reads the highest
+   rate of all, because it does no work.
 
 **This file states no throughput target.** `Non-goals` of `docs/specs/spec.md` states that
 wire-speed performance is out of scope, and that this project measures throughput and
@@ -50,18 +50,39 @@ PACKETS_PER_CONNECTION = 10
 THROUGHPUT_PACKETS = int(os.environ.get("JA4PLUS_THROUGHPUT_PACKETS", "10000"))
 
 # The connections the case builds, and the packets it feeds across them. The run stops on
-# a whole connection, so a count that is no multiple of ten rounds down here rather than
-# failing the case that reads the count back.
+# a whole connection. A count that is no multiple of ten reaches the next multiple, so the
+# count rounds up here. A reader who overrides the packet count with an odd number then
+# reads a control that measures the run. It reads no control that fails on the rounding.
 THROUGHPUT_CONNECTIONS = max(THROUGHPUT_PACKETS // PACKETS_PER_CONNECTION, 1)
-THROUGHPUT_RUN_PACKETS = THROUGHPUT_CONNECTIONS * PACKETS_PER_CONNECTION
+
+
+def run_packets(packets):
+    """Return the packets one run feeds when the case asks for a stated count.
+
+    Args:
+        packets: The count of packets the case asks for.
+
+    Returns:
+        The count the run feeds, which is the next whole connection at or above the ask.
+    """
+    return -(-packets // PACKETS_PER_CONNECTION) * PACKETS_PER_CONNECTION
+
+
+THROUGHPUT_RUN_PACKETS = run_packets(THROUGHPUT_PACKETS)
+
+# The packets the work control feeds. The rounding above applies to this run too, so a
+# doubled ask is not always a doubled run, and the case reads this count rather than
+# twice the first one.
+DOUBLE_RUN_PACKETS = run_packets(2 * THROUGHPUT_PACKETS)
 
 # The seconds one measurement may take. #279 read 481 seconds for 1000000 packets on a
 # ten-core laptop, so the limit holds about four times that rate. The work control feeds
 # twice the packets, so its own run reads twice this allowance.
 THROUGHPUT_TIMEOUT = 120 + THROUGHPUT_PACKETS // 500
 
-# The share of one part in a thousand that the reported rate may differ from the rate the
-# caller computes from the two fields beside it. The criterion of #415 states the figure.
+# The share by which the reported rate may differ from the rate the caller computes.
+# The caller computes it from the two fields beside it. The criterion of #415 states the
+# figure as one part in a thousand.
 RATE_TOLERANCE = 1.0 / 1000.0
 
 # The capture the capture-mode case reads. The case proves the mode measures one real
@@ -85,8 +106,8 @@ MEASUREMENT_FIELDS = (
 def measure_throughput(packets, captures=None, timeout=None):
     """Return the throughput measurement of one run, taken in an interpreter of its own.
 
-    The run needs an interpreter of its own for the same reason the memory ceiling does:
-    a measurement taken inside this pytest session shares its processor with every case
+    The run needs an interpreter of its own for the same reason the memory ceiling does.
+    A measurement taken inside this pytest session shares its processor with every case
     that runs beside it.
 
     Args:
@@ -159,31 +180,34 @@ class TestTheMeasurementTheRunWrites:
     def test_the_measurement_states_the_field(self, measurement, field):
         assert field in measurement, sorted(measurement)
 
-    def test_the_measurement_names_the_interpreter_that_took_it(self, measurement):
+    def test_the_measurement_names_the_interpreter_that_takes_it(self, measurement):
         assert measurement["python_version"] == sys.version.split()[0]
 
-    def test_the_measurement_names_the_platform_that_took_it(self, measurement):
+    def test_the_measurement_names_the_platform_that_takes_it(self, measurement):
         assert measurement["platform"]
 
-    def test_the_measurement_names_the_commit_it_measured(self, measurement):
+    def test_the_measurement_names_the_commit_it_measures(self, measurement):
         assert re.fullmatch(r"[0-9a-f]{40}", measurement["commit"])
 
 
 class TestThePacketCountControl:
     """A run that fed fewer packets reads a shorter elapsed time."""
 
-    def test_the_run_fed_the_packet_count_the_case_states(self, measurement):
+    def test_the_run_feeds_the_packet_count_the_case_states(self, measurement):
         assert measurement["packets"] == THROUGHPUT_RUN_PACKETS
 
-    def test_the_run_built_the_connection_count_the_case_states(self, measurement):
+    def test_the_run_builds_the_connection_count_the_case_states(self, measurement):
         assert measurement["connections"] == THROUGHPUT_CONNECTIONS
 
 
 class TestTheWorkControl:
     """Twice the packets reports a longer elapsed time."""
 
-    def test_the_double_run_fed_twice_the_packets(self, measurement, double_measurement):
-        assert double_measurement["packets"] == 2 * measurement["packets"]
+    def test_the_double_run_feeds_more_packets_than_the_first(
+        self, measurement, double_measurement
+    ):
+        assert double_measurement["packets"] == DOUBLE_RUN_PACKETS
+        assert DOUBLE_RUN_PACKETS > measurement["packets"]
 
     def test_the_double_run_reports_a_longer_elapsed_time(self, measurement, double_measurement):
         assert double_measurement["elapsed_seconds"] > measurement["elapsed_seconds"]
@@ -192,7 +216,7 @@ class TestTheWorkControl:
 class TestTheResultControl:
     """A processor that produced nothing reads the highest rate of all."""
 
-    def test_the_run_produced_more_than_zero_fingerprints(self, measurement):
+    def test_the_run_produces_more_than_zero_fingerprints(self, measurement):
         assert measurement["fingerprints"] > 0
 
 
@@ -210,10 +234,10 @@ class TestTheReportedRate:
 class TestTheCaptureMode:
     """The run times each capture it reads, and it states one row for each."""
 
-    def test_the_capture_mode_states_one_row_for_each_capture_it_read(self, capture_measurement):
+    def test_the_capture_mode_states_one_row_for_each_capture_it_reads(self, capture_measurement):
         assert [row["capture"] for row in capture_measurement["captures"]] == [SMALL_CAPTURE]
 
-    def test_each_row_states_the_packets_it_timed(self, capture_measurement):
+    def test_each_row_states_the_packets_it_times(self, capture_measurement):
         assert capture_measurement["captures"][0]["packets"] > 0
 
     def test_the_total_packets_equal_the_sum_of_the_rows(self, capture_measurement):
@@ -224,7 +248,7 @@ class TestTheCaptureMode:
 class TestThePerformancePage:
     """`docs/performance.md` publishes the measurements, and it names each host."""
 
-    def test_the_page_states_one_row_for_each_capture_the_run_read(self, page):
+    def test_the_page_states_one_row_for_each_capture_the_run_reads(self, page):
         captures = sorted(
             path.name for path in VECTOR_DIRECTORY.rglob("*") if path.suffix in {".pcap", ".pcapng"}
         )
