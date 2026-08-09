@@ -134,9 +134,9 @@ belong to the command-line program, and the library result carries neither.
 
 ## The raw forms
 
-Four of the ten methods write a value into a raw field. The other six write `null` into
-both raw fields. JA4H writes a value into one raw field and `null` into the other, so
-read the table for the exact behaviour of each method.
+Four of the ten `type` values write a value into a raw field. The other six write `null`
+into both raw fields. JA4H writes a value into one raw field and `null` into the other,
+so read the table for the exact behaviour of each `type` value.
 
 | Method | `raw` | `raw_original_order` |
 |---|---|---|
@@ -148,6 +148,35 @@ read the table for the exact behaviour of each method.
 
 JA4S and JA4X sort no list, so one value serves both raw fields. JA4H writes no `JA4H_r`
 value, so its `raw` field is always `null`.
+
+**`tests/test_method_pages.py` holds this table against the output.** It runs the
+committed capture that each method page names, and it compares the two raw fields of the
+result against the row above. A row that disagrees with the writer fails that case. The
+table was prose that no case read until #65.
+
+## The method of each output line
+
+The `type` field names the method. **Ten `type` values carry eleven methods**, because
+`JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=` under the `type` value `ja4l`.
+Read the `JA4L-C=` prefix and the `JA4L-S=` prefix of the fingerprint to tell the two
+apart.
+
+| `type` | The method it names |
+|---|---|
+| `ja4` | [JA4](methods/ja4.md) |
+| `ja4s` | [JA4S](methods/ja4s.md) |
+| `ja4h` | [JA4H](methods/ja4h.md) |
+| `ja4l` | [JA4L](methods/ja4l.md) and [JA4LS](methods/ja4ls.md) |
+| `ja4x` | [JA4X](methods/ja4x.md) |
+| `ja4ssh` | [JA4SSH](methods/ja4ssh.md) |
+| `ja4t` | [JA4T](methods/ja4t.md) |
+| `ja4ts` | [JA4TS](methods/ja4ts.md) |
+| `ja4d` | [JA4D](methods/ja4d.md) |
+| `ja4d6` | [JA4D6](methods/ja4d6.md) |
+
+[The method index](methods/index.md) states the output format, the part list and the hash
+rule of each method. `--types` accepts the same ten tokens, so `--types ja4l` writes both
+latency values.
 
 ## An example JSON object
 

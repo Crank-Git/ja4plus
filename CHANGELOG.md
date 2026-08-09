@@ -406,7 +406,42 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   against the base. Both suites report the counts of the base: 1839 passed and 8
   xfailed in the unit suite, and 1531 passed, 143 skipped and 135 xfailed in the
   conformance suite, against 135 keys in `tests/foxio_deviations.json`.
+
 ### Added
+
+- **The site carries a page per method, the output schema and the migration page**
+  (#65). Round TBD. `docs/methods/` holds eleven method pages and an index. **FoxIO
+  publishes twelve methods, this project implements eleven, and ten fingerprinter classes
+  carry the eleven**, because `JA4LFingerprinter` writes `JA4L-S=` at
+  `ja4plus/fingerprinters/ja4l.py:446` and `JA4L-C=` at `:482`. The set was measured
+  against `__all__`, against `VALID_TYPES` of `ja4plus/cli.py:51` and against the README
+  table of #62, and the three agree. **JA4TScan reaches no method page**, because this
+  project declines it, and `docs/methods/index.md` holds the twelve-row table and states
+  the decline. **Every value on a method page is a claim, and
+  `tests/test_method_pages.py` holds 144 cases against the code.** Each page carries a
+  `## The facts` table that a parser reads: the `--types` token against `VALID_TYPES`,
+  the class and the one-shot function against `__all__`, the hash rule against the
+  `hexdigest()[:12]` its own module holds, and the FoxIO file against the inventory of
+  `docs/specs/foxio/README.md`. **The example table of each page names a committed
+  capture and a value, and the case runs the capture and compares.** 142 of the 144 cases
+  failed on the unchanged base, and five mutations prove they discriminate.
+  **`docs/output-schema.md` already existed, so this round extended it rather than adding
+  a second schema page.** Its `## The raw forms` table was prose that no case read, and a
+  case now runs the capture of each method page and compares the two raw fields. A
+  `## The method of each output line` section links the ten `type` values to the eleven
+  pages. `docs/concurrency.md` restates the contract of `README.md`, and two cases read
+  the two default bounds out of `ja4plus/utils/state_table.py`.
+
+- **The site carries a migration page for the move from version 0.6.0 to version 1.0.0**
+  (#65). Round TBD. `docs/migration-0.6-to-1.0.md` lists eleven breaking changes with the
+  old form, the new form, the reason and the round, plus the seven fingerprints that
+  move. **The issue body listed five breaking changes and the record holds eleven.**
+  **Two gaps in the record are findings and this round repairs neither.** `CHANGELOG.md`
+  holds no mention of `ja4plus.collector`, which round 71 of `docs/specs/spec.md` records
+  alone. **The Python floor moved from 3.8 to 3.9 and no Changelog round records it in
+  either file**; it shipped in commit `02ee772` under #76, and round 4 names #27 alone.
+  The migration page states that gap in its row rather than hide it. FR-documentation-13
+  belongs to #66, so this round writes no release notes.
 
 - **The documentation site builds from the Markdown files that already exist** (#64).
   Round TBD. `mkdocs.yml` at the repository root configures MkDocs 1.6.1 with the
