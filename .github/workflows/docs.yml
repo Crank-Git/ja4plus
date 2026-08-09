@@ -56,18 +56,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -u
-          code=$(curl --silent --output pages.json --write-out '%{http_code}' \
+          rm -f pages.json
+          # **`curl` reports its own failure separately, because a network fault is not a
+          # setting.** `--write-out` prints `000` where no response arrives, and a step
+          # that read that as a status would name the wrong repair.
+          if ! code=$(curl --silent --output pages.json --write-out '%{http_code}' \
             --header "Authorization: Bearer ${GH_TOKEN}" \
             --header "Accept: application/vnd.github+json" \
             --header "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pages")
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pages"); then
+            echo "::error::The request to the Pages API failed before it read a status. Read the network of the runner, and read no setting of the repository."
+            exit 1
+          fi
           if [ "$code" = "404" ]; then
             echo "::error::GitHub Pages is not enabled on ${GITHUB_REPOSITORY}, so this run publishes nothing. Open Settings > Pages, and set Build and deployment > Source to GitHub Actions. Enabling Pages publishes a public website, so the owner of the repository makes that change."
             exit 1
           fi
           if [ "$code" != "200" ]; then
             echo "::error::The Pages API answered ${code} for ${GITHUB_REPOSITORY}. Read Settings > Pages to confirm that Build and deployment > Source reads GitHub Actions, and confirm that this workflow holds the pages permission."
-            cat pages.json
+            [ -f pages.json ] && cat pages.json
             exit 1
           fi
           build_type=$(python3 -c 'import json;print(json.load(open("pages.json")).get("build_type"))')
