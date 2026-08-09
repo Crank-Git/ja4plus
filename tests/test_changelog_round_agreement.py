@@ -44,14 +44,18 @@ SPECIFICATION_ROW = re.compile(r"^\|\s*(\d+|TBD)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|\s
 SPECIFICATION_ROW_NUMBER = re.compile(r"^\|\s*(\d+|TBD)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|")
 
 # An entry of `CHANGELOG.md` opens the line with `- ` and names its round in a sentence
-# of its own, as `Round 90.`. Thirty-eight entries of the seventy-four name no round, and
+# of its own, as `Round 90.`. Thirty-three entries of the seventy-four name no round, and
 # those entries reach no case here.
-# **Two entries write the round inside backticks, so the backticks are optional here.**
-# A pattern that requires the bare word reads 34 entries where 36 exist, and the two it
-# drops escape every case below.
+# **`\s+` carries this pattern and a literal space breaks it.** The file wraps at 90
+# columns, so `Round` ends one line and `  TBD.` opens the next on five entries. A
+# pattern that reads a literal space matched 36 entries where 41 exist, and the five it
+# dropped reached no case below. All five were real orphans, and they are the defect
+# #302 exists to repair. **A comparison that never runs reads as a comparison that
+# passes**, which is the fault this project records sixteen times.
+# **Two entries write the round inside backticks**, so the backticks are optional too.
 # The closing period matters. It parts the round sentence of an entry from a citation of
 # another round inside the prose, as `Round 12 closed with`, which #258 wrote.
-CHANGELOG_ROUND = re.compile(r"Round `?(\d+|TBD)`?\.")
+CHANGELOG_ROUND = re.compile(r"Round\s+`?(\d+|TBD)`?\.")
 
 # An entry cites its own issue in a parenthesis in front of its round sentence, as
 # `(#345).` or `(#382, absorbed by #319).`.
@@ -68,7 +72,11 @@ ISSUE_REFERENCE = re.compile(r"#(\d+)")
 # every case below on an empty list, so each floor fails such a parser. Both counts grow
 # and neither falls, because both tables are append-only.
 MINIMUM_SPECIFICATION_ROWS = 133
-MINIMUM_CHANGELOG_ENTRIES = 36
+# **Read this number from the corrected parser and never from the parser it guards.**
+# The first form of this floor read 36, which is the count the wrapped-round defect
+# produced. A floor that a faulty parser measures records the fault as the expectation,
+# so it cannot report it. The corrected parser reads 41.
+MINIMUM_CHANGELOG_ENTRIES = 41
 
 
 def _specification_rounds() -> tuple[set[int], set[int]]:

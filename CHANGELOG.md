@@ -314,7 +314,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   under `FR-typed-api-5` and `FR-typed-api-6`.
 
 - **`JA4DBClient.lookup_many` identifies many fingerprints in one call** (#59). Round
-  TBD. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
+  122. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
   miss holds `None`, so a caller reads one entry for every fingerprint it passed. The
   returned mapping keys the fingerprint, so a sequence that repeats a fingerprint holds
   one entry for it. The call reaches the lookup service under the rule that `lookup`
@@ -325,7 +325,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   costs one request and no more.
 
 - **`--lookup-remote` and `JA4PLUS_DB_LOOKUP` ask for the remote lookup** (#58). Round
-  TBD. `--lookup` reads the bundled mapping file and makes no network request.
+  118. `--lookup` reads the bundled mapping file and makes no network request.
   `--lookup-remote` identifies each fingerprint, and it sends every fingerprint the
   mapping file holds no entry for to `https://ja4db.com`. It asks for the lookup as well
   as for the disclosure, so an operator who passes it needs no `--lookup`.
@@ -342,7 +342,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **A lookup result is a frozen `LookupResult` and it records its source** (#59). Round
-  TBD. Through version 0.6.0 `JA4DBClient.lookup` returned a dict with the keys
+  122. Through version 0.6.0 `JA4DBClient.lookup` returned a dict with the keys
   `application`, `type` and `notes`. It now returns a frozen `LookupResult` that carries
   the same three fields plus `source`, so a caller reads `result.application` where it
   read `result["application"]` before. `LookupResult` of `lookup.go:23` carries the three
@@ -465,7 +465,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   no thread other than the one `--stats-interval` starts.
 
 - **`ja4plus watch` applies a capture filter and reads the capture failure** (#56). Round
-  TBD. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
+  104. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
   which drops every packet the filter rejects. The command reads no user identity. It
   attempts the capture and reads the failure, so a Linux host that grants `CAP_NET_RAW`
   without granting the user identity zero runs the monitor. Version 0.6.0 read
@@ -494,7 +494,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   open, which the command writes and #214 decided.
 
 - **`ja4plus watch` stops on a termination signal and flushes its output** (#54). Round
-  TBD. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
+  102. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
   status zero. The handler sets a flag and returns. It calls `sys.exit` never, because a
   signal arrives at any point, including the point where the output holds half a line.
   `scapy` reads the flag through the `stop_filter` argument of `sniff`, and it applies
