@@ -91,6 +91,34 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Every entry of this file states the round its specification row states** (#302).
+  Round TBD. Eight entries read `Round TBD` while `docs/specs/spec.md` had already
+  assigned their round. A reader who follows such an entry reaches nothing, and version
+  1.0.0 is close. **Each entry names the round its row records, and this repair invents
+  no number, adds no row and moves no number.** Three entries of Epic 4 name round 90,
+  which is the Epic 4 shipment row and already records all three pieces of work in the
+  words the entries use. #258 settled that shape, because a repair folds a detail into
+  the shipment row and renumbers no row. The other five name rounds 122, 118, 122, 104
+  and 102. **Each match reads what the two records state and not the issue number**,
+  because #59 carries two entries against one round, and rounds 123 and 124 are the rival
+  candidates and each is already taken, 123 by #364 and 124 by #368. **No prose of the
+  eight entries changes**, and the eight lines differ by the round word alone.
+  `tests/test_changelog_round_agreement.py` holds the invariant. **It bars no `TBD`.** A
+  guard that barred the literal word would fail on every integration branch, because the
+  batch model requires a member to write it and the project manager to assign the number
+  at the batch gate. The guard instead compares the two files against each other, so the
+  ten unassigned entries of this branch stay untouched. **Five of the eight orphans hid
+  behind a defect in the guard itself.** The round pattern read a literal space, the file
+  wraps at 90 columns, and `Round` therefore ends one line and `  TBD.` opens the next on
+  five entries. The parser read 36 entries where 41 exist and skipped all five, so the
+  guard reported green over the defect it exists to report. **A comparison that never
+  runs reads as a comparison that passes**, and this project records that fault sixteen
+  times. **The floor recorded the fault rather than the fault reporting the floor**: it
+  read 36, which is the count the broken parser produced, so it could never fire. It now
+  reads 41 from the corrected parser. Seven mutations prove the guard, and the two that
+  wrap a round sentence are the pair the first five could not reach. No file under
+  `ja4plus/` changes and no fingerprint moves.
+
 - **The marker rule states the decided-entry count the register holds, and a case
   holds it there** (#345). Round `TBD`. The `## The marker rule` section of
   `tests/foxio_deviations.py` read `38 of the 128 decided entries`. The register holds
@@ -297,7 +325,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   under `FR-typed-api-5` and `FR-typed-api-6`.
 
 - **`JA4DBClient.lookup_many` identifies many fingerprints in one call** (#59). Round
-  TBD. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
+  122. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
   miss holds `None`, so a caller reads one entry for every fingerprint it passed. The
   returned mapping keys the fingerprint, so a sequence that repeats a fingerprint holds
   one entry for it. The call reaches the lookup service under the rule that `lookup`
@@ -308,7 +336,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   costs one request and no more.
 
 - **`--lookup-remote` and `JA4PLUS_DB_LOOKUP` ask for the remote lookup** (#58). Round
-  TBD. `--lookup` reads the bundled mapping file and makes no network request.
+  118. `--lookup` reads the bundled mapping file and makes no network request.
   `--lookup-remote` identifies each fingerprint, and it sends every fingerprint the
   mapping file holds no entry for to `https://ja4db.com`. It asks for the lookup as well
   as for the disclosure, so an operator who passes it needs no `--lookup`.
@@ -325,7 +353,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **A lookup result is a frozen `LookupResult` and it records its source** (#59). Round
-  TBD. Through version 0.6.0 `JA4DBClient.lookup` returned a dict with the keys
+  122. Through version 0.6.0 `JA4DBClient.lookup` returned a dict with the keys
   `application`, `type` and `notes`. It now returns a frozen `LookupResult` that carries
   the same three fields plus `source`, so a caller reads `result.application` where it
   read `result["application"]` before. `LookupResult` of `lookup.go:23` carries the three
@@ -420,7 +448,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4plus/output.py` holds one writer per format. #50 documents the schema and its
   version.
 
-- **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round TBD.
+- **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round 90.
   The method returned a list of dictionaries through version 0.6.0. A caller who reads
   `result["fingerprint"]` keeps working for one major version, and item access emits a
   `DeprecationWarning` that names the attribute form. Read `result.fingerprint` instead.
@@ -448,7 +476,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   no thread other than the one `--stats-interval` starts.
 
 - **`ja4plus watch` applies a capture filter and reads the capture failure** (#56). Round
-  TBD. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
+  104. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
   which drops every packet the filter rejects. The command reads no user identity. It
   attempts the capture and reads the failure, so a Linux host that grants `CAP_NET_RAW`
   without granting the user identity zero runs the monitor. Version 0.6.0 read
@@ -477,7 +505,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   open, which the command writes and #214 decided.
 
 - **`ja4plus watch` stops on a termination signal and flushes its output** (#54). Round
-  TBD. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
+  102. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
   status zero. The handler sets a flag and returns. It calls `sys.exit` never, because a
   signal arrives at any point, including the point where the output holds half a line.
   `scapy` reads the flag through the `stop_filter` argument of `sniff`, and it applies
@@ -534,7 +562,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4`, `ja4s`, `ja4h` and `ja4x` write a raw form and the other six methods write
   `null`; `ja4x` now writes `JA4X_r`, which #267 added.
 
-- **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
+- **The package ships the `py.typed` marker and declares `__all__`** (#47). Round 90.
   The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as
   package data. A caller who runs `mypy --strict` against their own code now resolves
   the annotations of `ja4plus`: `unzip -l dist/*.whl` lists `ja4plus/py.typed`, and a
@@ -552,7 +580,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   FR-typed-api-12 and FR-typed-api-13.
 
 - **`Processor.process_packet_with_errors` returns the results and the errors** (#45).
-  Round TBD. `process_packet` logs a fingerprinter error at DEBUG and returns the
+  Round 90. `process_packet` logs a fingerprinter error at DEBUG and returns the
   results alone, so a caller could not tell a packet that produces no fingerprint from a
   packet that failed a parse. The new method returns both lists, and one method that
   raises poisons no other method. The Go port returns the pair from one call, and parity
