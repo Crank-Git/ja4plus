@@ -47,6 +47,25 @@ The `table` format carries no stability promise, and it writes no `schema_versio
 packs the four endpoint values into one `Source` column for a person to read. A tool
 reads the `json` format or the `csv` format instead.
 
+## What a fingerprint is evidence of
+
+**A fingerprint is evidence of the bytes the packet carried. It is no evidence of a real
+client.**
+
+`ja4plus` adds no plausibility guard. A structurally valid ClientHello produces a
+fingerprint, whatever its body holds. The headers and the length fields decide the
+outcome, and the content of the body decides nothing.
+
+Before you trust an output line that untrusted traffic produced, read the consequence.
+Any sender can build bytes that produce a well formed fingerprint. That fingerprint names
+no application on its own. `identified_as` reports what the mapping file holds for the
+value, and a sender who chooses the bytes chooses that value too.
+
+The behaviour follows the FoxIO reference. No FoxIO material rejects such a packet, so a
+guard here would make `ja4plus` answer differently from every FoxIO implementation on the
+same bytes. #343 holds the decision, the `Divergence register` of `docs/specs/spec.md`
+holds the measurement, and `tests/fuzz/test_structural_validity.py` holds the cases.
+
 ## Where the output goes
 
 The command writes results to standard output and every diagnostic to standard error, so

@@ -42,6 +42,12 @@ an empty payload, a truncated TLS record, a record that declares more bytes than
 packet holds, a long run of `0x00`, a long run of `0xff`, and a ClientHello with one
 corrupted byte. Its ClientHello comes from the `client_hello_packet` fixture.
 
+`test_structural_validity.py` reads no capture either, and it asserts the other outcome.
+A structurally valid ClientHello produces a fingerprint, whatever its body holds, because
+`ja4plus` adds no plausibility guard. The two files agree, because the TLS record header,
+the handshake header and the two length fields separate the two input sets. #343 holds
+the decision, and `tests/measure_random_client_hello.py` reproduces the measurement.
+
 ## The rule that governs every case
 
 A case that asserts "no exception" passes when no parser runs. A truncated capture that
