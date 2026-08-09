@@ -29,6 +29,29 @@ VECTOR_DIRECTORY = pathlib.Path(__file__).parent / "foxio_vectors"
 BSD_AF_INET6_VALUES = (0x18, 0x1C, 0x1E)
 
 
+def project_bound(family_value: int) -> bool:
+    """Report whether `ja4plus` bound the IPv6 layer to the address family value.
+
+    scapy binds `socket.AF_INET6` itself, and that value is 30 on Darwin. A dissection of
+    family 30 therefore succeeds on Darwin whether `ja4plus` bound the value or not, so
+    the dissection alone measures nothing on that host. #412 measured it: the mutation of
+    `0x1E` to `31` left the case green here and would fail it on Linux.
+
+    scapy writes its own entry with an `AddressFamily` member and `ja4plus` writes a plain
+    `int`, so the type of the key separates the two.
+
+    Args:
+        family_value: A BSD address family value of a `DLT_NULL` frame.
+
+    Returns:
+        True when the bind table holds an entry `ja4plus` wrote for that value.
+    """
+    return any(
+        bound is IPv6 and type(match.get("type")) is int and match["type"] == family_value
+        for match, bound in Loopback.payload_guess
+    )
+
+
 @pytest.mark.parametrize("family_value", BSD_AF_INET6_VALUES)
 def test_dissects_every_bsd_address_family_value_as_ipv6(family_value):
     """The IPv6 layer of a loopback frame reaches a reader on every host."""
@@ -45,6 +68,9 @@ def test_dissects_every_bsd_address_family_value_as_ipv6(family_value):
     )
     assert packet[IPv6].dst == "::2"
     assert Raw not in packet
+    assert project_bound(family_value), "ja4plus binds no IPv6 layer to family {}".format(
+        hex(family_value)
+    )
 
 
 def test_the_ipv6_vector_produces_the_reference_ja4_fingerprint():

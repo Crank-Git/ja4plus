@@ -333,6 +333,45 @@ class TestTheVerdictOfEverySettlement:
         assert mutation_census.settlement_faults(settlements, {"412-utils"}) == []
 
 
+class TestTheRecordsOfThisRepository:
+    """The census reads the real directories, and the reading is not vacuous.
+
+    **A criterion that reads "0 unsettled candidates" passes on an empty directory.** #412
+    reported that: with no report under `docs/mutation_reports/`, the census printed
+    `0 candidates over 0 test files` and every settlement criterion passed with no work
+    done. These cases state the two readings a settlement issue must prove: the census
+    names at least one candidate, and it names an unclaimed one when a record drops a row.
+    """
+
+    def test_the_census_names_at_least_one_candidate(self) -> None:
+        found = mutation_census.census(
+            mutation_census.REPORT_DIRECTORY, mutation_census.SETTLEMENT_DIRECTORY
+        )
+        assert found.candidates != []
+
+    def test_every_candidate_of_this_repository_holds_exactly_one_settlement(self) -> None:
+        found = mutation_census.census(
+            mutation_census.REPORT_DIRECTORY, mutation_census.SETTLEMENT_DIRECTORY
+        )
+        assert found.unclaimed == []
+        assert found.claimed_twice == {}
+        assert found.unknown == {}
+        assert found.faults == []
+
+    def test_the_census_names_the_candidate_a_record_drops(self, tmp_path) -> None:
+        settlements = tmp_path / "settlements"
+        settlements.mkdir()
+        dropped = None
+        for path in sorted(mutation_census.SETTLEMENT_DIRECTORY.glob("*.json")):
+            record = json.loads(path.read_text())
+            if dropped is None and record["settlements"]:
+                dropped = record["settlements"].pop(0)
+            (settlements / path.name).write_text(json.dumps(record))
+        assert dropped is not None, "no settlement record holds a row to drop"
+        found = mutation_census.census(mutation_census.REPORT_DIRECTORY, settlements)
+        assert [item.case for item in found.unclaimed] == [dropped["candidate"]]
+
+
 class TestTheCensusOpensNoMarkdownFile:
     def test_no_reader_of_the_census_opens_a_markdown_file(
         self, reports, settlements, monkeypatch

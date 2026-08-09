@@ -1,0 +1,1809 @@
+{
+  "issue": 412,
+  "sweep": "412-utils",
+  "modules": [
+    "ja4plus/utils/http_utils.py",
+    "ja4plus/utils/loopback.py",
+    "ja4plus/utils/packet_utils.py",
+    "ja4plus/utils/quic_utils.py",
+    "ja4plus/utils/ssh_utils.py",
+    "ja4plus/utils/state_table.py",
+    "ja4plus/utils/tcp_options.py",
+    "ja4plus/utils/tcp_stream.py",
+    "ja4plus/utils/tls_utils.py",
+    "ja4plus/utils/tunnels.py",
+    "ja4plus/utils/x509_utils.py"
+  ],
+  "scope": {
+    "rule": "Each module is swept against the smallest test-file set that still runs every mutation line of that module. The user ruled on 2026-08-09, and Amendment 3 of #412 records the ruling. The rule 'name every test file that reads the module' measured 32.18 hours against a four-hour ceiling.",
+    "limits": [
+      "Every mutation keeps a reader, so a mutation that no case kills is still found. The surviving-mutation signal is preserved.",
+      "The cover is conservative in the safe direction. A test file the cover drops might have killed a mutation, so the cover can report a survivor that a wider run would have killed. It over-reports survivors and it does not under-report them.",
+      "The candidate set shrinks, because fewer cases are evaluated. quic_utils.py gives 97 cases here against 2268 under the wider rule. A case the cover drops stays unmeasured against that module, and this record measures no such case."
+    ],
+    "cover": {
+      "ja4plus/utils/http_utils.py": [
+        "tests/test_cleanup_connection.py",
+        "tests/test_utils.py"
+      ],
+      "ja4plus/utils/loopback.py": [
+        "tests/test_loopback_link_type.py"
+      ],
+      "ja4plus/utils/packet_utils.py": [
+        "tests/test_cleanup_connection.py",
+        "tests/test_cli.py",
+        "tests/test_ipv6_support.py"
+      ],
+      "ja4plus/utils/quic_utils.py": [
+        "tests/test_bare_exception_reading.py",
+        "tests/test_cli.py",
+        "tests/test_ja4l_quic_server_hello.py",
+        "tests/test_quic_crypto_buffer_bound.py",
+        "tests/test_quic_multipacket.py",
+        "tests/test_quic_utils.py"
+      ],
+      "ja4plus/utils/ssh_utils.py": [
+        "tests/test_cli.py",
+        "tests/test_ja4ssh_deep.py",
+        "tests/test_ja4ssh_message_count.py"
+      ],
+      "ja4plus/utils/state_table.py": [
+        "tests/test_cleanup_connection.py",
+        "tests/test_ja4h_retransmission.py",
+        "tests/test_state_table.py"
+      ],
+      "ja4plus/utils/tcp_options.py": [
+        "tests/test_ja4t_deep.py"
+      ],
+      "ja4plus/utils/tcp_stream.py": [
+        "tests/test_cleanup_connection.py",
+        "tests/test_cli_processor.py",
+        "tests/test_tcp_stream.py"
+      ],
+      "ja4plus/utils/tls_utils.py": [
+        "tests/test_ja4_alpn.py",
+        "tests/test_loopback_link_type.py",
+        "tests/test_utils.py"
+      ],
+      "ja4plus/utils/tunnels.py": [
+        "tests/test_tunnels.py"
+      ],
+      "ja4plus/utils/x509_utils.py": [
+        "tests/test_parity.py",
+        "tests/test_x509_certificate_reader.py"
+      ]
+    }
+  },
+  "settlements": [
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_a_group_one_reader_names_no_bare_exception[compute_ja4x_from_pem]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_a_group_one_reader_names_no_bare_exception[decrypt_quic_initial_crypto]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_a_group_one_reader_names_no_bare_exception[decrypt_quic_server_initial_crypto]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_a_group_one_reader_names_no_bare_exception[parse_quic_initial]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_the_lookup_returns_no_match_when_the_service_fails",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_the_pem_reader_returns_nothing_and_raises_nothing_for_hostile_input",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_the_pem_reader_returns_nothing_for_a_certificate_of_an_unknown_version",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_the_pem_reader_returns_nothing_for_a_certificate_that_holds_no_certificate",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_the_processor_loses_no_window_when_one_method_fails",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_the_processor_reports_the_error_of_a_method_rather_than_raising",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_bare_exception_reading.py::test_the_processor_returns_when_a_method_fails_to_drop_its_state",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestBaseFingerprinterCleanup::test_the_base_class_holds_the_cleanup_method",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/state_table.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/state_table.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestBaseFingerprinterCleanup::test_the_base_no_op_holds_no_state_table_and_holds_every_fingerprint",
+      "verdict": "correct",
+      "reason": "The case asserts that the base fingerprinter holds no state table and returns every fingerprint it recorded. It reads no field of the 5-tuple key, so the mutations of the key field names at packet_utils.py:109 to 112 leave its result unchanged. Another case of the same sweep kills every one of them.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/state_table.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4Cleanup::test_cleanup_of_an_absent_connection_holds_every_key",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4Cleanup::test_cleanup_on_an_empty_fingerprinter_holds_the_empty_tables",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4Cleanup::test_cleanup_removes_only_the_target_connection",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4Cleanup::test_cleanup_removes_the_target_named_in_the_reverse_direction",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4HCleanup::test_cleanup_on_an_empty_fingerprinter_holds_the_empty_tables",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4LCleanup::test_cleanup_of_an_absent_connection_holds_every_key",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4LCleanup::test_cleanup_on_an_empty_fingerprinter_holds_the_empty_tables",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/state_table.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/state_table.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4LCleanup::test_cleanup_removes_a_tunnelled_connection_by_the_reported_address",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4LCleanup::test_cleanup_removes_only_the_target_connection",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4LCleanup::test_cleanup_removes_the_target_named_in_the_reverse_direction",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SCleanup::test_cleanup_of_an_absent_connection_holds_every_key",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SCleanup::test_cleanup_on_an_empty_fingerprinter_holds_the_empty_tables",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SCleanup::test_cleanup_removes_only_the_target_connection",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SCleanup::test_cleanup_removes_the_target_named_in_the_reverse_direction",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SSHCleanup::test_cleanup_of_an_absent_connection_holds_every_key",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SSHCleanup::test_cleanup_on_an_empty_fingerprinter_holds_the_empty_tables",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/state_table.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/state_table.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SSHCleanup::test_cleanup_removes_only_the_target_connection",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SSHCleanup::test_cleanup_removes_only_the_target_connection_on_port_22",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4SSHCleanup::test_cleanup_removes_the_target_named_in_the_reverse_direction",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4TSCleanup::test_cleanup_of_an_absent_connection_holds_every_key",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4TSCleanup::test_cleanup_on_an_empty_fingerprinter_holds_the_empty_tables",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4TSCleanup::test_cleanup_removes_only_the_target_connection",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4TSCleanup::test_cleanup_removes_the_target_named_in_the_reverse_direction",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4XCleanup::test_cleanup_of_an_absent_connection_holds_every_key",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4XCleanup::test_cleanup_on_an_empty_fingerprinter_holds_the_empty_tables",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, ja4plus/utils/state_table.py, ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/state_table.py",
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4XCleanup::test_cleanup_removes_only_the_target_stream",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cleanup_connection.py::TestJA4XCleanup::test_cleanup_removes_the_target_stream_named_in_the_reverse_direction",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/packet_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/packet_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_csv_format",
+      "verdict": "correct",
+      "reason": "The case asserts the exit code, the header row against ja4plus.output.CSV_COLUMNS, and the width of each data row. It reads no fingerprint value, so a mutation that changes a parsed value changes no column.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_file_not_found",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_json_format",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_pcap",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_table_has_header",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_types_filter",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestCertCommand::test_cert_command",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestCertCommand::test_cert_file_not_found",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestCertCommand::test_cert_json_format",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestInvalidTypes::test_invalid_types",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestInvalidTypes::test_valid_types_accepted",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestTheTrailingJA4SSHWindow::test_analyze_writes_the_window_the_connection_holds_open",
+      "verdict": "correct",
+      "reason": "The case asserts the trailing JA4SSH window of one connection. A mutation of quic_utils.py changes no JA4SSH value, so the 31 mutation lines the case runs cannot reach the assertion.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli.py::TestVersionFlag::test_version_flag",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, ja4plus/utils/quic_utils.py, ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py",
+        "ja4plus/utils/quic_utils.py",
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheProgramBuildsOneProcessor::test_the_analyze_command_builds_one_processor",
+      "verdict": "correct",
+      "reason": "The case asserts that the program builds exactly one Processor. It reads no fingerprint, so a mutation of tcp_stream.py changes no count. Another case of the same sweep kills every mutation of the nine lines this case runs.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheProgramBuildsOneProcessor::test_the_module_holds_no_dictionary_of_fingerprinter_classes",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheProgramHoldsNoError::test_the_module_holds_no_list_of_errors_after_the_run",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheProgramReportsAFingerprinterError::test_the_program_names_the_method_that_raised",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheProgramReportsAFingerprinterError::test_the_program_reports_an_error_of_a_method_the_types_option_excludes",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheProgramReportsAFingerprinterError::test_the_program_writes_the_diagnostic_to_standard_error",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheProgramReportsAFingerprinterError::test_the_program_writes_the_message_the_error_carries",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheProgramReportsAFingerprinterError::test_the_run_continues_after_a_method_raises",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheReportingOrderFollowsTheUser::test_a_method_the_user_wrote_twice_keeps_its_first_position",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheReportingOrderFollowsTheUser::test_the_program_reports_one_record_for_a_method_the_user_wrote_twice",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_cli_processor.py::TheReportingOrderFollowsTheUser::test_the_program_writes_the_methods_in_the_order_the_user_wrote",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ipv6_support.py::TestJA4TIPv6::test_ja4t_ipv6",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ipv6_support.py::TestJA4TSIPv6::test_ja4ts_ipv6",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/packet_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/packet_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[ -20]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[ a-21]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[-00]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[01\\xab\\xcd-3d]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[0\\xab-3b]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[0\\xab\\xcd1-01]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[\\xab-ab]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[\\xab\\xcd-ad]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[a -60]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[h-hh]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[h2-h2]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[h3-h3]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value[http/1.1-h1]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_value_none_returns_00",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_compute_alpn_via_generate_ja4",
+      "verdict": "correct",
+      "reason": "The case passes one cipher, 0x1301, and no extension. is_grease reads `if not value and value != 0` at tls_utils.py:429, and 0x1301 is neither empty nor zero, so the mutation to `or` and the mutation to `==` both return the same result for this input.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4_alpn.py::test_the_pcap_vector_alpn_value_is_99",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHFingerprinterClass::test_no_raw_layer_ignored",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHFingerprinterClass::test_no_tcp_ignored",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHFingerprinterClass::test_non_ssh_ignored",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHFingerprinterClass::test_packet_count_parameter",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHHASSSDatabase::test_known_cyberduck",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHHASSSDatabase::test_known_dropbear",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHHASSSDatabase::test_known_openssh",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHHASSSDatabase::test_known_paramiko",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHHASSSDatabase::test_unknown_hassh",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHInterpretation::test_detail_extraction",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHInterpretation::test_file_transfer_download",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHInterpretation::test_file_transfer_upload",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHInterpretation::test_interactive_interpretation",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHInterpretation::test_invalid_format",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHInterpretation::test_reverse_ssh",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4ssh_deep.py::TestJA4SSHInterpretation::test_unknown_pattern",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/ssh_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/ssh_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TFingerprinterClass::test_reset",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TFlagFiltering::test_ack_rejected",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TFlagFiltering::test_fin_rejected",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TFlagFiltering::test_push_ack_rejected",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TFlagFiltering::test_rst_rejected",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TFlagFiltering::test_synack_rejected",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TSFingerprinterClass::test_reset",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TSFlagFiltering::test_ack_rejected",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TSFlagFiltering::test_rst_rejected",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_ja4t_deep.py::TestJA4TSFlagFiltering::test_syn_rejected",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_options.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_options.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_loopback_link_type.py::test_dissects_every_bsd_address_family_value_as_ipv6[24]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_loopback_link_type.py::test_dissects_every_bsd_address_family_value_as_ipv6[28]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_loopback_link_type.py::test_dissects_every_bsd_address_family_value_as_ipv6[30]",
+      "verdict": "repaired",
+      "case": "tests/test_loopback_link_type.py::test_dissects_every_bsd_address_family_value_as_ipv6[30]",
+      "modules": [
+        "ja4plus/utils/loopback.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_loopback_link_type.py::test_the_ipv6_vector_produces_the_reference_ja4_fingerprint",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/loopback.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/loopback.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_parity.py::test_compute_ja4x_from_pem_returns_none_for_text_that_is_not_a_certificate",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_parity.py::test_the_command_line_program_accepts_every_type_name_and_reports_two_reference_values",
+      "verdict": "correct",
+      "reason": "The case asserts the JA4 and JA4S reference values and the exit code of ten type names. A mutation of the X.509 object identifier reader changes no JA4 value and no JA4S value.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_parity.py::test_the_ja4_raw_forms_match_the_reference",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_parity.py::test_the_ja4s_raw_forms_match_the_reference",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_parity.py::test_the_shard_key_matches_the_port_format",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_quic_crypto_buffer_bound.py::test_the_reassembler_names_no_large_buffer_for_any_hostile_offset[28]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_quic_crypto_buffer_bound.py::test_the_reassembler_names_no_large_buffer_for_any_hostile_offset[34]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_quic_crypto_buffer_bound.py::test_the_reassembler_names_no_large_buffer_for_any_hostile_offset[40]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_quic_crypto_buffer_bound.py::test_the_reassembler_names_no_large_buffer_for_any_hostile_offset[62]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_quic_utils.py::TestParseQuicInitial::test_a_truncated_long_header_returns_none_rather_than_raising",
+      "verdict": "correct",
+      "reason": "The case measures the guard and not the bound. With the guard removed the case fails: parse_quic_initial(b'\\xc0\\x00\\x00\\x00') raises `error: unpack requires a buffer of 4 bytes`. The two mutations move the bound alone, and the reader returns None for a payload of 19 bytes and for a payload of 20 bytes under the bound 20 and under the bound 21. No datagram of 20 bytes carries a ClientHello, so no input separates the two bounds.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_quic_utils.py::TestParseQuicInitial::test_too_short",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_quic_utils.py::TestParseQuicServerInitial::test_too_short_returns_none",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/quic_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/quic_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_state_table.py::TestTheCaptureReplay::test_the_replay_reaches_the_connection_that_holds_the_longest_gap",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/state_table.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/state_table.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_state_table.py::TestTheConstructor::test_the_constructor_refuses_a_maximum_entry_count_of_zero",
+      "verdict": "correct",
+      "reason": "The case passes 0 and expects a ValueError. The guard reads `max_connections < 1`. The mutation to `<= 1` and the mutation of 1 to 2 both still reject 0, so neither changes the result for this input.",
+      "modules": [
+        "ja4plus/utils/state_table.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_state_table.py::TestTheConstructor::test_the_constructor_refuses_a_negative_maximum_entry_count",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/state_table.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/state_table.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_state_table.py::TestTheConstructor::test_the_constructor_refuses_an_eviction_interval_below_one",
+      "verdict": "correct",
+      "reason": "The case passes 0 and expects a ValueError. The guard reads `eviction_interval < 1`. The mutation to `<= 1` and the mutation of 1 to 2 both still reject 0, so neither changes the result for this input.",
+      "modules": [
+        "ja4plus/utils/state_table.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_state_table.py::TestTheDictionaryInterface::test_a_read_of_an_absent_key_raises_key_error",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/state_table.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/state_table.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tcp_stream.py::TestTCPStreamMaximumAge::test_the_default_maximum_age_passes_the_longest_gap_of_the_vectors",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tcp_stream.py::TestTCPStreamMaximumAge::test_the_module_reads_no_wall_clock",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tcp_stream.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tcp_stream.py::TestTCPStreamReassembler::test_the_base_sequence_of_an_unknown_stream_is_none",
+      "verdict": "correct",
+      "reason": "The case runs 2 lines of ja4plus/utils/tcp_stream.py, and the sweep changes none of those lines.",
+      "modules": [
+        "ja4plus/utils/tcp_stream.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tunnels.py::TestInnermostLayer::test_the_helper_reads_an_address_layer_of_each_version",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tunnels.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tunnels.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tunnels.py::TestInnermostLayer::test_the_helper_returns_none_when_the_packet_holds_no_such_layer",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tunnels.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tunnels.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tunnels.py::TestInnermostLayer::test_the_helper_returns_the_inner_address_layer_of_a_tunnel",
+      "verdict": "correct",
+      "reason": "The case runs 7 lines of ja4plus/utils/tunnels.py, and the sweep changes none of those lines.",
+      "modules": [
+        "ja4plus/utils/tunnels.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tunnels.py::TestInnermostLayer::test_the_helper_returns_the_inner_port_layer_of_a_tunnel",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tunnels.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tunnels.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tunnels.py::TestInnermostLayer::test_the_helper_returns_the_only_address_layer_of_a_plain_packet",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tunnels.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tunnels.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_tunnels.py::TestRegisterTunnelDissectors::test_the_registration_returns_a_tuple_of_module_names",
+      "verdict": "repaired",
+      "case": "tests/test_tunnels.py::TestRegisterTunnelDissectors::test_the_registration_names_every_tunnel_module_the_scapy_release_ships",
+      "modules": [
+        "ja4plus/utils/tunnels.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_all_16_grease_values",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_common_extension_types_not_grease",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_common_non_grease_cipher_suites",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_grease_as_hex_string",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_grease_edge_values",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_grease_empty_string",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_grease_invalid_types",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_grease_none_and_zero",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestGREASEDetection::test_non_grease_hex_string",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_a_complete_http_request_can_become_an_http_request",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_a_partial_method_name_can_become_an_http_request",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_a_string_buffer_can_become_an_http_request",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_a_tls_record_cannot_become_an_http_request",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_an_empty_buffer_can_become_an_http_request",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_extract_http_info_cookie_fields",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_extract_http_info_from_packet",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_extract_http_info_headers_as_list",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_extract_http_info_no_raw",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_extract_http_info_referer",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_is_http_request_false",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_is_http_request_string_input",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_is_http_request_true",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_parse_all_methods",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_parse_cookies",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_parse_empty_data",
+      "verdict": "correct",
+      "reason": "The case runs 2 lines of ja4plus/utils/http_utils.py, and the sweep changes none of those lines.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_parse_get_request",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_parse_no_cookies",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_parse_non_http_data",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestHTTPParsing::test_parse_post_request",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestOIDEncoding::test_common_oids",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestOIDEncoding::test_different_oids_produce_different_hex",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestOIDEncoding::test_extension_oids",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestOIDEncoding::test_oid_consistent",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestOIDEncoding::test_state_province_oid",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_extract_hassh_from_kexinit",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_extract_hassh_non_kexinit",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_is_not_ssh",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_is_ssh_banner",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_is_ssh_kexinit_test_format",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_parse_empty_data",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_parse_short_data",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_parse_ssh_banner",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestSSHParsing::test_parse_test_kexinit",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, ja4plus/utils/tls_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py",
+        "ja4plus/utils/tls_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_extract_tls_info_from_packet",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_extract_tls_info_no_raw",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_extract_tls_info_with_tls_info_attr",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_grease_in_ciphers_parsed",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_alpn",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_client_hello_basic",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_client_hello_with_sni",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_client_hello_without_sni",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_empty_data",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_non_handshake",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_server_hello",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_server_hello_reads_a_record_the_segment_truncates",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_server_hello_reads_no_extension_after_the_hello_message",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_server_hello_rejects_a_truncated_hello_message",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_signature_algorithms",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_supported_versions",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_utils.py::TestTLSParsing::test_parse_too_short",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/http_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/http_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_x509_certificate_reader.py::test_the_reader_returns_nothing_for_hostile_input[a sequence header and no body-0\\x82\\xff\\xff]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_x509_certificate_reader.py::test_the_reader_returns_nothing_for_hostile_input[a sequence of an impossible length-0\\x83\\xff\\xff\\xff\\x06\\x03U\\x04\\x06\\x03U\\x04\\x06\\x03U\\x04\\x06\\x03U\\x04\\x06\\x03U\\x04\\x06\\x03U\\x04\\x06\\x03U\\x04\\x06\\x03U\\x04]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_x509_certificate_reader.py::test_the_reader_returns_nothing_for_hostile_input[a sequence that carries the OID pattern-0\\n\\x06\\x03U\\x04\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_x509_certificate_reader.py::test_the_reader_returns_nothing_for_hostile_input[plain text-GET / HTTP/1.1\\r\\nHost: ja4plus.test\\r\\n\\r\\n]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_x509_certificate_reader.py::test_the_reader_returns_nothing_for_hostile_input[set bytes-\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_x509_certificate_reader.py::test_the_reader_returns_nothing_for_hostile_input[zero bytes-\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00]",
+      "verdict": "correct",
+      "reason": "Coverage with one context for each case reports that the case runs no line of ja4plus/utils/x509_utils.py, so no mutation of that module reaches it.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    },
+    {
+      "candidate": "tests/test_x509_certificate_reader.py::test_the_reader_returns_nothing_for_input_that_is_no_sequence_of_bytes",
+      "verdict": "correct",
+      "reason": "The case runs 3 lines of ja4plus/utils/x509_utils.py, and the sweep changes none of those lines.",
+      "modules": [
+        "ja4plus/utils/x509_utils.py"
+      ]
+    }
+  ]
+}
