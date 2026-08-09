@@ -6,6 +6,26 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **The lookup cache remembers no key it evicts, and it saves 16.06 MiB** (#359).
+  Round TBD. `StateTable` remembers the key of every entry it evicts, and that memory
+  buys `returned_connections`. `Processor.stats` collects the state tables of the
+  fingerprinters, and `JA4DBClient` is no fingerprinter, so nothing under `ja4plus/`
+  reads the count for the lookup cache. `BoundedStateTable` now takes
+  `track_evictions`, it defaults to True, and every existing caller keeps the statistic
+  it had. The lookup cache is the one caller that states False. **A full lookup cache of
+  100000 entries falls from 47.06 MiB to 31.00 MiB under `tracemalloc`.** It falls
+  from 44.66 MiB to 28.60 MiB under `sys.getsizeof`. The two methods agree on the saving to
+  0.00 MiB. The eviction count stands, so FR-concurrency-safety-12 holds for this table,
+  and the invariant `inserts == entries + evictions + removals` holds. **#279 measured
+  the 512 MiB ceiling case without a lookup cache**, so this saving moves none of its
+  four runs. No file under `ja4plus/fingerprinters/` changes, no fingerprint moves, and
+  the register holds 135 keys against 135 xfailed. **A first form of the new cases
+  turned the resident-memory control of #279 red**, because each one loaded the whole
+  mapping file into the session. The cases now patch `load_mapping_file` to an empty
+  mapping. A deselect run proves that the production change causes none of it.
+
 ### Fixed
 
 - **The example that a merge restored is absent again** (#368). Round 124.
