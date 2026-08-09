@@ -3,7 +3,7 @@ id: live-capture
 feature: Live capture
 epic: "Epic 6: Live capture"
 status: issued
-issues: [17, 53, 54, 55, 56]
+issues: [17, 53, 54, 55, 56, 320]
 mockups: []
 ---
 
@@ -13,8 +13,9 @@ mockups: []
 them, and never calls `cleanup_connection`. A monitor started on a busy interface
 grows until the host stops it.
 
-`examples/monitoring_daemon.py` shows an operator what a real monitor needs. An
-example is not a supported mode: nothing tests it, and nothing keeps it working.
+`examples/monitoring_daemon.py` showed an operator what a real monitor needs. An
+example is not a supported mode: nothing tested it, and nothing kept it working. #56
+removed the file, and `docs/usage.md` documents the command in its place.
 
 This feature set makes a long-running monitor a supported mode.
 
@@ -113,6 +114,10 @@ The statistics line, written to standard error:
   when `--stats-interval` is passed.
 - A signal handler sets a flag. It does not call `sys.exit`, because a signal may
   arrive while the output buffer is half written.
+- The command reads the flag after each packet and after each poll interval, so an
+  interface that carries no traffic stops the monitor within one second of the signal.
+- The command opens the capture socket and holds it open across the `sniff` calls, so
+  it loses no packet between two calls.
 - The privilege check uses a failed capture attempt, not `os.geteuid`. A Linux host
   may grant the capability without granting the user identity zero.
 - Dropped-packet counts come from the capture layer when it reports them, and are
@@ -127,21 +132,44 @@ The statistics line, written to standard error:
 - Removed file `examples/monitoring_daemon.py`, replaced by documentation of the
   supported command.
 - New file `tests/test_watch.py`.
+- New file `tests/test_watch_stop.py`, holding the stop on an interface that carries no
+  traffic.
 
 ## Interfaces
 
-The monitor reads packets through `scapy`. Two entry points matter.
+The monitor reads packets through `scapy`. Four entry points matter.
 
 | What | Call | Note |
 |---|---|---|
-| Read from an interface | `scapy.all.sniff(prn=..., iface=..., store=0, filter=...)` | `store=0` is required. Without it `scapy` keeps every packet. |
-| Stop reading | `sniff(stop_filter=...)` | The stop filter reads the flag the signal handler set. |
+| Open the socket | `resolve_iface(name).l2listen()(type=ETH_P_ALL, iface=name, filter=...)` | The command opens the socket, in the order `AsyncSniffer._run` holds. `libpcap` compiles the filter here. |
+| Read from an interface | `scapy.all.sniff(prn=..., store=0, opened_socket=..., timeout=...)` | `store=0` is required. Without it `scapy` keeps every packet. |
+| Stop reading | `sniff(stop_filter=...)`, and the loop that reads the flag | The stop filter reads the flag after a packet. The loop reads it after each timeout, because `scapy` applies the filter to a packet and to nothing else. |
+| List the interfaces | `scapy.all.get_if_list()` | The call needs no privilege, so an error message reads the list. |
+
+`AsyncSniffer._run` closes the sockets it opened itself and no other socket, so a socket
+the command opened stays open across the `sniff` calls and the host buffer holds every
+packet that arrives between two calls. #320 records the reading.
 
 Verified against: https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
-(scapy 2.6, retrieved 2026-08-06).
+(scapy 2.6, retrieved 2026-08-06). The `opened_socket` reading comes from `scapy` 2.7.0,
+at `scapy/sendrecv.py:1268`, `scapy/sendrecv.py:1331` and `scapy/sendrecv.py:1391`, read
+on 2026-08-08.
 
 Opening a capture interface needs elevated privileges. On Linux the capability is
 `CAP_NET_RAW`. On macOS the operator needs read access to the `/dev/bpf*` devices.
+
+`scapy` 2.7.0 reports three failures, and each one carries its own class and text. #56
+records the four line numbers.
+
+| Failure | Class | Text | Source |
+|---|---|---|---|
+| The host refuses the `/dev/bpf` device. | `Scapy_Exception` | `Permission denied: could not open /dev/bpf0. ...` | `scapy/arch/bpf/core.py:59` |
+| The host holds no such interface. | `ValueError` | `Interface 'nosuchif0' not found !` | `scapy/interfaces.py:434` |
+| `libpcap` refuses the filter. | `Scapy_Exception` | `Failed to compile filter expression tcp port (-1)` | `scapy/arch/common.py:129` |
+| A socket wraps the filter failure. | `Scapy_Exception` | `Cannot set filter: ...` | `scapy/arch/bpf/supersocket.py:218` and `scapy/arch/linux/__init__.py:232` |
+
+The Linux socket calls raise `OSError` and `scapy` wraps neither. `EPERM` and `EACCES`
+name a refused privilege, and `ENODEV` names an interface the host does not hold.
 
 ## Edge cases & failures
 
@@ -154,6 +182,8 @@ Opening a capture interface needs elevated privileges. On Linux the capability i
 | The connection table reaches its maximum. | The least recently used connection is evicted, and the eviction count rises. |
 | `SIGTERM` arrives while a line is half written. | The handler sets the flag. The loop finishes the line, then exits. |
 | The interface produces no traffic. | The command reports statistics with zero counts and keeps waiting. |
+| `SIGTERM` arrives while the interface produces no traffic. | The loop reads the flag after the poll interval, and the command exits within one second. |
+| A packet arrives as one poll interval expires. | The host buffers it on the open socket, and the next `sniff` call reports it. |
 | The disk fills while writing the output file. | The command reports the error on standard error and exits with status 1. |
 | The command runs on Windows. | The command reports that Windows is not supported and exits with status 1. |
 
@@ -166,6 +196,9 @@ Opening a capture interface needs elevated privileges. On Linux the capability i
 - [ ] A connection that stops sending is absent from the connection table after
       `--connection-timeout` seconds of capture time.
 - [ ] Sending `SIGTERM` to the monitor produces exit status zero.
+- [ ] A monitor on an interface that carries no traffic exits within one second of
+      `SIGTERM`.
+- [ ] The monitor loses no packet that arrives at the boundary of two `sniff` calls.
 - [ ] The output file written before `SIGTERM` holds every fingerprint the monitor
       reported.
 - [ ] The final statistics line reports the packet count, the fingerprint count,
@@ -190,5 +223,12 @@ Opening a capture interface needs elevated privileges. On Linux the capability i
 
 ## Open questions
 
-- Whether `scapy` reports dropped-packet counts on both Linux and macOS. The first
-  issue in this epic measures it, and the field is `null` where it does not.
+- Whether `scapy` reports dropped-packet counts on both Linux and macOS. #55 measured
+  it against `scapy` 2.7.0, and the field reads `null`. On macOS the capture socket
+  reads a drop count through the `BIOCGSTATS` ioctl, at
+  `scapy/arch/bpf/supersocket.py:297`, and `sniff` holds the socket it opens in a local
+  name, so a caller reaches that socket through the `opened_socket` argument alone. On
+  Linux `scapy` defines `PACKET_STATISTICS = 6` at `scapy/arch/linux/__init__.py:95`
+  and calls `getsockopt` with that option nowhere. The macOS reading ran on macOS
+  25.6.0. The Linux reading is a reading of the `scapy` source, and no Linux host ran
+  it. #326 owns the socket work that reports a count, and it follows #56.

@@ -52,8 +52,17 @@ ja4plus --format json analyze capture.pcap
 # Only specific fingerprint types
 ja4plus --types ja4,ja4t analyze capture.pcap
 
-# Live capture (requires root)
+# Read packets from an interface (needs the capture privilege)
+sudo ja4plus watch eth0
+
+# `live` is an alias of `watch`
 sudo ja4plus live eth0
+
+# Bound the connection table of the monitor
+sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
+
+# Apply a capture filter
+sudo ja4plus watch eth0 --bpf "tcp port 443"
 
 # Fingerprint a certificate
 ja4plus cert server.der
@@ -68,9 +77,33 @@ ja4plus analyze capture.pcap --format json --output results.json
 ja4plus analyze capture.pcap --format json --output results.json --force
 ```
 
-Every option runs before the subcommand name and after it.
+The five output options run before the subcommand name and after it.
 `ja4plus --format json analyze capture.pcap` and
-`ja4plus analyze capture.pcap --format json` do the same thing.
+`ja4plus analyze capture.pcap --format json` do the same thing. The five are
+`--format`, `--types`, `--lookup`, `--output` and `--force`.
+
+`--max-connections`, `--connection-timeout`, `--stats-interval` and `--bpf` belong to
+`watch` alone, so they run after the subcommand name.
+
+`--bpf` passes a Berkeley Packet Filter expression to the capture layer, which drops
+every packet the filter rejects.
+
+The monitor reads no user identity. It attempts the capture and reads the failure, so a
+Linux host that grants `CAP_NET_RAW` without the user identity zero runs it. Where the
+capture fails, the command names the privilege, lists the interfaces of the host, or
+reports the filter error, and it ends the run with the status 1. The command runs on
+Linux and on macOS, and it reports that Windows carries no monitor.
+
+`SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
+The monitor finishes the line it writes, flushes the output, and exits, so the output
+file holds every fingerprint it reported.
+
+The monitor writes one statistics line to standard error when it exits, and
+`--stats-interval SECONDS` adds a line for each interval that passes.
+
+```
+[ja4plus] packets=1284302 fingerprints=48211 connections=8134 evicted=112094 dropped=0 uptime=3600s
+```
 
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 
@@ -262,6 +295,19 @@ See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter an
 | JA4SSH | `c{mode}s{mode}_c{pkts}s{pkts}_c{acks}s{acks}` | `c36s36_c51s80_c69s0` |
 | JA4D | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `disco0000in_61-55_1-3-6-42` |
 | JA4D6 | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `solct0014nn_1-6-8-25_23-24` |
+
+## What a Fingerprint Is Evidence Of
+
+**A fingerprint is evidence of the bytes the packet carried. It is no evidence of a real
+client.**
+
+ja4plus adds no plausibility guard. A structurally valid ClientHello produces a
+fingerprint, whatever its body holds. Any sender can build bytes that produce a well
+formed fingerprint. Read a fingerprint from untrusted traffic as a description of those
+bytes and nothing more.
+
+The behaviour follows the FoxIO reference, because no FoxIO material rejects such a
+packet. [`docs/output-schema.md`](docs/output-schema.md) states the property in full.
 
 ## Spec Validation
 

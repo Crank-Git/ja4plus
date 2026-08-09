@@ -4,7 +4,8 @@ JA4+ CLI - Command-line interface for network fingerprinting.
 
 Subcommands:
   analyze <pcap_file>  Fingerprint packets in a PCAP file
-  live <interface>     Live capture from a network interface
+  watch <interface>    Read packets from a network interface
+  live <interface>     An alias of watch
   cert <cert_file>     Fingerprint an X.509 certificate (DER or PEM)
 """
 
@@ -15,6 +16,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import dataclasses
+import math
 import os
 import sys
 from datetime import datetime, timezone
@@ -25,6 +27,19 @@ from ja4plus.output import OutputWriter, build_writer
 from ja4plus.processor import Processor
 from ja4plus.types import FingerprintResult
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
+from ja4plus.watch import (
+    CAPTURE_FAILURES,
+    DEFAULT_CONNECTION_TIMEOUT,
+    DEFAULT_MAX_CONNECTIONS,
+    Monitor,
+    available_interfaces,
+    describe_capture_failure,
+    read_interface,
+    report_statistics,
+    stop_on_signal,
+    unsupported_platform_message,
+    write_statistics,
+)
 
 if TYPE_CHECKING:
     # Each command imports scapy and the lookup client where it needs them, so an
@@ -426,20 +441,33 @@ def cmd_analyze(args: argparse.Namespace) -> None:
     _report_no_result(args, count)
 
 
-def cmd_live(args: argparse.Namespace) -> None:
-    """Handle the 'live' subcommand."""
-    if os.geteuid() != 0:
-        print(
-            "Error: live capture requires root privileges.\n"
-            f"Try: sudo ja4plus live {args.interface}",
-            file=sys.stderr,
-        )
+def cmd_watch(args: argparse.Namespace) -> None:
+    """Handle the `watch` subcommand, and the `live` alias of it.
+
+    The command owns the connection table. It records the connection of every packet it
+    reads, and it evicts a connection on the entry count or on the entry age.
+    `ja4plus/watch.py` holds the table and the loop. Version 0.6.0 called
+    `Processor.cleanup_connection` never, so its monitor grew until the host stopped it.
+
+    The command reads no user identity. It attempts the capture and reads the failure,
+    because a Linux host grants `CAP_NET_RAW` without granting the user identity zero.
+    Version 0.6.0 read `os.geteuid() != 0` and refused that operator.
+
+    Args:
+        args: The parsed command line. It carries `interface`, `max_connections`,
+            `connection_timeout` and `bpf`, plus the five output options.
+    """
+    # `os.geteuid` is absent on Windows, so a check that read it raised `AttributeError`
+    # there. FR-live-capture-13 names Linux and macOS, and Windows is out of scope.
+    refusal = unsupported_platform_message(sys.platform, args.command)
+    if refusal is not None:
+        print(refusal, file=sys.stderr)
         sys.exit(1)
 
     types = _parse_types(args.types) if args.types else list(VALID_TYPES)
     order = _reporting_order(types)
-    # FR-structured-output-11 asks for one processor. A live capture runs without an
-    # end, so the connection eviction of Epic 3 matters most here.
+    # FR-structured-output-11 asks for one processor. A monitor runs without an end, so
+    # the connection eviction of Epic 3 matters most here.
     processor = Processor()
     ja4db_client = _init_lookup(args)
 
@@ -451,27 +479,72 @@ def cmd_live(args: argparse.Namespace) -> None:
 
         print(f"Starting live capture on '{args.interface}'... (Ctrl-C to stop)", file=sys.stderr)
 
-        def process_packet(packet: Packet) -> None:
+        def report(packet: Packet) -> None:
             batch = _fingerprint_one_packet(packet, processor, order)
             if batch:
                 _write_results(batch, writer, ja4db_client)
                 stream.flush()
+                # FR-live-capture-8 asks for the fingerprint count. The monitor counts
+                # the packet and the report counts what the packet produced.
+                monitor.stats.count_fingerprints(len(batch))
+
+        monitor = Monitor(
+            processor,
+            report,
+            max_connections=args.max_connections,
+            connection_timeout=args.connection_timeout,
+        )
 
         try:
-            from scapy.all import sniff
-
-            sniff(
-                prn=process_packet,
-                iface=args.interface if args.interface != "any" else None,
-                store=0,
-            )
+            # FR-live-capture-5 and FR-live-capture-6 ask for a clean exit on a signal.
+            # The handler sets a flag and the capture reads the flag after each packet
+            # and after each poll interval, so the loop finishes the line it writes. A
+            # handler that called `sys.exit` would end the run at the point the signal
+            # arrived, and that point holds half a line whenever the signal arrives
+            # during a write.
+            with stop_on_signal() as stop:
+                # FR-live-capture-9 asks for the schedule, and FR-live-capture-10 puts
+                # the line on standard error. The thread ends when the capture returns,
+                # so a monitor that reads a termination signal starts no line after it.
+                with report_statistics(monitor.stats, args.stats_interval, sys.stderr):
+                    # #320 asks the monitor to stop on an interface that carries no
+                    # traffic. `stop_filter` reads a packet, and `stop_requested` reads
+                    # the flag after each poll interval, so a quiet interface stops the
+                    # monitor too.
+                    read_interface(
+                        args.interface,
+                        monitor.handle_packet,
+                        stop.stop_after,
+                        capture_filter=args.bpf,
+                        stop_requested=stop.requested,
+                    )
+            if stop.requested():
+                print("\nCapture stopped.", file=sys.stderr)
         except KeyboardInterrupt:
             print("\nCapture stopped.", file=sys.stderr)
         except BrokenPipeError:
             # The reader of standard output went away. `main` ends the run quietly, and
-            # the catch below would report it as a capture error.
+            # the catch below would report it as a capture error. `BrokenPipeError`
+            # inherits `OSError`, so this clause must precede the capture clause.
             raise
+        except CAPTURE_FAILURES as error:
+            # FR-live-capture-12 asks for a clear error. The command attempts the
+            # capture and reads the failure, so a host that grants the privilege through
+            # a capability is not refused on its user identity.
+            print(
+                describe_capture_failure(
+                    error,
+                    interface=args.interface,
+                    command=args.command,
+                    capture_filter=args.bpf,
+                    interfaces=available_interfaces(),
+                ),
+                file=sys.stderr,
+            )
+            sys.exit(1)
         except Exception as e:
+            # The capture layer raises one of `CAPTURE_FAILURES`, so this clause reads a
+            # failure of the report path. #319 owns the bare catches of this module.
             print(f"Error during capture: {e}", file=sys.stderr)
             sys.exit(1)
 
@@ -480,7 +553,19 @@ def cmd_live(args: argparse.Namespace) -> None:
         trailing = _close_open_windows(processor, order)
         if trailing:
             _write_results(trailing, writer, ja4db_client)
-            stream.flush()
+            # The exit summary reports every fingerprint the command wrote, and the
+            # trailing window is a fingerprint the command wrote.
+            monitor.stats.count_fingerprints(len(trailing))
+
+        # FR-live-capture-7 asks for a flush before the exit. The stream holds a buffer,
+        # and the operator reads the file of a monitor that runs for weeks. A flush that
+        # the interpreter runs at shutdown reaches no reader of a running monitor, and it
+        # reaches no file after a host kills the process.
+        stream.flush()
+
+        # FR-live-capture-8 asks for statistics on exit. The line follows the flush, so
+        # the counts it reports describe output the operator can already read.
+        write_statistics(monitor.stats, sys.stderr)
 
 
 def cmd_cert(args: argparse.Namespace) -> None:
@@ -583,6 +668,87 @@ def cmd_db(args: argparse.Namespace) -> None:
     print(f"Updated: {entry_count} fingerprint entries written to {_BUNDLED_CSV}")
 
 
+def _max_connections(value: str) -> int:
+    """Return the maximum connection count the user stated.
+
+    A table that holds fewer than one connection tracks nothing, and `BoundedStateTable`
+    raises `ValueError` for it. The command reports the refusal instead of a traceback.
+
+    Args:
+        value: The text the user wrote after `--max-connections`.
+
+    Returns:
+        The count as an integer.
+
+    Raises:
+        argparse.ArgumentTypeError: The text is no integer, or it is below one.
+    """
+    try:
+        count = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--max-connections needs a whole number, and it is {value}"
+        )
+    if count < 1:
+        raise argparse.ArgumentTypeError(f"--max-connections must be 1 or more, and it is {count}")
+    return count
+
+
+def _connection_timeout(value: str) -> float:
+    """Return the maximum connection age the user stated, in seconds.
+
+    Args:
+        value: The text the user wrote after `--connection-timeout`.
+
+    Returns:
+        The age as a count of seconds.
+
+    Raises:
+        argparse.ArgumentTypeError: The text is no number, or it is below zero. A
+            negative age evicts every connection on the first pass.
+    """
+    try:
+        seconds = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"--connection-timeout needs a number, and it is {value}")
+    if seconds < 0:
+        raise argparse.ArgumentTypeError(
+            f"--connection-timeout must be 0 or more, and it is {seconds}"
+        )
+    return seconds
+
+
+def _stats_interval(value: str) -> float:
+    """Return the statistics interval the user stated, in seconds.
+
+    Args:
+        value: The text the user wrote after `--stats-interval`.
+
+    Returns:
+        The interval as a count of seconds.
+
+    Raises:
+        argparse.ArgumentTypeError: The text is no number, or it is 0 or less, or it is
+            no finite number. An interval of zero writes a statistics line without an
+            end. `Event.wait` returns at once for `nan`, which writes a line without an
+            end, and it raises `OverflowError` for `inf`, which ends the statistics
+            thread and leaves the monitor running.
+    """
+    try:
+        seconds = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"--stats-interval needs a number, and it is {value}")
+    if not math.isfinite(seconds):
+        raise argparse.ArgumentTypeError(
+            f"--stats-interval needs a finite number, and it is {value}"
+        )
+    if seconds <= 0:
+        raise argparse.ArgumentTypeError(
+            f"--stats-interval must be more than 0, and it is {seconds}"
+        )
+    return seconds
+
+
 def _add_output_options(parser: argparse.ArgumentParser, *, defaults: bool) -> None:
     """Add the five options that every result-producing subcommand accepts.
 
@@ -651,10 +817,55 @@ def main() -> None:
     analyze_parser.add_argument("pcap_file", help="Path to the PCAP file")
     _add_output_options(analyze_parser, defaults=False)
 
-    # live subcommand
-    live_parser = subparsers.add_parser("live", help="Live capture from a network interface")
-    live_parser.add_argument("interface", help="Network interface (e.g. eth0, any)")
-    _add_output_options(live_parser, defaults=False)
+    # watch subcommand, and the live alias FR-live-capture-14 keeps. One parser serves
+    # both names, so the two accept the same options and behave the same way.
+    watch_parser = subparsers.add_parser(
+        "watch", aliases=["live"], help="Read packets from a network interface"
+    )
+    watch_parser.add_argument("interface", help="Network interface (e.g. eth0, any)")
+    watch_parser.add_argument(
+        "--max-connections",
+        type=_max_connections,
+        default=DEFAULT_MAX_CONNECTIONS,
+        metavar="COUNT",
+        help=(
+            "Maximum number of tracked connections "
+            f"(default: {DEFAULT_MAX_CONNECTIONS}). When the table is full, the "
+            "monitor evicts the least recently used connection."
+        ),
+    )
+    watch_parser.add_argument(
+        "--connection-timeout",
+        type=_connection_timeout,
+        default=DEFAULT_CONNECTION_TIMEOUT,
+        metavar="SECONDS",
+        help=(
+            "Maximum age of a connection that sends no packet, in seconds "
+            f"(default: {int(DEFAULT_CONNECTION_TIMEOUT)})"
+        ),
+    )
+    watch_parser.add_argument(
+        "--stats-interval",
+        type=_stats_interval,
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Write a statistics line to standard error every SECONDS seconds "
+            "(default: no schedule). The monitor writes one statistics line on exit "
+            "whether or not this option is given."
+        ),
+    )
+    watch_parser.add_argument(
+        "--bpf",
+        default=None,
+        metavar="FILTER",
+        help=(
+            "Capture filter, in Berkeley Packet Filter syntax "
+            "(for example 'tcp port 443'). The capture layer drops every packet the "
+            "filter rejects, so the monitor never reads it."
+        ),
+    )
+    _add_output_options(watch_parser, defaults=False)
 
     # cert subcommand
     cert_parser = subparsers.add_parser("cert", help="Fingerprint an X.509 certificate")
@@ -678,8 +889,8 @@ def main() -> None:
     try:
         if args.command == "analyze":
             cmd_analyze(args)
-        elif args.command == "live":
-            cmd_live(args)
+        elif args.command in ("watch", "live"):
+            cmd_watch(args)
         elif args.command == "cert":
             cmd_cert(args)
         elif args.command == "db":

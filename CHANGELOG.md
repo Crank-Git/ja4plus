@@ -35,6 +35,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The documentation states what a fingerprint is evidence of** (#343). Round 110.
+  ja4plus adds no plausibility guard, so a structurally valid ClientHello produces a
+  fingerprint whatever its body holds. This change records the behaviour and changes
+  none of it, so no file under `ja4plus/` moves. A fingerprint is evidence of the bytes
+  the packet carried, and it is no evidence of a real client. `README.md` and
+  `docs/output-schema.md` now
+  state the property where a user reads it, and the `Divergence register` of
+  `docs/specs/spec.md` holds the measurement.
 - **The register records the kind of every decline** (#341). Round TBD.
   `tests/foxio_deviations.json` carries a `capability` field on all 135 entries, and
   `CAPABILITY_DECLINES` is gone from `tests/test_precedence_exception.py`. #334 shipped
@@ -166,6 +174,75 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`ja4plus watch` stops on an interface that carries no traffic** (#320). Round 105.
+  A monitor on a quiet interface exits within one second of `SIGINT` or of `SIGTERM`.
+  `scapy` applies the `stop_filter` argument of `sniff` to a packet and to nothing else,
+  and its capture loop waits in `select` without an end, so the monitor read the stop
+  flag when the next packet arrived and not when the signal arrived. An operator who ran
+  `systemctl stop` on such a monitor waited for the service timeout, and the host then
+  sent `SIGKILL`, which skips the flush. The command now opens the capture socket itself
+  and calls `sniff` with `opened_socket` and a timeout of 0.25 seconds, in a loop, and it
+  reads the stop flag after each call. The socket stays open across the calls, so the
+  monitor loses no packet that arrives between two of them. `--bpf` still applies, and
+  `libpcap` now compiles the expression when the socket opens. The command still starts
+  no thread other than the one `--stats-interval` starts.
+
+- **`ja4plus watch` applies a capture filter and reads the capture failure** (#56). Round
+  TBD. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
+  which drops every packet the filter rejects. The command reads no user identity. It
+  attempts the capture and reads the failure, so a Linux host that grants `CAP_NET_RAW`
+  without granting the user identity zero runs the monitor. Version 0.6.0 read
+  `os.geteuid() != 0`, which refused that operator and raised `AttributeError` on
+  Windows, where `os.geteuid` is absent. The command now names `CAP_NET_RAW` and the
+  `/dev/bpf*` devices for a refused privilege, lists every interface the host holds for
+  an interface it does not hold, and repeats the filter error for an expression the
+  capture layer refuses. Each of the three ends the run with the status 1. The command
+  runs on Linux and on macOS, and it reports that Windows carries no monitor and ends
+  the run with the status 1. `examples/monitoring_daemon.py` is removed, because
+  `ja4plus watch` is the supported monitor and `docs/usage.md` documents it.
+
+- **`ja4plus watch` reports statistics on exit and on a schedule** (#55). Round 103. The
+  monitor writes one statistics line when it exits, and `--stats-interval SECONDS` adds
+  a line for each interval that passes. Every line goes to standard error, so a pipe
+  that reads standard output reads fingerprints alone. The line reports the packet
+  count, the fingerprint count, the connection count, the eviction count, the
+  dropped-packet count and the uptime. `MonitorStats` holds the four counts under one
+  lock, and the capture thread publishes the two table counts, so the statistics thread
+  reads no state table. The statistics thread is the only thread the command starts, and
+  the command starts it only when the operator passes `--stats-interval`. The thread
+  ends with the capture, so a termination signal stops the monitor and the thread
+  together. The `dropped` field reads `null`, because `scapy` 2.7.0 reports no drop
+  count to a caller of `sniff`; #326 records the measurement and the work that reports a
+  count. The fingerprint count holds the trailing JA4SSH window that a capture leaves
+  open, which the command writes and #214 decided.
+
+- **`ja4plus watch` stops on a termination signal and flushes its output** (#54). Round
+  TBD. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
+  status zero. The handler sets a flag and returns. It calls `sys.exit` never, because a
+  signal arrives at any point, including the point where the output holds half a line.
+  `scapy` reads the flag through the `stop_filter` argument of `sniff`, and it applies
+  that filter after it reports a packet, so the monitor finishes the line it writes. The
+  command then flushes the output and exits, so the output file holds every fingerprint
+  the monitor reported. The command flushed the output only when it wrote a result, so a
+  monitor that produced no fingerprint left its header in the buffer. `scapy` applies the
+  filter on packet arrival alone, so an interface that carries no traffic reached that
+  filter never; the entry for #320 records the loop that repairs it.
+
+- **`ja4plus watch <interface>` reads an interface and bounds its connection table**
+  (#53). Round 101. `ja4plus live` stays as an alias of it, so a version 0.6.0 script
+  keeps working. The command owns the connection table, and that table holds a maximum
+  entry count and a maximum age. `--max-connections COUNT` sets the entry count, and it
+  defaults to 10000. `--connection-timeout SECONDS` sets the age, and it defaults to
+  300. When the table is full, the monitor evicts the least recently used connection.
+  When a connection sends no packet for the stated age of capture time, the monitor
+  evicts it too. Each eviction calls `Processor.cleanup_connection`, so it drops the
+  entry of the connection table and the per-connection state of all ten methods
+  together. Version 0.6.0 called `cleanup_connection` never, so its live capture held
+  the state of every connection it ever read and a monitor on a busy interface grew
+  until the host stopped it. Eviction runs on packet arrival, and the command starts no
+  thread for it. One million packets across 50000 connections leave the monitor holding
+  10000 connections and 7.20 MiB.
+
 - **`Processor.process_packet_with_method_errors` names the method that raised** (#51).
   Round 94. It returns the same results as `process_packet_with_errors`, and one pair
   of the method name and the exception for each method that raised. An exception names
@@ -265,6 +342,49 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   changed.
 
 ### Fixed
+
+- **The two handlers of the X.509 byte reader name the errors they expect** (#316).
+  Round 100. `extract_certificate_from_bytes` wrote `except Exception` twice, once
+  around the ASN.1 parse and once around the whole function body. #294 narrowed
+  neither, because it targeted the `(ValueError, TypeError, Exception)` form. The inner
+  list now names `ValueError` and `InvalidVersion`. The `cryptography` documentation
+  states `ValueError` alone, and a measurement of malformed candidates raised
+  `InvalidVersion` as well, which inherits `Exception` and not `ValueError`. The outer
+  list names `TypeError`, which `len()` raises for input that is no sequence. **The
+  reader still returns nothing and raises nothing for hostile input**: 13680 calls over
+  empty, truncated, textual, damaged and random data raised no error. **A defect of
+  this project now reaches a reader**, where the wide catch returned nothing. **No
+  fingerprint moves**: the conformance suite reports 1531 passed, 143 skipped and 135
+  xfailed before the change and after it. `tests/test_x509_certificate_reader.py` holds
+  16 cases, and one of the 12 new cases failed against the base.
+
+- **`extract_certificate_info` reads the module `x509`** (#309). Round 98.
+  `x509_utils.py:262` and `x509_utils.py:263` imported `x509` and `default_backend`
+  inside one branch, which made both names locals of the whole function. The parse at
+  `x509_utils.py:285` therefore raised `UnboundLocalError` for every packet whose
+  payload carried a certificate the reader found, and the wide handler below it returned
+  nothing. The module imports both names already, so the branch-local import bought
+  nothing, and this release removes it. **No caller inside `ja4plus/` calls the
+  function**, so no fingerprint moves: the conformance suite reports 1531 passed, 143
+  skipped and 135 xfailed before the change and after it.
+  `tests/test_x509_certificate_info.py` holds three cases, and one of them failed
+  against the base.
+
+- **The three X.509 handlers name the errors they expect** (#294). Round 97.
+  `ja4x.py:460`, `ja4x.py:490` and `x509_utils.py:267` each wrote
+  `except (ValueError, TypeError, Exception) as e:`. `Exception` is a superclass of the
+  other two names, so each handler caught every error while it read as a narrow catch.
+  `CLAUDE.md` states that a fingerprinter catches the parse errors it expects and catches
+  no bare `Exception`. The three lists now name the errors the `cryptography`
+  documentation states for the calls inside them: `ValueError` for
+  `load_der_x509_certificate`, `DuplicateExtension` and `UnsupportedGeneralNameType` for
+  `Certificate.extensions`, and `InvalidVersion` for `Certificate.version`.
+  `read_certificate` keeps `TypeError`, because `bytes()` raises it for input that is no
+  byte string. **A defect of this project now reaches a reader**, where the wide catch
+  logged it and returned nothing. **No fingerprint moves**: the conformance suite reports
+  1531 passed, 143 skipped and 135 xfailed before the change and after it.
+  `tests/test_ja4x_named_exceptions.py` holds 18 cases, and three of them failed against
+  the base.
 
 - **JA4 and JA4S write `s2` for the SSL 2.0 version value `0x0002`** (#227).
   `ja4.py:127`, `ja4.py:250` and `ja4s.py:393` wrote `s2` for `0x0200`, which is the
@@ -429,6 +549,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   equals the reference.
 
 ### Removed
+
+- **Four X.509 helpers leave `ja4plus/utils/x509_utils.py`** (#314). Round 99. The
+  user decided on 2026-08-08 that `extract_certificate_info` leaves the package before
+  version 1.0.0, together with the sibling helpers no caller uses. The four are
+  `extract_certificate_info`, `get_certificate_issuer`, `get_certificate_subject` and
+  `get_name_attribute`. `__all__` named none of the four, and a grep of `ja4plus/`,
+  `tests/`, `examples/` and `docs/` found no caller for any of them. `__all__` still
+  names 25 entries. `docs/api_reference.md` documented `extract_certificate_info` alone
+  of the four, and that row is gone. **Two plain `except Exception` handlers leave with
+  the function**, which #294 narrowed neither, because each wrote the plain form rather
+  than the deceptive form. **No fingerprint moves**: the conformance suite reports 1531
+  passed, 143 skipped and 135 xfailed before the change and after it.
+  `tests/test_x509_certificate_info.py` is now
+  `tests/test_x509_certificate_reader.py`, because it measures
+  `extract_certificate_from_bytes`, the reader that stays.
 
 - **The private helper `_src_is_client` leaves `ja4plus/fingerprinters/ja4l.py`**
   (#119). The helper read the outer address of a packet with `get_ip_layer`, and
