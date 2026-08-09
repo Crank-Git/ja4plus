@@ -764,6 +764,11 @@ file holds no entry for, FR-db-enrichment-2. The request goes to
 FR-db-enrichment-14. Version 1.0.0 is the first release that may make the interval
 configurable.
 
+`allow_remote` takes True or False, and the constructor raises `TypeError` for every
+other value. `cache_size` was the first parameter before #57, so `JA4DBClient(100)` asked
+for a lookup cache of 100 entries. That call now reads as a request for the remote
+lookup, and the client refuses it. Write `JA4DBClient(cache_size=100)` instead.
+
 The request needs the `requests` package, which the `lookup` extra installs. A client
 that reaches no service returns None for the miss, and it raises nothing,
 FR-db-enrichment-15. The same holds for a request that times out, for a status other

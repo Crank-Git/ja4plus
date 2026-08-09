@@ -132,6 +132,21 @@ class TestTheDefaultClientReachesNoNetwork:
         assert recorder.calls == []
 
 
+class TestTheConstructorRefusesAnAmbiguousCall:
+    """`cache_size` was the first parameter before #57."""
+
+    @pytest.mark.parametrize("value", [100, "yes", None, 0], ids=["int", "str", "none", "zero"])
+    def test_a_value_that_is_no_bool_raises_type_error(self, value):
+        """`JA4DBClient(100)` asked for a lookup cache of 100 entries. It now reads as a
+        request for the remote lookup, so the client refuses it."""
+        with pytest.raises(TypeError):
+            JA4DBClient(value)
+
+    def test_a_bool_builds_the_client(self):
+        assert JA4DBClient(True)._allow_remote is True
+        assert JA4DBClient(False)._allow_remote is False
+
+
 class TestTheOptInClient:
     """`JA4DBClient(allow_remote=True)` permits the remote lookup, FR-db-enrichment-2."""
 
@@ -152,6 +167,23 @@ class TestTheOptInClient:
         with patch.dict("sys.modules", {"requests": recorder}):
             assert client.lookup(KNOWN_FINGERPRINT) is not None
         assert recorder.calls == []
+
+    def test_a_fingerprint_that_carries_a_path_separator_names_no_other_path(self):
+        """`lookup` accepts any string, and the client escapes it before the request."""
+        payload = {"application": "Test Client", "type": "ja4", "notes": ""}
+        recorder = RecordingRequests(response=StubResponse(payload=payload))
+        client = JA4DBClient(allow_remote=True)
+        with patch.dict("sys.modules", {"requests": recorder}):
+            client.lookup("../../admin?q=1")
+        assert recorder.calls[0][0] == "https://ja4db.com/api/read/..%2F..%2Fadmin%3Fq%3D1"
+
+    def test_the_escape_moves_no_request_that_a_fingerprint_makes(self):
+        """A JA4+ fingerprint holds no character the escape changes."""
+        recorder = RecordingRequests(response=StubResponse(status_code=404))
+        client = JA4DBClient(allow_remote=True)
+        with patch.dict("sys.modules", {"requests": recorder}):
+            client.lookup(MISSING_FINGERPRINT)
+        assert recorder.calls[0][0] == f"https://ja4db.com/api/read/{MISSING_FINGERPRINT}"
 
     def test_the_remote_lookup_carries_a_timeout_of_five_seconds(self):
         """The remote lookup has a timeout, FR-db-enrichment-14."""

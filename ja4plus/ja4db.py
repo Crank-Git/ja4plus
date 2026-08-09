@@ -19,6 +19,7 @@ import csv
 import logging
 import os
 import threading
+from urllib.parse import quote
 
 from ja4plus.utils.state_table import DEFAULT_MAX_CONNECTION_AGE, BoundedStateTable
 
@@ -138,10 +139,17 @@ class JA4DBClient:
         cache_size: The maximum entry count of the lookup cache.
 
     Raises:
+        TypeError: `allow_remote` is no bool.
         ValueError: `cache_size` is below one.
     """
 
     def __init__(self, allow_remote: bool = False, cache_size: int = DEFAULT_CACHE_SIZE) -> None:
+        # `cache_size` was the first parameter before #57. A caller that wrote
+        # `JA4DBClient(100)` for a lookup cache of 100 entries would now permit the
+        # disclosure that #57 repairs, and would keep the default entry count. The
+        # client refuses that call rather than reach the lookup service for it.
+        if not isinstance(allow_remote, bool):
+            raise TypeError("allow_remote takes True or False")
         # A monitor looks every fingerprint it reads up, so a plain dictionary here holds
         # one entry for every fingerprint the traffic carries.
         self._cache = BoundedStateTable(
@@ -232,9 +240,14 @@ class JA4DBClient:
         except ImportError:
             return None
 
+        # `lookup` accepts any string, and a string that carries `/` or `?` would name
+        # another path on the service. A JA4+ fingerprint holds no character that the
+        # escape changes, so the escape moves no request the project makes.
+        path = quote(fingerprint, safe="")
+
         try:
             resp = requests.get(
-                f"https://ja4db.com/api/read/{fingerprint}",
+                f"https://ja4db.com/api/read/{path}",
                 timeout=_REMOTE_TIMEOUT,
                 headers={"Accept": "application/json"},
             )

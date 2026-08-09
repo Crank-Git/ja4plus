@@ -21,7 +21,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that fails returns None and raises nothing. The lookup service publishes no versioned
   API document, so the client accepts one shape: an object that carries a non-empty
   `application` string. Version 0.6.0 read an object without that field as the
-  application `Unknown`, and the client now reads it as a miss.
+  application `Unknown`, and the client now reads it as a miss. `allow_remote` is the
+  first parameter of the constructor, where `cache_size` was, so `JA4DBClient(100)` now
+  raises `TypeError`. Write `JA4DBClient(cache_size=100)` instead. The client also
+  escapes the fingerprint it puts in the request path, so a string that carries `/` or
+  `?` names no other path on the lookup service.
 
 - **The command-line program separates results from diagnostics and gains `--output`**
   (#52). Round 95. The program writes results to standard output and every diagnostic
