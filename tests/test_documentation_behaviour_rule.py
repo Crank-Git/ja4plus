@@ -5,7 +5,7 @@ named `pytest --doctest-glob="*.md" README.md docs/`, and that command collects 
 and exits with the status 5. `--doctest-glob` collects an interactive session, written as
 `>>>` lines above the expected output, and every code sample of this project is a fenced
 code block. The two forms share nothing, so the rule named no check at all, and a reader
-of the feature file believed the samples were covered.
+of the feature file believed the rule covered the samples.
 
 `docs/specs/spec.md` named the same command in its Testing strategy table, so the defect
 lived in two files. #63 built `tests/test_documentation_samples.py` and stopped at the
@@ -13,14 +13,14 @@ rule rather than editing the specification inside a feature diff.
 
 Four groups of cases guard the amendment.
 
-1. The instrument cases run every `pytest` command the two records name, and require each
-   one to collect at least one case.
+1. The command cases run every `pytest` command the two records name, and require each one
+   to collect at least one case.
 2. The floor case requires the Behaviour rules to name one such command. An aggregate
    over an empty set passes, so a rule somebody deletes would satisfy group 1 alone.
 3. The discrimination cases prove the measurement fails where it must. The doctest command
    collects nothing today, and the counter reads zero for a file that holds no case.
-4. The reader cases prove the prose reader fails on an absent sentence, on a repeated
-   sentence, and on the text the rules held before this round.
+4. The reader cases prove three failures of the prose reader. It fails on an absent
+   sentence, on a repeated sentence, and on the text the rules held before this round.
 
 These cases read prose and run pytest collection in a subprocess. They import nothing
 from `ja4plus` and they produce no fingerprint.
@@ -43,12 +43,12 @@ REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 FEATURE_PAGE = REPOSITORY_ROOT / "docs" / "specs" / "features" / "08-documentation.md"
 SPECIFICATION = REPOSITORY_ROOT / "docs" / "specs" / "spec.md"
 
-# The sentence of the Behaviour rules that names the instrument for FR-documentation-4 and
+# The sentence of the Behaviour rules that names the command for FR-documentation-4 and
 # FR-documentation-5. The reader takes the command out of the backticks, so a case runs the
 # text a reader of the page runs.
 SAMPLE_COMMAND = re.compile(r"`(pytest [^`]+)` runs every code sample of the README and of")
 
-# The sentence of the Behaviour rules that names the instrument for FR-documentation-6.
+# The sentence of the Behaviour rules that names the command for FR-documentation-6.
 SCRIPT_COMMAND = re.compile(r"`(pytest [^`]+)` runs every script of")
 
 # The Documentation row of the Testing strategy table of `docs/specs/spec.md`. The row
@@ -58,19 +58,24 @@ STRATEGY_ROW = re.compile(
     r"\| Documentation \| Every code sample in the README and in `docs/`\. \| `(pytest [^`]+)` \|"
 )
 
-# The sentence that records why this project keeps the fenced form. #393 states the
+# The reason that records why this project keeps the fenced form. #393 states the
 # requirement: a later reader will otherwise propose the doctest form again.
+#
+# The reason takes two clauses, and a reader that took the first alone would accept a
+# sentence that reverses the claim. A sentence holding "collects an interactive session"
+# and no consequence states what the option does and refuses nothing.
 REFUSAL_REASON = re.compile(
-    r"the `--doctest-glob` option collects an interactive session", re.IGNORECASE
+    r"`--doctest-glob` option collects an interactive session", re.IGNORECASE
 )
+REFUSAL_CONSEQUENCE = re.compile(r"that option collects nothing here", re.IGNORECASE)
 
 # Every backticked span of the Behaviour rules that opens a pytest command. Group 1 reads
-# the whole command, so a rewording that keeps the command reaches the instrument cases.
+# the whole command, so a rewording that keeps the command reaches the command cases.
 PYTEST_SPAN = re.compile(r"`(pytest\s[^`]+)`")
 
 # The summary line of a pytest collection run. `--collect-only -q` writes one node
-# identifier per line and then this line. The count is parsed and never grepped, because a
-# page that holds the words `0 tests collected` would match a substring search.
+# identifier per line and then this line. The reader parses the count and never greps it,
+# because a page that holds the words `0 tests collected` would match a substring search.
 COLLECTED_SUMMARY = re.compile(r"^(\d+) tests? collected", re.MULTILINE)
 
 # pytest exits with this status when a command collects no case at all. The doctest command
@@ -166,6 +171,10 @@ def collect(command: str) -> Tuple[int, int]:
     if not arguments or arguments[0] != "pytest":
         raise ValueError(f"the command {command!r} does not open with the word 'pytest'")
     environment = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    # `PYTEST_ADDOPTS` of the parent environment would reach this run and change the summary
+    # line, so a coverage option or an xdist option would break the parse for a reason that
+    # has nothing to do with the rule under test.
+    environment.pop("PYTEST_ADDOPTS", None)
     completed = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider"]
         + arguments[1:],
@@ -178,9 +187,12 @@ def collect(command: str) -> Tuple[int, int]:
         return 0, completed.returncode
     summary = COLLECTED_SUMMARY.search(completed.stdout)
     if summary is None:
+        # A usage error exits 4 and writes the diagnostic to standard error, so a message
+        # that carried standard output alone would name no reason.
         raise AssertionError(
             f"the collection run of {command!r} wrote no summary line. "
-            f"Its exit status is {completed.returncode} and its output is:\n{completed.stdout}"
+            f"Its exit status is {completed.returncode}, its standard output is:\n"
+            f"{completed.stdout}\nand its standard error is:\n{completed.stderr}"
         )
     return int(summary.group(1)), completed.returncode
 
@@ -198,7 +210,7 @@ def stated_pytest_commands(document: str) -> List[str]:
     return PYTEST_SPAN.findall(document)
 
 
-class TestTheInstrumentTheRecordsName:
+class TestTheCommandsTheRecordsName:
     """Check that every pytest command the two records name collects at least one case.
 
     #393 states the requirement: every rule that names a command names one that runs
@@ -268,18 +280,47 @@ class TestTheRulesRecordWhyTheFencedFormStays:
     """Check that the Behaviour rules record why this project keeps the fenced form.
 
     #393 requires the reason in the rule and not the command alone. A later reader will
-    otherwise propose the doctest form again, and rewriting 44 fenced samples would buy no
-    coverage the harness already provides.
+    otherwise propose the doctest form again, and a rewrite of 44 fenced samples would buy
+    no coverage the harness already provides.
+
+    The reason takes two clauses, and each case below reads both. A reader of the first
+    clause alone would accept a sentence that reverses the claim, because the words
+    `collects an interactive session` state what the option does and refuse nothing.
     """
 
     def test_the_behaviour_rules_state_that_the_doctest_option_reads_a_session(self) -> None:
-        assert REFUSAL_REASON.search(behaviour_rules(FEATURE_PAGE)) is not None, (
-            "the Behaviour rules record no reason for the fenced form"
+        rules = behaviour_rules(FEATURE_PAGE)
+        assert REFUSAL_REASON.search(rules) is not None, (
+            "the Behaviour rules state no reading of the `--doctest-glob` option"
+        )
+
+    def test_the_behaviour_rules_state_that_the_doctest_option_collects_nothing_here(
+        self,
+    ) -> None:
+        rules = behaviour_rules(FEATURE_PAGE)
+        assert REFUSAL_CONSEQUENCE.search(rules) is not None, (
+            "the Behaviour rules state no consequence for the `--doctest-glob` option"
         )
 
     def test_the_reader_of_the_reason_rejects_a_document_that_states_it_nowhere(self) -> None:
         """The reader reports an absent reason, so a deletion fails rather than passes."""
-        assert REFUSAL_REASON.search("A code sample is tested by `pytest --doctest-glob`.") is None
+        document = "A code sample is tested by `pytest --doctest-glob`."
+        assert REFUSAL_REASON.search(document) is None
+        assert REFUSAL_CONSEQUENCE.search(document) is None
+
+    def test_the_reader_of_the_reason_rejects_a_sentence_that_states_no_consequence(
+        self,
+    ) -> None:
+        """The reader rejects a sentence that reads the option and refuses nothing.
+
+        A reader of the first clause alone would accept this text, and the text records no
+        reason to keep the fenced form.
+        """
+        document = (
+            "The `--doctest-glob` option collects an interactive session, and this project uses it."
+        )
+        assert REFUSAL_REASON.search(document) is not None
+        assert REFUSAL_CONSEQUENCE.search(document) is None
 
 
 class TestTheMeasurementDiscriminates:

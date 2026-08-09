@@ -505,64 +505,68 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
-- **The documentation behaviour rule names the instrument that runs, and a case holds every
-  named command to a collection** (#393). Round TBD. The Behaviour rules of
+- **The documentation behaviour rule names a command that runs, and a case holds every named
+  command to a collection** (#393). Round TBD. The Behaviour rules of
   `docs/specs/features/08-documentation.md` read **A code sample is tested by
   `pytest --doctest-glob`**, and the Acceptance criteria named
   `pytest --doctest-glob="*.md" README.md docs/`. **That command collects nothing.** It
-  writes `no tests ran in 0.07s` and it exits with the status 5. `--doctest-glob` collects
-  an interactive session, written as `>>>` lines above the expected output, and every code
-  sample of this project is a fenced code block. The two forms share nothing, so the rule
-  named no check at all, and a reader of the page believed the samples were covered.
+  writes `no tests ran` and it exits with the status 5. `--doctest-glob` collects an
+  interactive session, written as `>>>` lines above the expected output. Every code sample of
+  this project is a fenced code block. The two forms share nothing, so the rule named no
+  check at all, and a reader of the page believed the rule covered the samples.
   **The requirements themselves hold.** `tests/test_documentation_samples.py` runs 45
   samples for FR-documentation-4 and FR-documentation-5, and `tests/test_examples.py` runs
   the five scripts of `examples/` under nine cases for FR-documentation-6. #63 built that
   harness, met the requirements, and stopped at the rule rather than editing the
   specification inside a feature diff. **The project manager ruled that the criterion is
-  amended and the samples stay fenced.** Rewriting 44 fenced samples into doctest sessions
-  would make several unrunnable and would buy no coverage the harness already provides, and
-  a token doctest added to make the command green would prove nothing. **The defect lived in
-  a second file.** The Documentation row of the Testing strategy table of
-  `docs/specs/spec.md` named the same command, so one rule stood in two records and this
-  round repairs both. `CLAUDE.md` carries no doctest command, and its `## Commands` section
-  was read for the same fault and holds none. **Three sentences of the feature page change
-  and one row of the specification changes.** The Behaviour rules now name
-  `pytest tests/test_documentation_samples.py` and `pytest tests/test_examples.py`, they
-  state that `--doctest-glob` reads an interactive session and collects nothing here, and
-  they record that the samples stay fenced because a fenced block is what a reader copies.
-  The Edge cases row reads `The harness case fails` where it read `The doctest run fails`.
-  **New file `tests/test_documentation_behaviour_rule.py` holds 18 cases in four groups.**
-  The instrument cases run every backticked `pytest` command of the Behaviour rules under
-  `--collect-only` and require each one to collect at least one case. The floor case
-  requires two such commands, because an aggregate over an empty set passes and a deleted
-  rule would satisfy the instrument cases in silence. The discrimination cases prove the
-  measurement fails where it must: the doctest command collects 0 cases and exits 5, and the
-  counter reads 0 for a file that holds no case. The reader cases prove that
-  `stated_command` raises on an absent sentence, on a repeated sentence, and on the text the
-  rules held before this round. **The case count is parsed and never grepped.** A page that
-  held the words `0 tests collected` would match a substring search, so the reader matches
-  the summary line and reads the exit status beside it. **Six cases failed on the unamended
-  records, and six mutations prove the new cases discriminate.** Each mutation was written
-  to disk, measured, and restored, and the file compared equal after every restore. Deleting
-  the sample rule fails two cases. Naming the doctest command in the rule sentence fails
-  two. Naming `tests/test_no_such_harness.py` fails the same two. Deleting the recorded
-  reason fails one. Reverting the row of `docs/specs/spec.md` fails one alone. Renaming the
+  amended and the samples stay fenced.** A rewrite of 44 fenced samples into doctest sessions
+  would make several unrunnable, and it would buy no coverage the harness already provides. A
+  token doctest added to make the command green would prove nothing. **The defect lived in a
+  second file.** The Documentation row of the Testing strategy table of `docs/specs/spec.md`
+  named the same command, so one rule stood in two records and this round repairs both.
+  `CLAUDE.md` carries no doctest command, and its `## Commands` section holds none.
+  **Three sentences of the feature page change and one row of the specification changes.**
+  The Behaviour rules now name `pytest tests/test_documentation_samples.py` and
+  `pytest tests/test_examples.py`. They state that `--doctest-glob` reads an interactive
+  session and collects nothing here. They record that the samples stay fenced, because a
+  fenced block is what a reader copies. The Edge cases row reads `The harness case fails`
+  where it read `The doctest run fails`.
+  **New file `tests/test_documentation_behaviour_rule.py` holds 20 cases in four groups.**
+  The command cases run every backticked `pytest` command of the Behaviour rules under
+  `--collect-only`, and each one must collect at least one case. The floor case requires two
+  such commands. **An aggregate over an empty set passes**, so a deleted rule would satisfy
+  the command cases in silence. The discrimination cases prove the measurement fails where it
+  must. The doctest command collects 0 cases and exits 5, and the counter reads 0 for a file
+  that holds no case. The reader cases prove that `stated_command` raises on an absent
+  sentence, on a repeated sentence, and on the text the rules held before this round.
+  **The reader parses the case count and never greps it.** A page that held the words
+  `0 tests collected` would match a substring search, so the reader matches the summary line
+  and reads the exit status beside it. **The recorded reason takes two clauses, and a case
+  reads each one.** A reader of the first clause alone would accept a sentence that reverses
+  the claim, because the words `collects an interactive session` refuse nothing.
+  **Six cases failed on the unamended records, and seven mutations prove the new cases
+  discriminate.** This round wrote each mutation to disk, measured it, and restored it, and
+  the file compared equal after every restore. A mutation that deletes the sample rule fails
+  two cases, and the floor is one of them. A mutation that names the doctest command in the
+  rule sentence fails two. A mutation that names `tests/test_no_such_harness.py` fails the
+  same two. A mutation that deletes the recorded reason fails one. A mutation that keeps the first
+  clause of the reason and drops the consequence fails the consequence case alone. A mutation that reverts
+  the row of `docs/specs/spec.md` fails one alone. A mutation that renames the
   `## Behaviour rules` heading fails five. **One premise of the issue was stale and this
   round re-measured it.** The issue reported 45 samples, which is right, and 14 samples
-  carrying a marker, which is not: `disposition` reads 15 explicit `skip` markers today, and
+  carrying a marker, which is not. `disposition` reads 15 explicit `skip` markers today, and
   17 markers with the two `raises` markers of `docs/api_reference.md`. This round names no
-  page as the fifteenth, because the marker set moved across several rounds of this epic and
-  the attribution would be a guess. The four-word reason case reaches all 95 skipped blocks
-  and not the marked ones alone. **The sweep read every command of
-  `docs/specs/features/*.md`, and three findings reach no repair here.** Two acceptance
-  criteria state counts the repository no longer holds: `00-foundation.md:214` expects 75
-  files under `tests/foxio_vectors/` where `git ls-files` reports 90, and
-  `09-release.md:144` expects the string `0.6.0` in one file where `grep -rn` reports eight.
-  `09-release.md:156` requires the wheel to carry no file under `docs/`, and `python -m
-  build` on this base produces a wheel of 96 entries that holds 56 of them. That third one
-  is a defect rather than a stale count, and #69 already owns it, so this round files no
-  duplicate and reports the measurement. **No file under `ja4plus/` changes, no fingerprint
-  moves, and the register holds 134 keys against 134 xfailed.**
+  page as the fifteenth, because the marker set moved across several rounds of this epic.
+  The four-word reason case reaches all 95 skipped blocks and not the marked ones alone.
+  **The sweep read every command of `docs/specs/features/*.md`, and three findings reach no
+  repair here.** Two acceptance criteria state counts the repository no longer holds.
+  `00-foundation.md:214` expects 75 files under `tests/foxio_vectors/` where `git ls-files`
+  reports 90. `09-release.md:144` expects the string `0.6.0` in one file where `grep -rn`
+  reports eight. `09-release.md:156` requires the wheel to carry no file under `docs/`, and
+  `python -m build` on this base produces a wheel of 96 entries that holds 56 of them. That
+  third one is a defect rather than a stale count, and #69 already owns it, so this round
+  files no duplicate and reports the measurement. **No file under `ja4plus/` changes, no
+  fingerprint moves, and the register holds 134 keys against 134 xfailed.**
 
 - **The precedence exception states the register key count the register holds, and a case
   holds it there** (#380). Round TBD. `.claude/rules/external-apis.md` read **The exception
