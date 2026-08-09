@@ -13,14 +13,22 @@ the decision.
 
 ## What a case here reads
 
-The pin is one entry of the `dev` extra, and `_dependency_block` of
-`tests/test_documentation_site.py` already parses that list. A case here imports that
-parser rather than writing a second one, because two parsers of one list drift apart and
-the disagreement reads as a pass.
+The pin is one entry of the `dev` extra. `_dependency_block` of
+`tests/test_documentation_site.py` parses a dependency list, and **this file declines it**.
+That reader collects every double-quoted substring of the block. The `dev` extra carries
+comment lines inside the list, and a comment that quotes a version therefore reads as an
+entry. The reader already returns `not spec_validation` from the comment beside
+`build>=1.0`. **A comment that quoted `"ruff==0.14.5"` would then fail a case here on the
+wording of a comment**, which is a check a rewording defeats. `_dev_entries` below strips
+the comment lines first.
+
+The self-review of #378 found that hazard. `_dependency_block` stays correct where it is
+used today, because the `docs` list and the runtime list carry no comment inside the
+brackets.
 
 **The `dev` extra is the one place a tool reads the version from.** Every job of
-`.github/workflows/test.yml` installs with `pip install -e ".[dev]"`, and no workflow names
-`ruff` with a version specifier of its own.
+`.github/workflows/test.yml` installs the extra, and no workflow names `ruff` with a
+version specifier of its own.
 
 **Prose that quotes the pin reaches no case here.** `CHANGELOG.md` and
 `docs/specs/spec.md` record the version this round chose, and no tool installs from a
@@ -43,8 +51,6 @@ import re
 
 import pytest
 
-from tests.test_documentation_site import _dependency_block
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 PYPROJECT = REPO_ROOT / "pyproject.toml"
@@ -62,12 +68,19 @@ DEV_EXTRA = "dev = ["
 PIN_ISSUE = "#378"
 
 # An exact pin, as `ruff==0.16.2`. The version carries at least a major and a minor part,
-# so `ruff==0` fails the pattern.
-EXACT_PIN = re.compile(rf"^{LINT_TOOL}==(\d+\.\d+(?:\.\d+)*)$")
+# so `ruff==0` fails the pattern. The trailing group accepts a pre-release or a local
+# version, as `0.17.0rc1` or `0.16.2+local`, because PEP 440 permits both and a pin that
+# names one is still exact.
+EXACT_PIN = re.compile(rf"^{LINT_TOOL}==(\d+\.\d+(?:\.\d+)*[A-Za-z0-9.+!-]*)$")
 
-# A version specifier of any shape, as `ruff>=0.6` or `ruff==0.16.2`. A second file that
-# carries one resolves a version of its own, which is the state the pin removes.
-ANY_SPECIFIER = re.compile(rf"\b{LINT_TOOL}\s*[=<>!~]=")
+# A version specifier of any shape, as `ruff>=0.6`, `ruff>0.6`, `ruff===0.16.2` or
+# `ruff[extra]==1.0`. A second file that carries one resolves a version of its own, which
+# is the state the pin removes.
+# **The one-character operators carry this pattern, and the first form omitted them.** It
+# read `[=<>!~]=` and demanded a trailing `=`, so it missed `ruff>0.6`, which is the shape
+# of the specifier this pin replaced. The optional extras group closes the second miss.
+# The self-review of #378 found both.
+ANY_SPECIFIER = re.compile(rf"\b{LINT_TOOL}(?:\[[^\]]*\])?\s*(?:[=!~<>]=|===|[<>])\s*\d")
 
 # The files a tool resolves a dependency from. `.github/workflows/` holds every job, and
 # the four names below are the dependency files this project would carry if it used them.
@@ -81,13 +94,51 @@ RESOLVED_FILES = (
 )
 
 
+def _dev_lines() -> list[str]:
+    """Return every line inside the brackets of the `dev` extra of `pyproject.toml`.
+
+    Returns:
+        The stripped lines, comment lines included, in file order.
+
+    Raises:
+        AssertionError: `pyproject.toml` holds no `dev` extra, or the list is not closed.
+    """
+    text = PYPROJECT.read_text(encoding="utf-8")
+    start = text.find(f"\n{DEV_EXTRA}\n")
+    assert start != -1, f"pyproject.toml holds no {DEV_EXTRA!r} list"
+    end = text.find("\n]", start)
+    assert end != -1, f"the {DEV_EXTRA!r} list is not closed"
+    return [line.strip() for line in text[start:end].splitlines()[2:]]
+
+
 def _dev_entries() -> list[str]:
     """Return every dependency entry of the `dev` extra of `pyproject.toml`.
 
+    A comment line reaches no entry. The `dev` extra states the reason for several of its
+    entries in a comment, and a comment that quotes a version is prose rather than a
+    dependency.
+
     Returns:
-        The quoted entries, without their quotes.
+        The quoted entries, without their quotes, in file order.
     """
-    return _dependency_block(PYPROJECT.read_text(encoding="utf-8"), DEV_EXTRA)
+    return [
+        found
+        for line in _dev_lines()
+        if not line.startswith("#")
+        for found in re.findall(r"\"([^\"]+)\"", line)
+    ]
+
+
+def _distribution(entry: str) -> str:
+    """Return the distribution name of one dependency entry.
+
+    Args:
+        entry: One entry of a dependency list, as `ruff==0.16.2` or `ruff[extra]>=1.0`.
+
+    Returns:
+        The name before the first extras bracket or version operator.
+    """
+    return re.split(r"[=<>!~\[;]", entry, maxsplit=1)[0].strip()
 
 
 def _lint_entry() -> str:
@@ -99,11 +150,7 @@ def _lint_entry() -> str:
     Raises:
         AssertionError: The extra names no such distribution, or it names it twice.
     """
-    entries = [
-        entry
-        for entry in _dev_entries()
-        if re.split(r"[=<>!~\[]", entry, maxsplit=1)[0].strip() == LINT_TOOL
-    ]
+    entries = [entry for entry in _dev_entries() if _distribution(entry) == LINT_TOOL]
     assert len(entries) == 1, f"the dev extra names {LINT_TOOL} {len(entries)} times: {entries}"
     return entries[0]
 
@@ -126,6 +173,11 @@ def _pinned_version() -> str:
 def _lint_comment() -> str:
     """Return the comment lines that stand above the lint entry inside the `dev` extra.
 
+    The line has to name the lint tool as its distribution. **A substring test reads the
+    wrong entry**, and the self-review of #378 proved it: a decoy `ruff-lsp` entry above the
+    pin, with a comment of its own, satisfied both comment cases while the pin carried no
+    comment at all. `_distribution` compares the whole name instead.
+
     Returns:
         The comment lines, joined by one space, without their `#` markers. An entry that
         carries no comment gives the empty string.
@@ -133,19 +185,12 @@ def _lint_comment() -> str:
     Raises:
         AssertionError: `pyproject.toml` holds no `dev` extra.
     """
-    text = PYPROJECT.read_text(encoding="utf-8")
-    start = text.find(f"\n{DEV_EXTRA}\n")
-    assert start != -1, f"pyproject.toml holds no {DEV_EXTRA!r} list"
-    end = text.find("\n]", start)
-    assert end != -1, f"the {DEV_EXTRA!r} list is not closed"
-
     comment: list[str] = []
-    for line in text[start:end].splitlines():
-        stripped = line.strip()
-        if stripped.startswith("#"):
-            comment.append(stripped.lstrip("#").strip())
+    for line in _dev_lines():
+        if line.startswith("#"):
+            comment.append(line.lstrip("#").strip())
             continue
-        if f'"{LINT_TOOL}' in stripped:
+        if any(_distribution(found) == LINT_TOOL for found in re.findall(r"\"([^\"]+)\"", line)):
             return " ".join(comment)
         comment = []
     return ""

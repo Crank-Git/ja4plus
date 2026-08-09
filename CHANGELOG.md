@@ -712,45 +712,74 @@ holds every breaking change of this record against a row of that page.
 ### Changed
 
 - **The `ruff` pin is exact, so the lint gate cannot change without a commit** (#378).
-  Round TBD. `pyproject.toml` declared `ruff>=0.6`, so `pip` resolved the newest release at
-  the moment of each install and the gate read a different tool on two days. The `dev`
-  extra now states `ruff==0.16.2`. **#297 measured the drift on this repository**: 58
-  `F401` findings, 28 files and 82 `I001` findings against `ruff` 0.14.5, against 54, 27
-  and 76 at 0.16.2, on an unchanged tree. Every number differed. **The project manager
-  ruled the exact pin over a compatible range and over the recorded drift**, because a gate
-  whose result depends on the day it runs measures something other than what it names.
-  **The pin changes what this gate installs today not at all, and that is a measurement
-  rather than an assumption.** 0.16.2 is the newest release `pip index versions ruff`
-  reports, so the floating specifier already resolved it, and `ruff check ja4plus/ tests/`
-  and `ruff format --check ja4plus/ tests/` each report no finding before the change and
-  after it. **The `dev` extra is the one place a tool reads the version from.** No file
-  under `.github/workflows/` names `ruff` with a specifier, every job installs with
-  `pip install -e ".[dev]"`, and the tracked `requirements.txt` names no `ruff` at all.
-  **New file `tests/test_lint_gate_pin.py` holds all four statements**, at 6 cases: the
-  entry is one exact pin, the comment beside it cites #378, the comment states that a
-  version change is a commit, no workflow states a version, no second dependency file
-  states one, and the installed release equals the pin. **The tests came first**, and the
-  unrepaired tree failed 4 of the 6 with
-  `AssertionError: the dev extra states no exact version for ruff: 'ruff>=0.6'`. **Eight
-  mutations prove the cases discriminate, and each one isolates to the case it targets.**
-  A pin of 0.16.1 fails the installed-release case alone. A comment that drops `#378`
-  fails the citation case alone. A comment that drops the word `commit` fails the commit
-  rule alone. **The comment reader is bound to the pin and not to the list**, so moving the
-  pin above its own comment gives the empty string and fails both comment cases. A
-  workflow that appends `"ruff>=0.6"` fails the workflow case alone. A `ruff` line appended
-  to `requirements.txt` fails the dependency-file case alone. A second `ruff` entry fails
-  the pin case. The floating specifier restored fails the pin case and the installed-release
-  case. **The case that reads the installed release is the one that catches a drifted
-  environment**, and it skips where the environment holds no `ruff`, so a reader of the skip
-  sees the gap. **`FR-foundation-8b` and `FR-foundation-8c` carry the two requirements**,
-  and `docs/specs/features/00-foundation.md` states the cost beside them: a pinned tool
-  falls behind, and the bump re-measures the lint gate and the `ignore` list of
+  Round TBD. `pyproject.toml` declared `ruff>=0.6`. `pip` therefore resolved the newest
+  release at the moment of each install, and the gate read a different tool on two days.
+  The `dev` extra now states `ruff==0.16.2`. **#297 measured the drift on this
+  repository.** Against `ruff` 0.14.5 it read 58 `F401` findings, 28 files and 82 `I001`
+  findings. Against 0.16.2 it read 54, 27 and 76. The tree did not change and every number
+  differed. #297 changed no pin, because the pin sat outside its scope. **The project
+  manager ruled the exact pin.** It declined a compatible range and it declined the
+  recorded drift. A gate whose result depends on the day it runs measures something other
+  than what it names. **The pin moves what this gate installs today not at all.** That is a
+  measurement and not an assumption. `pip index versions ruff` reports 0.16.2 as the newest
+  release, so the floating specifier already resolved it. Both lint commands report no
+  finding before the change and after it. **The pinned release therefore reports no finding
+  the floating one did not**, which is the condition the plan asked a worker to report
+  rather than repair. **The `dev` extra is the one place a tool reads the version from, and
+  three readings state it.**
+
+    1. No file under `.github/workflows/` names `ruff` with a version specifier.
+    2. Every job of `.github/workflows/test.yml` installs the extra.
+    3. The tracked `requirements.txt` names no `ruff`.
+
+  **New file `tests/test_lint_gate_pin.py` holds 6 cases.** The entry is one exact pin. The
+  comment beside it cites #378. That comment states that a version change is a commit. No
+  workflow states a version. No second dependency file states one. The installed release
+  equals the pin. **The tests came first.** The unrepaired tree failed 4 of the 6 with
+  `AssertionError: the dev extra states no exact version for ruff: 'ruff>=0.6'`. **Eleven
+  mutations prove the cases discriminate, and each one isolates to the case it targets.** A
+  pin of 0.16.1 fails the installed-release case alone. A comment that drops `#378` fails
+  the citation case alone. A comment that drops the word `commit` fails the commit rule
+  alone. **The comment reader binds to the pin and not to the list.** The pin moved above
+  its own comment gives the empty string, and it fails both comment cases. A workflow that
+  appends a specifier fails the workflow case alone. A `ruff` line appended to
+  `requirements.txt` fails the dependency-file case alone. A second `ruff` entry fails the
+  pin case. The floating specifier restored fails the pin case and the installed-release
+  case. **Each mutation restored from a snapshot of the implemented tree.** The first
+  harness restored from the index instead, and it contaminated six of its own readings.
+  **The self-review found three defects in the first form of this file, and three more
+  mutations prove the repairs.** All three are the shape this project records most often: a
+  case that cannot fail.
+  - **A substring test read the comment of the wrong entry.** The reader matched the line
+    that held `"ruff`. A decoy `ruff-lsp` entry above the pin, with a one-line comment of
+    its own, satisfied both comment cases while the pin carried no comment. `_distribution`
+    now compares the whole name, and the decoy fails both cases.
+  - **The specifier pattern missed a one-character operator.** It read `[=<>!~]=` and
+    demanded a trailing `=`, so `ruff>0.6` escaped it. That is the shape of the specifier
+    this pin replaced. The pattern now reads `ruff>0.6`, `ruff===0.16.2` and
+    `ruff[extra]==1.0`, and a workflow that appends `"ruff>0.6"` fails the workflow case.
+  - **The shared list parser counted a string inside a comment.** `_dependency_block` of
+    `tests/test_documentation_site.py` collects every double-quoted substring of the block,
+    and the `dev` extra carries comments inside its brackets. It already returned
+    `not spec_validation` from the comment beside `build>=1.0`. A comment that quoted
+    `"ruff==0.14.5"` would have failed a case on the wording of a comment, which is a check
+    a rewording defeats. `_dev_entries` strips the comment lines first, and such a comment
+    now moves no case. `_dependency_block` stays correct where it is used, because the
+    `docs` list and the runtime list carry no comment inside the brackets.
+
+  **The case that reads the installed release catches a drifted environment.** It skips
+  where the environment holds no `ruff`, so a reader of the skip sees the gap. **A case here
+  reads no prose.** This entry quotes the pin inside backticks, and no tool installs from a
+  record. **`FR-foundation-8b` and `FR-foundation-8c` carry the two requirements.** Two
+  behaviour rules of `docs/specs/features/00-foundation.md` state the cost. A pinned tool
+  falls behind, and a bump re-measures the lint gate and the `ignore` list of
   `[tool.ruff.lint]`. The `Terms` table gains `pin` and `lint gate`. **Two findings reach no
-  repair here, because both sit outside this issue.** `mypy>=1.11` resolves 2.3.0 and
-  `pytest>=7.0` resolves 9.1.1, so the same defect stands on the rest of the `dev` extra,
-  and the tracked `requirements.txt` states `pytest-cov>=3.0.0` against the `>=5.0` of
-  `pyproject.toml`, which the comment beside that entry says the coverage floor needs. #446
-  carries both. **No file under `ja4plus/` changes and no fingerprint moves.**
+  repair here, because both sit outside the acceptance criteria of #378.** `mypy>=1.11`
+  resolves 2.3.0 and `pytest>=7.0` resolves 9.1.1, so the same defect stands on the rest of
+  the `dev` extra. The tracked `requirements.txt` states `pytest-cov>=3.0.0` against the
+  `>=5.0` of `pyproject.toml`, and the comment beside that entry states why the coverage
+  floor needs 5.0. #446 carries both, and it holds the `mypy` question open rather than pin
+  by symmetry. **No file under `ja4plus/` changes and no fingerprint moves.**
 
 - **The record names the two breaking changes it never captured** (#395). Round 141.
   #65 found both gaps while it wrote `docs/migration-0.6-to-1.0.md`, and it stated each one

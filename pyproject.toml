@@ -43,14 +43,17 @@ dev = [
     # records the decision, and it declines both a compatible range and the drift.
     #
     # **A version change is a deliberate commit, and this line is its whole diff.** The
-    # cost is maintenance: a pinned tool falls behind, and nothing raises the number by
-    # itself. A bump re-measures four things before it lands: `ruff check ja4plus/ tests/`,
-    # `ruff format --check ja4plus/ tests/`, the finding count of each rule the new release
-    # widened, and the `ignore` list of `[tool.ruff.lint]` below.
+    # cost is maintenance. A pinned tool falls behind, and nothing raises the number by
+    # itself. A bump re-measures four things before it lands.
     #
-    # `tests/test_lint_gate_pin.py` holds this pin against the installed release, against
-    # every workflow and against `requirements.txt`, so the `dev` extra stays the one place
-    # a tool reads the version from.
+    #   1. `ruff check ja4plus/ tests/`.
+    #   2. `ruff format --check ja4plus/ tests/`.
+    #   3. The finding count of each rule the new release widened.
+    #   4. The `ignore` list of `[tool.ruff.lint]` below.
+    #
+    # `tests/test_lint_gate_pin.py` holds this pin. It reads the installed release, every
+    # file under `.github/workflows/` and `requirements.txt`. The `dev` extra therefore
+    # stays the one place a tool reads the version from.
     "ruff==0.16.2",
     "mypy>=1.11",
     # `tests/test_installed_wheel.py` runs `python -m build`, and the `installed_wheel`
