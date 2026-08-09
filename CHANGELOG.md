@@ -73,6 +73,42 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **One case fingerprints a capture from the installed wheel** (#408). Round TBD. New
+  file `tests/test_installed_wheel.py`, and the new `installed_wheel` marker in
+  `pyproject.toml`. The case builds both artifacts with `python -m build`, and it installs
+  the wheel into a clean environment. It reads three paths from that environment:
+  `ja4plus --version`, `ja4plus analyze --format json`, and one script that imports
+  `ja4plus` and drives a `Processor`. The output of the last two equals the output of the
+  source tree, byte for byte. **A run that resolves the working copy proves nothing.**
+  Every other job of `.github/workflows/test.yml` installs with `pip install -e ".[dev]"`,
+  which puts the source tree on the import path. A case that only imports `ja4plus`
+  therefore measures the checkout. This case reads `ja4plus.__file__` of the clean
+  environment. It fails when that path is not below the `site-packages` directory of that
+  environment.
+  **A check that cannot fail measures nothing**, so
+  `test_the_import_check_fails_for_the_source_tree` holds the same check against the
+  interpreter that runs the suite and asserts that it rejects that path. **The control
+  case is not optional**, because the byte-for-byte comparison passes on any wheel that
+  imports. It removes `ja4plus/data/ja4plus-mapping.csv` from a second clean environment
+  and reads one probe twice: `70 True` before the removal, and `0 False` after it.
+  `.github/workflows/test.yml` gains the `installed-wheel` job, which names the marker, so
+  a failure is visible without a log search. **That job is the only runner of the marker.**
+  New file `tests/conftest.py` deselects the marker from a run that does not name it, and
+  the `conformance` job holds the same relation to `spec_validation`. The unit gate
+  therefore builds no wheel and reaches no index. **A `-m` expression on the command line
+  replaces the one in `addopts`, so `addopts` cannot hold that rule.** A measurement of
+  2026-08-09 proved it: with `addopts = "-m 'not installed_wheel'"` and the gate command
+  `-m "not spec_validation"`, `pytest --collect-only` still collected all seven cases. New
+  file `tests/test_installed_wheel_selection.py` holds the rule against three commands, so
+  a rename of the marker fails a case rather than removing the wheel cases from the gate
+  in silence. **`build` joins the `dev` extra**, because the dedicated job and a local run
+  each need `python -m build`. #409 installs the source distribution. The build,
+  the environment creation and the comparison each take the artifact as a parameter, so
+  #409 passes another artifact to the same three functions. **The case costs wall-clock
+  time on every gate run.** Four consecutive runs on macOS with a warm `pip` cache
+  measured 40.39 s, 24.25 s, 24.40 s and 22.22 s, so the settled figure is about 23 s. A
+  runner starts with a cold `pip` cache and takes longer. This entry changes no file under
+  `ja4plus/` and it moves no fingerprint.
 - **The sweep report names the commit it read, and a census counts the open candidates**
   (#411). Round TBD. `tests/mutation_sweep.py` writes a `commit` key and a `Commit` row,
   read from `git rev-parse HEAD` before the first mutation lands.
