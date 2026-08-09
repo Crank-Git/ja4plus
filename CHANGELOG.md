@@ -224,6 +224,42 @@ holds every breaking change of this record against a row of that page.
   measured 40.39 s, 24.25 s, 24.40 s and 22.22 s, so the settled figure is about 23 s. A
   runner starts with a cold `pip` cache and takes longer. This entry changes no file under
   `ja4plus/` and it moves no fingerprint.
+- **Every sweep candidate of the twelve fingerprinter modules is settled** (#413).
+  Round TBD. New files `docs/mutation_reports/413-fingerprinters.json` and
+  `docs/mutation_settlements/413-fingerprinters.json`. Twelve single-module sweeps read
+  `ja4plus/fingerprinters/` with `--max-per-module 0`, one for each module, over **1569
+  mutations**: `ja4ssh.py` 265, `ja4l.py` 239, `ja4.py` 203, `ja4d6.py` 194, `ja4h.py` 169,
+  `ja4s.py` 134, `ja4x.py` 130, `ja4d.py` 128, `ja4ts.py` 56, `ja4t.py` 31, `base.py` 11 and
+  `__init__.py` 9. The sweeps killed 891 mutations, 675 survived and 3 passed the time
+  limit. The union of the twelve candidate sets is **394 candidates**, and the record
+  settles every one with the verdict `correct` and the reason. **No file under `ja4plus/`
+  changes**, because `CLAUDE.md` rule 1 binds every change there to a vector.
+  **The scope is the minimal cover.** The rule "name every test file that reads the module"
+  measured **43.86 hours** for this module group, eleven times the four-hour ceiling, and
+  the cover measured **0.69 hours** against 1569 mutations. The three limits of #412 hold
+  here without change, and the record states them under its `scope` key.
+  **The default coverage core of Python 3.14 records almost no test context.** A minimal
+  cover reads a run that tags each line with the case that ran it, and `coverage` 7.15.4
+  selects the `sysmon` core on Python 3.14.3. One whole-suite run over 4112 passing cases
+  recorded **294 contexts over 74 test files**, where the same run under
+  `COVERAGE_CORE=ctrace` recorded one context for each case and raised the reader set of
+  this module group from 47 test files to 95. **A cover built on the first run names too few
+  test files**, so the record states the command that produces correct data.
+  **94 of the 675 surviving mutations sit inside a type annotation, and no case can ever
+  fail for one.** Every module of `ja4plus/fingerprinters/` carries
+  `from __future__ import annotations`, so Python holds each annotation as a string and
+  evaluates none of them. The sweep already skips a docstring and a logger argument for the
+  same reason, and #431 records the finding.
+  **`ja4plus/fingerprinters/__init__.py` reported 9 survived of 9, and the record states the
+  reason rather than a new case.** The module holds nine export names and no case reads
+  `__all__`, so no name is measured. The nine survivors are correct as they stand.
+  **Three mutations of `ja4plus/fingerprinters/ja4x.py` make a record scan run with no
+  progress**, at line 243 and twice at line 284, and each run stopped at the 180-second
+  limit #412 added. A run that never finished measured nothing, so each carries the status
+  `timeout` and the candidate list over-reports rather than under-reports.
+  **Eight candidates cannot fail**, because the unmutated suite state reports them as
+  xfailed: seven of `tests/test_ja4_alpn.py` and one of `tests/test_ja4h_spec.py`. No
+  candidate is skipped. **No fingerprint moves.**
 - **Every sweep candidate of the seven interface modules is settled** (#414). Round TBD.
   New files `docs/mutation_reports/414-interface.json`,
   `docs/mutation_settlements/414-interface.json` and
