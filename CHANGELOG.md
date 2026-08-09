@@ -8,7 +8,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- **The example that a merge restored is absent again** (#368). Round TBD.
+- **The example that a merge restored is absent again** (#368). Round 124.
   #56 removed `examples/monitoring_daemon.py` and added
   `tests/test_watch_capture.py::TheExampleDaemonIsAbsent`, which asserts that the file
   stays absent. `batch/322-hygiene-two` forked from `dev` before that case landed, so
