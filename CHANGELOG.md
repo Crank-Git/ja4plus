@@ -709,6 +709,44 @@ holds every breaking change of this record against a row of that page.
   first green run, and no case reached it before**, because nothing ran the sample. This
   entry repairs the two documents and changes no signature.
 
+- **Six documents stated a count of ten methods, and the count is eleven** (#387). Round
+  TBD. `JA4LFingerprinter` writes `JA4L-S=` at `ja4plus/fingerprinters/ja4l.py:446` and
+  `JA4L-C=` at `:482`, so ten fingerprinter classes carry eleven methods. **The measurement
+  reproduces on the base commit `d123ab9` and it carries no number from the issue body.**
+  `__all__` names ten `generate_` functions, the module of `generate_ja4l` writes both value
+  prefixes, and `FOXIO_METHODS` holds twelve names, so eleven of twelve reach a generator
+  and JA4TScan reaches none. **The issue named three documents and a sweep of the whole
+  corpus found six.** `docs/specs/features/08-documentation.md` and `docs/specs/spec.html`
+  held the implemented count of ten, and `docs/api_reference.md`, `docs/usage.md`,
+  `docs/specs/features/03-concurrency-safety.md` and the `Data model` table of
+  `docs/specs/spec.md` called the ten fingerprinters ten methods. **The prose now counts
+  fingerprinters and values where it counted methods**, matching the
+  `FingerprintResult.type` docstring that round 139 wrote. **The reason stands beside the
+  number in every document that states it**, because a bare eleven invites the next reader
+  to count the classes and correct it back. New file
+  `tests/test_documented_method_count.py` holds 140 cases. It reads the method set out of
+  `__all__` and out of the module source of each generator, so a case that restated eleven
+  would pass on a document that contradicts the package. **The cases came first and they
+  bite**: 10 failed against the unchanged documents and 130 passed. **Six mutations prove
+  they discriminate.** The first replaces `JA4L-S=` with `JA4L-X=` in
+  `ja4plus/fingerprinters/ja4l.py`, which drops the count to ten and fails all five
+  documents that state eleven. The second removes `generate_ja4d6` from `__all__`. The other
+  four restate ten in one document, drop the reason from one document, and apply the class
+  count to the word `method` on two pages. Each was restored, and `inspect.getsource`
+  confirmed the live source in both directions. **The self-review found the reader blind on
+  one whole page.** The quotation exemption paired a quotation mark of one line of
+  `docs/usage.md` with a mark 40 lines below it and dropped every word between them, so the
+  reader read nothing there; it now drops a quotation one line at a time, and
+  `test_the_class_count_reader_reads_a_page_that_holds_a_quotation_mark_elsewhere` holds the
+  repair. **Three findings reach no repair here and two of them hold a new issue.** #449
+  records that `docs/specs/spec.html` states "Seven of twelve FoxIO methods are specified
+  only as images" where the same page states eleven, and that `SUPERSEDED_COUNT` of
+  `tests/test_documentation_image_count.py` reads over it because the page writes no `the`.
+  #450 records the ten files under `tests/` that call the ten fingerprinters ten methods, and
+  it names the decision that `ProcessorStats.method` needs. The body of #62 still states ten
+  of the twelve, and it is a tracker record rather than a document of this repository. **No
+  file under `ja4plus/` changes and no fingerprint moves.**
+
 ### Changed
 
 - **The record names the two breaking changes it never captured** (#395). Round 141.

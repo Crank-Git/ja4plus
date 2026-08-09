@@ -96,6 +96,19 @@ IMPLEMENTED_COUNT_PATTERNS: Tuple["re.Pattern[str]", ...] = (
 # the pattern because a document writes both between the count and the noun.
 CLASS_COUNT_OF_METHODS = r"\b{word}\s+(?:JA4\+?\s+|FoxIO\s+)?methods?\b"
 
+# A passage inside double quotation marks. `class_counts_of_methods` drops one before it
+# reads, because a quotation reproduces the words of another document and the writing
+# standard forbids a rewrite of it. `docs/specs/features/08-documentation.md` quotes the
+# claim "all ten JA4+ methods" that the README carried, and that quotation is the record of
+# the defect the epic corrects. **The limit is deliberate and it is a hole**: a document
+# that states its own count inside quotation marks reaches no case here.
+#
+# **Warning: the reader drops a quoted passage one line at a time.** `docs/usage.md` holds
+# a quotation mark inside a command, so a search over the whole page pairs one mark with
+# another mark 40 lines away and drops every word between them. The first form of this
+# reader did exactly that, and it read nothing at all on that page.
+QUOTED_PASSAGE = re.compile(r"\"[^\"]*\"")
+
 # The headings of the sections that record a state of the project at the time of writing.
 # `readable_text` cuts each one out of `docs/specs/spec.md`.
 RECORD_SECTIONS = ("## Risks & open questions", "## Changelog")
@@ -164,6 +177,22 @@ def _plain(text: str) -> str:
     return " ".join(HTML_TAG.sub(" ", text).split())
 
 
+def _unquoted(text: str) -> str:
+    """Return one line of text with every quoted passage of every line dropped.
+
+    The reader drops a quotation one line at a time, because a search over the whole page
+    pairs a quotation mark of one line with a quotation mark far below it.
+
+    Args:
+        text: The text of one document.
+
+    Returns:
+        The text as one line, with no HTML tag and no quoted passage.
+    """
+    lines = [QUOTED_PASSAGE.sub(" ", line) for line in HTML_TAG.sub(" ", text).splitlines()]
+    return " ".join(" ".join(lines).split())
+
+
 def stated_counts(text: str) -> List[str]:
     """Return every count of implemented methods the text states, in lowercase.
 
@@ -189,6 +218,9 @@ def stated_counts(text: str) -> List[str]:
 def class_counts_of_methods(text: str, word: str) -> List[str]:
     """Return every place the text applies the class count to the word `method`.
 
+    The reader drops a quoted passage first, so a quotation of another document's claim
+    reports nothing.
+
     Args:
         text: The text of one document.
         word: The count word of the fingerprinter classes.
@@ -197,7 +229,7 @@ def class_counts_of_methods(text: str, word: str) -> List[str]:
         The matching phrase of each place, in the order the text holds them.
     """
     pattern = re.compile(CLASS_COUNT_OF_METHODS.format(word=word), re.IGNORECASE)
-    return [match.group(0) for match in pattern.finditer(_plain(text))]
+    return [match.group(0) for match in pattern.finditer(_unquoted(text))]
 
 
 def readable_text(path: Path, text: str) -> str:
@@ -283,8 +315,7 @@ def test_the_package_implements_every_foxio_method_but_the_declined_one() -> Non
     """The package implements every FoxIO method except the one it declines."""
     absent = sorted(set(FOXIO_METHODS) - implemented_methods())
     assert absent == [DECLINED_METHOD], (
-        f"the package implements every method but {absent}, and it declines "
-        f"{DECLINED_METHOD} alone"
+        f"the package implements every method but {absent}, and it declines {DECLINED_METHOD} alone"
     )
 
 
@@ -393,6 +424,24 @@ def test_the_class_count_reader_reads_the_word_beside_the_noun() -> None:
         "ten methods",
         "ten FoxIO methods",
     ]
+
+
+def test_the_class_count_reader_reads_no_quotation_of_another_document() -> None:
+    """The class-count reader reads no claim that a quotation reproduces."""
+    passage = 'The README said the project implements "all ten JA4+ methods".'
+    assert class_counts_of_methods(passage, "ten") == []
+
+
+def test_the_class_count_reader_reads_a_page_that_holds_a_quotation_mark_elsewhere() -> None:
+    """The class-count reader reads a claim below a line that holds one quotation mark."""
+    passage = "\n".join(
+        [
+            'Run `ja4plus live --filter "tcp port 443"` to read one port.',
+            "A prose line that holds no mark at all.",
+            "The eviction drops the state of all ten methods together.",
+        ]
+    )
+    assert class_counts_of_methods(passage, "ten") == ["ten methods"]
 
 
 def test_the_class_count_reader_reads_no_count_of_values_or_classes() -> None:
