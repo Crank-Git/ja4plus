@@ -420,7 +420,8 @@ METHOD_FILTER_KEYS = (
     "tls-handshake.pcapng/JA4L-S",
 )
 
-# The one entry of the six that compares two measured counts.
+# The one entry of the six that compared two measured counts. #272 repaired the defect it
+# recorded, so the case passes and the register holds the key no longer.
 DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
 
 # The three entries that awaited the #215 decision on the JA4T form left the open set.
@@ -429,15 +430,11 @@ DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
 # FoxIO Rust implementation.
 TCP_OPTION_KEYS = ()
 
-# The six JA4L entries together. #34 owned them, and #34 is closed, so a worker can act
-# on none of them. #272 is open and it holds the question the user answers.
-JA4L_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,)
-
 JA4L_OWNER = 272
 
-# Every entry that stays open. #272 owns the six JA4L entries, and no JA4T entry stays
-# open after #215.
-OPEN_KEYS = JA4L_KEYS + TCP_OPTION_KEYS
+# Every entry that stays open. #272 decided the five method filter entries and repaired
+# the sixth, and no JA4T entry stays open after #215.
+OPEN_KEYS = TCP_OPTION_KEYS
 
 
 class TestTheOpenRegisterEntries:
@@ -453,33 +450,53 @@ class TestTheOpenRegisterEntries:
             key: deviation for key, deviation in load_register().items() if not deviation.decided
         }
 
-    def test_the_register_holds_six_undecided_entries(self):
-        assert len(self._undecided()) == 6
+    def test_the_register_holds_no_undecided_entry(self):
+        assert len(self._undecided()) == 0
 
-    def test_the_undecided_keys_are_the_six_no_round_settled(self):
+    def test_the_undecided_keys_are_the_ones_no_round_settled(self):
         assert sorted(self._undecided()) == sorted(OPEN_KEYS)
 
     def test_every_undecided_entry_names_the_issue_that_decides_it(self):
         for key, deviation in self._undecided().items():
             assert "#{}".format(deviation.issue) in deviation.cause, key
 
-    def test_every_ja4l_entry_names_the_open_issue_that_holds_the_question(self):
+    def test_every_method_filter_entry_names_the_issue_that_declined_it(self):
         """#34 closed on 2026-08-07 and left the six entries with no owner.
 
-        An entry whose owner is closed names nobody a worker can reach. #272 is open, it
-        carries the question the user answers, and it decides none of the six.
+        An entry whose owner is closed names nobody a worker can reach. #272 took the six,
+        it declined the five the method filter produced, and it repaired the sixth.
         """
-        for key in JA4L_KEYS:
+        for key in METHOD_FILTER_KEYS:
             assert load_register()[key].issue == JA4L_OWNER, key
+
+    def test_every_method_filter_entry_records_a_decided_value_decline(self):
+        for key in METHOD_FILTER_KEYS:
+            deviation = load_register()[key]
+            assert deviation.decided is True, key
+            assert deviation.capability is False, key
 
     def test_every_method_filter_entry_names_the_reference_line_that_deletes_the_key(self):
         for key in METHOD_FILTER_KEYS:
             assert "python/ja4.py:339" in load_register()[key].cause, key
 
-    def test_the_duplicate_server_value_entry_names_the_extra_value(self):
-        cause = load_register()[DUPLICATE_SERVER_VALUE_KEY].cause
-        assert "JA4L-S=6252_58" in cause
-        assert "retransmitted SYN-ACK" in cause
+    def test_every_method_filter_entry_states_that_the_comparison_is_unreachable(self):
+        """The wrong wording makes the decline read as a pass, so the cause states it.
+
+        This project was never emitting more than the reference on these five. The
+        reference published nothing to compare, because the method filter deleted the key.
+        """
+        for key in METHOD_FILTER_KEYS:
+            cause = load_register()[key].cause
+            assert "unreachable and not satisfied" in cause, key
+            assert "published nothing to compare" in cause, key
+
+    def test_the_register_holds_no_duplicate_server_value_entry(self):
+        """#272 repaired the defect, so the case passes and needs no register entry.
+
+        `ssh2.pcapng` stream 15 produced `JA4L-S=6252_58` twice where the reference holds
+        it once. A retransmitted SYN-ACK now gives no value, so the counts agree.
+        """
+        assert DUPLICATE_SERVER_VALUE_KEY not in load_register()
 
 
 class TestTheRegisterMarkerRule:

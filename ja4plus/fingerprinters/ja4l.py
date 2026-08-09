@@ -453,9 +453,14 @@ def _tcp_ja4l(
 
     if syn and ack:
         conn["isns"][source] = sequence
-        if "B" not in timestamps:
-            timestamps["B"] = now
-            ttls["server"] = ttl
+        # A retransmitted SYN-ACK finds point `B` set, and it moves neither the point
+        # nor the TTL. A value here would repeat the value the first SYN-ACK gave, and
+        # the reference publishes one server value for one connection. #272 measured the
+        # repeat on `ssh2.pcapng` stream 15.
+        if "B" in timestamps:
+            return None
+        timestamps["B"] = now
+        ttls["server"] = ttl
         if "A" not in timestamps:
             return None
         return "JA4L-S={}_{}".format(
