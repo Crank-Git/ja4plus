@@ -8,8 +8,19 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The example that a merge restored is absent again** (#368). Round 124.
+  #56 removed `examples/monitoring_daemon.py` and added
+  `tests/test_watch_capture.py::TheExampleDaemonIsAbsent`, which asserts that the file
+  stays absent. `batch/322-hygiene-two` forked from `dev` before that case landed, so
+  its own run never collected the case, and its merge `8b87c20` restored the file. **Both
+  parents of the merge were green and the merged tree was not**, because the file and the
+  case live in different directories. `dev` then ran red across `35bdfab` and `8ef8acc`.
+  The case
+  fails on the base commit `8ef8acc` and passes after the removal. `ja4plus watch` is
+  the supported monitor, and `docs/usage.md` documents it. No file under `ja4plus/`
+  changes, no fingerprint moves, and the register holds 135 keys against 135 xfailed.
 - **The statistics interval cases state the schedule rather than sample it** (#369).
-  Round TBD. `TheReporterWritesOneLinePerInterval` started the reporter at a 0.05 second
+  Round 125. `TheReporterWritesOneLinePerInterval` started the reporter at a 0.05 second
   interval, slept a fraction of a second, and counted the lines that arrived. That count
   measures how promptly the host schedules a thread. The `macos-latest, 3.12` job of the
   run for `8ef8acc` read 2 lines where the case asked for 3, and `dev` went red on a
