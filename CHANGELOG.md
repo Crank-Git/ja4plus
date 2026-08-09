@@ -355,7 +355,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   site builds while an anchor is dead. A link changed to a page that does not exist and
   a link changed to an anchor that does not exist each abort the build with exit code 1.
   `tests/test_documentation_site.py` carries the same check inside the unit suite, which
-  installs no site generator.
+  installs no site generator. One of its cases is stricter than the build: a link into
+  the excluded `docs/specs/` returns a 404 on the published site, and
+  `mkdocs build --strict` reports it at the information level and still succeeds.
 
 - **A `LookupResult` supports item access by field name** (#364). Round 123. Version
   0.6.0 returned a dict with the keys `application`, `type` and `notes`, and #59 replaced

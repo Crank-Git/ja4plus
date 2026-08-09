@@ -4,10 +4,14 @@
 `FR-documentation-9` asks the site to carry an API reference generated from the
 docstrings. `FR-documentation-15` asks a broken internal link to fail the build.
 
-**The build itself is the authority, and `mkdocs build --strict` is the command.** These
-cases stand in front of it, because the unit suite installs the `dev` extra and not the
-`docs` extra, so no case here imports `mkdocs`. They read the site configuration and the
-pages as text, and they resolve every internal link the same way the build does.
+**`mkdocs build --strict` is the command that carries the requirement.** These cases
+stand in front of it, because the unit suite installs the `dev` extra and not the `docs`
+extra, so no case here imports `mkdocs`. They read the site configuration and the pages
+as text, and they resolve every internal link the way the build resolves it.
+
+**One case is stricter than the build, and `_publishes` records the measurement.** A link
+into the excluded `docs/specs/` returns a 404 on the published site, and the build reports
+it at the information level, which strict mode does not fail.
 
 **A case here reads the published page set, which excludes `docs/specs/`.** The
 specification package is design material. `mkdocs.yml` excludes it from the site, so a
@@ -19,6 +23,9 @@ produce no fingerprint.
 
 from pathlib import Path
 import re
+import unicodedata
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -60,6 +67,7 @@ MKDOCSTRINGS_IDENTIFIER = re.compile(r"^:::\s+(\S+)\s*$", re.MULTILINE)
 # on an empty list. The published set held these counts when #64 landed, and both grow.
 MINIMUM_PUBLISHED_PAGES = 10
 MINIMUM_INTERNAL_LINKS = 20
+MINIMUM_PUBLISHED_HEADINGS = 200
 
 
 def _published_pages() -> list[Path]:
@@ -80,10 +88,17 @@ def _published_pages() -> list[Path]:
 
 
 def _slug(heading: str) -> str:
-    """Return the anchor that Python-Markdown builds for one heading.
+    """Return the anchor that `mkdocs.yml` builds for one heading.
 
-    The `toc` extension lowercases the text, removes every character that is not a word
-    character, a space or a hyphen, and then replaces each space with a hyphen.
+    `mkdocs.yml` gives the `toc` extension `pymdownx.slugs.slugify(case="lower")`, and
+    `_uslugify` of `pymdownx/slugs.py` states these five steps. This function reproduces
+    them, because the unit suite installs the `dev` extra and imports no `pymdownx`.
+
+    **Never replace a run of spaces with one hyphen.** The source calls `str.replace`,
+    which keeps every space, so `JA4 — TLS client` slugs to `ja4--tls-client` with two
+    hyphens. A first form of this function collapsed the run, and it disagreed with the
+    build on 84 headings of 268. No link pointed at one of the 84, so the case passed
+    while it compared the wrong value.
 
     Args:
         heading: The heading text, without its `#` characters.
@@ -91,12 +106,15 @@ def _slug(heading: str) -> str:
     Returns:
         The anchor, without the leading `#`.
     """
-    # A heading carries inline Markdown. `## The `Processor` class` must slug the word and
-    # not the backticks, and `## [Usage](usage.md)` must slug the label.
+    # Python-Markdown slugs the rendered heading, so the inline Markdown is already gone.
+    # `## The `Processor` class` slugs the word and not the backticks, and
+    # `## [Usage](usage.md)` slugs the label.
     text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading)
-    text = text.replace("`", "").replace("*", "").replace("_", "")
-    text = re.sub(r"[^\w\s-]", "", text.lower())
-    return re.sub(r"\s+", "-", text.strip())
+    text = text.replace("`", "").replace("*", "")
+    slug = re.sub(r"</?[^>]*>", "", unicodedata.normalize("NFC", text)).strip().lower()
+    # `\w` holds the underscore, so a name such as `process_packet` keeps it.
+    slug = re.sub(r"[^\w\- ]", "", slug, flags=re.UNICODE)
+    return slug.replace(" ", "-")
 
 
 def _anchors(page: Path) -> set[str]:
@@ -153,6 +171,70 @@ def _internal_links() -> list[tuple[Path, int, str]]:
     return links
 
 
+def _publishes(candidate: Path) -> bool:
+    """Report whether the site publishes the file one link names.
+
+    **A file that exists is not always a page the site serves.** MkDocs resolves a link
+    against `docs_dir` alone, so a target above `docs/` reaches nothing, and
+    `exclude_docs` removes `docs/specs/` from the site.
+
+    **This reading is stricter than the build, and the difference is measured.** A link
+    to `../specs/spec.md` returns a 404 on the published site, and `mkdocs build
+    --strict` still succeeds. It writes `Doc file 'reference/processor.md' contains a
+    link to 'specs/spec.md' which is excluded from the built site.` at the information
+    level, and strict mode fails on a warning alone. The `validation` tree holds no key
+    that raises that message, so this function is the only guard against it.
+
+    Args:
+        candidate: The path the link resolves to, before normalisation.
+
+    Returns:
+        True when the file exists inside `docs_dir` and outside the excluded directory.
+    """
+    resolved = candidate.resolve()
+    if not resolved.exists():
+        return False
+    try:
+        relative = resolved.relative_to(DOCS_DIR.resolve())
+    except ValueError:
+        return False
+    return EXCLUDED_DIRECTORY not in relative.parts
+
+
+def test_the_slug_of_a_case_matches_the_slug_of_the_build() -> None:
+    """`_slug` returns what `pymdownx.slugs.slugify` returns for every published heading.
+
+    **This case reads the anchor checker itself.** `_slug` is a copy of an algorithm the
+    site owns, and a copy drifts. A first form of it collapsed a run of spaces and
+    disagreed on 84 headings of 268. No link pointed at one of the 84, so the anchor case
+    compared the wrong value and still passed.
+
+    The case runs where the `docs` extra is installed. The unit suite installs the `dev`
+    extra alone and reports a skip, which names the gap rather than hiding it.
+    """
+    slugs = pytest.importorskip(
+        "pymdownx.slugs", reason="the `docs` extra installs pymdownx, and `dev` does not"
+    )
+    reference = slugs.slugify(case="lower")
+    compared = 0
+    disagreements = []
+    for page in _published_pages():
+        text = FENCED_BLOCK.sub("", page.read_text(encoding="utf-8"))
+        for _, heading in HEADING.findall(text):
+            compared += 1
+            if _slug(heading) != reference(heading, "-"):
+                disagreements.append(
+                    f"{page.relative_to(REPO_ROOT)} {heading!r}: "
+                    f"{_slug(heading)!r} against {reference(heading, '-')!r}"
+                )
+    assert compared >= MINIMUM_PUBLISHED_HEADINGS, (
+        f"the case compared {compared} headings, and the floor is {MINIMUM_PUBLISHED_HEADINGS}"
+    )
+    assert disagreements == [], (
+        f"`_slug` disagrees with the build on these headings: {disagreements}"
+    )
+
+
 def test_the_repository_holds_a_site_configuration() -> None:
     """`mkdocs.yml` sits at the repository root, where `mkdocs build` reads it."""
     assert CONFIGURATION.is_file(), "the repository holds no mkdocs.yml"
@@ -196,11 +278,10 @@ def test_every_published_page_links_a_file_that_exists() -> None:
         path = target.split("#", 1)[0]
         if not path:
             continue
-        resolved = (page.parent / path).resolve()
-        if resolved.exists():
+        if _publishes(page.parent / path):
             continue
         broken.append(f"{page.relative_to(REPO_ROOT)}:{number} points at {target!r}")
-    assert broken == [], f"these links name a file that does not exist: {broken}"
+    assert broken == [], f"these links name a page the site does not publish: {broken}"
 
 
 def test_every_published_page_links_an_anchor_that_exists() -> None:
