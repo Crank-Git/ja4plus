@@ -140,6 +140,28 @@ edits no page of another issue.
 
 ### Fixed
 
+- **The migration page records the narrowed certificate readers, and it cites round 123
+  for the item access** (#399, #401). Round TBD. The page held eleven breaking changes and
+  none recorded #319, which narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`,
+  so an input that returned `None` in version 0.6.0 can now raise. The page also cited one
+  row under `Round 122, #59 and #364`, and the Changelog table of `docs/specs/spec.md`
+  holds round 122 for #59 and round 123 for #364. **Both defects sit in a page this epic
+  itself created, and #66 found both while it wrote the release notes.** The page now holds
+  thirteen rows: the conflated row parts into two, and the certificate readers gain one.
+  **The repair is the two cases that make the page answerable to the record.**
+  `test_every_citation_of_the_migration_page_names_the_row_that_records_it` reads every
+  `Round N, #M` citation of the page against the Changelog table of `docs/specs/spec.md`,
+  and it reads no second document. The first citation case of #66 compared the `Record`
+  cell of the notes against the cell of the page, and both files held one error, so the
+  two agreed and the case passed. That is the eighteenth recorded instance of a comparison
+  that never runs.
+  `test_every_breaking_change_of_the_record_reaches_the_migration_page` reads the direction
+  #66 left open, because the case that reads the other direction passes on a page that
+  holds fewer changes than the record. Four mutations prove the two cases discriminate, and
+  each was restored. The unit suite rises from 2499 passed to 2501, coverage holds at 94,
+  and the conformance suite reports 134 xfailed against 134 register keys. This entry
+  changes no file under `ja4plus/` and no fingerprint moves.
+
 - **`generate_ja4` reads a TLS info dictionary, and the documentation stated a packet**
   (#63). Round TBD. `README.md` and `docs/api_reference.md` each wrote
   `generate_ja4(packet)`, and the call raises `AttributeError: get`. The function reads
