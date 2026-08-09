@@ -1,4 +1,4 @@
-"""Fingerprint a capture from the wheel, installed into a clean environment.
+"""Fingerprint a capture from the built package, installed into a clean environment.
 
 `FR-pre-release-validation-1` to `FR-pre-release-validation-7` state the requirements.
 #68 and #69 read the contents of the wheel. No case before this one installed the wheel
@@ -29,6 +29,20 @@ the check again**, so `build_artifacts`, `create_clean_environment` and
 #409 installs the source distribution. The build, the environment creation and the
 comparison each take the artifact as a parameter, so #409 passes another artifact to the
 same three functions.
+
+**The source distribution is a second artifact and it can fail where the wheel passes.**
+`pip install ja4plus` falls back to the source distribution where no wheel matches the
+host, and that path runs the build backend on the machine of the user. A file the
+`setuptools` package-data rule reaches in one artifact and not the other produces a
+package that imports and then reports an empty database.
+`test_the_lookup_of_the_source_distribution_reports_nothing_without_the_mapping_file`
+proves that state is separable from a working install.
+
+**`pip install <the sdist>` must build the source distribution and not resolve a wheel.**
+The pip documentation states that `--no-binary` does not download a binary package and
+that a cached binary package may still be used, so the option alone does not settle it.
+`test_pip_built_the_package_from_the_source_distribution` therefore reads the recorded
+`pip` output and holds three facts against it.
 """
 
 from __future__ import annotations
@@ -40,6 +54,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 
 import pytest
 
@@ -61,6 +76,21 @@ MARKER = "installed_wheel"
 # this value before it removes the mapping file and after it, so a hit and a miss
 # separate the two states.
 MAPPED_FINGERPRINT = "t13i181000_85036bcba153_d41ae481755e"
+
+# The arguments that bar a wheel from the source-distribution install. `--no-binary`
+# accepts `:all:`, `:none:`, or one or more package names with commas between them, and
+# it reaches the named package alone. The two dependencies therefore keep their wheels,
+# and a source build of `cryptography` costs a compiler this gate does not hold.
+#
+# Verified against: https://pip.pypa.io/en/stable/cli/pip_install/ (retrieved 2026-08-09).
+NO_BINARY_ARGUMENTS = ("--no-binary", "ja4plus")
+
+# The mapping file, below the root of the installed package and below the repository root.
+MAPPING_FILE_PARTS = ("data", "ja4plus-mapping.csv")
+
+# The member the source distribution carries for the deviation register. `tar -tzf` writes
+# every member under the `<name>-<version>/` prefix, and this reader matches the tail.
+REGISTER_MEMBER = "tests/foxio_deviations.json"
 
 # The probe that exercises the public interface. It imports `ja4plus`, builds a
 # `Processor`, reads the capture with `scapy`, and writes one line for each fingerprint
@@ -352,6 +382,41 @@ def resolves_outside_the_repository(
     return below_site_packages and holds_no_checkout
 
 
+def resolved_a_wheel(pip_output: str) -> bool:
+    """Report whether one `pip install` run resolved a `ja4plus` wheel.
+
+    `pip` writes `Downloading ja4plus-<version>.whl` for a wheel it reads from an index,
+    and `Using cached ja4plus-<version>.whl` for a wheel it reads from its own cache. A
+    run that builds the artifact writes neither line.
+
+    Verified against: https://pip.pypa.io/en/stable/cli/pip_install/ (retrieved 2026-08-09).
+
+    Args:
+        pip_output: The standard output of one `pip install` run.
+
+    Returns:
+        True where the run resolved a wheel, False otherwise.
+    """
+    pattern = r"^\s*(Downloading|Using cached) ja4plus-\S+\.whl"
+    return re.search(pattern, pip_output, re.MULTILINE) is not None
+
+
+def sdist_member_names(sdist: pathlib.Path) -> list[str]:
+    """Return the member names of one source distribution, without the root prefix.
+
+    `tar -tzf <the sdist>` writes the same listing. This reader opens the archive through
+    `tarfile`, so the case needs no `tar` program on the host.
+
+    Args:
+        sdist: The source distribution to read.
+
+    Returns:
+        Every member name, with the leading `<name>-<version>/` component removed.
+    """
+    with tarfile.open(sdist, "r:gz") as archive:
+        return [name.split("/", 1)[1] for name in archive.getnames() if "/" in name]
+
+
 def declared_version() -> str:
     """Return the version that the `[project]` block of `pyproject.toml` declares.
 
@@ -413,6 +478,34 @@ def control_environment(
     """
     return create_clean_environment(
         tmp_path_factory.mktemp("control-env") / "env", artifacts["wheel"]
+    )
+
+
+@pytest.fixture(scope="session")
+def sdist_environment(
+    artifacts: dict[str, pathlib.Path],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> CleanEnvironment:
+    """Install the source distribution into one clean environment for the whole session."""
+    return create_clean_environment(
+        tmp_path_factory.mktemp("sdist-env") / "env", artifacts["sdist"], NO_BINARY_ARGUMENTS
+    )
+
+
+@pytest.fixture(scope="session")
+def sdist_control_environment(
+    artifacts: dict[str, pathlib.Path],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> CleanEnvironment:
+    """Install the source distribution into a second environment that the control damages.
+
+    The control case removes the mapping file, so it needs an environment that no other
+    case reads.
+    """
+    return create_clean_environment(
+        tmp_path_factory.mktemp("sdist-control-env") / "env",
+        artifacts["sdist"],
+        NO_BINARY_ARGUMENTS,
     )
 
 
@@ -529,6 +622,175 @@ def test_the_lookup_reports_an_empty_database_without_the_mapping_file(
     assert after.split() == ["0", "False"], (
         f"the lookup reported {after.strip()!r} without the mapping file, and an empty "
         "database reports '0 False'"
+    )
+
+
+def test_pip_built_the_package_from_the_source_distribution(
+    sdist_environment: CleanEnvironment, artifacts: dict[str, pathlib.Path]
+) -> None:
+    """`FR-pre-release-validation-8` and `FR-pre-release-validation-9`.
+
+    Warning: a run that resolves a wheel measures the artifact of #408 again and reports a
+    pass. Three facts of the recorded output separate the two runs. `pip` names the input
+    file, it builds a wheel from that file, and it reads no wheel from an index or a cache.
+    """
+    output = sdist_environment.pip_output
+    assert f"Processing {artifacts['sdist']}" in output, (
+        f"pip read another input than {artifacts['sdist']}: {output}"
+    )
+    assert "Building wheel for ja4plus" in output, (
+        f"pip built no wheel from the source distribution: {output}"
+    )
+    assert not resolved_a_wheel(output), f"pip resolved a ja4plus wheel: {output}"
+
+
+def test_the_source_distribution_environment_imports_ja4plus_from_its_own_site_packages(
+    sdist_environment: CleanEnvironment, workspace: pathlib.Path
+) -> None:
+    """`FR-pre-release-validation-4`. The source-distribution environment holds the copy."""
+    package_file = package_file_of(sdist_environment.python, workspace)
+    assert resolves_outside_the_repository(package_file, sdist_environment.site_packages), (
+        f"the clean environment imported {package_file}, which is not below "
+        f"{sdist_environment.site_packages}"
+    )
+
+
+def test_the_source_distribution_environment_reports_the_version_of_pyproject(
+    sdist_environment: CleanEnvironment, workspace: pathlib.Path
+) -> None:
+    """The console script of the source-distribution environment writes the version."""
+    written = run_probe(sdist_environment.script, ["--version"], workspace, workspace / "cache")
+    assert written.decode("utf-8").strip() == f"ja4plus {declared_version()}"
+
+
+def test_the_analyze_output_of_the_source_distribution_equals_the_source_tree(
+    sdist_environment: CleanEnvironment, workspace: pathlib.Path
+) -> None:
+    """`FR-pre-release-validation-3` and `FR-pre-release-validation-5`.
+
+    Both runs call `ja4plus.cli:main` on one copy of the capture, and the two outputs are
+    equal byte for byte.
+    """
+    arguments = [
+        "-m",
+        "ja4plus.cli",
+        "analyze",
+        str(workspace / CAPTURE_VECTOR),
+        "--format",
+        "json",
+    ]
+    installed = run_probe(sdist_environment.python, arguments, workspace, workspace / "cache")
+    source_tree = run_probe(
+        pathlib.Path(sys.executable), arguments, REPOSITORY_ROOT, workspace / "cache"
+    )
+    assert installed, "the source-distribution environment wrote no output line"
+    assert installed.splitlines() == source_tree.splitlines()
+    assert installed == source_tree
+
+
+def test_the_processor_of_the_source_distribution_produces_the_same_fingerprint_list(
+    sdist_environment: CleanEnvironment, workspace: pathlib.Path
+) -> None:
+    """`FR-pre-release-validation-2` and `FR-pre-release-validation-5`.
+
+    The probe imports `ja4plus`, builds a `Processor`, and writes one line for each
+    fingerprint. The two lists hold the same lines in the same order.
+    """
+    arguments = [str(workspace / "processor_probe.py"), str(workspace / CAPTURE_VECTOR)]
+    installed = run_probe(sdist_environment.python, arguments, workspace, workspace / "cache")
+    source_tree = run_probe(
+        pathlib.Path(sys.executable), arguments, REPOSITORY_ROOT, workspace / "cache"
+    )
+    assert installed.splitlines(), "the source-distribution environment collected no fingerprint"
+    assert installed.splitlines() == source_tree.splitlines()
+
+
+def test_the_source_distribution_ships_the_mapping_file_of_the_repository(
+    sdist_environment: CleanEnvironment,
+) -> None:
+    """`FR-pre-release-validation-10`. The installed mapping file holds the byte count.
+
+    The `setuptools` package-data rule reaches the mapping file. A rule that reaches the
+    wheel and not the source distribution produces a package that imports and then reports
+    an empty database.
+    """
+    installed = sdist_environment.site_packages.joinpath("ja4plus", *MAPPING_FILE_PARTS)
+    repository = REPOSITORY_ROOT.joinpath("ja4plus", *MAPPING_FILE_PARTS)
+    assert installed.is_file(), f"the source distribution shipped no {installed}"
+    assert installed.stat().st_size == repository.stat().st_size, (
+        f"{installed} holds {installed.stat().st_size} bytes, and {repository} holds "
+        f"{repository.stat().st_size}"
+    )
+
+
+def test_the_lookup_of_the_source_distribution_answers_for_one_named_fingerprint(
+    sdist_environment: CleanEnvironment, workspace: pathlib.Path
+) -> None:
+    """`FR-pre-release-validation-11`. The installed package reads the mapping file.
+
+    A present file is not a read file. The probe looks one named fingerprint up, so the
+    answer states that the package opened the file and parsed it.
+    """
+    arguments = [str(workspace / "lookup_probe.py"), MAPPED_FINGERPRINT]
+    written = run_probe(sdist_environment.python, arguments, workspace, workspace / "cache").decode(
+        "utf-8"
+    )
+    count, answered = written.split()
+    assert int(count) > 0, "the installed source distribution holds no mapping entry"
+    assert answered == "True", (
+        f"the lookup reported {written.strip()!r} for {MAPPED_FINGERPRINT}, and a record "
+        "reports 'True'"
+    )
+
+
+def test_the_lookup_of_the_source_distribution_reports_nothing_without_the_mapping_file(
+    sdist_control_environment: CleanEnvironment, workspace: pathlib.Path
+) -> None:
+    """`FR-pre-release-validation-6`. The control case proves the lookup assertion can fail.
+
+    Warning: never remove this case. The assertion above passes on any environment whose
+    lookup answers, and a check that cannot fail measures nothing. The probe runs before
+    the removal and after it, so a passing source distribution and a broken one produce
+    two different lines.
+    """
+    arguments = [str(workspace / "lookup_probe.py"), MAPPED_FINGERPRINT]
+    # This case damages its environment, so it reads a cache directory that no other case
+    # reads. A shared directory would carry a mapping file from one environment to the
+    # other as soon as a probe writes one.
+    cache_home = sdist_control_environment.root.parent / "cache"
+    cache_home.mkdir(exist_ok=True)
+    before = run_probe(sdist_control_environment.python, arguments, workspace, cache_home).decode(
+        "utf-8"
+    )
+    count, answered = before.split()
+    assert int(count) > 0, "the installed source distribution holds no entry before the removal"
+    assert answered == "True", f"the source distribution holds no entry for {MAPPED_FINGERPRINT}"
+
+    mapping_file = sdist_control_environment.site_packages.joinpath("ja4plus", *MAPPING_FILE_PARTS)
+    assert mapping_file.is_file(), f"the source distribution shipped no {mapping_file}"
+    mapping_file.unlink()
+
+    after = run_probe(sdist_control_environment.python, arguments, workspace, cache_home).decode(
+        "utf-8"
+    )
+    assert after.split() == ["0", "False"], (
+        f"the lookup reported {after.strip()!r} without the mapping file, and an empty "
+        "database reports '0 False'"
+    )
+
+
+def test_the_source_distribution_lists_the_deviation_register(
+    artifacts: dict[str, pathlib.Path],
+) -> None:
+    """The source distribution carries the FoxIO deviation register.
+
+    A user who builds from the source distribution runs the conformance gate, and
+    `tests/foxio_deviations.py` opens this file. A source distribution that omits it
+    carries a gate that no user can run.
+    """
+    members = sdist_member_names(artifacts["sdist"])
+    assert REGISTER_MEMBER in members, (
+        f"the source distribution lists no {REGISTER_MEMBER}, and it holds {len(members)} members"
     )
 
 

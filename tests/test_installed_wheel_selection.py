@@ -25,8 +25,9 @@ REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parent.parent
 WHEEL_TESTS = REPOSITORY_ROOT / "tests" / "test_installed_wheel.py"
 
 # The case count of `tests/test_installed_wheel.py` on 2026-08-09. A reader that finds
-# nothing passes every count case on zero, so the cases below hold this floor.
-EXPECTED_CASE_COUNT = 7
+# nothing passes every count case on zero, so the cases below hold this floor. #408 wrote
+# seven cases against the wheel, and #409 added nine against the source distribution.
+EXPECTED_CASE_COUNT = 16
 
 
 def _collect(arguments: List[str]) -> str:
