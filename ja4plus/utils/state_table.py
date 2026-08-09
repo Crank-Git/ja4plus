@@ -139,14 +139,19 @@ class StateTable:
         max_evicted_keys: The count of evicted keys the table remembers. The memory of
             an evicted key costs one key, so this bound matches the entry bound of the
             table.
+        track_evictions: True remembers the key of every entry the table evicts, and it
+            reports `returned_connections`. False remembers no key, and it reports 0
+            returned connections. #359 measured the cost of the memory, and only a
+            reader of the count needs it.
     """
 
-    def __init__(self, max_evicted_keys: int) -> None:
+    def __init__(self, max_evicted_keys: int, track_evictions: bool = True) -> None:
         self.inserts = 0
         self.evictions = 0
         self.removals = 0
         self.returned_connections = 0
         self.max_evicted_keys = max_evicted_keys
+        self.track_evictions = track_evictions
 
         # The keys the table evicted and has not seen again, least recent first. A set
         # answers the membership question, and it gives no order to drop the oldest
@@ -171,7 +176,8 @@ class StateTable:
             key: The key that arrives.
 
         Returns:
-            True when this table evicted the key and has not seen it since.
+            True when this table evicted the key and has not seen it since. A table that
+            tracks no eviction returns False for every key.
         """
         if key not in self._evicted_keys:
             return False
@@ -195,6 +201,11 @@ class StateTable:
             key: The key the table removed.
         """
         self.evictions += 1
+        # A table that tracks no eviction reports no returned connection, so the key of
+        # this entry buys nothing. The eviction count stands, because
+        # FR-concurrency-safety-12 asks for it and it costs one integer.
+        if not self.track_evictions:
+            return
         self._evicted_keys[key] = None
         # A fresh key lands at the end already. This call covers a key the memory still
         # holds, which happens when a subclass evicts a key that no `take_evicted_key`
@@ -272,6 +283,10 @@ class BoundedStateTable(StateTable, MutableMapping[Any, Any]):
             argument that `features/03-concurrency-safety.md` publishes.
         max_connection_age: The maximum age of one entry, in seconds.
         eviction_interval: The count of packets between two age eviction passes.
+        track_evictions: True remembers the key of every entry the table evicts, and it
+            reports `returned_connections`. False remembers no key, and it reports 0
+            returned connections. A full table of 100000 entries pays 16.06 MiB for that
+            memory, and #359 measured it. Only a caller that reads the count needs it.
         on_eviction: A callable the table calls with the key of every entry it evicts,
             on either bound. The table calls it after it removes the entry. A caller
             that removes an entry itself receives no call, because that caller already
@@ -289,6 +304,7 @@ class BoundedStateTable(StateTable, MutableMapping[Any, Any]):
         max_connections: int = DEFAULT_MAX_CONNECTIONS,
         max_connection_age: float = DEFAULT_MAX_CONNECTION_AGE,
         eviction_interval: int = DEFAULT_EVICTION_INTERVAL,
+        track_evictions: bool = True,
         on_eviction: Callable[[Any], None] | None = None,
     ) -> None:
         if max_connections < 1:
@@ -298,7 +314,7 @@ class BoundedStateTable(StateTable, MutableMapping[Any, Any]):
 
         # `evictions` counts the entries the table itself removed. `pop` and `del`
         # belong to the caller, so neither raises that count. #41 reports it.
-        StateTable.__init__(self, max_evicted_keys=max_connections)
+        StateTable.__init__(self, max_evicted_keys=max_connections, track_evictions=track_evictions)
 
         self.max_connections = max_connections
         self.max_connection_age = max_connection_age

@@ -300,6 +300,11 @@ class JA4DBClient:
             # An age pass reads every entry, so a lookup cache below the default entry
             # count runs its pass on its own entry count.
             eviction_interval=min(DEFAULT_CACHE_EVICTION_INTERVAL, cache_size),
+            # `Processor.stats` collects the state tables of the fingerprinters, and
+            # this client is no fingerprinter, so nothing reads `returned_connections`
+            # for the lookup cache. #359 measured the memory that count costs at
+            # 16.06 MiB of the 47.06 MiB a full lookup cache holds.
+            track_evictions=False,
         )
         self._cache_lock = threading.Lock()
         self._allow_remote = allow_remote
