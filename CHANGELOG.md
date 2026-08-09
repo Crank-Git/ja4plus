@@ -8,6 +8,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The documentation states what a fingerprint is evidence of** (#343). Round 110.
+  ja4plus adds no plausibility guard, so a structurally valid ClientHello produces a
+  fingerprint whatever its body holds. This change records the behaviour and changes
+  none of it, so no file under `ja4plus/` moves. A fingerprint is evidence of the bytes
+  the packet carried, and it is no evidence of a real client. `README.md` and
+  `docs/output-schema.md` now
+  state the property where a user reads it, and the `Divergence register` of
+  `docs/specs/spec.md` holds the measurement.
+
 - **The command-line program separates results from diagnostics and gains `--output`**
   (#52). Round 95. The program writes results to standard output and every diagnostic
   to standard error, so a pipe that reads standard output reads results alone. The

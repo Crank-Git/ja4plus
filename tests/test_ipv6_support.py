@@ -59,7 +59,12 @@ class TestJA4LIPv6(unittest.TestCase):
 
 
 class TestJA4SSHIPv6(unittest.TestCase):
-    def test_ja4ssh_ipv6(self):
+    def test_ja4ssh_names_the_ipv6_connection_of_its_fingerprint(self):
+        """JA4SSH reads an IPv6 packet and keys its connection by the IPv6 addresses.
+
+        #339 records that this case read the result of `process_packet` and discarded
+        it. The values below are the measured behaviour of the unchanged code.
+        """
         from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 
         fp = JA4SSHFingerprinter(packet_count=1)
@@ -68,22 +73,33 @@ class TestJA4SSHIPv6(unittest.TestCase):
             / TCP(sport=12345, dport=22)
             / Raw(load=b"SSH-2.0-OpenSSH_8.9\r\n")
         )
-        fp.process_packet(pkt)
-        # Should not crash due to missing IP layer — that's the key test
+
+        result = fp.process_packet(pkt)
+
+        self.assertEqual(result, "c21s0_c1s0_c0s0")
+        self.assertEqual(len(fp.get_fingerprints()), 1)
+        self.assertEqual(fp.get_fingerprints()[0]["connection"], "::1:12345-::2:22")
+        self.assertEqual(set(fp.connections.keys()), {"::1:12345-::2:22"})
 
 
 class TestJA4XIPv6(unittest.TestCase):
-    def test_ja4x_ipv6_no_crash(self):
+    def test_ja4x_keys_the_ipv6_stream_by_the_ipv6_addresses(self):
+        """JA4X reads an IPv6 packet and holds the record under the IPv6 stream key.
+
+        The record carries no whole certificate, so the method emits nothing. #339
+        records that this case asserted nothing at all.
+        """
         from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 
         fp = JA4XFingerprinter()
-        pkt = (
-            IPv6(src="::1", dst="::2")
-            / TCP(sport=12345, dport=443, seq=100)
-            / Raw(load=b"\x16\x03\x01\x00\x05\x0b\x00\x00\x01\x00")
-        )
-        fp.process_packet(pkt)
-        # May return None (not enough data), but must not crash
+        record = b"\x16\x03\x01\x00\x05\x0b\x00\x00\x01\x00"
+        pkt = IPv6(src="::1", dst="::2") / TCP(sport=12345, dport=443, seq=100) / Raw(load=record)
+
+        self.assertIsNone(fp.process_packet(pkt))
+
+        self.assertEqual(set(fp.reassembler.streams), {"::1:12345-::2:443"})
+        self.assertEqual(fp.reassembler.get_stream("::1:12345-::2:443"), record)
+        self.assertEqual(fp.get_fingerprints(), [])
 
 
 if __name__ == "__main__":
