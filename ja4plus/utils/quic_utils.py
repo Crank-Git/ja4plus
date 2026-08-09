@@ -15,6 +15,7 @@ import struct
 from collections.abc import Iterable
 from typing import Any
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDFExpand
 from cryptography.hazmat.primitives import hashes
@@ -378,7 +379,12 @@ def decrypt_quic_initial_crypto(
         unprotected, pn, pn_length = remove_header_protection(udp_payload, hp_key)
         pn_offset = _find_pn_offset(udp_payload)
         plaintext = decrypt_initial_payload(unprotected, pn, pn_length, pn_offset, key, iv)
-    except Exception as e:
+    # `_find_pn_offset` and `remove_header_protection` guard no index, so a length field
+    # of the packet raises `IndexError`. AES in ECB mode raises `ValueError` for a
+    # header-protection sample that is no multiple of 16 bytes. `AESGCM.decrypt` raises
+    # `InvalidTag`, which inherits `Exception` and not `ValueError`, so a list without it
+    # drops the common case. #319 holds the measurement of 90000 datagrams.
+    except (IndexError, ValueError, InvalidTag) as e:
         logger.debug(f"QUIC Initial decryption failed: {e}")
         return None, None
 
@@ -468,7 +474,9 @@ def decrypt_quic_server_initial_crypto(
         unprotected, pn, pn_length = remove_header_protection(udp_payload, hp_key)
         pn_offset = _find_pn_offset(udp_payload)
         plaintext = decrypt_initial_payload(unprotected, pn, pn_length, pn_offset, key, iv)
-    except Exception as e:
+    # The try-body above holds the same three calls as `decrypt_quic_initial_crypto`, so
+    # it meets the same three errors. #319 holds the measurement.
+    except (IndexError, ValueError, InvalidTag) as e:
         logger.debug(f"QUIC server Initial decryption failed: {e}")
         return None
 
@@ -619,6 +627,11 @@ def parse_quic_initial(udp_payload: bytes) -> dict[str, Any] | None:
             tls_info["is_quic"] = True
         return tls_info
 
-    except Exception as e:
+    # The try-body holds the three calls of `decrypt_quic_initial_crypto` and the read of
+    # the ClientHello behind them. The read raises `IndexError` alone, and
+    # `MAXIMUM_CRYPTO_BUFFER_BYTES` caps the reassembled message at 16384 bytes, so the
+    # `!H` length field below reaches no value that raises `struct.error`. #319 holds the
+    # measurement of 40005 decrypted payloads.
+    except (IndexError, ValueError, InvalidTag) as e:
         logger.debug(f"QUIC parsing failed: {e}")
         return None

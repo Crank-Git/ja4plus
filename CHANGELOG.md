@@ -8,6 +8,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Four QUIC and certificate readers name the errors they expect, and ten wide catches
+  state why they stay wide** (#319). Round TBD. `grep -rn "except Exception" ja4plus/`
+  reads 14 sites across five files. **#319 is a reading of all fourteen, and it narrows
+  the four that `CLAUDE.md` binds.** A parser that cannot read a packet returns nothing,
+  and it does not raise. `decrypt_quic_initial_crypto`, `decrypt_quic_server_initial_crypto`
+  and `parse_quic_initial` of `ja4plus/utils/quic_utils.py` now name `IndexError`,
+  `ValueError` and `InvalidTag`. `compute_ja4x_from_pem` of `ja4plus/__init__.py` now
+  names `ValueError` and `x509.InvalidVersion`. **`InvalidTag` and `InvalidVersion` each
+  inherit `Exception` and not `ValueError`**, so a list of `ValueError` alone drops a real
+  packet and a real certificate. A fuzz of 90000 datagrams and a second fuzz of 40005
+  decrypted payloads measured the set, and a bound of 16384 bytes on the reassembled
+  ClientHello proves that `struct.error` reaches no site. **The three sites of
+  `ja4plus/processor.py` hand each failure to the caller, and #45 decided that.** The five
+  sites of `ja4plus/cli.py` and the two of `ja4plus/ja4db.py` report a failure and return.
+  Each of those ten now carries a comment that states the reason. **No fingerprint moves,
+  and the conformance suite reports 134 xfailed against 134 register keys.**
+
 - **JA4L emits one server value for one connection, and the six open JA4L register
   entries now hold a live owner** (#272). Round TBD. `ja4plus/fingerprinters/ja4l.py`
   returned the server value on every SYN-ACK, so a retransmitted SYN-ACK repeated the

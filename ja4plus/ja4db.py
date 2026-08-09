@@ -389,8 +389,11 @@ class JA4DBClient:
         if not self._allow_remote:
             return None
 
-        # #319 owns this wide handler. The handlers that name their errors are inside
-        # `_remote_lookup`.
+        # The wide catch is the design, and #319 read the site and narrowed nothing.
+        # `ja4db.com` publishes no versioned document, so the client treats every failure
+        # of the service as a miss. A lookup is an enrichment of a fingerprint this
+        # project already produced, and no failure of it may reach the caller as an
+        # error. The handlers that name their errors are inside `_remote_lookup`.
         try:
             return self._remote_lookup(fingerprint)
         except Exception as e:
@@ -431,6 +434,10 @@ class JA4DBClient:
                 return _read_remote_body(resp.json())
         except (ValueError, KeyError, AttributeError):
             pass
+        # The wide catch is the design, and #319 read the site and narrowed nothing.
+        # `requests` raises from a hierarchy that its transport adapters extend, so no
+        # list this module writes stays complete. The clause above names the errors the
+        # response body raises, and this one reads a failure of the request.
         except Exception as e:
             logger.debug("ja4db.com API error: %s", e)
 

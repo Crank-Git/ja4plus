@@ -80,7 +80,12 @@ def compute_ja4x_from_pem(cert_pem_bytes: bytes | str) -> str | None:
 
     try:
         cert = x509.load_pem_x509_certificate(cert_pem_bytes, default_backend())
-    except Exception:
+    # The `cryptography` documentation names `ValueError` for data the loader cannot
+    # parse. #316 measured `InvalidVersion` from the DER loader, and #319 measured it
+    # from the PEM loader. It inherits `Exception` and not `ValueError`, so a list of
+    # `ValueError` alone drops it and a real certificate then reaches the caller as an
+    # error rather than as nothing.
+    except (ValueError, x509.InvalidVersion):
         return None
     der = cert.public_bytes(Encoding.DER)
     return compute_ja4x_from_der(der)
