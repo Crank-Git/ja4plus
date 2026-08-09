@@ -73,6 +73,31 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **One case fingerprints a capture from the installed wheel** (#408). Round TBD. New
+  file `tests/test_installed_wheel.py`, and the new `installed_wheel` marker in
+  `pyproject.toml`. The case builds both artefacts with `python -m build`, installs the
+  wheel into a clean environment, and reads three paths from that environment:
+  `ja4plus --version`, `ja4plus analyze --format json`, and one script that imports
+  `ja4plus` and drives a `Processor`. The output of the last two equals the output of the
+  source tree, byte for byte. **A run that resolves the working copy proves nothing.**
+  Every other job of `.github/workflows/test.yml` installs with `pip install -e ".[dev]"`,
+  which puts the source tree on the import path, so a case that only imports `ja4plus`
+  measures the checkout. This case reads `ja4plus.__file__` of the clean environment, and
+  it fails when that path is not below the `site-packages` directory of that environment.
+  **A check that cannot fail measures nothing**, so
+  `test_the_import_check_fails_for_the_source_tree` holds the same check against the
+  interpreter that runs the suite and asserts that it rejects that path. **The control
+  case is not optional**, because the byte-for-byte comparison passes on any wheel that
+  imports. It removes `ja4plus/data/ja4plus-mapping.csv` from a second clean environment
+  and reads one probe twice: `70 True` before the removal, and `0 False` after it.
+  `.github/workflows/test.yml` gains the `installed-wheel` job, which names the marker, so
+  a failure is visible without a log search. **`build` joins the `dev` extra**, because
+  the marker sits inside `pytest tests/ -m "not spec_validation"`, and every environment
+  that runs that gate needs the package. #409 installs the source distribution, and the
+  build, the environment creation and the comparison each take the artefact as a
+  parameter, so #409 passes another artefact to the same three functions. The marker run
+  measured 12.88 s on macOS with a warm `pip` cache. This entry changes no file under
+  `ja4plus/` and it moves no fingerprint.
 - **The specification records Epic 11, pre-release validation** (#407). Round TBD. New
   file `docs/specs/features/11-pre-release-validation.md`. It states 33 requirements, and
   every sub-issue of #406 quotes one. **The epic measures four statements that version

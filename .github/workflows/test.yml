@@ -178,6 +178,49 @@ jobs:
           name: sample-results
           path: sample-results.xml
 
+  installed-wheel:
+    # `FR-pre-release-validation-7`. This job builds the wheel, installs it into a clean
+    # environment, and produces a fingerprint from that environment.
+    #
+    # Every other job of this file installs with `pip install -e ".[dev]"`, which puts
+    # the source tree on the import path. A case that only imports `ja4plus` therefore
+    # measures the checkout. `tests/test_installed_wheel.py` reads `ja4plus.__file__` of
+    # the created environment and fails when that path is not below the `site-packages`
+    # directory of the environment.
+    #
+    # This job runs one Python version. The `test` job reads `tests/`, so it runs this
+    # marker on every version of the matrix and on macOS. This job names the marker, so
+    # a failure is visible without a log search. The `fuzz` job and the `samples` job
+    # state the same reason.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Fingerprint a capture from the installed wheel
+        # The clean environment installs no development extra, so `pip` reads the
+        # dependency list the wheel ships.
+        run: |
+          python -m pytest tests/test_installed_wheel.py -m installed_wheel \
+            -v --tb=short --junitxml=installed-wheel-results.xml
+
+      - name: Upload the installed-wheel results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: installed-wheel-results
+          path: installed-wheel-results.xml
+
   conformance:
     # `FR-foundation-4`. The vectors are committed under `tests/foxio_vectors`, so this
     # job reads no network. Never add a step that runs `tests/download_test_vectors.py`:
