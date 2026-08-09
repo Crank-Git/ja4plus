@@ -64,6 +64,32 @@ marker, which 38 of the 128 decided entries do. A FoxIO Rust snapshot settled th
 measurement, and no person decided them. The 38 are the 34 entries of #138 and 4 of the 5
 entries of #151.
 
+## The kind of decline
+
+A decided entry records one of two kinds of decline, and `"capability"` states which.
+
+| Field | The kind | What it records |
+|---|---|---|
+| `"capability": false` | A value decline | A disagreement about the value. An implementation change on either side could close it. |
+| `"capability": true` | A capability decline | A capability this project chose not to build. No implementation change closes it, because the difference is the scope this project chose. |
+
+**The default is `false`, and the default is a statement rather than an absence.** An
+entry with no field is a value decline. The reader states the default on `Deviation`, and
+no caller reads the kind from the prose of a cause.
+
+`unrecorded_kinds` in `tests/test_foxio_deviations.py` requires the field on every
+decided entry, so a new decline states its kind at the moment a person decides it. An
+undecided entry declines nothing, so it may omit the field.
+
+The kind is load-bearing. The source-neutral precedence exception of
+`.claude/rules/external-apis.md` reaches a value decline and passes over a capability
+decline, and `tests/test_precedence_exception.py` reads this field for that bar. #334
+held the same fact as a set of issue numbers inside that test file, and #341 moved it
+here.
+
+43 entries record a capability decline today, and all 43 name #129. `ja4plus` reads no
+encrypted request and no encrypted certificate, by a decision Changelog round 26 settled.
+
 ## How to remove an entry
 
 A fix that lands makes the case pass, and the strict marker turns that pass into a
@@ -127,11 +153,15 @@ class Deviation(NamedTuple):
         cause: One line that states the cause.
         decided: True when the issue is a decision record. A decided deviation is
             permanent, so its issue is closed and no fix removes the entry.
+        capability: True when the decline records a capability this project chose not to
+            build. False records a disagreement about the value. The default is False,
+            which states that an entry with no field is a value decline.
     """
 
     issue: int
     cause: str
     decided: bool = False
+    capability: bool = False
 
     def reason(self):
         """Return the `xfail` reason that names the issue and the cause."""
@@ -203,7 +233,10 @@ def _read_entry(key, entry):
     decided = entry.get("decided", False)
     if not isinstance(decided, bool):
         raise ValueError("deviation {}: the decided field is not true or false".format(key))
-    return Deviation(issue=issue, cause=cause, decided=decided)
+    capability = entry.get("capability", False)
+    if not isinstance(capability, bool):
+        raise ValueError("deviation {}: the capability field is not true or false".format(key))
+    return Deviation(issue=issue, cause=cause, decided=decided, capability=capability)
 
 
 class Owner(NamedTuple):

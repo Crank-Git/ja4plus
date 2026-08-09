@@ -1,4 +1,4 @@
-"""Tests for the output records that `ja4plus/output.py` writes.
+"""Tests for the output lines that `ja4plus/output.py` writes.
 
 `docs/specs/features/05-structured-output.md` defines the schema. #49 covers the
 separate address and port fields, the fixed CSV column order and the empty column.
@@ -44,7 +44,7 @@ DOCUMENTED_COLUMNS = [
 # a value that is present and null rather than absent.
 DOCUMENTED_FIELDS = set(DOCUMENTED_COLUMNS)
 
-# The frozen record of what each schema version published. #50 owns it. A released
+# The frozen list of what each schema version published. #50 owns it. A released
 # version never loses an entry here, because the entry is the evidence a downstream
 # parser relies on. Add a key when the version rises, and change no key that exists.
 SCHEMA_HISTORY = {
@@ -147,9 +147,13 @@ class StubLookupClient:
         self.matches = matches or {}
 
     def lookup(self, fingerprint):
-        """Return the match dict for the fingerprint, or None when there is no match."""
+        """Return the match for the fingerprint, or None when there is no match."""
+        from ja4plus.ja4db import LookupResult
+
         application = self.matches.get(fingerprint)
-        return {"application": application} if application else None
+        if not application:
+            return None
+        return LookupResult(application=application, type="ja4", notes="", source="embedded")
 
 
 def run_cli(*argv, lookup_client=None):
@@ -188,7 +192,7 @@ def csv_rows(text):
     return [row for row in csv.reader(io.StringIO(text)) if row]
 
 
-def json_records(text):
+def json_objects(text):
     """Return one parsed object for each non-empty line of the text."""
     return [json.loads(line) for line in text.splitlines() if line.strip()]
 
@@ -293,7 +297,7 @@ class TheJsonLinesObject(unittest.TestCase):
         out, err, code = run_cli("--format", "json", "analyze", HTTP_CAP)
         self.assertEqual(code, 0, f"the command exited with {code}. stderr: {err}")
         lines = [line for line in out.splitlines() if line.strip()]
-        self.assertGreater(len(lines), 1, "the capture produces fewer than two records")
+        self.assertGreater(len(lines), 1, "the capture produces fewer than two output lines")
         for line in lines:
             parsed = json.loads(line)
             self.assertIsInstance(parsed, dict)
@@ -301,40 +305,40 @@ class TheJsonLinesObject(unittest.TestCase):
     def test_every_json_object_holds_every_documented_field(self):
         out, _, code = run_cli("--format", "json", "analyze", HTTP_CAP)
         self.assertEqual(code, 0)
-        records = json_records(out)
-        self.assertGreater(len(records), 0)
-        for record in records:
-            self.assertEqual(set(record), DOCUMENTED_FIELDS)
+        objects = json_objects(out)
+        self.assertGreater(len(objects), 0)
+        for json_object in objects:
+            self.assertEqual(set(json_object), DOCUMENTED_FIELDS)
 
     def test_the_json_object_holds_the_source_port_as_a_number(self):
         """`--format json | jq -e '.src_port'` succeeds only for a present, true value."""
         out, _, code = run_cli("--format", "json", "--types", "ja4t", "analyze", HTTP_CAP)
         self.assertEqual(code, 0)
-        record = json_records(out)[0]
-        self.assertEqual(record["src_ip"], "145.254.160.237")
-        self.assertEqual(record["src_port"], 3372)
-        self.assertEqual(record["dst_ip"], "65.208.228.223")
-        self.assertEqual(record["dst_port"], 80)
-        self.assertIsInstance(record["src_port"], int)
+        json_object = json_objects(out)[0]
+        self.assertEqual(json_object["src_ip"], "145.254.160.237")
+        self.assertEqual(json_object["src_port"], 3372)
+        self.assertEqual(json_object["dst_ip"], "65.208.228.223")
+        self.assertEqual(json_object["dst_port"], 80)
+        self.assertIsInstance(json_object["src_port"], int)
 
     def test_the_json_object_holds_no_composite_source_field(self):
         out, _, code = run_cli("--format", "json", "analyze", HTTP_CAP)
         self.assertEqual(code, 0)
-        for record in json_records(out):
-            self.assertNotIn("source", record)
-            self.assertNotIn("->", record["src_ip"])
+        for json_object in json_objects(out):
+            self.assertNotIn("source", json_object)
+            self.assertNotIn("->", json_object["src_ip"])
 
     def test_a_field_with_no_value_is_null_rather_than_absent(self):
         stream = io.StringIO()
         JsonLinesWriter(stream).write(
             FingerprintResult(type="ja4t", fingerprint="8760_2-1-1-4_1460_00")
         )
-        record = json.loads(stream.getvalue())
-        self.assertEqual(set(record), DOCUMENTED_FIELDS)
-        self.assertIsNone(record["raw"])
-        self.assertIsNone(record["raw_original_order"])
-        self.assertIsNone(record["timestamp"])
-        self.assertIsNone(record["identified_as"])
+        json_object = json.loads(stream.getvalue())
+        self.assertEqual(set(json_object), DOCUMENTED_FIELDS)
+        self.assertIsNone(json_object["raw"])
+        self.assertIsNone(json_object["raw_original_order"])
+        self.assertIsNone(json_object["timestamp"])
+        self.assertIsNone(json_object["identified_as"])
 
     def test_the_json_object_holds_the_identified_name_that_the_lookup_returned(self):
         stream = io.StringIO()
@@ -361,7 +365,7 @@ class TheTimestamp(unittest.TestCase):
         out, _, code = run_cli("--format", "json", "--types", "ja4t", "analyze", HTTP_CAP)
         self.assertEqual(code, 0)
         # The first packet of `http.cap` carries the epoch time 1084443427.311224.
-        self.assertEqual(json_records(out)[0]["timestamp"], "2004-05-13T10:17:07.311224Z")
+        self.assertEqual(json_objects(out)[0]["timestamp"], "2004-05-13T10:17:07.311224Z")
 
 
 class TheEndpointReaders(unittest.TestCase):
@@ -450,10 +454,10 @@ class TheSchemaVersion(unittest.TestCase):
     def test_every_json_object_holds_the_schema_version(self):
         out, err, code = run_cli("--format", "json", "analyze", HTTP_CAP)
         self.assertEqual(code, 0, f"the command exited with {code}. stderr: {err}")
-        records = json_records(out)
-        self.assertGreater(len(records), 0)
-        for record in records:
-            self.assertEqual(record["schema_version"], SCHEMA_VERSION)
+        objects = json_objects(out)
+        self.assertGreater(len(objects), 0)
+        for json_object in objects:
+            self.assertEqual(json_object["schema_version"], SCHEMA_VERSION)
 
     def test_every_csv_row_holds_the_schema_version(self):
         out, err, code = run_cli("--format", "csv", "analyze", HTTP_CAP)
@@ -524,18 +528,18 @@ class TheSchemaVersionRule(unittest.TestCase):
         )
         stream = io.StringIO()
         JsonLinesWriter(stream).write(result, identified_as="Test Application")
-        record = json.loads(stream.getvalue())
-        self.assertEqual(record["schema_version"], SCHEMA_VERSION)
-        self.assertEqual(record["timestamp"], "2026-08-06T12:34:56.789012Z")
-        self.assertEqual(record["type"], result.type)
-        self.assertEqual(record["fingerprint"], result.fingerprint)
-        self.assertEqual(record["raw"], result.raw)
-        self.assertEqual(record["raw_original_order"], result.raw_original_order)
-        self.assertEqual(record["src_ip"], result.src_ip)
-        self.assertEqual(record["src_port"], result.src_port)
-        self.assertEqual(record["dst_ip"], result.dst_ip)
-        self.assertEqual(record["dst_port"], result.dst_port)
-        self.assertEqual(record["identified_as"], "Test Application")
+        json_object = json.loads(stream.getvalue())
+        self.assertEqual(json_object["schema_version"], SCHEMA_VERSION)
+        self.assertEqual(json_object["timestamp"], "2026-08-06T12:34:56.789012Z")
+        self.assertEqual(json_object["type"], result.type)
+        self.assertEqual(json_object["fingerprint"], result.fingerprint)
+        self.assertEqual(json_object["raw"], result.raw)
+        self.assertEqual(json_object["raw_original_order"], result.raw_original_order)
+        self.assertEqual(json_object["src_ip"], result.src_ip)
+        self.assertEqual(json_object["src_port"], result.src_port)
+        self.assertEqual(json_object["dst_ip"], result.dst_ip)
+        self.assertEqual(json_object["dst_port"], result.dst_port)
+        self.assertEqual(json_object["identified_as"], "Test Application")
 
     def test_every_csv_column_carries_the_value_of_the_column_it_names(self):
         """The CSV counterpart of the case above. A swap of two values fails here."""
@@ -597,10 +601,10 @@ class TheSchemaDocument(unittest.TestCase):
     def test_the_json_object_holds_exactly_the_documented_fields(self):
         out, _, code = run_cli("--format", "json", "analyze", HTTP_CAP)
         self.assertEqual(code, 0)
-        records = json_records(out)
-        self.assertGreater(len(records), 0)
-        for record in records:
-            self.assertEqual(list(record), documented_columns())
+        objects = json_objects(out)
+        self.assertGreater(len(objects), 0)
+        for json_object in objects:
+            self.assertEqual(list(json_object), documented_columns())
 
     def test_the_document_describes_every_field(self):
         for row in document_table("## Fields"):

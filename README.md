@@ -32,7 +32,9 @@ QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS 
 pip install ja4plus
 ```
 
-For fingerprint identification (browsers, malware, C2 frameworks):
+The bundled mapping file identifies browsers, malware and C2 frameworks, and it needs no
+extra. The `lookup` extra adds the optional remote lookup, which you ask for. Read
+[The lookup makes no network request unless you ask for one](#the-lookup-makes-no-network-request-unless-you-ask-for-one).
 
 ```bash
 pip install ja4plus[lookup]
@@ -67,8 +69,11 @@ sudo ja4plus watch eth0 --bpf "tcp port 443"
 # Fingerprint a certificate
 ja4plus cert server.der
 
-# Identify known fingerprints
+# Identify known fingerprints from the bundled database. It makes no network request
 ja4plus --lookup analyze capture.pcap
+
+# Identify them, and ask https://ja4db.com about each fingerprint the database misses
+ja4plus --lookup-remote analyze capture.pcap
 
 # Write the results to a file
 ja4plus analyze capture.pcap --format json --output results.json
@@ -77,10 +82,10 @@ ja4plus analyze capture.pcap --format json --output results.json
 ja4plus analyze capture.pcap --format json --output results.json --force
 ```
 
-The five output options run before the subcommand name and after it.
+The six output options run before the subcommand name and after it.
 `ja4plus --format json analyze capture.pcap` and
-`ja4plus analyze capture.pcap --format json` do the same thing. The five are
-`--format`, `--types`, `--lookup`, `--output` and `--force`.
+`ja4plus analyze capture.pcap --format json` do the same thing. The six are
+`--format`, `--types`, `--lookup`, `--lookup-remote`, `--output` and `--force`.
 
 `--max-connections`, `--connection-timeout`, `--stats-interval` and `--bpf` belong to
 `watch` alone, so they run after the subcommand name.
@@ -108,7 +113,7 @@ The monitor writes one statistics line to standard error when it exits, and
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 
 The `json` and the `csv` formats write the same fields whatever flags you pass. Each
-record carries the source address, the source port, the destination address and the
+output line carries the source address, the source port, the destination address and the
 destination port as separate fields, in this order:
 
 ```
@@ -148,8 +153,75 @@ ja4plus includes a bundled database of known JA4+ fingerprints from FoxIO's [ja4
 from ja4plus.ja4db import lookup
 
 result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
-# {"application": "Chromium Browser", "type": "ja4", "notes": ""}
+# LookupResult(application="Chromium Browser", type="ja4", notes="", source="embedded")
 ```
+
+Every result records its source: `embedded` for the mapping file inside the package,
+`cache` for the file `ja4plus db update` wrote, and `remote` for the lookup service. You
+need to know where a name came from to judge how much to trust it.
+
+`lookup_many` identifies a sequence of fingerprints in one call, and it returns one entry
+per fingerprint:
+
+```python
+from ja4plus.ja4db import JA4DBClient
+
+results = JA4DBClient().lookup_many(fingerprints)
+# {"t13d1516h2_8daaf6152771_02713d6af862": LookupResult(...), "t99z9999h0_0_0": None}
+```
+
+### The lookup makes no network request unless you ask for one
+
+A fingerprint describes traffic you observed. A request to the lookup service
+`ja4db.com` tells that service which fingerprint your host saw. `ja4plus` therefore reads
+the bundled mapping file and reaches no network by default. `ja4plus --lookup analyze`
+and `ja4plus.ja4db.lookup` both hold that default, and neither one contacts a third
+party.
+
+To permit the request, build the client with `allow_remote=True`:
+
+```python
+from ja4plus.ja4db import JA4DBClient
+
+# The default. Every lookup reads the bundled mapping file.
+offline = JA4DBClient()
+
+# Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
+online = JA4DBClient(allow_remote=True)
+```
+
+The command asks for the same request with `--lookup-remote`:
+
+```bash
+# The default of the command. Every lookup reads the bundled mapping file.
+ja4plus analyze capture.pcap --lookup
+
+# Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
+ja4plus analyze capture.pcap --lookup-remote
+
+# The variable permits the same request, for a command line you cannot change.
+JA4PLUS_DB_LOOKUP=1 ja4plus analyze capture.pcap --lookup
+```
+
+The command writes one notice to standard error for a run that permits the remote
+lookup. The notice names the lookup service and the two ways to stop the request. It
+appears once whatever count of fingerprints the run looks up. It goes to standard error,
+so it enters no pipe that carries the results.
+
+The option and the variable each permit the request, and neither one refuses it.
+`JA4PLUS_DB_LOOKUP=0` therefore cancels no option. To stop the request, pass `--lookup`
+and unset the variable. The variable permits the request on the value `1` and on no
+other value. The variable asks for no lookup, so a command that names no option looks
+nothing up.
+
+The remote lookup needs the `requests` package. Where you ask for the remote lookup and
+the package is absent, the command names the extra to install and ends the run with the
+status 1.
+
+To stop the request again, build the client with no argument. The remote lookup waits 5
+seconds at most. A request that fails returns None, and it raises nothing. The `lookup`
+extra installs the `requests` package that the request needs, and a client without that
+package reports every miss as None.
 
 ## Python API
 

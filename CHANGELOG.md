@@ -6,6 +6,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Zeek reference page reads the current comparison** (#327). Round 113.
+  `docs/specs/foxio/zeek.md` read as though #214 were open, in three places. #214 made
+  JA4SSH emit the window a connection holds open when the capture ends, so `ssh2.pcapng`
+  now produces `c36s52_c42s76_c51s2` as its second value, which the Zeek baseline holds.
+  The re-run against the pinned FoxIO checkout prints 98 rows, of which 63 match and 35
+  differ, where round 52 read 98 rows, 62 match and 36 differ. **The page now names the
+  Changelog round of every run it cites**, so a reader can tell a stale count from a
+  current one. **One value rating no longer follows from its evidence, and #327 leaves it
+  `Undecided`**: the JA4SSH baseline was `Blocked` on #214, and the replacement rating is
+  a precedence question the user decides. **#332 answers that question.** No file under
+  `ja4plus/` changes, no fingerprint moves, and the register holds 135 keys against 135
+  xfailed.
+
+- **The Zeek baseline comparison script runs again, and a case now runs it** (#324).
+  Round 112. `tests/compare_zeek_baselines.py` read the composite `source` field that
+  #49 removed, so the script raised `KeyError` on the first output line it parsed. The
+  reader now reads `src_ip`, `src_port`, `dst_ip` and `dst_port`, which
+  `docs/output-schema.md` states, and `split_source` goes away because nothing needs it.
+  The reader also reads `schema_version` first and stops on a version above 1, which the
+  same page states. **The script is evidence-producing tooling, not dead code**:
+  `docs/specs/foxio/zeek.md` rests on it, and #198, #226 and #276 reason from its
+  readings. `tests/test_compare_zeek_baselines.py` runs the script end to end over
+  `dhcp.pcapng`, so a later schema change fails a case instead of breaking the script in
+  silence. No fingerprint moves, no output field changes, and the schema version stays 1.
+
 ### Changed
 
 - **The package states a memory ceiling of 512 MiB** (#279). Round TBD. One
@@ -32,6 +59,167 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `docs/output-schema.md` now
   state the property where a user reads it, and the `Divergence register` of
   `docs/specs/spec.md` holds the measurement.
+- **The register records the kind of every decline** (#341). Round 116.
+  `tests/foxio_deviations.json` carries a `capability` field on all 135 entries, and
+  `CAPABILITY_DECLINES` is gone from `tests/test_precedence_exception.py`. #334 shipped
+  bar 1 of the precedence exception as a constant set of issue numbers, so a new
+  capability decline would have reached the exception unless somebody edited a test that
+  named it nowhere near the decline. **`true` records a capability this project chose not
+  to build, and `false` records a disagreement about the value.** `tests/foxio_deviations.py`
+  reads the field beside `decided` and states the default in the schema, and
+  `unrecorded_kinds` requires the field on every decided entry. **43 entries record a
+  capability decline, and all 43 name #129**, which the recorded cause of each of the 135
+  entries decides. No entry was undeterminable. **The reach of the exception is 6 rows
+  before and after**, and the six rows are unchanged. No fingerprint moves, no file under
+  `ja4plus/` changes, and no vector is adopted.
+
+- **The precedence exception is source-neutral** (#334). Round 115.
+  `.claude/rules/external-apis.md` wrote the exception of #332 for the Zeek baseline
+  alone, because that was the case #327 raised. Where `tests/foxio_deviations.json`
+  declines the FoxIO Python value under a decided entry, **any other FoxIO implementation
+  may hold the reference value** for that method on that connection. **Two bars stand
+  above the rule.** A decline that records a capability this project chose not to build
+  reaches no row, and #129 is that case: `ja4plus` reads no encrypted request by
+  decision. Where the remaining FoxIO sources hold different values, no source holds the
+  reference and the row stays declined. **The exception reaches 6 rows of the 135 the
+  register holds**, where the widened rule before the bars reaches 58.
+  `tests/test_zeek_precedence_exception.py` becomes `tests/test_precedence_exception.py`
+  and measures the reach against every source. **Three findings came out of the search.**
+  The register records no field that separates a value decline from a capability decline,
+  and the rule states a proposal for one. `gre-erspan-vxlan.pcap/0:65174/JA4T.1` carries
+  the value form and declines no Python value, so the rule now reads that fact from the
+  vectors. The Wireshark dissector appends the third part that bars a Zeek JA4L value,
+  which the bar does not name; #225 records that this project adopted the `quic` marker
+  from the dissector on purpose, so nothing there changed. **No vector is adopted, no
+  register entry changes, no file under `ja4plus/` changes, and no fingerprint moves.**
+
+- **A declined FoxIO Python value forfeits its precedence** (#332). Round 114.
+  `.claude/rules/external-apis.md` states that `python/test/testdata/` decides where it
+  and a Zeek baseline both hold a value for one method on one connection, and it named no
+  exception for a value this project already ruled wrong. The rule now carries one
+  exception: where `tests/foxio_deviations.json` declines the Python value under a decided
+  entry, a Zeek baseline may hold the reference value for that method on that connection.
+  **Python keeps its precedence everywhere else.** **The condition is one recorded decline
+  that names an issue, and no reading of which value looks right reaches it.** An
+  undecided entry is an open question, and the exception passes over it.
+  `docs/specs/foxio/zeek.md` now rates `Scripts.ja4-ssh2/ja4ssh.log` Medium and states the
+  reason, where #327 left it `Undecided`. `tests/test_zeek_precedence_exception.py`
+  measures the reach: the exception reaches 1 row of the 135 the register holds, and that
+  row is `ssh2.pcapng/14:57377/JA4SSH.2` under #97. **No baseline is adopted as a vector**,
+  no file under `ja4plus/` changes, and no fingerprint moves.
+
+- **The vocabulary settles one word for the serialized output line** (#306). Round 111.
+  The `## Terms` table of `docs/specs/spec.md` listed `record` in the `Do not use`
+  column of `result`, and `ja4plus/output.py` used it as a noun in five places. #50
+  found that and reworded its own page rather than the shared table. The table now holds
+  the term `output line`, whose `Do not use` column names `record`, `result` and
+  `entry`. **A result and an output line are two things.** A result is one fingerprint
+  one method produced. An output line carries every field of the result, plus
+  `schema_version` and `identified_as`, which the command-line program owns. The word
+  now reads the same way in `ja4plus/output.py`, `ja4plus/cli.py`, `README.md`,
+  `tests/test_output_schema.py`, `tests/test_cli.py`, `tests/test_parity.py`,
+  `tests/compare_zeek_baselines.py` and `examples/monitoring_daemon.py`.
+  `docs/output-schema.md` already used it and needs no change. The `json` format writes
+  one output line as one JSON object, and the `csv` format writes it as one row, so the
+  identifier for a parsed line is now `json_object`. **The word `record` keeps two other
+  meanings that this term does not touch**: the verb, as in `#215 records the reading`,
+  and the TLS record of RFC 8446. **No field name and no column name moved.**
+  `schema_version` stays 1, `CSV_COLUMNS` holds the same eleven names in the same order,
+  and `ja4plus.__all__` names the same 25 entries. A replay of the 38 committed captures
+  in all three formats produces 114 runs, 2466 output lines and 0 differing bytes
+  against the base. Both suites report the counts of the base: 1839 passed and 8
+  xfailed in the unit suite, and 1531 passed, 143 skipped and 135 xfailed in the
+  conformance suite, against 135 keys in `tests/foxio_deviations.json`.
+### Added
+
+- **A `LookupResult` supports item access by field name** (#364). Round 123. Version
+  0.6.0 returned a dict with the keys `application`, `type` and `notes`, and #59 replaced
+  it with a frozen `LookupResult`. A caller that reads `result["application"]` keeps
+  working for one major version, and that read emits a `DeprecationWarning` that names
+  the attribute to read instead. Every key version 0.6.0 published names a field of
+  `LookupResult`, so no key returns the value of another field. A key that names no field
+  raises `KeyError` and emits no warning. Item access reads a field and writes none, so
+  a `LookupResult` stays frozen. `FingerprintResult` holds the same behaviour from #44,
+  under `FR-typed-api-5` and `FR-typed-api-6`.
+
+- **`JA4DBClient.lookup_many` identifies many fingerprints in one call** (#59). Round
+  TBD. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
+  miss holds `None`, so a caller reads one entry for every fingerprint it passed. The
+  returned mapping keys the fingerprint, so a sequence that repeats a fingerprint holds
+  one entry for it. The call reaches the lookup service under the rule that `lookup`
+  holds, and under no other rule. A client built with `allow_remote=False` sends nothing,
+  whatever count of fingerprints the call carries. A client built with
+  `allow_remote=True` sends one request for each fingerprint the mapping file holds no
+  entry for. The lookup cache holds a miss as well as a hit, so a repeated fingerprint
+  costs one request and no more.
+
+- **`--lookup-remote` and `JA4PLUS_DB_LOOKUP` ask for the remote lookup** (#58). Round
+  TBD. `--lookup` reads the bundled mapping file and makes no network request.
+  `--lookup-remote` identifies each fingerprint, and it sends every fingerprint the
+  mapping file holds no entry for to `https://ja4db.com`. It asks for the lookup as well
+  as for the disclosure, so an operator who passes it needs no `--lookup`.
+  `JA4PLUS_DB_LOOKUP=1` permits the same request, for an operator who runs a command line
+  another program builds. The variable permits the request on the value `1` and on no
+  other value, and it asks for no lookup. The option and the variable each permit the
+  request, and neither one refuses it, so `JA4PLUS_DB_LOOKUP=0` cancels no option. The
+  command writes one notice to standard error for each run that permits the remote
+  lookup. The notice names the lookup service and the two ways to stop the request, and
+  it appears once whatever count of fingerprints the run looks up. Where the operator
+  asks for the remote lookup and the `requests` package is absent, the command names the
+  `lookup` extra and ends the run with the status 1.
+
+### Changed
+
+- **A lookup result is a frozen `LookupResult` and it records its source** (#59). Round
+  TBD. Through version 0.6.0 `JA4DBClient.lookup` returned a dict with the keys
+  `application`, `type` and `notes`. It now returns a frozen `LookupResult` that carries
+  the same three fields plus `source`, so a caller reads `result.application` where it
+  read `result["application"]` before. `LookupResult` of `lookup.go:23` carries the three
+  fields, and `CLAUDE.md` parity rule 2 adopts them. The `source` field holds `embedded`
+  for the mapping file that ships inside the package, `cache` for the file that
+  `ja4plus db update` wrote to the cache directory, and `remote` for the lookup service.
+  An analyst needs to know where a name came from to judge how much to trust it. The
+  command-line output schema is unchanged, because the command writes the application
+  name alone.
+
+- **`ja4plus db update` writes to the cache directory, and the client prefers that file**
+  (#61). Round 121. Through version 0.6.0 `db update` wrote the download over
+  `ja4plus/data/ja4plus-mapping.csv` inside the installed package. That directory may be
+  read-only, several users may share it, and the next `pip install` discards the file.
+  `db update` now writes `ja4plus-mapping.csv` to the platform cache directory:
+  `$XDG_CACHE_HOME/ja4plus` or `~/.cache/ja4plus` on Linux, and
+  `~/Library/Caches/ja4plus` on macOS. It writes a temporary file and renames it, so a
+  reader sees the whole new file or the file the last run wrote. It leaves the installed
+  package byte for byte as it was. `JA4DBClient` and `ja4plus db info` now read the
+  cached mapping file when one exists, and the bundled mapping file otherwise. A cache
+  file that is empty, corrupt or unreadable falls back to the bundled file, and the
+  client reports the problem at `WARNING`. `db info` reports the source on its first
+  line, as `embedded` or `cache`, and it names the mapping file path on the second. The Go
+  port publishes the value `embedded` for the file that ships inside the package, at
+  `lookup.go:31`, and `CLAUDE.md` parity rule 2 adopts it. The prose of this project still
+  calls that file the bundled mapping file. `db info` wrote the FoxIO address on a line
+  named `Source` through version 0.6.0, and that line is now named `Mapping`. Where the
+  source is `embedded`, `db info` names the cache file as well. It reports that the cache
+  file holds no entry, or that no cache file exists.
+
+- **The remote lookup is opt-in at the client** (#57). Round 117. Through version 0.6.0
+  `JA4DBClient.lookup` sent every fingerprint the bundled mapping file held no entry for
+  to `https://ja4db.com`, and no caller asked for that. A fingerprint describes traffic
+  the operator observed, so each request told a third party what the operator watched.
+  `JA4DBClient()` now performs no network request. `JA4DBClient(allow_remote=True)`
+  permits one request per miss, and it is the only way to reach the service.
+  `ja4plus --lookup analyze` and `ja4plus.ja4db.lookup` both hold the new default, so
+  the command-line program makes no network request. #58 adds the command-line option
+  that permits the remote lookup. The remote lookup waits 5 seconds at most, and
+  version 1.0.0 is the first release that may make the interval configurable. A request
+  that fails returns None and raises nothing. The lookup service publishes no versioned
+  API document, so the client accepts one shape: an object that carries a non-empty
+  `application` string. Version 0.6.0 read an object without that field as the
+  application `Unknown`, and the client now reads it as a miss. `allow_remote` is the
+  first parameter of the constructor, where `cache_size` was, so `JA4DBClient(100)` now
+  raises `TypeError`. Write `JA4DBClient(cache_size=100)` instead. The client also
+  escapes the fingerprint it puts in the request path, so a string that carries `/` or
+  `?` names no other path on the lookup service.
 
 - **The command-line program separates results from diagnostics and gains `--output`**
   (#52). Round 95. The program writes results to standard output and every diagnostic
@@ -60,7 +248,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the connections of a method you filtered out and it reports that method's errors. The
   reported order is still the order you wrote in `--types`, and a name you write twice
   keeps its first position. No fingerprint value moved:
-  the program writes the same 863 records over the 43 committed captures, byte for byte,
+  the program writes the same 863 output lines over the 43 committed captures, byte for
+  byte,
   and the conformance suite reports the same 1531 passed, 143 skipped and 135 xfailed.
   The unit suite rises from 1801 passed to 1814 passed, which is the 13 cases the change
   adds.
@@ -70,10 +259,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   field of version 0.6.0 with `src_ip`, `src_port`, `dst_ip` and `dst_port`, so a
   downstream tool parses no composite string. The CSV header is now fixed at
   `schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as`,
-  and it no longer changes with `--lookup`. Every field is present in every record: a
-  field with no value is `null` in the `json` format and empty in the `csv` format.
+  and it no longer changes with `--lookup`. Every field is present in every output line:
+  a field with no value is `null` in the `json` format and empty in the `csv` format.
   `identified_as` is therefore present without `--lookup`, where version 0.6.0 omitted
-  it. Each record also carries the packet `timestamp` in RFC 3339 form. New module
+  it. Each output line also carries the packet `timestamp` in RFC 3339 form. New module
   `ja4plus/output.py` holds one writer per format. #50 documents the schema and its
   version.
 

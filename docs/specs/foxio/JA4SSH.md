@@ -477,6 +477,19 @@ Python value is `c36s36_c0s0_c2s0`, which #97 declines, so the precedence rule p
 value this project already declined. The decline outranks it, and the Rust snapshot
 decides.
 
+**The rule that licenses this reading is "A declined FoxIO Python value forfeits its
+precedence" in `.claude/rules/external-apis.md`.** The register key is
+`ssh2.pcapng/14:57377/JA4SSH.2`, the entry carries `"decided": true` under #97, the
+decline records a disagreement about the value, and the Rust snapshot and the Zeek
+baseline both hold `c36s52_c42s76_c51s2` for that method on that connection. The rule
+therefore lets either one hold the reference value.
+`tests/test_precedence_exception.py` measures the reach and holds this row.
+
+**The page asserted this reading before the rule licensed it.** #332 wrote the exception
+for the Zeek baseline alone, and the sentence above names the Rust snapshot. #334 made
+the exception source-neutral and wrote this citation, so the next reader checks the rule
+rather than trusting the page.
+
 **#97 stays declined, and its reasoning is unchanged.** A window that holds no SSH packet
 describes no traffic. `ja4plus/fingerprinters/ja4ssh.py:368-369` holds the guard, and the
 new rule reaches it.

@@ -1,671 +1,806 @@
 {
   "CVE-2018-6794.pcap/JA4L-C": {
     "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
-    "issue": 272
+    "issue": 272,
+    "capability": false
   },
   "CVE-2018-6794.pcap/JA4L-S": {
     "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
-    "issue": 272
+    "issue": 272,
+    "capability": false
   },
   "alpn-condition.pcap/2:44403/JA4.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/2:44403/JA4_o.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/2:44403/JA4_r.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/2:44403/JA4_ro.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/4:44405/JA4.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0x1F, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x1F. FoxIO Rust writes hf. rust/ja4/src/tls.rs reads the tshark escape text as the five characters h, backslash, x, 1 and f. It keeps the first character and the last character. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/4:44405/JA4_o.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0x1F, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x1F. FoxIO Rust writes hf. rust/ja4/src/tls.rs reads the tshark escape text as the five characters h, backslash, x, 1 and f. It keeps the first character and the last character. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/4:44405/JA4_r.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0x1F, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x1F. FoxIO Rust writes hf. rust/ja4/src/tls.rs reads the tshark escape text as the five characters h, backslash, x, 1 and f. It keeps the first character and the last character. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/4:44405/JA4_ro.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0x1F, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x1F. FoxIO Rust writes hf. rust/ja4/src/tls.rs reads the tshark escape text as the five characters h, backslash, x, 1 and f. It keeps the first character and the last character. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/5:44406/JA4.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0x0A, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x0A. FoxIO Rust writes no value at all for this stream. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/5:44406/JA4_o.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0x0A, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x0A. FoxIO Rust writes no value at all for this stream. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/5:44406/JA4_r.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0x0A, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x0A. FoxIO Rust writes no value at all for this stream. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/5:44406/JA4_ro.1": {
     "issue": 162,
     "cause": "The first ALPN value is the two bytes 0x68 0x0A, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the control byte 0x0A. FoxIO Rust writes no value at all for this stream. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/6:44407/JA4.1": {
     "issue": 162,
     "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/6:44407/JA4_o.1": {
     "issue": 162,
     "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/6:44407/JA4_r.1": {
     "issue": 162,
     "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "alpn-condition.pcap/6:44407/JA4_ro.1": {
     "issue": 162,
     "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "browsers-x509.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 151,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "browsers-x509.pcapng/JA4S_r": {
     "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 151,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
     "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1": {
     "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1": {
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.2": {
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4H": {
     "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4H_ro": {
     "cause": "The reference decrypts the QUIC traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4S_r": {
     "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4X": {
     "cause": "The reference decrypts the QUIC handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4_o": {
     "cause": "ja4plus produces a JA4_o value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4_r": {
     "cause": "ja4plus produces a JA4_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "chrome-cloudflare-quic-with-secrets.pcapng/JA4_ro": {
     "cause": "ja4plus produces a JA4_ro value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "gre-erspan-vxlan.pcap/0:65174/JA4T.1": {
     "issue": 215,
     "cause": "The FoxIO Rust snapshot holds 8192__0_0 and ja4plus writes 8192_00_00_00. The SYN carries no TCP option, and the three FoxIO forms disagree: rust/ja4/src/tcp.rs writes one digit, wireshark/source/packet-ja4.c:664 and zeek/ja4t/main.zeek:195-211 write the two-digit form. The user chose the two-digit form on 2026-08-08, so this divergence is decided and it stays. #215 records the decision, D1 of docs/specs/foxio/JA4T.md states the reading, and the Divergence register in docs/specs/spec.md holds the cost.",
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "gre-sample.pcap/JA4SSH": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
     "decided": true,
-    "issue": 105
+    "issue": 105,
+    "capability": false
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.1": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.10": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.11": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.12": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.13": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.14": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.15": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.2": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.3": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.4": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.5": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.6": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.7": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.8": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H.9": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.1": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.10": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.11": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.12": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.13": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.14": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.15": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.2": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.3": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.4": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.5": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.6": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.7": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.8": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4H_ro.9": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4X.1": {
     "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4X.2": {
     "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/0:58847/JA4X.3": {
     "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/JA4H": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/JA4H_ro": {
     "cause": "The reference decrypts the TLS 1.3 traffic with the secrets the capture carries, and ja4plus reads no encrypted request. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "http2-with-cookies.pcapng/JA4X": {
     "cause": "The reference decrypts the TLS 1.3 handshake with the secrets the capture carries, and ja4plus reads no encrypted certificate. Changelog round 26 settled the decision on 2026-08-07, and it is reversible: a program that reads a key log file reads the plain text of the traffic the operator captured, and that capability is larger than fingerprint production.",
     "issue": 129,
-    "decided": true
+    "decided": true,
+    "capability": true
   },
   "https-connect.pcap/JA4": {
     "cause": "The FoxIO Rust snapshot and the Wireshark dissector both hold the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no TLS on port 8080, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "https-connect.pcap/JA4L-C": {
     "cause": "ja4plus emits more JA4L-C values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
-    "issue": 272
+    "issue": 272,
+    "capability": false
   },
   "https-connect.pcap/JA4L-S": {
     "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
-    "issue": 272
+    "issue": 272,
+    "capability": false
   },
   "https-connect.pcap/JA4S": {
     "cause": "The FoxIO Rust snapshot and the Wireshark dissector both hold the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no TLS on port 8080, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "https-connect.pcap/JA4X": {
     "cause": "The FoxIO Rust snapshot and the Wireshark dissector both hold the exact JA4X value ja4plus produces. The FoxIO Python implementation reads no TLS on port 8080, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match. #229 built that comparison, and TestTheJa4xValuesTheRustSnapshotHolds names both values.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "latest.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 151,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "latest.pcapng/JA4S_r": {
     "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 151,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "quic-tls-handshake.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "quic-with-several-tls-frames.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "socks4-https.pcap/JA4S": {
     "cause": "ja4plus produces a JA4S value on the SOCKS4 tunnel on port 9901, and no FoxIO implementation holds one. ja4plus reads the record layer without regard to the tunnel protocol that carries it, which is the behaviour #138 decided to keep for the three JA4X values on the same stream. #151 made the value reachable by bounding a hello on its own length field rather than on the length of the record that carries it.",
     "issue": 151,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "socks4-https.pcap/JA4X": {
     "cause": "ja4plus produces three JA4X values on the SOCKS4 tunnel on port 9901, and no FoxIO implementation holds one. ja4plus reads the record layer without regard to the tunnel protocol that carries it. The same behaviour produces the https-connect.pcap values that the FoxIO Rust snapshot and the Wireshark dissector both hold. #138 keeps the values, because a gate on the record-layer scan would risk the https-connect.pcap case.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh-r.pcap/0:64980/JA4SSH.2": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets.",
     "decided": true,
-    "issue": 97
+    "issue": 97,
+    "capability": false
   },
   "ssh-r.pcap/1:46394/JA4SSH.1": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window.",
     "decided": true,
-    "issue": 96
+    "issue": 96,
+    "capability": false
   },
   "ssh-r.pcap/2:46396/JA4SSH.1": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window.",
     "decided": true,
-    "issue": 96
+    "issue": 96,
+    "capability": false
   },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.3": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window.",
     "decided": true,
-    "issue": 96
+    "issue": 96,
+    "capability": false
   },
   "ssh-scp-1050.pcap/0:49237/JA4SSH.4": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #96. dict(ja4sh_stats) shares one payload list across every window and every connection, so the reference mode field reads the packet lengths of the whole capture. ja4plus reads the lengths of the window.",
     "decided": true,
-    "issue": 96
+    "issue": 96,
+    "capability": false
   },
   "ssh-scp-1050.pcap/JA4SSH": {
     "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
     "decided": true,
-    "issue": 214
+    "issue": 214,
+    "capability": false
   },
   "ssh.pcapng/JA4SSH": {
     "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
     "decided": true,
-    "issue": 214
+    "issue": 214,
+    "capability": false
   },
   "ssh2-malformed.pcap/JA4SSH": {
     "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
     "decided": true,
-    "issue": 214
+    "issue": 214,
+    "capability": false
   },
   "ssh2-moloch-crash.pcap/JA4SSH": {
     "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
     "decided": true,
-    "issue": 214
+    "issue": 214,
+    "capability": false
   },
   "ssh2.pcapng/14:57377/JA4SSH.2": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #97. A bare ACK that follows a window boundary makes FoxIO write another occurrence from a window that holds no SSH packet. ja4plus emits a value only for a window that holds SSH packets.",
     "decided": true,
-    "issue": 97
+    "issue": 97,
+    "capability": false
   },
   "ssh2.pcapng/33:51810/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh2.pcapng/36:61861/JA4L-C.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh2.pcapng/36:61861/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh2.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh2.pcapng/JA4L-S": {
     "cause": "ja4plus emits more JA4L-S values than the reference holds. The FoxIO Python file holds 10 `JA4L-S` values on this capture, and ja4plus produces 11. `ja4plus/fingerprinters/ja4l.py:430` returns a second server value for a retransmitted SYN-ACK, and the extra value is `JA4L-S=6252_58` on the connection to 184.150.157.177:80. This is the one entry of the six that compares two measured counts. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
-    "issue": 272
+    "issue": 272,
+    "capability": false
   },
   "ssh2.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. It also reads no ServerHello whose handshake record spans several TCP segments, which omits the two streams #151 names. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh2.pcapng/JA4S_r": {
     "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake, and it reads no ServerHello whose handshake record spans several TCP segments. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh2.pcapng/JA4_o": {
     "cause": "ja4plus produces a JA4_o value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh2.pcapng/JA4_r": {
     "cause": "ja4plus produces a JA4_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "ssh2.pcapng/JA4_ro": {
     "cause": "ja4plus produces a JA4_ro value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "sshv1.pcap/JA4SSH": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
     "decided": true,
-    "issue": 105
+    "issue": 105,
+    "capability": false
   },
   "tcpdump-geneve.pcap/JA4SSH": {
     "cause": "A decided divergence from the FoxIO Python reference, decided on #214. `python/ja4.py:610` reads `#finalize_ja4ssh() if 'ja4ssh' in output_types else None`, so the reference runs no end-of-capture step and it emits no trailing window for a connection that sends no FIN+ACK packet. ja4plus emits the window a connection holds open when the capture ends, as `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` do.",
     "decided": true,
-    "issue": 214
+    "issue": 214,
+    "capability": false
   },
   "tls-handshake.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-handshake.pcapng/JA4L-S": {
     "cause": "ja4plus emits more JA4L-S values than the reference holds. The expected-output file publishes no JA4L key at all. `python/ja4.py:339-340` deletes `JA4L-S` and `JA4L-C` when the run names another method, so a method filter produced the file. The entry stays open under #272, and no Changelog round settled it. #272 decides whether this project declines the deviation.",
-    "issue": 272
+    "issue": 272,
+    "capability": false
   },
   "tls-handshake.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. It also reads no ServerHello whose handshake record spans several TCP segments, which omits the stream #151 names. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-handshake.pcapng/JA4S_r": {
     "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake, and it reads no ServerHello whose handshake record spans several TCP segments. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-handshake.pcapng/JA4_o": {
     "cause": "ja4plus produces a JA4_o value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-handshake.pcapng/JA4_r": {
     "cause": "ja4plus produces a JA4_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-handshake.pcapng/JA4_ro": {
     "cause": "ja4plus produces a JA4_ro value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-sni.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-sni.pcapng/JA4_o": {
     "cause": "ja4plus produces a JA4_o value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-sni.pcapng/JA4_r": {
     "cause": "ja4plus produces a JA4_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls-sni.pcapng/JA4_ro": {
     "cause": "ja4plus produces a JA4_ro value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/21:62481/JA4L-C.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/21:62481/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/22:61732/JA4L-C.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/22:61732/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/23:49791/JA4L-C.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/23:49791/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/24:56684/JA4L-C.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/24:56684/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/25:61884/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/28:58117/JA4L-C.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/28:58117/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/JA4S_r": {
     "cause": "ja4plus produces a JA4S_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/JA4_o": {
     "cause": "ja4plus produces a JA4_o value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/JA4_r": {
     "cause": "ja4plus produces a JA4_r value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "tls3.pcapng/JA4_ro": {
     "cause": "ja4plus produces a JA4_ro value on a stream the FoxIO Python expected-output file omits. The FoxIO Python implementation reads no QUIC handshake. The FoxIO Rust snapshot holds the hashed form of the same stream, and it equals the value ja4plus produces. The reference publishes no raw form for the stream.",
     "issue": 138,
-    "decided": true
+    "decided": true,
+    "capability": false
   },
   "v6.pcap/JA4SSH": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
     "decided": true,
-    "issue": 105
+    "issue": 105,
+    "capability": false
   }
 }
