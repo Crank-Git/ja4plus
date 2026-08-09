@@ -8,6 +8,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The package states a memory ceiling of 512 MiB** (#279). Round TBD. One
+  `Processor()` at the shipped defaults reads 1000000 packets across 100000 distinct
+  connections and holds resident memory below 512 MiB. Four runs measured 383.47 MiB,
+  388.25 MiB, 392.05 MiB and 394.94 MiB, and the highest is 77 percent of the ceiling.
+  `README.md` and `docs/api_reference.md` each carried the sentence "This package states
+  no memory ceiling", and each now states the number, the defaults the ceiling holds at,
+  and the boundary of the claim.
+  `docs/specs/features/03-concurrency-safety.md` states the whole measurement. **The
+  ceiling covers that packet run and no longer run.** Each fingerprinter keeps every
+  fingerprint it produces and that list holds no bound, so resident memory keeps rising
+  after every state table settles, at about 23 MiB for each 100000 packets. The same
+  traffic passes 512 MiB at 1500000 packets, where it reads 513.06 MiB. New file
+  `tests/memory_ceiling_run.py` measures one packet run in an interpreter of its own,
+  because `resource.getrusage(RUSAGE_SELF).ru_maxrss` reports the high-water mark of the
+  whole process. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **The documentation states what a fingerprint is evidence of** (#343). Round 110.
   ja4plus adds no plausibility guard, so a structurally valid ClientHello produces a
   fingerprint whatever its body holds. This change records the behaviour and changes

@@ -14,9 +14,12 @@ shapes.
    also flat.
 3. One case records the structure that holds no bound, so a reader does not read
    "every table is bounded" as "the processor is bounded".
+4. One case reads the memory ceiling this package states. #279 added it.
 
-This file states no memory ceiling. #279 owns that number, and the measurement of round
-81 forces a floor and forces no ceiling.
+`TestTheStatedMemoryCeiling` holds the fourth shape. The user decided 512 MiB on
+2026-08-08, and `features/03-concurrency-safety.md` states the number, the defaults it
+holds at, and the case it covers. The ceiling covers the one-million-packet case and no
+longer run, because `BaseFingerprinter.fingerprints` grows without a limit.
 
 Every case here is proven by its removal, and #43 ran each removal three times against
 the base commit `0e377b0`.
@@ -36,7 +39,13 @@ every case in this file runs on one thread. `tests/test_thread_safety.py` measur
 locks.
 """
 
+import importlib.util
+import json
+import os
+import subprocess
+import sys
 from collections import OrderedDict
+from pathlib import Path
 
 import pytest
 from scapy.all import IP, TCP, UDP, Raw
@@ -66,6 +75,50 @@ SMALL_BOUND = 25
 
 # The connections one flood builds. The value saturates a bound of 25 many times over.
 FLOOD_CONNECTIONS = 400
+
+# The memory ceiling this package states, in MiB. The user decided the number on
+# 2026-08-08, and `features/03-concurrency-safety.md` states it beside the defaults it
+# holds at. A measurement forces the floor and forces no ceiling, so the distance above
+# the floor is a product judgement and no case here may derive the number.
+MEMORY_CEILING_MIB = 512.0
+
+# The packets the ceiling case feeds. The acceptance criterion states 1000000 packets
+# across 100000 connections, and #279 measured that run at 481 seconds. A case of that
+# length costs every later run of the unit suite, so the default holds the case cheap and
+# the pull request records one run at 1000000. `tests/test_thread_safety.py` holds the
+# same arrangement for the 60-second soak of #40.
+CEILING_PACKETS = int(os.environ.get("JA4PLUS_MEMORY_CEILING_PACKETS", "30000"))
+
+# The packets one connection carries. `ceiling_traffic` returns ten, so the case spreads
+# its packets across one tenth as many connections.
+PACKETS_PER_CONNECTION = 10
+
+# The connections the case builds, and the packets it feeds across them. The run stops on
+# a whole connection, so a count that is no multiple of ten rounds down here rather than
+# failing a case that reads the count back.
+CEILING_CONNECTIONS = max(CEILING_PACKETS // PACKETS_PER_CONNECTION, 1)
+CEILING_RUN_PACKETS = CEILING_CONNECTIONS * PACKETS_PER_CONNECTION
+
+# The entry count the control run gives every state table. A run whose tables hold 100
+# entries reads less resident memory than a run whose tables hold every connection.
+CONTROL_BOUND = 100
+
+# The share of the shipped run's memory that the control run may reach. The reading is a
+# ratio and not a MiB figure, because the absolute numbers move with the platform and the
+# interpreter while the ratio measures the bound itself. #279 read five runs at the
+# default size: the ratio held between 0.746 and 0.769, and a control bound raised to the
+# shipped 10000 read 0.955. The threshold sits between the two.
+CONTROL_GROWTH_RATIO = 0.85
+
+# The MiB the shipped run must add before the ratio above means anything. A run that added
+# nothing would divide one small number by another.
+CONTROL_FLOOR_MIB = 10.0
+
+# The seconds one measurement may take. #279 read 481 seconds for 1000000 packets on a
+# ten-core laptop, so the limit holds about four times that rate.
+CEILING_TIMEOUT = 120 + CEILING_PACKETS // 500
+
+CEILING_RUNNER = Path(__file__).resolve().with_name("memory_ceiling_run.py")
 
 
 def walk_tables(processor):
@@ -174,6 +227,33 @@ def connection_traffic(index, second):
     return packets
 
 
+def ceiling_traffic(index, second):
+    """Return the ten packets of one connection, each with its own capture timestamp.
+
+    The acceptance criterion of #279 states 1000000 packets across 100000 distinct
+    connections, which is ten packets for each connection. `connection_traffic` returns
+    six, so this function repeats the three payload packets and closes with a bare ACK.
+
+    Args:
+        index: The connection number. It decides the client address and the client port.
+        second: The capture timestamp of the first packet, in seconds since the epoch.
+
+    Returns:
+        A list of ten packets on one connection.
+    """
+    client = f"10.{(index >> 16) & 0xFF}.{(index >> 8) & 0xFF}.{index & 0xFF}"
+    port = 20000 + (index % 40000)
+    ssh = b"\x00\x00\x00\x20\x0a" + b"y" * 27
+    http = b"GET /b HTTP/1.1\r\nHost: e.com\r\nUser-Agent: t\r\n\r\n"
+    tls = b"\x16\x03\x03\x00\x20" + b"\x11" * 32
+    return connection_traffic(index, second) + [
+        _tcp(client, port, "10.9.9.9", 22, "PA", second + 0.01, payload=ssh),
+        _tcp(client, port, "10.9.9.9", 80, "PA", second + 0.02, payload=http),
+        _tcp(client, port, "10.9.9.9", 443, "PA", second + 0.03, payload=tls),
+        _tcp(client, port, "10.9.9.9", 443, "A", second + 0.04),
+    ]
+
+
 def handshake(index, second):
     """Return the three packets of one TCP handshake, each with a capture timestamp.
 
@@ -232,6 +312,57 @@ def total_entries(processor):
 def total_evictions(processor):
     """Return the count of entries every state table of a processor evicted."""
     return sum(table.evictions for table in walk_tables(processor).values())
+
+
+def measure_resident_memory(packets, bound=0):
+    """Return the memory reading of one packet run, taken in a clean interpreter.
+
+    `resource.getrusage` reports the high-water mark of the whole process, so a reading
+    taken inside this pytest session would measure every case that ran before it. A
+    separate interpreter is therefore part of the measurement and not a convenience.
+
+    Args:
+        packets: The count of packets to feed.
+        bound: The entry count every state table reads. Zero keeps the shipped bounds.
+
+    Returns:
+        A dict with the keys `idle_mib`, `peak_mib`, `packets`, `connections` and `bound`.
+
+    Raises:
+        subprocess.CalledProcessError: The run failed.
+        subprocess.TimeoutExpired: The run passed `CEILING_TIMEOUT` seconds.
+    """
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(CEILING_RUNNER),
+            "--packets",
+            str(packets),
+            "--connections",
+            str(max(packets // PACKETS_PER_CONNECTION, 1)),
+            "--bound",
+            str(bound),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=CEILING_TIMEOUT,
+    )
+    # scapy writes a deprecation warning to standard error, and a future release may
+    # write to standard output. The reading is the last line, so a banner costs nothing.
+    return json.loads(completed.stdout.strip().splitlines()[-1])
+
+
+@pytest.fixture(scope="module")
+def shipped_reading():
+    """Return the memory reading of one packet run at every bound the library ships."""
+    return measure_resident_memory(CEILING_PACKETS)
+
+
+@pytest.fixture(scope="module")
+def control_reading():
+    """Return the memory reading of the same run with every entry count lowered."""
+    return measure_resident_memory(CEILING_PACKETS, bound=CONTROL_BOUND)
 
 
 @pytest.fixture(scope="module")
@@ -529,6 +660,85 @@ class TestAConnectionThatReturns:
             processor.process_packet(packet)
 
         assert processor.stats()["ja4l"].returned_connections >= 1
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("resource") is None,
+    reason="the reading needs `resource.getrusage`, and Windows ships no `resource`",
+)
+class TestTheStatedMemoryCeiling:
+    """One packet run holds resident memory below the ceiling this package states.
+
+    `features/03-concurrency-safety.md` states 512 MiB for the one-million-packet case at
+    the shipped defaults, and the user decided that number on 2026-08-08. This class is
+    what makes the number a claim a reader can check rather than prose.
+
+    **The ceiling covers the stated case and no longer run.**
+    `BaseFingerprinter.fingerprints` grows without a limit, so resident memory rises with
+    the packet count after every state table settles. #279 read 23 MiB for each 100000
+    packets past 200000, and it measured the crossing at 1500000 packets and 513.06 MiB.
+    `TestTheStructuresThatHoldNoBound` records the structure that causes it, and Goal 3
+    owns the list.
+
+    **The packet count falsifies this ceiling, and a raised entry count does not.** #279
+    raised a table limit three ways and the case stayed green each time, because the age
+    bound holds the tables the reversal raises.
+    `features/03-concurrency-safety.md` records all three readings.
+
+    Three controls sit beside the ceiling case, because a comparison that cannot fail
+    measures nothing. The default size holds 3000 connections, which no shipped bound
+    reaches, so the ceiling comparison alone cannot fail at that size. The first control
+    reads the packet count back. The second reads the memory the traffic added. The third
+    lowers every entry count and reads a smaller number, which is the reading that proves
+    the entry count bound is measured here at all.
+
+    The third control compares a ratio and not a MiB figure. A resident memory reading
+    moves with the platform and with the interpreter, and an absolute margin that suits
+    one platform can sit above the whole signal on another.
+    """
+
+    def test_the_packet_run_holds_resident_memory_below_the_stated_ceiling(self, shipped_reading):
+        """The claim itself.
+
+        #279 read 383.47 MiB, 388.25 MiB, 392.05 MiB and 394.94 MiB across four runs of
+        the full 1000000-packet case. The highest is 77 percent of the ceiling, and the
+        same traffic passes the ceiling at 1500000 packets.
+        """
+        assert shipped_reading["peak_mib"] < MEMORY_CEILING_MIB, (
+            f"{shipped_reading['packets']} packets across "
+            f"{shipped_reading['connections']} connections held "
+            f"{shipped_reading['peak_mib']} MiB, above the stated {MEMORY_CEILING_MIB} MiB"
+        )
+
+    def test_the_run_feeds_every_packet_the_case_states(self, shipped_reading):
+        """The first control. A run that fed fewer packets measures a smaller number."""
+        assert shipped_reading["packets"] == CEILING_RUN_PACKETS
+        assert shipped_reading["connections"] == CEILING_CONNECTIONS
+
+    def test_the_reading_measures_the_traffic_and_not_the_interpreter(self, shipped_reading):
+        """The second control. A constant reading would pass the case above unread."""
+        assert shipped_reading["peak_mib"] > shipped_reading["idle_mib"], (
+            "the run added no resident memory, so the reading measures no traffic"
+        )
+
+    def test_a_smaller_entry_count_holds_less_resident_memory(
+        self, shipped_reading, control_reading
+    ):
+        """The third control. It proves the entry count bound holds the ceiling.
+
+        A package that ignored its entry count bound would read one number for both runs.
+        The comparison is a ratio, because the absolute readings move with the platform.
+        """
+        shipped_growth = shipped_reading["peak_mib"] - shipped_reading["idle_mib"]
+        control_growth = control_reading["peak_mib"] - control_reading["idle_mib"]
+        assert shipped_growth > CONTROL_FLOOR_MIB, (
+            f"the shipped run added {shipped_growth:.2f} MiB, which is too little to read"
+        )
+        assert control_growth < shipped_growth * CONTROL_GROWTH_RATIO, (
+            f"a bound of {CONTROL_BOUND} added {control_growth:.2f} MiB and the shipped "
+            f"bounds added {shipped_growth:.2f} MiB, a ratio of "
+            f"{control_growth / shipped_growth:.3f}, so the entry count changed nothing"
+        )
 
 
 class TestTheStructuresThatHoldNoBound:
