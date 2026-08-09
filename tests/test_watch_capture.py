@@ -113,23 +113,25 @@ def run_watch(*argv, source=None, failure=None, calls=None, platform=None, euid=
 def the_privilege_failure():
     """Return the failure the macOS capture layer reports without the privilege.
 
-    The call opens `/dev/bpf0` and it opens no interface. A caller that holds the
-    privilege receives the file descriptor instead, so the case that reads this failure
-    skips under the user identity zero.
+    The call opens `/dev/bpf0` and it opens no interface. A host that grants the
+    privilege returns the file descriptor instead, and this call reports no failure.
+    The caller reads that result as the state of the host, and #424 records why: the
+    user identity and the platform do not decide the grant, and a case that reads the
+    grant through those two alone fails on a host that chowned the `/dev/bpf*` devices.
 
     Returns:
-        The `Scapy_Exception` the call raised.
-
-    Raises:
-        AssertionError: The call raised nothing.
+        The `Scapy_Exception` the call raised, or None where the host granted the
+        privilege.
     """
     from scapy.arch.bpf.core import get_dev_bpf
 
     try:
-        get_dev_bpf()
+        descriptor, _ = get_dev_bpf()
     except Scapy_Exception as error:
         return error
-    raise AssertionError("the host granted the capture privilege")
+    # `get_dev_bpf` returns an open descriptor, and no caller of this module closes it.
+    os.close(descriptor)
+    return None
 
 
 def the_absent_interface_failure():
@@ -216,10 +218,74 @@ class TheCommandNamesTheCapturePrivilege(unittest.TestCase):
     @unittest.skipIf(os.geteuid() == 0, "the user identity zero holds the privilege")
     def test_the_message_reads_the_failure_this_host_reports(self):
         """The macOS reading, taken from the real capture layer of this host."""
-        message = describe(the_privilege_failure())
+        error = the_privilege_failure()
+        if error is None:
+            self.skipTest("this host grants the capture privilege to this account")
+        message = describe(error)
         self.assertIn("CAP_NET_RAW", message)
         self.assertIn("/dev/bpf*", message)
         self.assertIn("could not open /dev/bpf", message)
+
+
+class TheCapturePrivilegeCaseGuardsOnTheHostState(unittest.TestCase):
+    """#424 — the case that reads the real capture layer guards on the privilege.
+
+    The case above reads the failure of this host, so its result depends on whether
+    this host grants the capture privilege to this account. A guard proved in one
+    direction can skip on every host, and a case that always skips measures nothing.
+    The two cases here force each direction and read what the guarded case then does.
+    """
+
+    # The message `scapy` 2.7.0 raises at `scapy/arch/bpf/core.py:59`, read on
+    # 2026-08-09. The guarded case asserts on this text, so a paraphrase would prove
+    # nothing about the real denial.
+    DENIAL = (
+        "Permission denied: could not open /dev/bpf0. "
+        "Make sure to be running Scapy as root ! (sudo)"
+    )
+
+    def the_guarded_case(self):
+        """Return the guarded case, ready to run.
+
+        Returns:
+            The `TheCommandNamesTheCapturePrivilege` case that reads this host.
+        """
+        return TheCommandNamesTheCapturePrivilege(
+            "test_the_message_reads_the_failure_this_host_reports"
+        )
+
+    @unittest.skipUnless(sys.platform == "darwin", "the /dev/bpf devices are macOS")
+    @unittest.skipIf(os.geteuid() == 0, "the user identity zero holds the privilege")
+    def test_the_case_runs_and_passes_where_the_host_denies_the_privilege(self):
+        """A host without the privilege still reads the message from the capture layer."""
+        denial = Scapy_Exception(self.DENIAL)
+        with patch("scapy.arch.bpf.core.get_dev_bpf", side_effect=denial):
+            result = self.the_guarded_case().run()
+        self.assertEqual(result.testsRun, 1)
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
+        self.assertEqual(result.skipped, [])
+
+    @unittest.skipUnless(sys.platform == "darwin", "the /dev/bpf devices are macOS")
+    @unittest.skipIf(os.geteuid() == 0, "the user identity zero holds the privilege")
+    def test_the_case_skips_where_the_host_grants_the_privilege(self):
+        """A host with the privilege reports no failure, so the case skips."""
+        granted = os.open(os.devnull, os.O_RDONLY)
+        with patch("scapy.arch.bpf.core.get_dev_bpf", return_value=(granted, 0)):
+            result = self.the_guarded_case().run()
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
+        self.assertEqual(len(result.skipped), 1)
+        self.assertIn("grants the capture privilege", result.skipped[0][1])
+
+    @unittest.skipUnless(sys.platform == "darwin", "the /dev/bpf devices are macOS")
+    def test_the_probe_closes_the_descriptor_a_granting_host_returns(self):
+        """`get_dev_bpf` returns an open descriptor, and nothing else closes it."""
+        granted = os.open(os.devnull, os.O_RDONLY)
+        with patch("scapy.arch.bpf.core.get_dev_bpf", return_value=(granted, 0)):
+            self.assertIsNone(the_privilege_failure())
+        with self.assertRaises(OSError):
+            os.fstat(granted)
 
 
 class TheCommandListsTheInterfacesItFound(unittest.TestCase):
