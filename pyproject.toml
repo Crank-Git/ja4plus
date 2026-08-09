@@ -108,6 +108,9 @@ ja4plus = ["data/*.csv", "py.typed"]
 [tool.pytest.ini_options]
 markers = [
     "spec_validation: FoxIO reference validation tests",
+    # `tests/conftest.py` deselects this marker from a run that does not name it. The
+    # `installed-wheel` job is the only runner of it. **A `-m` expression on the command
+    # line replaces the one in `addopts`, so `addopts` cannot hold that rule.**
     "installed_wheel: cases that install the built package into a clean environment",
 ]
 

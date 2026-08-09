@@ -15,6 +15,13 @@ discriminates.
 any wheel that imports. `test_the_lookup_reports_an_empty_database_without_the_mapping_file`
 removes the mapping file and reads the same probe again.
 
+**Every case here carries the `installed_wheel` marker, and `tests/conftest.py` deselects
+that marker from a run that does not name it.** The `installed-wheel` job of
+`.github/workflows/test.yml` is the only runner of the marker, and the `conformance` job
+holds the same relation to `spec_validation`. The build and the install cost about 23 s,
+and `pip` reaches the index for the dependency list, so the unit gate carries neither.
+`tests/test_installed_wheel_selection.py` holds that rule against three commands.
+
 #68 owns `.github/workflows/publish.yml`. **#68 imports this file rather than writing
 the check again**, so `build_artifacts`, `create_clean_environment` and
 `package_file_of` stay public.

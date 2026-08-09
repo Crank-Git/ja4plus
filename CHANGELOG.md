@@ -92,9 +92,17 @@ holds every breaking change of this record against a row of that page.
   imports. It removes `ja4plus/data/ja4plus-mapping.csv` from a second clean environment
   and reads one probe twice: `70 True` before the removal, and `0 False` after it.
   `.github/workflows/test.yml` gains the `installed-wheel` job, which names the marker, so
-  a failure is visible without a log search. **`build` joins the `dev` extra**, because
-  the marker sits inside `pytest tests/ -m "not spec_validation"`, and every environment
-  that runs that gate needs the package. #409 installs the source distribution. The build,
+  a failure is visible without a log search. **That job is the only runner of the marker.**
+  New file `tests/conftest.py` deselects the marker from a run that does not name it, and
+  the `conformance` job holds the same relation to `spec_validation`. The unit gate
+  therefore builds no wheel and reaches no index. **A `-m` expression on the command line
+  replaces the one in `addopts`, so `addopts` cannot hold that rule.** A measurement of
+  2026-08-09 proved it: with `addopts = "-m 'not installed_wheel'"` and the gate command
+  `-m "not spec_validation"`, `pytest --collect-only` still collected all seven cases. New
+  file `tests/test_installed_wheel_selection.py` holds the rule against three commands, so
+  a rename of the marker fails a case rather than removing the wheel cases from the gate
+  in silence. **`build` joins the `dev` extra**, because the dedicated job and a local run
+  each need `python -m build`. #409 installs the source distribution. The build,
   the environment creation and the comparison each take the artifact as a parameter, so
   #409 passes another artifact to the same three functions. **The case costs wall-clock
   time on every gate run.** Four consecutive runs on macOS with a warm `pip` cache
