@@ -290,7 +290,7 @@ class TestTheClientPrefersTheCachedMappingFile:
         client = JA4DBClient(allow_remote=False)
         result = client.lookup(CACHE_ONLY_FINGERPRINT)
         assert result is not None
-        assert result["application"] == "Issue 61 Client"
+        assert result.application == "Issue 61 Client"
 
     def test_the_client_reads_the_bundled_mapping_file_when_no_cache_file_exists(
         self, cache_home, no_network

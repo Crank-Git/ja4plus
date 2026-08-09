@@ -147,9 +147,13 @@ class StubLookupClient:
         self.matches = matches or {}
 
     def lookup(self, fingerprint):
-        """Return the match dict for the fingerprint, or None when there is no match."""
+        """Return the match for the fingerprint, or None when there is no match."""
+        from ja4plus.ja4db import LookupResult
+
         application = self.matches.get(fingerprint)
-        return {"application": application} if application else None
+        if not application:
+            return None
+        return LookupResult(application=application, type="ja4", notes="", source="embedded")
 
 
 def run_cli(*argv, lookup_client=None):
