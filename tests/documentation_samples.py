@@ -22,10 +22,16 @@ REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parent.parent
 # "```python", because a reader that matches one literal form skips every other form.
 _FENCE = re.compile(r"^(?P<indent> {0,3})(?P<ticks>`{3,}|~{3,})[ \t]*(?P<info>[^`\n]*)$")
 
-# The marker sits on the line before the opening fence. An explicit marker beats a
-# heuristic: a heuristic reclassifies a sample the day somebody edits it, and it reports
-# no change.
+# The marker sits above the opening fence. An explicit marker beats a heuristic: a
+# heuristic reclassifies a sample the day somebody edits it, and it reports no change.
+#
+# The reader passes over a blank line between the marker and the fence. A reader that
+# read one line alone would drop the marker the day somebody tidies the file, and the
+# block would then run with no reason recorded.
 _MARKER = re.compile(r"^<!--\s*sample:\s*(?P<body>.+?)\s*-->$")
+
+# A fence inside a blockquote reaches neither reader, so a case bars the form.
+BLOCKQUOTE_FENCE = re.compile(r"^ {0,3}>[ >]*(?:`{3,}|~{3,})")
 
 # The user documentation. `docs/specs/` is the specification package, and
 # `EXCLUDED_DIRECTORY` below records why no block of it runs.
@@ -103,7 +109,10 @@ def read_fenced_blocks(path: pathlib.Path, relative_to: pathlib.Path) -> List[Fe
             index += 1
             continue
         fence = opening.group("ticks")
-        marker_match = _MARKER.match(lines[index - 1].strip()) if index > 0 else None
+        above = index - 1
+        while above >= 0 and not lines[above].strip():
+            above -= 1
+        marker_match = _MARKER.match(lines[above].strip()) if above >= 0 else None
         body_start = index + 1
         end = body_start
         while end < len(lines):

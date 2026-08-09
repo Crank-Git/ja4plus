@@ -11,7 +11,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Every code sample and every example script runs in continuous integration** (#63).
   Round TBD. Nothing ran a sample before this round, so a sample that stopped working
   stopped working in silence. That is the shape this project records seventeen times: a
-  comparison that is never made reads as a comparison that passes. **The reader finds 157
+  comparison that never runs reads as a comparison that passes. **The reader finds 157
   fenced blocks across `README.md` and `docs/`, and a second reader agrees on every
   file.** `tests/documentation_samples.py` matches a fence grammar and tracks the fence
   width, and `_second_reader_block_count` uses string operations alone. **The two readers
@@ -38,11 +38,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- **`generate_ja4` reads a TLS info dictionary, and the documentation said a packet**
+- **`generate_ja4` reads a TLS info dictionary, and the documentation stated a packet**
   (#63). Round TBD. `README.md` and `docs/api_reference.md` each wrote
   `generate_ja4(packet)`, and the call raises `AttributeError: get`. The function reads
-  the dictionary that `ja4plus.utils.tls_utils.extract_tls_info` returns. The nine other
-  one-shot functions read a packet, and `generate_ja4x` reads a dictionary that
+  the dictionary that `ja4plus.utils.tls_utils.extract_tls_info` returns. Eight of the
+  nine other one-shot functions read a packet. `generate_ja4x` reads a dictionary that
   `docs/api_reference.md` already recorded. **The sample harness of #63 found this on its
   first green run, and no case reached it before**, because nothing ran the sample. This
   entry repairs the two documents and changes no signature.

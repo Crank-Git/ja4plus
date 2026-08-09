@@ -21,19 +21,22 @@ import os
 import pathlib
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import sys
 import textwrap
-from contextlib import redirect_stdout
-from typing import Any, Dict, List
+from contextlib import contextmanager, redirect_stdout
+from typing import Any, Dict, Iterator, List
 
 import pytest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from tests.documentation_samples import (  # noqa: E402
+    BLOCKQUOTE_FENCE,
     REPOSITORY_ROOT,
+    RUNNABLE_LANGUAGES,
     SAMPLE_FILES,
     FencedBlock,
     all_blocks,
@@ -180,6 +183,64 @@ def test_every_skipped_sample_names_its_reason() -> None:
             assert len(result.reason.split()) >= 4, f"{block.name}: {result.reason!r}"
 
 
+def test_every_marker_sits_on_a_block_the_harness_runs() -> None:
+    """Every `sample:` marker sits on a `python` block or on a `bash` block.
+
+    `disposition` reads the language before it reads the marker, so a marker on a JSON
+    block or on an output block would state a reason that nothing acts on. This case
+    reports the misplaced marker rather than dropping it.
+    """
+    misplaced = [
+        f"{block.name} carries the marker {block.marker!r} on a {block.info!r} block"
+        for block in all_blocks()
+        if block.marker is not None and block.language not in RUNNABLE_LANGUAGES
+    ]
+    assert not misplaced, "; ".join(misplaced)
+
+
+# A fence inside a blockquote reaches neither reader, so the two counts agree on a block
+# that neither one found. The census therefore misses it, and the miss is silent.
+#
+# Two such fences exist today, and both sit in the specification package, which the
+# harness excludes whole. They open and close one `.gitignore` fragment, which is data
+# rather than a code sample. This list records them so that the miss is counted and not
+# silent, and `test_no_new_fence_hides_inside_a_blockquote` fails on a third.
+KNOWN_BLOCKQUOTE_FENCES = (
+    "docs/specs/features/00-foundation.md:49",
+    "docs/specs/features/00-foundation.md:53",
+)
+
+
+def _blockquote_fences() -> List[str]:
+    """Return the location of every fence that opens inside a blockquote."""
+    return [
+        f"{path.relative_to(REPOSITORY_ROOT).as_posix()}:{number}"
+        for path in documentation_files()
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+        if BLOCKQUOTE_FENCE.match(line)
+    ]
+
+
+def test_no_new_fence_hides_inside_a_blockquote() -> None:
+    """The documentation holds the two recorded blockquote fences and no other."""
+    assert _blockquote_fences() == list(KNOWN_BLOCKQUOTE_FENCES)
+
+
+def test_the_user_documentation_holds_no_fence_inside_a_blockquote() -> None:
+    """No user documentation page opens a fence inside a blockquote.
+
+    A blockquote fence reaches neither reader. In the user documentation such a fence
+    would hide a runnable sample from the census, so this case bars the shape there.
+    """
+    offenders = [
+        location for location in _blockquote_fences() if not location.startswith("docs/specs/")
+    ]
+    assert not offenders, (
+        f"a fence inside a blockquote reaches neither reader: {offenders}. Move the "
+        "block out of the blockquote."
+    )
+
+
 # A block with no info string carries output, a schema line or a table. This case proves
 # that classification. A block the reader calls output must not import this library and
 # must not start with the name of the command.
@@ -317,6 +378,37 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> None:
 # --------------------------------------------------------------------------------------
 
 
+# A shell sample runs in a subprocess, which carries its own timeout. A Python sample
+# runs in this process, so an unmarked sample that blocks would hang the whole run.
+SAMPLE_TIME_LIMIT_SECONDS = 300
+
+
+@contextmanager
+def _time_limit(name: str) -> Iterator[None]:
+    """Raise `TimeoutError` when the body runs longer than the sample time limit.
+
+    Args:
+        name: The identifier of the block, for the message.
+
+    Yields:
+        Nothing. The caller runs the sample inside the body.
+    """
+    if not hasattr(signal, "SIGALRM"):
+        yield
+        return
+
+    def expire(*_args: Any) -> None:
+        raise TimeoutError(f"{name} ran longer than {SAMPLE_TIME_LIMIT_SECONDS} seconds")
+
+    previous = signal.signal(signal.SIGALRM, expire)
+    signal.setitimer(signal.ITIMER_REAL, SAMPLE_TIME_LIMIT_SECONDS)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+
+
 def _python_samples(name: str) -> List[FencedBlock]:
     """Return the Python blocks of one file that the harness runs, in file order."""
     return [
@@ -352,7 +444,7 @@ def test_every_python_sample_of_the_page_runs(
         source = compile(block.body + "\n", block.name, "exec")
         if result.action == "raises":
             with pytest.raises(Exception) as caught:  # noqa: B017
-                with redirect_stdout(io.StringIO()):
+                with _time_limit(block.name), redirect_stdout(io.StringIO()):
                     exec(source, namespace)
             assert type(caught.value).__name__ == result.expected_error, (
                 f"{block.name} raised {type(caught.value).__name__}, and the marker names "
@@ -360,7 +452,7 @@ def test_every_python_sample_of_the_page_runs(
             )
             continue
         try:
-            with redirect_stdout(io.StringIO()):
+            with _time_limit(block.name), redirect_stdout(io.StringIO()):
                 exec(source, namespace)
         except Exception as error:  # noqa: BLE001
             pytest.fail(
