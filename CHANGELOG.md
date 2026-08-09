@@ -81,8 +81,8 @@ holds every breaking change of this record against a row of that page.
   `3991712f08fbb11996fad69a3b457150d585463b`, the head of
   `epic/406-pre-release-validation`. #410 holds every transcript verbatim.
   **The gates report no failure.** The unit suite reads
-  `2547 passed, 3 skipped, 1825 deselected, 8 xfailed, 16 warnings in 393.15s (0:06:33)`
-  at 94 percent coverage against the `COVERAGE_FLOOR` of 70. The conformance suite reads
+  `2547 passed, 3 skipped, 1825 deselected, 8 xfailed, 16 warnings in 393.15s (0:06:33)`.
+  Coverage reads 94 percent against the `COVERAGE_FLOOR` of 70. The conformance suite reads
   `1532 passed, 143 skipped, 2574 deselected, 134 xfailed, 1 warning in 16.21s` against
   the 134 keys of `tests/foxio_deviations.json`, which matches the premise the issue
   states. `ruff check` reads `All checks passed!`, `ruff format --check` reads
@@ -93,7 +93,7 @@ holds every breaking change of this record against a row of that page.
   `peak_mib` 115.37 against the stated 512 MiB ceiling.
   **The installed-wheel marker took 71.56 s on Linux against the 23 s #408 measured on
   macOS.** That case builds an artifact and installs it, so its cost follows the host.
-  **The caveat binds every measurement above.** The host verifies a Linux code path and
+  **The caveat binds every measurement above.** The host verifies a Linux code path. It
   predicts no `ubuntu-latest` result, because the runner holds another kernel, another
   processor count, another memory size and another Python version. The host measures
   `python3.12` alone, so the 3.9, the 3.10, the 3.11 and the 3.13 rows of the matrix get

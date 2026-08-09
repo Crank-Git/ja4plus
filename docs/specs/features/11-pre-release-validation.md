@@ -248,9 +248,9 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
   that omits them states more than the host measured.
 - The clean environment installs no development extra, so the run reads the shipped
   dependency list.
-- The installed-artefact case builds an artefact and installs it, so its cost follows the
-  host rather than the case count. #410 measured 71.56 s on the granted Linux host against
-  the 23 s #408 measured on macOS.
+- A case that installs the shipped package builds and installs before it measures, so its
+  cost follows the host rather than the case count. #410 measured 71.56 s on the granted
+  Linux host against the 23 s #408 measured on macOS.
 - **This feature set sets no throughput target, and it adds no gate on a throughput
   value.** `Non-goals` of `docs/specs/spec.md` states the reason.
 - A throughput measurement of this feature set becomes no floor. A floor derived from one
