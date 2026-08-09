@@ -1,0 +1,86 @@
+name: Documentation
+
+# **This job measures the committed pins, and no other environment.** A unit case cannot
+# do it. The suite runs inside an environment that another resolution already filled, so
+# a case that imports `mkdocs` reports that environment and not `pyproject.toml`. The
+# runner starts empty, so the install here resolves the `docs` extra alone.
+#
+# #391 records the defect that made this job necessary. `mkdocstrings==1.0.6` is an exact
+# pin and an incompatible one: it installs, and the build then fails with
+# `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. Every case of
+# `tests/test_documentation_site.py` passed while the site did not build.
+#
+# **Never add the `dev` extra to the install step.** It brings a second resolution into
+# the environment, the release installs no such set, and a job that installs it measures
+# the wrong artifact.
+#
+# **This job publishes nothing.** #66 owns the publish workflow, so keep this one to an
+# install and a build.
+#
+# `dev` is the default branch and every pull request targets it. `master` stays in both
+# lists, so a promotion to the release branch runs this check too.
+
+on:
+  push:
+    branches: [master, dev]
+    paths:
+      - "pyproject.toml"
+      - "mkdocs.yml"
+      - "docs/**"
+      - ".github/workflows/docs-build.yml"
+  pull_request:
+    branches: [master, dev]
+    paths:
+      - "pyproject.toml"
+      - "mkdocs.yml"
+      - "docs/**"
+      - ".github/workflows/docs-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        # The `docs` extra needs Python 3.10 or later, because `griffe` 2.1.0 requires it.
+        # The package floor of Python 3.9 stays, because no user builds the site.
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install the documentation extra
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[docs]"
+
+      - name: Report the resolved versions
+        # The build result belongs to one set of versions. This step names the set, so a
+        # red build reports what it ran against.
+        run: pip list
+
+      - name: Build the site
+        run: mkdocs build --strict
+
+      - name: Check that the API reference rendered
+        # A build that produces empty pages exits 0. `mkdocstrings` reads the docstrings
+        # of the source, so this step reads two results back out of the generated HTML.
+        run: |
+          if ! grep -q "runs every JA4+ fingerprinter on each packet" \
+            site/reference/processor/index.html; then
+            echo "::error::The Processor page carries no docstring text from the source."
+            exit 1
+          fi
+          page=site/reference/fingerprinters/index.html
+          missing=""
+          for name in ja4 ja4d ja4d6 ja4h ja4l ja4s ja4ssh ja4t ja4ts ja4x; do
+            grep -q "id=\"ja4plus.fingerprinters.${name}.generate_${name}\"" "$page" \
+              || missing="${missing} ${name}"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::The API reference renders no one-shot function for:${missing}"
+            exit 1
+          fi
+          echo "The API reference renders the ten one-shot functions." >> "$GITHUB_STEP_SUMMARY"
