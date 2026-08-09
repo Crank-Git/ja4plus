@@ -384,7 +384,10 @@ class StatisticsReporter:
 
 @contextlib.contextmanager
 def report_statistics(
-    stats: MonitorStats, interval: Optional[float], stream: TextIO
+    stats: MonitorStats,
+    interval: Optional[float],
+    stream: TextIO,
+    wait: Optional[Callable[[float], bool]] = None,
 ) -> Iterator[Optional[StatisticsReporter]]:
     """Yield the statistics reporter, and stop it when the body returns.
 
@@ -395,6 +398,11 @@ def report_statistics(
         stats: The counts to report.
         interval: The count of seconds between two lines, or None for no thread.
         stream: The stream to write to.
+        wait: The call that waits one interval and reports whether the stop arrived, or
+            None for the wait on the stop event. `StatisticsReporter` states the form.
+            `ja4plus/cli.py` passes None, and a test passes its own call, so a case that
+            reaches the reporter through `cmd_watch` states the schedule rather than
+            measures how promptly the host schedules a thread. #371 added the parameter.
 
     Yields:
         The reporter, or None where the operator stated no interval.
@@ -402,7 +410,7 @@ def report_statistics(
     if interval is None:
         yield None
         return
-    reporter = StatisticsReporter(stats, interval, stream)
+    reporter = StatisticsReporter(stats, interval, stream, wait=wait)
     reporter.start()
     try:
         yield reporter

@@ -435,13 +435,16 @@ class ScriptedReport:
         self._intervals = intervals
         self.seconds = []
         self.reached_standard_error = []
+        self.waits = []
 
     def __call__(self, stats, interval, stream):
+        wait = ScriptedWait(self._intervals)
         self.seconds.append(interval)
         # `run_watch` patches `sys.stderr`, so the test reads the identity here and not
         # after `main` returns.
         self.reached_standard_error.append(stream is sys.stderr)
-        return report_statistics(stats, interval, stream, wait=ScriptedWait(self._intervals))
+        self.waits.append(wait)
+        return report_statistics(stats, interval, stream, wait=wait)
 
 
 class TheReporterWritesOneLinePerInterval(unittest.TestCase):
@@ -639,8 +642,12 @@ class TheStatisticsGoToStandardError(unittest.TestCase):
         # order.
         self.assertEqual(len(lines), 4)
         self.assertNotIn("[ja4plus] packets=", out)
-        # FR-live-capture-9 — the command line reaches the reporter unchanged.
+        # FR-live-capture-9 — the command line reaches the reporter unchanged. The command
+        # passes the interval to `report_statistics`, and the reporter passes it to the
+        # wait, once for each of the three intervals and once for the call that reports
+        # the stop.
         self.assertEqual(report.seconds, [0.05])
+        self.assertEqual(report.waits[0].timeouts, [0.05] * 4)
         # FR-live-capture-10 — the reporter writes to standard error.
         self.assertEqual(report.reached_standard_error, [True])
 
