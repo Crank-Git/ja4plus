@@ -304,6 +304,37 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The network rule of Epic 11 bound every case, and every install case had to violate
+  it** (#419). Round TBD. `FR-pre-release-validation-26` read `No case of this feature set
+  opens a network connection.` `pip install <the wheel>` resolves the shipped dependency
+  list, so an install into a clean environment reaches a package index by construction.
+  **A measurement of 2026-08-09 states it rather than infers it.** A clean environment that
+  installed `ja4plus-0.6.0-py3-none-any.whl` read
+  `Downloading scapy-2.7.0-py3-none-any.whl (2.6 MB)` and
+  `Downloading cryptography-50.0.0-cp311-abi3-macosx_11_0_arm64.whl (4.0 MB)`.
+  **The rule came from #414, where it is correct and narrow**, so this entry keeps it and
+  names its scope. `FR-pre-release-validation-26` binds a case of `tests/test_db_offline.py`
+  that asserts that `ja4plus/ja4db.py` sends no request, and it names the recorded
+  transport `RecordingRequests`. `FR-pre-release-validation-26a` bars the address
+  `https://ja4db.com`. `FR-pre-release-validation-26b` permits the package index for the
+  install cases of `tests/test_installed_wheel.py`, and `FR-pre-release-validation-26c`
+  names `scapy` and `cryptography` as the two dependencies that index resolves.
+  **The rule is now a condition a case tests, and not prose alone.** New file
+  `tests/test_requirement_scope.py` reads the requirement text of every document under
+  `docs/specs/features/`. A requirement that scopes itself to a feature set names one path
+  under `tests/` inside backticks. **The check reads a necessary condition and not a
+  sufficient one**, because no parser reads which cases a sentence means. **The failing
+  direction is proven live.** Against the base the case read
+  `AssertionError: these requirements bind a feature set and name no case file: ['FR-pre-release-validation-26']`,
+  an injected `FR-release-99` of the same shape read the same message, and the revert
+  returned all four cases to green. **The self-review found one gap in the pattern and
+  closed it.** The first form read `case` alone, so `No cases open a network connection`
+  stated the defect again and passed. The pattern now reads `cases?`. **The sweep found one widened rule of the 200 the base
+  holds, and no second one.** `FR-pre-release-validation-33` is the only other requirement
+  scoped to a feature set, it binds the issues rather than the cases, and it names
+  `tests/foxio_deviations.json`. **`FR-pre-release-validation-16` is untouched, because
+  #411 owns it.** The `## Terms` table gains `recorded transport` and `package index`. No
+  file under `ja4plus/` changes and no fingerprint moves.
 - **The migration page cited round 122 for the item access, and it recorded the narrowed
   certificate readers not at all** (#399, #401, #403). Round 143. The page held eleven breaking
   changes and none recorded #319. That round narrowed `compute_ja4x_from_pem` and
