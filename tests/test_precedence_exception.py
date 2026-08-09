@@ -38,6 +38,13 @@ FoxIO checkout.** The measurement read all 135 register keys against 38 Rust sna
 connection by resolving `frame.number` against the capture, because the Wireshark
 testdata records a frame number and no connection.
 
+**#334 left the 35 source values of #129 out of the table, and #347 put them in.** The
+exclusion enforced the capability bar a second time. A wrong reading of the field then
+moved nothing, and no case failed. The table now holds every measured row, and the field
+alone bars the 35. `test_the_field_alone_bars_the_measured_capability_rows` reads the
+reach with the field flipped. #347 measured the 35 rows against the same pinned commit
+and by the same method.
+
 These cases read the register, the vectors and prose. They import nothing from `ja4plus`
 and they produce no fingerprint.
 """
@@ -59,9 +66,9 @@ ZEEK_PAGE = REPO_ROOT / "docs" / "specs" / "foxio" / "zeek.md"
 JA4SSH_PAGE = REPO_ROOT / "docs" / "specs" / "foxio" / "JA4SSH.md"
 
 # The value every other FoxIO source holds for one register key, keyed by the register
-# key. The run of #334 measured it, and it holds every decided value-form key that a
-# source covers and that no capability decline bars. A further 35 keys of #129 carry a
-# source value, and the capability bar removes each one before its value matters.
+# key. The run of #334 measured 23 rows, and the run of #347 measured the 35 rows of
+# #129. The table holds every decided value-form key that a source covers. The capability
+# field is the one fact that bars the 35.
 SOURCE_VALUES = {
     "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
         "rust": "113_64",
@@ -73,8 +80,132 @@ SOURCE_VALUES = {
         "wireshark": "9285_0_quic",
         "zeek": "10990_56_q",
     },
+    "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
+        "rust": "ge20nn16enus_0f5a7a41a252_000000000000_000000000000",
+        "wireshark": "ge20nn12enus_60f823d07c94_000000000000_000000000000",
+    },
+    "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1": {
+        "wireshark": "ge20nn12enus_sec-ch-ua,sec-ch-ua-mobile,sec-ch-ua-platform,upgrade-insecure-requests,user-agent,accept,sec-fetch-site,sec-fetch-mode,sec-fetch-user,sec-fetch-dest,accept-encoding,accept-language__",
+    },
     "gre-erspan-vxlan.pcap/0:65174/JA4T.1": {
         "rust": "8192__0_0",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.1": {
+        "rust": "ge20cn23enus_641f0b6ae3f0_c7713052b7e4_348cad68b6fb",
+        "wireshark": "ge20cn19enus_cb83bf27b7a9_c7713052b7e4_348cad68b6fb",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.10": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.11": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.12": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.13": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.14": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.15": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.2": {
+        "rust": "ge20cn17enus_949f364da66f_e43af2e8abfe_015bb0ca5596",
+        "wireshark": "ge20cn13enus_8e33b43baae9_e43af2e8abfe_015bb0ca5596",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.3": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.4": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.5": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.6": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.7": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.8": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H.9": {
+        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.1": {
+        "wireshark": "ge20cn19enus_sec-ch-ua,sec-ch-ua-mobile,sec-ch-ua-platform,upgrade-insecure-requests,user-agent,accept,sec-ch-ua-arch,sec-ch-ua-platform-version,sec-ch-ua-model,sec-ch-ua-bitness,sec-ch-ua-wow64,sec-ch-ua-full-version-list,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-user,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PSIDCC=APoG2W80ReNqY71qp2I8hZk8BsmVmWk_ejh3LtS-HuboNyHI73aZAnaQhqTWkTHUiz45rCPv,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.10": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.11": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.12": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.13": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.14": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.15": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.2": {
+        "wireshark": "ge20cn13enus_upgrade-insecure-requests,user-agent,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-user,sec-fetch-dest,sec-ch-ua,sec-ch-ua-mobile,sec-ch-ua-platform,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,SIDCC=APoG2W9RK6clrsnkAMIVg0rYm3am1HkEfg8dAPun6iMCVEt_0tkuDFLdjjiADNirDnahrwzeAQ,__Secure-1PSIDCC=APoG2W81CyAxqg4qdIqnAV5zkvXLzRfSMgA4mkydeWg9IeL-6814d1G7t95sNNSRTqgzkZji,__Secure-3PSIDCC=APoG2W_WfImJeKcVAH4O7muEBxWxwaZd-WwKWyO1PfcqO-vHYfyX0O9GCzXU0t6LNlvXg9w7,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.3": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.4": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.5": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.6": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.7": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.8": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.9": {
+        "wireshark": "ge20cr18enus_sec-ch-ua,sec-ch-ua-mobile,user-agent,sec-ch-ua-arch,sec-ch-ua-full-version,sec-ch-ua-platform-version,sec-ch-ua-full-version-list,sec-ch-ua-bitness,sec-ch-ua-model,sec-ch-ua-wow64,sec-ch-ua-platform,accept,x-client-data,sec-fetch-site,sec-fetch-mode,sec-fetch-dest,accept-encoding,accept-language_VISITOR_INFO1_LIVE,LOGIN_INFO,SID,__Secure-1PSIDTS,__Secure-3PSIDTS,__Secure-1PSID,__Secure-3PSID,HSID,SSID,APISID,SAPISID,__Secure-1PAPISID,__Secure-3PAPISID,YSC,VISITOR_PRIVACY_METADATA,SIDCC,__Secure-1PSIDCC,__Secure-3PSIDCC_VISITOR_INFO1_LIVE=5CuVaSL9wDE,LOGIN_INFO=AFmmF2swRgIhAOltLQJUxXKDwpOeYd1REmFWIv-SZOX5_Mt3l8dB8TUyAiEAq9Hxidx9TIYr9Usi0QvZwoAY7hWdD0TrwUBJ-vDNhFw:QUQ3MjNmeHlXOVFoOGc1bWNjT2VKNnZPVlJzVktiM3pXc2ExNENfTkFqZzh6SEFIODBCWUo2d0hZU1preThtcjVjNW1oV1NXX2dXbV9laUsxN2gxNlRMZGM4QlVEMkJNVFR3UWpfbWtoSTdXSlVYUnRIekJiVmxXT0NLMklXRmxDSEZ1M2xDYkZjYld5NTg2azdMOTRuSFg0SEQ1NmhCcXJR,SID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3oyvm4YN6azbdj99oAEv6g.,__Secure-1PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-3PSIDTS=sidts-CjEB3e41hfRDIv3qE6IhIGL4regkBrZQzMepIsMI60XzPXMHjuDBFb8Jzi6e3Q_XguntEAA,__Secure-1PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK3ZH4QQAFpOKIred2Wu8QgA.,__Secure-3PSID=bAiSGpEASIdYDutJlWaOLSpT-A0OtSymfAqQHglc8wCyKvJK9erTPZ3XpDCPS4p8f5PnjQ.,HSID=AOF5tyazl7ZAKFyZY,SSID=AqFHwVpJHIK9H1lfZ,APISID=pEXHoyISD5STpHG9/AajENhWjLXnfNmbhI,SAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-1PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,__Secure-3PAPISID=_4e9wsQoZw81B655/A2zwmxsRQhzaXtNW0,YSC=fmJvKZ98ZzM,VISITOR_PRIVACY_METADATA=CgJDQRICGgA%3D,SIDCC=APoG2W_-Qsh5iRlLVDzN2OkIW0cAz_0yN7-rr-KCkBL1IXxKRG0CdQP6-ZkTxzy7D4H-DselDw,__Secure-1PSIDCC=APoG2W-ysomredm6Llr5hD-_lAbJvmQ7uTdjhZQS5pPUXf4Avu9tKLhKjZXAlGhtseKPB6dC,__Secure-3PSIDCC=APoG2W-TOlRHTYrgLGQiaBdvBhHjJ9JVpf6IZAguDfwj958a7ObWfITcu9ql2EdL0cxQ_e33,",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4X.1": {
+        "rust": "a373a9f83c6b_7022c563de38_2e3757343cb0",
+        "wireshark": "a373a9f83c6b_7022c563de38_2e3757343cb0",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4X.2": {
+        "rust": "a373a9f83c6b_a373a9f83c6b_5d71497f7704",
+        "wireshark": "a373a9f83c6b_a373a9f83c6b_5d71497f7704",
+    },
+    "http2-with-cookies.pcapng/0:58847/JA4X.3": {
+        "rust": "7d5dbb3783b4_a373a9f83c6b_2fbee3f04f3b",
+        "wireshark": "7d5dbb3783b4_a373a9f83c6b_2fbee3f04f3b",
     },
     "ssh-r.pcap/0:64980/JA4SSH.2": {
         "rust": "c64s64_c33s48_c42s2",
@@ -167,11 +298,15 @@ SOURCE_VALUES = {
     },
 }
 
-# The count of decided value-form keys the capability bar holds out. 35 of the 37 carry a
-# value in another FoxIO source, and the bar removes each one before its value matters, so
-# `SOURCE_VALUES` holds none of them. 58 of the 76 decided value-form keys carry a source
-# value, and 35 of the 58 are these.
+# The count of decided value-form keys the capability bar holds out. 58 of the 76 decided
+# value-form keys carry a source value, and 35 of the 58 are these.
 CAPABILITY_VALUE_KEYS = 37
+
+# The count of measured rows the capability bar holds out. The run of #347 read all 37
+# rows of #129 and found a source value for 35. The other two are the JA4X keys of
+# `chrome-cloudflare-quic-with-secrets.pcapng`. No Rust snapshot and no Wireshark file
+# holds a JA4X value for that capture, so the table records neither key.
+CAPABILITY_ROWS_MEASURED = 35
 
 # The methods no Zeek baseline holds a reference value for. Three rules of the Zeek script
 # part it from the Python reference, and the bar stands above the exception.
@@ -182,6 +317,35 @@ ZEEK = "zeek"
 
 # The name of the Wireshark source.
 WIRESHARK = "wireshark"
+
+# The issue every capability decline names. All 43 capability entries carry it.
+CAPABILITY_ISSUE = 129
+
+# The measured #129 rows that the `capability` field alone holds out of the reach. Each
+# row carries a source value that the remaining sources agree on, so the field is the one
+# fact that bars it. The 16 JA4H rows are absent here. Each one carries a Rust value that
+# differs from the Wireshark value, so the disagreement bar holds it out as well.
+CAPABILITY_ROWS_THE_FIELD_ALONE_BARS = {
+    "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.1",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.10",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.11",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.12",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.13",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.14",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.15",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.2",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.3",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.4",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.5",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.6",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.7",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.8",
+    "http2-with-cookies.pcapng/0:58847/JA4H_ro.9",
+    "http2-with-cookies.pcapng/0:58847/JA4X.1",
+    "http2-with-cookies.pcapng/0:58847/JA4X.2",
+    "http2-with-cookies.pcapng/0:58847/JA4X.3",
+}
 
 # The rows the exception reaches. `.claude/rules/external-apis.md` states the rule, and
 # each row carries a recorded decline that names an issue.
@@ -336,11 +500,21 @@ class TestTheReachOfTheException:
             assert key in register, "{} names no register entry".format(key)
             assert register[key].decided, "{} names an undecided entry".format(key)
 
-    def test_no_measured_row_records_a_capability_decline(self):
+    def test_every_measured_capability_row_names_the_issue_the_bar_exists_for(self):
+        """A measured row the field bars names #129, and the table holds 35 of them.
+
+        #334 measured these 35 rows and left them out, and
+        `test_no_measured_row_records_a_capability_decline` asserted the exclusion.
+        #347 removed the exclusion, and this case replaces it. A capability decline that
+        names another issue reaches a bar no measurement has read. This case fails on
+        such a row, and a reader then decides whether the bar still holds.
+        """
         register = load_register()
-        for key in SOURCE_VALUES:
-            assert not register[key].capability, (
-                "{} records a capability decline, which bars the row".format(key)
+        barred = {key for key in SOURCE_VALUES if register[key].capability}
+        assert len(barred) == CAPABILITY_ROWS_MEASURED
+        for key in barred:
+            assert register[key].issue == CAPABILITY_ISSUE, (
+                "{} records a capability decline under #{}".format(key, register[key].issue)
             )
 
 
@@ -378,6 +552,27 @@ class TestTheBarsOnTheException:
         assert exception_reach(load_register(path)) == {key}
         path.write_text(json.dumps({key: dict(entry, capability=True)}))
         assert exception_reach(load_register(path)) == set()
+
+    def test_the_field_alone_bars_the_measured_capability_rows(self, tmp_path):
+        """The reach rises when the `capability` field reads false on the #129 entries.
+
+        #334 measured the 35 #129 source values and left them out of `SOURCE_VALUES`.
+        No case could then measure what the field does on the issue the bar exists for.
+        #347 put them in the table, and this case flips the field on every #129 entry
+        and reads the reach again. The rise proves the field carries the bar alone.
+        """
+        with open(REGISTER_PATH) as handle:
+            register = json.load(handle)
+        assert exception_reach(load_register()) == REACHED_KEYS
+        flipped = {
+            key: dict(entry, capability=False) if entry.get("issue") == CAPABILITY_ISSUE else entry
+            for key, entry in register.items()
+        }
+        path = tmp_path / "register.json"
+        path.write_text(json.dumps(flipped))
+        assert exception_reach(load_register(path)) == (
+            REACHED_KEYS | CAPABILITY_ROWS_THE_FIELD_ALONE_BARS
+        )
 
     def test_the_exception_passes_over_a_row_whose_sources_disagree(self):
         register = load_register()
