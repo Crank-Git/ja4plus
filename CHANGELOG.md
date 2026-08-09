@@ -506,7 +506,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **Two timing cases read the work performed rather than the seconds elapsed** (#430).
-  Round TBD. Both cases compared wall-clock durations. Each one reported the load of the
+  Round 158. Both cases compared wall-clock durations. Each one reported the load of the
   host beside the state of the package. #412 met both of them failing beside a mutation
   sweep.
   `tests/test_tcp_stream.py::TestTCPStreamReassembler::test_the_cost_of_a_segment_does_not_grow_with_the_segment_count`
@@ -532,7 +532,7 @@ holds every breaking change of this record against a row of that page.
   The 20000-packet run of the earlier form leaves the unit suite. No file under
   `ja4plus/` changes and no fingerprint moves.
 - **The periodic statistics case states the schedule rather than samples it** (#371).
-  Round TBD.
+  Round 157.
   `tests/test_watch_statistics.py::TheStatisticsGoToStandardError::test_the_periodic_line_reaches_standard_error`
   ran `ja4plus watch` with `--stats-interval 0.05`, slept 0.3 seconds inside the capture,
   and asserted that at least 2 statistics lines reached standard error. That count measures
@@ -552,7 +552,7 @@ holds every breaking change of this record against a row of that page.
   `ja4plus/cli.py:871` as killed, at a killed count of 1, and it named this case as the
   sample. That guard reads `seconds <= 0`, and `--stats-interval 0.05` is the one interval
   below one that any case of the suite passes. The repair therefore holds that argument.
-- **Four more cases read ambient host state under no guard** (#426). Round TBD. The sweep
+- **Four more cases read ambient host state under no guard** (#426). Round 159. The sweep
   of #424 read all 154 files under `tests/` and found four cases of the shape it repaired.
   This round guards all four, and it deletes none of them. **Each case states a real
   requirement, so a guard skips where the host cannot answer and the reason names the
