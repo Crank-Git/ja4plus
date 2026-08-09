@@ -340,6 +340,27 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The capture privilege case read a host that grants the privilege** (#424). Round TBD.
+  `tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_reads_the_failure_this_host_reports`
+  asks the real capture layer of the host for the failure it reports without the
+  privilege. It guarded on `sys.platform` and on `os.geteuid()`, and it did not guard on
+  the state it depends on: whether this host grants the capture privilege to this
+  account. **The user ran `sudo chown $(whoami) /dev/bpf*` on 2026-08-09 for #423**, and
+  the case then read `AssertionError: the host granted the capture privilege` at
+  `tests/test_watch_capture.py:132` on the unchanged base. **A red gate that is normal is
+  worse than no gate**, because the next real failure hides inside it. `the_privilege_failure`
+  now returns `None` where the host grants the privilege, and the case calls `skipTest`
+  with a reason that names the grant. **The case is not weakened and it is not deleted.**
+  It stays the only case that reads the failure from the real capture layer, and it still
+  runs and still asserts the message on a host that denies the privilege. New class
+  `TheCapturePrivilegeCaseGuardsOnTheHostState` proves the guard in both directions,
+  because a guard proved in one direction can skip on every host, and a case that always
+  skips measures nothing. That class runs the guarded case itself against a patched
+  `scapy.arch.bpf.core.get_dev_bpf`: the denial direction reports one case run, no
+  failure and no skip, and the grant direction reports one skip whose reason names the
+  grant. A third case proves that the probe closes the descriptor `get_dev_bpf` returns,
+  which the earlier form leaked on every granting host. No file under `ja4plus/` changes,
+  the privilege message does not move, and no fingerprint moves.
 - **The network rule of Epic 11 bound every case, and every install case had to violate
   it** (#419). Round TBD. `FR-pre-release-validation-26` read `No case of this feature set
   opens a network connection.` `pip install <the wheel>` resolves the shipped dependency
