@@ -470,11 +470,28 @@ the value list, and `TestTheStructuresThatHoldNoBound` records it. A reader must
 this ceiling as a bound that holds for a monitor that runs without an end.
 
 **How the case measures it.** `tests/memory_ceiling_run.py` feeds the packets in an
-interpreter of its own and reports `resource.getrusage(RUSAGE_SELF).ru_maxrss`. The
-separate interpreter is part of the measurement: `ru_maxrss` reports the high-water mark
-of the whole process, so a reading taken inside the pytest session measures every case
-that ran before it. `TestTheStatedMemoryCeiling` of `tests/test_memory_bounds.py` reads
-the number and compares it against 512.0.
+interpreter of its own and reports `resource.getrusage(RUSAGE_SELF).ru_maxrss` as
+`peak_mib`. The separate interpreter is part of the measurement: `ru_maxrss` reports the
+high-water mark of the whole process, so a reading taken inside the pytest session
+measures every case that ran before it. `TestTheStatedMemoryCeiling` of
+`tests/test_memory_bounds.py` reads the number and compares it against 512.0.
+
+**The run reports two kinds of reading, and the two answer different questions.** The
+ceiling is a claim about the high-water mark, so the ceiling case reads `peak_mib`. The
+memory one run adds is no claim about a mark, so the run also reports the current
+resident set before the traffic and after it, as `idle_resident_mib` and
+`final_resident_mib`. Linux publishes the current reading in `/proc/self/statm` and
+Darwin reports it through `ps`.
+
+**Warning: two high-water marks subtract to no growth.** A mark rises and never falls, so
+the difference between two of them states `max(0, later mark - earlier mark)`. The import
+of scapy reaches a mark on Ubuntu that the traffic run then stays below, and the
+difference is exactly zero for a run that allocated tens of MiB. **The four Ubuntu jobs of
+pull request #384 read `idle_mib 154.7` and `peak_mib 154.7`, and the same run on macOS
+read a difference because the import costs less there.** `traffic_growth_mib` of
+`tests/test_memory_bounds.py` holds the rule, and it refuses a high-water pair as a void
+measurement rather than reporting zero. `TestTheGrowthReading` measures that refusal
+against the Ubuntu numbers, and it starts no interpreter.
 
 **The case feeds 30000 packets by default, and `JA4PLUS_MEMORY_CEILING_PACKETS` sets the
 count.** The full run costs 481 seconds, and a case of that length costs every later run
@@ -523,9 +540,14 @@ which no shipped bound reaches, so the ceiling comparison alone cannot fail at t
 - `test_the_run_feeds_every_packet_the_case_states` reads the packet count and the
   connection count back from the run.
 - `test_the_reading_measures_the_traffic_and_not_the_interpreter` reads the memory the
-  traffic added.
+  traffic added, and it reads the mark against the resident set the run held.
 - `test_a_smaller_entry_count_holds_less_resident_memory` lowers every entry count to 100
   and reads a smaller number.
+
+**The second and third controls read the current resident set, and neither subtracts a
+mark.** A run that reports a flat pair fails both of them: the second reads `the run added
+0.00 MiB, so the reading measures no traffic`, and the third reads `the shipped run added
+0.00 MiB, which is too little to read`.
 
 **The third control compares a ratio and not a MiB figure**, because the absolute reading
 moves with the platform and with the interpreter while the ratio measures the bound

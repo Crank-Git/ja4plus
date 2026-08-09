@@ -243,6 +243,16 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/memory_ceiling_run.py` measures one packet run in an interpreter of its own,
   because `resource.getrusage(RUSAGE_SELF).ru_maxrss` reports the high-water mark of the
   whole process. No file under `ja4plus/` changes and no fingerprint moves.
+  **The two controls beside the ceiling now read the current resident set, because two
+  high-water marks subtract to no growth.** A mark rises and never falls, so the
+  difference between two of them states `max(0, later mark - earlier mark)`. The import
+  of scapy reaches a mark on Ubuntu that the traffic run then stays below, and the four
+  Ubuntu jobs of pull request #384 read `idle_mib 154.7` and `peak_mib 154.7` for a run
+  that allocated tens of MiB. The ceiling itself is a claim about the mark and it stands
+  unchanged, and the run now also reports `idle_resident_mib` and `final_resident_mib`
+  from `/proc/self/statm`, or from `ps` on Darwin. `traffic_growth_mib` refuses a
+  high-water pair as a void measurement, and `TestTheGrowthReading` measures that refusal
+  against the Ubuntu numbers on every platform.
 
 - **The documentation states what a fingerprint is evidence of** (#343). Round 110.
   ja4plus adds no plausibility guard, so a structurally valid ClientHello produces a

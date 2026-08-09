@@ -314,6 +314,37 @@ def total_evictions(processor):
     return sum(table.evictions for table in walk_tables(processor).values())
 
 
+def traffic_growth_mib(reading):
+    """Return the resident memory the traffic of one run added, in MiB.
+
+    A high-water mark rises and never falls, so the difference between two of them is
+    `max(0, later mark - earlier mark)` and not the growth between the two readings. The
+    import of scapy reaches a mark that the traffic then stays below, and the difference
+    is then exactly zero on a run that allocated tens of MiB. The Ubuntu jobs of pull
+    request #384 read `idle_mib 154.7` and `peak_mib 154.7` for that reason, and the same
+    run on macOS read a difference because the import cost less there. This function
+    therefore reads the two current resident readings and subtracts no high-water mark.
+
+    Args:
+        reading: One JSON object of `tests/memory_ceiling_run.py`.
+
+    Returns:
+        The MiB the traffic added to the resident set. The number may be negative, and a
+        caller that needs a positive reading states that comparison itself.
+
+    Raises:
+        ValueError: The reading carries no current resident pair. Such a reading states
+            nothing about the traffic, and it is void rather than zero.
+    """
+    pair = ("idle_resident_mib", "final_resident_mib")
+    if any(key not in reading for key in pair):
+        raise ValueError(
+            "the reading holds no current resident pair, so the measurement is void: "
+            f"{sorted(reading)}"
+        )
+    return reading["final_resident_mib"] - reading["idle_resident_mib"]
+
+
 def measure_resident_memory(packets, bound=0):
     """Return the memory reading of one packet run, taken in a clean interpreter.
 
@@ -326,7 +357,8 @@ def measure_resident_memory(packets, bound=0):
         bound: The entry count every state table reads. Zero keeps the shipped bounds.
 
     Returns:
-        A dict with the keys `idle_mib`, `peak_mib`, `packets`, `connections` and `bound`.
+        A dict with the keys `idle_resident_mib`, `final_resident_mib`, `peak_mib`,
+        `packets`, `connections` and `bound`.
 
     Raises:
         subprocess.CalledProcessError: The run failed.
@@ -695,6 +727,14 @@ class TestTheStatedMemoryCeiling:
     The third control compares a ratio and not a MiB figure. A resident memory reading
     moves with the platform and with the interpreter, and an absolute margin that suits
     one platform can sit above the whole signal on another.
+
+    **The ceiling reads a high-water mark, and the second and third controls read the
+    current resident set.** The two kinds answer different questions, and the split is
+    what repairs the controls. A high-water mark never falls, so the difference between
+    two of them states `max(0, later mark - earlier mark)`. The import of scapy reaches a
+    mark on Ubuntu that the traffic then stays below, and both controls therefore read a
+    difference of exactly zero on a run that allocated tens of MiB. `traffic_growth_mib`
+    holds the rule, and `TestTheGrowthReading` measures it against the Ubuntu numbers.
     """
 
     def test_the_packet_run_holds_resident_memory_below_the_stated_ceiling(self, shipped_reading):
@@ -716,9 +756,17 @@ class TestTheStatedMemoryCeiling:
         assert shipped_reading["connections"] == CEILING_CONNECTIONS
 
     def test_the_reading_measures_the_traffic_and_not_the_interpreter(self, shipped_reading):
-        """The second control. A constant reading would pass the case above unread."""
-        assert shipped_reading["peak_mib"] > shipped_reading["idle_mib"], (
-            "the run added no resident memory, so the reading measures no traffic"
+        """The second control. A constant reading would pass the case above unread.
+
+        The growth comes from the two current resident readings, because the difference
+        between two high-water marks is no growth. The second assertion ties the ceiling
+        number to the run: the mark covers the resident set the traffic left behind.
+        """
+        growth = traffic_growth_mib(shipped_reading)
+        assert growth > 0.0, f"the run added {growth:.2f} MiB, so the reading measures no traffic"
+        assert shipped_reading["peak_mib"] >= shipped_reading["final_resident_mib"], (
+            f"the mark reads {shipped_reading['peak_mib']} MiB and the run held "
+            f"{shipped_reading['final_resident_mib']} MiB, so the mark covers no run"
         )
 
     def test_a_smaller_entry_count_holds_less_resident_memory(
@@ -729,8 +777,8 @@ class TestTheStatedMemoryCeiling:
         A package that ignored its entry count bound would read one number for both runs.
         The comparison is a ratio, because the absolute readings move with the platform.
         """
-        shipped_growth = shipped_reading["peak_mib"] - shipped_reading["idle_mib"]
-        control_growth = control_reading["peak_mib"] - control_reading["idle_mib"]
+        shipped_growth = traffic_growth_mib(shipped_reading)
+        control_growth = traffic_growth_mib(control_reading)
         assert shipped_growth > CONTROL_FLOOR_MIB, (
             f"the shipped run added {shipped_growth:.2f} MiB, which is too little to read"
         )
@@ -739,6 +787,54 @@ class TestTheStatedMemoryCeiling:
             f"bounds added {shipped_growth:.2f} MiB, a ratio of "
             f"{control_growth / shipped_growth:.3f}, so the entry count changed nothing"
         )
+
+
+class TestTheGrowthReading:
+    """`traffic_growth_mib` reads a growth, and it subtracts no high-water mark.
+
+    These cases run on every platform, because they read numbers and start no
+    interpreter. They are the part of the memory measurement a reader can check in a
+    millisecond, and they hold the rule that pull request #384 found broken.
+    """
+
+    # The reading the four Ubuntu jobs of pull request #384 wrote. The two numbers are
+    # equal because the import of scapy reached a mark the traffic stayed below, and the
+    # run allocated tens of MiB all the same.
+    UBUNTU_HIGH_WATER_READING = {
+        "idle_mib": 154.7,
+        "peak_mib": 154.7,
+        "packets": 30000,
+        "connections": 3000,
+        "bound": 0,
+    }
+
+    def test_a_pair_of_high_water_marks_reads_as_a_void_measurement(self):
+        """A reader must read `idle 154.7, peak 154.7` as void, and not as no memory.
+
+        An earlier form of the two controls subtracted the pair below and read 0.00 MiB
+        as the memory the package used. The reading states nothing about the traffic, so
+        the helper refuses it rather than returning a number.
+        """
+        with pytest.raises(ValueError, match="void"):
+            traffic_growth_mib(self.UBUNTU_HIGH_WATER_READING)
+
+    def test_the_growth_is_the_difference_of_the_two_current_readings(self):
+        """The control. It proves the case above refuses the pair and not every reading.
+
+        The two numbers are one macOS run of 30000 packets at the shipped bounds, taken
+        under an artificial 80 MiB import transient that reproduces the Ubuntu shape.
+        """
+        reading = {"idle_resident_mib": 111.86, "final_resident_mib": 147.44}
+        assert traffic_growth_mib(reading) == pytest.approx(35.58)
+
+    def test_a_run_that_frees_its_memory_reads_a_negative_growth(self):
+        """The current reading falls, where a high-water mark cannot.
+
+        The helper returns the signed difference, so a caller reads a shrinking process
+        as a fall. A high-water mark reports zero for the same run and hides it.
+        """
+        reading = {"idle_resident_mib": 140.0, "final_resident_mib": 120.0}
+        assert traffic_growth_mib(reading) == pytest.approx(-20.0)
 
 
 class TestTheStructuresThatHoldNoBound:
