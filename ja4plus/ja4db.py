@@ -8,7 +8,7 @@ Usage:
     from ja4plus.ja4db import JA4DBClient
     client = JA4DBClient()
     result = client.lookup("t13d1516h2_8daaf6152771_02713d6af862")
-    # {"application": "Chromium Browser", "type": "ja4"}
+    # LookupResult(application="Chromium Browser", type="ja4", notes="", source="embedded")
 """
 
 # Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
@@ -20,15 +20,38 @@ import logging
 import os
 import sys
 import threading
+from collections.abc import Sequence
+from dataclasses import dataclass
 from urllib.parse import quote
 
 from ja4plus.utils.state_table import DEFAULT_MAX_CONNECTION_AGE, BoundedStateTable
 
 logger = logging.getLogger(__name__)
 
-# One match the mapping file or the remote interface holds. The three keys are
-# `application`, `type` and `notes`.
-LookupResult = dict[str, str]
+
+@dataclass(frozen=True)
+class LookupResult:
+    """One match, with the place the match came from.
+
+    `LookupResult` of `lookup.go:23` holds `Application`, `Type` and `Notes`, and
+    `CLAUDE.md` parity rule 2 adopts the three. FR-db-enrichment-8 adds `source`, because
+    an analyst judges a name by the place it came from.
+
+    The type is frozen, because the lookup cache hands one result to every caller that
+    asks for one fingerprint.
+
+    Attributes:
+        application: The name the mapping file or the lookup service gives.
+        type: The fingerprint method the entry names, such as `ja4`.
+        notes: The note the entry carries, or an empty string.
+        source: The place the match came from: `embedded`, `cache` or `remote`.
+    """
+
+    application: str
+    type: str
+    notes: str
+    source: str
+
 
 # Bundled mapping from FoxIO's ja4plus-mapping.csv
 _MAPPING_URL = "https://raw.githubusercontent.com/FoxIO-LLC/ja4/main/ja4plus-mapping.csv"
@@ -106,7 +129,7 @@ def load_mapping_file() -> tuple[dict[str, LookupResult], str, str]:
     """
     path = cache_file_path()
     if os.path.exists(path):
-        cached = _read_mapping_file(path)
+        cached = _read_mapping_file(path, "cache")
         if cached:
             return cached, "cache", path
         logger.warning(
@@ -123,14 +146,15 @@ def load_mapping_file() -> tuple[dict[str, LookupResult], str, str]:
 
 def _load_bundled_db() -> dict[str, LookupResult]:
     """Load the bundled ja4plus-mapping.csv into a lookup dict."""
-    return _read_mapping_file(_BUNDLED_CSV)
+    return _read_mapping_file(_BUNDLED_CSV, "embedded")
 
 
-def _read_mapping_file(csv_path: str) -> dict[str, LookupResult]:
+def _read_mapping_file(csv_path: str, source: str) -> dict[str, LookupResult]:
     """Return the mapping that one ja4plus-mapping.csv file holds.
 
     Args:
         csv_path: The path of the file to read.
+        source: The source every entry of this file records: `embedded` or `cache`.
 
     Returns:
         The mapping, or an empty mapping when the file is absent, unreadable or corrupt.
@@ -160,11 +184,12 @@ def _read_mapping_file(csv_path: str) -> dict[str, LookupResult]:
                 for fp_type in ("ja4", "ja4s", "ja4h", "ja4x", "ja4t", "ja4tscan"):
                     fp_val = row.get(fp_type, "").strip()
                     if fp_val:
-                        db[fp_val] = {
-                            "application": ident,
-                            "type": fp_type,
-                            "notes": notes,
-                        }
+                        db[fp_val] = LookupResult(
+                            application=ident,
+                            type=fp_type,
+                            notes=notes,
+                            source=source,
+                        )
     # A cached mapping file is input that this program did not write. A file of arbitrary
     # bytes raises `UnicodeDecodeError`, which is no `OSError`, so the handler names it.
     except (OSError, csv.Error, UnicodeDecodeError) as e:
@@ -190,11 +215,18 @@ def _read_remote_body(data: object) -> LookupResult | None:
     application: object = data.get("application")
     if not isinstance(application, str) or not application:
         return None
-    result: LookupResult = {"application": application}
+    fields: dict[str, str] = {}
     for name in ("type", "notes"):
         value: object = data.get(name)
-        result[name] = value if isinstance(value, str) else ""
-    return result
+        fields[name] = value if isinstance(value, str) else ""
+    return LookupResult(
+        application=application,
+        type=fields["type"],
+        notes=fields["notes"],
+        # The service answered, so the caller reads the name of the service and not the
+        # name of a file.
+        source="remote",
+    )
 
 
 class JA4DBClient:
@@ -248,14 +280,14 @@ class JA4DBClient:
         )
 
     def lookup(self, fingerprint: str) -> LookupResult | None:
-        """
-        Look up a fingerprint.
+        """Return the match for one fingerprint.
 
         Args:
-            fingerprint: JA4+ fingerprint string
+            fingerprint: A JA4+ fingerprint string.
 
         Returns:
-            dict with 'application', 'type', 'notes' keys, or None if unknown.
+            The match, with the source it came from, or None when no source holds an
+            entry.
         """
         with self._cache_lock:
             # The lookup cache reads no packet, so one lookup announces itself as one
@@ -277,6 +309,28 @@ class JA4DBClient:
         with self._cache_lock:
             self._cache[fingerprint] = result
         return result
+
+    def lookup_many(self, fingerprints: Sequence[str]) -> dict[str, LookupResult | None]:
+        """Return one entry for every fingerprint of the sequence.
+
+        A miss holds None, so the caller reads one entry for every fingerprint it passed.
+        The returned mapping keys the fingerprint, so a sequence that repeats a
+        fingerprint holds one entry for it.
+
+        This method reaches the lookup service under the rule that `lookup` holds, and
+        under no other rule. A client that the operator built with `allow_remote=False`
+        therefore sends nothing, whatever count of fingerprints the call carries. A client
+        that the operator built with `allow_remote=True` sends one request for each
+        fingerprint the mapping file holds no entry for. The lookup cache holds a miss as
+        well as a hit, so a repeated fingerprint costs one request and no more.
+
+        Args:
+            fingerprints: The fingerprints to look up, in any order.
+
+        Returns:
+            The mapping from each fingerprint to its match, or to None for a miss.
+        """
+        return {fingerprint: self.lookup(fingerprint) for fingerprint in fingerprints}
 
     def _do_lookup(self, fingerprint: str) -> LookupResult | None:
         """Return the match for the fingerprint from the mapping file or the service.

@@ -384,7 +384,7 @@ def _write_results(
         if ja4db_client:
             match = ja4db_client.lookup(result.fingerprint)
             if match:
-                identified = match.get("application") or None
+                identified = match.application or None
         writer.write(result, identified)
 
 

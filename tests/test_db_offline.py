@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from ja4plus.ja4db import _REMOTE_TIMEOUT, JA4DBClient
+from ja4plus.ja4db import _REMOTE_TIMEOUT, JA4DBClient, LookupResult
 
 # A fingerprint the bundled mapping file holds.
 KNOWN_FINGERPRINT = "t13d1516h2_8daaf6152771_02713d6af862"
@@ -120,7 +120,7 @@ class TestTheDefaultClientReachesNoNetwork:
         client = JA4DBClient()
         result = client.lookup(KNOWN_FINGERPRINT)
         assert result is not None
-        assert "Chromium" in result["application"]
+        assert "Chromium" in result.application
 
     def test_the_module_level_lookup_function_attempts_no_request(self):
         """`ja4plus.ja4db.lookup` builds a client that holds the default."""
@@ -157,7 +157,7 @@ class TestTheOptInClient:
         client = JA4DBClient(allow_remote=True)
         with patch.dict("sys.modules", {"requests": recorder}):
             result = client.lookup(MISSING_FINGERPRINT)
-        assert result == payload
+        assert result == LookupResult(source="remote", **payload)
         assert len(recorder.calls) == 1
         assert recorder.calls[0][0].endswith(MISSING_FINGERPRINT)
 
@@ -274,7 +274,7 @@ class TestARemoteLookupFailure:
         client = JA4DBClient(allow_remote=True)
         with patch.dict("sys.modules", {"requests": recorder}):
             result = client.lookup(MISSING_FINGERPRINT)
-        assert result == {"application": "Test Client", "type": "", "notes": ""}
+        assert result == LookupResult(application="Test Client", type="", notes="", source="remote")
 
     def test_a_response_with_a_numeric_type_returns_an_empty_type(self):
         """The client never lets an unexpected field shape reach the caller."""
@@ -284,7 +284,7 @@ class TestARemoteLookupFailure:
         client = JA4DBClient(allow_remote=True)
         with patch.dict("sys.modules", {"requests": recorder}):
             result = client.lookup(MISSING_FINGERPRINT)
-        assert result == {"application": "Test Client", "type": "", "notes": ""}
+        assert result == LookupResult(application="Test Client", type="", notes="", source="remote")
 
     def test_an_absent_requests_package_returns_none(self):
         """The `lookup` extra installs `requests`, and the client works without it."""

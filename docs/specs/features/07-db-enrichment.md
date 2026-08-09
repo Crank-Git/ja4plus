@@ -161,10 +161,12 @@ class LookupResult:
     application: str
     type: str
     notes: str
-    source: str          # "bundled" | "cache" | "remote"
+    source: str          # "embedded" | "cache" | "remote"
 ```
 
-`LookupResult` carries the port's three fields plus `source`.
+`LookupResult` carries the port's three fields plus `source`. The behaviour rule above
+states the three source values, and #61 settled the first of them as `embedded`. #59
+repaired this block, which published `bundled` until then.
 
 The constructor publishes no `timeout` parameter. The behaviour rule above refuses one
 before version 1.0.0, and the Go port publishes none either. `RemoteLookupConfig` of
@@ -213,7 +215,7 @@ treats any unexpected shape as a miss. This is listed in the spec's
 - [ ] `JA4PLUS_DB_LOOKUP=1 ja4plus analyze <capture> --lookup` permits the remote
       lookup.
 - [ ] `lookup_many` returns one entry per input fingerprint, including misses.
-- [ ] Every `LookupResult` carries a `source` value of `bundled`, `cache` or
+- [ ] Every `LookupResult` carries a `source` value of `embedded`, `cache` or
       `remote`.
 - [ ] The cache holds no more than `cache_size` entries after 200000 distinct
       lookups.

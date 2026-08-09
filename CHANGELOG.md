@@ -8,6 +8,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`JA4DBClient.lookup_many` identifies many fingerprints in one call** (#59). Round
+  TBD. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
+  miss holds `None`, so a caller reads one entry for every fingerprint it passed. The
+  returned mapping keys the fingerprint, so a sequence that repeats a fingerprint holds
+  one entry for it. The call reaches the lookup service under the rule that `lookup`
+  holds, and under no other rule. A client built with `allow_remote=False` sends nothing,
+  whatever count of fingerprints the call carries. A client built with
+  `allow_remote=True` sends one request for each fingerprint the mapping file holds no
+  entry for. The lookup cache holds a miss as well as a hit, so a repeated fingerprint
+  costs one request and no more.
+
 - **`--lookup-remote` and `JA4PLUS_DB_LOOKUP` ask for the remote lookup** (#58). Round
   TBD. `--lookup` reads the bundled mapping file and makes no network request.
   `--lookup-remote` identifies each fingerprint, and it sends every fingerprint the
@@ -24,6 +35,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `lookup` extra and ends the run with the status 1.
 
 ### Changed
+
+- **A lookup result is a frozen `LookupResult` and it records its source** (#59). Round
+  TBD. Through version 0.6.0 `JA4DBClient.lookup` returned a dict with the keys
+  `application`, `type` and `notes`. It now returns a frozen `LookupResult` that carries
+  the same three fields plus `source`, so a caller reads `result.application` where it
+  read `result["application"]` before. `LookupResult` of `lookup.go:23` carries the three
+  fields, and `CLAUDE.md` parity rule 2 adopts them. The `source` field holds `embedded`
+  for the mapping file that ships inside the package, `cache` for the file that
+  `ja4plus db update` wrote to the cache directory, and `remote` for the lookup service.
+  An analyst needs to know where a name came from to judge how much to trust it. The
+  command-line output schema is unchanged, because the command writes the application
+  name alone.
 
 - **`ja4plus db update` writes to the cache directory, and the client prefers that file**
   (#61). Round TBD. Through version 0.6.0 `db update` wrote the download over

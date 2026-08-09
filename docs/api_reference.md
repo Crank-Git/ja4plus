@@ -741,18 +741,63 @@ from ja4plus.ja4db import JA4DBClient, lookup
 
 # Module-level convenience function
 result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
-# {"application": "Chromium Browser", "type": "ja4", "notes": ""}
+# LookupResult(application="Chromium Browser", type="ja4", notes="", source="embedded")
 
 # Or use the client for caching across multiple lookups
 client = JA4DBClient()
 result = client.lookup(fingerprint_string)
+
+# One call for many fingerprints
+results = client.lookup_many([fingerprint_string, another_fingerprint])
 ```
 
 | Class/Function | Description |
 |----------------|-------------|
 | `JA4DBClient(allow_remote=False, cache_size=100000)` | Client with a bounded lookup cache and the bundled database |
-| `JA4DBClient.lookup(fingerprint)` | Look up a fingerprint, returns dict or None |
+| `JA4DBClient.lookup(fingerprint)` | Look up a fingerprint, returns a `LookupResult` or None |
+| `JA4DBClient.lookup_many(fingerprints)` | Look up a sequence, returns one entry per fingerprint |
 | `lookup(fingerprint)` | Module-level convenience using a shared client |
+| `LookupResult` | The frozen result: `application`, `type`, `notes` and `source` |
+
+#### The result records the source it came from
+
+`LookupResult` is a frozen dataclass. It carries the three fields that `LookupResult` of
+`lookup.go:23` carries, plus `source`, FR-db-enrichment-8. An analyst needs to know where
+a name came from to judge how much to trust it.
+
+| Field | What it holds |
+|---|---|
+| `application` | The name the mapping file or the lookup service gives |
+| `type` | The fingerprint method the entry names, such as `ja4` |
+| `notes` | The note the entry carries, or an empty string |
+| `source` | `embedded`, `cache` or `remote` |
+
+The value `embedded` names the mapping file that ships inside the package, `cache` names
+the file that `ja4plus db update` wrote to the cache directory, and `remote` names the
+lookup service. The port publishes the first two at `lookup.go:31`, and `CLAUDE.md`
+parity rule 2 adopts them.
+
+Version 0.6.0 returned a dict from `lookup`. Version 1.0.0 returns the frozen result, so
+a caller reads `result.application` where it read `result["application"]` before.
+
+#### One call identifies many fingerprints
+
+`lookup_many` accepts a sequence of fingerprints and returns one entry per fingerprint,
+FR-db-enrichment-7. A miss holds None, so a caller reads one entry for every fingerprint
+it passed. The returned mapping keys the fingerprint, so a sequence that repeats a
+fingerprint holds one entry for it.
+
+```python
+results = client.lookup_many(["t13d1516h2_8daaf6152771_02713d6af862", "t99z9999h0_0_0"])
+# {"t13d1516h2_8daaf6152771_02713d6af862": LookupResult(...), "t99z9999h0_0_0": None}
+```
+
+`lookup_many` reaches the lookup service under the rule that `lookup` holds, and under no
+other rule. A client that the operator built with `allow_remote=False` sends nothing,
+whatever count of fingerprints the call carries. A client that the operator built with
+`allow_remote=True` sends one request for each fingerprint the mapping file holds no entry
+for. The lookup cache holds a miss as well as a hit, so a repeated fingerprint costs one
+request and no more.
 
 #### The remote lookup is opt-in
 
