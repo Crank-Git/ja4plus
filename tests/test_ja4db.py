@@ -352,3 +352,47 @@ class TestCLILookupFlag:
                 # rather than absent, so the field set reads no flag. #49 changed this
                 # expectation from the absent field of version 0.6.0.
                 assert obj["identified_as"] is None
+
+
+class TestTheLookupCacheEvictionMemory:
+    """The lookup cache pays for no statistic that nothing reads, #359.
+
+    `Processor.stats` collects the state tables of the fingerprinters, and
+    `JA4DBClient` is no fingerprinter. No code under `ja4plus/` reads
+    `returned_connections` for this table.
+    """
+
+    def offline_client(self, **kwargs):
+        """Return a client that holds an empty mapping file and reaches no network.
+
+        Warning: the mapping file costs resident memory, and
+        `tests/test_memory_bounds.py::TestTheStatedMemoryCeiling` reads the resident
+        memory of this session. Every case here reads the lookup cache and no mapping
+        entry, so the patch below removes a cost the cases do not need.
+
+        Args:
+            kwargs: The `JA4DBClient` arguments.
+
+        Returns:
+            The client. Its `_remote_lookup` returns None for every fingerprint.
+        """
+        with patch.object(ja4db, "load_mapping_file", return_value=({}, "embedded", "test")):
+            client = JA4DBClient(**kwargs)
+        client._remote_lookup = lambda fingerprint: None
+        return client
+
+    def test_the_lookup_cache_tracks_no_eviction(self):
+        client = self.offline_client(cache_size=3)
+        assert client._cache.track_evictions is False
+
+    def test_the_lookup_cache_remembers_no_evicted_key(self):
+        client = self.offline_client(cache_size=3)
+        for index in range(100):
+            client.lookup(f"t13d1516h2_000000000000_{index:012d}")
+        assert len(client._cache._evicted_keys) == 0
+
+    def test_the_lookup_cache_still_counts_the_entries_it_evicts(self):
+        client = self.offline_client(cache_size=3)
+        for index in range(10):
+            client.lookup(f"t13d1516h2_000000000000_{index:012d}")
+        assert client._cache.stats().evictions == 7

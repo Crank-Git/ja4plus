@@ -6,6 +6,26 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **The lookup cache remembers no key it evicts, and it saves 16.06 MiB** (#359).
+  Round TBD. `StateTable` remembers the key of every entry it evicts, and that memory
+  buys `returned_connections`. `Processor.stats` collects the state tables of the
+  fingerprinters, and `JA4DBClient` is no fingerprinter, so nothing under `ja4plus/`
+  reads the count for the lookup cache. `BoundedStateTable` now takes
+  `track_evictions`, it defaults to True, and every existing caller keeps the statistic
+  it had. The lookup cache is the one caller that states False. **A full lookup cache of
+  100000 entries falls from 47.06 MiB to 31.00 MiB under `tracemalloc`.** It falls
+  from 44.66 MiB to 28.60 MiB under `sys.getsizeof`. The two methods agree on the saving to
+  0.00 MiB. The eviction count stands, so FR-concurrency-safety-12 holds for this table,
+  and the invariant `inserts == entries + evictions + removals` holds. **#279 measured
+  the 512 MiB ceiling case without a lookup cache**, so this saving moves none of its
+  four runs. No file under `ja4plus/fingerprinters/` changes, no fingerprint moves, and
+  the register holds 135 keys against 135 xfailed. **A first form of the new cases
+  turned the resident-memory control of #279 red**, because each one loaded the whole
+  mapping file into the session. The cases now patch `load_mapping_file` to an empty
+  mapping. A deselect run proves that the production change causes none of it.
+
 ### Fixed
 
 - **The `capability` field alone bars the rows of #129** (#347). Round `TBD`.
@@ -33,6 +53,25 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   #129, and a row under another issue reaches a bar no measurement has read. No file
   under `ja4plus/` changes, no register entry changes, no fingerprint moves, and the
   register holds 135 keys against 135 xfailed.
+
+- **Every Changelog round number of the specification names one row** (#258). Round TBD.
+  `docs/specs/spec.md` carried the number 9 on two rows, and a round number is a citation
+  target. **The two rows are not two rounds.** One row records the shipment of Epic 1
+  batch 1, and it names #80 as a member. The other row details #80 on the same date.
+  **The repair folds the detail row into the shipment row, and it renumbers no row.** The
+  fold preserves every sentence of the folded row. **A round number is an identifier, and
+  it states no order.** The date column carries the order. Rounds 10 through 124 are all
+  taken, so no free number sits beside the number 9. A renumber of the rows above it
+  would break every citation of a round number. Those citations carry weight: round 67
+  holds the #226 part e decision, and #215 and #226 cite it. **Three premises of the issue
+  were stale, and this round measured all three again.** The ruling named `spec.md:542`
+  and `:546`, and the rows were at 569 and 573. The ruling named 88 as the highest round,
+  and the highest was 124. The ruling searched `[Rr]ound 9\b` and found no citation. That
+  pattern misses the one citation that exists. Round 12 closed with "The rounds below hold
+  two entries numbered 9". The fold makes that sentence false, so round 12 now records the
+  repair. `tests/test_specification_changelog.py` holds the invariant. Both of its cases
+  fail when the duplicate returns. No file under `ja4plus/` changes, no fingerprint moves,
+  and the register holds 135 keys against 135 xfailed.
 
 - **The example that a merge restored is absent again** (#368). Round 124.
   #56 removed `examples/monitoring_daemon.py` and added
