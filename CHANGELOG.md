@@ -73,6 +73,20 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **The sweep report names the commit it read, and a census counts the open candidates**
+  (#411). Round TBD. `tests/mutation_sweep.py` writes a `commit` key and a `Commit` row,
+  read from `git rev-parse HEAD` before the first mutation lands.
+  `FR-pre-release-validation-17` asks for it, and the report of 2026-08-07 states no
+  commit. New file `tests/mutation_census.py` reads the JSON report, counts the candidates
+  of each test file, and reads every `*.json` record of `docs/mutation_settlements/`.
+  **It opens no Markdown file**, because `docs/mutation_sweep.md` is one page and a count
+  taken from its lines counts the page layout. **The census groups by test file and not by
+  module**, because `tests/mutation_sweep.py:593` builds one flat candidate list over every
+  swept module and no module owns a candidate. **The whole-package sweep itself waits on a
+  decision.** `--dry-run --max-per-module 0` reads 3545 mutations over 31 modules, one
+  suite run takes 72.75 seconds, and the product is 71.6 hours on one host.
+  `.claude/rules/conformance.md` stated about 17 seconds, and it now carries the measured
+  number. **No file under `ja4plus/` changes and no fingerprint moves.**
 - **The specification records Epic 11, pre-release validation** (#407). Round TBD. New
   file `docs/specs/features/11-pre-release-validation.md`. It states 33 requirements, and
   every sub-issue of #406 quotes one. **The epic measures four statements that version

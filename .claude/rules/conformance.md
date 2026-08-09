@@ -152,17 +152,65 @@ python tests/mutation_sweep.py --dry-run --max-per-module 0     # count the muta
 python tests/mutation_sweep.py --module "ja4plus/utils/tls_utils.py" --max-per-module 0
 ```
 
-One run of the whole suite takes about 17 seconds, so 12 mutations for each module cost
-about 80 minutes. Raise `--max-per-module` to sharpen the answer, and name one module to
-sweep it whole.
+**Warning: measure the run before you start it.** One run of the whole suite took about
+17 seconds when #172 built the sweep. #411 measured 72.75 seconds on 2026-08-09, over
+4325 collected cases, and no single case dominates that time. The cost of a sweep is the
+mutation count times the cost of one suite run, so a suite that grows raises every sweep.
+Read the mutation count with `--dry-run --max-per-module 0`, multiply it by a measured
+suite run, and state the product before the sweep starts. **Never estimate either
+number.**
 
-The report holds three parts.
+#411 measured 3545 mutations over 31 modules, so one whole-package sweep costs 71.6 hours
+on one host. **A checkpoint makes such a run resumable, and it removes no work.** Name one
+module and sweep it whole to get an answer that belongs to that module.
 
+The report holds four parts.
+
+- `commit` names the commit the sweep read, from `git rev-parse HEAD` at the start of the
+  run. A checkpoint belongs to one commit, and `FR-pre-release-validation-17` asks the
+  report to state it. #411 added the field.
 - `modules` names every module, and every mutation the sweep applied to it. A mutation
   records the line, the text before, the text after, and the count of the cases it killed.
 - A mutation whose status is `survived` killed no case. A mutation whose status is
   `unusable` failed the whole suite, because it broke an import, and the sweep drops it.
 - `candidates` names every case that no mutation killed.
+
+**Warning: `git ls-files 'ja4plus/**/*.py'` lists 24 files and the package holds 31.** Git
+reads `**` in a pathspec as one or more directories, so the pattern matches no file of the
+top directory of the package. It omits `ja4plus/cli.py` and `ja4plus/processor.py` among
+seven. Write `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` to list every module, which is
+the pair of patterns the sweep applies by default.
+
+## How to read the census
+
+`tests/mutation_census.py` reads the JSON report and counts the candidates of each test
+file. **It opens no Markdown file**, because `docs/mutation_sweep.md` is one page and a
+count taken from its lines counts the page layout.
+
+**The census groups by test file and not by module.** `tests/mutation_sweep.py:593` builds
+one flat candidate list over every module the sweep read, so no module owns a candidate. A
+sweep of one module names a candidate set that belongs to that module by construction, and
+that is the sweep each module group runs.
+
+The census reads every `*.json` file of `docs/mutation_settlements/`, so three issues
+settle three module groups at the same time and no file is shared. Each record holds this
+shape.
+
+```json
+{
+  "issue": 412,
+  "modules": ["ja4plus/utils/tls_utils.py"],
+  "settlements": [
+    {"candidate": "tests/test_a.py::test_b", "verdict": "repaired", "case": "tests/test_a.py::test_c"},
+    {"candidate": "tests/test_a.py::test_d", "verdict": "correct", "reason": "The mutation is equivalent."}
+  ]
+}
+```
+
+`FR-pre-release-validation-22` states the two verdicts. A `repaired` verdict names the
+case, and a `correct` verdict states the reason the mutation cannot reach the case. The
+census names every candidate that two records claim, every candidate that no record
+claims, and every settlement of a case the report names no candidate.
 
 Read a candidate this way.
 
