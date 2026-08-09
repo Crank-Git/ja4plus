@@ -77,16 +77,24 @@ holds every breaking change of this record against a row of that page.
   (#411). Round TBD. `tests/mutation_sweep.py` writes a `commit` key and a `Commit` row,
   read from `git rev-parse HEAD` before the first mutation lands.
   `FR-pre-release-validation-17` asks for it, and the report of 2026-08-07 states no
-  commit. New file `tests/mutation_census.py` reads the JSON report, counts the candidates
-  of each test file, and reads every `*.json` record of `docs/mutation_settlements/`.
-  **It opens no Markdown file**, because `docs/mutation_sweep.md` is one page and a count
-  taken from its lines counts the page layout. **The census groups by test file and not by
-  module**, because `tests/mutation_sweep.py:593` builds one flat candidate list over every
-  swept module and no module owns a candidate. **The whole-package sweep itself waits on a
-  decision.** `--dry-run --max-per-module 0` reads 3545 mutations over 31 modules, one
+  commit. New file `tests/mutation_census.py` reads every `*.json` report of
+  `docs/mutation_reports/`, counts the candidates of each test file, and reads every
+  `*.json` record of `docs/mutation_settlements/`. **It opens no Markdown file**, because a
+  Markdown report is one page and a count taken from its lines counts the page layout.
+  **The census groups by test file and not by module**, because
+  `tests/mutation_sweep.py:593` builds one flat candidate list over every swept module and
+  no module owns a candidate. **The whole-package sweep is partitioned across #412, #413
+  and #414.** `--dry-run --max-per-module 0` reads 3545 mutations over 31 modules, one
   suite run takes 72.75 seconds, and the product is 71.6 hours on one host.
   `.claude/rules/conformance.md` stated about 17 seconds, and it now carries the measured
-  number. **No file under `ja4plus/` changes and no fingerprint moves.**
+  number and its date. **The union of the per-module sweeps is larger than the candidate
+  set of one whole-package sweep, and the union is the correct input for settlement.**
+  **`git ls-files 'ja4plus/**/*.py'` lists 24 files where the package holds 31**, because
+  git reads `**` in a pathspec as one or more directories.
+  `FR-pre-release-validation-16` now names `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'`,
+  and new file `tests/test_mutation_sweep_module_list.py` fails when the module list one
+  sweep reads stops matching the tracked Python files of the package. **No file under
+  `ja4plus/` changes and no fingerprint moves.**
 - **The specification records Epic 11, pre-release validation** (#407). Round TBD. New
   file `docs/specs/features/11-pre-release-validation.md`. It states 33 requirements, and
   every sub-issue of #406 quotes one. **The epic measures four statements that version
