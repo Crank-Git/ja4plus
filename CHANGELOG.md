@@ -10,9 +10,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The documentation states what a fingerprint is evidence of** (#343). Round TBD.
   ja4plus adds no plausibility guard, so a structurally valid ClientHello produces a
-  fingerprint whatever its body holds. The behaviour is recorded and not changed, and no
-  file under `ja4plus/` moves. A fingerprint is evidence of the bytes the packet carried,
-  and it is no evidence of a real client. `README.md` and `docs/output-schema.md` now
+  fingerprint whatever its body holds. This change records the behaviour and changes
+  none of it, so no file under `ja4plus/` moves. A fingerprint is evidence of the bytes
+  the packet carried, and it is no evidence of a real client. `README.md` and
+  `docs/output-schema.md` now
   state the property where a user reads it, and the `Divergence register` of
   `docs/specs/spec.md` holds the measurement.
 

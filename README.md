@@ -303,8 +303,8 @@ client.**
 
 ja4plus adds no plausibility guard. A structurally valid ClientHello produces a
 fingerprint, whatever its body holds. Any sender can build bytes that produce a well
-formed fingerprint, so read a fingerprint from untrusted traffic as a description of
-those bytes and nothing more.
+formed fingerprint. Read a fingerprint from untrusted traffic as a description of those
+bytes and nothing more.
 
 The behaviour follows the FoxIO reference, because no FoxIO material rejects such a
 packet. [`docs/output-schema.md`](docs/output-schema.md) states the property in full.

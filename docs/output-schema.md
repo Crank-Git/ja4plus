@@ -56,9 +56,9 @@ client.**
 fingerprint, whatever its body holds. The headers and the length fields decide the
 outcome, and the content of the body decides nothing.
 
-Read the consequence before you trust an output line that untrusted traffic produced. Any
-sender can build bytes that produce a well formed fingerprint. That fingerprint names no
-application on its own. `identified_as` reports what the mapping file holds for the
+Before you trust an output line that untrusted traffic produced, read the consequence.
+Any sender can build bytes that produce a well formed fingerprint. That fingerprint names
+no application on its own. `identified_as` reports what the mapping file holds for the
 value, and a sender who chooses the bytes chooses that value too.
 
 The behaviour follows the FoxIO reference. No FoxIO material rejects such a packet, so a

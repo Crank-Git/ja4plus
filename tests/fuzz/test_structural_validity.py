@@ -27,7 +27,8 @@ import ja4plus.utils.tls_utils as tls_utils
 from tests.fuzz.support import spy_on
 
 # The pattern, the draw count, the seeded generator and the reader all come from the
-# #338 file. A second copy of the JA4 pattern would drift away from the first one.
+# #338 file. A second copy of the JA4 pattern would differ from the first one after one
+# edit reaches only one copy.
 from tests.fuzz.test_synthetic_hostile_input import (
     DRAWS,
     JA4_FORM,
@@ -104,8 +105,9 @@ def test_a_structurally_valid_client_hello_with_a_random_body_produces_a_fingerp
 def test_a_random_body_produces_the_version_token_00_on_511_draws_of_512():
     """Almost every random body names a TLS version that no reference knows.
 
-    A guard on the version token therefore rejects almost every draw. It still leaves
-    one draw of 512, so it narrows the hole and it closes none of it.
+    A guard on the version token therefore rejects 511 draws of 512. It answers the
+    remaining draw, so it reduces the count of fabricated values and it reaches zero
+    never.
     """
     produced = read_every_random_client_hello()
 
@@ -115,18 +117,17 @@ def test_a_random_body_produces_the_version_token_00_on_511_draws_of_512():
 def test_a_random_body_carries_no_cipher_suite_and_no_extension_on_79_draws_of_512():
     """A guard on the empty cipher list and the empty extension list reaches 79 draws.
 
-    The count is far below the draw count, so this guard narrows the hole less than the
-    version guard does.
+    79 is far below 511, so this guard rejects fewer draws than the version guard does.
     """
     produced = read_every_random_client_hello()
 
     assert sum(1 for value in produced if value[4:8] == "0000") == NO_CIPHER_NO_EXTENSION_DRAWS
 
 
-def test_the_vector_client_hello_carries_a_known_version_and_a_cipher_suite(
+def test_a_vector_client_hello_produces_a_fingerprint_that_no_guard_rejects(
     client_hello_packet,
 ):
-    """A guard rejects no vector ClientHello, so it buys a divergence and no vector.
+    """A guard reaches no vector ClientHello, so it costs a divergence and gains no case.
 
     The 168 ClientHellos of `tests/foxio_vectors/` carry neither the version token `00`
     nor an empty cipher list. `tests/measure_random_client_hello.py` counts all 168, and
