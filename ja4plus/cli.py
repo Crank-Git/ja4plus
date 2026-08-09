@@ -692,18 +692,34 @@ def cmd_cert(args: argparse.Namespace) -> None:
 def cmd_db(args: argparse.Namespace) -> None:
     """Handle the 'db' subcommand."""
     import csv as csv_mod
-    from ja4plus.ja4db import _BUNDLED_CSV, _MAPPING_URL, _load_bundled_db
+    from ja4plus.ja4db import _MAPPING_URL, cache_dir_path, cache_file_path, load_mapping_file
 
     if args.db_command == "info":
-        db = _load_bundled_db()
-        print(f"Database: {_BUNDLED_CSV}")
+        db, source, path = load_mapping_file()
+        # `Source` names the file the client reads, and `Mapping` names the file FoxIO
+        # publishes. An earlier form wrote the FoxIO address on the `Source` line, and
+        # `features/07-db-enrichment.md` gives that word one other meaning.
+        print(f"Source:   {source}")
+        print(f"Path:     {path}")
         print(f"Entries:  {len(db)}")
-        if os.path.exists(_BUNDLED_CSV):
+        if os.path.exists(path):
             import time
 
-            mtime = os.path.getmtime(_BUNDLED_CSV)
+            mtime = os.path.getmtime(path)
             print(f"Updated:  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))}")
-        print(f"Source:   {_MAPPING_URL}")
+        print(f"Mapping:  {_MAPPING_URL}")
+        if source != "cache":
+            # The `Screens & states` table of `features/07-db-enrichment.md` names three
+            # states, and a cache file that the client read no entry from is the third.
+            # A hint that names no cache file would contradict the file on disk.
+            cache_file = cache_file_path()
+            if os.path.exists(cache_file):
+                print(f"\nThe cache file at {cache_file} holds no entry.")
+                print("Run `ja4plus db update` to write it again.")
+            else:
+                # `runDBInfo` of `cmd/ja4plus/main.go:389` prints the same hint.
+                print(f"\nNo cache file at {cache_file}")
+                print("Run `ja4plus db update` to download the latest from FoxIO.")
         return
 
     # db update
@@ -713,6 +729,8 @@ def cmd_db(args: argparse.Namespace) -> None:
     try:
         import urllib.request
 
+        # #319 owns this wide handler. `urlopen` raises `URLError`, `HTTPError`,
+        # `OSError`, `ValueError` and `UnicodeDecodeError` for the cases here.
         data = urllib.request.urlopen(_MAPPING_URL, timeout=15).read().decode("utf-8")
     except Exception as e:
         print(f"Error: could not download database: {e}", file=sys.stderr)
@@ -734,12 +752,32 @@ def cmd_db(args: argparse.Namespace) -> None:
         if any(row.get(f, "").strip() for f in ("ja4", "ja4s", "ja4h", "ja4x", "ja4t"))
     )
 
-    # Write to bundled location
-    os.makedirs(os.path.dirname(_BUNDLED_CSV), exist_ok=True)
-    with open(_BUNDLED_CSV, "w", encoding="utf-8") as f:
-        f.write(data)
+    # FR-db-enrichment-12 keeps the write outside the installed package. A package
+    # directory may be read-only, several users may share it, and the next `pip install`
+    # replaces it.
+    cache_dir = cache_dir_path()
+    cache_file = cache_file_path()
+    try:
+        os.makedirs(cache_dir, exist_ok=True)
+    except OSError as e:
+        print(f"Error: could not create the cache directory {cache_dir}: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    print(f"Updated: {entry_count} fingerprint entries written to {_BUNDLED_CSV}")
+    # A reader of the cache file sees the file the last run wrote, or the whole new file,
+    # and never a part of one. `runDBUpdate` of `cmd/ja4plus/main.go:352` renames the same
+    # way.
+    partial = cache_file + ".tmp"
+    try:
+        with open(partial, "w", encoding="utf-8") as f:
+            f.write(data)
+        os.replace(partial, cache_file)
+    except OSError as e:
+        if os.path.exists(partial):
+            os.remove(partial)
+        print(f"Error: could not write {cache_file}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Updated: {entry_count} fingerprint entries written to {cache_file}")
 
 
 def _max_connections(value: str) -> int:
