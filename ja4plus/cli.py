@@ -677,8 +677,8 @@ def cmd_cert(args: argparse.Namespace) -> None:
         print("Error: could not generate JA4X fingerprint from certificate", file=sys.stderr)
         sys.exit(1)
 
-    # A certificate file carries no address, no port and no packet time, so the record
-    # holds the empty address, the port zero and no time. FR-structured-output-5 asks
+    # A certificate file carries no address, no port and no packet time, so the output
+    # line holds the empty address, the port zero and no time. FR-structured-output-5 asks
     # for a column that is empty rather than absent.
     results = [FingerprintResult(type="ja4x", fingerprint=fingerprint)]
     ja4db_client = _init_lookup(args)

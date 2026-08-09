@@ -273,9 +273,22 @@ class TestJA4DFingerprinter(unittest.TestCase):
         result = self.fp.process_packet(pkt)
         self.assertIsNone(result)
 
-    def test_cleanup_connection_is_noop(self):
-        """JA4D is stateless — cleanup should not raise."""
+    def test_cleanup_holds_every_fingerprint_because_ja4d_holds_no_state_table(self):
+        """JA4D reads one packet and holds nothing per connection.
+
+        `BaseFingerprinter.state_tables` reports the tables of a fingerprinter, and it
+        reports none for this method. The base class no-op therefore has nothing to
+        remove. #339 records that this case asserted nothing.
+        """
+        self.fp.process_packet(_make_dhcp_packet(msg_type=1))
+        before = list(self.fp.get_fingerprints())
+        self.assertEqual(self.fp.state_tables(), {})
+        self.assertEqual(len(before), 1)
+
         self.fp.cleanup_connection("1.2.3.4", 68, "255.255.255.255", 67, "udp")
+
+        self.assertEqual(self.fp.state_tables(), {})
+        self.assertEqual(self.fp.get_fingerprints(), before)
 
 
 if __name__ == "__main__":

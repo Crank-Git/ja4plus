@@ -113,7 +113,7 @@ The monitor writes one statistics line to standard error when it exits, and
 Output formats: `--format table` (default), `json` (JSONL), `csv`
 
 The `json` and the `csv` formats write the same fields whatever flags you pass. Each
-record carries the source address, the source port, the destination address and the
+output line carries the source address, the source port, the destination address and the
 destination port as separate fields, in this order:
 
 ```
@@ -367,6 +367,19 @@ See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter an
 | JA4SSH | `c{mode}s{mode}_c{pkts}s{pkts}_c{acks}s{acks}` | `c36s36_c51s80_c69s0` |
 | JA4D | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `disco0000in_61-55_1-3-6-42` |
 | JA4D6 | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `solct0014nn_1-6-8-25_23-24` |
+
+## What a Fingerprint Is Evidence Of
+
+**A fingerprint is evidence of the bytes the packet carried. It is no evidence of a real
+client.**
+
+ja4plus adds no plausibility guard. A structurally valid ClientHello produces a
+fingerprint, whatever its body holds. Any sender can build bytes that produce a well
+formed fingerprint. Read a fingerprint from untrusted traffic as a description of those
+bytes and nothing more.
+
+The behaviour follows the FoxIO reference, because no FoxIO material rejects such a
+packet. [`docs/output-schema.md`](docs/output-schema.md) states the property in full.
 
 ## Spec Validation
 
