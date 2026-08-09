@@ -501,9 +501,7 @@ Three readings explain the two green results, and each one matters to a reader.
 
 **The committed control proves the entry count bound is measured.** With the control
 bound raised from 100 to the shipped 10000,
-`test_a_smaller_entry_count_holds_less_resident_memory` fails, and it reads `a bound of
-10000 added 37.89 MiB and the shipped bounds added 39.69 MiB, so the entry count changed
-nothing`.
+`test_a_smaller_entry_count_holds_less_resident_memory` fails.
 
 **Three controls sit beside the ceiling case.** The default size holds 3000 connections,
 which no shipped bound reaches, so the ceiling comparison alone cannot fail at that size.
@@ -515,11 +513,15 @@ which no shipped bound reaches, so the ceiling comparison alone cannot fail at t
 - `test_a_smaller_entry_count_holds_less_resident_memory` lowers every entry count to 100
   and reads a smaller number.
 
-Five runs separated the shipped run from the lowered run by 9.03 MiB at the closest,
-while one reading held a run-to-run spread of 1.03 MiB. The margin of 4.0 MiB sits
-between the two. **With the control bound raised to the shipped 10000 the third control
-fails**, and it reads `a bound of 10000 added 37.89 MiB and the shipped bounds added
-39.69 MiB, so the entry count changed nothing`.
+**The third control compares a ratio and not a MiB figure**, because the absolute reading
+moves with the platform and with the interpreter while the ratio measures the bound
+itself. An absolute margin that suits macOS can sit above the whole signal on a platform
+whose readings are smaller. Five runs at the default size held the ratio between 0.746
+and 0.769, while one reading held a run-to-run spread of 1.03 MiB. **With the control
+bound raised to the shipped 10000 the ratio reads 0.955 and 0.979 and the case fails**,
+so the threshold of 0.85 sits between the two readings. The failure message is `a bound of
+10000 added 38.26 MiB and the shipped bounds added 39.08 MiB, a ratio of 0.979, so the
+entry count changed nothing`.
 
 ## Data touched
 

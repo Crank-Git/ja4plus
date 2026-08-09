@@ -103,10 +103,16 @@ CEILING_RUN_PACKETS = CEILING_CONNECTIONS * PACKETS_PER_CONNECTION
 # entries reads less resident memory than a run whose tables hold every connection.
 CONTROL_BOUND = 100
 
-# The MiB by which the control run must sit below the shipped run. #279 read the two over
-# five runs at the default size and separated them by 9.03 MiB at the closest, while the
-# run-to-run spread of one reading held at 1.03 MiB. The margin sits between the two.
-CONTROL_MARGIN_MIB = 4.0
+# The share of the shipped run's memory that the control run may reach. The reading is a
+# ratio and not a MiB figure, because the absolute numbers move with the platform and the
+# interpreter while the ratio measures the bound itself. #279 read five runs at the
+# default size: the ratio held between 0.746 and 0.769, and a control bound raised to the
+# shipped 10000 read 0.955. The threshold sits between the two.
+CONTROL_GROWTH_RATIO = 0.85
+
+# The MiB the shipped run must add before the ratio above means anything. A run that added
+# nothing would divide one small number by another.
+CONTROL_FLOOR_MIB = 10.0
 
 # The seconds one measurement may take. #279 read 481 seconds for 1000000 packets on a
 # ten-core laptop, so the limit holds about four times that rate.
@@ -684,7 +690,11 @@ class TestTheStatedMemoryCeiling:
     reaches, so the ceiling comparison alone cannot fail at that size. The first control
     reads the packet count back. The second reads the memory the traffic added. The third
     lowers every entry count and reads a smaller number, which is the reading that proves
-    the bound and not the packet count holds the ceiling.
+    the entry count bound is measured here at all.
+
+    The third control compares a ratio and not a MiB figure. A resident memory reading
+    moves with the platform and with the interpreter, and an absolute margin that suits
+    one platform can sit above the whole signal on another.
     """
 
     def test_the_packet_run_holds_resident_memory_below_the_stated_ceiling(self, shipped_reading):
@@ -717,13 +727,17 @@ class TestTheStatedMemoryCeiling:
         """The third control. It proves the entry count bound holds the ceiling.
 
         A package that ignored its entry count bound would read one number for both runs.
-        The margin sits below every reading #279 took and above the run-to-run spread.
+        The comparison is a ratio, because the absolute readings move with the platform.
         """
         shipped_growth = shipped_reading["peak_mib"] - shipped_reading["idle_mib"]
         control_growth = control_reading["peak_mib"] - control_reading["idle_mib"]
-        assert control_growth + CONTROL_MARGIN_MIB < shipped_growth, (
+        assert shipped_growth > CONTROL_FLOOR_MIB, (
+            f"the shipped run added {shipped_growth:.2f} MiB, which is too little to read"
+        )
+        assert control_growth < shipped_growth * CONTROL_GROWTH_RATIO, (
             f"a bound of {CONTROL_BOUND} added {control_growth:.2f} MiB and the shipped "
-            f"bounds added {shipped_growth:.2f} MiB, so the entry count changed nothing"
+            f"bounds added {shipped_growth:.2f} MiB, a ratio of "
+            f"{control_growth / shipped_growth:.3f}, so the entry count changed nothing"
         )
 
 
