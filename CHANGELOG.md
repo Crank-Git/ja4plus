@@ -21,7 +21,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and the invariant `inserts == entries + evictions + removals` holds. **#279 measured
   the 512 MiB ceiling case without a lookup cache**, so this saving moves none of its
   four runs. No file under `ja4plus/fingerprinters/` changes, no fingerprint moves, and
-  the register holds 135 keys against 135 xfailed.
+  the register holds 135 keys against 135 xfailed. **A first form of the new cases
+  turned the resident-memory control of #279 red**, because each one loaded the whole
+  mapping file into the session. The cases now patch `load_mapping_file` to an empty
+  mapping, and a deselect run proves the production change is not implicated.
 
 ### Fixed
 

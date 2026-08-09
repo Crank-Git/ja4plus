@@ -363,7 +363,12 @@ class TestTheLookupCacheEvictionMemory:
     """
 
     def offline_client(self, **kwargs):
-        """Return a client whose miss reaches no network.
+        """Return a client that holds an empty mapping file and reaches no network.
+
+        Warning: the mapping file costs resident memory, and
+        `tests/test_memory_bounds.py::TestTheStatedMemoryCeiling` reads the resident
+        memory of this session. Every case here reads the lookup cache and no mapping
+        entry, so the patch below removes a cost the cases do not need.
 
         Args:
             kwargs: The `JA4DBClient` arguments.
@@ -371,7 +376,8 @@ class TestTheLookupCacheEvictionMemory:
         Returns:
             The client. Its `_remote_lookup` returns None for every fingerprint.
         """
-        client = JA4DBClient(**kwargs)
+        with patch.object(ja4db, "load_mapping_file", return_value=({}, "embedded", "test")):
+            client = JA4DBClient(**kwargs)
         client._remote_lookup = lambda fingerprint: None
         return client
 
