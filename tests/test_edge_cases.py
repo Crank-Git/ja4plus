@@ -15,7 +15,7 @@ from ja4plus.fingerprinters.ja4h import JA4HFingerprinter, generate_ja4h
 from ja4plus.fingerprinters.ja4t import JA4TFingerprinter, generate_ja4t
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter, generate_ja4ts
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter, generate_ja4l
-from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter, generate_ja4ssh
+from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter, generate_ja4x
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -294,7 +294,6 @@ class TestX509EdgeCases(unittest.TestCase):
         """An empty list writes the zero sentinel, and never the hash of the empty
         string. The user decided it on 2026-08-08 and R8 of
         `docs/specs/foxio/JA4X.md` holds the reading."""
-        import hashlib
 
         cert_info = {"issuer_rdns": [], "subject_rdns": [], "extensions": []}
         result = generate_ja4x(cert_info)

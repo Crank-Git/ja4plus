@@ -66,7 +66,6 @@ def test_ja4_fingerprinter_buffers_quic_fragments():
     """
     from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
     from ja4plus.utils import quic_utils
-    from ja4plus.utils import tls_utils as _tls_utils
 
     fp = JA4Fingerprinter()
 

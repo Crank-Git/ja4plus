@@ -2,7 +2,7 @@
 
 import unittest
 import time
-from scapy.all import IPv6, IP, TCP, UDP, Raw
+from scapy.all import IPv6, TCP, Raw
 
 
 def _build_tls_client_hello():

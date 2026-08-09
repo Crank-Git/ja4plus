@@ -5,9 +5,8 @@ import os
 # Add the parent directory to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from scapy.all import IP, TCP, Raw
-from ja4plus.fingerprinters.ja4 import JA4Fingerprinter, generate_ja4
-from ja4plus.utils.tls_utils import extract_tls_info
+from scapy.all import IP, TCP
+from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 
 
 class TestJA4(unittest.TestCase):

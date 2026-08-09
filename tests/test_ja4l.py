@@ -1,5 +1,5 @@
 import unittest
-from scapy.all import IP, TCP, Raw
+from scapy.all import IP, TCP
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter, generate_ja4l
 
 # The handshake below states its own packet times, so the latency of each measurement
