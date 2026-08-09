@@ -75,19 +75,18 @@ line-length = 100
 [tool.ruff.lint]
 # The default rule set, plus import order.
 select = ["E4", "E7", "E9", "F", "I"]
-# Each rule below reports more than 50 findings on the existing code, so Epic 0 turns
-# it off. Epic 4, the typed public interface (#15), turns both back on.
+# I001 reports more than 50 findings on the existing code, so Epic 0 turns it off.
+# Epic 4, the typed public interface (#15), turns it back on.
 #
-# F401 waits on #297. #47 declared `__all__` in `ja4plus/__init__.py`, which cleared the
-# 21 re-export findings of that file. The rule reports 58 findings across 28 other files,
-# and #297 removes them and turns the rule on.
+# F401 is on. #47 declared `__all__` in `ja4plus/__init__.py`, which cleared the 21
+# re-export findings of that file. #297 removed the 54 unused imports that remained
+# across 27 other files, and turned the rule on.
 #
 # Never enable I001 by hand. `tests/test_ja4.py` and `tests/test_spec_validation.py`
 # call `sys.path.insert` before their imports. Read both files before you turn the rule
 # on, and confirm that the fix keeps every import below the path insertion.
 ignore = [
-    "F401",  # 58 findings. None of them sits in `ja4plus/__init__.py`.
-    "I001",  # 82 findings. Every module orders its imports by hand.
+    "I001",  # 76 findings. Every module orders its imports by hand.
 ]
 
 [tool.mypy]

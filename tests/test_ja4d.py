@@ -11,7 +11,6 @@ from ja4plus.fingerprinters.ja4d import (
     build_param_list,
     generate_ja4d,
     DHCP_MESSAGE_TYPES,
-    DHCP_SKIP_OPTIONS,
 )
 
 

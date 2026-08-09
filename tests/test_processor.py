@@ -4,10 +4,6 @@ Mirrors the surface area of ja4plus-go's ja4plus.Processor:
 process_packet, reset, cleanup_connection, get_shard_key.
 """
 
-import os
-
-import pytest
-
 
 def test_processor_constructs_with_all_ten_fingerprinters():
     from ja4plus import Processor

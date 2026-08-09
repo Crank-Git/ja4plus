@@ -16,7 +16,7 @@ import hashlib
 import logging
 from typing import Any
 
-from scapy.all import IP, IPv6, TCP, Raw, Packet
+from scapy.all import TCP, Raw, Packet
 
 from ja4plus.utils.http_utils import (
     REQUEST_LINE_PATTERN,
@@ -24,7 +24,6 @@ from ja4plus.utils.http_utils import (
     extract_http_info,
     header_block_end,
     is_http_request,
-    parse_http_request,
     split_http_lines,
 )
 from ja4plus.utils.tcp_stream import SEQUENCE_MASK, TCPStreamReassembler, sequence_before

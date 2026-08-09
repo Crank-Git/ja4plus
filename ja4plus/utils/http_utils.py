@@ -10,7 +10,7 @@ import re
 import logging
 from typing import Any
 
-from scapy.all import Raw, TCP, IP, Packet
+from scapy.all import Raw, Packet
 
 logger = logging.getLogger(__name__)
 

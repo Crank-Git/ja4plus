@@ -9,7 +9,6 @@ even when the content is encrypted. Also includes HASSH support.
 # without this import.
 from __future__ import annotations
 
-import hashlib
 import logging
 import re
 from collections import Counter
