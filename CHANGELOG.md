@@ -16,9 +16,9 @@ two tables below name each one and cite the round that records it. The entries u
 form and the reason for each change, so read that page before you upgrade.
 
 **Warning: a fingerprint of version 0.6.0 and a fingerprint of version 1.0.0 are not always
-comparable.** Eight changes move a value that a tool may have stored. Read
-[The fingerprints that move](#the-fingerprints-that-move) before you compare two sets of
-results.
+comparable.** Read [The fingerprints that move](#the-fingerprints-that-move) before you
+compare two sets of results. That table holds eight rows. Seven of them move a value a tool
+may have stored, and #214 adds a value that version 0.6.0 never produced.
 
 `tests/test_release_notes.py` holds the two tables against the record. A change that
 `CHANGELOG.md` marks `**BREAKING`, and a change that the migration page records, reaches a
