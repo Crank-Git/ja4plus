@@ -50,7 +50,10 @@ and they produce no fingerprint.
 """
 
 import json
+import re
 from pathlib import Path
+
+import pytest
 
 from tests.conformance_index import index_expected
 from tests.foxio_deviations import REGISTER_PATH, load_register
@@ -371,6 +374,38 @@ DISSECTOR_ONLY_JA4L_KEYS = {
 SSH2_BASELINE = "Scripts.ja4-ssh2/ja4ssh.log"
 
 
+# The sentence of `.claude/rules/external-apis.md` that states the reach and the register
+# key count. The key count went stale when #272 removed an entry, because no case measured
+# it. #380 states the sentence as a condition the cases below test.
+EXCEPTION_REACH_COUNTS = re.compile(
+    r"The exception reaches (\d+) rows? of the (\d+) the register holds"
+)
+
+
+def stated_exception_reach_counts(document):
+    """Return the two counts the rule states for the reach of the exception.
+
+    Args:
+        document: The text of `.claude/rules/external-apis.md`, flattened.
+
+    Returns:
+        The stated count of rows the exception reaches, then the stated count of register
+        keys.
+
+    Raises:
+        ValueError: The document states the two counts on no sentence, or on more than one
+            sentence.
+    """
+    matches = EXCEPTION_REACH_COUNTS.findall(document)
+    if len(matches) != 1:
+        raise ValueError(
+            "the rule states the reach counts on {} sentences, and it states them on one".format(
+                len(matches)
+            )
+        )
+    return int(matches[0][0]), int(matches[0][1])
+
+
 def flatten(path):
     """Return the text of one page with every run of whitespace as one space.
 
@@ -656,6 +691,30 @@ class TestThePagesThatCarryTheRule:
         page = flatten(JA4SSH_PAGE)
         assert "ssh2.pcapng/14:57377/JA4SSH.2" in page
         assert "A declined FoxIO Python value forfeits its precedence" in page
+
+    def test_the_rule_states_the_reach_the_register_holds(self):
+        assert stated_exception_reach_counts(flatten(RULE_PAGE))[0] == len(
+            exception_reach(load_register())
+        )
+
+    def test_the_rule_states_the_register_key_count_the_register_holds(self):
+        assert stated_exception_reach_counts(flatten(RULE_PAGE))[1] == len(load_register())
+
+    def test_the_reader_rejects_a_document_that_states_the_counts_nowhere(self):
+        with pytest.raises(ValueError, match="0 sentences"):
+            stated_exception_reach_counts("The exception reaches the rows the rule names.")
+
+    def test_the_reader_rejects_a_document_that_states_the_counts_twice(self):
+        document = (
+            "The exception reaches 1 row of the 2 the register holds."
+            " The exception reaches 3 rows of the 4 the register holds."
+        )
+        with pytest.raises(ValueError, match="2 sentences"):
+            stated_exception_reach_counts(document)
+
+    def test_the_reader_reads_the_two_counts_the_sentence_states(self):
+        document = "The exception reaches 6 rows of the 134 the register holds."
+        assert stated_exception_reach_counts(document) == (6, 134)
 
     def test_the_zeek_page_rates_the_baseline_the_exception_reaches(self):
         rows = [line for line in ZEEK_PAGE.read_text().splitlines() if SSH2_BASELINE in line]
