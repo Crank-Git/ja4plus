@@ -4,9 +4,101 @@ All notable changes to ja4plus are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - unreleased
+
+Version 0.6.0 is the released version on PyPI. Version 1.0.0 is not released yet, and the
+date of this section arrives with the promotion of `dev` to `master`.
+
+`FR-documentation-13` asks this file to record every breaking change of the release. The
+two tables below name each one and cite the round that records it. The entries under
+`### Added`, `### Changed`, `### Fixed` and `### Removed` hold the whole detail.
+[`docs/migration-0.6-to-1.0.md`](docs/migration-0.6-to-1.0.md) states the old form, the new
+form and the reason for each change, so read that page before you upgrade.
+
+**Warning: a fingerprint of version 0.6.0 and a fingerprint of version 1.0.0 are not always
+comparable.** Read [The fingerprints that move](#the-fingerprints-that-move) before you
+compare two sets of results. That table holds eight rows. Seven of them move a value a tool
+may have stored, and #214 adds a value that version 0.6.0 never produced.
+
+`tests/test_release_notes.py` holds the two tables against the record. A change that
+`CHANGELOG.md` marks `**BREAKING`, and a change that the migration page records, reaches a
+row below or fails a case. A list that a reader keeps by hand goes stale on the day the
+next breaking change lands, and a case does not.
+
+### The breaking changes
+
+#### The interface changes
+
+| Change | Record |
+|---|---|
+| `Processor.process_packet` returns a list of `FingerprintResult` objects, and no longer a list of dictionaries. | Round 90, #45 |
+| `JA4DBClient.lookup` returns a frozen `LookupResult`, and no longer a dictionary. | Round 122, #59 |
+| Item access on a `LookupResult` works for one major version, and it raises a `DeprecationWarning`. | Round 123, #364 |
+| `JA4DBClient()` reaches no network, and `JA4DBClient(allow_remote=True)` opts in. | Round 117, #57 |
+| `allow_remote` is the first argument of `JA4DBClient`, so `JA4DBClient(100)` raises a `TypeError`. | Round 117, #57 |
+| `ja4plus db update` writes the cache directory of the platform, and no longer the installed package. | Round 121, #61 |
+| `ja4plus watch` reads an interface, and `ja4plus live` stays as an alias of it. | Round 101, #53 |
+| The `ja4plus.collector` module leaves the package, so `import ja4plus.collector` raises a `ModuleNotFoundError`. | Round 71, #191 |
+| The `json` format and the `csv` format write four address fields, and no longer one composite `source` field. | Round 96, #49 |
+| The command writes every result to standard output and every diagnostic to standard error. | Round 95, #52 |
+| The monitor opens the capture socket to test the privilege, and no longer reads `os.geteuid()`. | Round 104, #56 |
+| `compute_ja4x_from_pem` and `compute_ja4x_from_der` raise where an unreadable input returned `None`. | Round 133, #319 |
+| `requires-python` moves from `>=3.8` to `>=3.9`. | Round 135, #76 |
+
+#### The fingerprints that move
+
+| Change | Record |
+|---|---|
+| JA4SSH emits one fingerprint for every 200 SSH packets, and no longer one for every 10. | Round 9, #28 |
+| JA4SSH counts an SSH message, and no longer a TCP segment that carries a payload. | #98 |
+| JA4SSH counts a true bare ACK alone. | #92 |
+| JA4SSH emits every window a connection leaves open, so a capture produces one more value. | #214 |
+| JA4L and JA4LS report a one-way latency, and no longer a round-trip time. | #88 |
+| The JA4L QUIC server point reads the Initial packet whose TLS handshake type is `2`. | #102 |
+| Both JA4S raw fields hold the extension list in wire order. | #108 |
+| JA4 and JA4S write `s2` for the version `0x0002`, and FoxIO retracted the earlier reading. | #227 |
+
+**Two further changes narrow the published interface, and the sweep of #395 judged each one
+marginal.** `ja4plus.__all__` names 25 entries, so a `from ja4plus import *` that read a
+name outside the 25 loses it, under Round 90, #47. `import ja4plus` registers the tunnel
+dissectors of scapy for the whole process, under Round 12, #94.
+
+**One breaking change reaches this record and reaches no row of the migration page.** #319
+narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`, and #397 recorded the change
+under round 133. #65 owns `docs/migration-0.6-to-1.0.md`, so #66 records the gap here and
+edits no page of another issue.
 
 ### Added
+
+- **The documentation site publishes to GitHub Pages, and this file holds the release
+  notes of version 1.0.0** (#66). Round TBD. New file `.github/workflows/docs.yml`. It
+  fires on a push to `master`, which is the live branch, and a promotion from `dev` to
+  `master` is a step the user approves. **The workflow builds nothing of its own.**
+  `.github/workflows/docs-build.yml` already installs the committed `docs` pins into an
+  empty environment and runs `mkdocs build --strict`, and a second recipe for one site
+  drifts apart from the first in silence. That job gains a `workflow_call` trigger and one
+  conditional step, so the publish workflow calls it and deploys the artifact it uploads.
+  The input is absent on a `push` trigger and on a `pull_request` trigger, so a pull
+  request uploads nothing. No pin and no build step changes, and #391 keeps both.
+  **This repository holds no GitHub Pages site, and no run has ever deployed.**
+  `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides whether to
+  turn Pages on, because that change publishes a public website. The first job therefore
+  reads `GET /repos/{owner}/{repo}/pages` and names the setting in the failure: a 404
+  reports that the site is absent, a `build_type` other than `workflow` reports the wrong
+  source, and any other status reports the status it read. **The deployment stays
+  unverified until the user changes the setting**, and no case here claims otherwise.
+  **The release notes name every breaking change the record holds**: thirteen interface
+  changes and eight fingerprints that move. New file `tests/test_release_notes.py` holds
+  the two tables against the `**BREAKING` entries of this file, against
+  `docs/migration-0.6-to-1.0.md`, and against the Changelog table of `docs/specs/spec.md`.
+  **The self-review then found a citation the first form of that file could not read.**
+  The migration page cites one change under `Round 122` and names #364 beside #59, and
+  round 123 is the row that records #364. A case that compared the two `Record` cells
+  passed, because both files held one error. The case now reads the Changelog table, which
+  is the authority both files copy, and #401 holds the repair of the page. Six mutations
+  prove the cases discriminate, and each was restored. New file
+  `tests/test_documentation_publish.py` reads the two workflows. `actionlint` 1.7.7 reports
+  no finding on either one. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **Every code sample and every example script runs in continuous integration** (#63).
   Round TBD. Nothing ran a sample before this round, so a sample that stopped working
