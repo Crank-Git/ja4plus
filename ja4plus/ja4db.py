@@ -19,6 +19,7 @@ import csv
 import logging
 import os
 import threading
+from urllib.parse import quote
 
 from ja4plus.utils.state_table import DEFAULT_MAX_CONNECTION_AGE, BoundedStateTable
 
@@ -47,6 +48,11 @@ DEFAULT_CACHE_AGE = DEFAULT_MAX_CONNECTION_AGE
 # lookup. A client that holds a smaller lookup cache reads its own entry count instead,
 # and its age pass therefore runs.
 DEFAULT_CACHE_EVICTION_INTERVAL = DEFAULT_CACHE_SIZE
+
+# The maximum interval of one remote lookup, in seconds.
+# `features/07-db-enrichment.md` line 113 states 5 seconds, and it states that no
+# operator configures the interval before version 1.0.0.
+_REMOTE_TIMEOUT = 5.0
 
 # The value the lookup cache holds for no fingerprint. A cached miss holds None, so a
 # read needs a value that no lookup produces.
@@ -92,20 +98,58 @@ def _load_bundled_db() -> dict[str, LookupResult]:
     return db
 
 
+def _read_remote_body(data: object) -> LookupResult | None:
+    """Return the match that the response body of the lookup service holds.
+
+    The service publishes no versioned API document. The client therefore reads every
+    shape it does not know as a miss, and it lets no unchecked field reach a caller.
+
+    Args:
+        data: The value the response body decoded to.
+
+    Returns:
+        The match, or None when the body carries no application name.
+    """
+    if not isinstance(data, dict):
+        return None
+    application: object = data.get("application")
+    if not isinstance(application, str) or not application:
+        return None
+    result: LookupResult = {"application": application}
+    for name in ("type", "notes"):
+        value: object = data.get(name)
+        result[name] = value if isinstance(value, str) else ""
+    return result
+
+
 class JA4DBClient:
     """Client for looking up JA4+ fingerprints against known databases.
 
     Several threads may share one client. The client holds a lock over the lookup cache
     read and over the lookup cache write.
 
+    The client reads the bundled mapping file and reaches no network. A fingerprint
+    describes traffic the operator observed, so a request to `ja4db.com` discloses that
+    traffic to a third party. The operator asks for that disclosure with
+    `allow_remote=True`.
+
     Args:
+        allow_remote: True permits a request to `ja4db.com` for a fingerprint the
+            mapping file holds no entry for.
         cache_size: The maximum entry count of the lookup cache.
 
     Raises:
+        TypeError: `allow_remote` is no bool.
         ValueError: `cache_size` is below one.
     """
 
-    def __init__(self, cache_size: int = DEFAULT_CACHE_SIZE) -> None:
+    def __init__(self, allow_remote: bool = False, cache_size: int = DEFAULT_CACHE_SIZE) -> None:
+        # `cache_size` was the first parameter before #57. A caller that wrote
+        # `JA4DBClient(100)` for a lookup cache of 100 entries would now permit the
+        # disclosure that #57 repairs, and would keep the default entry count. The
+        # client refuses that call rather than reach the lookup service for it.
+        if not isinstance(allow_remote, bool):
+            raise TypeError("allow_remote takes True or False")
         # A monitor looks every fingerprint it reads up, so a plain dictionary here holds
         # one entry for every fingerprint the traffic carries.
         self._cache = BoundedStateTable(
@@ -116,6 +160,7 @@ class JA4DBClient:
             eviction_interval=min(DEFAULT_CACHE_EVICTION_INTERVAL, cache_size),
         )
         self._cache_lock = threading.Lock()
+        self._allow_remote = allow_remote
         self._db = _load_bundled_db()
         logger.debug("JA4DB client initialized with %d bundled entries", len(self._db))
 
@@ -151,12 +196,25 @@ class JA4DBClient:
         return result
 
     def _do_lookup(self, fingerprint: str) -> LookupResult | None:
-        """Perform the actual lookup."""
-        # Check bundled database first
+        """Return the match for the fingerprint from the mapping file or the service.
+
+        Args:
+            fingerprint: A JA4+ fingerprint string.
+
+        Returns:
+            The match, or None when no source holds an entry.
+        """
+        # The mapping file answers first, so a hit costs no request.
         if fingerprint in self._db:
             return self._db[fingerprint]
 
-        # Try remote API if requests is available
+        # A client that reaches the service tells it which fingerprint the operator
+        # observed. A miss stays a miss until the operator asks for that disclosure.
+        if not self._allow_remote:
+            return None
+
+        # #319 owns this wide handler. The handlers that name their errors are inside
+        # `_remote_lookup`.
         try:
             return self._remote_lookup(fingerprint)
         except Exception as e:
@@ -164,26 +222,37 @@ class JA4DBClient:
             return None
 
     def _remote_lookup(self, fingerprint: str) -> LookupResult | None:
-        """Try to look up via ja4db.com (requires requests)."""
+        """Return the match the lookup service holds for the fingerprint.
+
+        The caller decides whether the request happens. `_do_lookup` calls this method
+        only for a client that the operator built with `allow_remote=True`. The `lookup`
+        extra installs the `requests` package that the request needs.
+
+        Args:
+            fingerprint: A JA4+ fingerprint string.
+
+        Returns:
+            The match, or None when the request fails, the package is absent, or the
+            response holds a shape the client does not know.
+        """
         try:
             import requests
         except ImportError:
             return None
 
+        # `lookup` accepts any string, and a string that carries `/` or `?` would name
+        # another path on the service. A JA4+ fingerprint holds no character that the
+        # escape changes, so the escape moves no request the project makes.
+        path = quote(fingerprint, safe="")
+
         try:
             resp = requests.get(
-                f"https://ja4db.com/api/read/{fingerprint}",
-                timeout=5,
+                f"https://ja4db.com/api/read/{path}",
+                timeout=_REMOTE_TIMEOUT,
                 headers={"Accept": "application/json"},
             )
             if resp.status_code == 200:
-                data = resp.json()
-                if data and isinstance(data, dict):
-                    return {
-                        "application": data.get("application", "Unknown"),
-                        "type": data.get("type", ""),
-                        "notes": data.get("notes", ""),
-                    }
+                return _read_remote_body(resp.json())
         except (ValueError, KeyError, AttributeError):
             pass
         except Exception as e:

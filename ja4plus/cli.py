@@ -785,7 +785,9 @@ def _add_output_options(parser: argparse.ArgumentParser, *, defaults: bool) -> N
         "--lookup",
         action="store_true",
         default=default(False),
-        help="Identify fingerprints using ja4db (bundled database + optional remote lookup)",
+        # #57 made the remote lookup opt-in at the client, so this option reads the
+        # bundled mapping file and reaches no network.
+        help="Identify fingerprints from the bundled database. It makes no network request",
     )
     parser.add_argument(
         "--output",

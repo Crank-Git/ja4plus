@@ -32,7 +32,9 @@ QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS 
 pip install ja4plus
 ```
 
-For fingerprint identification (browsers, malware, C2 frameworks):
+The bundled mapping file identifies browsers, malware and C2 frameworks, and it needs no
+extra. The `lookup` extra adds the optional remote lookup, which you ask for. Read
+[The lookup makes no network request unless you ask for one](#the-lookup-makes-no-network-request-unless-you-ask-for-one).
 
 ```bash
 pip install ja4plus[lookup]
@@ -150,6 +152,31 @@ from ja4plus.ja4db import lookup
 result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
 # {"application": "Chromium Browser", "type": "ja4", "notes": ""}
 ```
+
+### The lookup makes no network request unless you ask for one
+
+A fingerprint describes traffic you observed. A request to the lookup service
+`ja4db.com` tells that service which fingerprint your host saw. `ja4plus` therefore reads
+the bundled mapping file and reaches no network by default. `ja4plus --lookup analyze`
+and `ja4plus.ja4db.lookup` both hold that default, and neither one contacts a third
+party.
+
+To permit the request, build the client with `allow_remote=True`:
+
+```python
+from ja4plus.ja4db import JA4DBClient
+
+# The default. Every lookup reads the bundled mapping file.
+offline = JA4DBClient()
+
+# Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
+online = JA4DBClient(allow_remote=True)
+```
+
+To stop the request again, build the client with no argument. The remote lookup waits 5
+seconds at most. A request that fails returns None, and it raises nothing. The `lookup`
+extra installs the `requests` package that the request needs, and a client without that
+package reports every miss as None.
 
 ## Python API
 
