@@ -92,6 +92,26 @@ def test_a_repeated_syn_that_carries_the_same_number_changes_nothing():
     assert values == ["JA4L-S=1000_64", "JA4L-C=500_128"]
 
 
+def test_a_retransmitted_syn_ack_reports_no_second_server_value():
+    """A retransmitted SYN-ACK reaches no new measurement point, so it gives no value.
+
+    The first SYN-ACK sets point `B`. A later SYN-ACK finds point `B` already set and
+    changes neither the point nor the TTL, so a second value would repeat the first one.
+    The reference publishes one server value for one connection. `ssh2.pcapng` stream 15
+    proves it: the expected-output file holds `JA4L-S=6252_58` once, and #272 measured
+    that this project produced it twice.
+    """
+    values = _values(
+        [
+            _client("S", 0, 0, 0.000),
+            _server("SA", 0, 1, 0.001),
+            _server("SA", 0, 1, 0.005),
+            _client("A", 1, 1, 0.006),
+        ]
+    )
+    assert values == ["JA4L-S=500_64", "JA4L-C=2500_128"]
+
+
 def test_a_connection_of_100_bare_acks_stores_one_client_value():
     """The stored list holds one client value for one connection.
 
