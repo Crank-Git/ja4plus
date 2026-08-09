@@ -17,6 +17,10 @@ so a mutation never lands on top of an uncommitted edit. A stop signal reaches t
 restore, and `SIGKILL` does not. If a killed sweep leaves a change behind, the next
 sweep refuses to start; run `git checkout -- ja4plus/` to drop it.
 
+**Warning: one mutation can turn a loop bound into a loop that never ends.** Name
+`--timeout` to bound one suite run. A run that passes the limit records the status
+`timeout` and the sweep continues. The limit is off by default.
+
 A checkpoint belongs to one commit. It keys each result on the position of the
 expression in the file, so a code change moves the key.
 """
@@ -40,6 +44,13 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 # A mutant that breaks the import of a module fails the whole suite. Such a run reports
 # no test as measured, so the sweep records it and drops it from the kill sets.
 UNUSABLE_KILL_RATIO = 0.9
+
+# One mutation can turn a loop bound into a loop that never ends, and the suite run then
+# never returns. `while position < len(payload)` of `ja4plus/utils/ssh_utils.py:284` is
+# such a bound. The sweep records this status for a run that passes the time limit, and it
+# continues with the next mutation. **A mutation that times out is not a survivor**,
+# because a run that never finished measured nothing.
+TIMEOUT = "timeout"
 
 # The two patterns list every tracked module of the package. **Never write
 # `ja4plus/**/*.py` here**: git reads `**` in a pathspec as one or more directories, so it
@@ -277,9 +288,25 @@ FAILURE_LINE = re.compile(r"^(?:FAILED|ERROR|SUBFAIL\w*(?:\([^)]*\))?)\s+(\S+)")
 
 
 def run_suite(
-    root: Path, python: str, pytest_args: Sequence[str], tests: Sequence[str] = ("tests/",)
-) -> Tuple[Set[str], int]:
-    """Run the suite once and return the failing case names and the exit code."""
+    root: Path,
+    python: str,
+    pytest_args: Sequence[str],
+    tests: Sequence[str] = ("tests/",),
+    timeout: int = 0,
+) -> Tuple[Set[str], Optional[int]]:
+    """Run the suite once and return the failing case names and the exit code.
+
+    Args:
+        root: The repository root the run starts in.
+        python: The interpreter that runs the suite.
+        pytest_args: One more argument for the run.
+        tests: The paths pytest runs.
+        timeout: The second count one run may take. 0 names no limit.
+
+    Returns:
+        The failing case names, and the exit code. A run that passes the limit gives an
+        empty name set and None, because it measured nothing.
+    """
     command = [
         python,
         "-m",
@@ -292,7 +319,17 @@ def run_suite(
         "no:cacheprovider",
     ]
     command.extend(pytest_args)
-    finished = subprocess.run(command, cwd=str(root), capture_output=True, text=True, check=False)
+    try:
+        finished = subprocess.run(
+            command,
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout or None,
+        )
+    except subprocess.TimeoutExpired:
+        return set(), None
     failures: Set[str] = set()
     for line in finished.stdout.splitlines():
         match = FAILURE_LINE.match(line)
@@ -382,19 +419,20 @@ def markdown_report(report: Dict[str, object]) -> str:
         "",
         "## What the sweep applied to each module",
         "",
-        "| Module | Mutations | Killed | Survived | Unusable |",
-        "|---|---|---|---|---|",
+        "| Module | Mutations | Killed | Survived | Unusable | Timeout |",
+        "|---|---|---|---|---|---|",
     ]
     for entry in modules:  # type: ignore[union-attr]
         found = entry["mutations"]
         counts = collections.Counter(item["status"] for item in found)
         lines.append(
-            "| `{}` | {} | {} | {} | {} |".format(
+            "| `{}` | {} | {} | {} | {} | {} |".format(
                 entry["module"],
                 len(found),
                 counts["killed"],
                 counts["survived"],
                 counts["unusable"],
+                counts[TIMEOUT],
             )
         )
     lines.extend(["", "## Every mutation", ""])
@@ -484,6 +522,13 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="Report the mutation count per module and run no suite.",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=0,
+        help="The second count one suite run may take. A run that passes the limit records "
+        "the status timeout. 0 names no limit.",
+    )
     return parser.parse_args(argv)
 
 
@@ -564,7 +609,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         baseline = set(done[baseline_key]["failures"])  # type: ignore[arg-type]
         cases = set(done[baseline_key]["cases"])  # type: ignore[arg-type]
     else:
-        baseline, _ = run_suite(root, options.python, options.pytest_arg, tests)
+        baseline, code = run_suite(root, options.python, options.pytest_arg, tests, options.timeout)
+        if code is None:
+            print(
+                "the unmutated suite passed the {} second limit, so no mutation can be "
+                "read against it.".format(options.timeout),
+                file=sys.stderr,
+            )
+            return 2
         cases = collect_cases(root, options.python, tests)
         with checkpoint.open("a") as handle:
             handle.write(
@@ -592,10 +644,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     path.write_text(
                         original[: mutation.start] + mutation.after + original[mutation.end :]
                     )
-                    failures, _ = run_suite(root, options.python, options.pytest_arg, tests)
+                    failures, code = run_suite(
+                        root, options.python, options.pytest_arg, tests, options.timeout
+                    )
                     killed = failures - baseline
                     mutation.killed = sorted(killed)
-                    if len(killed) >= UNUSABLE_KILL_RATIO * max(len(cases), 1):
+                    if code is None:
+                        mutation.status = TIMEOUT
+                    elif len(killed) >= UNUSABLE_KILL_RATIO * max(len(cases), 1):
                         mutation.status = "unusable"
                     elif killed:
                         mutation.status = "killed"
