@@ -454,12 +454,10 @@ def test_a_continuous_integration_job_installs_the_documentation_pins_and_builds
     assert 'pip install -e ".[docs]"' in text, (
         f"{DOCS_WORKFLOW.name} installs some other set than the committed `docs` pins"
     )
-    assert "mkdocs build --strict" in text, (
-        f"{DOCS_WORKFLOW.name} runs no `mkdocs build --strict`"
-    )
+    assert "mkdocs build --strict" in text, f"{DOCS_WORKFLOW.name} runs no `mkdocs build --strict`"
     # The `dev` extra brings a second resolution into the environment, and the release
     # installs no such set. A job that installs it measures the wrong artefact.
-    assert '[dev' not in text, f"{DOCS_WORKFLOW.name} installs the dev extra beside the docs extra"
+    assert "[dev" not in text, f"{DOCS_WORKFLOW.name} installs the dev extra beside the docs extra"
 
 
 def test_the_documentation_job_runs_when_a_pin_or_a_page_changes() -> None:
