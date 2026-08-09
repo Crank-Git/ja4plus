@@ -280,6 +280,7 @@ written against the dictionary keeps working for one major version.
 
 Warning: item access emits a `DeprecationWarning`. Read the attribute instead.
 
+<!-- sample: raises KeyError the second line reads a field name that no field carries -->
 ```python
 result["fingerprint"]   # the same value, and one DeprecationWarning
 result["method"]        # KeyError. The field is `type`.
@@ -440,14 +441,18 @@ from ja4plus import (
     generate_ja4x,
     generate_ja4ssh,
 )
+from ja4plus.utils.tls_utils import extract_tls_info
 
-# Each takes a scapy packet and returns a fingerprint string or None
-result = generate_ja4(packet)
+# Each of the eight takes a scapy packet, except `generate_ja4` and `generate_ja4x`.
+result = generate_ja4s(packet)
+
+# `generate_ja4` reads the TLS info that `extract_tls_info` returns.
+result = generate_ja4(extract_tls_info(packet))
 ```
 
 | Function | Input | Description |
 |----------|-------|-------------|
-| `generate_ja4(packet)` | scapy packet | JA4 TLS client fingerprint |
+| `generate_ja4(tls_info)` | dict | JA4 TLS client fingerprint. It reads the dict that `extract_tls_info` returns, and not a packet |
 | `generate_ja4s(packet)` | scapy packet | JA4S TLS server fingerprint |
 | `generate_ja4h(packet)` | scapy packet | JA4H HTTP fingerprint |
 | `generate_ja4t(packet)` | scapy packet | JA4T TCP client fingerprint |
@@ -631,6 +636,7 @@ It holds the longest gap between two segments of one connection across
 
 Command-line interface for JA4+ fingerprinting. Installed as the `ja4plus` command.
 
+<!-- sample: skip the block names a placeholder argument, and `db update` reaches the FoxIO repository -->
 ```bash
 ja4plus analyze <pcap_file>   # Fingerprint a PCAP file
 ja4plus watch <interface>     # Read an interface (needs the capture privilege)
@@ -809,6 +815,7 @@ version 0.6.0 returns the value of another field.
 Warning: item access emits a `DeprecationWarning`, FR-db-enrichment-17. Read the
 attribute instead.
 
+<!-- sample: raises KeyError the second line reads a field name that no field carries -->
 ```python
 result["application"]   # the same value, and one DeprecationWarning
 result["method"]        # KeyError. `LookupResult` holds no field of that name.

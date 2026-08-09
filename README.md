@@ -53,6 +53,7 @@ QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS 
 
 ## Installation
 
+<!-- sample: skip the command reaches the Python Package Index -->
 ```bash
 pip install ja4plus
 ```
@@ -61,6 +62,7 @@ The bundled mapping file identifies browsers, malware and C2 frameworks, and it 
 extra. The `lookup` extra adds the optional remote lookup, which you ask for. Read
 [The lookup makes no network request unless you ask for one](#the-lookup-makes-no-network-request-unless-you-ask-for-one).
 
+<!-- sample: skip the command reaches the Python Package Index -->
 ```bash
 pip install ja4plus[lookup]
 ```
@@ -79,6 +81,23 @@ ja4plus --format json analyze capture.pcap
 # Only specific fingerprint types
 ja4plus --types ja4,ja4t analyze capture.pcap
 
+# Fingerprint a certificate
+ja4plus cert server.der
+
+# Identify known fingerprints from the bundled database. It makes no network request
+ja4plus --lookup analyze capture.pcap
+
+# Write the results to a file
+ja4plus analyze capture.pcap --format json --output results.json
+
+# Overwrite a file that exists
+ja4plus analyze capture.pcap --format json --output results.json --force
+```
+
+The monitor reads an interface, so it needs the capture privilege:
+
+<!-- sample: skip the command opens a capture socket, and continuous integration holds no capture privilege -->
+```bash
 # Read packets from an interface (needs the capture privilege)
 sudo ja4plus watch eth0
 
@@ -90,21 +109,16 @@ sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
 
 # Apply a capture filter
 sudo ja4plus watch eth0 --bpf "tcp port 443"
+```
 
-# Fingerprint a certificate
-ja4plus cert server.der
+`--lookup-remote` reaches the lookup service, so read
+[The lookup makes no network request unless you ask for one](#the-lookup-makes-no-network-request-unless-you-ask-for-one)
+before you pass it:
 
-# Identify known fingerprints from the bundled database. It makes no network request
-ja4plus --lookup analyze capture.pcap
-
+<!-- sample: skip the command reaches the lookup service at https://ja4db.com -->
+```bash
 # Identify them, and ask https://ja4db.com about each fingerprint the database misses
 ja4plus --lookup-remote analyze capture.pcap
-
-# Write the results to a file
-ja4plus analyze capture.pcap --format json --output results.json
-
-# Overwrite a file that exists
-ja4plus analyze capture.pcap --format json --output results.json --force
 ```
 
 The six output options run before the subcommand name and after it.
@@ -220,7 +234,10 @@ The command asks for the same request with `--lookup-remote`:
 ```bash
 # The default of the command. Every lookup reads the bundled mapping file.
 ja4plus analyze capture.pcap --lookup
+```
 
+<!-- sample: skip the command reaches the lookup service at https://ja4db.com -->
+```bash
 # Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
 ja4plus analyze capture.pcap --lookup-remote
 
@@ -296,8 +313,13 @@ For one-shot fingerprinting without maintaining state:
 
 ```python
 from ja4plus import generate_ja4, generate_ja4s, generate_ja4h
+from ja4plus.utils.tls_utils import extract_tls_info
 
-fingerprint = generate_ja4(packet)
+# `generate_ja4s` and `generate_ja4h` each read a packet.
+server_fingerprint = generate_ja4s(packet)
+
+# `generate_ja4` reads the TLS info that `extract_tls_info` returns.
+fingerprint = generate_ja4(extract_tls_info(packet))
 ```
 
 ### Aggregating Processor
@@ -439,6 +461,7 @@ packet. [`docs/output-schema.md`](docs/output-schema.md) states the property in 
 
 ja4plus is validated against [FoxIO's official test vectors](https://github.com/FoxIO-LLC/ja4):
 
+<!-- sample: skip the first command downloads the vectors from the FoxIO repository -->
 ```bash
 python tests/download_test_vectors.py
 pytest -m spec_validation -v
@@ -446,6 +469,7 @@ pytest -m spec_validation -v
 
 ## Development
 
+<!-- sample: skip the first command clones the repository from GitHub -->
 ```bash
 git clone https://github.com/Crank-Git/ja4plus.git
 cd ja4plus

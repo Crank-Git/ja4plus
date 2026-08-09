@@ -6,6 +6,47 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Every code sample and every example script runs in continuous integration** (#63).
+  Round TBD. Nothing ran a sample before this round, so a sample that stopped working
+  stopped working in silence. That is the shape this project records seventeen times: a
+  comparison that is never made reads as a comparison that passes. **The reader finds 157
+  fenced blocks across `README.md` and `docs/`, and a second reader agrees on every
+  file.** `tests/documentation_samples.py` matches a fence grammar and tracks the fence
+  width, and `_second_reader_block_count` uses string operations alone. **The two readers
+  disagreed on the first run, and the disagreement was a real defect.** Four files of
+  `docs/specs/foxio/` each hold an inline code span that opens a line with three
+  backticks, and the second reader read each one as a fence. The floor was then set from
+  the corrected reader, because #302 set its floor from a reader that skipped every
+  wrapped row. **The census reads 43 blocks that run, 2 that raise a named error, 94 that
+  the harness skips and 18 that carry output.** A `python` block and a `bash` block run
+  by default. `<!-- sample: skip <reason> -->` states why a block runs never, and
+  `<!-- sample: raises <error> <reason> -->` states the error a block raises on purpose.
+  A skip reason shorter than four words fails a case, so no skip is silent. **14 samples
+  carry a skip marker and 80 blocks of `docs/specs/` carry a directory reason**, because
+  that directory holds the specification package and the verbatim FoxIO transcription.
+  **No sample reaches the network**, and a fixture refuses every outbound connection
+  while a Python sample runs. **Five scripts of `examples/` run under six command lines.**
+  `examples/live_traffic_fingerprinting.py` gained a `--pcap` option that passes
+  `offline` to `sniff`. **Four mutations prove the harness discriminates**, one for each
+  of the README Python path, the README shell path, the `docs/` path and the `examples/`
+  path, and each was restored. New files `tests/documentation_samples.py`,
+  `tests/test_documentation_samples.py` and `tests/test_examples.py`, and a new `samples`
+  job in `.github/workflows/test.yml`. No file under `ja4plus/` changes and no
+  fingerprint moves.
+
+### Fixed
+
+- **`generate_ja4` reads a TLS info dictionary, and the documentation said a packet**
+  (#63). Round TBD. `README.md` and `docs/api_reference.md` each wrote
+  `generate_ja4(packet)`, and the call raises `AttributeError: get`. The function reads
+  the dictionary that `ja4plus.utils.tls_utils.extract_tls_info` returns. The nine other
+  one-shot functions read a packet, and `generate_ja4x` reads a dictionary that
+  `docs/api_reference.md` already recorded. **The sample harness of #63 found this on its
+  first green run, and no case reached it before**, because nothing ran the sample. This
+  entry repairs the two documents and changes no signature.
+
 ### Changed
 
 - **The README states eleven of the twelve FoxIO methods, the two contracts and the four
