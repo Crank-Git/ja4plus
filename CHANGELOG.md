@@ -63,6 +63,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The marker rule states the decided-entry count the register holds, and a case
+  holds it there** (#345). Round `TBD`. The `## The marker rule` section of
+  `tests/foxio_deviations.py` read `38 of the 128 decided entries`. The register holds
+  134 decided entries of 134 keys, measured on the base commit `f238c15`. **The
+  denominator went stale twice**, because nothing measured it. #341 found the first
+  drift at 129. #272 then removed one entry and decided five inside this batch. **The
+  numerator of 38 was correct**, and the 38 are still the 34 entries of #138 and 4 of
+  the 5 entries of #151. `TestTheMarkerRuleCounts` in `tests/test_foxio_deviations.py`
+  now reads the two counts out of the prose and measures them against the register. The
+  next move of the register therefore fails a case, where the count sat unmeasured in a
+  docstring before. The case failed on the unchanged prose with `assert 128 == 134`.
+  Three mutations prove that it fails when the register moves and the prose does not,
+  and each run restored the file it moved. No register entry changed, no file under
+  `ja4plus/` changed, and no fingerprint moved.
 - **The `capability` field alone bars the rows of #129** (#347). Round `TBD`.
   #341 shipped the field on all 135 register entries and reported that it could not
   prove the one thing it exists for. **The bar stood twice**: once in the field, and once
