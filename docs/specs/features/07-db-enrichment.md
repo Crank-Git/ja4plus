@@ -71,6 +71,11 @@ FR-db-enrichment-14 — The remote lookup has a timeout.
 
 FR-db-enrichment-15 — A remote lookup failure returns nothing and does not raise.
 
+FR-db-enrichment-16 — A `LookupResult` supports item access by field name, so that
+code written against the dictionary keeps working for one major version.
+
+FR-db-enrichment-17 — Item access on a `LookupResult` emits a `DeprecationWarning`.
+
 ## User flows
 
 **An analyst identifies fingerprints from a capture.**
@@ -115,7 +120,24 @@ FR-db-enrichment-15 — A remote lookup failure returns nothing and does not rai
   read-only, and a wheel reinstall would discard the file.
 - The cache directory follows the platform convention: `$XDG_CACHE_HOME/ja4plus`
   or `~/.cache/ja4plus` on Linux, `~/Library/Caches/ja4plus` on macOS.
-- A source value is one of `bundled`, `cache` or `remote`.
+- A source value is one of `embedded`, `cache` or `remote`.
+
+**The published source value is `embedded`, and the prose of this project still calls the
+file bundled.** The two are not a contradiction. `lookup.go:31` of `Crank-Git/ja4plus-go`
+sets `dbSource = "embedded"`, and `runDBInfo` of `cmd/ja4plus/main.go:378` prints it.
+`CLAUDE.md` parity rule 2 gives the port the interface where FoxIO specifies nothing, and
+a source label is that kind of choice. An earlier form of this file published `bundled`,
+and #61 found the disagreement. The user decided on 2026-08-08 that the port wins, because
+the port already corroborates every other interface choice of this feature: the cache
+directory and the file name at `CachedDatabasePath` of `lookup.go:210`, the temporary-file
+rename at `runDBUpdate` of `cmd/ja4plus/main.go:352`, the cache preference at `loadDB` of
+`lookup.go:41`, and the `Source`, `Path` and `Entries` lines of `runDBInfo`. One
+disagreement against five agreements is a specification that drifted. Read `embedded` as
+the value alone. The word `bundled` describes the file that ships inside the package, and
+`_BUNDLED_CSV` and `_load_bundled_db` keep their names.
+
+Verified against: https://github.com/Crank-Git/ja4plus-go/blob/master/lookup.go (retrieved
+2026-08-08).
 
 ## Data touched
 
@@ -132,7 +154,6 @@ class JA4DBClient:
         self,
         allow_remote: bool = False,
         cache_size: int = 100_000,
-        timeout: float = 5.0,
     ) -> None: ...
 
     def lookup(self, fingerprint: str) -> LookupResult | None: ...
@@ -145,10 +166,26 @@ class LookupResult:
     application: str
     type: str
     notes: str
-    source: str          # "bundled" | "cache" | "remote"
+    source: str          # "embedded" | "cache" | "remote"
+
+    def __getitem__(self, key: str) -> Any: ...
 ```
 
-`LookupResult` carries the port's three fields plus `source`.
+`LookupResult` carries the port's three fields plus `source`. The behaviour rule above
+states the three source values, and #61 settled the first of them as `embedded`. #59
+repaired this block, which published `bundled` until then.
+
+`__getitem__` reads the field the key names, FR-db-enrichment-16, and it emits a
+`DeprecationWarning`, FR-db-enrichment-17. `FingerprintResult` of
+`docs/specs/features/04-typed-api.md` holds the same method under `FR-typed-api-5` and
+`FR-typed-api-6`, and #364 adopted that spelling rather than a second one. The three keys
+version 0.6.0 published each name a field, so no key of version 0.6.0 raises `KeyError`.
+
+The constructor publishes no `timeout` parameter. The behaviour rule above refuses one
+before version 1.0.0, and the Go port publishes none either. `RemoteLookupConfig` of
+`lookup.go` holds two fields, `Endpoint` and `HTTPClient`, and it holds no field for the
+remote timeout. `tests/test_db_offline.py` pins the parameter list, so a parameter that
+this file does not publish fails the unit suite. #354 records the reading.
 
 Verified against:
 https://github.com/Crank-Git/ja4plus-go/blob/master/lookup.go (retrieved
@@ -191,7 +228,7 @@ treats any unexpected shape as a miss. This is listed in the spec's
 - [ ] `JA4PLUS_DB_LOOKUP=1 ja4plus analyze <capture> --lookup` permits the remote
       lookup.
 - [ ] `lookup_many` returns one entry per input fingerprint, including misses.
-- [ ] Every `LookupResult` carries a `source` value of `bundled`, `cache` or
+- [ ] Every `LookupResult` carries a `source` value of `embedded`, `cache` or
       `remote`.
 - [ ] The cache holds no more than `cache_size` entries after 200000 distinct
       lookups.
@@ -199,7 +236,7 @@ treats any unexpected shape as a miss. This is listed in the spec's
 - [ ] `ja4plus db update` writes to the platform cache directory and leaves the
       installed package unchanged.
 - [ ] After `db update`, `db info` reports `cache` as the source.
-- [ ] A corrupt cache file makes `db info` report `bundled` as the source.
+- [ ] A corrupt cache file makes `db info` report `embedded` as the source.
 
 ## Out of scope
 

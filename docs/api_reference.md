@@ -623,13 +623,16 @@ ja4plus analyze <pcap_file>   # Fingerprint a PCAP file
 ja4plus watch <interface>     # Read an interface (needs the capture privilege)
 ja4plus live <interface>      # An alias of watch
 ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
+ja4plus db update             # Download the mapping file to the cache directory
+ja4plus db info               # Report the mapping file the client reads
 ```
 
 | Option | Description |
 |--------|-------------|
 | `--format table\|json\|csv` | Output format (default: table) |
 | `--types ja4,ja4s,...` | Filter to specific fingerprint types |
-| `--lookup` | Identify fingerprints using bundled ja4db database |
+| `--lookup` | Identify fingerprints from the bundled database. It makes no network request |
+| `--lookup-remote` | Identify fingerprints, and send each one the bundled database holds no entry for to `https://ja4db.com` |
 | `--output FILE` | Write the results to FILE instead of standard output |
 | `--force` | Overwrite the file that `--output` names when it exists |
 | `--version` | Print version |
@@ -738,18 +741,143 @@ from ja4plus.ja4db import JA4DBClient, lookup
 
 # Module-level convenience function
 result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
-# {"application": "Chromium Browser", "type": "ja4", "notes": ""}
+# LookupResult(application="Chromium Browser", type="ja4", notes="", source="embedded")
 
 # Or use the client for caching across multiple lookups
 client = JA4DBClient()
 result = client.lookup(fingerprint_string)
+
+# One call for many fingerprints
+results = client.lookup_many([fingerprint_string, another_fingerprint])
 ```
 
 | Class/Function | Description |
 |----------------|-------------|
-| `JA4DBClient(cache_size=100000)` | Client with a bounded lookup cache and the bundled database |
-| `JA4DBClient.lookup(fingerprint)` | Look up a fingerprint, returns dict or None |
+| `JA4DBClient(allow_remote=False, cache_size=100000)` | Client with a bounded lookup cache and the bundled database |
+| `JA4DBClient.lookup(fingerprint)` | Look up a fingerprint, returns a `LookupResult` or None |
+| `JA4DBClient.lookup_many(fingerprints)` | Look up a sequence, returns one entry per fingerprint |
 | `lookup(fingerprint)` | Module-level convenience using a shared client |
+| `LookupResult` | The frozen result: `application`, `type`, `notes` and `source` |
+
+#### The result records the source it came from
+
+`LookupResult` is a frozen dataclass. It carries the three fields that `LookupResult` of
+`lookup.go:23` carries, plus `source`, FR-db-enrichment-8. An analyst needs to know where
+a name came from to judge how much to trust it.
+
+| Field | What it holds |
+|---|---|
+| `application` | The name the mapping file or the lookup service gives |
+| `type` | The fingerprint method the entry names, such as `ja4` |
+| `notes` | The note the entry carries, or an empty string |
+| `source` | `embedded`, `cache` or `remote` |
+
+The value `embedded` names the mapping file that ships inside the package, `cache` names
+the file that `ja4plus db update` wrote to the cache directory, and `remote` names the
+lookup service. The port publishes the first two at `lookup.go:31`, and `CLAUDE.md`
+parity rule 2 adopts them.
+
+Version 0.6.0 returned a dict from `lookup`. Version 1.0.0 returns the frozen result, so
+a caller reads `result.application` where it read `result["application"]` before.
+
+#### The deprecated item access
+
+A result reads by field name too, so that code written against the dict of version 0.6.0
+keeps working for one major version, FR-db-enrichment-16. Version 0.6.0 published the
+three keys `application`, `type` and `notes`, and each one names a field, so no key of
+version 0.6.0 returns the value of another field.
+
+Warning: item access emits a `DeprecationWarning`, FR-db-enrichment-17. Read the
+attribute instead.
+
+```python
+result["application"]   # the same value, and one DeprecationWarning
+result["method"]        # KeyError. `LookupResult` holds no field of that name.
+```
+
+The item access covers reading only. `result["application"] = "x"` raises `TypeError`,
+and `result.application = "x"` raises `dataclasses.FrozenInstanceError`.
+
+#### One call identifies many fingerprints
+
+`lookup_many` accepts a sequence of fingerprints and returns one entry per fingerprint,
+FR-db-enrichment-7. A miss holds None, so a caller reads one entry for every fingerprint
+it passed. The returned mapping keys the fingerprint, so a sequence that repeats a
+fingerprint holds one entry for it.
+
+```python
+results = client.lookup_many(["t13d1516h2_8daaf6152771_02713d6af862", "t99z9999h0_0_0"])
+# {"t13d1516h2_8daaf6152771_02713d6af862": LookupResult(...), "t99z9999h0_0_0": None}
+```
+
+`lookup_many` reaches the lookup service under the rule that `lookup` holds, and under no
+other rule. A client that the operator built with `allow_remote=False` sends nothing,
+whatever count of fingerprints the call carries. A client that the operator built with
+`allow_remote=True` sends one request for each fingerprint the mapping file holds no entry
+for. The lookup cache holds a miss as well as a hit, so a repeated fingerprint costs one
+request and no more.
+
+#### The remote lookup is opt-in
+
+A fingerprint describes traffic the operator observed. A request to the lookup service
+`ja4db.com` discloses that traffic to a third party. The client therefore reads the
+bundled mapping file and performs no network request by default, FR-db-enrichment-1. The
+module-level `lookup` function holds the same default.
+
+`JA4DBClient(allow_remote=True)` permits one request for each fingerprint the mapping
+file holds no entry for, FR-db-enrichment-2. The request goes to
+`https://ja4db.com/api/read/<fingerprint>`, and it waits 5 seconds at most,
+FR-db-enrichment-14. Version 1.0.0 is the first release that may make the interval
+configurable.
+
+`allow_remote` takes True or False, and the constructor raises `TypeError` for every
+other value. `cache_size` was the first parameter before #57, so `JA4DBClient(100)` asked
+for a lookup cache of 100 entries. That call now reads as a request for the remote
+lookup, and the client refuses it. Write `JA4DBClient(cache_size=100)` instead.
+
+The request needs the `requests` package, which the `lookup` extra installs. A client
+that reaches no service returns None for the miss, and it raises nothing,
+FR-db-enrichment-15. The same holds for a request that times out, for a status other
+than 200, and for a package that is absent.
+
+The lookup service publishes no versioned API document. The client therefore accepts one
+shape: an object that carries a non-empty `application` string. It reads `type` and
+`notes` as strings, and it substitutes an empty string for a field of another type. It
+returns None for every other shape, so no unchecked value reaches a caller.
+
+#### The command asks for the remote lookup with an option or a variable
+
+`--lookup` identifies each fingerprint from the bundled mapping file, and it makes no
+network request, FR-db-enrichment-3.
+
+`--lookup-remote` identifies each fingerprint, and it sends every fingerprint the mapping
+file holds no entry for to the lookup service, FR-db-enrichment-4. It asks for the lookup
+as well as for the disclosure, so an operator who passes it needs no `--lookup`.
+
+`JA4PLUS_DB_LOOKUP=1` permits the same disclosure, FR-db-enrichment-5. It serves an
+operator who runs a command line another program builds. The variable permits the
+disclosure and asks for no lookup, so `JA4PLUS_DB_LOOKUP=1 ja4plus analyze capture.pcap`
+looks nothing up. `JA4PLUS_DB_LOOKUP=1 ja4plus analyze capture.pcap --lookup` performs
+the remote lookup.
+
+The option and the variable each permit the disclosure, and neither one refuses it.
+`JA4PLUS_DB_LOOKUP=0` therefore cancels no option, and an operator who wants the local
+lookup passes `--lookup`. The variable permits the disclosure on the value `1` and on no
+other value.
+
+The command writes one notice to standard error for each run that permits the remote
+lookup, FR-db-enrichment-6. The notice names the lookup service and the two ways to stop
+the request. It appears once whatever count of fingerprints the run looks up, and it
+goes to standard error, because a notice on standard output would enter the pipe that
+carries the results.
+
+```
+Notice: the remote lookup is on. Each fingerprint the bundled mapping file holds no entry for goes to the lookup service at https://ja4db.com. To stop it, pass no --lookup-remote option and unset JA4PLUS_DB_LOOKUP.
+```
+
+The command needs the `requests` package for the remote lookup. Where the operator asks
+for the remote lookup and the package is absent, the command reports the extra to install
+and ends the run with the status 1.
 
 #### The concurrency contract of the lookup client
 
@@ -770,5 +898,41 @@ A caller that shares one client between threads therefore receives a result the 
 looked up before, or a result the client looks up now. An entry that leaves the lookup
 cache costs the next caller one more lookup, and it changes no result.
 
+A full lookup cache holds about 47 MiB. Two methods agree on that total: `tracemalloc`
+reads 47.06 MiB and `sys.getsizeof` reads 46.95 MiB. The figure covers two structures,
+because the client also remembers the 100000 keys it evicted. A run of 200000 distinct
+lookups fills both, and a run of 100000 fills the entries alone at 25.34 MiB. #279 holds
+the memory ceiling of this package, and it states no decided number yet.
+
 The client reads the mapping file once, at construction. A caller that replaces the
 mapping file builds a new client, and the new client holds an empty lookup cache.
+
+#### The cached mapping file
+
+`ja4plus db update` downloads `ja4plus-mapping.csv` from FoxIO and writes it to the cache
+directory, FR-db-enrichment-12. It writes no file inside the installed package. A package
+directory may be read-only, several users may share it, and the next `pip install`
+discards a file written there. The cache directory follows the platform convention.
+
+| Platform | Cache directory |
+|---|---|
+| Linux | `$XDG_CACHE_HOME/ja4plus`, or `~/.cache/ja4plus` where the variable holds no value |
+| macOS | `~/Library/Caches/ja4plus` |
+
+The command writes a temporary file and renames it, so a reader of the cache file reads
+the whole new file or the file the last run wrote. Where the command creates no cache
+directory, it names the directory and ends the run with the status 1. Where the download
+fails, it leaves the cache file as it was and ends the run with the status 1.
+
+`JA4DBClient` prefers the cached mapping file over the bundled one, FR-db-enrichment-13.
+A cache file that is empty, corrupt or unreadable falls back to the bundled file, and the
+client writes one `WARNING` record that names the path.
+
+`ja4plus db info` reports the source, the path, the entry count and the modification time
+of the mapping file the client reads, FR-db-enrichment-11. The source is `embedded` or
+`cache`. The port publishes the value `embedded` for the file that ships inside the
+package, at `lookup.go:31`, and `CLAUDE.md` parity rule 2 adopts it. The prose of this
+project still calls that file the bundled mapping file. Where the source is `embedded`,
+the command names the cache file as well. It
+reports that the cache file holds no entry, or that no cache file exists, and it names
+`ja4plus db update` in each case.

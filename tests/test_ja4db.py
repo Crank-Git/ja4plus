@@ -26,13 +26,13 @@ class TestBundledDB:
         # Known Chromium JA4 fingerprint from FoxIO mapping
         result = db.get("t13d1516h2_8daaf6152771_02713d6af862")
         assert result is not None
-        assert "Chromium" in result["application"]
+        assert "Chromium" in result.application
 
     def test_python_in_db(self):
         db = _load_bundled_db()
         result = db.get("t13i181000_85036bcba153_d41ae481755e")
         assert result is not None
-        assert "Python" in result["application"]
+        assert "Python" in result.application
 
 
 class TestJA4DBClient:
@@ -42,7 +42,7 @@ class TestJA4DBClient:
         client = JA4DBClient()
         result = client.lookup("t13d1516h2_8daaf6152771_02713d6af862")
         assert result is not None
-        assert "Chromium" in result["application"]
+        assert "Chromium" in result.application
 
     def test_lookup_unknown_fingerprint(self):
         client = JA4DBClient()
@@ -91,7 +91,7 @@ class TestConvenienceFunction:
     def test_lookup_function(self):
         result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
         assert result is not None
-        assert "Chromium" in result["application"]
+        assert "Chromium" in result.application
 
     def test_lookup_function_unknown(self):
         result = lookup("t99z9999h0_000000000000_000000000000")
@@ -145,7 +145,7 @@ class TestTheModuleLevelClient:
         assert len(built) == 1, f"the module built {len(built)} clients"
         assert default_client is built[0]
         assert results["first"] is results["second"]
-        assert results["first"]["application"] is not None
+        assert results["first"].application is not None
 
     def test_the_module_builds_the_client_on_the_first_call(self):
         """The module holds no client before a caller looks a fingerprint up."""
@@ -315,8 +315,8 @@ class TestCLILookupFlag:
             ],
             capture_output=True,
             text=True,
-            # Every fingerprint the bundled database does not hold costs one remote
-            # lookup of 5 seconds. The file produces enough of them to pass 30 seconds.
+            # #57 made the remote lookup opt-in, so every fingerprint the bundled
+            # database does not hold now costs one cache write and no request.
             timeout=180,
         )
         if result.returncode == 0 and result.stdout.strip():
