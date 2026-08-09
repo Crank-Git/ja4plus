@@ -11,8 +11,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The statistics interval cases state the schedule rather than sample it** (#369).
   Round TBD. `TheReporterWritesOneLinePerInterval` started the reporter at a 0.05 second
   interval, slept a fraction of a second, and counted the lines that arrived. That count
-  measures how promptly the host schedules a thread, so the `macos-latest, 3.12` job of
-  the run for `8ef8acc` read 2 lines where the case asked for 3, and `dev` went red on a
+  measures how promptly the host schedules a thread. The `macos-latest, 3.12` job of the
+  run for `8ef8acc` read 2 lines where the case asked for 3, and `dev` went red on a
   package that holds no defect. `StatisticsReporter` gains a `wait` parameter, which
   receives the interval and returns True when the stop arrives. The default waits on the
   stop event, and `ja4plus watch` passes no other call, so the shipped behaviour is

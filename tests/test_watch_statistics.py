@@ -382,12 +382,12 @@ class TheSnapshotReadsOneInstant(unittest.TestCase):
 
 
 class ScriptedWait:
-    """A wait the test scripts, in place of the wait on the stop event.
+    """A wait that the test scripts, in place of the wait on the stop event.
 
-    The reporter calls the wait once for each interval, and it writes one line for each
-    call that returns False. This call returns False for the count of intervals the
-    test states, and True after them, so the count of lines is the count the test
-    states and not the count the host delivered.
+    The reporter calls the wait once for each interval. It writes one line for each call
+    that returns False. This call returns False for the count of intervals the test
+    states, and True after them. The count of lines is therefore the count the test
+    states, and not the count the host delivered.
 
     The call records every timeout it received, so a case reads the interval the
     reporter asked for.
@@ -414,15 +414,18 @@ class TheReporterWritesOneLinePerInterval(unittest.TestCase):
     Every case here drives the reporter from a scripted wait, so it states the schedule
     rather than samples it. #369 removed the earlier form, which slept a fraction of a
     second and counted the lines that arrived. That form measured how promptly the host
-    scheduled a thread: the `macos-latest, 3.12` job of the run for `8ef8acc` read 2
-    lines where the case asked for 3, and the sweep of #369 read 4 lines of 5 due on an
-    idle host at a 0.25 second sleep. A case that waits one second per line costs the
-    suite more than it measures, and a case that waits less than that reports a defect
-    the package does not hold.
+    scheduled a thread. The `macos-latest, 3.12` job of the run for `8ef8acc` read 2
+    lines where the case asked for 3. The sweep of #369 read 4 lines of 5 due, on an
+    idle host, at a 0.25 second sleep.
+
+    A case that waits one second per line costs the suite more than it measures. A case
+    that waits less than that reports a defect the package does not hold. **No case here
+    asserts the elapsed time between two lines**, and #369 removed that assertion on
+    purpose, because the host decides that time.
 
     The reporter still runs on its own thread here, so the cases measure the thread and
-    not a loop the case wrote. `stop` joins that thread, and the thread blocks on
-    nothing once the scripted wait returns True, so the join is a liveness bound and no
+    not a loop the case wrote. `stop` joins that thread. The thread blocks on nothing
+    once the scripted wait returns True, so the join is a liveness bound and no
     measurement of promptness. Each case names the end of the thread, so a join that
     timed out reports itself rather than shortening a stream.
 
@@ -430,7 +433,7 @@ class TheReporterWritesOneLinePerInterval(unittest.TestCase):
     """
 
     def run_reporter(self, intervals, interval=0.05, stream=None):
-        """Run the reporter until the scripted wait reports the stop, and return both.
+        """Return the stream and the scripted wait, after the reporter thread ends.
 
         Args:
             intervals: The count of intervals that pass before the stop arrives.
