@@ -8,6 +8,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **JA4L emits one server value for one connection, and the six open JA4L register
+  entries now hold a live owner** (#272). Round TBD. `ja4plus/fingerprinters/ja4l.py`
+  returned the server value on every SYN-ACK, so a retransmitted SYN-ACK repeated the
+  value the first SYN-ACK gave. A retransmitted SYN-ACK moves neither the server
+  measurement point nor the server TTL, so the repeat described no second measurement.
+  **`ssh2.pcapng` stream 15 is the one vector that reaches the rule**: the FoxIO Python
+  file holds `JA4L-S=6252_58` once, and `ja4plus` produced it twice. A replay of the 38
+  committed captures moved exactly one value, and it is that duplicate. No JA4L value
+  moved on any other capture. **#272 declines five of the six entries instead of
+  repairing them, because the comparison is unreachable and not satisfied.**
+  `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng` publish no JA4L
+  key at all, because `python/ja4.py:339` runs
+  `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another
+  method. This project was never emitting more than the reference. The reference
+  published nothing to compare. `tests/foxio_deviations.json` falls from 135 keys to
+  134, and the conformance suite falls from 135 `xfailed` to 134.
 - **The lookup cache remembers no key it evicts, and it saves 16.06 MiB** (#359).
   Round TBD. `StateTable` remembers the key of every entry it evicts, and that memory
   buys `returned_connections`. `Processor.stats` collects the state tables of the
