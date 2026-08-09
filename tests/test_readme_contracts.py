@@ -17,6 +17,7 @@ against it. A case that restated the number would pass on a README that contradi
 These cases read prose. They produce no fingerprint and they open no capture socket.
 """
 
+import re
 from pathlib import Path
 
 import pytest
@@ -45,9 +46,38 @@ CONCURRENCY_HEADING = "#### The concurrency contract"
 # § Non-goals holds the decision and #197 holds the reading.
 DECLINED_METHOD = "JA4TScan"
 
-# The claim #62 removes. The project implements eleven of the twelve FoxIO methods, so
-# a claim of full coverage is false whatever count it names.
-COVERAGE_CLAIMS = ("all ten ja4+ methods", "all twelve ja4+ methods", "all ja4+ methods")
+# The claim #62 removes. The project implements eleven of the twelve FoxIO methods, so a
+# claim of full coverage is false whatever count it names and whatever words it uses.
+# **A fixed list of three phrasings passes on the fourth phrasing**, and the first form of
+# this case held such a list, so these patterns match the shape of the claim instead.
+COVERAGE_CLAIMS = (
+    re.compile(r"\ball\s+(?:\w+\s+){0,2}ja4\+?\s+methods\b", re.IGNORECASE),
+    re.compile(r"\bevery\s+(?:\w+\s+){0,2}ja4\+?\s+method\b", re.IGNORECASE),
+    re.compile(r"\bfull\s+(?:method\s+)?coverage\b", re.IGNORECASE),
+    re.compile(r"\bimplements\s+all\b", re.IGNORECASE),
+)
+
+# The count word the README writes for each count of implemented methods. A case compares
+# the word the prose states against the rows the table marks, so the two cannot drift.
+COUNT_WORDS = {
+    9: "nine",
+    10: "ten",
+    11: "eleven",
+    12: "twelve",
+}
+
+# The one sentence that answers FR-documentation-14 for a reader of the first screen. A
+# substring search over the whole page passes on a footnote, and #62 needs the claim where
+# a reader meets the project.
+OWNER_SENTENCE = "FoxIO owns the JA4+ standard"
+INDEPENDENCE_SENTENCE = "This library is an independent implementation of that standard."
+
+# The lines of the README that a reader sees before the first heading.
+INTRODUCTION_LINES = 20
+
+# One imported fingerprinter of the `All Fingerprinters` block. The name must open a line
+# of the import statement, because a name inside a comment imports nothing.
+IMPORTED_FINGERPRINTER = re.compile(r"^\s+(JA4\w*Fingerprinter)\s*,", re.MULTILINE)
 
 
 def _readme() -> str:
@@ -150,8 +180,8 @@ def test_the_readme_method_table_names_every_foxio_method(method: str) -> None:
     assert method in _method_rows(), f"the method table holds no row for {method}"
 
 
-def test_the_readme_method_table_names_no_method_foxio_does_not_publish() -> None:
-    """The README method table names no method outside the twelve FoxIO publishes."""
+def test_the_readme_method_table_names_only_methods_foxio_publishes() -> None:
+    """The README method table names the twelve FoxIO methods and no other name."""
     extra = sorted(set(_method_rows()) - set(FOXIO_METHODS))
     assert extra == [], f"the method table names {extra}, which FoxIO does not publish"
 
@@ -174,23 +204,44 @@ def test_the_readme_method_table_marks_every_other_method_implemented(method: st
 
 
 def test_the_readme_claims_no_full_foxio_method_coverage() -> None:
-    """The README claims no coverage of every JA4+ method."""
+    """The README claims coverage of no complete set of JA4+ methods."""
     offenders = []
-    text = _readme().lower()
-    for claim in COVERAGE_CLAIMS:
-        if claim in text:
-            offenders.append(claim)
+    for pattern in COVERAGE_CLAIMS:
+        offenders += [match.group(0) for match in pattern.finditer(_readme())]
     assert offenders == [], f"the README still claims {offenders}"
 
 
-def test_the_readme_import_block_names_every_exported_fingerprinter() -> None:
-    """The README `All Fingerprinters` block names each fingerprinter `__all__` holds."""
+def test_the_readme_states_the_count_of_methods_its_own_table_marks() -> None:
+    """The README prose states the count of methods its method table marks `Yes`."""
+    implemented = [row for row in _method_rows().values() if _implemented_cell(row) == "Yes"]
+    word = COUNT_WORDS[len(implemented)]
+    assert f"implements {word} of them" in _readme(), (
+        f"the table marks {len(implemented)} methods implemented, and the prose "
+        f"states no 'implements {word} of them'"
+    )
+
+
+def test_the_readme_states_the_count_of_methods_foxio_publishes() -> None:
+    """The README prose states the count of methods the FoxIO tuple holds."""
+    word = COUNT_WORDS[len(FOXIO_METHODS)]
+    assert f"FoxIO publishes {word} JA4+ methods" in _readme(), (
+        f"FoxIO publishes {len(FOXIO_METHODS)} methods, and the prose states another count"
+    )
+
+
+def test_the_readme_import_block_imports_every_exported_fingerprinter() -> None:
+    """The README `All Fingerprinters` block imports each fingerprinter `__all__` holds."""
     exported = {name for name in PUBLIC_NAMES if name.endswith("Fingerprinter")}
     text = _readme()
     start = text.index("### All Fingerprinters")
-    block = text[start : text.index("```", text.index("```python", start) + 1)]
-    named = {name for name in exported if name in block}
-    assert named == exported, f"the block names no import for {sorted(exported - named)}"
+    opening = text.index("```python", start)
+    block = text[opening : text.index("```", opening + 1)]
+    # A name inside a comment imports nothing, so read the import lines and not the block.
+    imported = set(IMPORTED_FINGERPRINTER.findall(block))
+    assert imported == exported, (
+        f"the block imports no {sorted(exported - imported)} and imports an unexported "
+        f"{sorted(imported - exported)}"
+    )
 
 
 def test_the_readme_states_the_default_maximum_entry_count_of_a_state_table() -> None:
@@ -240,15 +291,28 @@ def test_the_readme_states_whether_threads_may_share_one_processor() -> None:
     )
 
 
+def _introduction() -> str:
+    """Return the first lines of the README, with each run of whitespace as one space.
+
+    The page wraps at 90 columns, so a sentence spans two lines and a search for it fails
+    against the raw text.
+
+    Returns:
+        The text a reader meets before the badges and the first heading.
+    """
+    head = "\n".join(_readme().splitlines()[:INTRODUCTION_LINES])
+    return " ".join(head.split())
+
+
 def test_the_readme_names_foxio_as_the_owner_of_the_standard() -> None:
-    """The README states that FoxIO owns the JA4+ standard."""
-    assert "FoxIO owns the JA4+ standard" in _readme(), (
-        "the README names no owner of the JA4+ standard"
+    """The README introduction states that FoxIO owns the JA4+ standard."""
+    assert OWNER_SENTENCE in _introduction(), (
+        f"the first {INTRODUCTION_LINES} lines name no owner of the JA4+ standard"
     )
 
 
 def test_the_readme_names_this_project_an_independent_implementation() -> None:
-    """The README states that this project is an independent implementation."""
-    assert "independent implementation" in _readme(), (
-        "the README does not call this project an independent implementation"
+    """The README introduction states that this project is an independent implementation."""
+    assert INDEPENDENCE_SENTENCE in _introduction(), (
+        f"the first {INTRODUCTION_LINES} lines hold no {INDEPENDENCE_SENTENCE!r}"
     )

@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/logo.png" width="300"></p>
 
-A Python library and command-line program for JA4+ network fingerprinting. It reads TLS,
+A Python library and command-line program that produces JA4+ fingerprints. It reads TLS,
 TCP, HTTP, SSH and DHCP traffic, and it reads an X.509 certificate. It supports QUIC,
 IPv4, IPv6 and multi-segment TCP reassembly.
 
@@ -46,8 +46,8 @@ capability is larger than fingerprint production.
 [`docs/specs/spec.md`](docs/specs/spec.md) holds the decision under `Non-goals`, and the
 decision is reversible.
 
-`JA4LFingerprinter` builds both JA4L and JA4LS, so ten classes carry the eleven methods.
-The `--types` option names them together as `ja4l`.
+`JA4LFingerprinter` builds both JA4L and JA4LS, so ten fingerprinters carry eleven
+methods. The `--types` option names the two together as `ja4l`.
 
 QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS ClientHellos. IPv4 and IPv6 are both supported across all fingerprinters.
 
@@ -362,7 +362,7 @@ runs on packet arrival and the library starts no thread.
 `ja4plus/utils/state_table.py` sets the first two, and a table that needs a smaller bound
 states its own. `ja4plus/watch.py` sets the last two, and `--max-connections` and
 `--connection-timeout` change them for one run. **The monitor holds an idle connection
-for a shorter time than a state table does**, so the monitor sheds a connection first.
+for a shorter time than a state table does**, so the monitor evicts a connection first.
 [`docs/specs/features/03-concurrency-safety.md`](docs/specs/features/03-concurrency-safety.md)
 states the entry count and the age of every table.
 
