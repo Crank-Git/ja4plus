@@ -532,7 +532,7 @@ Three readings explain the two green results, and each one matters to a reader.
 
 **The committed control proves the entry count bound is measured.** With the control
 bound raised from 100 to the shipped 10000,
-`test_a_smaller_entry_count_holds_less_resident_memory` fails.
+`test_a_smaller_entry_count_holds_fewer_memory_blocks` fails.
 
 **Three controls sit beside the ceiling case.** The default size holds 3000 connections,
 which no shipped bound reaches, so the ceiling comparison alone cannot fail at that size.
@@ -541,23 +541,70 @@ which no shipped bound reaches, so the ceiling comparison alone cannot fail at t
   connection count back from the run.
 - `test_the_reading_measures_the_traffic_and_not_the_interpreter` reads the memory the
   traffic added, and it reads the mark against the resident set the run held.
-- `test_a_smaller_entry_count_holds_less_resident_memory` lowers every entry count to 100
+- `test_a_smaller_entry_count_holds_fewer_memory_blocks` lowers every entry count to 100
   and reads a smaller number.
 
-**The second and third controls read the current resident set, and neither subtracts a
-mark.** A run that reports a flat pair fails both of them: the second reads `the run added
-0.00 MiB, so the reading measures no traffic`, and the third reads `the shipped run added
-0.00 MiB, which is too little to read`.
+**The second control reads the current resident set and it subtracts no mark.** A run
+that reports a flat pair fails it, and the message reads `the run added 0.00 MiB, so the
+reading measures no traffic`.
 
-**The third control compares a ratio and not a MiB figure**, because the absolute reading
-moves with the platform and with the interpreter while the ratio measures the bound
-itself. An absolute margin that suits macOS can sit above the whole signal on a platform
-whose readings are smaller. Five runs at the default size held the ratio between 0.746
-and 0.769, while one reading held a run-to-run spread of 1.03 MiB. **With the control
-bound raised to the shipped 10000 the ratio reads 0.955 and 0.979 and the case fails**,
-so the threshold of 0.85 sits between the two readings. The failure message is `a bound of
-10000 added 38.26 MiB and the shipped bounds added 39.08 MiB, a ratio of 0.979, so the
-entry count changed nothing`.
+**The third control reads a block count, and #389 moved it there.** A resident reading
+states what the host left in memory, and a block count states what the program holds. A
+host under memory pressure reclaims the pages of a running process, and it reaches the
+run that holds the most memory first. The reclaim therefore moves the two runs by
+different amounts, and it moves the ratio toward one. **Five workers saw the case fail
+and then pass on an unchanged tree**, and every failure sat on a loaded host.
+
+**#389 measured both readings across four memory limits**, on one Ubuntu 24.10 host with
+`python3.12`, 30000 packets, and each run under `systemd-run --user --scope -p
+MemoryMax=<limit>`.
+
+| Memory limit | Resident growth, shipped and control | Resident ratio | Block ratio |
+|---|---|---|---|
+| none | 29.34 MiB, 12.72 MiB | 0.434 | 0.392 |
+| 80 MiB | 10.98 MiB, 10.56 MiB | 0.962 | 0.392 |
+| 75 MiB | 6.13 MiB, 4.82 MiB | 0.786 | 0.392 |
+| 70 MiB | 0.00 MiB, 0.00 MiB | no reading | 0.392 |
+
+The block growth of the shipped run held between 376952 and 376965 across all four, a
+spread of 13 blocks in 376955. **The repaired case passes at every one of the four**, and
+the case that reads the resident growth fails at 80 MiB on the ratio, at 75 MiB on the
+floor, and at 70 MiB on the floor.
+
+**A rule that repeats the pair and takes the median repairs nothing.** Memory pressure
+lasts as long as the host holds it, so every round reads the same clipped pair. Three
+rounds of the resident reading at the 80 MiB limit read 1.047, 0.885 and 1.045, and the
+median of the three fails. The rule also costs three times the wall clock, and one round
+costs 57 seconds on that host.
+
+**A deliberate load of the processor moves neither reading, and that reading is what
+names the mechanism.** 56 spinners on the 56-core host held the load average at 58 for
+three rounds, which matches the ratio of load to cores that every reported failure sat
+at. The runs took 59 to 67 seconds against 27 quiet, and the resident ratio read 0.361,
+0.445 and 0.407. **Memory pressure moves this reading and processor contention does
+not.**
+
+**The third control compares a ratio and not an absolute figure**, because the absolute
+reading moves with the platform and with the interpreter while the ratio measures the
+bound itself. **With the control bound raised to the shipped 10000 the case fails**: the
+block ratio reads 1.367 on macOS with Python 3.14 and 1.361 on Linux with `python3.12`.
+The true reading is 0.392 on Linux and 0.398 on macOS, so the threshold of 0.85 sits
+between the two. The failure message is `a bound of 10000 added 506935 blocks and the
+shipped bounds added 370945 blocks, a ratio of 1.367, so the entry count changed nothing`.
+
+**The run collects the cyclic garbage before it counts the blocks.** A count taken
+between two collections holds the garbage the collector has not reached, and the point it
+reaches moves with the allocation history. Without the collection three macOS rounds read
+a control growth of 230616, 247991 and a ratio between 0.612 and 0.664. With it the same
+three rounds read 147562, 147566 and 147569, and the ratio reads 0.398 at each. The
+collection runs after the resident reading at both points, so it moves no part of the
+ceiling reading.
+
+**The floor reads a rate of one block for each packet, and it read 10.0 MiB until #389.**
+A MiB floor is the reading a host moves: under the 70 MiB limit the shipped run added
+0.00 MiB and 376954 blocks. The measured rate is 12.6 blocks for each packet on Linux and
+12.4 on macOS, so the floor sits an order of magnitude below the reading, where the MiB
+floor sat at 2.9 times below it.
 
 ## Data touched
 
