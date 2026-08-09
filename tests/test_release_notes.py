@@ -1,26 +1,30 @@
 """Tests that the release notes of version 1.0.0 name every breaking change the record holds.
 
 `FR-documentation-13` asks `CHANGELOG.md` to record every breaking change of this release.
-A section that lists them goes stale on the day the next one lands, so these cases hold the
-list against the record instead of against a number somebody remembered.
+A section that lists them goes stale on the day the next one lands. These cases hold the
+list against the record, and not against a number a reader keeps by hand.
 
 **The record is three files, and each one reaches the notes by a rule of its own.**
 
 1. An entry of `CHANGELOG.md` that opens with `**BREAKING` marks a breaking change. The
    issue it cites reaches the release notes.
 2. The breaking-change table of `docs/migration-0.6-to-1.0.md` states the old form and the
-   new form of each change. Every issue of that table reaches the release notes, and the
-   `Record` cell of the notes repeats the `Record` cell of the page word for word.
+   new form of each change. Every issue of that table reaches the release notes.
 3. The fingerprint section of the same page names each method whose value moves. Every
-   issue that section names reaches the notes, and the prose of the section counts too,
-   because `#214` sits in a paragraph and not in a row.
+   issue that section names reaches the notes. The prose of the section counts too, because
+   `#214` sits in a paragraph and not in a row.
+
+**The Changelog table of `docs/specs/spec.md` decides a round.** A `Round N, #M` citation of
+the notes names the row that holds `N`, and that row mentions `#M`. The first form of this
+file compared the `Record` cell of the notes against the cell of the migration page instead.
+**Two files that copy one error agree, and the comparison passed on it.** #401 holds that
+error.
 
 **These cases read one direction and not the other.** The notes hold a change the migration
-page omits: #319 narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`, so an input
-that returned `None` can now raise, and #397 recorded it under round 133. The migration
-page carries no row for it. A two-way comparison would therefore fail on a page this issue
-does not own, so the reverse direction reads the round instead: every round the notes cite
-names a row of `docs/specs/spec.md`.
+page omits. #319 narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`, so an input
+that returned `None` can now raise. #397 recorded the change under round 133, and the
+migration page carries no row for it. A two-way comparison would fail on a page this issue
+does not own, and #399 holds the repair of that page.
 
 These cases read prose. They import nothing from `ja4plus` and they produce no fingerprint.
 """
@@ -41,6 +45,14 @@ RELEASE_HEADING = re.compile(r"^## \[1\.0\.0\]", re.MULTILINE)
 
 # Any second-level heading. It closes the section above it.
 SECTION_HEADING = re.compile(r"^## ", re.MULTILINE)
+
+# The subsection of the release notes that carries the two tables and their citations. A
+# case that reads a citation reads this block alone, because an entry under `### Added`
+# quotes a wrong citation as evidence and a reader of the whole section would count it.
+NOTES_BREAKING_HEADING = "### The breaking changes"
+
+# Any third-level heading. It closes the subsection above it.
+SUBSECTION_HEADING = re.compile(r"^### ", re.MULTILINE)
 
 # The two tables of the release notes. Each one opens under a fourth-level heading, and a
 # fourth-level heading reaches no case of `tests/test_breaking_change_record.py`, which
@@ -78,7 +90,7 @@ BREAKING_ENTRY = re.compile(r"^- \*\*BREAKING\b", re.MULTILINE)
 # comparison below on an empty set, so each floor fails such a parser. Every count grows
 # and none of them falls, because a released breaking change stays released.
 MINIMUM_BREAKING_ENTRIES = 8
-MINIMUM_INTERFACE_ROWS = 12
+MINIMUM_INTERFACE_ROWS = 13
 MINIMUM_FINGERPRINT_ROWS = 8
 MINIMUM_MIGRATION_ROWS = 11
 
@@ -140,16 +152,20 @@ def _issues(rows: list[str]) -> set[int]:
     return {int(number) for row in rows for number in ISSUE_REFERENCE.findall(row)}
 
 
-def _record_cell(row: str) -> str:
-    """Return the last cell of a table row.
-
-    Args:
-        row: The whole row text, as `| The change | Round 90, #45 |`.
+def _breaking_subsection() -> str:
+    """Return the `### The breaking changes` subsection of the release notes.
 
     Returns:
-        The text of the last cell, without the surrounding spaces.
+        The subsection text, from its heading to the next third-level heading.
+
+    Raises:
+        AssertionError: The release notes hold no such heading.
     """
-    return row.strip().strip("|").split("|")[-1].strip()
+    notes = _release_notes()
+    start = notes.find(NOTES_BREAKING_HEADING)
+    assert start != -1, f"the release notes hold no heading {NOTES_BREAKING_HEADING!r}"
+    following = SUBSECTION_HEADING.search(notes, start + len(NOTES_BREAKING_HEADING))
+    return notes[start : following.start() if following else len(notes)]
 
 
 def _migration_section(heading: str) -> str:
@@ -309,26 +325,6 @@ def test_every_fingerprint_that_moves_reaches_the_release_notes() -> None:
     )
 
 
-def test_the_release_notes_repeat_the_record_cell_of_the_migration_page() -> None:
-    """A row of the release notes cites the same round and issue as the migration page.
-
-    Two pages that cite one change under two rounds send a reader to two places. The
-    `Record` cell is the last cell of both tables, so this case compares the two cells for
-    every issue the migration page names.
-    """
-    page_rows = _table_under(
-        _migration_section(MIGRATION_BREAKING_HEADING), MIGRATION_BREAKING_HEADING
-    )
-    notes_rows = _table_under(_release_notes(), NOTES_INTERFACE_HEADING)
-    notes_records = {_record_cell(row) for row in notes_rows}
-    disagreements = [
-        f"{_record_cell(row)!r} of the migration page reaches no row of the release notes"
-        for row in page_rows
-        if _record_cell(row) not in notes_records
-    ]
-    assert disagreements == [], f"the two records disagree: {disagreements}"
-
-
 def test_every_round_the_release_notes_cite_names_a_row_of_the_specification() -> None:
     """A round the release notes cite exists in the Changelog table of `docs/specs/spec.md`."""
     assigned = _assigned_rounds()
@@ -339,6 +335,40 @@ def test_every_round_the_release_notes_cite_names_a_row_of_the_specification() -
     assert orphans == [], (
         f"the release notes cite rounds the specification does not hold: {orphans}"
     )
+
+
+def test_every_citation_of_the_release_notes_names_the_row_that_records_it() -> None:
+    """A `Round N, #M` citation names a specification row that holds `N` and mentions `#M`.
+
+    **A round number alone proves nothing.** A citation that names a real round beside the
+    wrong issue reaches a row that records another change, and a reader who follows it
+    learns nothing about the change in front of them.
+
+    The first form of this case compared the `Record` cell of the notes against the cell of
+    `docs/migration-0.6-to-1.0.md`. **Two files that copy one error agree, and the case
+    passed on it.** The page cites `Round 122, #59 and #364`, and row 123 of the
+    specification is the row that records #364. #401 holds the repair of the page. The case
+    now reads the specification, which is the authority the page and the notes both copy.
+    """
+    rows = {
+        int(match.group(1)): line
+        for line in SPECIFICATION.read_text(encoding="utf-8").splitlines()
+        for match in [SPECIFICATION_ROW.match(line)]
+        if match
+    }
+    wrong: list[str] = []
+    for line in _breaking_subsection().splitlines():
+        opening = NOTES_ROUND.search(line)
+        if not opening:
+            continue
+        number = int(opening.group(1))
+        if number not in rows:
+            wrong.append(f"round {number} names no row")
+            continue
+        for issue in ISSUE_REFERENCE.findall(line[opening.end() :]):
+            if f"#{issue}" not in rows[number]:
+                wrong.append(f"round {number} records no #{issue}")
+    assert wrong == [], f"these citations of the release notes name the wrong row: {wrong}"
 
 
 def test_the_release_notes_name_the_narrowed_certificate_readers() -> None:

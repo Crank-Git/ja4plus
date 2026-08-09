@@ -32,7 +32,8 @@ next breaking change lands, and a case does not.
 | Change | Record |
 |---|---|
 | `Processor.process_packet` returns a list of `FingerprintResult` objects, and no longer a list of dictionaries. | Round 90, #45 |
-| `JA4DBClient.lookup` returns a frozen `LookupResult`, and no longer a dictionary. | Round 122, #59 and #364 |
+| `JA4DBClient.lookup` returns a frozen `LookupResult`, and no longer a dictionary. | Round 122, #59 |
+| Item access on a `LookupResult` works for one major version, and it raises a `DeprecationWarning`. | Round 123, #364 |
 | `JA4DBClient()` reaches no network, and `JA4DBClient(allow_remote=True)` opts in. | Round 117, #57 |
 | `allow_remote` is the first argument of `JA4DBClient`, so `JA4DBClient(100)` raises a `TypeError`. | Round 117, #57 |
 | `ja4plus db update` writes the cache directory of the platform, and no longer the installed package. | Round 121, #61 |
@@ -79,20 +80,25 @@ edits no page of another issue.
   conditional step, so the publish workflow calls it and deploys the artifact it uploads.
   The input is absent on a `push` trigger and on a `pull_request` trigger, so a pull
   request uploads nothing. No pin and no build step changes, and #391 keeps both.
-  **GitHub Pages is not enabled on this repository, and no run has ever deployed.**
-  `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`, and enabling Pages publishes
-  a public website, which is a decision of the user. The first job therefore reads
-  `GET /repos/{owner}/{repo}/pages` and names the setting in the failure: a 404 reports
-  that Pages is off, a `build_type` other than `workflow` reports the wrong source, and
-  any other status reports the status it read. **The deployment stays unverified until the
-  user enables the setting**, and no case here claims otherwise. **The release notes name
-  every breaking change the record holds**: twelve interface changes and eight fingerprints
-  that move. New file `tests/test_release_notes.py` holds the two tables against the
-  `**BREAKING` entries of this file, against `docs/migration-0.6-to-1.0.md`, and against
-  the Changelog table of `docs/specs/spec.md`. Two mutations prove the cases discriminate,
-  and both were restored. New file `tests/test_documentation_publish.py` reads the two
-  workflows. `actionlint` 1.7.7 reports no finding on either one. No file under `ja4plus/`
-  changes and no fingerprint moves.
+  **This repository holds no GitHub Pages site, and no run has ever deployed.**
+  `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides whether to
+  turn Pages on, because that change publishes a public website. The first job therefore
+  reads `GET /repos/{owner}/{repo}/pages` and names the setting in the failure: a 404
+  reports that the site is absent, a `build_type` other than `workflow` reports the wrong
+  source, and any other status reports the status it read. **The deployment stays
+  unverified until the user changes the setting**, and no case here claims otherwise.
+  **The release notes name every breaking change the record holds**: thirteen interface
+  changes and eight fingerprints that move. New file `tests/test_release_notes.py` holds
+  the two tables against the `**BREAKING` entries of this file, against
+  `docs/migration-0.6-to-1.0.md`, and against the Changelog table of `docs/specs/spec.md`.
+  **The self-review then found a citation the first form of that file could not read.**
+  The migration page cites one change under `Round 122` and names #364 beside #59, and
+  round 123 is the row that records #364. A case that compared the two `Record` cells
+  passed, because both files held one error. The case now reads the Changelog table, which
+  is the authority both files copy, and #401 holds the repair of the page. Six mutations
+  prove the cases discriminate, and each was restored. New file
+  `tests/test_documentation_publish.py` reads the two workflows. `actionlint` 1.7.7 reports
+  no finding on either one. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **Every code sample and every example script runs in continuous integration** (#63).
   Round TBD. Nothing ran a sample before this round, so a sample that stopped working

@@ -99,8 +99,8 @@ jobs:
         # this step runs for the publish workflow alone.** A pull request builds the site
         # to prove the pins, and it publishes nothing.
         #
-        # The pair `upload-pages-artifact` v3 with `deploy-pages` v4 is the pair the
-        # documentation of both actions states. Verified against
+        # The documentation of both actions states this pair: `upload-pages-artifact` v3
+        # with `deploy-pages` v4. Verified against
         # https://github.com/actions/upload-pages-artifact, retrieved 2026-08-09.
         if: ${{ inputs.upload_pages_artifact }}
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3.0.1

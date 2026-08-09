@@ -11,11 +11,11 @@ name: Publish the documentation
 # `build` job below therefore calls that workflow, which uploads the site as the Pages
 # artifact when the caller asks for it. #391 owns the pins and the build steps.
 #
-# **Warning: GitHub Pages is not enabled on this repository, so no run of this workflow has
-# ever deployed.** `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. Enabling
-# Pages publishes a public website, which is the decision of the user. The `settings` job
-# below reads the setting first and names it in the failure, so a red run tells a reader
-# exactly what to change.
+# **Warning: this repository holds no GitHub Pages site, so no run of this workflow has ever
+# deployed.** `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides
+# whether to turn Pages on, because that change publishes a public website. The `settings`
+# job below reads the setting first and names it in the failure, so a red run states what a
+# reader must change.
 #
 # Verified against https://github.com/actions/deploy-pages (v4),
 # https://github.com/actions/upload-pages-artifact (v3) and
@@ -69,17 +69,17 @@ jobs:
             exit 1
           fi
           if [ "$code" = "404" ]; then
-            echo "::error::GitHub Pages is not enabled on ${GITHUB_REPOSITORY}, so this run publishes nothing. Open Settings > Pages, and set Build and deployment > Source to GitHub Actions. Enabling Pages publishes a public website, so the owner of the repository makes that change."
+            echo "::error::${GITHUB_REPOSITORY} holds no GitHub Pages site, so this run publishes nothing. Open Settings > Pages. Set Build and deployment > Source to GitHub Actions. The owner of the repository makes that change, because it publishes a public website."
             exit 1
           fi
           if [ "$code" != "200" ]; then
-            echo "::error::The Pages API answered ${code} for ${GITHUB_REPOSITORY}. Read Settings > Pages to confirm that Build and deployment > Source reads GitHub Actions, and confirm that this workflow holds the pages permission."
+            echo "::error::The Pages API answered ${code} for ${GITHUB_REPOSITORY}. Read Settings > Pages, and confirm that Build and deployment > Source reads GitHub Actions. Confirm that this workflow holds the pages permission."
             [ -f pages.json ] && cat pages.json
             exit 1
           fi
           build_type=$(python3 -c 'import json;print(json.load(open("pages.json")).get("build_type"))')
           if [ "$build_type" != "workflow" ]; then
-            echo "::error::GitHub Pages builds from '${build_type}' on ${GITHUB_REPOSITORY}, and this workflow needs 'workflow'. Open Settings > Pages, and set Build and deployment > Source to GitHub Actions."
+            echo "::error::GitHub Pages builds from '${build_type}' on ${GITHUB_REPOSITORY}, and this workflow needs 'workflow'. Open Settings > Pages. Set Build and deployment > Source to GitHub Actions."
             exit 1
           fi
           echo "GitHub Pages builds from GitHub Actions." >> "$GITHUB_STEP_SUMMARY"

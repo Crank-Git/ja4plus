@@ -3,10 +3,11 @@
 `FR-documentation-8` asks the site to publish to GitHub Pages on a push to the live branch.
 The live branch is `master` under the dev-and-live branch model.
 
-**No case here observes a deployment.** GitHub Pages is not enabled on the repository, and
-enabling it publishes a public website, which is the decision of the user.
-`gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. These cases therefore read the
-workflow as text, and the deployment stays unverified until the user enables the setting.
+**No case here observes a deployment.** This repository holds no GitHub Pages site, and
+`gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides whether to
+turn Pages on, because that change publishes a public website. These cases therefore read
+the workflow as text, and the deployment stays unverified until the user changes the
+setting.
 The issue body states the behaviour the workflow must have until then: the run fails with a
 message that names the setting.
 
@@ -131,7 +132,7 @@ def test_the_publish_workflow_reuses_the_build_of_the_documentation_job() -> Non
     assert "pip install" not in steps, f"{PUBLISH_WORKFLOW.name} resolves the pins a second time"
 
 
-def test_the_build_workflow_answers_a_call_and_uploads_the_site() -> None:
+def test_the_build_workflow_uploads_the_site_as_the_pages_artifact() -> None:
     """`docs-build.yml` accepts a call and uploads the site as the Pages artifact.
 
     A called workflow runs inside the run of its caller, so the deployment job of the caller
