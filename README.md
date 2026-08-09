@@ -251,8 +251,19 @@ states both numbers for each table. A table that reaches its maximum entry count
 the least recently used entry. A connection can therefore leave a long capture and
 return, and the fingerprint of a returned connection may be incomplete.
 `Processor.stats()` reports the count of returned connections for each method. Eviction
-runs on packet arrival and the library starts no thread. This package states no memory
-ceiling.
+runs on packet arrival and the library starts no thread.
+
+This package states a memory ceiling of **512 MiB**. One `Processor()` at the shipped
+defaults reads 1000000 packets across 100000 distinct connections and holds resident
+memory below that number. Four runs measured 383.47 MiB, 388.25 MiB, 392.05 MiB and
+394.94 MiB.
+[`docs/specs/features/03-concurrency-safety.md`](docs/specs/features/03-concurrency-safety.md)
+states the defaults the ceiling holds at. **The ceiling covers that packet run and no
+longer run.** Each fingerprinter keeps every fingerprint it produces, and that list holds
+no bound, so a longer run reads more memory. The same traffic passes 512 MiB at 1500000
+packets. `Processor.reset()` drops those results, and
+it drops every state table with them, so a caller that runs it in the middle of a capture
+loses the connection state the next packet needs.
 
 JA4 and JA4S result dicts include the unhashed `raw` and
 `raw_original_order` variants — useful for human-readable output and

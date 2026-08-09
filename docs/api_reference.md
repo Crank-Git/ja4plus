@@ -417,7 +417,13 @@ per-connection data, and it holds no bound. A caller that runs for a long time r
 `process_packet` and never let the list grow.
 `JA4SSHFingerprinter.hassh_fingerprints` holds no bound either.
 
-This package states no memory ceiling.
+This package states a memory ceiling of 512 MiB. One `Processor()` at the shipped
+defaults reads 1000000 packets across 100000 distinct connections and holds resident
+memory below that number, and #279 measured 394.94 MiB at the highest of four runs.
+`features/03-concurrency-safety.md` states the defaults the ceiling holds at and the
+traffic the case feeds. **The ceiling covers that packet run and no longer run**, because
+of the two unbounded lists the paragraph above names. The same traffic passes 512 MiB at
+1500000 packets, where it reads 513.06 MiB.
 
 ## Convenience Functions
 
