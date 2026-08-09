@@ -124,6 +124,9 @@ nav:
   - Usage guide: usage.md
   - Output schema: output-schema.md
   - Concurrency: concurrency.md
+  # `omitted_files: warn` above turns an unlisted page into a warning, and
+  # `mkdocs build --strict` turns that warning into a failure. #415 adds the page.
+  - Packet throughput: performance.md
   - Migration from 0.6.0: migration-0.6-to-1.0.md
   # `FR-documentation-10` asks for a page per method. Eleven methods reach ten
   # fingerprinter classes, because `JA4LFingerprinter` writes both `JA4L-C=` and
