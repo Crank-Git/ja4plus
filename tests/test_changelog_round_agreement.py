@@ -53,6 +53,15 @@ SPECIFICATION_ROW_NUMBER = re.compile(r"^\|\s*(\d+|TBD)\s*\|\s*\d{4}-\d{2}-\d{2}
 # another round inside the prose, as `Round 12 closed with`, which #258 wrote.
 CHANGELOG_ROUND = re.compile(r"Round `?(\d+|TBD)`?\.")
 
+# An entry cites its own issue in a parenthesis in front of its round sentence, as
+# `(#345).` or `(#382, absorbed by #319).`.
+# **An entry also names another issue in its title, and that issue owns another row.**
+# `- **The `capability` field alone bars the rows of #129** (#347).` is such an entry, so
+# a reader of the whole lead collects #129 beside #347. #129 holds round 26 today and the
+# entry therefore matches the wrong row on the day #129 waits for a round. Read the last
+# parenthesis instead, because the citation sits closest to the round sentence.
+ISSUE_CITATION = re.compile(r"\(([^()]*#\d+[^()]*)\)")
+
 ISSUE_REFERENCE = re.compile(r"#(\d+)")
 
 # The two files held these counts when #302 landed. A parser that reads nothing passes
@@ -110,7 +119,12 @@ def _changelog_entries() -> list[tuple[str, set[int], str]]:
         if not round_match:
             continue
         lead = entry[: round_match.start()]
-        issues = {int(number) for number in ISSUE_REFERENCE.findall(lead)}
+        citations = ISSUE_CITATION.findall(lead)
+        # All 36 entries cite an issue. A future entry that cites none falls back to the
+        # whole lead, so the cases still reach it.
+        issues = {
+            int(number) for number in ISSUE_REFERENCE.findall(citations[-1] if citations else lead)
+        }
         entries.append((round_match.group(1), issues, entry.splitlines()[0].strip()))
     assert len(entries) >= MINIMUM_CHANGELOG_ENTRIES, (
         f"the parser read {len(entries)} entries, and the floor is {MINIMUM_CHANGELOG_ENTRIES}"
@@ -133,7 +147,7 @@ def test_an_unassigned_entry_matches_an_unassigned_row() -> None:
     """An entry reading `Round TBD` names an issue whose specification row also reads `TBD`."""
     _, unassigned = _specification_rounds()
     orphans = [
-        title
+        f"{title} cites {sorted(issues)}"
         for round_read, issues, title in _changelog_entries()
         if round_read == "TBD" and not issues & unassigned
     ]
