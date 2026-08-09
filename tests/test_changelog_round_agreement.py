@@ -1,11 +1,11 @@
 """Tests that `CHANGELOG.md` and `docs/specs/spec.md` state the same Changelog round.
 
-Every worker writes the literal `TBD` rather than choosing a round number, because two
-members of one batch have claimed the same number before. The project manager assigns
-each number at the batch gate. **An assignment that covers one file and not the other
-leaves an orphan**, and a reader who follows `Round TBD` in a shipped `CHANGELOG.md`
-reaches nothing. #302 found three such orphans, and the handoff of session 10 records six
-more from an earlier batch.
+Every worker writes the literal `TBD` and chooses no round number, because two members of
+one batch have claimed the same number before. The project manager assigns each number at
+the batch gate. **An assignment that covers one file and not the other leaves an orphan**,
+and a reader who follows `Round TBD` in a shipped `CHANGELOG.md` reaches nothing. #302
+found three such orphans, and the handoff of session 10 records six more from an earlier
+batch.
 
 **A case here bars no `TBD`.** An integration branch carries one `TBD` for each member
 that has not reached the gate, and every one of them is correct. The defect is the
@@ -13,6 +13,12 @@ disagreement between the two files, so these cases compare the files against eac
 
 An entry matches a row on the issue the entry names. A numbered entry matches on the
 number alone, because a round number is an identifier that names one row.
+
+**These cases reach no unassigned row that opens with no issue reference.** Sixteen rows
+of the 133 open with the shipment of a batch, as `Epic 4 shipped`, and such a row carries
+no issue to match. Every such row holds a number today, because the project manager writes
+it at the gate. An entry that names an unassigned row of that shape therefore reads as an
+orphan here. Give the row an issue reference where that happens.
 
 These cases read prose. They import nothing from `ja4plus` and they produce no
 fingerprint.
@@ -56,19 +62,19 @@ MINIMUM_SPECIFICATION_ROWS = 133
 MINIMUM_CHANGELOG_ENTRIES = 36
 
 
-def _specification_rounds() -> tuple[set[int], dict[int, str]]:
-    """Return the assigned rounds of the specification and the issue of each unassigned row.
+def _specification_rounds() -> tuple[set[int], set[int]]:
+    """Return the assigned rounds of the specification and the issues that await a round.
 
     Returns:
-        The set of round numbers the Changelog table assigns, and a map from an issue
-        number to the round of the unassigned row that opens with that issue.
+        The set of round numbers the Changelog table assigns, and the set of issue
+        numbers that open a row reading `TBD`.
 
     Raises:
         AssertionError: The page holds fewer rows than the recorded floor.
     """
     text = SPECIFICATION.read_text(encoding="utf-8")
     assigned: set[int] = set()
-    unassigned: dict[int, str] = {}
+    unassigned: set[int] = set()
     rows = 0
     for line in text.splitlines():
         number_match = SPECIFICATION_ROW_NUMBER.match(line)
@@ -80,7 +86,7 @@ def _specification_rounds() -> tuple[set[int], dict[int, str]]:
             continue
         issue_match = SPECIFICATION_ROW.match(line)
         if issue_match:
-            unassigned[int(issue_match.group(2))] = "TBD"
+            unassigned.add(int(issue_match.group(2)))
     assert rows >= MINIMUM_SPECIFICATION_ROWS, (
         f"the parser read {rows} Changelog rows, and the floor is {MINIMUM_SPECIFICATION_ROWS}"
     )
@@ -129,7 +135,7 @@ def test_an_unassigned_entry_matches_an_unassigned_row() -> None:
     orphans = [
         title
         for round_read, issues, title in _changelog_entries()
-        if round_read == "TBD" and not issues & set(unassigned)
+        if round_read == "TBD" and not issues & unassigned
     ]
     assert orphans == [], (
         f"these entries read Round TBD and the specification assigns their row: {orphans}"
@@ -142,7 +148,7 @@ def test_a_numbered_entry_holds_no_row_that_waits_for_its_number() -> None:
     early = [
         f"{title} names round {round_read}"
         for round_read, issues, title in _changelog_entries()
-        if round_read != "TBD" and issues & set(unassigned)
+        if round_read != "TBD" and issues & unassigned
     ]
     assert early == [], (
         f"these entries name a number while their specification row reads TBD: {early}"
