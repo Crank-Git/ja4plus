@@ -16,6 +16,7 @@ packet source, so the measured behaviour is the loop and not the capture layer.
 """
 
 import io
+import sys
 import threading
 import time
 import unittest
@@ -31,6 +32,7 @@ from ja4plus.watch import (
     StatisticsReporter,
     StatisticsSnapshot,
     format_statistics,
+    report_statistics,
     write_statistics,
 )
 
@@ -60,7 +62,7 @@ class FakeClock:
         return self.now
 
 
-def run_watch(*argv, source=None, during=None):
+def run_watch(*argv, source=None, during=None, report=None):
     """Run the command-line program against an injected packet source.
 
     The call replaces the capture with the packets the test states, so it opens no
@@ -73,6 +75,9 @@ def run_watch(*argv, source=None, during=None):
         during: A callable the fake capture calls once, before it replays the packets.
             A test that measures the statistics thread runs inside the capture, because
             the thread stops when the capture returns.
+        report: The call the command uses in place of `report_statistics`, or None for
+            the shipped call. `ScriptedReport` is the call a test passes. #371 added the
+            parameter.
 
     Returns:
         A tuple of the standard output, the standard error and the exit status.
@@ -100,6 +105,8 @@ def run_watch(*argv, source=None, during=None):
         patch("sys.stderr", captured_err),
         patch("ja4plus.cli.read_interface", read_interface),
     ]
+    if report is not None:
+        patches.append(patch("ja4plus.cli.report_statistics", report))
 
     status = 0
     try:
@@ -407,6 +414,36 @@ class ScriptedWait:
         return False
 
 
+class ScriptedReport:
+    """A `report_statistics` call that carries a scripted wait, in place of the real wait.
+
+    `run_watch` patches this call over the name `ja4plus.cli.report_statistics`, so
+    `cmd_watch` reaches the shipped call through it. The call records the interval and the
+    stream the command passed, and it forwards both to the shipped call with a scripted
+    wait. The count of periodic lines is therefore the count the test states, and not the
+    count the host delivered.
+
+    The call replaces no other behaviour. `report_statistics` builds the reporter, starts
+    the thread and stops it, and `stop` joins the thread, so every line the test counts
+    reaches the stream before `main` returns.
+
+    Args:
+        intervals: The count of intervals that pass before the stop arrives.
+    """
+
+    def __init__(self, intervals):
+        self._intervals = intervals
+        self.seconds = []
+        self.reached_standard_error = []
+
+    def __call__(self, stats, interval, stream):
+        self.seconds.append(interval)
+        # `run_watch` patches `sys.stderr`, so the test reads the identity here and not
+        # after `main` returns.
+        self.reached_standard_error.append(stream is sys.stderr)
+        return report_statistics(stats, interval, stream, wait=ScriptedWait(self._intervals))
+
+
 class TheReporterWritesOneLinePerInterval(unittest.TestCase):
     """FR-live-capture-9 — `--stats-interval 1` writes a statistics line every second.
 
@@ -580,15 +617,32 @@ class TheStatisticsGoToStandardError(unittest.TestCase):
         self.assertNotIn("[ja4plus] packets=", out)
 
     def test_the_periodic_line_reaches_standard_error(self):
-        _, err, status = run_watch(
-            "watch",
-            "eth0",
-            "--stats-interval",
-            "0.05",
-            during=lambda: time.sleep(0.3),
+        """Three intervals through the command write three periodic lines, and no more.
+
+        #371 replaced the earlier form, which slept 0.3 seconds inside the capture and
+        asserted that at least 2 lines arrived. That bound measured how promptly the host
+        schedules a thread, which is the fault #369 repaired inside
+        `TheReporterWritesOneLinePerInterval`.
+
+        The scripted report states the schedule, so the count is exact. It also reads the
+        two arguments the command passed, so the case proves that `--stats-interval`
+        reaches the reporter and that the reporter writes to standard error.
+        """
+        report = ScriptedReport(intervals=3)
+        out, err, status = run_watch(
+            "--format", "json", "watch", "eth0", "--stats-interval", "0.05", report=report
         )
         self.assertEqual(status, 0, err)
-        self.assertGreaterEqual(len(statistics_lines(err)), 2)
+        lines = statistics_lines(err)
+        # The exit summary of FR-live-capture-8 is the fourth line, and it follows the
+        # three periodic lines. `test_the_final_line_follows_the_stop_message` holds that
+        # order.
+        self.assertEqual(len(lines), 4)
+        self.assertNotIn("[ja4plus] packets=", out)
+        # FR-live-capture-9 — the command line reaches the reporter unchanged.
+        self.assertEqual(report.seconds, [0.05])
+        # FR-live-capture-10 — the reporter writes to standard error.
+        self.assertEqual(report.reached_standard_error, [True])
 
     def test_the_final_line_reports_the_packets_the_monitor_read(self):
         packets = [tcp_packet(src_port=1000 + index, when=float(index)) for index in range(3)]
