@@ -3,10 +3,8 @@ Tests for JA4X (X.509 Certificate) fingerprinting
 """
 
 import unittest
-from scapy.all import IP, TCP, Raw
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter, generate_ja4x
 from ja4plus.utils.x509_utils import oid_to_hex
-import os
 import datetime
 from cryptography import x509
 from cryptography.x509.oid import NameOID

@@ -10,6 +10,7 @@ import re
 
 import pytest
 
+from tests import foxio_deviations
 from tests.foxio_deviations import (
     OWNERS_PATH,
     REGISTER_PATH,
@@ -65,6 +66,52 @@ def unmarked_decisions(register):
             "{} names {}, and the entry carries no decided marker".format(key, citation.group())
         )
     return messages
+
+
+# The sentence of the `## The marker rule` section that states the two counts. The
+# denominator went stale twice, because no case measured it. #345 states the rule as a
+# condition the cases below test.
+MARKER_RULE_COUNTS = re.compile(r"which (\d+) of the (\d+) decided entries do")
+
+
+def stated_marker_rule_counts(document):
+    """Return the two counts the marker rule states.
+
+    Args:
+        document: The module docstring of `tests.foxio_deviations`.
+
+    Returns:
+        The stated count of decided entries that cite no decision, then the stated count
+        of decided entries.
+
+    Raises:
+        ValueError: The document states the two counts on no sentence, or on more than
+            one sentence.
+    """
+    matches = MARKER_RULE_COUNTS.findall(document)
+    if len(matches) != 1:
+        raise ValueError(
+            "the marker rule states the two counts on {} sentences, and it states them"
+            " on one".format(len(matches))
+        )
+    return int(matches[0][0]), int(matches[0][1])
+
+
+def measured_marker_rule_counts(register):
+    """Return the two counts the register holds.
+
+    Args:
+        register: The register that `load_register` returns.
+
+    Returns:
+        The count of decided entries that cite no decision, then the count of decided
+        entries.
+    """
+    decided = [deviation for deviation in register.values() if deviation.decided]
+    uncited = [
+        deviation for deviation in decided if DECISION_CITATION.search(deviation.cause) is None
+    ]
+    return len(uncited), len(decided)
 
 
 def unrecorded_kinds(entries):
@@ -420,7 +467,8 @@ METHOD_FILTER_KEYS = (
     "tls-handshake.pcapng/JA4L-S",
 )
 
-# The one entry of the six that compares two measured counts.
+# The one entry of the six that compared two measured counts. #272 repaired the defect it
+# recorded, so the case passes and the register holds the key no longer.
 DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
 
 # The three entries that awaited the #215 decision on the JA4T form left the open set.
@@ -429,15 +477,11 @@ DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
 # FoxIO Rust implementation.
 TCP_OPTION_KEYS = ()
 
-# The six JA4L entries together. #34 owned them, and #34 is closed, so a worker can act
-# on none of them. #272 is open and it holds the question the user answers.
-JA4L_KEYS = METHOD_FILTER_KEYS + (DUPLICATE_SERVER_VALUE_KEY,)
-
 JA4L_OWNER = 272
 
-# Every entry that stays open. #272 owns the six JA4L entries, and no JA4T entry stays
-# open after #215.
-OPEN_KEYS = JA4L_KEYS + TCP_OPTION_KEYS
+# Every entry that stays open. #272 decided the five method filter entries and repaired
+# the sixth, and no JA4T entry stays open after #215.
+OPEN_KEYS = TCP_OPTION_KEYS
 
 
 class TestTheOpenRegisterEntries:
@@ -453,33 +497,53 @@ class TestTheOpenRegisterEntries:
             key: deviation for key, deviation in load_register().items() if not deviation.decided
         }
 
-    def test_the_register_holds_six_undecided_entries(self):
-        assert len(self._undecided()) == 6
+    def test_the_register_holds_no_undecided_entry(self):
+        assert len(self._undecided()) == 0
 
-    def test_the_undecided_keys_are_the_six_no_round_settled(self):
+    def test_the_undecided_keys_are_the_ones_no_round_settled(self):
         assert sorted(self._undecided()) == sorted(OPEN_KEYS)
 
     def test_every_undecided_entry_names_the_issue_that_decides_it(self):
         for key, deviation in self._undecided().items():
             assert "#{}".format(deviation.issue) in deviation.cause, key
 
-    def test_every_ja4l_entry_names_the_open_issue_that_holds_the_question(self):
+    def test_every_method_filter_entry_names_the_issue_that_declined_it(self):
         """#34 closed on 2026-08-07 and left the six entries with no owner.
 
-        An entry whose owner is closed names nobody a worker can reach. #272 is open, it
-        carries the question the user answers, and it decides none of the six.
+        An entry whose owner is closed names nobody a worker can reach. #272 took the six,
+        it declined the five the method filter produced, and it repaired the sixth.
         """
-        for key in JA4L_KEYS:
+        for key in METHOD_FILTER_KEYS:
             assert load_register()[key].issue == JA4L_OWNER, key
+
+    def test_every_method_filter_entry_records_a_decided_value_decline(self):
+        for key in METHOD_FILTER_KEYS:
+            deviation = load_register()[key]
+            assert deviation.decided is True, key
+            assert deviation.capability is False, key
 
     def test_every_method_filter_entry_names_the_reference_line_that_deletes_the_key(self):
         for key in METHOD_FILTER_KEYS:
             assert "python/ja4.py:339" in load_register()[key].cause, key
 
-    def test_the_duplicate_server_value_entry_names_the_extra_value(self):
-        cause = load_register()[DUPLICATE_SERVER_VALUE_KEY].cause
-        assert "JA4L-S=6252_58" in cause
-        assert "retransmitted SYN-ACK" in cause
+    def test_every_method_filter_entry_states_that_the_comparison_is_unreachable(self):
+        """The cause states the reading in exact words, because wrong words read as a pass.
+
+        This project was never emitting more than the reference on these five. The
+        reference published nothing to compare, because the method filter deleted the key.
+        """
+        for key in METHOD_FILTER_KEYS:
+            cause = load_register()[key].cause
+            assert "unreachable and not satisfied" in cause, key
+            assert "published nothing to compare" in cause, key
+
+    def test_the_register_holds_no_duplicate_server_value_entry(self):
+        """#272 repaired the defect, so the case passes and needs no register entry.
+
+        `ssh2.pcapng` stream 15 produced `JA4L-S=6252_58` twice where the reference holds
+        it once. A retransmitted SYN-ACK now gives no value, so the counts agree.
+        """
+        assert DUPLICATE_SERVER_VALUE_KEY not in load_register()
 
 
 class TestTheRegisterMarkerRule:
@@ -589,6 +653,75 @@ class TestTheRegisterMarkerRule:
         assert unmarked_decisions(register) == [
             "a.pcap/JA4 names decided on 2026-08-07, and the entry carries no decided marker"
         ]
+
+
+class TestTheMarkerRuleCounts:
+    """Check that the marker rule states the counts the register holds.
+
+    The `## The marker rule` section of `tests/foxio_deviations.py` states how many
+    decided entries cite no decision, and how many decided entries the register holds.
+    The register moved twice under that sentence and no case caught either move. #345
+    reads the two counts out of the prose and measures them against the register, so the
+    next move fails here.
+    """
+
+    def _stated(self):
+        return stated_marker_rule_counts(foxio_deviations.__doc__)
+
+    def _measured(self):
+        return measured_marker_rule_counts(load_register())
+
+    def test_the_marker_rule_states_the_decided_count_the_register_holds(self):
+        assert self._stated()[1] == self._measured()[1]
+
+    def test_the_marker_rule_states_the_uncited_count_the_register_holds(self):
+        assert self._stated()[0] == self._measured()[0]
+
+    def test_the_measurement_counts_every_decided_entry(self):
+        register = {
+            "a.pcap/JA4": Deviation(issue=138, cause="#138 decided.", decided=True),
+            "b.pcap/JA4": Deviation(issue=272, cause="No round settled it."),
+        }
+        assert measured_marker_rule_counts(register)[1] == 1
+
+    def test_the_measurement_rises_when_the_register_gains_a_decided_entry(self):
+        """A new decided entry moves the denominator, which is the drift #345 repairs.
+
+        The prose states one number. The register states another the moment an entry
+        lands, so the two cases above fail and name the repair. The case states both
+        counts, because a rise of one alone reads the same on a measurement that counts
+        every entry and ignores the marker.
+        """
+        register = {
+            "a.pcap/JA4": Deviation(issue=138, cause="#138 decided.", decided=True),
+            "c.pcap/JA4T": Deviation(issue=215, cause="#215 decides the form."),
+        }
+        gained = dict(register)
+        gained["b.pcap/JA4"] = Deviation(
+            issue=96, cause="Changelog round 66 kept it.", decided=True
+        )
+        assert measured_marker_rule_counts(register)[1] == 1
+        assert measured_marker_rule_counts(gained)[1] == 2
+
+    def test_the_measurement_counts_a_decided_entry_that_cites_no_decision(self):
+        register = {
+            "a.pcap/JA4X": Deviation(issue=138, cause="A Rust snapshot holds it.", decided=True),
+            "b.pcap/JA4": Deviation(issue=96, cause="Changelog round 66 kept it.", decided=True),
+        }
+        assert measured_marker_rule_counts(register) == (1, 2)
+
+    def test_the_measurement_counts_no_undecided_entry(self):
+        register = {"a.pcap/JA4T": Deviation(issue=215, cause="#215 decides the form.")}
+        assert measured_marker_rule_counts(register) == (0, 0)
+
+    def test_the_reader_rejects_a_document_that_states_the_counts_nowhere(self):
+        with pytest.raises(ValueError, match="0 sentences"):
+            stated_marker_rule_counts("## The marker rule\n\nThe rule runs one way.\n")
+
+    def test_the_reader_rejects_a_document_that_states_the_counts_twice(self):
+        document = "which 1 of the 2 decided entries do\nwhich 3 of the 4 decided entries do\n"
+        with pytest.raises(ValueError, match="2 sentences"):
+            stated_marker_rule_counts(document)
 
 
 # The one issue whose entries record a capability this project chose not to build. #129

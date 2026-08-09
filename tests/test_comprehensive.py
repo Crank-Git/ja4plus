@@ -9,16 +9,16 @@ import unittest
 import hashlib
 import time
 import datetime
-from scapy.all import IP, TCP, UDP, Raw, Ether
+from scapy.all import IP, TCP, Raw, Ether
 
-from ja4plus.fingerprinters.ja4 import JA4Fingerprinter, generate_ja4, get_raw_fingerprint
-from ja4plus.fingerprinters.ja4s import JA4SFingerprinter, generate_ja4s
+from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
+from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 from ja4plus.fingerprinters.ja4h import JA4HFingerprinter, generate_ja4h
 from ja4plus.fingerprinters.ja4t import JA4TFingerprinter, generate_ja4t
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter, generate_ja4ts
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter, generate_ja4l
-from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter, generate_ja4ssh
-from ja4plus.fingerprinters.ja4x import JA4XFingerprinter, generate_ja4x
+from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
+from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 from ja4plus.utils.tls_utils import is_grease_value, parse_tls_handshake
 
 

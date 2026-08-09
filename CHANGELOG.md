@@ -6,7 +6,177 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Four QUIC and certificate readers name the errors they expect, and ten wide catches
+  state why they stay wide** (#319). Round 133. `grep -rn "except Exception" ja4plus/`
+  reads 14 sites across five files. **#319 is a reading of all fourteen, and it narrows
+  the four that `CLAUDE.md` binds.** A parser that cannot read a packet returns nothing,
+  and it does not raise. `decrypt_quic_initial_crypto`, `decrypt_quic_server_initial_crypto`
+  and `parse_quic_initial` of `ja4plus/utils/quic_utils.py` now name `IndexError`,
+  `ValueError` and `InvalidTag`. `compute_ja4x_from_pem` of `ja4plus/__init__.py` now
+  names `ValueError` and `x509.InvalidVersion`. **`InvalidTag` and `InvalidVersion` each
+  inherit `Exception` and not `ValueError`**, so a list of `ValueError` alone drops a real
+  packet and a real certificate. A fuzz of 90000 datagrams and a second fuzz of 40005
+  decrypted payloads measured the set. A bound of 16384 bytes on the reassembled
+  ClientHello proves that `struct.error` reaches no site. **The three sites of
+  `ja4plus/processor.py` hand each failure to the caller, and #45 decided that.** The five
+  sites of `ja4plus/cli.py` and the two of `ja4plus/ja4db.py` report a failure and return.
+  Each of those ten now carries a comment that states the reason.
+
+- **The QUIC frame reader returns the frames it read when a CRYPTO frame is truncated**
+  (#382, absorbed by #319). Round 133. The CRYPTO branch of `parse_crypto_frames` read a
+  varint behind the frame type byte and guarded no index. A plaintext that ends on that
+  byte made `_decode_varint` raise `IndexError`. **Two of the three callers call that
+  reader outside their handler**, so the error reached the caller of a parser, which
+  `CLAUDE.md` rule 2 forbids. **The defect is remotely triggerable by construction**,
+  because the Initial keys derive from the destination connection ID that the packet
+  carries in the clear. The branch now holds the guard its own ACK branch already used.
+  The defect predates #319, and the same datagram raises the same error against the base
+  commit. **No fingerprint moves, and the conformance suite reports 134 xfailed against
+  134 register keys.**
+
+- **JA4L emits one server value for one connection, and the six open JA4L register
+  entries now hold a live owner** (#272). Round 130. `ja4plus/fingerprinters/ja4l.py`
+  returned the server value on every SYN-ACK, so a retransmitted SYN-ACK repeated the
+  value the first SYN-ACK gave. A retransmitted SYN-ACK moves neither the server
+  measurement point nor the server TTL, so the repeat described no second measurement.
+  **`ssh2.pcapng` stream 15 is the one vector that reaches the rule**: the FoxIO Python
+  file holds `JA4L-S=6252_58` once, and `ja4plus` produced it twice. A replay of the 38
+  committed captures moved exactly one value, and it is that duplicate. No JA4L value
+  moved on any other capture. **#272 declines five of the six entries instead of
+  repairing them, because the comparison is unreachable and not satisfied.**
+  `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng` publish no JA4L
+  key at all, because `python/ja4.py:339` runs
+  `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another
+  method. This project was never emitting more than the reference. The reference
+  published nothing to compare. `tests/foxio_deviations.json` falls from 135 keys to
+  134, and the conformance suite falls from 135 `xfailed` to 134.
+- **`ruff` enforces the F401 rule, and 54 unused imports are gone** (#297). Round 131.
+  `pyproject.toml` no longer holds `F401` in the `ignore` list of `[tool.ruff.lint]`.
+  **Every count the issue recorded is stale.** The issue read 58 findings across 28
+  files on `issue/47-py-typed` at `ruff 0.14.5`, and this round reads **54 findings
+  across 27 files** on `batch/362-hygiene-three` at `ruff 0.16.2`. The `ignore` comment
+  recorded 82 I001 findings, the rule reports 76, and the comment now states 76.
+  **`ruff --fix` decides no removal here, because an unused import is not always
+  unused.** This round classified all 54 first, against five shapes: a side-effect
+  import, a re-export, a `TYPE_CHECKING` import, a test helper, and a genuinely unused
+  name. All 54 are genuinely unused. No consumer imports a flagged name from a flagged
+  module, and no file that holds a finding declares `__all__` or a `TYPE_CHECKING`
+  block. **No import statement under `ja4plus/` loses every name**, so every
+  `scapy.all` line keeps `Packet` and no module-level side effect disappears. 15
+  findings sit under `ja4plus/fingerprinters/` and `ja4plus/utils/`, and the
+  conformance suite proves each removal inert: 1531 passed, 143 skipped and 135 xfailed
+  before the change and after it, against 135 register keys. The unit suite reports
+  2212 passed, 2 skipped, 8 xfailed and 96 subtests before and after. Coverage holds at
+  93, and the missed line count stays at 287. **No fingerprint moves.**
+
+- **The lookup cache remembers no key it evicts, and it saves 16.06 MiB** (#359).
+  Round 129. `StateTable` remembers the key of every entry it evicts, and that memory
+  buys `returned_connections`. `Processor.stats` collects the state tables of the
+  fingerprinters, and `JA4DBClient` is no fingerprinter, so nothing under `ja4plus/`
+  reads the count for the lookup cache. `BoundedStateTable` now takes
+  `track_evictions`, it defaults to True, and every existing caller keeps the statistic
+  it had. The lookup cache is the one caller that states False. **A full lookup cache of
+  100000 entries falls from 47.06 MiB to 31.00 MiB under `tracemalloc`.** It falls
+  from 44.66 MiB to 28.60 MiB under `sys.getsizeof`. The two methods agree on the saving to
+  0.00 MiB. The eviction count stands, so FR-concurrency-safety-12 holds for this table,
+  and the invariant `inserts == entries + evictions + removals` holds. **#279 measured
+  the 512 MiB ceiling case without a lookup cache**, so this saving moves none of its
+  four runs. No file under `ja4plus/fingerprinters/` changes, no fingerprint moves, and
+  the register holds 135 keys against 135 xfailed. **A first form of the new cases
+  turned the resident-memory control of #279 red**, because each one loaded the whole
+  mapping file into the session. The cases now patch `load_mapping_file` to an empty
+  mapping. A deselect run proves that the production change causes none of it.
+
 ### Fixed
+
+- **Every entry of this file states the round its specification row states** (#302).
+  Round 134. Eight entries read `Round TBD` while `docs/specs/spec.md` had already
+  assigned their round. A reader who follows such an entry reaches nothing, and version
+  1.0.0 is close. **Each entry names the round its row records, and this repair invents
+  no number, adds no row and moves no number.** Three entries of Epic 4 name round 90,
+  which is the Epic 4 shipment row and already records all three pieces of work in the
+  words the entries use. #258 settled that shape, because a repair folds a detail into
+  the shipment row and renumbers no row. The other five name rounds 122, 118, 122, 104
+  and 102. **Each match reads what the two records state and not the issue number**,
+  because #59 carries two entries against one round, and rounds 123 and 124 are the rival
+  candidates and each is already taken, 123 by #364 and 124 by #368. **No prose of the
+  eight entries changes**, and the eight lines differ by the round word alone.
+  `tests/test_changelog_round_agreement.py` holds the invariant. **It bars no `TBD`.** A
+  guard that barred the literal word would fail on every integration branch, because the
+  batch model requires a member to write it and the project manager to assign the number
+  at the batch gate. The guard instead compares the two files against each other, so the
+  ten unassigned entries of this branch stay untouched. **Five of the eight orphans hid
+  behind a defect in the guard itself.** The round pattern read a literal space, the file
+  wraps at 90 columns, and `Round` therefore ends one line and `  TBD.` opens the next on
+  five entries. The parser read 36 entries where 41 exist and skipped all five, so the
+  guard reported green over the defect it exists to report. **A comparison that never
+  runs reads as a comparison that passes**, and this project records that fault sixteen
+  times. **The floor recorded the fault rather than the fault reporting the floor**: it
+  read 36, which is the count the broken parser produced, so it could never fire. It now
+  reads 41 from the corrected parser. Seven mutations prove the guard, and the two that
+  wrap a round sentence are the pair the first five could not reach. No file under
+  `ja4plus/` changes and no fingerprint moves.
+
+- **The marker rule states the decided-entry count the register holds, and a case
+  holds it there** (#345). Round 132. The `## The marker rule` section of
+  `tests/foxio_deviations.py` read `38 of the 128 decided entries`. The register holds
+  134 decided entries of 134 keys, measured on the base commit `f238c15`. **The
+  denominator went stale twice**, because nothing measured it. #341 found the first
+  drift at 129. #272 then removed one entry and decided five inside this batch. **The
+  numerator of 38 was correct**, and the 38 are still the 34 entries of #138 and 4 of
+  the 5 entries of #151. `TestTheMarkerRuleCounts` in `tests/test_foxio_deviations.py`
+  now reads the two counts out of the prose and measures them against the register. The
+  next move of the register therefore fails a case, where the count sat unmeasured in a
+  docstring before. The case failed on the unchanged prose with `assert 128 == 134`.
+  Three mutations prove that it fails when the register moves and the prose does not,
+  and each run restored the file it moved. No register entry changed, no file under
+  `ja4plus/` changed, and no fingerprint moved.
+- **The `capability` field alone bars the rows of #129** (#347). Round 127.
+  #341 shipped the field on all 135 register entries and reported that it could not
+  prove the one thing it exists for. **The bar stood twice**: once in the field, and once
+  in an absent measurement. #334 measured the 35 source values of #129 and left them out
+  of `SOURCE_VALUES`, and `test_no_measured_row_records_a_capability_decline` asserted
+  the exclusion. Flipping the field on a #129 entry therefore moved nothing, and no case
+  failed. **This round measured the 35 rows against the pinned FoxIO checkout**
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` and put them in the table. It resolved every
+  Wireshark frame number against its capture with `scapy` and read the 5-tuple, which is
+  the method #334 recorded. **The reading corroborates itself**: all 16 Wireshark JA4H
+  values and all 3 Wireshark JA4X values equal the FoxIO Python values at the same
+  occurrence. Two of the 37 rows carry no source value, and they are
+  `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1` and `JA4X.2`. Neither the
+  Rust snapshot nor the Wireshark file holds a JA4X value for that capture.
+  **The reach holds at 6 rows, and the measurement the field now permits reads 25.**
+  With `capability` false on all 43 #129 entries, live on disk, the reach rises from 6 to
+  25 and returns to 6 after the restore. On the base file the same flip reads 6 and 6.
+  The 19 rows that enter are the 16 JA4H_ro rows and the 3 JA4X rows; the 16 JA4H rows
+  stay out because the Rust value and the Wireshark value differ.
+  `test_no_measured_row_records_a_capability_decline` is renamed to
+  `test_every_measured_capability_row_names_the_issue_the_bar_exists_for`. The new name
+  holds the one meaning the exclusion did not carry: a measured capability row names
+  #129, and a row under another issue reaches a bar no measurement has read. No file
+  under `ja4plus/` changes, no register entry changes, no fingerprint moves, and the
+  register holds 135 keys against 135 xfailed.
+
+- **Every Changelog round number of the specification names one row** (#258). Round 128.
+  `docs/specs/spec.md` carried the number 9 on two rows, and a round number is a citation
+  target. **The two rows are not two rounds.** One row records the shipment of Epic 1
+  batch 1, and it names #80 as a member. The other row details #80 on the same date.
+  **The repair folds the detail row into the shipment row, and it renumbers no row.** The
+  fold preserves every sentence of the folded row. **A round number is an identifier, and
+  it states no order.** The date column carries the order. Rounds 10 through 124 are all
+  taken, so no free number sits beside the number 9. A renumber of the rows above it
+  would break every citation of a round number. Those citations carry weight: round 67
+  holds the #226 part e decision, and #215 and #226 cite it. **Three premises of the issue
+  were stale, and this round measured all three again.** The ruling named `spec.md:542`
+  and `:546`, and the rows were at 569 and 573. The ruling named 88 as the highest round,
+  and the highest was 124. The ruling searched `[Rr]ound 9\b` and found no citation. That
+  pattern misses the one citation that exists. Round 12 closed with "The rounds below hold
+  two entries numbered 9". The fold makes that sentence false, so round 12 now records the
+  repair. `tests/test_specification_changelog.py` holds the invariant. Both of its cases
+  fail when the duplicate returns. No file under `ja4plus/` changes, no fingerprint moves,
+  and the register holds 135 keys against 135 xfailed.
 
 - **The example that a merge restored is absent again** (#368). Round 124.
   #56 removed `examples/monitoring_daemon.py` and added
@@ -57,6 +227,32 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   silence. No fingerprint moves, no output field changes, and the schema version stays 1.
 
 ### Changed
+
+- **The package states a memory ceiling of 512 MiB** (#279). Round 126. One
+  `Processor()` at the shipped defaults reads 1000000 packets across 100000 distinct
+  connections and holds resident memory below 512 MiB. Four runs measured 383.47 MiB,
+  388.25 MiB, 392.05 MiB and 394.94 MiB, and the highest is 77 percent of the ceiling.
+  `README.md` and `docs/api_reference.md` each carried the sentence "This package states
+  no memory ceiling", and each now states the number, the defaults the ceiling holds at,
+  and the boundary of the claim.
+  `docs/specs/features/03-concurrency-safety.md` states the whole measurement. **The
+  ceiling covers that packet run and no longer run.** Each fingerprinter keeps every
+  fingerprint it produces and that list holds no bound, so resident memory keeps rising
+  after every state table settles, at about 23 MiB for each 100000 packets. The same
+  traffic passes 512 MiB at 1500000 packets, where it reads 513.06 MiB. New file
+  `tests/memory_ceiling_run.py` measures one packet run in an interpreter of its own,
+  because `resource.getrusage(RUSAGE_SELF).ru_maxrss` reports the high-water mark of the
+  whole process. No file under `ja4plus/` changes and no fingerprint moves.
+  **The two controls beside the ceiling now read the current resident set, because two
+  high-water marks subtract to no growth.** A mark rises and never falls, so the
+  difference between two of them states `max(0, later mark - earlier mark)`. The import
+  of scapy reaches a mark on Ubuntu that the traffic run then stays below, and the four
+  Ubuntu jobs of pull request #384 read `idle_mib 154.7` and `peak_mib 154.7` for a run
+  that allocated tens of MiB. The ceiling itself is a claim about the mark and it stands
+  unchanged, and the run now also reports `idle_resident_mib` and `final_resident_mib`
+  from `/proc/self/statm`, or from `ps` on Darwin. `traffic_growth_mib` refuses a
+  high-water pair as a void measurement, and `TestTheGrowthReading` measures that refusal
+  against the Ubuntu numbers on every platform.
 
 - **The documentation states what a fingerprint is evidence of** (#343). Round 110.
   ja4plus adds no plausibility guard, so a structurally valid ClientHello produces a
@@ -150,7 +346,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   under `FR-typed-api-5` and `FR-typed-api-6`.
 
 - **`JA4DBClient.lookup_many` identifies many fingerprints in one call** (#59). Round
-  TBD. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
+  122. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
   miss holds `None`, so a caller reads one entry for every fingerprint it passed. The
   returned mapping keys the fingerprint, so a sequence that repeats a fingerprint holds
   one entry for it. The call reaches the lookup service under the rule that `lookup`
@@ -161,7 +357,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   costs one request and no more.
 
 - **`--lookup-remote` and `JA4PLUS_DB_LOOKUP` ask for the remote lookup** (#58). Round
-  TBD. `--lookup` reads the bundled mapping file and makes no network request.
+  118. `--lookup` reads the bundled mapping file and makes no network request.
   `--lookup-remote` identifies each fingerprint, and it sends every fingerprint the
   mapping file holds no entry for to `https://ja4db.com`. It asks for the lookup as well
   as for the disclosure, so an operator who passes it needs no `--lookup`.
@@ -178,7 +374,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **A lookup result is a frozen `LookupResult` and it records its source** (#59). Round
-  TBD. Through version 0.6.0 `JA4DBClient.lookup` returned a dict with the keys
+  122. Through version 0.6.0 `JA4DBClient.lookup` returned a dict with the keys
   `application`, `type` and `notes`. It now returns a frozen `LookupResult` that carries
   the same three fields plus `source`, so a caller reads `result.application` where it
   read `result["application"]` before. `LookupResult` of `lookup.go:23` carries the three
@@ -273,7 +469,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4plus/output.py` holds one writer per format. #50 documents the schema and its
   version.
 
-- **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round TBD.
+- **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round 90.
   The method returned a list of dictionaries through version 0.6.0. A caller who reads
   `result["fingerprint"]` keeps working for one major version, and item access emits a
   `DeprecationWarning` that names the attribute form. Read `result.fingerprint` instead.
@@ -301,7 +497,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   no thread other than the one `--stats-interval` starts.
 
 - **`ja4plus watch` applies a capture filter and reads the capture failure** (#56). Round
-  TBD. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
+  104. `--bpf FILTER` passes a Berkeley Packet Filter expression to the capture layer,
   which drops every packet the filter rejects. The command reads no user identity. It
   attempts the capture and reads the failure, so a Linux host that grants `CAP_NET_RAW`
   without granting the user identity zero runs the monitor. Version 0.6.0 read
@@ -330,7 +526,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   open, which the command writes and #214 decided.
 
 - **`ja4plus watch` stops on a termination signal and flushes its output** (#54). Round
-  TBD. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
+  102. `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the
   status zero. The handler sets a flag and returns. It calls `sys.exit` never, because a
   signal arrives at any point, including the point where the output holds half a line.
   `scapy` reads the flag through the `stop_filter` argument of `sniff`, and it applies
@@ -387,7 +583,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4`, `ja4s`, `ja4h` and `ja4x` write a raw form and the other six methods write
   `null`; `ja4x` now writes `JA4X_r`, which #267 added.
 
-- **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
+- **The package ships the `py.typed` marker and declares `__all__`** (#47). Round 90.
   The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as
   package data. A caller who runs `mypy --strict` against their own code now resolves
   the annotations of `ja4plus`: `unzip -l dist/*.whl` lists `ja4plus/py.typed`, and a
@@ -405,7 +601,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   FR-typed-api-12 and FR-typed-api-13.
 
 - **`Processor.process_packet_with_errors` returns the results and the errors** (#45).
-  Round TBD. `process_packet` logs a fingerprinter error at DEBUG and returns the
+  Round 90. `process_packet` logs a fingerprinter error at DEBUG and returns the
   results alone, so a caller could not tell a packet that produces no fingerprint from a
   packet that failed a parse. The new method returns both lists, and one method that
   raises poisons no other method. The Go port returns the pair from one call, and parity

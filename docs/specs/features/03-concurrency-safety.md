@@ -270,6 +270,20 @@ that client. The lookup cache holds 100000 entries at most, and
 the lookup cache no state table, so the 10000 above describes a different object. The
 lookup cache is a `BoundedStateTable`, and one lookup drives its age pass.
 
+**The lookup cache remembers no evicted key, and #359 decided it.** `StateTable`
+remembers the key of every entry it evicts, and that memory buys `returned_connections`.
+`Processor.stats` collects the state tables of the fingerprinters, and `JA4DBClient` is
+no fingerprinter, so no reader reads the count for this table. `BoundedStateTable` now
+takes `track_evictions`, it defaults to True, and the lookup cache is the one caller that
+states False. **The saving is 16.06 MiB, and two methods agree on it to 0.00 MiB.** A
+full lookup cache of 100000 entries falls from 47.06 MiB to 31.00 MiB under
+`tracemalloc`, and from 44.66 MiB to 28.60 MiB under `sys.getsizeof`. The eviction count
+stands, so FR-concurrency-safety-12 holds for this table. **#279 measured the ceiling
+case without a lookup cache**, so this saving moves no number of the four runs below. It
+moves the worst case of a program that runs a monitor and a full lookup cache
+together. That worst case falls from 442.00 MiB to 425.94 MiB, against the 512 MiB
+ceiling.
+
 ## The concurrency contract, as #43 measured it
 
 #43 states the contract and it re-measured every premise it rests on.
@@ -361,10 +375,9 @@ of `BoundedStateTable.evict_key` removed, five cases fail: two in
 `KeyError: ('10.0.0.2', 443, '10.0.0.1', 50000)`, because `SynAckTracker.reset_value`
 then reads a prefix that the prefix table already lost.
 
-**This feature states no memory ceiling, and #43 states none.** #279 owns the number, and
-round 81 records that the measurement forces a floor and forces no ceiling. The memory
-file proves the bound through entry counts and eviction counts instead: a second flood of
-400 connections raises the entry count by zero while the eviction count rises.
+**#43 stated no memory ceiling, and #279 states one.** The section below holds it. #43
+proves the bound through entry counts and eviction counts as well: a second flood of 400
+connections raises the entry count by zero while the eviction count rises.
 
 **#41 landed before #43, so the contract states the statistics it built.**
 `docs/api_reference.md` holds a `stats()` row, the six fields of `ProcessorStats`, and
@@ -377,6 +390,175 @@ in #179 to thirteen in #39 to fifteen in #41 to sixteen in #285. Three of the fo
 followed a better walk rather than new code, and #285 is the one that followed new code:
 #246 added `SynAckTracker.prefixes` while Epic 3 was live.
 
+## The memory ceiling this package states
+
+**This package holds resident memory below 512 MiB for the one-million-packet case at the
+shipped defaults.** The user decided the number on 2026-08-08. #38 proposed it and #279
+confirmed it, and #279 re-measured the package rather than quoting the projection of #38.
+
+**A ceiling with no stated configuration is no claim a reader can check, so this table
+states the defaults the ceiling holds at.**
+
+| Default | Value |
+|---|---|
+| The maximum entry count of a state table | 10000 entries |
+| The maximum age of a state table | 600 seconds |
+| `thread_safe` | `True` |
+| The lookup cache | 100000 entries, and the case runs no lookup |
+
+The `State bounds the code holds today` table above states each table that holds a
+smaller bound. A caller that raises a bound raises the memory, and this ceiling then
+states nothing about that caller.
+
+**The case the ceiling covers.** One `Processor()` reads 1000000 packets across 100000
+distinct connections, which is ten packets for each connection. The traffic reaches every
+stateful method. Each connection carries a SYN, a SYN-ACK, two SSH records, two HTTP
+requests, two TLS records, one QUIC Initial packet and one bare ACK.
+
+**The reading.** #279 measured the case four times on macOS 26.6.1 with Python 3.14.3, on
+a ten-core Apple silicon laptop. **The table states every run and not the best one**,
+because a resident memory reading moves with the platform and with the machine.
+
+| Run | Peak resident memory |
+|---|---|
+| 1 | 383.47 MiB |
+| 2 | 388.25 MiB |
+| 3 | 392.05 MiB |
+| 4 | 394.94 MiB |
+
+**The highest of the four is 394.94 MiB, which is 77 percent of the ceiling.** The four
+sit 11.47 MiB apart, and the ceiling holds 117.06 MiB above the highest.
+
+An idle `Processor` with scapy imported reads about 100 MiB of each total, and a bare
+interpreter reads 16.14 MiB of that. The run ends with 40200 entries across the seventeen
+state tables and 400000 values across the ten value lists.
+
+**The age bound holds most of the large tables, and the entry count bound holds two.**
+This is the entry count of each table at the one-million-packet mark.
+
+| State table | Entries | Maximum | What holds it |
+|---|---|---|---|
+| `ja4l.connections` | 10000 | 10000 | The entry count |
+| `ja4l.grouping_keys` | 10000 | 10000 | The entry count |
+| `ja4s._quic_dcids` | 6000 | 10000 | The age |
+| `ja4ssh.connections` | 6000 | 10000 | The age |
+| `ja4t.connections` | 6000 | 10000 | The age |
+| `ja4ts.syn_ack_times.times` | 1000 | 1000 | The entry count |
+| `ja4ts.syn_ack_times.prefixes` | 1000 | 1000 | The eviction hook of `times` |
+| `ja4h.consumed_seq` | 100 | 100 | The entry count |
+| `ja4x.scan_offsets` | 50 | 50 | The entry count |
+| `ja4x.reassembler` | 50 streams | 50 | The stream count |
+| The six remaining tables | 0 | | The traffic reaches none of them |
+
+**The case advances the capture timestamp 0.1 seconds for each connection**, so 100000
+connections span 10000 seconds of capture time. A 600-second age therefore holds a table
+at about 6000 entries, which is why three tables sit below their maximum. A reader who
+changes the traffic changes which bound binds.
+
+**#279 read a larger idle figure than #38 and a smaller total than round 82.** #38 read
+91.03 MiB for an idle `Processor` and projected 238.96 MiB, and round 82 read 419.27 MiB
+for the whole run. Neither number describes this branch: #214 added emission to
+`JA4SSHFingerprinter.connections`, #215 added a connection table to `ja4t.py`, #53 added
+the table of the monitor, and #60 measured the lookup cache at 47.06 MiB. The projection
+of #38 counted ten full tables, and the case saturates fewer than ten.
+
+**The ceiling covers the stated case and no longer run.**
+`BaseFingerprinter.fingerprints` grows without a limit, so resident memory keeps rising
+after every state table settles. #279 read about 23 MiB for each 100000 packets past the
+200000th, and **it measured the crossing at 1500000 packets and 513.06 MiB.** Goal 3 owns
+the value list, and `TestTheStructuresThatHoldNoBound` records it. A reader must not read
+this ceiling as a bound that holds for a monitor that runs without an end.
+
+**How the case measures it.** `tests/memory_ceiling_run.py` feeds the packets in an
+interpreter of its own and reports `resource.getrusage(RUSAGE_SELF).ru_maxrss` as
+`peak_mib`. The separate interpreter is part of the measurement: `ru_maxrss` reports the
+high-water mark of the whole process, so a reading taken inside the pytest session
+measures every case that ran before it. `TestTheStatedMemoryCeiling` of
+`tests/test_memory_bounds.py` reads the number and compares it against 512.0.
+
+**The run reports two kinds of reading, and the two answer different questions.** The
+ceiling is a claim about the high-water mark, so the ceiling case reads `peak_mib`. The
+memory one run adds is no claim about a mark, so the run also reports the current
+resident set before the traffic and after it, as `idle_resident_mib` and
+`final_resident_mib`. Linux publishes the current reading in `/proc/self/statm` and
+Darwin reports it through `ps`.
+
+**Warning: two high-water marks subtract to no growth.** A mark rises and never falls, so
+the difference between two of them states `max(0, later mark - earlier mark)`. The import
+of scapy reaches a mark on Ubuntu that the traffic run then stays below, and the
+difference is exactly zero for a run that allocated tens of MiB. **The four Ubuntu jobs of
+pull request #384 read `idle_mib 154.7` and `peak_mib 154.7`, and the same run on macOS
+read a difference because the import costs less there.** `traffic_growth_mib` of
+`tests/test_memory_bounds.py` holds the rule, and it refuses a high-water pair as a void
+measurement rather than reporting zero. `TestTheGrowthReading` measures that refusal
+against the Ubuntu numbers, and it starts no interpreter.
+
+**The case feeds 30000 packets by default, and `JA4PLUS_MEMORY_CEILING_PACKETS` sets the
+count.** The full run costs 481 seconds, and a case of that length costs every later run
+of the unit suite. `tests/test_thread_safety.py` holds the same arrangement for the
+60-second soak of #40, and the pull request of #279 records one run at 1000000.
+
+**The ceiling case goes red, and #279 measured the point.** At the shipped defaults the
+run passes 512 MiB at **1500000 packets across 150000 connections, where it reads 513.06
+MiB**. That reading is what makes the ceiling comparison falsifiable, and it replaces the
+projection above with a measurement. The packet count is the mechanism that falsifies the
+ceiling, and the entry count bound is not.
+
+**#279 raised a table limit three ways, and the case stayed green each time.** The brief
+of #279 expected a raised bound to turn the case red. It does not, and the three readings
+below say why.
+
+| Reversal | Reading at 1000000 packets | Result |
+|---|---|---|
+| `ja4ssh.connections` raised from 10000 to 100000 | 383.00 MiB | Green |
+| `ja4l.connections` and `ja4l.grouping_keys` raised from 10000 to 100000 | 412.06 MiB | Green |
+| Every one of the fifteen entry counts raised to 100000 | No reading | The run never finished |
+
+**The third reversal produced no reading, and #279 ran it three times.** The operating
+system killed two runs before either wrote a number, and the third reached 2500
+connections in ten minutes. A table of 100000 entries makes each age pass cost more than
+the packet does, so the run stops being the case the ceiling describes.
+
+Three readings explain the two green results, and each one matters to a reader.
+
+1. **The age bound holds the table that the reversal raises.** With both JA4L bounds at
+   100000 the two tables settle at 24000 entries rather than 100000, because the capture
+   timeline passes 600 seconds. The reversal therefore buys 14000 entries and 17.12 MiB.
+2. **`ja4ssh.connections` never reaches its shipped maximum on this traffic.** It holds
+   6000 entries against a maximum of 10000, so raising that maximum changes nothing.
+3. **The 5423 bytes for each JA4SSH entry that #38 measured describe a full 200-packet
+   window.** The case gives each connection two SSH packets, so each entry holds two
+   packet lengths. **A ceiling describes a traffic mix and not a packet count alone.**
+
+**The committed control proves the entry count bound is measured.** With the control
+bound raised from 100 to the shipped 10000,
+`test_a_smaller_entry_count_holds_less_resident_memory` fails.
+
+**Three controls sit beside the ceiling case.** The default size holds 3000 connections,
+which no shipped bound reaches, so the ceiling comparison alone cannot fail at that size.
+
+- `test_the_run_feeds_every_packet_the_case_states` reads the packet count and the
+  connection count back from the run.
+- `test_the_reading_measures_the_traffic_and_not_the_interpreter` reads the memory the
+  traffic added, and it reads the mark against the resident set the run held.
+- `test_a_smaller_entry_count_holds_less_resident_memory` lowers every entry count to 100
+  and reads a smaller number.
+
+**The second and third controls read the current resident set, and neither subtracts a
+mark.** A run that reports a flat pair fails both of them: the second reads `the run added
+0.00 MiB, so the reading measures no traffic`, and the third reads `the shipped run added
+0.00 MiB, which is too little to read`.
+
+**The third control compares a ratio and not a MiB figure**, because the absolute reading
+moves with the platform and with the interpreter while the ratio measures the bound
+itself. An absolute margin that suits macOS can sit above the whole signal on a platform
+whose readings are smaller. Five runs at the default size held the ratio between 0.746
+and 0.769, while one reading held a run-to-run spread of 1.03 MiB. **With the control
+bound raised to the shipped 10000 the ratio reads 0.955 and 0.979 and the case fails**,
+so the threshold of 0.85 sits between the two readings. The failure message is `a bound of
+10000 added 38.26 MiB and the shipped bounds added 39.08 MiB, a ratio of 0.979, so the
+entry count changed nothing`.
+
 ## Data touched
 
 - Changed files: every file under `ja4plus/fingerprinters/`,
@@ -385,6 +567,8 @@ followed a better walk rather than new code, and #285 is the one that followed n
   fingerprinter uses.
 - New file `tests/test_thread_safety.py`.
 - New file `tests/test_memory_bounds.py`.
+- New file `tests/memory_ceiling_run.py`, which #279 added. It measures the resident
+  memory of one packet run in an interpreter of its own.
 
 ## Interfaces
 
@@ -435,9 +619,12 @@ rule 2 applies only where the port has already shipped a choice.
       raises no exception. #40 holds it.
 - [x] `Processor(thread_safe=False)` acquires no lock, proven by a test that
       replaces the lock with an object that fails when acquired. #40 holds it.
-- [ ] Feeding 1000000 packets across 100000 distinct connections holds resident
-      memory below a stated ceiling. **#279 owns the ceiling, and this feature states
-      none.** Round 82 measured 419.27 MiB for that run and zero tables above a bound.
+- [x] Feeding 1000000 packets across 100000 distinct connections holds resident
+      memory below a stated ceiling. **The ceiling is 512 MiB, and #279 states it.**
+      #279 measured 394.94 MiB at the highest of four runs, and
+      `TestTheStatedMemoryCeiling::test_the_packet_run_holds_resident_memory_below_the_stated_ceiling`
+      reads it. The same traffic passes the ceiling at 1500000 packets, which is the
+      reading that makes the comparison falsifiable.
 - [x] Every state table reports an entry count no greater than `max_connections`.
       `test_no_state_table_passes_its_entry_count_after_two_floods` reads every table.
 - [x] An entry that receives no packet for longer than `max_connection_age` is
@@ -462,19 +649,18 @@ rule 2 applies only where the port has already shipped a choice.
 
 ## Open questions
 
-- The stated memory ceiling for the one-million-packet test. **#38 measured the
-  baseline and #279 decides the number.** The measurement forces a floor and it
-  forces no ceiling, so the distance above that floor is a product judgement. A
-  ceiling is a number this package states to its users.
+**#279 closed the one open question of this feature on 2026-08-08.** The user decided the
+memory ceiling, and `The memory ceiling this package states` above holds it and the
+measurement behind it. No constant in `ja4plus/` names the ceiling, because the ceiling
+is a claim this package publishes and no code reads it.
 
-  An idle `Processor()` with scapy imported holds 91.03 MiB resident. One full table
-  of 10000 entries shaped like `JA4LFingerprinter.connections` holds 10.69 MiB, at
-  1121 bytes for each entry. One full table of 10000 entries shaped like
-  `JA4SSHFingerprinter.connections` holds 51.72 MiB at a 200 packet window, at 5423
-  bytes for each entry. That table is the largest of the twelve. Ten tables at the
-  default entry count therefore project 91.03 + 51.72 + 96.21 = **238.96 MiB**.
-
-  The projection holds whatever the connection count is. `BoundedStateTable` never
-  passes 10000 entries, so 100000 distinct connections reach no more than 10000
-  entries in one table. No constant in `ja4plus/` names a ceiling, and no case
-  asserts one.
+The measurement #38 produced stays on record, because it is the reading the decision
+started from. An idle `Processor()` with scapy imported held 91.03 MiB resident. One full
+table of 10000 entries shaped like `JA4LFingerprinter.connections` held 10.69 MiB, at
+1121 bytes for each entry. One full table of 10000 entries shaped like
+`JA4SSHFingerprinter.connections` held 51.72 MiB at a 200 packet window, at 5423 bytes
+for each entry. Ten tables at the default entry count therefore projected
+91.03 + 51.72 + 96.21 = **238.96 MiB**. #279 re-measured the whole case and reads
+394.94 MiB at the highest of four runs, because the projection counts a saturated table
+where the case saturates fewer, and because the value lists hold 400000 values the
+projection omits.

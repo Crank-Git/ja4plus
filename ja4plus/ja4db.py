@@ -300,6 +300,11 @@ class JA4DBClient:
             # An age pass reads every entry, so a lookup cache below the default entry
             # count runs its pass on its own entry count.
             eviction_interval=min(DEFAULT_CACHE_EVICTION_INTERVAL, cache_size),
+            # `Processor.stats` collects the state tables of the fingerprinters, and
+            # this client is no fingerprinter, so nothing reads `returned_connections`
+            # for the lookup cache. #359 measured the memory that count costs at
+            # 16.06 MiB of the 47.06 MiB a full lookup cache holds.
+            track_evictions=False,
         )
         self._cache_lock = threading.Lock()
         self._allow_remote = allow_remote
@@ -384,8 +389,11 @@ class JA4DBClient:
         if not self._allow_remote:
             return None
 
-        # #319 owns this wide handler. The handlers that name their errors are inside
-        # `_remote_lookup`.
+        # The wide catch is the design, and #319 read the site and narrowed nothing.
+        # `ja4db.com` publishes no versioned document, so the client treats every failure
+        # of the service as a miss. A lookup is an enrichment of a fingerprint this
+        # project already produced, and no failure of it may reach the caller as an
+        # error. The handlers that name their errors are inside `_remote_lookup`.
         try:
             return self._remote_lookup(fingerprint)
         except Exception as e:
@@ -426,6 +434,10 @@ class JA4DBClient:
                 return _read_remote_body(resp.json())
         except (ValueError, KeyError, AttributeError):
             pass
+        # The wide catch is the design, and #319 read the site and narrowed nothing.
+        # `requests` raises from a hierarchy that its transport adapters extend, so no
+        # list this module writes stays complete. The clause above names the errors the
+        # response body raises, and this one reads a failure of the request.
         except Exception as e:
             logger.debug("ja4db.com API error: %s", e)
 

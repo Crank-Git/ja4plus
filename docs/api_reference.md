@@ -417,7 +417,13 @@ per-connection data, and it holds no bound. A caller that runs for a long time r
 `process_packet` and never let the list grow.
 `JA4SSHFingerprinter.hassh_fingerprints` holds no bound either.
 
-This package states no memory ceiling.
+This package states a memory ceiling of 512 MiB. One `Processor()` at the shipped
+defaults reads 1000000 packets across 100000 distinct connections and holds resident
+memory below that number, and #279 measured 394.94 MiB at the highest of four runs.
+`features/03-concurrency-safety.md` states the defaults the ceiling holds at and the
+traffic the case feeds. **The ceiling covers that packet run and no longer run**, because
+of the two unbounded lists the paragraph above names. The same traffic passes 512 MiB at
+1500000 packets, where it reads 513.06 MiB.
 
 ## Convenience Functions
 
@@ -491,6 +497,12 @@ print(report["ja4l"].tables["connections"].evictions)
 
 The six counts hold the invariant `inserts == entries + evictions + removals`. A reader
 who sees it broken read the table while another thread wrote it.
+
+A table that a caller built with `track_evictions=False` reports 0 returned connections,
+because it remembers no evicted key. The other five counts stand, and the invariant
+holds. Every state table of a `Processor` tracks its evictions, so a `ProcessorStats`
+reports the count for every method. The lookup cache of `JA4DBClient` is the one table
+that opts out, and #359 measured the 16.06 MiB it saves.
 
 A returned connection matters to an operator. Its new entry holds none of the packets
 that came before the eviction, so its fingerprint may be incomplete. A count above zero
@@ -575,12 +587,13 @@ inherits `StateTable` and reports the six counts every state table reports.
 
 | Class/Function | Description |
 |----------------|-------------|
-| `BoundedStateTable(max_connections, max_connection_age, eviction_interval, on_eviction)` | A mapping that evicts on the entry count and on the entry age |
+| `BoundedStateTable(max_connections, max_connection_age, eviction_interval, track_evictions, on_eviction)` | A mapping that evicts on the entry count and on the entry age |
 | `.on_packet(timestamp)` | Announce one packet. The table reads `timestamp` for every later operation, and it runs one age eviction pass for every `eviction_interval` packets |
 | `.evict_aged(now)` | Run one age eviction pass, and return the count of entries it removed |
 | `.evict_key(key)` | Remove one entry, count it as an eviction, and call `on_eviction`. Return False when the table holds no such key |
 | `.on_eviction` | A callable the table calls with the key of every entry it evicts. A caller removal calls nothing. #285 added it, so that a second table holding the same keys stays in lockstep |
 | `.evictions` | The count of entries the table itself removed. `pop`, `del` and `clear` raise none |
+| `.track_evictions` | True remembers the key of every entry the table evicts, and it reports `returned_connections`. False remembers no key and reports 0. The default is True |
 | `.stats()` | Return the `TableStats` of the table |
 | `StateTable` | The base class every state table inherits. It holds the six counts and the memory of the evicted keys |
 | `TableStats` | The counts one state table reports: `entries`, `max_entries`, `inserts`, `evictions`, `removals` and `returned_connections` |

@@ -467,3 +467,62 @@ class TestTheCaptureReplay:
         # A replay that never reads this connection proves nothing about the gap.
         keys = {key for key, _ in _ssh_r_payload_packets()}
         assert SSH_R_LONG_GAP_KEY in keys
+
+
+class TestTheOptionalEvictionMemory:
+    """A table that reports no returned connection pays no memory for one.
+
+    #359 measured the cost. The memory of the evicted keys holds one key for every
+    entry the table evicts, so a full table pays close to its own size a second time.
+    The memory buys `returned_connections`, and only a reader of that count needs it.
+    """
+
+    def test_the_default_table_tracks_its_evictions(self):
+        # Every caller that states nothing keeps the statistic it had before #359.
+        table = BoundedStateTable()
+        assert table.track_evictions is True
+
+    def test_a_table_that_tracks_evictions_remembers_the_key_it_evicted(self):
+        table = BoundedStateTable(max_connections=1, track_evictions=True)
+        table["a"] = 1
+        table["b"] = 2
+        assert list(table._evicted_keys) == ["a"]
+
+    def test_a_table_that_tracks_evictions_counts_the_connection_that_returns(self):
+        table = BoundedStateTable(max_connections=1, track_evictions=True)
+        table["a"] = 1
+        table["b"] = 2
+        table["a"] = 3
+        assert table.stats().returned_connections == 1
+
+    def test_a_table_that_tracks_no_eviction_remembers_no_key(self):
+        table = BoundedStateTable(max_connections=1, track_evictions=False)
+        for index in range(100):
+            table[index] = index
+        assert len(table._evicted_keys) == 0
+
+    def test_a_table_that_tracks_no_eviction_counts_no_returned_connection(self):
+        table = BoundedStateTable(max_connections=1, track_evictions=False)
+        table["a"] = 1
+        table["b"] = 2
+        table["a"] = 3
+        assert table.stats().returned_connections == 0
+
+    def test_a_table_that_tracks_no_eviction_counts_every_eviction(self):
+        # The eviction count answers FR-concurrency-safety-12, and the memory of the
+        # evicted keys answers a different question. Only the second one leaves.
+        table = BoundedStateTable(max_connections=1, track_evictions=False)
+        table["a"] = 1
+        table["b"] = 2
+        table["c"] = 3
+        stats = table.stats()
+        assert stats.evictions == 2
+        assert stats.inserts == stats.entries + stats.evictions + stats.removals
+
+    def test_the_age_bound_of_a_table_that_tracks_no_eviction_remembers_no_key(self):
+        table = BoundedStateTable(max_connection_age=10, track_evictions=False)
+        table.on_packet(1000.0)
+        table["a"] = 1
+        table.on_packet(1100.0)
+        assert table.evict_aged() == 1
+        assert len(table._evicted_keys) == 0

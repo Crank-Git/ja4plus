@@ -591,13 +591,19 @@ register entry.**
 3. **D2. Open.** If part c stays absent, does `calculate_distance` keep an interface that
    cannot compute the VPN case the image works? #225 ruled on the part count and on the
    marker, and it ruled on neither D2 nor D4. **Both await a decision.**
-4. **D4. Open.** Does a retransmitted SYN-ACK produce a second `JA4L-S`?
-   `tests/foxio_deviations.json` holds `ssh2.pcapng/JA4L-S` under #34, and that entry
-   stands unchanged.
-4. **Five register entries compare against an expected-output file that publishes no JA4L
-   key.** `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng` hold no JA4L
-   value, because the file was produced with a method filter. An entry of that shape records
-   no measured divergence, and a reader of the register cannot tell it from one that does.
+4. **D4. Settled on 2026-08-09. A retransmitted SYN-ACK produces no second `JA4L-S`.**
+   #272 holds the decision and the measurement. A retransmitted SYN-ACK moves neither
+   point `B` nor the server TTL, so a second value repeats the first one and describes no
+   second measurement. `ssh2.pcapng` stream 15 held `JA4L-S=6252_58` twice against one
+   reference value, and a replay of the 38 committed captures moves that one value alone.
+   `tests/foxio_deviations.json` holds `ssh2.pcapng/JA4L-S` no longer, because the counts
+   now agree. `docs/specs/spec.md` holds the `Divergence register` row.
+4. **Settled on 2026-08-09. Five register entries are declined, and the register records
+   why.** `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng` hold no
+   JA4L value, because a method filter produced the file. **This project was never emitting
+   more than the reference. The reference published nothing to compare.** The comparison is
+   unreachable, not satisfied. #272 declined the five on 2026-08-08, each cause cites
+   `python/ja4.py:339`, and each entry carries `"decided": true` with `"capability": false`.
 5. **R8 to R11 stay uncertain, and none of them builds a fingerprint.** The initial TTL
    table, the hop count formula, the distance formula and the propagation factor table rest
    on the image alone. `ja4l.py` follows the image on all four, and one dead FoxIO function

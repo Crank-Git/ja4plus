@@ -1,7 +1,7 @@
 import unittest
 import hashlib
 from scapy.all import IP, TCP, Raw
-from ja4plus.fingerprinters.ja4s import JA4SFingerprinter, generate_ja4s
+from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 
 
 def build_server_hello_bytes(version=0x0303, cipher=0xC02F, extensions=None):

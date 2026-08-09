@@ -1,5 +1,5 @@
 import unittest
-from scapy.all import IP, TCP, Raw
+from scapy.all import IP, TCP
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter, generate_ja4ts
 
 

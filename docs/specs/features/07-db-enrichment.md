@@ -115,6 +115,8 @@ FR-db-enrichment-17 — Item access on a `LookupResult` emits a `DeprecationWarn
 - The lookup cache stores a miss as well as a hit, so that a repeated miss costs
   nothing.
 - The cache maximum is 100000 entries.
+- The lookup cache remembers no key it evicts, so it reports 0 returned connections.
+  #359 decided it and measured the 16.06 MiB it saves.
 - The remote timeout is 5 seconds, and is not configurable before version 1.0.0.
 - `db update` never writes inside the installed package. A package directory may be
   read-only, and a wheel reinstall would discard the file.

@@ -220,6 +220,11 @@ class Processor:
                 self._packet_counts[fp_type] += 1
                 try:
                     fingerprint = fp.process_packet(packet)
+                # The wide catch is the design, and #45 decided it. This method hands the
+                # caller every failure it meets, named by its method, so a clause that
+                # named a list would drop the failure this method exists to report.
+                # `CLAUDE.md` binds a fingerprinter, and this loop is the caller of ten
+                # fingerprinters. #319 read the site and narrowed nothing.
                 except Exception as e:
                     logger.debug(f"{fp_type} processing failed: {e}")
                     errors.append((fp_type, _drop_traceback(e)))
@@ -256,6 +261,9 @@ class Processor:
         for fp_type, fp in self.fingerprinters.items():
             try:
                 entries = fp.close_open_windows()
+            # The wide catch is the design. The loop reaches ten methods, and one method
+            # that fails at the end of a capture costs the caller no window of the other
+            # nine. #319 read the site and narrowed nothing.
             except Exception as e:
                 logger.debug(f"{fp_type} close_open_windows failed: {e}")
                 continue
@@ -320,6 +328,9 @@ class Processor:
         for fp in self.fingerprinters.values():
             try:
                 fp.cleanup_connection(src_ip, src_port, dst_ip, dst_port, proto)
+            # The wide catch is the design. A long-running monitor drops a connection
+            # from all ten methods or it leaks state, so one method that fails must not
+            # stop the loop. #319 read the site and narrowed nothing.
             except Exception as e:
                 logger.debug(f"cleanup_connection error in {fp.__class__.__name__}: {e}")
 

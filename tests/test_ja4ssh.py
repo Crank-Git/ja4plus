@@ -1,5 +1,4 @@
 import unittest
-import time
 from scapy.all import IP, TCP, Raw, Ether
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter, generate_ja4ssh
 

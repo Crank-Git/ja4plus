@@ -6,8 +6,7 @@ Covers tls_utils, http_utils, ssh_utils, and x509_utils.
 
 import unittest
 import hashlib
-import struct
-from scapy.all import IP, TCP, UDP, Raw
+from scapy.all import IP, TCP, Raw
 
 from ja4plus.utils.tls_utils import (
     is_grease_value,
