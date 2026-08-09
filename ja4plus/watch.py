@@ -400,9 +400,9 @@ def report_statistics(
         stream: The stream to write to.
         wait: The call that waits one interval and reports whether the stop arrived, or
             None for the wait on the stop event. `StatisticsReporter` states the form.
-            `ja4plus/cli.py` passes None, and a test passes its own call, so a case that
-            reaches the reporter through `cmd_watch` states the schedule rather than
-            measures how promptly the host schedules a thread. #371 added the parameter.
+            `ja4plus/cli.py` passes None and a test passes its own call. A case that
+            reaches the reporter through `cmd_watch` therefore states the schedule rather
+            than samples it. #371 added the parameter.
 
     Yields:
         The reporter, or None where the operator stated no interval.

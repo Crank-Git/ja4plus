@@ -735,9 +735,9 @@ call and reads an exact line count, rather than count the lines a loaded host de
 Issue #369 added the parameter.
 
 `report_statistics` carries the same parameter, and it forwards the call to the reporter.
-A test that reaches the reporter through `cmd_watch` builds no reporter of its own, so the
-seam of `StatisticsReporter` alone left that test on the wall clock. Issue #371 added the
-parameter.
+A test that reaches the reporter through `cmd_watch` builds no reporter of its own. The
+seam of `StatisticsReporter` alone therefore left that test on the wall clock. Issue #371
+added the parameter.
 
 `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
 The handler sets the stop request and returns. It calls `sys.exit` never, because a

@@ -484,9 +484,13 @@ holds every breaking change of this record against a row of that page.
   `ScriptedReport`, which records the interval and the stream `cmd_watch` passed and carries
   a scripted wait to the reporter. It asserts an exact count of four statistics lines, three
   periodic and one exit summary, where the earlier form asserted a lower bound. It also
-  asserts that the interval reaches the wait unchanged and that the stream is standard
-  error, so it proves more of FR-live-capture-9 and FR-live-capture-10 than the earlier form
-  proved. The case holds no sleep.
+  asserts that the interval reaches the wait unchanged, and that the stream is standard
+  error. The case therefore proves more of FR-live-capture-9 and FR-live-capture-10 than the
+  earlier form proved, and it holds no sleep. **The repair keeps the one argument that
+  carries a unique mutation kill.** The sweep of #414 recorded the mutation `0` to `1` at
+  `ja4plus/cli.py:871` as killed, at a killed count of 1, and it named this case as the
+  sample. That guard reads `seconds <= 0`, and `--stats-interval 0.05` is the one interval
+  below one that any case of the suite passes. The repair therefore holds that argument.
 - **The capture privilege case read a host that grants the privilege** (#424). Round 152.
   `tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_reads_the_failure_this_host_reports`
   asks the real capture layer of the host for the failure it reports without the

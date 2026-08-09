@@ -424,8 +424,8 @@ class ScriptedReport:
     count the host delivered.
 
     The call replaces no other behaviour. `report_statistics` builds the reporter, starts
-    the thread and stops it, and `stop` joins the thread, so every line the test counts
-    reaches the stream before `main` returns.
+    the thread and stops it, and `stop` joins the thread. Every line the test counts
+    therefore reaches the stream before `main` returns.
 
     Args:
         intervals: The count of intervals that pass before the stop arrives.
@@ -628,8 +628,13 @@ class TheStatisticsGoToStandardError(unittest.TestCase):
         `TheReporterWritesOneLinePerInterval`.
 
         The scripted report states the schedule, so the count is exact. It also reads the
-        two arguments the command passed, so the case proves that `--stats-interval`
-        reaches the reporter and that the reporter writes to standard error.
+        two arguments the command passed. The case therefore proves that `--stats-interval`
+        reaches the reporter, and that the reporter writes to standard error.
+
+        Warning: keep the interval `0.05`. The sweep of #414 recorded the mutation `0` to
+        `1` at `ja4plus/cli.py:871` as killed, at a killed count of 1. It named this case
+        as the sample. That guard reads `seconds <= 0`, and `0.05` is the one interval
+        below one that any case of the suite passes.
         """
         report = ScriptedReport(intervals=3)
         out, err, status = run_watch(
@@ -642,10 +647,9 @@ class TheStatisticsGoToStandardError(unittest.TestCase):
         # order.
         self.assertEqual(len(lines), 4)
         self.assertNotIn("[ja4plus] packets=", out)
-        # FR-live-capture-9 — the command line reaches the reporter unchanged. The command
-        # passes the interval to `report_statistics`, and the reporter passes it to the
-        # wait, once for each of the three intervals and once for the call that reports
-        # the stop.
+        # FR-live-capture-9 — the interval reaches the reporter unchanged. The wait receives
+        # it four times: once for each of the three intervals, and once for the call that
+        # reports the stop.
         self.assertEqual(report.seconds, [0.05])
         self.assertEqual(report.waits[0].timeouts, [0.05] * 4)
         # FR-live-capture-10 — the reporter writes to standard error.
