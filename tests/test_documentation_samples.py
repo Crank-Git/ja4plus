@@ -37,12 +37,12 @@ from tests.documentation_samples import (  # noqa: E402
     BLOCKQUOTE_FENCE,
     REPOSITORY_ROOT,
     RUNNABLE_LANGUAGES,
-    SAMPLE_FILES,
     FencedBlock,
     all_blocks,
     census,
     disposition,
     documentation_files,
+    user_documentation_files,
 )
 
 VECTORS = REPOSITORY_ROOT / "tests" / "foxio_vectors"
@@ -57,13 +57,22 @@ VECTORS = REPOSITORY_ROOT / "tests" / "foxio_vectors"
 MINIMUM_BLOCKS = 157
 MINIMUM_RUNNABLE_SAMPLES = 45
 
-# The fenced blocks of each file, measured by hand from the file on 2026-08-09.
-BLOCKS_PER_SAMPLE_FILE = {
+# The fenced blocks each page held on 2026-08-09, measured by hand from the page.
+#
+# **This table is a floor for each page, and never an exact count.** An exact count
+# breaks on every page that gains a block, and a floor breaks on the one thing the
+# totals above miss: a page that loses a sample while another page gains more.
+#
+# **The counts stay hand-measured on purpose.** The only tool that could derive them is
+# the reader these cases exist to check, and a floor taken from the reader reports
+# nothing about the reader. #302 set its floor from the count its own broken parser read.
+#
+# A page absent from this table carries a floor of zero. It is still read, counted,
+# classified and run, because every one of those steps reads the filesystem.
+MINIMUM_BLOCKS_PER_PAGE = {
     "README.md": 21,
-    "docs/README.md": 0,
     "docs/api_reference.md": 22,
     "docs/implementation_notes.md": 9,
-    "docs/mutation_sweep.md": 0,
     "docs/output-schema.md": 4,
     "docs/usage.md": 21,
 }
@@ -142,28 +151,45 @@ def test_the_harness_runs_at_least_the_measured_count_of_samples() -> None:
     )
 
 
-@pytest.mark.parametrize("name", sorted(BLOCKS_PER_SAMPLE_FILE))
-def test_each_user_documentation_file_holds_its_measured_count_of_blocks(name: str) -> None:
-    """Each user documentation file holds the count of fenced blocks the table records."""
+@pytest.mark.parametrize("name", sorted(MINIMUM_BLOCKS_PER_PAGE))
+def test_each_page_holds_at_least_its_measured_count_of_blocks(name: str) -> None:
+    """Each page of the floor table holds no fewer blocks than the table records.
+
+    The two totals above miss one regression: a page that loses a sample while another
+    page gains more. This floor catches it, and it tolerates a page that grows.
+    """
     found = len([b for b in all_blocks() if b.path == name])
-    assert found == BLOCKS_PER_SAMPLE_FILE[name], (
-        f"{name} holds {found} fenced blocks, and the table records {BLOCKS_PER_SAMPLE_FILE[name]}"
+    assert found >= MINIMUM_BLOCKS_PER_PAGE[name], (
+        f"{name} holds {found} fenced blocks, and the floor is {MINIMUM_BLOCKS_PER_PAGE[name]}"
     )
 
 
-def test_the_table_names_every_markdown_file_outside_the_specification_package() -> None:
-    """`BLOCKS_PER_SAMPLE_FILE` names every user documentation file.
+def test_the_floor_table_names_no_page_the_repository_lacks() -> None:
+    """Every page of the floor table still exists.
 
-    A new page under `docs/` fails this case until somebody records its block count. A
-    page nobody classifies is a page whose samples nobody runs.
+    A floor entry for a page somebody deleted would report a missing page as a missing
+    sample, which names the wrong repair.
     """
-    found = {
-        path.relative_to(REPOSITORY_ROOT).as_posix()
-        for path in documentation_files()
-        if not path.relative_to(REPOSITORY_ROOT).as_posix().startswith("docs/specs/")
+    missing = sorted(set(MINIMUM_BLOCKS_PER_PAGE) - set(user_documentation_files()))
+    assert not missing, f"the floor table names pages the repository no longer holds: {missing}"
+
+
+def test_the_execution_cases_reach_every_sample_the_reader_calls_runnable() -> None:
+    """Every block the reader calls runnable belongs to a case that runs it.
+
+    The reader and the runner are two lists, and two lists drift apart. #64 proved it:
+    a page under `docs/reference/` was read and classified as runnable, and no case ran
+    it. This case compares the two, so the drift fails rather than passing in silence.
+    """
+    reader = {
+        block.name for block in all_blocks() if disposition(block).action in {"run", "raises"}
     }
-    assert found == set(SAMPLE_FILES)
-    assert found == set(BLOCKS_PER_SAMPLE_FILE)
+    runner = {block.name for name in PYTHON_SAMPLE_FILES for block in _python_samples(name)}
+    runner |= {block.name for block in BASH_SAMPLES}
+    assert reader == runner, (
+        f"the reader calls these runnable and no case runs them: {sorted(reader - runner)}; "
+        f"these cases run a block the reader does not call runnable: {sorted(runner - reader)}"
+    )
 
 
 def test_every_block_carries_one_disposition() -> None:
@@ -409,18 +435,24 @@ def _time_limit(name: str) -> Iterator[None]:
         signal.signal(signal.SIGALRM, previous)
 
 
+def _is_python_sample(block: FencedBlock) -> bool:
+    """Return True when the harness runs this block as a Python sample."""
+    return block.language == "python" and disposition(block).action in {"run", "raises"}
+
+
 def _python_samples(name: str) -> List[FencedBlock]:
     """Return the Python blocks of one file that the harness runs, in file order."""
-    return [
-        block
-        for block in all_blocks()
-        if block.path == name
-        and block.language == "python"
-        and disposition(block).action in {"run", "raises"}
-    ]
+    return [block for block in all_blocks() if block.path == name and _is_python_sample(block)]
 
 
-PYTHON_SAMPLE_FILES = sorted(name for name in BLOCKS_PER_SAMPLE_FILE if _python_samples(name))
+# The execution set reads the blocks, so it reaches every page the filesystem holds.
+#
+# Warning: never drive this list from a table somebody maintains by hand. An earlier form
+# read the keys of the block-count table, and a page absent from that table was read,
+# counted and classified as runnable, and then never run. #64 added five pages under
+# `docs/reference/` and proved it: a page holding a broken sample reported
+# `3 passed` from the execution cases.
+PYTHON_SAMPLE_FILES = sorted({block.path for block in all_blocks() if _is_python_sample(block)})
 
 
 @pytest.mark.parametrize("name", PYTHON_SAMPLE_FILES)

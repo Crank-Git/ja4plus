@@ -33,8 +33,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   of the README Python path, the README shell path, the `docs/` path and the `examples/`
   path, and each was restored. New files `tests/documentation_samples.py`,
   `tests/test_documentation_samples.py` and `tests/test_examples.py`, and a new `samples`
-  job in `.github/workflows/test.yml`. No file under `ja4plus/` changes and no
-  fingerprint moves.
+  job in `.github/workflows/test.yml`. **The merge with #64 exposed a hole in the first
+  form of this harness.** `PYTHON_SAMPLE_FILES` read the keys of a table somebody
+  maintained by hand, so a page absent from that table was read, counted and classified
+  as runnable, and then never run. A probe page under `docs/reference/` holding a broken
+  import proves it: the reader called the block runnable and the execution cases reported
+  `3 passed`. **The file set now derives from the filesystem and the block counts stay
+  measured by hand**, because the only tool that could derive a count is the reader the
+  cases exist to check. `MINIMUM_BLOCKS_PER_PAGE` is a floor for each page and no longer
+  an exact count. `test_the_execution_cases_reach_every_sample_the_reader_calls_runnable`
+  compares the reader against the runner, so the two cannot drift apart again. The five
+  pages #64 added hold `:::` directives and no fenced block, so both counts stay at 157.
+  No file under `ja4plus/` changes and no fingerprint moves.
 
 ### Fixed
 

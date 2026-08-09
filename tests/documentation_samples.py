@@ -33,18 +33,6 @@ _MARKER = re.compile(r"^<!--\s*sample:\s*(?P<body>.+?)\s*-->$")
 # A fence inside a blockquote reaches neither reader, so a case bars the form.
 BLOCKQUOTE_FENCE = re.compile(r"^ {0,3}>[ >]*(?:`{3,}|~{3,})")
 
-# The user documentation. `docs/specs/` is the specification package, and
-# `EXCLUDED_DIRECTORY` below records why no block of it runs.
-SAMPLE_FILES = (
-    "README.md",
-    "docs/README.md",
-    "docs/api_reference.md",
-    "docs/implementation_notes.md",
-    "docs/mutation_sweep.md",
-    "docs/output-schema.md",
-    "docs/usage.md",
-)
-
 EXCLUDED_DIRECTORY = "docs/specs"
 
 # `docs/specs/` holds the design of the project and the transcription of the FoxIO
@@ -143,6 +131,27 @@ def documentation_files(root: pathlib.Path = REPOSITORY_ROOT) -> List[pathlib.Pa
     files = [root / "README.md"]
     files.extend(sorted((root / "docs").rglob("*.md")))
     return files
+
+
+def user_documentation_files(root: pathlib.Path = REPOSITORY_ROOT) -> List[str]:
+    """Return every Markdown file of the user documentation, in sorted order.
+
+    The filesystem is the one record of which pages exist, so this function reads it
+    rather than a list somebody maintains beside it. #64 added five pages under
+    `docs/reference/` one sub-merge after this harness landed, and a hand-written list
+    had already gone stale.
+
+    Args:
+        root: The repository root.
+
+    Returns:
+        The path of each page, relative to the root, with `docs/specs/` left out.
+    """
+    return [
+        path.relative_to(root).as_posix()
+        for path in documentation_files(root)
+        if not path.relative_to(root).as_posix().startswith(EXCLUDED_DIRECTORY + "/")
+    ]
 
 
 def all_blocks(root: pathlib.Path = REPOSITORY_ROOT) -> List[FencedBlock]:
