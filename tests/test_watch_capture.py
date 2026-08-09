@@ -231,9 +231,9 @@ def the_filter_failure():
 
     The call compiles the expression against the Ethernet link type and it opens no
     interface. A host that holds no `libpcap` compiles no expression, and this call then
-    reports no failure. The caller reads that result as the state of the host. #426
-    records why: a minimal Linux container holds no `libpcap`, and the earlier form ended
-    such a run with an error rather than with a skip.
+    reports no failure. The caller reads that result as the state of the host. #426 records
+    why. A minimal Linux container holds no `libpcap`. The earlier form ended such a run
+    with an error rather than with a skip.
 
     Returns:
         The `Scapy_Exception` the call raised, or None where the host holds no `libpcap`.
@@ -682,10 +682,10 @@ class TheFilterCasesGuardOnTheAmbientLibpcap(unittest.TestCase):
     def this_host_holds_libpcap(self):
         """Return whether `compile_filter` reaches `libpcap` on this host.
 
-        The read calls `compile_filter` and not `the_filter_failure`. A prover that read
-        the state through the guard it proves cannot tell a guard that skips on every host
-        from a host that holds no `libpcap`, and the run direction is the direction that
-        reading loses.
+        The read calls `compile_filter` and not `the_filter_failure`. A prover that reads
+        the state through the guard it proves cannot tell two states apart. One is a guard
+        that skips on every host. The other is a host that holds no `libpcap`. The run
+        direction is the direction such a prover loses.
 
         Returns:
             True where `compile_filter` compiled the expression or refused it.
@@ -717,9 +717,16 @@ class TheFilterCasesGuardOnTheAmbientLibpcap(unittest.TestCase):
             self.assertIsNone(the_filter_failure())
 
     def test_each_case_skips_where_the_host_holds_no_libpcap(self):
-        """A host without `libpcap` skips all four cases, and each reason names it."""
+        """A host without `libpcap` skips all four cases, and each reason names it.
+
+        One of the four cases reads the absent interface as well, and it reads that state
+        first. This case therefore pins the interface state to the state of a host that
+        holds no `nosuchif0`. Without that, a host holding both anomalies would skip on the
+        interface and the reason would name the wrong state.
+        """
         with no_libpcap():
-            results = [(name, case.run()) for name, case in self.the_guarded_cases()]
+            with patch("scapy.all.resolve_iface", side_effect=ValueError(ABSENT_INTERFACE)):
+                results = [(name, case.run()) for name, case in self.the_guarded_cases()]
         for name, result in results:
             with self.subTest(case=name):
                 self.assertEqual(result.errors, [])
@@ -728,12 +735,16 @@ class TheFilterCasesGuardOnTheAmbientLibpcap(unittest.TestCase):
                 self.assertIn("libpcap", result.skipped[0][1])
 
     def test_each_case_runs_and_passes_where_the_host_holds_libpcap(self):
-        """A host with `libpcap` runs all four cases, and each one passes."""
+        """A host with `libpcap` runs all four cases, and each one passes.
+
+        The case pins the interface state for the reason the skip direction states.
+        """
         if not self.this_host_holds_libpcap():
             self.skipTest("this host holds no libpcap, so no case here can run")
         for name, case in self.the_guarded_cases():
             with self.subTest(case=name):
-                result = case.run()
+                with patch("scapy.all.resolve_iface", side_effect=ValueError(ABSENT_INTERFACE)):
+                    result = case.run()
                 self.assertEqual(result.testsRun, 1)
                 self.assertEqual(result.errors, [])
                 self.assertEqual(result.failures, [])
@@ -798,8 +809,8 @@ class TheAbsentInterfaceCasesGuardOnTheNameTheHostHolds(unittest.TestCase):
         """Return whether this host holds an interface named `nosuchif0`.
 
         The read calls `resolve_iface` and not `the_absent_interface_failure`. A prover
-        that read the state through the guard it proves cannot tell a guard that skips on
-        every host from a host that holds the name.
+        that reads the state through the guard it proves cannot tell two states apart. One
+        is a guard that skips on every host. The other is a host that holds the name.
 
         Returns:
             True where `resolve_iface` resolved the name.
@@ -829,12 +840,21 @@ class TheAbsentInterfaceCasesGuardOnTheNameTheHostHolds(unittest.TestCase):
                 self.assertIn(ABSENT_INTERFACE, result.skipped[0][1])
 
     def test_each_case_runs_and_passes_where_the_host_holds_no_such_name(self):
-        """A host without `nosuchif0` runs all four cases, and each one passes."""
+        """A host without `nosuchif0` runs all four cases, and each one passes.
+
+        One of the four cases reads the `libpcap` state as well. This case therefore pins
+        that state to the failure a host with `libpcap` reports for a filter it refuses.
+        Without that, a host without `libpcap` would skip on the filter state here.
+        """
         if self.this_host_holds_the_name():
             self.skipTest("this host holds an interface named " + ABSENT_INTERFACE)
+        # The text `libpcap` writes for this expression, which `test_the_probe_reads_...`
+        # of the class above reads from the real call.
+        refusal = Scapy_Exception(f"Failed to compile filter expression {INVALID_FILTER} (-1)")
         for name, case in self.the_guarded_cases():
             with self.subTest(case=name):
-                result = case.run()
+                with patch("scapy.arch.common.compile_filter", side_effect=refusal):
+                    result = case.run()
                 self.assertEqual(result.testsRun, 1)
                 self.assertEqual(result.errors, [])
                 self.assertEqual(result.failures, [])

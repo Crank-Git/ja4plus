@@ -55,8 +55,9 @@ DESCRIPTOR_DIRECTORY = "/dev/fd"
 # The count of descriptors the count case accepts above the count it read before the run.
 # The reading covers every descriptor of the process, so another part of the run that opens
 # one moves it, and #426 records that second defect. The leak the case exists to detect
-# opens two descriptors for each `sniff` call, which is 600 descriptors over 300 calls, so
-# this tolerance leaves the detection whole.
+# opens two descriptors for each `sniff` call. That is 600 descriptors over 300 calls, so
+# this tolerance leaves the detection whole. A leak below the tolerance passes, and
+# `test_the_case_fails_where_the_monitor_leaks_a_descriptor_for_each_call` states the limit.
 DESCRIPTOR_TOLERANCE = 16
 
 # The count of calls the count case makes. A monitor calls `sniff` four times each second,
@@ -72,7 +73,9 @@ def the_open_descriptor_count():
     """
     try:
         return len(os.listdir(DESCRIPTOR_DIRECTORY))
-    except OSError:
+    except FileNotFoundError:
+        # The catch names one class. A wider catch would report a directory this host holds
+        # as a directory it lacks. The skip reason would then name the wrong state.
         return None
 
 
@@ -528,8 +531,9 @@ class TheDescriptorCountCaseGuardsOnTheDirectoryItReads(unittest.TestCase):
     def test_the_case_runs_and_passes_where_the_host_holds_the_directory(self):
         """A host with the directory runs the case, and it passes."""
         # The read calls `os.path.isdir` and not `the_open_descriptor_count`. A prover that
-        # read the state through the guard it proves cannot tell a guard that skips on
-        # every host from a host that holds no such directory.
+        # reads the state through the guard it proves cannot tell two states apart. One is
+        # a guard that skips on every host. The other is a host that holds no such
+        # directory.
         if not os.path.isdir(DESCRIPTOR_DIRECTORY):
             self.skipTest("this host holds no " + DESCRIPTOR_DIRECTORY + " directory")
         result = self.the_guarded_case().run()
@@ -546,10 +550,17 @@ class TheDescriptorCountCaseGuardsOnTheDirectoryItReads(unittest.TestCase):
         real leak would measure nothing. This case therefore opens one descriptor inside
         each capture call and requires the case above to fail, which is the leak that case
         exists to detect.
+
+        The tolerance states one limit, and this case does not remove it. A leak of fewer
+        than `DESCRIPTOR_TOLERANCE` descriptors over the whole run passes the case above,
+        where the earlier comparison for equality failed it. #426 records the trade: the
+        equality read every descriptor of the process, so it failed on a run that opened one
+        elsewhere.
         """
         # The read calls `os.path.isdir` and not `the_open_descriptor_count`. A prover that
-        # read the state through the guard it proves cannot tell a guard that skips on
-        # every host from a host that holds no such directory.
+        # reads the state through the guard it proves cannot tell two states apart. One is
+        # a guard that skips on every host. The other is a host that holds no such
+        # directory.
         if not os.path.isdir(DESCRIPTOR_DIRECTORY):
             self.skipTest("this host holds no " + DESCRIPTOR_DIRECTORY + " directory")
         self.assertGreater(
@@ -561,7 +572,7 @@ class TheDescriptorCountCaseGuardsOnTheDirectoryItReads(unittest.TestCase):
         waited = BlockingSocket.select
 
         def select(capture, sockets, remain=None):
-            """Open one descriptor, then wait as the socket waits."""
+            """Return the sockets the socket reports, after this call opens one descriptor."""
             leaked.append(os.open(os.devnull, os.O_RDONLY))
             return waited(capture, sockets, remain)
 

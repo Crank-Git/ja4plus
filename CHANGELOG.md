@@ -560,7 +560,7 @@ holds every breaking change of this record against a row of that page.
   and `scapy` 2.7.0 raises `ImportError("libpcap is not available. Cannot compile filter !")`
   at `scapy/arch/common.py:87` where the loader cannot open `libpcap`. The call caught
   `Scapy_Exception` alone, so a host without `libpcap` ended four cases with an error
-  rather than with a failure, and a minimal Linux container is such a host. The helper now
+  rather than with a failure. A minimal Linux container is such a host. The helper now
   returns `None` there, and `the_filter_failure_or_skip` skips the four cases that read it.
   `the_absent_interface_failure` raised `AssertionError` where the host holds an interface
   named `nosuchif0`, and it now returns `None` and skips the four cases that read it.
@@ -579,15 +579,16 @@ holds every breaking change of this record against a row of that page.
   finder on `sys.meta_path` raises `OSError` from the import of `scapy.libs.winpcapy`,
   which is the failure the loader reports, and `scapy` raises the `ImportError` itself.
   **Every run-direction prover reads the ambient state by a route that passes the guard
-  it proves.** The first form read the state through the guard, and a mutation that made
-  the guard skip always then made the prover skip as well, so it measured nothing; the
-  mutation now turns four subtests red. **The count case carried a second defect and this
+  it proves.** The first form read the state through the guard. A mutation that made the
+  guard skip always then made the prover skip as well, so it measured nothing. The mutation
+  now turns four subtests red. **The count case carried a second defect and this
   round repairs it too.** The reading covers every descriptor of the process, so another
   part of the run that opens one moved it, and the case compared for equality.
-  `DESCRIPTOR_TOLERANCE` is 16 against the 600 descriptors the leak opens over 300 calls,
-  and `test_the_case_fails_where_the_monitor_leaks_a_descriptor_for_each_call` opens one
-  descriptor inside each capture call and requires the count case to fail. No file under
-  `ja4plus/` changes and no fingerprint moves.
+  `DESCRIPTOR_TOLERANCE` is 16 against the 600 descriptors the leak opens over 300 calls.
+  `test_the_case_fails_where_the_monitor_leaks_a_descriptor_for_each_call` opens one
+  descriptor inside each capture call and requires the count case to fail. **The tolerance
+  states one limit.** A leak below it passes where the equality failed, and the case states
+  that trade. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The capture privilege case read a host that grants the privilege** (#424). Round 152.
   `tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_reads_the_failure_this_host_reports`
