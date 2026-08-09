@@ -11,7 +11,7 @@ import logging
 import time
 from typing import Any
 
-from scapy.all import TCP, UDP, Raw, IP, Packet
+from scapy.all import UDP, Packet
 
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.utils.packet_utils import packet_endpoints

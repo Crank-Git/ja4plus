@@ -14,7 +14,6 @@ from ja4plus.fingerprinters.ja4 import (
     generate_ja4,
     get_raw_fingerprint,
 )
-from ja4plus.utils.tls_utils import is_grease_value
 
 
 def _build_ch(

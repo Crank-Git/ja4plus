@@ -1,7 +1,6 @@
 import unittest
 from scapy.all import IP, TCP, Raw
 from ja4plus.fingerprinters.ja4h import JA4HFingerprinter, generate_ja4h
-import binascii
 
 
 class TestJA4H(unittest.TestCase):

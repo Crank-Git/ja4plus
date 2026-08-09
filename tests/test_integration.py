@@ -1,13 +1,11 @@
 import unittest
-import hashlib
-from scapy.all import IP, TCP, UDP, Raw
+from scapy.all import IP, TCP, Raw
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 from ja4plus.fingerprinters.ja4s import JA4SFingerprinter
 from ja4plus.fingerprinters.ja4h import JA4HFingerprinter
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
 from ja4plus.fingerprinters.ja4t import JA4TFingerprinter
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter
-from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 
 
 class TestIntegration(unittest.TestCase):

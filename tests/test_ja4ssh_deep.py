@@ -8,17 +8,11 @@ connection tracking, and the fingerprinter class interface.
 
 import unittest
 import hashlib
-import time
 from scapy.all import IP, TCP, Raw, Ether
 
 from ja4plus.fingerprinters.ja4ssh import (
     JA4SSHFingerprinter,
     generate_ja4ssh,
-)
-from ja4plus.utils.ssh_utils import (
-    is_ssh_packet,
-    parse_ssh_packet,
-    extract_hassh,
 )
 
 

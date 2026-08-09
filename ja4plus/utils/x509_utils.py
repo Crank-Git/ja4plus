@@ -6,8 +6,6 @@ Enhanced X.509 certificate utility functions for JA4+ fingerprinting.
 # without this import.
 from __future__ import annotations
 
-import binascii
-import hashlib
 import logging
 from typing import Any
 
@@ -17,7 +15,6 @@ from typing import Any
 # #314 removes the second copy of it.
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from cryptography.x509.oid import ExtensionOID
 
 logger = logging.getLogger(__name__)
 

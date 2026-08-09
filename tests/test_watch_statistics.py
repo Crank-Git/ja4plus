@@ -16,7 +16,6 @@ packet source, so the measured behaviour is the loop and not the capture layer.
 """
 
 import io
-import sys
 import threading
 import time
 import unittest

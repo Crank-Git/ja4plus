@@ -8,6 +8,25 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **`ruff` enforces the F401 rule, and 54 unused imports are gone** (#297). Round TBD.
+  `pyproject.toml` no longer holds `F401` in the `ignore` list of `[tool.ruff.lint]`.
+  **Every count the issue recorded is stale.** The issue read 58 findings across 28
+  files on `issue/47-py-typed` at `ruff 0.14.5`, and this round reads **54 findings
+  across 27 files** on `batch/362-hygiene-three` at `ruff 0.16.2`. The `ignore` comment
+  recorded 82 I001 findings, the rule reports 76, and the comment now states 76.
+  **`ruff --fix` decides no removal here, because an unused import is not always
+  unused.** This round classified all 54 first, against five shapes: a side-effect
+  import, a re-export, a `TYPE_CHECKING` import, a test helper, and a genuinely unused
+  name. All 54 are genuinely unused. No consumer imports a flagged name from a flagged
+  module, and no file that holds a finding declares `__all__` or a `TYPE_CHECKING`
+  block. **No import statement under `ja4plus/` loses every name**, so every
+  `scapy.all` line keeps `Packet` and no module-level side effect disappears. 15
+  findings sit under `ja4plus/fingerprinters/` and `ja4plus/utils/`, and the
+  conformance suite proves each removal inert: 1531 passed, 143 skipped and 135 xfailed
+  before the change and after it, against 135 register keys. The unit suite reports
+  2212 passed, 2 skipped, 8 xfailed and 96 subtests before and after. Coverage holds at
+  93, and the missed line count stays at 287. **No fingerprint moves.**
+
 - **The lookup cache remembers no key it evicts, and it saves 16.06 MiB** (#359).
   Round TBD. `StateTable` remembers the key of every entry it evicts, and that memory
   buys `returned_connections`. `Processor.stats` collects the state tables of the
