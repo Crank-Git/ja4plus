@@ -73,7 +73,7 @@ def read_report(path: Path) -> Dict[str, object]:
 
 def candidates(report: Dict[str, object]) -> List[str]:
     """Return every candidate identifier the report names, in order."""
-    return list(report["candidates"])  # type: ignore[arg-type]
+    return [str(case) for case in report["candidates"]]  # type: ignore[union-attr]
 
 
 def counts_by_test_file(report: Dict[str, object]) -> Dict[str, int]:
@@ -165,13 +165,16 @@ def census(report_path: Path, directory: Path) -> Census:
     report = read_report(report_path)
     found = candidates(report)
     claims = read_claims(directory)
+    # The membership test runs once for each claim, so the set is built once. A sweep of
+    # the whole package names more than a thousand candidates.
+    named = set(found)
     return Census(
         commit=str(report.get("commit", "")),
         counts=counts_by_test_file(report),
         candidates=found,
         claimed_twice={case: names for case, names in claims.items() if len(names) > 1},
         unclaimed=[case for case in found if case not in claims],
-        unknown={case: names for case, names in claims.items() if case not in set(found)},
+        unknown={case: names for case, names in claims.items() if case not in named},
         faults=settlement_faults(directory),
     )
 
