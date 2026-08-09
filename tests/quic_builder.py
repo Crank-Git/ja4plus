@@ -128,25 +128,68 @@ def handshake_packet(payload_length=32, version=QUIC_VERSION_1):
     return header + b"\x00" * payload_length
 
 
-def server_initial(client_dcid, plaintext, packet_number=0, version=QUIC_VERSION_1, trailer=b""):
+def first_byte(type_code, long_header):
+    """Return the unprotected first byte of one QUIC long header.
+
+    RFC 9000 Section 17.2 gives bit 7 to the header form and bit 6 to the fixed bit. The
+    type code occupies bits 4 and 5.
+
+    Args:
+        type_code: The long-header type code.
+        long_header: True writes the long-header form. False clears bit 7, so that a
+            reader reads the byte as a short header.
+
+    Returns:
+        One byte.
+    """
+    form_bit = 0x80 if long_header else 0x00
+    return form_bit | 0x40 | (type_code << 4)
+
+
+def server_initial(
+    client_dcid,
+    plaintext,
+    packet_number=0,
+    version=QUIC_VERSION_1,
+    trailer=b"",
+    type_code=None,
+    long_header=True,
+    key_version=None,
+):
     """Return the UDP payload of one QUIC server Initial packet that decrypts.
+
+    The AEAD tag covers the header, so a test that changes the header form, the version
+    number or the type code states the change here. A test that changes a byte of the
+    built packet destroys the tag, and the reader then returns None for that reason
+    instead of for the guard the test names.
 
     Args:
         client_dcid: The destination connection ID the client sent. The server Initial
             keys derive from it.
         plaintext: The QUIC frames the packet carries.
         packet_number: The packet number, which the builder encodes in one byte.
-        version: The QUIC version number.
+        version: The QUIC version number the builder writes in the header.
         trailer: Bytes the builder appends behind the Initial packet, so that a test
             reproduces a datagram that coalesces two QUIC packets.
+        type_code: The long-header type code the builder writes. The default is the code
+            the version gives an Initial packet.
+        long_header: True writes the long-header form. False clears bit 7, so that a
+            test builds a packet a reader reads as a short header.
+        key_version: The QUIC version whose salt derives the keys. The default is the
+            version the header carries. A test that writes version 0 states 1 here, so
+            that the packet decrypts under the version 1 salt.
 
     Returns:
         The bytes of the UDP payload.
     """
-    _, server_secret = derive_initial_secrets(bytes(client_dcid), 1 if version == 1 else 2)
+    if key_version is None:
+        key_version = 1 if version == QUIC_VERSION_1 else 2
+    if type_code is None:
+        type_code = INITIAL_TYPE_CODES[version]
+    _, server_secret = derive_initial_secrets(bytes(client_dcid), key_version)
     key, iv, hp_key = derive_key_iv_hp(server_secret)
 
-    header = bytes([0xC0]) + struct.pack("!I", version)
+    header = bytes([first_byte(type_code, long_header)]) + struct.pack("!I", version)
     header += b"\x00"  # An empty destination connection ID.
     header += b"\x00"  # An empty source connection ID.
     header += b"\x00"  # An empty token.
@@ -220,31 +263,51 @@ def client_hello(sni_hostname="example.com"):
     return b"\x01" + len(body).to_bytes(3, "big") + bytes(body)
 
 
-def client_initial_crypto(dcid, plaintext, packet_number=0, version=QUIC_VERSION_1, type_code=None):
+def client_initial_crypto(
+    dcid,
+    plaintext,
+    packet_number=0,
+    version=QUIC_VERSION_1,
+    type_code=None,
+    long_header=True,
+    key_version=None,
+):
     """Return the UDP payload of one QUIC client Initial packet that decrypts.
 
     `client_initial` builds a packet with no readable payload. This builder encrypts the
     frames a caller gives, so that a test measures what the reader extracts.
+
+    The AEAD tag covers the header, so a test that changes the header form, the version
+    number or the type code states the change here. A test that changes a byte of the
+    built packet destroys the tag, and the reader then returns None for that reason
+    instead of for the guard the test names.
 
     Args:
         dcid: The destination connection ID the client chooses. The Initial keys derive
             from it.
         plaintext: The QUIC frames the packet carries.
         packet_number: The packet number, which the builder encodes in one byte.
-        version: The QUIC version number.
+        version: The QUIC version number the builder writes in the header.
         type_code: The long-header type code the builder writes. The default is the code
             the version gives an Initial packet. A test states another code to build a
             packet that carries Initial keys under a type that is no Initial type.
+        long_header: True writes the long-header form. False clears bit 7, so that a
+            test builds a packet a reader reads as a short header.
+        key_version: The QUIC version whose salt derives the keys. The default is the
+            version the header carries. A test that writes version 0 states 1 here, so
+            that the packet decrypts under the version 1 salt.
 
     Returns:
         The bytes of the UDP payload.
     """
+    if key_version is None:
+        key_version = 1 if version == QUIC_VERSION_1 else 2
     if type_code is None:
         type_code = INITIAL_TYPE_CODES[version]
-    client_secret, _ = derive_initial_secrets(bytes(dcid), 1 if version == QUIC_VERSION_1 else 2)
+    client_secret, _ = derive_initial_secrets(bytes(dcid), key_version)
     key, iv, hp_key = derive_key_iv_hp(client_secret)
 
-    header = bytes([0xC0 | (type_code << 4)]) + struct.pack("!I", version)
+    header = bytes([first_byte(type_code, long_header)]) + struct.pack("!I", version)
     header += bytes([len(dcid)]) + bytes(dcid)
     header += b"\x00"  # An empty source connection ID.
     header += b"\x00"  # An empty token.
