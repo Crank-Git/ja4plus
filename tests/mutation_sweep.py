@@ -317,6 +317,29 @@ def module_paths(root: Path, patterns: Sequence[str]) -> List[Path]:
     return [path for path in paths if path.is_file()]
 
 
+def head_commit(root: Path) -> str:
+    """Return the commit the sweep reads.
+
+    A checkpoint keys each result on the position of the expression in the file, so a
+    result belongs to one commit. The report names that commit, and a reader then proves
+    that it is an ancestor of the head of the branch.
+
+    Args:
+        root: The repository root.
+
+    Returns:
+        The 40-character commit, or the empty string when git reads none.
+    """
+    finished = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return finished.stdout.strip()
+
+
 def markdown_report(report: Dict[str, object]) -> str:
     """Return the report as a page a reader can follow."""
     modules = report["modules"]
@@ -342,6 +365,7 @@ def markdown_report(report: Dict[str, object]) -> str:
         "| Field | Value |",
         "|---|---|",
         "| Date | {} |".format(report["generated"]),
+        "| Commit | `{}` |".format(report["commit"]),
         "| Cases collected | {} |".format(report["cases_collected"]),
         "| Mutations per module | {} |".format(report["max_per_module"] or "every one"),
         "| Sampling seed | {} |".format(report["seed"]),
@@ -519,6 +543,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if number is not None:
             signal.signal(number, stop)
 
+    # The commit is read before the first mutation lands, so it names the code the
+    # results belong to and not a later state of the worktree.
+    commit = head_commit(root)
     started = time.time()
     checkpoint = Path(options.checkpoint)
     done = read_checkpoint(checkpoint)
@@ -593,6 +620,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     candidates = sorted(case for case in cases if case not in killers and case not in baseline)
     report = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "commit": commit,
         "seed": options.seed,
         "max_per_module": options.max_per_module,
         "tests": tests,
