@@ -688,16 +688,20 @@ class TestTheMarkerRuleCounts:
         """A new decided entry moves the denominator, which is the drift #345 repairs.
 
         The prose states one number. The register states another the moment an entry
-        lands, so the two cases above fail and name the repair.
+        lands, so the two cases above fail and name the repair. The case states both
+        counts, because a rise of one alone reads the same on a measurement that counts
+        every entry and ignores the marker.
         """
-        register = {"a.pcap/JA4": Deviation(issue=138, cause="#138 decided.", decided=True)}
+        register = {
+            "a.pcap/JA4": Deviation(issue=138, cause="#138 decided.", decided=True),
+            "c.pcap/JA4T": Deviation(issue=215, cause="#215 decides the form."),
+        }
         gained = dict(register)
         gained["b.pcap/JA4"] = Deviation(
             issue=96, cause="Changelog round 66 kept it.", decided=True
         )
-        assert (
-            measured_marker_rule_counts(gained)[1] == measured_marker_rule_counts(register)[1] + 1
-        )
+        assert measured_marker_rule_counts(register)[1] == 1
+        assert measured_marker_rule_counts(gained)[1] == 2
 
     def test_the_measurement_counts_a_decided_entry_that_cites_no_decision(self):
         register = {
