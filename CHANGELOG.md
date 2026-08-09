@@ -227,8 +227,8 @@ holds every breaking change of this record against a row of that page.
 - **Every sweep candidate of the seven interface modules is settled** (#414). Round TBD.
   New files `docs/mutation_reports/414-interface.json`,
   `docs/mutation_settlements/414-interface.json` and
-  `tests/test_settlement_procedure.py`. Seven single-module sweeps read the seven files
-  `git ls-files 'ja4plus/*.py'` names, with `--max-per-module 0`, over **556 mutations**:
+  `tests/test_settlement_procedure.py`. Seven single-module sweeps read the seven Python modules of the top directory of the package, which `tests/mutation_sweep.py --module 'ja4plus/*.py'` selects with `Path.glob`,
+  with `--max-per-module 0`, over **556 mutations**:
   `cli.py` 226, `watch.py` 97, `ja4db.py` 68, `output.py` 68, `processor.py` 54,
   `__init__.py` 32 and `types.py` 11. **The cost was measured before the run and not
   estimated.** The minimal cover of each module, timed as a whole `pytest` command, gives a

@@ -71,7 +71,8 @@
    "ja4plus/processor.py": 21.84,
    "ja4plus/types.py": 9.45,
    "ja4plus/watch.py": 5.7
-  }
+  },
+  "module_set": "The seven Python modules of the top directory of the package. `tests/mutation_sweep.py --module 'ja4plus/*.py'` selects them, because `Path.glob` reads `*` as one path part. **The body of #414 asks a worker to confirm the list against `git ls-files 'ja4plus/*.py'`, and that command names 31 files**, because a git pathspec matches `*` across a directory separator. The instruction is unsatisfiable as written, and this record names the seven files rather than the command. `.claude/rules/conformance.md` already warns about the same reading of `ja4plus/**/*.py`, which names 24."
  },
  "settlements": [
   {

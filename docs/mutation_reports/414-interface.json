@@ -7532,5 +7532,5 @@
  "sweep_commits": [
   "6fd61f8432453d9cf14eb150132448644e29b74d"
  ],
- "note": "Seven single-module sweeps produce this report, one for each module of `git ls-files 'ja4plus/*.py'`. Every sweep read commit 6fd61f8432453d9cf14eb150132448644e29b74d. The `tests` field of each entry of `sweeps` names the minimal cover of that module, and `tests` at the top level is the union. A candidate of this report is a case that no mutation of its own module killed, so the list is the union over the seven sweeps and one case may reach it from more than one module."
+ "note": "Seven single-module sweeps produce this report, one for each of the seven Python modules of the top directory of the package, which `--module 'ja4plus/*.py'` selects with `Path.glob`. **A git pathspec reads the same glob differently**: `git ls-files 'ja4plus/*.py'` names 31 files, because git matches `*` across a directory separator. Every sweep read commit 6fd61f8432453d9cf14eb150132448644e29b74d. The `tests` field of each entry of `sweeps` names the minimal cover of that module, and `tests` at the top level is the union. A candidate of this report is a case that no mutation of its own module killed, so the list is the union over the seven sweeps and one case may reach it from more than one module."
 }
