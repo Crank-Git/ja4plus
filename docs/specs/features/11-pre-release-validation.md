@@ -7,7 +7,7 @@ issues: [406, 407, 408, 409, 410, 411, 412, 413, 414, 415]
 mockups: []
 number_gap: "The file number equals the epic number. Epic 10 (#194) holds no feature
   document, so `features/10-*.md` does not exist. The directory sequence carries a gap,
-  and no file is lost."
+  and it loses no file."
 ---
 
 ## Purpose
@@ -23,8 +23,8 @@ measurement before the publish.
    distribution at all.
 2. **Every Linux result comes from a continuous-integration runner.** The development
    host is macOS. The user granted one Linux host on 2026-08-09, and no run has used it.
-3. **The mutation sweep names 976 candidates, and two of them are settled.** #206 records
-   the count, and `docs/mutation_sweep.md` states it in the `Candidates` row.
+3. **The mutation sweep names 976 candidates, and #172 settled two of them.** #206
+   records the count, and `docs/mutation_sweep.md` states it in the `Candidates` row.
 4. **The package states no throughput.** `Non-goals` of `docs/specs/spec.md` states that
    this project measures throughput and reports it.
    `docs/specs/features/03-concurrency-safety.md` states the memory ceiling, and that
@@ -36,7 +36,7 @@ fingerprint.**
 ## User stories
 
 - As a maintainer, I want a case that installs the built package and produces a
-  fingerprint, so that I do not publish a package that imports and then does nothing.
+  fingerprint, so that I publish no package that only imports.
 - As a maintainer, I want the gates measured on a Linux host, so that a Linux defect
   reaches me before the batch gate.
 - As a maintainer, I want every candidate settled, so that I know which cases measure the
@@ -192,9 +192,10 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
   from the FoxIO material, that proves the change. `CLAUDE.md` rule 1 binds it.
 - Where a candidate shows that a fingerprinter produces a wrong value, the worker opens a
   decision issue and changes no fingerprinter.
-- A candidate belongs to one sweep. The sweep names a case a candidate when no mutation
-  of that sweep made the case fail, and the sweep does not already count the case as a
-  failure before it applies a mutation.
+- A candidate belongs to one sweep. The sweep names a case a candidate when both
+  statements below hold.
+  1. No mutation of that sweep makes the case fail.
+  2. The sweep does not count the case as a failure before it applies a mutation.
 - **A candidate of the whole-package sweep names no module.** `tests/mutation_sweep.py`
   writes the `candidates` key as one list of case identifiers, and it groups that list by
   test file at `tests/mutation_sweep.py:396`. A candidate survives every mutation of
@@ -251,8 +252,8 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 Verified against the pages above, retrieved 2026-08-09.
 
 `python -m build` writes both artefacts into `{srcdir}/dist` by default. It builds the
-source distribution from the project root, and it builds the wheel from that source
-distribution. A wheel run therefore reads the source distribution already, and #409 still
+source distribution from the source tree, and it builds the wheel from that source
+distribution. A wheel run therefore reads the source distribution already. #409 still
 installs the source distribution, because `pip` runs the build backend on the user's
 host.
 
@@ -268,7 +269,7 @@ the checkout is.
 
 | Case | What happens |
 |---|---|
-| The clean environment resolves the working copy. | The case fails, because `ja4plus.__file__` names a path below the repository root. |
+| The clean environment resolves the source tree. | The case fails, because `ja4plus.__file__` names a path below the repository root. |
 | The wheel omits the mapping file. | The lookup reports an empty database, and the control case proves the comparison can fail. |
 | The source distribution omits the mapping file. | The byte-count case fails, and the package imports. |
 | `pip` resolves a wheel where the case asks for the source distribution. | The case reads the recorded `pip` output and fails. |
