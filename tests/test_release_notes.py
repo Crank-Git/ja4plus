@@ -19,7 +19,7 @@ the notes names the row that holds `N`, and that row mentions `#M`. The first fo
 file compared the `Record` cell of the notes against the cell of the migration page instead.
 **Two files that copy one error agree, and the comparison passed on it.** #401 held that
 error. The same rule now reads the citations of the migration page against the same table,
-because a page that copies a wrong round from another document reads as correct.
+because a page that copies a wrong round from another file reads as correct.
 
 **These cases read both directions.** #66 wrote the first direction alone, because the notes
 held a change the page omitted. #319 narrowed `compute_ja4x_from_pem` and
@@ -254,12 +254,12 @@ def _wrong_citations(text: str, source: str) -> list[str]:
     """Return every citation of a text that names the wrong Changelog row.
 
     **A round number alone proves nothing.** A citation that names a real round beside the
-    wrong issue reaches a row that records another change, and a reader who follows it
-    learns nothing about the change in front of them.
+    wrong issue reaches a row that records another change. A reader who follows it learns
+    nothing about the change in front of them.
 
-    **This reader compares one document against the Changelog table and never against a
-    second document.** Two documents that copy one error agree, and a comparison between
-    them passes on the error. #401 is that case.
+    **This reader compares one file against the Changelog table and never against a second
+    file.** Two files that copy one error agree, and a comparison between them passes on
+    the error. #401 is that case.
 
     Args:
         text: The text to read.
@@ -487,15 +487,14 @@ def test_every_citation_of_the_migration_page_names_the_row_that_records_it() ->
     """A `Round N, #M` citation of the migration page names a row that holds `N` and `#M`.
 
     **The page is a second copy of the record, and it copied a wrong round.** It cited
-    `Round 122, #59 and #364` for the typed lookup result and for the item access, and the
-    two are different changes under different rounds. Row 122 records #59 and row 123
-    records #364, so a reader who followed the citation reached a row about `lookup_many`.
-    #401 holds the repair.
+    `Round 122, #59 and #364` for the typed lookup result and for the item access. The two
+    are different changes under different rounds. Row 122 records #59 and row 123 records
+    #364, so a reader who followed the citation reached a row about `lookup_many`. #401
+    holds the repair.
 
-    **This case reads the Changelog table of `docs/specs/spec.md` and no other document.**
-    The release notes hold the same citations, and the first citation case of #66 compared
-    the two documents against each other. Both held the error, so they agreed and the case
-    passed.
+    **This case reads the Changelog table of `docs/specs/spec.md` and no other file.** The
+    release notes hold the same citations, and the first citation case of #66 compared the
+    two files against each other. Both held the error, so they agreed and the case passed.
     """
     text = MIGRATION.read_text(encoding="utf-8")
     citations = _citations(text)
