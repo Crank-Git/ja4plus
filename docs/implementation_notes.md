@@ -1473,6 +1473,7 @@ No FoxIO vector carries a repeated cookie name, so the FoxIO Python implementati
 settles the reading. It collects the pairs into a list, and it sorts that list on the
 cookie name alone:
 
+<!-- sample: skip the block quotes the FoxIO reference implementation, which this project runs never -->
 ```python
 sorted_pairs = sorted(cookie_pairs, key=lambda p: p[0])
 x['cookie_fields'] = [pair[0] for pair in sorted_pairs]

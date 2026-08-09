@@ -48,3 +48,7 @@ Thumbs.db
 # The FoxIO conformance vectors are committed. The negation must follow the
 # capture patterns above, because a later rule wins.
 !tests/foxio_vectors/**
+
+# `mkdocs build` writes the site here. `mkdocs.yml` names the directory as `site_dir`.
+# The build output follows the sources, so a committed copy would stop following them.
+/site/

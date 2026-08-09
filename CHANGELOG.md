@@ -4,9 +4,266 @@ All notable changes to ja4plus are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - unreleased
+
+Version 0.6.0 is the released version on PyPI. Version 1.0.0 is not released yet, and the
+date of this section arrives with the promotion of `dev` to `master`.
+
+`FR-documentation-13` asks this file to record every breaking change of the release. The
+two tables below name each one and cite the round that records it. The entries under
+`### Added`, `### Changed`, `### Fixed` and `### Removed` hold the whole detail.
+[`docs/migration-0.6-to-1.0.md`](docs/migration-0.6-to-1.0.md) states the old form, the new
+form and the reason for each change, so read that page before you upgrade.
+
+**Warning: a fingerprint of version 0.6.0 and a fingerprint of version 1.0.0 are not always
+comparable.** Read [The fingerprints that move](#the-fingerprints-that-move) before you
+compare two sets of results. That table holds eight rows. Seven of them move a value a tool
+may have stored, and #214 adds a value that version 0.6.0 never produced.
+
+`tests/test_release_notes.py` holds the two tables against the record. A change that
+`CHANGELOG.md` marks `**BREAKING`, and a change that the migration page records, reaches a
+row below or fails a case. A list that a reader keeps by hand goes stale on the day the
+next breaking change lands, and a case does not.
+
+### The breaking changes
+
+#### The interface changes
+
+| Change | Record |
+|---|---|
+| `Processor.process_packet` returns a list of `FingerprintResult` objects, and no longer a list of dictionaries. | Round 90, #45 |
+| `JA4DBClient.lookup` returns a frozen `LookupResult`, and no longer a dictionary. | Round 122, #59 |
+| Item access on a `LookupResult` works for one major version, and it raises a `DeprecationWarning`. | Round 123, #364 |
+| `JA4DBClient()` reaches no network, and `JA4DBClient(allow_remote=True)` opts in. | Round 117, #57 |
+| `allow_remote` is the first argument of `JA4DBClient`, so `JA4DBClient(100)` raises a `TypeError`. | Round 117, #57 |
+| `ja4plus db update` writes the cache directory of the platform, and no longer the installed package. | Round 121, #61 |
+| `ja4plus watch` reads an interface, and `ja4plus live` stays as an alias of it. | Round 101, #53 |
+| The `ja4plus.collector` module leaves the package, so `import ja4plus.collector` raises a `ModuleNotFoundError`. | Round 71, #191 |
+| The `json` format and the `csv` format write four address fields, and no longer one composite `source` field. | Round 96, #49 |
+| The command writes every result to standard output and every diagnostic to standard error. | Round 95, #52 |
+| The monitor opens the capture socket to test the privilege, and no longer reads `os.geteuid()`. | Round 104, #56 |
+| `compute_ja4x_from_pem` and `compute_ja4x_from_der` raise where an unreadable input returned `None`. | Round 133, #319 |
+| `requires-python` moves from `>=3.8` to `>=3.9`. | Round 135, #76 |
+
+#### The fingerprints that move
+
+| Change | Record |
+|---|---|
+| JA4SSH emits one fingerprint for every 200 SSH packets, and no longer one for every 10. | Round 9, #28 |
+| JA4SSH counts an SSH message, and no longer a TCP segment that carries a payload. | #98 |
+| JA4SSH counts a true bare ACK alone. | #92 |
+| JA4SSH emits every window a connection leaves open, so a capture produces one more value. | #214 |
+| JA4L and JA4LS report a one-way latency, and no longer a round-trip time. | #88 |
+| The JA4L QUIC server point reads the Initial packet whose TLS handshake type is `2`. | #102 |
+| Both JA4S raw fields hold the extension list in wire order. | #108 |
+| JA4 and JA4S write `s2` for the version `0x0002`, and FoxIO retracted the earlier reading. | #227 |
+
+**Two further changes narrow the published interface, and the sweep of #395 judged each one
+marginal.** `ja4plus.__all__` names 25 entries, so a `from ja4plus import *` that read a
+name outside the 25 loses it, under Round 90, #47. `import ja4plus` registers the tunnel
+dissectors of scapy for the whole process, under Round 12, #94.
+
+**The record and the migration page name the same breaking changes.** #319 narrowed
+`compute_ja4x_from_pem` and `compute_ja4x_from_der`, and #397 recorded the change. The
+interface table above carries the row, and #66 found that `docs/migration-0.6-to-1.0.md`
+held none. #66 edited no page of another issue. #399 added the row, and #403 corrected
+this paragraph.
+`tests/test_release_notes.py::test_every_breaking_change_of_the_record_reaches_the_migration_page`
+holds every breaking change of this record against a row of that page.
+
+### Added
+
+- **The documentation site publishes to GitHub Pages, and this file holds the release
+  notes of version 1.0.0** (#66). Round 142. New file `.github/workflows/docs.yml`. It
+  fires on a push to `master`, which is the live branch, and a promotion from `dev` to
+  `master` is a step the user approves. **The workflow builds nothing of its own.**
+  `.github/workflows/docs-build.yml` already installs the committed `docs` pins into an
+  empty environment and runs `mkdocs build --strict`, and a second recipe for one site
+  drifts apart from the first in silence. That job gains a `workflow_call` trigger and one
+  conditional step, so the publish workflow calls it and deploys the artifact it uploads.
+  The input is absent on a `push` trigger and on a `pull_request` trigger, so a pull
+  request uploads nothing. No pin and no build step changes, and #391 keeps both.
+  **This repository holds no GitHub Pages site, and no run has ever deployed.**
+  `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides whether to
+  turn Pages on, because that change publishes a public website. The first job therefore
+  reads `GET /repos/{owner}/{repo}/pages` and names the setting in the failure: a 404
+  reports that the site is absent, a `build_type` other than `workflow` reports the wrong
+  source, and any other status reports the status it read. **The deployment stays
+  unverified until the user changes the setting**, and no case here claims otherwise.
+  **The release notes name every breaking change the record holds**: thirteen interface
+  changes and eight fingerprints that move. New file `tests/test_release_notes.py` holds
+  the two tables against the `**BREAKING` entries of this file, against
+  `docs/migration-0.6-to-1.0.md`, and against the Changelog table of `docs/specs/spec.md`.
+  **The self-review then found a citation the first form of that file could not read.**
+  The migration page cites one change under `Round 122` and names #364 beside #59, and
+  round 123 is the row that records #364. A case that compared the two `Record` cells
+  passed, because both files held one error. The case now reads the Changelog table, which
+  is the authority both files copy, and #401 holds the repair of the page. Six mutations
+  prove the cases discriminate, and each was restored. New file
+  `tests/test_documentation_publish.py` reads the two workflows. `actionlint` 1.7.7 reports
+  no finding on either one. No file under `ja4plus/` changes and no fingerprint moves.
+
+- **Every code sample and every example script runs in continuous integration** (#63).
+  Round 138. Nothing ran a sample before this round, so a sample that stopped working
+  stopped working in silence. That is the shape this project records seventeen times: a
+  comparison that never runs reads as a comparison that passes. **The reader finds 157
+  fenced blocks across `README.md` and `docs/`, and a second reader agrees on every
+  file.** `tests/documentation_samples.py` matches a fence grammar and tracks the fence
+  width, and `_second_reader_block_count` uses string operations alone. **The two readers
+  disagreed on the first run, and the disagreement was a real defect.** Four files of
+  `docs/specs/foxio/` each hold an inline code span that opens a line with three
+  backticks, and the second reader read each one as a fence. The floor was then set from
+  the corrected reader, because #302 set its floor from a reader that skipped every
+  wrapped row. **The census reads 43 blocks that run, 2 that raise a named error, 94 that
+  the harness skips and 18 that carry output.** A `python` block and a `bash` block run
+  by default. `<!-- sample: skip <reason> -->` states why a block runs never, and
+  `<!-- sample: raises <error> <reason> -->` states the error a block raises on purpose.
+  A skip reason shorter than four words fails a case, so no skip is silent. **14 samples
+  carry a skip marker and 80 blocks of `docs/specs/` carry a directory reason**, because
+  that directory holds the specification package and the verbatim FoxIO transcription.
+  **No sample reaches the network**, and a fixture refuses every outbound connection
+  while a Python sample runs. **Five scripts of `examples/` run under six command lines.**
+  `examples/live_traffic_fingerprinting.py` gained a `--pcap` option that passes
+  `offline` to `sniff`. **Four mutations prove the harness discriminates**, one for each
+  of the README Python path, the README shell path, the `docs/` path and the `examples/`
+  path, and each was restored. New files `tests/documentation_samples.py`,
+  `tests/test_documentation_samples.py` and `tests/test_examples.py`, and a new `samples`
+  job in `.github/workflows/test.yml`. **The merge with #64 exposed a hole in the first
+  form of this harness.** `PYTHON_SAMPLE_FILES` read the keys of a table somebody
+  maintained by hand, so a page absent from that table was read, counted and classified
+  as runnable, and then never run. A probe page under `docs/reference/` holding a broken
+  import proves it: the reader called the block runnable and the execution cases reported
+  `3 passed`. **The file set now derives from the filesystem and the block counts stay
+  measured by hand**, because the only tool that could derive a count is the reader the
+  cases exist to check. `MINIMUM_BLOCKS_PER_PAGE` is a floor for each page and no longer
+  an exact count. `test_the_execution_cases_reach_every_sample_the_reader_calls_runnable`
+  compares the reader against the runner, so the two cannot drift apart again. The five
+  pages #64 added hold `:::` directives and no fenced block, so both counts stay at 157.
+  No file under `ja4plus/` changes and no fingerprint moves.
+
+### Fixed
+
+- **The migration page cited round 122 for the item access, and it recorded the narrowed
+  certificate readers not at all** (#399, #401, #403). Round 143. The page held eleven breaking
+  changes and none recorded #319. That round narrowed `compute_ja4x_from_pem` and
+  `compute_ja4x_from_der`, so an input that returned `None` in version 0.6.0 can now raise.
+  The page also cited one row under `Round 122, #59 and #364`. The Changelog table of
+  `docs/specs/spec.md` holds round 122 for #59 and round 123 for #364. **Both defects sit
+  in a page this epic created, and #66 found both while it wrote the release notes.** The
+  page now holds thirteen rows: the conflated row parts into two, and the certificate
+  readers gain one. **The repair is the two cases that make the page answerable to the
+  record.** `test_every_citation_of_the_migration_page_names_the_row_that_records_it` reads
+  every `Round N, #M` citation of the page against the Changelog table of
+  `docs/specs/spec.md`, and it reads no second file. The first citation case of #66
+  compared the `Record` cell of the notes against the cell of the page. Both files held one
+  error, so the two agreed and the case passed. That is the eighteenth recorded instance of
+  a comparison that never runs.
+  `test_every_breaking_change_of_the_record_reaches_the_migration_page` reads the direction
+  #66 left open. The case that reads the other direction passes on a page that holds fewer
+  changes than the record. **#403 is the sentence this repair falsified.** The release
+  notes read "One breaking change reaches this record and reaches no row of the migration
+  page", and the new row of #319 made that untrue. **No case read the paragraph**, so a
+  reader found it and the suite did not.
+  `test_the_release_notes_report_the_gap_the_record_shows_and_no_other` connects the prose
+  to the measurement. It reads a present-tense gap claim against the set difference of the
+  record and the page, and it fails in both directions: on a claim the record does not
+  show, and on a gap the notes report not at all. Six mutations prove the three cases
+  discriminate, and each was restored. The unit suite rises from 2499 passed to 2502, and
+  coverage holds at 94. The conformance suite reports 134 xfailed against 134 register
+  keys. This entry
+  changes no file under `ja4plus/` and no fingerprint moves.
+- **The memory ceiling control reads a block count, and a busy host no longer moves it**
+  (#389). Round 144. `TestTheStatedMemoryCeiling::test_a_smaller_entry_count_holds_less_resident_memory`
+  failed and then passed on an unchanged tree, and five workers reported it. The case is
+  the control that proves the entry count bound holds the ceiling, and **a control that
+  fails when nothing is wrong teaches a reader to disregard it.** The case now reads the
+  count of memory blocks the run holds, and it carries the name
+  `test_a_smaller_entry_count_holds_fewer_memory_blocks`. **Memory pressure is the
+  mechanism, and processor contention is not.** A resident reading states what the host
+  left in memory. A host under memory pressure reclaims the pages of a running process,
+  and it reaches the run that holds the most memory first. The reclaim moves the two runs
+  by different amounts, and it moves the growth ratio toward one. **The reproduction ran
+  on one Ubuntu 24.10 host with 56 cores.** Each measurement run ran under `systemd-run
+  --user --scope -p MemoryMax=<limit>`. The resident ratio read 0.434 at no limit, 0.962
+  at 80 MiB and 0.786 at 75 MiB, and at 70 MiB both runs added 0.00 MiB. **The block ratio
+  read 0.392 at every one of the four.** A deliberate processor load of 56 processes that
+  hold a processor busy held the load average at 58 for three rounds, and it moved neither
+  reading. **A rule that repeats the pair and takes the median repairs nothing.** Three
+  rounds at the 80 MiB limit read 1.047, 0.885 and 1.045. The rule also costs three times
+  the wall clock. The run collects the cyclic garbage before it counts the blocks. That
+  collection moves the macOS ratio from 0.612 and 0.664 across two rounds to 0.398 at each
+  of three. **`CONTROL_GROWTH_RATIO` stays 0.85**, and the mutation that raises the control
+  bound to the shipped 10000 reads 1.361 on Linux and 1.367 on macOS. **The floor moves
+  from 10.0 MiB to four blocks for each packet**, because a MiB floor is the reading the
+  host moves. Under the 70 MiB limit the shipped run added 0.00 MiB and 376954 blocks. The
+  measured rate is 12.37 blocks for each packet at the default size, so the reading sits
+  3.1 times above the new floor. The retired MiB floor sat 2.9 times below its reading, so
+  the new floor holds the strength the old one held. **No file under `ja4plus/` changes and
+  no fingerprint moves.**
+
+- **`generate_ja4` reads a TLS info dictionary, and the documentation stated a packet**
+  (#63). Round 138. `README.md` and `docs/api_reference.md` each wrote
+  `generate_ja4(packet)`, and the call raises `AttributeError: get`. The function reads
+  the dictionary that `ja4plus.utils.tls_utils.extract_tls_info` returns. Eight of the
+  nine other one-shot functions read a packet. `generate_ja4x` reads a dictionary that
+  `docs/api_reference.md` already recorded. **The sample harness of #63 found this on its
+  first green run, and no case reached it before**, because nothing ran the sample. This
+  entry repairs the two documents and changes no signature.
 
 ### Changed
+
+- **The record names the two breaking changes it never captured** (#395). Round 141.
+  #65 found both gaps while it wrote `docs/migration-0.6-to-1.0.md`, and it stated each one
+  in a row rather than hide it. This round records them. **The removal of
+  `ja4plus.collector` now holds an entry of this file under round 71**, which
+  `docs/specs/spec.md` already carried. **The move of the Python floor holds the new round
+  135 in both files**, because neither file recorded it. **A comparison between two records
+  finds no change that is absent from both sides.** #302 holds `CHANGELOG.md` and
+  `docs/specs/spec.md` to the same round for every entry that exists in both. The two files
+  recorded the Python floor nowhere, so they agreed and both were wrong. **New file
+  `tests/test_breaking_change_record.py` compares the record against the package instead.**
+  It holds the 25 modules of version 0.6.0, which `git ls-tree -r --name-only v0.6.0
+  ja4plus/` reports, and it reads each one with `importlib.util.find_spec`.
+  `ja4plus.collector` is the one module the package drops. It reads `requires-python` out
+  of `pyproject.toml`, and it requires both files to name the value. **Three of the six
+  cases failed on the unchanged branch and three passed.** Two mutations prove the cases
+  discriminate: a floor of `>=3.10` fails the two floor cases, and `ja4plus/collector.py`
+  restored from the tag fails `test_a_removed_module_reaches_no_importer`. **A sweep of `v0.6.0..HEAD` found no
+  third gap**, and the pull request holds the whole table. **No file under `ja4plus/`
+  changes and no fingerprint moves.**
+
+- **BREAKING — `requires-python` moves from `>=3.8` to `>=3.9`** (#76). Round 135.
+  **This entry is the record that was missing.** Commit `02ee772` raised the floor on
+  2026-08-06, and no round recorded the move. Round 4 covers Epic 0 and it names #27 alone.
+  Python 3.8 reached its end of life in October 2024. **A user on Python 3.8 cannot install
+  version 1.0.0**, because `pip` reads `requires-python` and refuses the distribution. The
+  `Programming Language :: Python :: 3.8` classifier left `pyproject.toml` in the same
+  commit, and `README.md` states the same floor. Continuous integration runs Python 3.9
+  through Python 3.13. #65 found the gap while it wrote `docs/migration-0.6-to-1.0.md`, and
+  #395 records it here. `tests/test_breaking_change_record.py` reads the value of
+  `requires-python` and requires both files to name it.
+
+- **The README states eleven of the twelve FoxIO methods, the two contracts and the four
+  default bounds** (#62). Round 136. The README claimed "all ten JA4+ methods". FoxIO
+  publishes twelve, and `technical_details/README.md:5-16` at the pinned commit lists
+  JA4LS and JA4TScan as rows of their own. **The claim was false in two directions**: the
+  project builds no JA4TScan, and it builds JA4LS, which the table never named. **The
+  issue body and `docs/specs/features/08-documentation.md` each say ten of the twelve,
+  and eleven is the number.** `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`, so
+  ten fingerprinters carry eleven methods, and the count of ten counts fingerprinters.
+  `docs/specs/spec.md:42` already read eleven. The method table now holds twelve rows and
+  an `Implemented` column, and JA4TScan alone reads `No`. **The README states the four
+  default bounds in one table**: 10000 entries and 600 seconds for a state table, 10000
+  connections and 300 seconds for the monitor. **The concurrency contract and the
+  independent-implementation sentence were already present**, so two new cases record
+  that rather than change prose. `tests/test_readme_contracts.py` holds fifteen case
+  functions, and each reads its number out of `ja4plus/` instead of restating it. Four
+  mutations prove them, and the mutation of `DEFAULT_MAX_CONNECTION_AGE` to 900 in the
+  code is the one that proves the bound cases read the code. **The self-review then
+  evaded three of the cases**, with a name left in a comment, a fresh wording of the
+  coverage claim, and a sentence that undercuts itself while keeping the words. All
+  three now fail, and two cases were added that tie the prose count to the table. No file under `ja4plus/`
+  changes and no fingerprint moves.
 
 - **Four QUIC and certificate readers name the errors they expect, and ten wide catches
   state why they stay wide** (#319). Round 133. `grep -rn "except Exception" ja4plus/`
@@ -91,6 +348,24 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The documentation extra pins a `mkdocstrings` the site can build with** (#391).
+  Round 140. `mkdocstrings==1.0.6` installed and the build then failed with
+  `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`.
+  `mkdocstrings_handlers/python/handler.py` of the 1.x line imports that module, and
+  `mkdocstrings` 1.0.0 removed it. The pin is now `mkdocstrings==0.30.1`, and no other
+  version moves. **An exact pin can still be an incompatible pin**, which is why
+  `test_every_documentation_dependency_pins_one_version` passed while the site did not
+  build. **Two records measured the wrong artifact.** #64 built the site inside a virtual
+  environment that an earlier resolution had already filled. The gate then repeated that
+  measurement in the same environment. Nobody installed the committed set from
+  scratch. `.github/workflows/docs-build.yml` installs the `docs` extra alone into an
+  empty environment, runs `mkdocs build --strict`, and reads the `Processor` docstring
+  and the ten one-shot functions back out of the generated HTML. It runs on a change to
+  `pyproject.toml`, to `mkdocs.yml` or to `docs/`. **The steps of the job run red on
+  `da2338d` and green on the repair**, on macOS with Python 3.11 and on Linux with Python
+  3.12. `test_the_mkdocstrings_pin_holds_the_handler_module_its_handler_imports` states
+  the upper bound as text, so a reader of `pyproject.toml` alone still sees it. No file
+  under `ja4plus/` changed and no fingerprint moved.
 - **Every entry of this file states the round its specification row states** (#302).
   Round 134. Eight entries read `Round TBD` while `docs/specs/spec.md` had already
   assigned their round. A reader who follows such an entry reaches nothing, and version
@@ -333,7 +608,66 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   against the base. Both suites report the counts of the base: 1839 passed and 8
   xfailed in the unit suite, and 1531 passed, 143 skipped and 135 xfailed in the
   conformance suite, against 135 keys in `tests/foxio_deviations.json`.
+
 ### Added
+
+- **The site carries a page per method, the output schema and the migration page**
+  (#65). Round 139. `docs/methods/` holds eleven method pages and an index. **FoxIO
+  publishes twelve methods, this project implements eleven, and ten fingerprinter classes
+  carry the eleven**, because `JA4LFingerprinter` writes `JA4L-S=` at
+  `ja4plus/fingerprinters/ja4l.py:446` and `JA4L-C=` at `:482`. The set was measured
+  against `__all__`, against `VALID_TYPES` of `ja4plus/cli.py:51` and against the README
+  table of #62, and the three agree. **JA4TScan reaches no method page**, because this
+  project declines it, and `docs/methods/index.md` holds the twelve-row table and states
+  the decline. **Every value on a method page is a claim, and
+  `tests/test_method_pages.py` holds 144 cases against the code.** Each page carries a
+  `## The facts` table that a parser reads: the `--types` token against `VALID_TYPES`,
+  the class and the one-shot function against `__all__`, the hash rule against the
+  `hexdigest()[:12]` its own module holds, and the FoxIO file against the inventory of
+  `docs/specs/foxio/README.md`. **The example table of each page names a committed
+  capture and a value, and the case runs the capture and compares.** 142 of the 144 cases
+  failed on the unchanged base, and five mutations prove they discriminate.
+  **`docs/output-schema.md` already existed, so this round extended it rather than adding
+  a second schema page.** Its `## The raw forms` table was prose that no case read, and a
+  case now runs the capture of each method page and compares the two raw fields. A
+  `## The method of each output line` section links the ten `type` values to the eleven
+  pages. `docs/concurrency.md` restates the contract of `README.md`, and two cases read
+  the two default bounds out of `ja4plus/utils/state_table.py`.
+
+- **The site carries a migration page for the move from version 0.6.0 to version 1.0.0**
+  (#65). Round 139. `docs/migration-0.6-to-1.0.md` lists eleven breaking changes with the
+  old form, the new form, the reason and the round, plus the seven fingerprints that
+  move. **The issue body listed five breaking changes and the record holds eleven.**
+  **Two gaps in the record are findings and this round repairs neither.** `CHANGELOG.md`
+  holds no mention of `ja4plus.collector`, which round 71 of `docs/specs/spec.md` records
+  alone. **The Python floor moved from 3.8 to 3.9 and no Changelog round records it in
+  either file**; it shipped in commit `02ee772` under #76, and round 4 names #27 alone.
+  The migration page states that gap in its row rather than hide it. FR-documentation-13
+  belongs to #66, so this round writes no release notes.
+
+- **The documentation site builds from the Markdown files that already exist** (#64).
+  Round 137. `mkdocs.yml` at the repository root configures MkDocs 1.6.1 with the
+  Material theme 9.7.7. `docs_dir` is `docs/`, so no page moves. Build the site with
+  `pip install -e ".[docs]"` and `mkdocs build --strict`. `docs/specs/` stays out of the
+  site, because the specification package is design material. The new `docs` extra holds
+  every generator, and no entry of it reaches the runtime dependencies, so a user who
+  installs `ja4plus` installs no site generator. Every version in the extra is exact.
+
+- **The site carries an API reference the docstrings generate** (#64). Round 137. The
+  five pages under `docs/reference/` name objects rather than describe them, and
+  `mkdocstrings-python` 1.15.0 reads the docstrings of the source, so the reference
+  cannot fall behind the code. The reference covers `Processor`, `ProcessorStats`,
+  `FingerprintResult`, the ten fingerprinter modules and the lookup.
+
+- **A broken internal link fails the documentation build** (#64). Round 137.
+  `strict: true` fails the build on a warning, and `validation.links.anchors: warn`
+  raises a broken anchor from information to a warning. Without the second setting the
+  site builds while an anchor is dead. A link changed to a page that does not exist and
+  a link changed to an anchor that does not exist each abort the build with exit code 1.
+  `tests/test_documentation_site.py` carries the same check inside the unit suite, which
+  installs no site generator. One of its cases is stricter than the build: a link into
+  the excluded `docs/specs/` returns a 404 on the published site, and
+  `mkdocs build --strict` reports it at the information level and still succeeds.
 
 - **A `LookupResult` supports item access by field name** (#364). Round 123. Version
   0.6.0 returned a dict with the keys `application`, `type` and `notes`, and #59 replaced
@@ -858,6 +1192,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   equals the reference.
 
 ### Removed
+
+- **BREAKING — the `ja4plus.collector` module leaves the package** (#191). Round 71.
+  **This entry is the record that was missing.** #191 removed `ja4plus/collector.py` on
+  2026-08-08, and round 71 of `docs/specs/spec.md` recorded it. This file named the module
+  nowhere, so a reader who works from the Changelog alone met no removal. #65 found the
+  gap while it wrote `docs/migration-0.6-to-1.0.md`, and #395 records it here. **No new
+  round records the removal**, because round 71 already records it, and a second round
+  would give one change two citation targets. `import ja4plus.collector` raises
+  `ModuleNotFoundError`. The module held module-level state that grew without a bound, and
+  it carried its own removal notice for version 0.4.0. Use `Processor` instead.
+  `tests/test_breaking_change_record.py` reads the 25 modules of version 0.6.0 against the
+  package, so a later removal that no round records fails a case.
 
 - **Four X.509 helpers leave `ja4plus/utils/x509_utils.py`** (#314). Round 99. The
   user decided on 2026-08-08 that `extract_certificate_info` leaves the package before

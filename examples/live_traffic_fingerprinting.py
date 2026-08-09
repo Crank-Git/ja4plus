@@ -3,6 +3,10 @@
 JA4+ Live Traffic Fingerprinting Example
 
 This script demonstrates how to use JA4+ for live traffic analysis.
+
+Usage:
+    python examples/live_traffic_fingerprinting.py --interface en0
+    python examples/live_traffic_fingerprinting.py --pcap capture.pcap
 """
 
 from scapy.all import sniff
@@ -21,6 +25,9 @@ def main():
     """Run the live traffic fingerprinting example."""
     parser = argparse.ArgumentParser(description="JA4+ Live Traffic Fingerprinting")
     parser.add_argument("--interface", "-i", help="Network interface to capture on")
+    # A capture socket needs a privilege that continuous integration holds never, so
+    # this option reads a committed capture instead. #63 asks for the mode.
+    parser.add_argument("--pcap", "-p", help="Read a capture file instead of an interface")
     parser.add_argument("--filter", "-f", default="tcp or udp", 
                       help="BPF filter (default: 'tcp or udp')")
     parser.add_argument("--count", "-c", type=int, default=0,
@@ -46,17 +53,29 @@ def main():
     fingerprints = []
     
     # Process packets
-    print(f"Starting packet capture on {args.interface or 'default interface'}.")
-    print(f"Filter: {args.filter}")
-    print("Press Ctrl+C to stop.")
-    
+    if args.pcap:
+        print(f"Reading the capture file {args.pcap}.")
+    else:
+        print(f"Starting packet capture on {args.interface or 'default interface'}.")
+        print(f"Filter: {args.filter}")
+        print("Press Ctrl+C to stop.")
+
     try:
-        # Sniff packets
-        sniff(prn=lambda pkt: process_packet(pkt, fingerprinters, args.verbose), 
-              filter=args.filter, 
-              store=0,
-              iface=args.interface,
-              count=args.count)
+        if args.pcap:
+            # `sniff` reads a capture file through `offline`. The reader applies no BPF
+            # filter here, because an offline filter needs `tcpdump` on the host.
+            # Verified against the `scapy.sendrecv.sniff` docstring of scapy 2.6.
+            sniff(prn=lambda pkt: process_packet(pkt, fingerprinters, args.verbose),
+                  store=0,
+                  offline=args.pcap,
+                  count=args.count)
+        else:
+            # Sniff packets
+            sniff(prn=lambda pkt: process_packet(pkt, fingerprinters, args.verbose),
+                  filter=args.filter,
+                  store=0,
+                  iface=args.interface,
+                  count=args.count)
     except KeyboardInterrupt:
         print("\nStopping capture...")
     except Exception as e:
