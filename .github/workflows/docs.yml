@@ -1,0 +1,114 @@
+name: Publish the documentation
+
+# **This workflow publishes the documentation site to GitHub Pages, and it builds nothing
+# of its own.** `FR-documentation-8` asks the site to publish on a push to the live branch.
+# The live branch is `master` under the dev-and-live model, and a promotion from `dev` to
+# `master` is a separate step the user approves.
+#
+# `.github/workflows/docs-build.yml` owns the build. It installs the committed `docs` pins
+# into an empty environment and runs `mkdocs build --strict`. **Two recipes for one site
+# drift apart, and the drift shows up as a published page that no check ever built.** The
+# `build` job below therefore calls that workflow, which uploads the site as the Pages
+# artifact when the caller asks for it. #391 owns the pins and the build steps.
+#
+# **Warning: this repository holds no GitHub Pages site, so no run of this workflow has ever
+# deployed.** `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides
+# whether to turn Pages on, because that change publishes a public website. The `settings`
+# job below reads the setting first and names it in the failure, so a red run states what a
+# reader must change.
+#
+# Verified against https://github.com/actions/deploy-pages (v4),
+# https://github.com/actions/upload-pages-artifact (v3) and
+# https://docs.github.com/en/rest/pages/pages (API version 2022-11-28), retrieved
+# 2026-08-09.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# The default token of the run reads the repository alone. Each job below states the
+# permissions it needs, so the deployment holds `pages: write` and no other job does.
+permissions:
+  contents: read
+
+# One deployment reaches the site at a time. A run in progress finishes and the next run
+# waits, because a cancelled deployment leaves the site on the older commit.
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  settings:
+    name: Read the Pages setting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+
+    steps:
+      - name: Check that GitHub Pages builds from GitHub Actions
+        # `GET /repos/{owner}/{repo}/pages` answers 404 where the repository has no Pages
+        # site, and it answers 200 with a `build_type` of `workflow` or `legacy`. **The
+        # step parts the two failures, because they need different repairs.** A step that
+        # read any failure as "Pages is off" would report the wrong setting on a 403.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          rm -f pages.json
+          # **`curl` reports its own failure separately, because a network fault is not a
+          # setting.** `--write-out` prints `000` where no response arrives, and a step
+          # that read that as a status would name the wrong repair.
+          if ! code=$(curl --silent --output pages.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pages"); then
+            echo "::error::The request to the Pages API failed before it read a status. Read the network of the runner, and read no setting of the repository."
+            exit 1
+          fi
+          if [ "$code" = "404" ]; then
+            echo "::error::${GITHUB_REPOSITORY} holds no GitHub Pages site, so this run publishes nothing. Open Settings > Pages. Set Build and deployment > Source to GitHub Actions. The owner of the repository makes that change, because it publishes a public website."
+            exit 1
+          fi
+          if [ "$code" != "200" ]; then
+            echo "::error::The Pages API answered ${code} for ${GITHUB_REPOSITORY}. Read Settings > Pages, and confirm that Build and deployment > Source reads GitHub Actions. Confirm that this workflow holds the pages permission."
+            [ -f pages.json ] && cat pages.json
+            exit 1
+          fi
+          build_type=$(python3 -c 'import json;print(json.load(open("pages.json")).get("build_type"))')
+          if [ "$build_type" != "workflow" ]; then
+            echo "::error::GitHub Pages builds from '${build_type}' on ${GITHUB_REPOSITORY}, and this workflow needs 'workflow'. Open Settings > Pages. Set Build and deployment > Source to GitHub Actions."
+            exit 1
+          fi
+          echo "GitHub Pages builds from GitHub Actions." >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build the site
+    needs: settings
+    permissions:
+      contents: read
+    # A called workflow runs inside this run, so the deployment below reads the artifact
+    # that its upload step writes.
+    uses: ./.github/workflows/docs-build.yml
+    with:
+      upload_pages_artifact: true
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    # `actions/deploy-pages` needs both permissions. `pages: write` creates the deployment
+    # and `id-token: write` proves the origin of the artifact.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy the artifact
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4.0.5

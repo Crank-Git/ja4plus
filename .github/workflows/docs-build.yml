@@ -36,6 +36,15 @@ on:
       - "docs/**"
       - ".github/workflows/docs-build.yml"
   workflow_dispatch:
+  # `.github/workflows/docs.yml` publishes the site, and it builds nothing of its own. A
+  # publish job that rebuilt the site with a second recipe would be a second source of
+  # truth, so it calls this job instead. #66 owns the publish workflow.
+  workflow_call:
+    inputs:
+      upload_pages_artifact:
+        description: Upload the built site as the GitHub Pages artifact.
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -84,3 +93,16 @@ jobs:
             exit 1
           fi
           echo "The API reference renders the ten one-shot functions." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the site as the Pages artifact
+        # **The input is absent on a `push` trigger and on a `pull_request` trigger, so
+        # this step runs for the publish workflow alone.** A pull request builds the site
+        # to prove the pins, and it publishes nothing.
+        #
+        # The documentation of both actions states this pair: `upload-pages-artifact` v3
+        # with `deploy-pages` v4. Verified against
+        # https://github.com/actions/upload-pages-artifact, retrieved 2026-08-09.
+        if: ${{ inputs.upload_pages_artifact }}
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3.0.1
+        with:
+          path: site
