@@ -420,7 +420,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4plus/output.py` holds one writer per format. #50 documents the schema and its
   version.
 
-- **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round TBD.
+- **`Processor.process_packet` returns a list of `FingerprintResult`** (#45). Round 90.
   The method returned a list of dictionaries through version 0.6.0. A caller who reads
   `result["fingerprint"]` keeps working for one major version, and item access emits a
   `DeprecationWarning` that names the attribute form. Read `result.fingerprint` instead.
@@ -534,7 +534,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4`, `ja4s`, `ja4h` and `ja4x` write a raw form and the other six methods write
   `null`; `ja4x` now writes `JA4X_r`, which #267 added.
 
-- **The package ships the `py.typed` marker and declares `__all__`** (#47). Round TBD.
+- **The package ships the `py.typed` marker and declares `__all__`** (#47). Round 90.
   The new file `ja4plus/py.typed` follows PEP 561, and `pyproject.toml` ships it as
   package data. A caller who runs `mypy --strict` against their own code now resolves
   the annotations of `ja4plus`: `unzip -l dist/*.whl` lists `ja4plus/py.typed`, and a
@@ -552,7 +552,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   FR-typed-api-12 and FR-typed-api-13.
 
 - **`Processor.process_packet_with_errors` returns the results and the errors** (#45).
-  Round TBD. `process_packet` logs a fingerprinter error at DEBUG and returns the
+  Round 90. `process_packet` logs a fingerprinter error at DEBUG and returns the
   results alone, so a caller could not tell a packet that produces no fingerprint from a
   packet that failed a parse. The new method returns both lists, and one method that
   raises poisons no other method. The Go port returns the pair from one call, and parity
