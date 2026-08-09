@@ -1,4 +1,4 @@
-"""Fingerprint a capture from the built package, installed into a clean environment.
+"""Fingerprint a capture from the built artifact, installed into a clean environment.
 
 `FR-pre-release-validation-1` to `FR-pre-release-validation-7` state the requirements.
 #68 and #69 read the contents of the wheel. No case before this one installed the wheel
@@ -631,8 +631,19 @@ def test_pip_built_the_package_from_the_source_distribution(
     """`FR-pre-release-validation-8` and `FR-pre-release-validation-9`.
 
     Warning: a run that resolves a wheel measures the artifact of #408 again and reports a
-    pass. Three facts of the recorded output separate the two runs. `pip` names the input
-    file, it builds a wheel from that file, and it reads no wheel from an index or a cache.
+    pass. Three facts of the recorded output separate the two runs.
+
+    1. `pip` names the source distribution as the input.
+    2. `pip` builds a wheel from that input.
+    3. `pip` reads no `ja4plus` wheel from an index and none from a cache.
+
+    **`create_clean_environment` leaves the `pip` cache of the host in place**, so a reader
+    asks whether a cached wheel can satisfy the install. A measurement of 2026-08-09 ran
+    the same install twice against one local source distribution. The first run wrote
+    `Stored in directory: .../pip/wheels/...` and the second run wrote
+    `Building wheel for ja4plus` again, so `pip` read no wheel back for a local file link.
+    **The failure direction is safe either way.** A cached wheel makes fact 2 or fact 3
+    fail, and no cache state makes this case report a pass on a resolved wheel.
     """
     output = sdist_environment.pip_output
     assert f"Processing {artifacts['sdist']}" in output, (
@@ -684,7 +695,6 @@ def test_the_analyze_output_of_the_source_distribution_equals_the_source_tree(
         pathlib.Path(sys.executable), arguments, REPOSITORY_ROOT, workspace / "cache"
     )
     assert installed, "the source-distribution environment wrote no output line"
-    assert installed.splitlines() == source_tree.splitlines()
     assert installed == source_tree
 
 
