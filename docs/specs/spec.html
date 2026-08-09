@@ -348,7 +348,7 @@ major version behind a <code>DeprecationWarning</code>.</p>
 
 <h3><a href="features/05-structured-output.md">05 — Structured output</a></h3>
 <p>13 requirements. Addresses and ports as separate fields instead of one packed
-<code>source</code> string; a <code>schema_version</code> on every record; a CSV header
+<code>source</code> string; a <code>schema_version</code> on every output line; a CSV header
 that is identical whatever flags were passed. The table format explicitly carries no
 stability promise; JSON Lines and CSV do.</p>
 <p><strong>Key criteria:</strong> the CSV header is byte-identical with and without

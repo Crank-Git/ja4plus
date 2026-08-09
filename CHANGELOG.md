@@ -6,6 +6,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Zeek reference page reads the current comparison** (#327). Round TBD.
+  `docs/specs/foxio/zeek.md` read as though #214 were open, in three places. #214 made
+  JA4SSH emit the window a connection holds open when the capture ends, so `ssh2.pcapng`
+  now produces `c36s52_c42s76_c51s2` as its second value, which the Zeek baseline holds.
+  The re-run against the pinned FoxIO checkout prints 98 rows, of which 63 match and 35
+  differ, where round 52 read 98 rows, 62 match and 36 differ. **The page now names the
+  Changelog round of every run it cites**, so a reader can tell a stale count from a
+  current one. **One value rating no longer follows from its evidence, and #327 leaves it
+  `Undecided`**: the JA4SSH baseline was `Blocked` on #214, and the replacement rating is
+  a precedence question the user decides. **#332 answers that question.** No file under
+  `ja4plus/` changes, no fingerprint moves, and the register holds 135 keys against 135
+  xfailed.
+
+- **The Zeek baseline comparison script runs again, and a case now runs it** (#324).
+  Round TBD. `tests/compare_zeek_baselines.py` read the composite `source` field that
+  #49 removed, so the script raised `KeyError` on the first output line it parsed. The
+  reader now reads `src_ip`, `src_port`, `dst_ip` and `dst_port`, which
+  `docs/output-schema.md` states, and `split_source` goes away because nothing needs it.
+  The reader also reads `schema_version` first and stops on a version above 1, which the
+  same page states. **The script is evidence-producing tooling, not dead code**:
+  `docs/specs/foxio/zeek.md` rests on it, and #198, #226 and #276 reason from its
+  readings. `tests/test_compare_zeek_baselines.py` runs the script end to end over
+  `dhcp.pcapng`, so a later schema change fails a case instead of breaking the script in
+  silence. No fingerprint moves, no output field changes, and the schema version stays 1.
+
 ### Changed
 
 - **The documentation states what a fingerprint is evidence of** (#343). Round 110.
@@ -16,6 +43,77 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `docs/output-schema.md` now
   state the property where a user reads it, and the `Divergence register` of
   `docs/specs/spec.md` holds the measurement.
+- **The register records the kind of every decline** (#341). Round TBD.
+  `tests/foxio_deviations.json` carries a `capability` field on all 135 entries, and
+  `CAPABILITY_DECLINES` is gone from `tests/test_precedence_exception.py`. #334 shipped
+  bar 1 of the precedence exception as a constant set of issue numbers, so a new
+  capability decline would have reached the exception unless somebody edited a test that
+  named it nowhere near the decline. **`true` records a capability this project chose not
+  to build, and `false` records a disagreement about the value.** `tests/foxio_deviations.py`
+  reads the field beside `decided` and states the default in the schema, and
+  `unrecorded_kinds` requires the field on every decided entry. **43 entries record a
+  capability decline, and all 43 name #129**, which the recorded cause of each of the 135
+  entries decides. No entry was undeterminable. **The reach of the exception is 6 rows
+  before and after**, and the six rows are unchanged. No fingerprint moves, no file under
+  `ja4plus/` changes, and no vector is adopted.
+
+- **The precedence exception is source-neutral** (#334). Round TBD.
+  `.claude/rules/external-apis.md` wrote the exception of #332 for the Zeek baseline
+  alone, because that was the case #327 raised. Where `tests/foxio_deviations.json`
+  declines the FoxIO Python value under a decided entry, **any other FoxIO implementation
+  may hold the reference value** for that method on that connection. **Two bars stand
+  above the rule.** A decline that records a capability this project chose not to build
+  reaches no row, and #129 is that case: `ja4plus` reads no encrypted request by
+  decision. Where the remaining FoxIO sources hold different values, no source holds the
+  reference and the row stays declined. **The exception reaches 6 rows of the 135 the
+  register holds**, where the widened rule before the bars reaches 58.
+  `tests/test_zeek_precedence_exception.py` becomes `tests/test_precedence_exception.py`
+  and measures the reach against every source. **Three findings came out of the search.**
+  The register records no field that separates a value decline from a capability decline,
+  and the rule states a proposal for one. `gre-erspan-vxlan.pcap/0:65174/JA4T.1` carries
+  the value form and declines no Python value, so the rule now reads that fact from the
+  vectors. The Wireshark dissector appends the third part that bars a Zeek JA4L value,
+  which the bar does not name; #225 records that this project adopted the `quic` marker
+  from the dissector on purpose, so nothing there changed. **No vector is adopted, no
+  register entry changes, no file under `ja4plus/` changes, and no fingerprint moves.**
+
+- **A declined FoxIO Python value forfeits its precedence** (#332). Round TBD.
+  `.claude/rules/external-apis.md` states that `python/test/testdata/` decides where it
+  and a Zeek baseline both hold a value for one method on one connection, and it named no
+  exception for a value this project already ruled wrong. The rule now carries one
+  exception: where `tests/foxio_deviations.json` declines the Python value under a decided
+  entry, a Zeek baseline may hold the reference value for that method on that connection.
+  **Python keeps its precedence everywhere else.** **The condition is one recorded decline
+  that names an issue, and no reading of which value looks right reaches it.** An
+  undecided entry is an open question, and the exception passes over it.
+  `docs/specs/foxio/zeek.md` now rates `Scripts.ja4-ssh2/ja4ssh.log` Medium and states the
+  reason, where #327 left it `Undecided`. `tests/test_zeek_precedence_exception.py`
+  measures the reach: the exception reaches 1 row of the 135 the register holds, and that
+  row is `ssh2.pcapng/14:57377/JA4SSH.2` under #97. **No baseline is adopted as a vector**,
+  no file under `ja4plus/` changes, and no fingerprint moves.
+
+- **The vocabulary settles one word for the serialized output line** (#306). Round TBD.
+  The `## Terms` table of `docs/specs/spec.md` listed `record` in the `Do not use`
+  column of `result`, and `ja4plus/output.py` used it as a noun in five places. #50
+  found that and reworded its own page rather than the shared table. The table now holds
+  the term `output line`, whose `Do not use` column names `record`, `result` and
+  `entry`. **A result and an output line are two things.** A result is one fingerprint
+  one method produced. An output line carries every field of the result, plus
+  `schema_version` and `identified_as`, which the command-line program owns. The word
+  now reads the same way in `ja4plus/output.py`, `ja4plus/cli.py`, `README.md`,
+  `tests/test_output_schema.py`, `tests/test_cli.py`, `tests/test_parity.py`,
+  `tests/compare_zeek_baselines.py` and `examples/monitoring_daemon.py`.
+  `docs/output-schema.md` already used it and needs no change. The `json` format writes
+  one output line as one JSON object, and the `csv` format writes it as one row, so the
+  identifier for a parsed line is now `json_object`. **The word `record` keeps two other
+  meanings that this term does not touch**: the verb, as in `#215 records the reading`,
+  and the TLS record of RFC 8446. **No field name and no column name moved.**
+  `schema_version` stays 1, `CSV_COLUMNS` holds the same eleven names in the same order,
+  and `ja4plus.__all__` names the same 25 entries. A replay of the 38 committed captures
+  in all three formats produces 114 runs, 2466 output lines and 0 differing bytes
+  against the base. Both suites report the counts of the base: 1839 passed and 8
+  xfailed in the unit suite, and 1531 passed, 143 skipped and 135 xfailed in the
+  conformance suite, against 135 keys in `tests/foxio_deviations.json`.
 
 - **The command-line program separates results from diagnostics and gains `--output`**
   (#52). Round 95. The program writes results to standard output and every diagnostic
@@ -44,7 +142,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the connections of a method you filtered out and it reports that method's errors. The
   reported order is still the order you wrote in `--types`, and a name you write twice
   keeps its first position. No fingerprint value moved:
-  the program writes the same 863 records over the 43 committed captures, byte for byte,
+  the program writes the same 863 output lines over the 43 committed captures, byte for
+  byte,
   and the conformance suite reports the same 1531 passed, 143 skipped and 135 xfailed.
   The unit suite rises from 1801 passed to 1814 passed, which is the 13 cases the change
   adds.
@@ -54,10 +153,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   field of version 0.6.0 with `src_ip`, `src_port`, `dst_ip` and `dst_port`, so a
   downstream tool parses no composite string. The CSV header is now fixed at
   `schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as`,
-  and it no longer changes with `--lookup`. Every field is present in every record: a
-  field with no value is `null` in the `json` format and empty in the `csv` format.
+  and it no longer changes with `--lookup`. Every field is present in every output line:
+  a field with no value is `null` in the `json` format and empty in the `csv` format.
   `identified_as` is therefore present without `--lookup`, where version 0.6.0 omitted
-  it. Each record also carries the packet `timestamp` in RFC 3339 form. New module
+  it. Each output line also carries the packet `timestamp` in RFC 3339 form. New module
   `ja4plus/output.py` holds one writer per format. #50 documents the schema and its
   version.
 

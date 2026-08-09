@@ -101,6 +101,92 @@ reference.
 2. It appends a third part that the Python reference does not publish.
 3. It marks a QUIC connection with a `q` part.
 
+**A declined FoxIO Python value forfeits its precedence.** The precedence above breaks a
+tie between two sources this project trusts. A value this project already ruled wrong is
+not a tie. Where `tests/foxio_deviations.json` declines the Python value for one method on
+one connection, under a decided entry, **any other FoxIO implementation may hold the
+reference value** for that method on that connection. The Zeek baseline, the Rust
+snapshot and the Wireshark dissector each qualify. #332 records the first decision, #334
+records the source-neutral form, and #97 is the decline that raised the family.
+
+**Read the condition from the register and the vectors.** Five facts state it, and a
+reader checks each one.
+
+1. The register key is the value form `<vector>/<stream>:<port>/<method>.<occurrence>`,
+   and the FoxIO Python expected-output file holds a value at that connection, that
+   method and that occurrence. The occurrence form `<vector>/<method>` records a stream
+   that file omits, and the Rust snapshot rule above decides that case.
+2. The entry carries `"decided": true`, so a recorded decision names the issue.
+   `tests/foxio_deviations.py` states the marker rule.
+3. The entry carries `"capability": false`, so it is a value decline and not a capability
+   decline. `tests/foxio_deviations.py` states the field.
+4. Another FoxIO source holds a value for the same method, the same connection and the
+   same occurrence.
+5. The remaining sources hold one value between them.
+
+**Read fact 1 from the vectors, and not from the key form alone.** A value-form key
+states that the Python file holds a value, and on one row that statement is false.
+`gre-erspan-vxlan.pcap/0:65174/JA4T.1` carries the value form, the FoxIO Python file
+holds no JA4T value, and #215 declines the FoxIO Rust value `8192__0_0` rather than a
+Python one. The exception rests on a declined Python value, so it passes over that row.
+
+**A capability decline bars the row.** The exception reaches a row only where the decline
+records a disagreement about the value. It does not reach a row whose decline records a
+capability this project chose not to build, because no implementation change could ever
+close that difference. **#129 is that case.** `ja4plus` reads no encrypted request, by
+decision, and the Wireshark file holds the decrypted values. #129 carries 37 decided
+value-form keys, and another FoxIO source holds a value for 35 of them. Naming those as
+the reference would create 35 permanent divergences of a kind this project chose.
+
+**The register records the kind of every decline.** Each entry carries a `"capability"`
+field: `true` records a capability this project chose not to build, and `false` records a
+disagreement about the value. `tests/foxio_deviations.py` reads it beside `decided`, and
+`unrecorded_kinds` in `tests/test_foxio_deviations.py` requires it on every decided
+entry, so a new decline states its kind where the decline is recorded. **Fact 3 reads one
+field of one entry.** 43 entries record a capability decline today, and all 43 name #129.
+#334 proposed the field and #341 built it. **Never infer the kind of a decline from the
+prose of its cause.** Read the field.
+
+**A disagreement between the remaining sources bars the row.** Where the remaining FoxIO
+sources hold different values, **no source holds the reference and the row stays declined
+exactly as it is today.** The decision removes a wrong value's precedence. It promotes no
+survivor. A standing ranking among Rust, Zeek and Wireshark is declined, because this
+project has found each of the three wrong in different places, so a ranking would be a
+claim the evidence does not support.
+
+**Warning: no reading of which value looks right reaches this exception.** An entry the
+register leaves undecided is an open question, and the exception does not reach it. An
+entry that names the issue that will decide it stays undecided.
+
+**The bar on a JA4L or JA4LS value of a Zeek baseline stands above this exception.** The
+three rules above part the Zeek script from the Python reference, so no such value is a
+reference value, whatever the register holds. The bar removes the Zeek value before fact
+5 reads the remaining sources.
+
+**Warning: the reasoning of that bar reaches the Wireshark dissector, and the bar does
+not name it.** The dissector appends a third part to every JA4L and JA4LS value it
+writes: a delta on a TCP connection, and the marker `quic` on a QUIC connection. That is
+the second of the three rules. #225 nevertheless records that this project adopted the
+`quic` marker from the dissector on purpose, so widening the bar would contradict a
+recorded decision. #334 reports the finding and leaves the bar as it stands. The user
+decides what the bar covers.
+
+**This exception adopts no source as a vector.** It states which source may hold a
+reference value, and adoption is its own decision. "Which baselines are usable as
+vectors" in `docs/specs/foxio/zeek.md` holds that decision for the Zeek package.
+
+**The exception reaches 6 rows of the 135 the register holds.**
+`tests/test_precedence_exception.py` measures the reach, and #334 records the search.
+
+| Row | Decline | The source that may hold the reference |
+|---|---|---|
+| `ssh-r.pcap/2:46396/JA4SSH.1` | #96 | Rust and Wireshark, which agree |
+| `ssh-scp-1050.pcap/0:49237/JA4SSH.3` | #96 | Rust and Wireshark, which agree |
+| `ssh-scp-1050.pcap/0:49237/JA4SSH.4` | #96 | Rust and Wireshark, which agree |
+| `ssh2.pcapng/14:57377/JA4SSH.2` | #97 | Rust and Zeek, which agree |
+| `ssh2.pcapng/33:51810/JA4L-S.1` | #225 | Wireshark alone |
+| `tls3.pcapng/25:61884/JA4L-S.1` | #225 | Wireshark alone |
+
 **`FoxIO-LLC/ja4tscan` holds prose and no baseline.** Its `README.md` gives eight
 JA4TScan example values against named operating systems, and two of them record TCP
 option kind 0 inside the JA4T option list. #197 owns the scope decision.
