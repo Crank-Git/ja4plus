@@ -60,9 +60,14 @@ denies a citation in other words fails the gate. Reword the cause. A gate that m
 decision costs more than a gate that asks a question.
 
 The rule runs in one direction. An entry that cites no decision may still carry the
-marker, which 38 of the 128 decided entries do. A FoxIO Rust snapshot settled those by
+marker, which 38 of the 134 decided entries do. A FoxIO Rust snapshot settled those by
 measurement, and no person decided them. The 38 are the 34 entries of #138 and 4 of the 5
 entries of #151.
+
+`TestTheMarkerRuleCounts` in `tests/test_foxio_deviations.py` reads the two counts out of
+the sentence above and measures them against the register. The denominator went stale
+twice, because no case measured it. Correct the sentence whenever the register moves, and
+the case names both numbers in its failure.
 
 ## The kind of decline
 
