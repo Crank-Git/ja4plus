@@ -375,6 +375,7 @@ python examples/pcap_analysis.py capture.pcap
 
 Fingerprint live traffic using scapy's `sniff`:
 
+<!-- sample: skip the sample opens a capture socket, and continuous integration holds no capture privilege -->
 ```python
 from scapy.all import sniff
 from ja4plus import JA4Fingerprinter, JA4TFingerprinter
@@ -407,6 +408,7 @@ The `ja4plus watch` command reads packets from an interface until the operator s
 It owns a connection table, and that table holds two bounds. A monitor that held no
 bound would grow until the host stopped it.
 
+<!-- sample: skip the command opens a capture socket, and continuous integration holds no capture privilege -->
 ```bash
 # Read an interface, and write one JSON object per fingerprint to a file
 sudo ja4plus watch eth0 --format json --output /var/log/ja4.jsonl
@@ -446,6 +448,7 @@ rejects. The capture layer applies the filter before it reports a packet, so the
 never reads a rejected packet and the packet count of the statistics line never holds
 it.
 
+<!-- sample: skip the command opens a capture socket, and continuous integration holds no capture privilege -->
 ```bash
 # Read the TLS and the QUIC traffic alone
 sudo ja4plus watch eth0 --bpf "tcp port 443 or udp port 443"
@@ -483,6 +486,7 @@ and reads no user identity.
 `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
 `Ctrl-C` sends `SIGINT`, and `kill` sends `SIGTERM`.
 
+<!-- sample: skip the command names a process identity that no host holds -->
 ```bash
 # Stop the monitor that runs under the process identity 4213
 kill 4213
@@ -503,6 +507,7 @@ monitor on a quiet interface there waited for the next packet.
 The monitor writes one statistics line when it exits. `--stats-interval` adds a line for
 each interval that passes.
 
+<!-- sample: skip the command opens a capture socket, and continuous integration holds no capture privilege -->
 ```bash
 # Write a statistics line every 60 seconds, and one more on exit
 sudo ja4plus watch eth0 --format json --output /var/log/ja4.jsonl --stats-interval 60

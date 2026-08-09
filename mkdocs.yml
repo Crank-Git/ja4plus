@@ -123,6 +123,25 @@ nav:
   - Home: README.md
   - Usage guide: usage.md
   - Output schema: output-schema.md
+  - Concurrency: concurrency.md
+  - Migration from 0.6.0: migration-0.6-to-1.0.md
+  # `FR-documentation-10` asks for a page per method. Eleven methods reach ten
+  # fingerprinter classes, because `JA4LFingerprinter` writes both `JA4L-C=` and
+  # `JA4L-S=`, so JA4L and JA4LS each hold a page. JA4TScan reaches no page, because this
+  # project declines it, and `methods/index.md` states the decline.
+  - Methods:
+      - methods/index.md
+      - JA4: methods/ja4.md
+      - JA4S: methods/ja4s.md
+      - JA4H: methods/ja4h.md
+      - JA4L: methods/ja4l.md
+      - JA4LS: methods/ja4ls.md
+      - JA4X: methods/ja4x.md
+      - JA4SSH: methods/ja4ssh.md
+      - JA4T: methods/ja4t.md
+      - JA4TS: methods/ja4ts.md
+      - JA4D: methods/ja4d.md
+      - JA4D6: methods/ja4d6.md
   - API reference:
       - reference/index.md
       - Processor: reference/processor.md

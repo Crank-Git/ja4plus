@@ -6,6 +6,57 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Every code sample and every example script runs in continuous integration** (#63).
+  Round TBD. Nothing ran a sample before this round, so a sample that stopped working
+  stopped working in silence. That is the shape this project records seventeen times: a
+  comparison that never runs reads as a comparison that passes. **The reader finds 157
+  fenced blocks across `README.md` and `docs/`, and a second reader agrees on every
+  file.** `tests/documentation_samples.py` matches a fence grammar and tracks the fence
+  width, and `_second_reader_block_count` uses string operations alone. **The two readers
+  disagreed on the first run, and the disagreement was a real defect.** Four files of
+  `docs/specs/foxio/` each hold an inline code span that opens a line with three
+  backticks, and the second reader read each one as a fence. The floor was then set from
+  the corrected reader, because #302 set its floor from a reader that skipped every
+  wrapped row. **The census reads 43 blocks that run, 2 that raise a named error, 94 that
+  the harness skips and 18 that carry output.** A `python` block and a `bash` block run
+  by default. `<!-- sample: skip <reason> -->` states why a block runs never, and
+  `<!-- sample: raises <error> <reason> -->` states the error a block raises on purpose.
+  A skip reason shorter than four words fails a case, so no skip is silent. **14 samples
+  carry a skip marker and 80 blocks of `docs/specs/` carry a directory reason**, because
+  that directory holds the specification package and the verbatim FoxIO transcription.
+  **No sample reaches the network**, and a fixture refuses every outbound connection
+  while a Python sample runs. **Five scripts of `examples/` run under six command lines.**
+  `examples/live_traffic_fingerprinting.py` gained a `--pcap` option that passes
+  `offline` to `sniff`. **Four mutations prove the harness discriminates**, one for each
+  of the README Python path, the README shell path, the `docs/` path and the `examples/`
+  path, and each was restored. New files `tests/documentation_samples.py`,
+  `tests/test_documentation_samples.py` and `tests/test_examples.py`, and a new `samples`
+  job in `.github/workflows/test.yml`. **The merge with #64 exposed a hole in the first
+  form of this harness.** `PYTHON_SAMPLE_FILES` read the keys of a table somebody
+  maintained by hand, so a page absent from that table was read, counted and classified
+  as runnable, and then never run. A probe page under `docs/reference/` holding a broken
+  import proves it: the reader called the block runnable and the execution cases reported
+  `3 passed`. **The file set now derives from the filesystem and the block counts stay
+  measured by hand**, because the only tool that could derive a count is the reader the
+  cases exist to check. `MINIMUM_BLOCKS_PER_PAGE` is a floor for each page and no longer
+  an exact count. `test_the_execution_cases_reach_every_sample_the_reader_calls_runnable`
+  compares the reader against the runner, so the two cannot drift apart again. The five
+  pages #64 added hold `:::` directives and no fenced block, so both counts stay at 157.
+  No file under `ja4plus/` changes and no fingerprint moves.
+
+### Fixed
+
+- **`generate_ja4` reads a TLS info dictionary, and the documentation stated a packet**
+  (#63). Round TBD. `README.md` and `docs/api_reference.md` each wrote
+  `generate_ja4(packet)`, and the call raises `AttributeError: get`. The function reads
+  the dictionary that `ja4plus.utils.tls_utils.extract_tls_info` returns. Eight of the
+  nine other one-shot functions read a packet. `generate_ja4x` reads a dictionary that
+  `docs/api_reference.md` already recorded. **The sample harness of #63 found this on its
+  first green run, and no case reached it before**, because nothing ran the sample. This
+  entry repairs the two documents and changes no signature.
+
 ### Changed
 
 - **The README states eleven of the twelve FoxIO methods, the two contracts and the four
@@ -373,7 +424,42 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   against the base. Both suites report the counts of the base: 1839 passed and 8
   xfailed in the unit suite, and 1531 passed, 143 skipped and 135 xfailed in the
   conformance suite, against 135 keys in `tests/foxio_deviations.json`.
+
 ### Added
+
+- **The site carries a page per method, the output schema and the migration page**
+  (#65). Round TBD. `docs/methods/` holds eleven method pages and an index. **FoxIO
+  publishes twelve methods, this project implements eleven, and ten fingerprinter classes
+  carry the eleven**, because `JA4LFingerprinter` writes `JA4L-S=` at
+  `ja4plus/fingerprinters/ja4l.py:446` and `JA4L-C=` at `:482`. The set was measured
+  against `__all__`, against `VALID_TYPES` of `ja4plus/cli.py:51` and against the README
+  table of #62, and the three agree. **JA4TScan reaches no method page**, because this
+  project declines it, and `docs/methods/index.md` holds the twelve-row table and states
+  the decline. **Every value on a method page is a claim, and
+  `tests/test_method_pages.py` holds 144 cases against the code.** Each page carries a
+  `## The facts` table that a parser reads: the `--types` token against `VALID_TYPES`,
+  the class and the one-shot function against `__all__`, the hash rule against the
+  `hexdigest()[:12]` its own module holds, and the FoxIO file against the inventory of
+  `docs/specs/foxio/README.md`. **The example table of each page names a committed
+  capture and a value, and the case runs the capture and compares.** 142 of the 144 cases
+  failed on the unchanged base, and five mutations prove they discriminate.
+  **`docs/output-schema.md` already existed, so this round extended it rather than adding
+  a second schema page.** Its `## The raw forms` table was prose that no case read, and a
+  case now runs the capture of each method page and compares the two raw fields. A
+  `## The method of each output line` section links the ten `type` values to the eleven
+  pages. `docs/concurrency.md` restates the contract of `README.md`, and two cases read
+  the two default bounds out of `ja4plus/utils/state_table.py`.
+
+- **The site carries a migration page for the move from version 0.6.0 to version 1.0.0**
+  (#65). Round TBD. `docs/migration-0.6-to-1.0.md` lists eleven breaking changes with the
+  old form, the new form, the reason and the round, plus the seven fingerprints that
+  move. **The issue body listed five breaking changes and the record holds eleven.**
+  **Two gaps in the record are findings and this round repairs neither.** `CHANGELOG.md`
+  holds no mention of `ja4plus.collector`, which round 71 of `docs/specs/spec.md` records
+  alone. **The Python floor moved from 3.8 to 3.9 and no Changelog round records it in
+  either file**; it shipped in commit `02ee772` under #76, and round 4 names #27 alone.
+  The migration page states that gap in its row rather than hide it. FR-documentation-13
+  belongs to #66, so this round writes no release notes.
 
 - **The documentation site builds from the Markdown files that already exist** (#64).
   Round TBD. `mkdocs.yml` at the repository root configures MkDocs 1.6.1 with the
