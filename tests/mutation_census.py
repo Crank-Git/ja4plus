@@ -7,8 +7,8 @@ under `docs/mutation_settlements/` claims each one.
 
 **The census reads a directory of reports and not one report.** #411 measured the
 whole-package sweep at 3545 mutations and 72.75 seconds for one suite run, which is 71.6
-hours, and the project manager partitioned the sweep on 2026-08-09. #412, #413 and #414
-each run one sweep over one module group and write one report.
+hours. The project manager partitioned the sweep on 2026-08-09. #412, #413 and #414 each
+run one sweep over one module group and write one report.
 
 **A candidate is keyed by the sweep that named it and by the case.** Two sweeps may name
 the same case, and that is one candidate for each sweep and not a duplicate claim.
@@ -54,6 +54,11 @@ SETTLEMENT_DIRECTORY = REPO_ROOT / "docs" / "mutation_settlements"
 
 # `FR-pre-release-validation-22` names two verdicts, and each one carries its own field.
 VERDICT_FIELDS = {"repaired": "case", "correct": "reason"}
+
+# The census reads files that three issues write at the same time, so it meets a
+# half-written record. A reader needs the name of the broken file, and a traceback from
+# inside a dictionary lookup names the key alone.
+REPORT_KEYS = ("commit", "modules", "candidates")
 
 
 @dataclass(frozen=True, order=True)
@@ -105,11 +110,38 @@ def read_reports(directory: Path) -> Dict[str, Dict[str, object]]:
     return {path.stem: json.loads(path.read_text()) for path in _json_files(directory)}
 
 
+def report_faults(reports: Dict[str, Dict[str, object]]) -> List[str]:
+    """Return one sentence for each report that holds no complete result.
+
+    A report that holds no `candidates` key counts as zero candidates, and #206 exists
+    because a count that falls to zero in silence reads as success.
+
+    Args:
+        reports: The report of each sweep, keyed by sweep.
+
+    Returns:
+        One sentence for each key one report does not hold.
+    """
+    faults: List[str] = []
+    for sweep in sorted(reports):
+        for key in REPORT_KEYS:
+            if key not in reports[sweep]:
+                faults.append(
+                    "The report of the sweep {} holds no {} key, so the census reads "
+                    "nothing of that sweep.".format(sweep, key)
+                )
+    return faults
+
+
 def candidates(reports: Dict[str, Dict[str, object]]) -> List[Candidate]:
-    """Return every candidate of every sweep, in sweep order and then in case order."""
+    """Return every candidate of every sweep, in sweep order and then in case order.
+
+    A report that holds no `candidates` key gives nothing here, and `report_faults` names
+    it.
+    """
     found: List[Candidate] = []
     for sweep in sorted(reports):
-        for case in reports[sweep]["candidates"]:  # type: ignore[union-attr]
+        for case in reports[sweep].get("candidates", []):  # type: ignore[union-attr]
             found.append(Candidate(sweep, str(case)))
     return found
 
@@ -122,7 +154,7 @@ def modules_swept(reports: Dict[str, Dict[str, object]]) -> Set[str]:
     """
     found: Set[str] = set()
     for report in reports.values():
-        for entry in report["modules"]:  # type: ignore[union-attr]
+        for entry in report.get("modules", []):  # type: ignore[union-attr]
             found.add(str(entry["module"]))
     return found
 
@@ -162,6 +194,10 @@ def read_claims(directory: Path) -> Dict[Candidate, List[str]]:
         record = json.loads(path.read_text())
         sweep = str(record.get("sweep", ""))
         for settlement in record.get("settlements", []):
+            # A settlement that names no candidate claims nothing, and `settlement_faults`
+            # names it.
+            if not settlement.get("candidate"):
+                continue
             key = Candidate(sweep, str(settlement["candidate"]))
             claims.setdefault(key, []).append(path.name)
     return {key: sorted(names) for key, names in sorted(claims.items())}
@@ -193,7 +229,10 @@ def settlement_faults(directory: Path, sweeps: Set[str]) -> List[str]:
                 )
             )
         for settlement in record.get("settlements", []):
-            case = settlement.get("candidate", "<no candidate>")
+            case = settlement.get("candidate")
+            if not case:
+                faults.append("{} holds one settlement that names no candidate.".format(path.name))
+                continue
             verdict = settlement.get("verdict")
             field = VERDICT_FIELDS.get(str(verdict))
             if field is None:
@@ -234,7 +273,7 @@ def census(report_directory: Path, settlement_directory: Path) -> Census:
         claimed_twice={key: names for key, names in claims.items() if len(names) > 1},
         unclaimed=[key for key in found if key not in claims],
         unknown={key: names for key, names in claims.items() if key not in named},
-        faults=settlement_faults(settlement_directory, set(reports)),
+        faults=report_faults(reports) + settlement_faults(settlement_directory, set(reports)),
     )
 
 

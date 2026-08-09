@@ -209,11 +209,11 @@ sweep of one module names a candidate set that belongs to that module by constru
 that is the sweep each module group runs.
 
 **Warning: the union of the per-module sweeps is larger than the candidate set of one
-whole-package sweep, and a reader who compares the two counts reads a regression that did
-not happen.** A whole-package sweep names the cases that no mutation of any module kills. A
-sweep of module X names the cases that no mutation of X kills, and a case that module Y
-kills still reaches that list. **The union is the correct input for settlement**, because a
-case module Y kills is still unmeasured against module X.
+whole-package sweep.** A reader who compares the two counts reads a regression that did not
+happen. A whole-package sweep names the cases that no mutation of any module kills. A sweep
+of module X names the cases that no mutation of X kills, and a case that module Y kills
+still reaches that list. **The union is the correct input for settlement**, because a case
+module Y kills is still unmeasured against module X.
 
 **A candidate is keyed by the sweep that named it and by the case.** Two sweeps may name
 the same case, and that is one candidate for each sweep and not a duplicate claim. Each one
@@ -239,10 +239,19 @@ The `sweep` field names the stem of the report file under `docs/mutation_reports
 `412-utils` settles `docs/mutation_reports/412-utils.json`.
 
 `FR-pre-release-validation-22` states the two verdicts. A `repaired` verdict names the
-case, and a `correct` verdict states the reason the mutation cannot reach the case. The
-census names every candidate that two records claim, every candidate that no record claims,
-every settlement of a case no report names a candidate, and every record that names a sweep
-no report holds.
+case, and a `correct` verdict states the reason the mutation cannot reach the case.
+
+The census names each of these.
+
+1. Every candidate that two records claim.
+2. Every candidate that no record claims.
+3. Every settlement of a case no report names a candidate.
+4. Every record that names a sweep no report holds.
+5. Every report or record that holds no key its schema states.
+
+**A broken file reaches that list, and it raises nothing.** Three issues write these
+directories at the same time, so the census meets a half-written record. A reader needs the
+name of the broken file, and a traceback from a dictionary lookup names the key alone.
 
 Read a candidate this way.
 

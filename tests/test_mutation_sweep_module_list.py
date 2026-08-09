@@ -66,12 +66,22 @@ class TestTheModuleListOfOneSweep:
     def test_the_default_patterns_list_every_tracked_module_of_the_package(self) -> None:
         assert listed_by(list(mutation_sweep.DEFAULT_MODULE_PATTERNS)) == tracked_modules()
 
-    def test_the_package_holds_more_than_one_directory_of_modules(self) -> None:
-        depths = {path.count("/") for path in tracked_modules()}
-        assert depths == {1, 2}
+    def test_the_default_patterns_reach_the_depth_of_every_tracked_module(self) -> None:
+        # `ja4plus/*.py` reaches depth 1 and `ja4plus/*/*.py` reaches depth 2. A module
+        # below depth 2 needs a third pattern, and the two cases above would then fail
+        # with no reader knowing which pattern to add.
+        assert len(mutation_sweep.DEFAULT_MODULE_PATTERNS) == 2
+        assert {path.count("/") for path in tracked_modules()} == {1, 2}
 
 
 class TestThePathspecThatDropsSevenModules:
+    """These two cases measure git and they do not measure the sweep.
+
+    They record why `DEFAULT_MODULE_PATTERNS` holds two patterns rather than the one
+    pattern `FR-pre-release-validation-16` carried. A reader who meets the `**` form in
+    another repository reads the measurement here instead of the claim.
+    """
+
     def test_the_double_star_pathspec_lists_no_module_of_the_top_directory(self) -> None:
         below = {path for path in tracked_modules() if path.count("/") > 1}
         assert listed_by(["ja4plus/**/*.py"]) == below
@@ -79,7 +89,7 @@ class TestThePathspecThatDropsSevenModules:
     def test_the_double_star_pathspec_drops_the_processor_and_the_command_line_program(
         self,
     ) -> None:
-        dropped = tracked_modules() - listed_by(["ja4plus/**/*.py"])
+        dropped = swept_modules() - listed_by(["ja4plus/**/*.py"])
         assert "ja4plus/processor.py" in dropped
         assert "ja4plus/cli.py" in dropped
         assert len(dropped) == 7

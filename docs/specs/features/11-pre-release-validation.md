@@ -24,7 +24,11 @@ measurement before the publish.
 2. **Every Linux result comes from a continuous-integration runner.** The development
    host is macOS. The user granted one Linux host on 2026-08-09, and no run has used it.
 3. **The mutation sweep names 976 candidates, and #172 settled two of them.** #206
-   records the count, and `docs/mutation_sweep.md` states it in the `Candidates` row.
+   records the count, and the report of 2026-08-07 states it in the `Candidates` row.
+   **That count is stale, and no later count replaces it here.** It comes from one sweep
+   of the whole package, against a commit that `dev` no longer holds. #412, #413 and #414
+   each run one sweep and write one report under `docs/mutation_reports/`, and the union
+   of those reports carries the count this epic settles.
 4. **The package states no throughput.** `Non-goals` of `docs/specs/spec.md` states that
    this project measures throughput and reports it.
    `docs/specs/features/03-concurrency-safety.md` states the memory ceiling, and that
@@ -97,9 +101,9 @@ satisfies this, and one sweep of the whole package satisfies it too.
 
 FR-pre-release-validation-16a — A case fails when the module list one sweep reads differs
 from the tracked Python files of `ja4plus/`. **Never write `git ls-files
-'ja4plus/**/*.py'`**: git reads `**` in a pathspec as one or more directories, so that
-pattern lists 24 files where the package holds 31, and it drops every module of the top
-directory of the package.
+'ja4plus/**/*.py'`.** Git reads `**` in a pathspec as one or more directories. That
+pattern therefore lists 24 files where the package holds 31. It drops every module of the
+top directory of the package.
 
 FR-pre-release-validation-17 — The report of each sweep states the commit the sweep read.
 

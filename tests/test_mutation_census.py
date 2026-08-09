@@ -253,6 +253,47 @@ class TestTheClaimOfEveryCandidate:
         assert found.faults == []
 
 
+class TestARecordThatBreaksItsOwnSchema:
+    """A broken record reaches the fault list. It raises nothing.
+
+    The census reads files three issues write at the same time. **A reader who runs the
+    census against a half-written record needs the name of the broken file**, and a
+    traceback from inside a dictionary lookup names the key alone.
+    """
+
+    def test_a_report_that_holds_no_candidates_key_is_a_fault(self, reports, settlements) -> None:
+        reports.mkdir(parents=True)
+        (reports / "412-utils.json").write_text(json.dumps({"commit": "c" * 40, "modules": []}))
+        found = mutation_census.census(reports, settlements)
+        assert found.candidates == []
+        assert len(found.faults) == 1
+        assert "candidates" in found.faults[0]
+        assert "412-utils" in found.faults[0]
+
+    def test_a_report_that_holds_no_modules_key_is_a_fault(self, reports, settlements) -> None:
+        reports.mkdir(parents=True)
+        (reports / "412-utils.json").write_text(json.dumps({"commit": "c" * 40, "candidates": []}))
+        found = mutation_census.census(reports, settlements)
+        assert len(found.faults) == 1
+        assert "modules" in found.faults[0]
+
+    def test_a_settlement_that_names_no_candidate_is_a_fault(self, reports, settlements) -> None:
+        write_report(reports, "412-utils", ["ja4plus/types.py"], [])
+        write_settlement(settlements, "412-utils", "412-utils", [{"verdict": "correct"}])
+        found = mutation_census.census(reports, settlements)
+        assert found.unknown == {}
+        assert any("names no candidate" in sentence for sentence in found.faults)
+
+    def test_a_broken_report_raises_nothing(self, reports, settlements) -> None:
+        reports.mkdir(parents=True)
+        (reports / "412-utils.json").write_text(json.dumps({}))
+        write_settlement(settlements, "412-utils", "412-utils", [{"verdict": "repaired"}])
+        found = mutation_census.census(reports, settlements)
+        assert found.counts == {}
+        # The report holds none of the three keys, and the settlement names no candidate.
+        assert len(found.faults) == 4
+
+
 class TestTheVerdictOfEverySettlement:
     def test_a_repaired_verdict_that_names_no_case_is_a_fault(self, reports, settlements) -> None:
         write_report(reports, "412-utils", ["ja4plus/types.py"], [])
