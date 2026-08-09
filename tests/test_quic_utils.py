@@ -108,37 +108,63 @@ class TestParseQuicInitial(unittest.TestCase):
         pkt += b"\x00\x00\x00\x01" + b"\x00" * 30
         self.assertIsNone(parse_quic_initial(bytes(pkt)))
 
-    def test_v2_initial_type_not_rejected(self):
-        """QUIC v2 Initial uses packet type 0x01, not 0x00. Must not be rejected."""
-        from ja4plus.utils.quic_utils import parse_quic_initial
+    # QUIC version 2 gives an Initial packet the long-header type code 1, where version 1
+    # gives it the code 0. RFC 9369 Section 3.2 states both codes. The three cases below
+    # build a packet that decrypts, because a packet that fails decryption returns None
+    # for two reasons, and the type check is only one of them.
+    DCID = bytes.fromhex("8394c8f03e515708")
 
-        # Build a v2 long header: bit7 set, packet_type=0x01 in bits 4-5
-        first_byte = 0x80 | (0x01 << 4)  # long header + type 0x01
-        pkt = bytearray()
-        pkt.append(first_byte)
-        pkt += b"\x6b\x33\x43\xcf"  # QUIC v2 version
-        pkt.append(8)  # DCID length
-        pkt += b"\x00" * 8  # DCID
-        pkt.append(0)  # SCID length
-        pkt.append(0)  # token length
-        pkt += (
-            b"\x00" * 50
-        )  # payload (will fail decryption, but should not be rejected at type check)
-        parse_quic_initial(bytes(pkt))
-        # Will return None (decryption fails on dummy data), but crucially
-        # should NOT be rejected at the packet_type check — it should reach
-        # the decryption stage. We verify by checking a v2 non-Initial IS rejected.
+    def test_v2_initial_yields_the_client_hello(self):
+        """A QUIC version 2 Initial packet produces the ClientHello it carries."""
+        from ja4plus.utils.quic_utils import parse_quic_initial
+        from tests.quic_builder import (
+            QUIC_VERSION_2,
+            client_hello,
+            client_initial_crypto,
+            crypto_frame,
+        )
+
+        packet = client_initial_crypto(
+            self.DCID,
+            crypto_frame(0, client_hello("v2.example.com")),
+            version=QUIC_VERSION_2,
+        )
+        tls_info = parse_quic_initial(packet)
+        self.assertIsNotNone(tls_info)
+        self.assertEqual(tls_info["sni"], "v2.example.com")
+        self.assertTrue(tls_info["is_quic"])
+
+    def test_v1_initial_yields_the_client_hello(self):
+        """A QUIC version 1 Initial packet produces the ClientHello it carries."""
+        from ja4plus.utils.quic_utils import parse_quic_initial
+        from tests.quic_builder import client_hello, client_initial_crypto, crypto_frame
+
+        packet = client_initial_crypto(self.DCID, crypto_frame(0, client_hello("v1.example.com")))
+        tls_info = parse_quic_initial(packet)
+        self.assertIsNotNone(tls_info)
+        self.assertEqual(tls_info["sni"], "v1.example.com")
 
     def test_v2_non_initial_rejected(self):
-        """QUIC v2 Handshake type (0x03) should be rejected."""
+        """A QUIC version 2 Handshake packet produces no ClientHello."""
         from ja4plus.utils.quic_utils import parse_quic_initial
+        from tests.quic_builder import (
+            QUIC_VERSION_2,
+            client_hello,
+            client_initial_crypto,
+            crypto_frame,
+        )
 
-        first_byte = 0x80 | (0x03 << 4)  # long header + type 0x03 (not Initial for v2)
-        pkt = bytearray()
-        pkt.append(first_byte)
-        pkt += b"\x6b\x33\x43\xcf"  # QUIC v2 version
-        pkt += b"\x00" * 30
-        self.assertIsNone(parse_quic_initial(bytes(pkt)))
+        # The packet holds the type code 3, which version 2 gives a Handshake packet, and
+        # it carries the same protected ClientHello as the Initial case. A reader that
+        # drops the type check therefore returns that ClientHello, so this case measures
+        # the type check and nothing else.
+        packet = client_initial_crypto(
+            self.DCID,
+            crypto_frame(0, client_hello("v2.example.com")),
+            version=QUIC_VERSION_2,
+            type_code=3,
+        )
+        self.assertIsNone(parse_quic_initial(packet))
 
 
 class TestExtractCryptoFrames(unittest.TestCase):
