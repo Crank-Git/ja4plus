@@ -630,6 +630,7 @@ ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
 | `--format table\|json\|csv` | Output format (default: table) |
 | `--types ja4,ja4s,...` | Filter to specific fingerprint types |
 | `--lookup` | Identify fingerprints from the bundled database. It makes no network request |
+| `--lookup-remote` | Identify fingerprints, and send each one the bundled database holds no entry for to `https://ja4db.com` |
 | `--output FILE` | Write the results to FILE instead of standard output |
 | `--force` | Overwrite the file that `--output` names when it exists |
 | `--version` | Print version |
@@ -778,6 +779,40 @@ The lookup service publishes no versioned API document. The client therefore acc
 shape: an object that carries a non-empty `application` string. It reads `type` and
 `notes` as strings, and it substitutes an empty string for a field of another type. It
 returns None for every other shape, so no unchecked value reaches a caller.
+
+#### The command asks for the remote lookup with an option or a variable
+
+`--lookup` identifies each fingerprint from the bundled mapping file, and it makes no
+network request, FR-db-enrichment-3.
+
+`--lookup-remote` identifies each fingerprint, and it sends every fingerprint the mapping
+file holds no entry for to the lookup service, FR-db-enrichment-4. It asks for the lookup
+as well as for the disclosure, so an operator who passes it needs no `--lookup`.
+
+`JA4PLUS_DB_LOOKUP=1` permits the same disclosure, FR-db-enrichment-5. It serves an
+operator who runs a command line another program builds. The variable permits the
+disclosure and asks for no lookup, so `JA4PLUS_DB_LOOKUP=1 ja4plus analyze capture.pcap`
+looks nothing up. `JA4PLUS_DB_LOOKUP=1 ja4plus analyze capture.pcap --lookup` performs
+the remote lookup.
+
+The option and the variable each permit the disclosure, and neither one refuses it.
+`JA4PLUS_DB_LOOKUP=0` therefore cancels no option, and an operator who wants the local
+lookup passes `--lookup`. The variable permits the disclosure on the value `1` and on no
+other value.
+
+The command writes one notice to standard error for each run that permits the remote
+lookup, FR-db-enrichment-6. The notice names the lookup service and the two ways to stop
+the request. It appears once whatever count of fingerprints the run looks up, and it
+goes to standard error, because a notice on standard output would enter the pipe that
+carries the results.
+
+```
+Notice: the remote lookup is on. Each fingerprint the bundled mapping file holds no entry for goes to the lookup service at https://ja4db.com. To stop it, pass no --lookup-remote option and unset JA4PLUS_DB_LOOKUP.
+```
+
+The command needs the `requests` package for the remote lookup. Where the operator asks
+for the remote lookup and the package is absent, the command reports the extra to install
+and ends the run with the status 1.
 
 #### The concurrency contract of the lookup client
 

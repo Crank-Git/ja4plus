@@ -20,8 +20,8 @@ The rule holds three parts:
 
 A JSON object omits no field, and a field with no value is `null`. A CSV row holds one
 value for each column, and a column with no value is empty. The output line therefore
-holds the same field set whatever options the user passed. `--lookup` changes the value
-of `identified_as` and no other part of the line.
+holds the same field set whatever options the user passed. `--lookup` and
+`--lookup-remote` change the value of `identified_as` and no other part of the line.
 
 `tests/test_output_schema.py` holds the rule as a check. `SCHEMA_HISTORY` in that file
 records the column list of each released version. The check fails when a released
@@ -104,7 +104,7 @@ this order, and the JSON format writes them as eleven keys.
 | 8 | `src_port` | number | `0` | The source port. It is `0` when the packet carries no port. |
 | 9 | `dst_ip` | string | `""` | The destination address. |
 | 10 | `dst_port` | number | `0` | The destination port. It is `0` when the packet carries no port. |
-| 11 | `identified_as` | string or null | `null` | The application name the lookup returned. It is `null` without `--lookup`, and `null` when the lookup finds no match. |
+| 11 | `identified_as` | string or null | `null` | The application name the lookup returned. It is `null` without `--lookup` and without `--lookup-remote`, and `null` when the lookup finds no match. |
 
 The CSV format writes an empty column where the JSON format writes `null`. The CSV
 format writes `0` where the JSON format writes the number `0`.

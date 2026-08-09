@@ -61,6 +61,21 @@ VALID_TYPES = [
     "ja4d6",
 ]
 
+# The environment variable that permits the remote lookup. It serves an operator who
+# runs a command line another program builds. `features/07-db-enrichment.md` line 50
+# states the name, and FR-db-enrichment-5 states the value 1.
+_REMOTE_LOOKUP_ENV = "JA4PLUS_DB_LOOKUP"
+
+# The disclosure notice FR-db-enrichment-6 asks for. A fingerprint describes traffic the
+# operator observed, so the notice names the third party that reads it and the two ways
+# to stop the request. It is one output line, and `_init_lookup` writes it once for
+# each run.
+_REMOTE_LOOKUP_NOTICE = (
+    "Notice: the remote lookup is on. Each fingerprint the bundled mapping file holds "
+    "no entry for goes to the lookup service at https://ja4db.com. To stop it, pass no "
+    "--lookup-remote option and unset JA4PLUS_DB_LOOKUP."
+)
+
 
 def _parse_types(types_str: str) -> list[str]:
     """Parse and validate --types argument. Returns list of type names."""
@@ -361,7 +376,8 @@ def _write_results(
     Args:
         results: The results to write, in the order the fingerprinters emitted them.
         writer: The writer the `--format` option selected.
-        ja4db_client: The lookup client, or None when the user passed no `--lookup`.
+        ja4db_client: The lookup client, or None when the user passed neither `--lookup`
+            nor `--lookup-remote`.
     """
     for result in results:
         identified: str | None = None
@@ -372,17 +388,75 @@ def _write_results(
         writer.write(result, identified)
 
 
+def _remote_lookup_permitted(args: argparse.Namespace) -> bool:
+    """Report whether the operator permits the remote lookup.
+
+    The option and the environment variable each permit the disclosure, and neither one
+    refuses it. FR-db-enrichment-4 states the option and FR-db-enrichment-5 states the
+    variable, and both read as a permission. `JA4PLUS_DB_LOOKUP=0` therefore cancels no
+    option, and an operator who wants the local lookup passes `--lookup`.
+
+    Args:
+        args: The parsed command line.
+
+    Returns:
+        True when the operator asks for the remote lookup.
+    """
+    if getattr(args, "lookup_remote", False):
+        return True
+    # FR-db-enrichment-5 names the value 1 and names no other value, so `true` and `yes`
+    # permit nothing. A privacy gate reads one spelling, because a gate that guesses at a
+    # value opens on a value the operator did not intend.
+    return os.environ.get(_REMOTE_LOOKUP_ENV) == "1"
+
+
 def _init_lookup(args: argparse.Namespace) -> JA4DBClient | None:
-    """Initialize ja4db client if --lookup is set."""
-    if not getattr(args, "lookup", False):
+    """Return the lookup client the options ask for, or None for a run without a lookup.
+
+    The command writes the disclosure notice here, so one run writes it once whatever
+    count of fingerprints it looks up. FR-db-enrichment-6 asks for that, and each command
+    calls this function once.
+
+    Args:
+        args: The parsed command line.
+
+    Returns:
+        The client, or None when the operator asks for no lookup.
+
+    Raises:
+        SystemExit: The operator asks for the remote lookup and `requests` is absent.
+    """
+    allow_remote = _remote_lookup_permitted(args)
+    # The variable permits the disclosure and asks for no lookup. A run that names no
+    # option therefore looks nothing up, and it discloses nothing.
+    if not getattr(args, "lookup", False) and not getattr(args, "lookup_remote", False):
         return None
+
+    if allow_remote:
+        try:
+            import requests  # noqa: F401 - the import measures the package, not a name
+        except ImportError:
+            print(
+                "Error: the remote lookup needs the requests package. "
+                "Install it with: pip install ja4plus[lookup]",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
     try:
         from ja4plus.ja4db import JA4DBClient
 
-        return JA4DBClient()
+        client = JA4DBClient(allow_remote=allow_remote)
     except Exception as e:
+        # #319 owns this wide handler.
         print(f"Warning: could not initialize ja4db lookup: {e}", file=sys.stderr)
         return None
+
+    # The notice follows the client, so a run that builds no client claims no
+    # disclosure.
+    if allow_remote:
+        print(_REMOTE_LOOKUP_NOTICE, file=sys.stderr)
+    return client
 
 
 def cmd_analyze(args: argparse.Namespace) -> None:
@@ -788,6 +862,17 @@ def _add_output_options(parser: argparse.ArgumentParser, *, defaults: bool) -> N
         # #57 made the remote lookup opt-in at the client, so this option reads the
         # bundled mapping file and reaches no network.
         help="Identify fingerprints from the bundled database. It makes no network request",
+    )
+    parser.add_argument(
+        "--lookup-remote",
+        action="store_true",
+        default=default(False),
+        # The option asks for the lookup and for the disclosure, so an operator who
+        # passes it needs no `--lookup` as well.
+        help=(
+            "Identify fingerprints, and send each one the bundled database holds no "
+            "entry for to https://ja4db.com"
+        ),
     )
     parser.add_argument(
         "--output",
