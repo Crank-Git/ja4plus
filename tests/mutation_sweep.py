@@ -41,6 +41,13 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 # no test as measured, so the sweep records it and drops it from the kill sets.
 UNUSABLE_KILL_RATIO = 0.9
 
+# The two patterns list every tracked module of the package. **Never write
+# `ja4plus/**/*.py` here**: git reads `**` in a pathspec as one or more directories, so it
+# drops every module of the top directory, `ja4plus/processor.py` among them.
+# `tests/test_mutation_sweep_module_list.py` fails when this list stops matching the
+# tracked files.
+DEFAULT_MODULE_PATTERNS = ("ja4plus/*.py", "ja4plus/*/*.py")
+
 COMPARE_SWAP = {
     "==": "!=",
     "!=": "==",
@@ -317,6 +324,29 @@ def module_paths(root: Path, patterns: Sequence[str]) -> List[Path]:
     return [path for path in paths if path.is_file()]
 
 
+def head_commit(root: Path) -> str:
+    """Return the commit the sweep reads.
+
+    A checkpoint keys each result on the position of the expression in the file, so a
+    result belongs to one commit. The report names that commit, and a reader then proves
+    that it is an ancestor of the head of the branch.
+
+    Args:
+        root: The repository root.
+
+    Returns:
+        The 40-character commit, or the empty string when git reads none.
+    """
+    finished = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return finished.stdout.strip()
+
+
 def markdown_report(report: Dict[str, object]) -> str:
     """Return the report as a page a reader can follow."""
     modules = report["modules"]
@@ -342,6 +372,7 @@ def markdown_report(report: Dict[str, object]) -> str:
         "| Field | Value |",
         "|---|---|",
         "| Date | {} |".format(report["generated"]),
+        "| Commit | `{}` |".format(report["commit"]),
         "| Cases collected | {} |".format(report["cases_collected"]),
         "| Mutations per module | {} |".format(report["max_per_module"] or "every one"),
         "| Sampling seed | {} |".format(report["seed"]),
@@ -480,7 +511,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     options = parse_arguments(argv)
     root = Path(__file__).resolve().parent.parent
     tests = options.tests or ["tests/"]
-    patterns = options.module or ["ja4plus/*.py", "ja4plus/*/*.py"]
+    patterns = options.module or list(DEFAULT_MODULE_PATTERNS)
     paths = module_paths(root, patterns)
     if not paths:
         print("no module matches {}".format(patterns), file=sys.stderr)
@@ -519,6 +550,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if number is not None:
             signal.signal(number, stop)
 
+    # The commit is read before the first mutation lands, so it names the code the
+    # results belong to and not a later state of the worktree.
+    commit = head_commit(root)
     started = time.time()
     checkpoint = Path(options.checkpoint)
     done = read_checkpoint(checkpoint)
@@ -593,6 +627,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     candidates = sorted(case for case in cases if case not in killers and case not in baseline)
     report = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "commit": commit,
         "seed": options.seed,
         "max_per_module": options.max_per_module,
         "tests": tests,
