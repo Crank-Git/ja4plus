@@ -148,12 +148,12 @@ field of one entry.** 43 entries record a capability decline today, and all 43 n
 prose of its cause.** Read the field.
 
 **The field alone carries this bar, and #347 measured it.** #334 left the 35 source
-values of #129 out of `SOURCE_VALUES`, so the exclusion enforced the bar a second time
-and no case could read what the field does on the one issue the bar exists for. The
+values of #129 out of `SOURCE_VALUES`, so the exclusion enforced the bar a second time.
+No case could then read what the field does on the one issue the bar exists for. The
 table now holds all 35, measured against the pinned commit. With `capability` false on
-every #129 entry the reach rises from 6 rows to 25, and the same flip on the earlier
-table moved nothing. The 16 JA4H rows of the 35 stay out under the disagreement bar,
-because the Rust value and the Wireshark value differ on each one.
+every #129 entry the reach rises from 6 rows to 25. The same flip on the earlier table
+moved nothing. The 16 JA4H rows of the 35 stay out under the disagreement bar, because
+the Rust value and the Wireshark value differ on each one.
 
 **A disagreement between the remaining sources bars the row.** Where the remaining FoxIO
 sources hold different values, **no source holds the reference and the row stays declined

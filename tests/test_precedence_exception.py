@@ -39,11 +39,11 @@ connection by resolving `frame.number` against the capture, because the Wireshar
 testdata records a frame number and no connection.
 
 **#334 left the 35 source values of #129 out of the table, and #347 put them in.** The
-exclusion enforced the capability bar a second time, so a wrong reading of the field on
-the one issue the bar exists for moved nothing and no case failed. The table now holds
-every measured row, the field alone bars the 35, and
-`test_the_field_alone_bars_the_measured_capability_rows` reads the reach with the field
-flipped. #347 measured the 35 rows against the same pinned commit and the same method.
+exclusion enforced the capability bar a second time. A wrong reading of the field then
+moved nothing, and no case failed. The table now holds every measured row, and the field
+alone bars the 35. `test_the_field_alone_bars_the_measured_capability_rows` reads the
+reach with the field flipped. #347 measured the 35 rows against the same pinned commit
+and by the same method.
 
 These cases read the register, the vectors and prose. They import nothing from `ja4plus`
 and they produce no fingerprint.
@@ -66,10 +66,9 @@ ZEEK_PAGE = REPO_ROOT / "docs" / "specs" / "foxio" / "zeek.md"
 JA4SSH_PAGE = REPO_ROOT / "docs" / "specs" / "foxio" / "JA4SSH.md"
 
 # The value every other FoxIO source holds for one register key, keyed by the register
-# key. The run of #334 measured 23 rows, the run of #347 measured the 35 rows of #129,
-# and the table holds every decided value-form key that a source covers. The capability
-# field is the one fact that bars the 35, and no case reads a source name that the
-# measurement did not produce.
+# key. The run of #334 measured 23 rows, and the run of #347 measured the 35 rows of
+# #129. The table holds every decided value-form key that a source covers. The capability
+# field is the one fact that bars the 35.
 SOURCE_VALUES = {
     "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
         "rust": "113_64",
@@ -304,9 +303,9 @@ SOURCE_VALUES = {
 CAPABILITY_VALUE_KEYS = 37
 
 # The count of measured rows the capability bar holds out. The run of #347 read all 37
-# rows of #129 and found a source value for 35. `chrome-cloudflare-quic-with-secrets.pcapng`
-# supplies the other two: no Rust snapshot and no Wireshark file holds a JA4X value for
-# that capture, so the table records neither key.
+# rows of #129 and found a source value for 35. The other two are the JA4X keys of
+# `chrome-cloudflare-quic-with-secrets.pcapng`. No Rust snapshot and no Wireshark file
+# holds a JA4X value for that capture, so the table records neither key.
 CAPABILITY_ROWS_MEASURED = 35
 
 # The methods no Zeek baseline holds a reference value for. Three rules of the Zeek script
@@ -324,8 +323,8 @@ CAPABILITY_ISSUE = 129
 
 # The measured #129 rows that the `capability` field alone holds out of the reach. Each
 # row carries a source value that the remaining sources agree on, so the field is the one
-# fact that bars it. The 16 JA4H rows carry a Rust value that differs from the Wireshark
-# value, so the disagreement bar holds those out as well and they are absent here.
+# fact that bars it. The 16 JA4H rows are absent here. Each one carries a Rust value that
+# differs from the Wireshark value, so the disagreement bar holds it out as well.
 CAPABILITY_ROWS_THE_FIELD_ALONE_BARS = {
     "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1",
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.1",
@@ -507,8 +506,8 @@ class TestTheReachOfTheException:
         #334 measured these 35 rows and left them out, and
         `test_no_measured_row_records_a_capability_decline` asserted the exclusion.
         #347 removed the exclusion, and this case replaces it. A capability decline that
-        names another issue reaches a bar no measurement has read, so this case fails
-        until a reader decides whether the bar still holds.
+        names another issue reaches a bar no measurement has read. This case fails on
+        such a row, and a reader then decides whether the bar still holds.
         """
         register = load_register()
         barred = {key for key in SOURCE_VALUES if register[key].capability}
@@ -557,8 +556,8 @@ class TestTheBarsOnTheException:
     def test_the_field_alone_bars_the_measured_capability_rows(self, tmp_path):
         """The reach rises when the `capability` field reads false on the #129 entries.
 
-        #334 measured the 35 #129 source values and left them out of `SOURCE_VALUES`,
-        so no case could measure what the field does on the issue the bar exists for.
+        #334 measured the 35 #129 source values and left them out of `SOURCE_VALUES`.
+        No case could then measure what the field does on the issue the bar exists for.
         #347 put them in the table, and this case flips the field on every #129 entry
         and reads the reach again. The rise proves the field carries the bar alone.
         """

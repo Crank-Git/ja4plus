@@ -11,28 +11,28 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The `capability` field alone bars the rows of #129** (#347). Round `TBD`.
   #341 shipped the field on all 135 register entries and reported that it could not
   prove the one thing it exists for. **The bar stood twice**: once in the field, and once
-  in an absent measurement. #334 measured the 35 source values of #129, left them out of
-  `SOURCE_VALUES`, and `test_no_measured_row_records_a_capability_decline` asserted the
-  exclusion, so flipping the field on a #129 entry moved nothing and no case failed.
-  **This round measured the 35 rows against the pinned FoxIO checkout**
+  in an absent measurement. #334 measured the 35 source values of #129 and left them out
+  of `SOURCE_VALUES`, and `test_no_measured_row_records_a_capability_decline` asserted
+  the exclusion. Flipping the field on a #129 entry therefore moved nothing, and no case
+  failed. **This round measured the 35 rows against the pinned FoxIO checkout**
   `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` and put them in the table. It resolved every
   Wireshark frame number against its capture with `scapy` and read the 5-tuple, which is
   the method #334 recorded. **The reading corroborates itself**: all 16 Wireshark JA4H
   values and all 3 Wireshark JA4X values equal the FoxIO Python values at the same
   occurrence. Two of the 37 rows carry no source value, and they are
-  `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1` and `JA4X.2`, because
-  neither the Rust snapshot nor the Wireshark file holds a JA4X value for that capture.
+  `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4X.1` and `JA4X.2`. Neither the
+  Rust snapshot nor the Wireshark file holds a JA4X value for that capture.
   **The reach holds at 6 rows, and the measurement the field now permits reads 25.**
   With `capability` false on all 43 #129 entries, live on disk, the reach rises from 6 to
   25 and returns to 6 after the restore. On the base file the same flip reads 6 and 6.
   The 19 rows that enter are the 16 JA4H_ro rows and the 3 JA4X rows; the 16 JA4H rows
   stay out because the Rust value and the Wireshark value differ.
   `test_no_measured_row_records_a_capability_decline` is renamed to
-  `test_every_measured_capability_row_names_the_issue_the_bar_exists_for`, which holds
-  the one meaning the exclusion did not carry: a measured capability row names #129, and
-  a row under another issue reaches a bar no measurement has read. No file under
-  `ja4plus/` changes, no register entry changes, no fingerprint moves, and the register
-  holds 135 keys against 135 xfailed.
+  `test_every_measured_capability_row_names_the_issue_the_bar_exists_for`. The new name
+  holds the one meaning the exclusion did not carry: a measured capability row names
+  #129, and a row under another issue reaches a bar no measurement has read. No file
+  under `ja4plus/` changes, no register entry changes, no fingerprint moves, and the
+  register holds 135 keys against 135 xfailed.
 
 - **The example that a merge restored is absent again** (#368). Round 124.
   #56 removed `examples/monitoring_daemon.py` and added
