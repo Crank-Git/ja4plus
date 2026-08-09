@@ -224,6 +224,53 @@ holds every breaking change of this record against a row of that page.
   measured 40.39 s, 24.25 s, 24.40 s and 22.22 s, so the settled figure is about 23 s. A
   runner starts with a cold `pip` cache and takes longer. This entry changes no file under
   `ja4plus/` and it moves no fingerprint.
+- **Every sweep candidate of the eleven protocol parsing modules is settled** (#412).
+  Round TBD. New files `docs/mutation_reports/412-utils.json` and
+  `docs/mutation_settlements/412-utils.json`. Eleven single-module sweeps read
+  `ja4plus/utils/` with `--max-per-module 0`, one for each module, over **1420 mutations**:
+  `tls_utils.py` 335, `quic_utils.py` 315, `ssh_utils.py` 252, `x509_utils.py` 173,
+  `http_utils.py` 103, `tcp_stream.py` 80, `tcp_options.py` 63, `state_table.py` 55,
+  `packet_utils.py` 35, `loopback.py` 5 and `tunnels.py` 4. `ja4plus/utils/__init__.py`
+  holds no expression a mutation can change. The union of the eleven candidate sets is
+  **205 candidates**, and the record settles every one: **203 read `correct` with the
+  reason and 2 read `repaired` with the case**.
+  **The scope is the minimal cover, and the user ruled it on 2026-08-09.** The rule "name
+  every test file that reads the module" measured **32.18 hours**, eight times the
+  four-hour ceiling, so the stop condition fired and no sweep started until the ruling
+  arrived. The minimal cover is the smallest test-file set that still runs every mutation
+  line of the module, and it measures **0.52 hours** for the same 1420 mutations.
+  **Three limits hold wherever that result is read.** Every mutation keeps a reader, so a
+  mutation that no case kills is still found and the surviving-mutation signal is
+  preserved. The cover is conservative in the safe direction: a test file it drops might
+  have killed a mutation, so it **over-reports survivors and never under-reports them**.
+  The candidate set shrinks, 97 cases for `quic_utils.py` against 2268 under the wider
+  rule, and **a case the cover drops stays unmeasured against that module** rather than
+  measured clean. The record holds the cover of each module under its `scope` key.
+  **Two cases are repaired.** `ja4plus/utils/tunnels.py:27` held three module-name strings
+  that no case read: `tests/test_tunnels.py` asserted `startswith("scapy.")` alone, so a
+  wrong module name left it green, and a new case names the three modules as literals.
+  `ja4plus/utils/loopback.py:23` held the address family value 30, and
+  `tests/test_loopback_link_type.py` measured nothing for it on Darwin, because scapy binds
+  `socket.AF_INET6` itself and that value is 30 there. **The case was vacuous on this host
+  and would have failed on Linux**, and it now asserts that `ja4plus` wrote the bind.
+  **One mutation can turn a loop bound into a loop that never ends, and the sweep had no
+  time limit.** `ja4plus/utils/ssh_utils.py:284` holds that bound: the sweep reads
+  `while position < len(payload)` as `while position <= len(payload)`, and
+  `SSHMessageTracker.process_payload` then loops with no progress. The sweep stopped for
+  good three times before the cause was read from the mutated file.
+  `tests/mutation_sweep.py` gains `--timeout`, and a run that passes the limit records the
+  status `timeout` and the sweep continues. **A mutation that times out is not a
+  survivor**, because a run that never finished measured nothing. The limit is off by
+  default. New file `tests/test_mutation_sweep_timeout.py` holds six cases. Seven mutations
+  of this module set reached the limit: three of `tls_utils.py`, two of `ssh_utils.py`, one
+  of `state_table.py` and one of `x509_utils.py`.
+  **A criterion that reads "0 unsettled candidates" passes on an empty directory**, so a
+  settlement issue must prove its census assertion is not vacuous.
+  `tests/test_mutation_census.py` gains `TestTheRecordsOfThisRepository`, which states two
+  readings: the census names at least one candidate, and it names an unclaimed candidate
+  when one row leaves the record. `.claude/rules/conformance.md` records the `timeout`
+  status, how to build a minimal cover from a measurement, and the non-vacuity rule.
+  **No file under `ja4plus/` changes and no fingerprint moves.**
 - **The sweep report names the commit it read, and a census counts the open candidates**
   (#411). Round TBD. `tests/mutation_sweep.py` writes a `commit` key and a `Commit` row,
   read from `git rev-parse HEAD` before the first mutation lands.

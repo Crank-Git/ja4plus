@@ -184,8 +184,53 @@ The report holds four parts.
 - `modules` names every module, and every mutation the sweep applied to it. A mutation
   records the line, the text before, the text after, and the count of the cases it killed.
 - A mutation whose status is `survived` killed no case. A mutation whose status is
-  `unusable` failed the whole suite, because it broke an import, and the sweep drops it.
+  `unusable` failed the whole suite, because it broke an import, and the sweep drops it. A
+  mutation whose status is `timeout` passed the time limit of one suite run.
 - `candidates` names every case that no mutation killed.
+
+**Warning: one mutation can turn a loop bound into a loop that never ends.** The sweep then
+never returns, and the checkpoint records nothing. `ja4plus/utils/ssh_utils.py:284` holds
+such a bound: the sweep reads `while position < len(payload)` as
+`while position <= len(payload)`, and `SSHMessageTracker.process_payload` then loops with
+no progress. **Name `--timeout` to bound one suite run.** #412 met the hang three times
+before it added the option. The limit is off by default, so a sweep that names no
+`--timeout` behaves as it did before.
+
+```bash
+python tests/mutation_sweep.py --max-per-module 0 --timeout 90 \
+  --module "ja4plus/utils/ssh_utils.py" --tests tests/test_ja4ssh_deep.py
+```
+
+## How to scope one sweep: the minimal cover
+
+**Scope each module to the smallest test-file set that still runs every mutation line of
+that module.** The user ruled on 2026-08-09, after #412 measured the rule "name every test
+file that reads the module" at **32.18 hours** over 1420 mutations. The minimal cover
+measures **0.52 hours** for the same 1420 mutations.
+
+Build the cover from a measurement and not from a file name.
+
+1. Run each test file on its own under `--cov=ja4plus --cov-report=json`, and record the
+   executed line set of the module.
+2. Subtract the lines the import runs. Every test file that imports `ja4plus` runs every
+   module-level constant, so a cover built on import reach names every file.
+3. Take the test files that run a mutation line, greatest lines for each second first,
+   until the set runs every reachable mutation line.
+
+**State these three limits wherever the result is read.**
+
+- **Every mutation keeps a reader**, so a mutation that no case kills is still found. The
+  surviving-mutation signal is preserved.
+- **The cover is conservative in the safe direction.** A test file the cover drops might
+  have killed a mutation, so the cover can report a survivor that a wider run would have
+  killed. **It over-reports survivors and it does not under-report them.**
+- **The candidate set shrinks**, because fewer cases are evaluated. A case the cover drops
+  stays unmeasured against that module, and the record names that rather than implying the
+  module is fully measured.
+
+**Record the cover of each module in the settlement record**, so a later reader widens it
+without deriving the cover again. `docs/mutation_settlements/412-utils.json` holds the
+first one, under the `scope` key.
 
 **Warning: `git ls-files 'ja4plus/**/*.py'` lists 24 files and the package holds 31.** Git
 reads `**` in a pathspec as one or more directories, so the pattern matches no file of the
@@ -260,6 +305,13 @@ Read a candidate this way.
    `--max-per-module 0`, and read the report again.
 3. If the case cannot fail, repair it. Apply by hand the mutation that exposed it, run
    the repaired case, and record the failure in the pull request.
+
+**Prove that a census assertion is not vacuous.** With no report under
+`docs/mutation_reports/`, the census prints `0 candidates over 0 test files` and every
+settlement criterion passes with no work done. #412 found that. A settlement issue states
+two readings: the census names at least one candidate, and it names an unclaimed candidate
+when one row leaves the record. `TestTheRecordsOfThisRepository` in
+`tests/test_mutation_census.py` holds both.
 
 **Read an acceptance criterion as a candidate too.** #32 and #177 each held the vacuous
 comparison in a criterion rather than in a test. #177's first two criteria passed on the
