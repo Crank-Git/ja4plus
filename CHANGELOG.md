@@ -224,6 +224,53 @@ holds every breaking change of this record against a row of that page.
   measured 40.39 s, 24.25 s, 24.40 s and 22.22 s, so the settled figure is about 23 s. A
   runner starts with a cold `pip` cache and takes longer. This entry changes no file under
   `ja4plus/` and it moves no fingerprint.
+- **Every sweep candidate of the seven interface modules is settled** (#414). Round TBD.
+  New files `docs/mutation_reports/414-interface.json`,
+  `docs/mutation_settlements/414-interface.json` and
+  `tests/test_settlement_procedure.py`. Seven single-module sweeps read the seven files
+  `git ls-files 'ja4plus/*.py'` names, with `--max-per-module 0`, over **556 mutations**:
+  `cli.py` 226, `watch.py` 97, `ja4db.py` 68, `output.py` 68, `processor.py` 54,
+  `__init__.py` 32 and `types.py` 11. **The cost was measured before the run and not
+  estimated.** The minimal cover of each module, timed as a whole `pytest` command, gives a
+  product of **1.27 hours** against the four-hour ceiling, so the stop condition of
+  Amendment 3 did not fire. The seven runs took 4188.7 s and reported **340 killed, 279
+  survived, 4 timeout and 0 unusable**. The candidate sets hold 307 rows over the seven
+  modules and **236 distinct cases**, which is the union the settlement record holds.
+  **Do not compare 236 against the 976 of #206 or the 205 of #412**; the three count
+  different sets. **Coverage with one context for each case splits the 307 rows**: 301 run
+  no mutated line of their module inside a function body, and 6 run one. Each of the 6 was
+  proved live with `inspect.getsource` in both directions, and **two of them are repairs**.
+  `tests/test_documentation_samples.py` asserted the type of the error a `raises` sample
+  block produces and never the line it came from, so the mutation `not in` -> `in` at
+  `ja4plus/types.py:74` moved the raise from the second line of
+  `docs/api_reference.md:284` to the first, kept the type `KeyError`, and left the case
+  green. The harness now reads the line the error came from, so a sample whose earlier line
+  raises fails. `tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error`
+  read the type of the error and no message, so the mutation of the message at
+  `ja4plus/ja4db.py:294` changed nothing it compared. **The first repair was itself unable
+  to fail**: `pytest.raises(match=...)` searches rather than compares, and
+  `allow_remote takes True or False_mutated` holds the unanchored pattern, so the mutation
+  still passed. The pattern now carries both anchors, and the mutation fails all four
+  parameters. **The census assertion is proved in both readings**: the census names 236
+  candidates of sweep `414-interface`, and one row removed from the record makes it name
+  that candidate as unclaimed. **`FR-pre-release-validation-23` is split.** It stated a
+  procedure a worker follows, no check could test it, and the list of statements the
+  document declares uncheckable did not name it. The artefact of the procedure keeps a
+  check, and `FR-pre-release-validation-23` now states it: a `repaired` verdict names a
+  case the suite collects, which `tests/test_settlement_procedure.py` reads. The procedure
+  itself becomes `FR-pre-release-validation-23a` and joins the uncheckable list as its
+  third entry, because no case observes a worker. **The condition is necessary and not
+  sufficient**, and both the requirement and the file say so. **The cover rule holds a
+  defect this round records and does not repair.** It drops the lines the import runs, and
+  95 of the 279 survivors sit on such a line. `ja4plus/__init__.py` measures the cost: the
+  cover the rule builds is `tests/test_parity.py` at 1 killed and 31 survived, while the
+  same 32 mutations against `tests/test_public_interface.py` read 25 killed and 7 survived,
+  so 24 survivors are over-reported. #433 carries it. **`tests/test_cli.py` runs all 27
+  reachable mutation lines of `ja4plus/output.py` on its own**, so the cover of that module
+  holds it alone and no case of `tests/test_output_schema.py` or of
+  `tests/test_cli_output_option.py` is measured against that module. A case the cover drops
+  is unmeasured and not clean, and the record states it. No file under `ja4plus/` changes,
+  no file under `tests/foxio_vectors/` changes, and no fingerprint moves.
 - **Every sweep candidate of the eleven protocol parsing modules is settled** (#412).
   Round TBD. New files `docs/mutation_reports/412-utils.json` and
   `docs/mutation_settlements/412-utils.json`. Eleven single-module sweeps read

@@ -26,8 +26,9 @@ import socket
 import subprocess
 import sys
 import textwrap
+import traceback
 from contextlib import contextmanager, redirect_stdout
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List, Optional
 
 import pytest
 
@@ -445,6 +446,43 @@ def _python_samples(name: str) -> List[FencedBlock]:
     return [block for block in all_blocks() if block.path == name and _is_python_sample(block)]
 
 
+def _last_code_line(block: FencedBlock) -> int:
+    """Return the number of the last line of the block that carries code.
+
+    Args:
+        block: One fenced block of a page.
+
+    Returns:
+        The 1-based line number, counted inside the block. A blank line and a comment
+        line carry no code, so neither one reaches the result.
+    """
+    numbered = [
+        index
+        for index, line in enumerate(block.body.splitlines(), start=1)
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    return numbered[-1] if numbered else 1
+
+
+def _raising_line(error: BaseException, block: FencedBlock) -> Optional[int]:
+    """Return the line of the block that raised the error.
+
+    Args:
+        error: The exception the block raised.
+        block: The block the harness ran. `compile` names the code object after it, so a
+            frame of the block carries `block.name` as its file name.
+
+    Returns:
+        The 1-based line number inside the block, or None when no frame names the block.
+    """
+    inside = [
+        frame.lineno
+        for frame in traceback.extract_tb(error.__traceback__)
+        if frame.filename == block.name and frame.lineno is not None
+    ]
+    return inside[-1] if inside else None
+
+
 # The execution set reads the blocks, so it reaches every page the filesystem holds.
 #
 # Warning: never drive this list from a table somebody maintains by hand. An earlier form
@@ -481,6 +519,18 @@ def test_every_python_sample_of_the_page_runs(
             assert type(caught.value).__name__ == result.expected_error, (
                 f"{block.name} raised {type(caught.value).__name__}, and the marker names "
                 f"{result.expected_error}"
+            )
+            # The type of the error names no line, so a block whose first line raises
+            # reads exactly like a block whose documented last line raises. A reader
+            # copies every line, so the earlier lines must run. #414 found this: a
+            # mutation of `FingerprintResult.__getitem__` moved the raise from the second
+            # line to the first, the type stayed `KeyError`, and this case stayed green.
+            expected_line = _last_code_line(block)
+            raising_line = _raising_line(caught.value, block)
+            assert raising_line == expected_line, (
+                f"{block.name} raised {result.expected_error} at line {raising_line}, and "
+                f"the last line of the sample is {expected_line}. A reader runs every "
+                f"line, so the lines before the last one must not raise."
             )
             continue
         try:

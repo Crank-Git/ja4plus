@@ -125,8 +125,12 @@ FR-pre-release-validation-22 — A settlement record states one verdict for each
 `repaired` with the case name, or `correct` with the reason the mutation cannot reach the
 case.
 
-FR-pre-release-validation-23 — A worker proves each mutation live in both directions with
-`inspect.getsource` before it settles the candidate.
+FR-pre-release-validation-23 — A `repaired` verdict of a settlement record names a case
+that `tests/test_settlement_procedure.py` collects from the suite.
+
+FR-pre-release-validation-23a — A worker proves each mutation live in both directions with
+`inspect.getsource` before it settles the candidate. **No check tests this statement**, and
+the list below names it.
 
 FR-pre-release-validation-24 — A repaired guard case feeds input that produces a
 fingerprint when the guard alone is removed.
@@ -368,14 +372,25 @@ the checkout is.
 - [ ] `git diff --name-only` lists no file under `tests/foxio_vectors/`.
 - [ ] `pytest tests/test_requirement_scope.py` passes, so every requirement that binds a
       feature set names one path under `tests/`.
+- [ ] `pytest tests/test_settlement_procedure.py` passes, so every `repaired` verdict names
+      a case the suite collects.
 
-**Two statements here are not checkable, and each names its reason.**
+**Three statements here are not checkable, and each names its reason.**
 
 1. **No check confirms that a recorded transcript came from the granted Linux host.** The
    output is evidence under `.claude/rules/ste.md`, so a worker pastes it verbatim and
    rewrites none of it. A reader trusts the transcript or repeats the run.
 2. **No check states whether a measured throughput is adequate.** Adequacy is a decision
    the user makes against a use, and `Non-goals` states no target.
+3. **No check confirms that a worker proved a mutation live in both directions with
+   `inspect.getsource`.** `FR-pre-release-validation-23a` states that procedure, and a
+   case observes no worker. #419 found the statement among rules a check tests, and #414
+   split it. **The artefact keeps a check where the procedure keeps none**: a worker who
+   followed the procedure leaves a `repaired` verdict that names a case the suite
+   collects, and `FR-pre-release-validation-23` states that condition.
+   `tests/test_settlement_procedure.py` reads it. **That condition is necessary and it is
+   not sufficient**, because a record that names a collected case still proves no run of
+   the mutation. A reader trusts the transcript in the pull request or repeats the run.
 
 ## Out of scope
 
