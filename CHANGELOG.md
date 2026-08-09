@@ -73,6 +73,333 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **The package states a measured packet throughput** (#415). Round 151. New file
+  `tests/throughput_run.py` feeds one `Processor` a stated packet run in an interpreter of
+  its own. It writes one JSON object, and the object holds `packets`, `connections`,
+  `elapsed_seconds`, `packets_per_second`, `fingerprints`, `python_version`, `platform`
+  and `commit`. New file `tests/test_throughput.py` reads that object. New page
+  `docs/performance.md` publishes the measurements, and `mkdocs.yml` lists it.
+  **The clock covers `process_packet` and nothing else.** The traffic build and the
+  capture parse sit outside it, so the rate reads this package and not scapy.
+  **The synthetic run reads 1000000 packets across 100000 connections at 2006 packets for
+  each second.** It took 498.39 seconds and produced 400000 fingerprints. The host is this
+  laptop, `macOS-26.6.1-arm64-arm-64bit-Mach-O`, Python 3.14.3, commit `be91cc4`. The run
+  ran beside a mutation sweep, and the load average read 8.88 before it and 12.78 after it.
+  Read the rate as a lower bound. **The capture run reads all 38 captures on both hosts.**
+  The two agree on the result and differ on the time. Each read 9062 packets and produced
+  777 fingerprints, at 1857 packets for each second on `bigboy` and 2183 on this laptop.
+  **The one-million-packet synthetic run has one host only.** `bigboy` is shared, it
+  carries an Elasticsearch node, and #410 already spent a memory ceiling run there. The
+  project manager therefore gave it the capture run alone. `docs/performance.md` states
+  that gap and its reason, and no Linux figure for the synthetic run exists.
+  **The measurement carries three controls, and #415 proved each one able to fail.** A
+  timing case that measures the wrong thing reads as a fast package. The packet count
+  control fails when the run feeds half the packets. The work control fails when the clock
+  reads a constant rather than the traffic. The result control fails when the run counts no
+  fingerprint, because a processor that produces nothing reads the highest rate of all.
+  Each defect turned its own control red on `bigboy`, and the restored file turned it green.
+  **The issue names the manifest as a premise, and the count contradicts the doubt.**
+  `tests/foxio_vector_manifest.json` holds the same 38 names the directory holds, so the
+  manifest is complete and the capture set is every file under `tests/foxio_vectors/`.
+  **This entry sets no target and adds no job.** `Non-goals` states that wire-speed
+  performance is out of scope, `grep -rn "packets_per_second" .github/workflows/` finds
+  nothing, and `test_no_workflow_names_the_rate_field` holds that. **The measurement
+  becomes no floor**, because a floor derived from it cannot detect a fault in it.
+  **Two statements about throughput are not checkable, and the page marks each one.** It
+  reports neither as true. No check tells a slow package from a slow host, and no check
+  states whether a rate is adequate. No file under `ja4plus/` changes and no fingerprint
+  moves.
+- **The granted Linux host measured the gates for the first time** (#410). Round 149.
+  The host is `bigboy`, Ubuntu 24.10, kernel `6.11.0-29-generic`, 56 cores, 137 GiB and
+  `python3.12` only. It holds a checkout at `/home/e/ja4plus-verify`, which
+  `.issue-flow.json` recorded nowhere, and the run created
+  `/home/e/ja4plus-verify/.venv` on `Python 3.12.7`. The checkout held
+  `3991712f08fbb11996fad69a3b457150d585463b`, the head of
+  `epic/406-pre-release-validation`. #410 holds every transcript verbatim.
+  **The gates report no failure.** The unit suite reads
+  `2547 passed, 3 skipped, 1825 deselected, 8 xfailed, 16 warnings in 393.15s (0:06:33)`.
+  Coverage reads 94 percent against the `COVERAGE_FLOOR` of 70. The conformance suite reads
+  `1532 passed, 143 skipped, 2574 deselected, 134 xfailed, 1 warning in 16.21s` against
+  the 134 keys of `tests/foxio_deviations.json`, which matches the premise the issue
+  states. `ruff check` reads `All checks passed!`, `ruff format --check` reads
+  `183 files already formatted`, and `mypy --strict ja4plus/` reads
+  `Success: no issues found in 31 source files`. The fuzz job reads `127 passed`.
+  `TestTheStatedMemoryCeiling` reads `4 passed`, and
+  `tests/memory_ceiling_run.py --packets 30000 --connections 3000 --bound 0` writes
+  `peak_mib` 115.37 against the stated 512 MiB ceiling.
+  **The installed-wheel marker took 71.56 s on Linux against the 23 s #408 measured on
+  macOS.** That case builds an artifact and installs it, so its cost follows the host.
+  **The caveat binds every measurement above.** The host verifies a Linux code path. It
+  predicts no `ubuntu-latest` result, because the runner holds another kernel, another
+  processor count, another memory size and another Python version. The host measures
+  `python3.12` alone, so the 3.9, the 3.10, the 3.11 and the 3.13 rows of the matrix get
+  no measurement here. **Three statements of #410 are not checkable, and each names its
+  reason.** No check confirms that a transcript came from that host. No check confirms
+  that no load generator ran. No check turns a Linux pass into an `ubuntu-latest`
+  prediction. `docs/specs/features/11-pre-release-validation.md` states the caveat, states
+  the version gap, and settles the open question about the checkout path. **This entry
+  adds no continuous-integration job.** **No file under `ja4plus/` changes, no file under
+  `tests/foxio_vectors/` changes, and no fingerprint moves.**
+- **One case fingerprints a capture from the installed source distribution** (#409).
+  Round 148. `tests/test_installed_wheel.py` gains nine cases, and no new file appears.
+  #408 wrote four functions that take the artifact as a parameter: the build, the
+  clean-environment creation, the probe run and the comparison. This entry passes the
+  source distribution to the same four. The run repeats the three paths of #408 against
+  that artifact.
+  - `ja4plus --version`.
+  - `ja4plus analyze --format json`.
+  - One script that imports `ja4plus` and drives a `Processor`.
+
+  **`pip install <the sdist>` must build the source distribution and not resolve a
+  wheel.** A run that resolves a wheel measures the artifact of #408 again and reports a
+  pass. The install passes `--no-binary ja4plus`, and
+  `test_pip_built_the_package_from_the_source_distribution` reads the recorded output for
+  three facts.
+  - `pip` names the source distribution as the input.
+  - `pip` writes `Building wheel for ja4plus`.
+  - `pip` writes no `Downloading ja4plus-<version>.whl` and no
+    `Using cached ja4plus-<version>.whl`.
+
+  **The option alone does not settle it.** The pip documentation states "Do not download
+  binary packages. Cached binary packages may still be used." A mutation that installs
+  `artifacts["wheel"]` proved the case fails:
+  `AssertionError: pip read another input than .../ja4plus-0.6.0.tar.gz`. **The mapping
+  file is the likeliest failure**, so two cases read it. One compares the byte count of
+  `ja4plus/data/ja4plus-mapping.csv` in the clean environment against the byte count in
+  the repository. One looks a named fingerprint up, because a present file is not a read
+  file. **The control case is not optional.** It removes the mapping file from a second
+  clean environment. It reads one probe twice: `70 True` before the removal, and
+  `0 False` after it.
+
+  **The evidence contradicts one premise of #409, and this entry works around it.** #409
+  states that a package-data rule carries the mapping file. A mutation that removed
+  `data/*.csv` from `[tool.setuptools.package-data]` still shipped the file in both
+  artifacts. A mutation that added `[tool.setuptools.exclude-package-data]` shipped it
+  too. `include-package-data` defaults to true for a `pyproject.toml` project, and the
+  `setuptools-scm` file finder lists every tracked file. A second rule therefore carries
+  the same file. Only `include-package-data = false` beside the removal dropped it, and
+  both cases then failed live. **The source distribution carries the test material.** It
+  lists 396 members, and `tests/foxio_deviations.json` is one of them.
+  `test_the_source_distribution_lists_the_deviation_register` reads that listing.
+  `tests/test_installed_wheel_selection.py` raises `EXPECTED_CASE_COUNT` from 7 to 16.
+  **The marked run costs about 26 s on macOS with a warm `pip` cache**, against about
+  23 s for the wheel alone. Two more clean environments install the artifact, and that is
+  the whole difference. This entry changes no file under `ja4plus/` and it moves no
+  fingerprint.
+  Verified against: https://pip.pypa.io/en/stable/cli/pip_install/ and
+  https://build.pypa.io/en/stable/reference/cli.html (retrieved 2026-08-09).
+- **One case fingerprints a capture from the installed wheel** (#408). Round 146. New
+  file `tests/test_installed_wheel.py`, and the new `installed_wheel` marker in
+  `pyproject.toml`. The case builds both artifacts with `python -m build`, and it installs
+  the wheel into a clean environment. It reads three paths from that environment:
+  `ja4plus --version`, `ja4plus analyze --format json`, and one script that imports
+  `ja4plus` and drives a `Processor`. The output of the last two equals the output of the
+  source tree, byte for byte. **A run that resolves the working copy proves nothing.**
+  Every other job of `.github/workflows/test.yml` installs with `pip install -e ".[dev]"`,
+  which puts the source tree on the import path. A case that only imports `ja4plus`
+  therefore measures the checkout. This case reads `ja4plus.__file__` of the clean
+  environment. It fails when that path is not below the `site-packages` directory of that
+  environment.
+  **A check that cannot fail measures nothing**, so
+  `test_the_import_check_fails_for_the_source_tree` holds the same check against the
+  interpreter that runs the suite and asserts that it rejects that path. **The control
+  case is not optional**, because the byte-for-byte comparison passes on any wheel that
+  imports. It removes `ja4plus/data/ja4plus-mapping.csv` from a second clean environment
+  and reads one probe twice: `70 True` before the removal, and `0 False` after it.
+  `.github/workflows/test.yml` gains the `installed-wheel` job, which names the marker, so
+  a failure is visible without a log search. **That job is the only runner of the marker.**
+  New file `tests/conftest.py` deselects the marker from a run that does not name it, and
+  the `conformance` job holds the same relation to `spec_validation`. The unit gate
+  therefore builds no wheel and reaches no index. **A `-m` expression on the command line
+  replaces the one in `addopts`, so `addopts` cannot hold that rule.** A measurement of
+  2026-08-09 proved it: with `addopts = "-m 'not installed_wheel'"` and the gate command
+  `-m "not spec_validation"`, `pytest --collect-only` still collected all seven cases. New
+  file `tests/test_installed_wheel_selection.py` holds the rule against three commands, so
+  a rename of the marker fails a case rather than removing the wheel cases from the gate
+  in silence. **`build` joins the `dev` extra**, because the dedicated job and a local run
+  each need `python -m build`. #409 installs the source distribution. The build,
+  the environment creation and the comparison each take the artifact as a parameter, so
+  #409 passes another artifact to the same three functions. **The case costs wall-clock
+  time on every gate run.** Four consecutive runs on macOS with a warm `pip` cache
+  measured 40.39 s, 24.25 s, 24.40 s and 22.22 s, so the settled figure is about 23 s. A
+  runner starts with a cold `pip` cache and takes longer. This entry changes no file under
+  `ja4plus/` and it moves no fingerprint.
+- **Every sweep candidate of the twelve fingerprinter modules is settled** (#413).
+  Round 154. New files `docs/mutation_reports/413-fingerprinters.json` and
+  `docs/mutation_settlements/413-fingerprinters.json`. Twelve single-module sweeps read
+  `ja4plus/fingerprinters/` with `--max-per-module 0`, one for each module, over **1569
+  mutations**: `ja4ssh.py` 265, `ja4l.py` 239, `ja4.py` 203, `ja4d6.py` 194, `ja4h.py` 169,
+  `ja4s.py` 134, `ja4x.py` 130, `ja4d.py` 128, `ja4ts.py` 56, `ja4t.py` 31, `base.py` 11 and
+  `__init__.py` 9. The sweeps killed 891 mutations, 675 survived and 3 passed the time
+  limit. The union of the twelve candidate sets is **394 candidates**, and the record
+  settles every one with the verdict `correct` and the reason. **No file under `ja4plus/`
+  changes**, because `CLAUDE.md` rule 1 binds every change there to a vector.
+  **The scope is the minimal cover.** The rule "name every test file that reads the module"
+  measured **43.86 hours** for this module group, eleven times the four-hour ceiling, and
+  the cover measured **0.69 hours** against 1569 mutations. The three limits of #412 hold
+  here without change, and the record states them under its `scope` key.
+  **The default coverage core of Python 3.14 records almost no test context.** A minimal
+  cover reads a run that tags each line with the case that ran it, and `coverage` 7.15.4
+  selects the `sysmon` core on Python 3.14.3. One whole-suite run over 4112 passing cases
+  recorded **294 contexts over 74 test files**, where the same run under
+  `COVERAGE_CORE=ctrace` recorded one context for each case and raised the reader set of
+  this module group from 47 test files to 95. **A cover built on the first run names too few
+  test files**, so the record states the command that produces correct data.
+  **94 of the 675 surviving mutations sit inside a type annotation, and no case can ever
+  fail for one.** Every module of `ja4plus/fingerprinters/` carries
+  `from __future__ import annotations`, so Python holds each annotation as a string and
+  evaluates none of them. The sweep already skips a docstring and a logger argument for the
+  same reason, and #431 records the finding.
+  **`ja4plus/fingerprinters/__init__.py` reported 9 survived of 9, and the record states the
+  reason rather than a new case.** The module holds nine export names and no case reads
+  `__all__`, so no name is measured. The nine survivors are correct as they stand.
+  **Three mutations of `ja4plus/fingerprinters/ja4x.py` make a record scan run with no
+  progress**, at line 243 and twice at line 284, and each run stopped at the 180-second
+  limit #412 added. A run that never finished measured nothing, so each carries the status
+  `timeout` and the candidate list over-reports rather than under-reports.
+  **Eight candidates cannot fail**, because the unmutated suite state reports them as
+  xfailed: seven of `tests/test_ja4_alpn.py` and one of `tests/test_ja4h_spec.py`. No
+  candidate is skipped. **No fingerprint moves.**
+- **Every sweep candidate of the seven interface modules is settled** (#414). Round 155.
+  New files `docs/mutation_reports/414-interface.json`,
+  `docs/mutation_settlements/414-interface.json` and
+  `tests/test_settlement_procedure.py`. Seven single-module sweeps read the seven Python modules of the top directory of the package, which `tests/mutation_sweep.py --module 'ja4plus/*.py'` selects with `Path.glob`,
+  with `--max-per-module 0`, over **556 mutations**:
+  `cli.py` 226, `watch.py` 97, `ja4db.py` 68, `output.py` 68, `processor.py` 54,
+  `__init__.py` 32 and `types.py` 11. **The cost was measured before the run and not
+  estimated.** The minimal cover of each module, timed as a whole `pytest` command, gives a
+  product of **1.27 hours** against the four-hour ceiling, so the stop condition of
+  Amendment 3 did not fire. The seven runs took 4188.7 s and reported **340 killed, 279
+  survived, 4 timeout and 0 unusable**. The candidate sets hold 307 rows over the seven
+  modules and **236 distinct cases**, which is the union the settlement record holds.
+  **Do not compare 236 against the 976 of #206 or the 205 of #412**; the three count
+  different sets. **Coverage with one context for each case splits the 307 rows**: 301 run
+  no mutated line of their module inside a function body, and 6 run one. Each of the 6 was
+  proved live with `inspect.getsource` in both directions, and **two of them are repairs**.
+  `tests/test_documentation_samples.py` asserted the type of the error a `raises` sample
+  block produces and never the line it came from, so the mutation `not in` -> `in` at
+  `ja4plus/types.py:74` moved the raise from the second line of
+  `docs/api_reference.md:284` to the first, kept the type `KeyError`, and left the case
+  green. The harness now reads the line the error came from, so a sample whose earlier line
+  raises fails. `tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error`
+  read the type of the error and no message, so the mutation of the message at
+  `ja4plus/ja4db.py:294` changed nothing it compared. **The first repair was itself unable
+  to fail**: `pytest.raises(match=...)` searches rather than compares, and
+  `allow_remote takes True or False_mutated` holds the unanchored pattern, so the mutation
+  still passed. The pattern now carries both anchors, and the mutation fails all four
+  parameters. **The census assertion is proved in both readings**: the census names 236
+  candidates of sweep `414-interface`, and one row removed from the record makes it name
+  that candidate as unclaimed. **`FR-pre-release-validation-23` is split.** It stated a
+  procedure a worker follows, no check could test it, and the list of statements the
+  document declares uncheckable did not name it. The artefact of the procedure keeps a
+  check, and `FR-pre-release-validation-23` now states it: a `repaired` verdict names a
+  case the suite collects, which `tests/test_settlement_procedure.py` reads. The procedure
+  itself becomes `FR-pre-release-validation-23a` and joins the uncheckable list as its
+  third entry, because no case observes a worker. **The condition is necessary and not
+  sufficient**, and both the requirement and the file say so. **The cover rule holds a
+  defect this round records and does not repair.** It drops the lines the import runs, and
+  95 of the 279 survivors sit on such a line. `ja4plus/__init__.py` measures the cost: the
+  cover the rule builds is `tests/test_parity.py` at 1 killed and 31 survived, while the
+  same 32 mutations against `tests/test_public_interface.py` read 25 killed and 7 survived,
+  so 24 survivors are over-reported. #433 carries it. **`tests/test_cli.py` runs all 27
+  reachable mutation lines of `ja4plus/output.py` on its own**, so the cover of that module
+  holds it alone and no case of `tests/test_output_schema.py` or of
+  `tests/test_cli_output_option.py` is measured against that module. A case the cover drops
+  is unmeasured and not clean, and the record states it. No file under `ja4plus/` changes,
+  no file under `tests/foxio_vectors/` changes, and no fingerprint moves.
+- **Every sweep candidate of the eleven protocol parsing modules is settled** (#412).
+  Round 153. New files `docs/mutation_reports/412-utils.json` and
+  `docs/mutation_settlements/412-utils.json`. Eleven single-module sweeps read
+  `ja4plus/utils/` with `--max-per-module 0`, one for each module, over **1420 mutations**:
+  `tls_utils.py` 335, `quic_utils.py` 315, `ssh_utils.py` 252, `x509_utils.py` 173,
+  `http_utils.py` 103, `tcp_stream.py` 80, `tcp_options.py` 63, `state_table.py` 55,
+  `packet_utils.py` 35, `loopback.py` 5 and `tunnels.py` 4. `ja4plus/utils/__init__.py`
+  holds no expression a mutation can change. The union of the eleven candidate sets is
+  **205 candidates**, and the record settles every one: **203 read `correct` with the
+  reason and 2 read `repaired` with the case**.
+  **The scope is the minimal cover, and the user ruled it on 2026-08-09.** The rule "name
+  every test file that reads the module" measured **32.18 hours**, eight times the
+  four-hour ceiling, so the stop condition fired and no sweep started until the ruling
+  arrived. The minimal cover is the smallest test-file set that still runs every mutation
+  line of the module, and it measures **0.52 hours** for the same 1420 mutations.
+  **Three limits hold wherever that result is read.** Every mutation keeps a reader, so a
+  mutation that no case kills is still found and the surviving-mutation signal is
+  preserved. The cover is conservative in the safe direction: a test file it drops might
+  have killed a mutation, so it **over-reports survivors and never under-reports them**.
+  The candidate set shrinks, 97 cases for `quic_utils.py` against 2268 under the wider
+  rule, and **a case the cover drops stays unmeasured against that module** rather than
+  measured clean. The record holds the cover of each module under its `scope` key.
+  **Two cases are repaired.** `ja4plus/utils/tunnels.py:27` held three module-name strings
+  that no case read: `tests/test_tunnels.py` asserted `startswith("scapy.")` alone, so a
+  wrong module name left it green, and a new case names the three modules as literals.
+  `ja4plus/utils/loopback.py:23` held the address family value 30, and
+  `tests/test_loopback_link_type.py` measured nothing for it on Darwin, because scapy binds
+  `socket.AF_INET6` itself and that value is 30 there. **The case was vacuous on this host
+  and would have failed on Linux**, and it now asserts that `ja4plus` wrote the bind.
+  **One mutation can turn a loop bound into a loop that never ends, and the sweep had no
+  time limit.** `ja4plus/utils/ssh_utils.py:284` holds that bound: the sweep reads
+  `while position < len(payload)` as `while position <= len(payload)`, and
+  `SSHMessageTracker.process_payload` then loops with no progress. The sweep stopped for
+  good three times before the cause was read from the mutated file.
+  `tests/mutation_sweep.py` gains `--timeout`, and a run that passes the limit records the
+  status `timeout` and the sweep continues. **A mutation that times out is not a
+  survivor**, because a run that never finished measured nothing. The limit is off by
+  default. New file `tests/test_mutation_sweep_timeout.py` holds six cases. Seven mutations
+  of this module set reached the limit: three of `tls_utils.py`, two of `ssh_utils.py`, one
+  of `state_table.py` and one of `x509_utils.py`.
+  **A criterion that reads "0 unsettled candidates" passes on an empty directory**, so a
+  settlement issue must prove its census assertion is not vacuous.
+  `tests/test_mutation_census.py` gains `TestTheRecordsOfThisRepository`, which states two
+  readings: the census names at least one candidate, and it names an unclaimed candidate
+  when one row leaves the record. `.claude/rules/conformance.md` records the `timeout`
+  status, how to build a minimal cover from a measurement, and the non-vacuity rule.
+  **No file under `ja4plus/` changes and no fingerprint moves.**
+- **The sweep report names the commit it read, and a census counts the open candidates**
+  (#411). Round 147. `tests/mutation_sweep.py` writes a `commit` key and a `Commit` row,
+  read from `git rev-parse HEAD` before the first mutation lands.
+  `FR-pre-release-validation-17` asks for it, and the report of 2026-08-07 states no
+  commit. New file `tests/mutation_census.py` reads every `*.json` report of
+  `docs/mutation_reports/`, counts the candidates of each test file, and reads every
+  `*.json` record of `docs/mutation_settlements/`. **It opens no Markdown file**, because a
+  Markdown report is one page and a count taken from its lines counts the page layout.
+  **The census groups by test file and not by module**, because
+  `tests/mutation_sweep.py:593` builds one flat candidate list over every swept module and
+  no module owns a candidate. **The whole-package sweep is partitioned across #412, #413
+  and #414.** `--dry-run --max-per-module 0` reads 3545 mutations over 31 modules, one
+  suite run takes 72.75 seconds, and the product is 71.6 hours on one host.
+  `.claude/rules/conformance.md` stated about 17 seconds, and it now carries the measured
+  number and its date. **The union of the per-module sweeps is larger than the candidate
+  set of one whole-package sweep, and the union is the correct input for settlement.**
+  **`git ls-files 'ja4plus/**/*.py'` lists 24 files where the package holds 31**, because
+  git reads `**` in a pathspec as one or more directories.
+  `FR-pre-release-validation-16` now names `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'`,
+  and new file `tests/test_mutation_sweep_module_list.py` fails when the module list one
+  sweep reads stops matching the tracked Python files of the package. **No file under
+  `ja4plus/` changes and no fingerprint moves.**
+- **The specification records Epic 11, pre-release validation** (#407). Round 145. New
+  file `docs/specs/features/11-pre-release-validation.md`. It states 33 requirements, and
+  every sub-issue of #406 quotes one. **The epic measures four statements that version
+  1.0.0 makes and that nothing checks today.** No case runs the shipped package. Every
+  Linux result comes from a continuous-integration runner. The sweep leaves 974 of its
+  976 candidates unsettled. The package states no throughput. **The epic publishes
+  nothing. It sets no throughput target, and it moves no fingerprint.**
+  `docs/specs/spec.md` gains the feature entry, the `Feature map` row, the `Epics`
+  section, both `Issue map` tables and five `Terms` rows. **The file number equals the
+  epic number.** Epic 10 (#194) holds no feature document, so `features/10-*.md` does not
+  exist and the sequence loses no file.
+  `Terms` gains `mutation`, `sweep`, `candidate`, `clean environment` and `throughput`.
+  **A count of the table read 67 rows, and the table held none of the five under any
+  spelling.** No row of this round therefore rotates a synonym of an existing row. New
+  file `tests/test_specification_terms.py` fails a term that two rows carry, and fails a
+  row that bars no synonym. A reader who scrolls a 72-row table sees neither by eye.
+  **The evidence contradicts two premises of the epic, and the feature document records
+  both rather than a repair.** `tests/mutation_sweep.py:396` groups the
+  `candidates` key of the report by test file and not by module. A candidate is a case
+  that survived every mutation of every swept module, so no module owns one. The
+  per-module census that #411 states therefore reads one sweep for each module group. The
+  report of 2026-08-07 also holds a `Date` field and no commit field, so
+  `FR-pre-release-validation-17` asks #411 to add one. This entry changes no file under
+  `ja4plus/`.
 - **The documentation site publishes to GitHub Pages, and this file holds the release
   notes of version 1.0.0** (#66). Round 142. New file `.github/workflows/docs.yml`. It
   fires on a push to `master`, which is the live branch, and a promotion from `dev` to
@@ -143,6 +470,58 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The capture privilege case read a host that grants the privilege** (#424). Round 152.
+  `tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_reads_the_failure_this_host_reports`
+  asks the real capture layer of the host for the failure it reports without the
+  privilege. It guarded on `sys.platform` and on `os.geteuid()`, and it did not guard on
+  the state it depends on: whether this host grants the capture privilege to this
+  account. **The user ran `sudo chown $(whoami) /dev/bpf*` on 2026-08-09 for #423**, and
+  the case then read `AssertionError: the host granted the capture privilege` at
+  `tests/test_watch_capture.py:132` on the unchanged base. **A red gate that is normal is
+  worse than no gate**, because the next real failure hides inside it. `the_privilege_failure`
+  now returns `None` where the host grants the privilege, and the case calls `skipTest`
+  with a reason that names the grant. **The case is not weakened and it is not deleted.**
+  It stays the only case that reads the failure from the real capture layer, and it still
+  runs and still asserts the message on a host that denies the privilege. New class
+  `TheCapturePrivilegeCaseGuardsOnTheHostState` proves the guard in both directions,
+  because a guard proved in one direction can skip on every host, and a case that always
+  skips measures nothing. That class runs the guarded case itself against a patched
+  `scapy.arch.bpf.core.get_dev_bpf`: the denial direction reports one case run, no
+  failure and no skip, and the grant direction reports one skip whose reason names the
+  grant. A third case proves that the probe closes the descriptor `get_dev_bpf` returns,
+  which the earlier form leaked on every granting host. No file under `ja4plus/` changes,
+  the privilege message does not move, and no fingerprint moves.
+- **The network rule of Epic 11 bound every case, and every install case had to violate
+  it** (#419). Round 150. `FR-pre-release-validation-26` read `No case of this feature set
+  opens a network connection.` `pip install <the wheel>` resolves the shipped dependency
+  list, so an install into a clean environment reaches a package index by construction.
+  **A measurement of 2026-08-09 states it rather than infers it.** A clean environment that
+  installed `ja4plus-0.6.0-py3-none-any.whl` read
+  `Downloading scapy-2.7.0-py3-none-any.whl (2.6 MB)` and
+  `Downloading cryptography-50.0.0-cp311-abi3-macosx_11_0_arm64.whl (4.0 MB)`.
+  **The rule came from #414, where it is correct and narrow**, so this entry keeps it and
+  names its scope. `FR-pre-release-validation-26` binds a case of `tests/test_db_offline.py`
+  that asserts that `ja4plus/ja4db.py` sends no request, and it names the recorded
+  transport `RecordingRequests`. `FR-pre-release-validation-26a` bars the address
+  `https://ja4db.com`. `FR-pre-release-validation-26b` permits the package index for the
+  install cases of `tests/test_installed_wheel.py`, and `FR-pre-release-validation-26c`
+  names `scapy` and `cryptography` as the two dependencies that index resolves.
+  **The rule is now a condition a case tests, and not prose alone.** New file
+  `tests/test_requirement_scope.py` reads the requirement text of every document under
+  `docs/specs/features/`. A requirement that scopes itself to a feature set names one path
+  under `tests/` inside backticks. **The check reads a necessary condition and not a
+  sufficient one**, because no parser reads which cases a sentence means. **The failing
+  direction is proven live.** Against the base the case read
+  `AssertionError: these requirements bind a feature set and name no case file: ['FR-pre-release-validation-26']`,
+  an injected `FR-release-99` of the same shape read the same message, and the revert
+  returned all four cases to green. **The self-review found one gap in the pattern and
+  closed it.** The first form read `case` alone, so `No cases open a network connection`
+  stated the defect again and passed. The pattern now reads `cases?`. **The sweep found one widened rule of the 200 the base
+  holds, and no second one.** `FR-pre-release-validation-33` is the only other requirement
+  scoped to a feature set, it binds the issues rather than the cases, and it names
+  `tests/foxio_deviations.json`. **`FR-pre-release-validation-16` is untouched, because
+  #411 owns it.** The `## Terms` table gains `recorded transport` and `package index`. No
+  file under `ja4plus/` changes and no fingerprint moves.
 - **The migration page cited round 122 for the item access, and it recorded the narrowed
   certificate readers not at all** (#399, #401, #403). Round 143. The page held eleven breaking
   changes and none recorded #319. That round narrowed `compute_ja4x_from_pem` and

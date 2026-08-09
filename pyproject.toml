@@ -38,6 +38,11 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "mypy>=1.11",
+    # `tests/test_installed_wheel.py` runs `python -m build`, and the `installed_wheel`
+    # marker is inside `pytest tests/ -m "not spec_validation"`. Every environment that
+    # runs that gate therefore needs this package. Without the entry the case skips or
+    # fails on the test matrix, and a case nobody runs is a check nobody has.
+    "build>=1.0",
 ]
 lookup = [
     "requests>=2.20.0",
@@ -103,6 +108,10 @@ ja4plus = ["data/*.csv", "py.typed"]
 [tool.pytest.ini_options]
 markers = [
     "spec_validation: FoxIO reference validation tests",
+    # `tests/conftest.py` deselects this marker from a run that does not name it. The
+    # `installed-wheel` job is the only runner of it. **A `-m` expression on the command
+    # line replaces the one in `addopts`, so `addopts` cannot hold that rule.**
+    "installed_wheel: cases that install the built package into a clean environment",
 ]
 
 [tool.ruff]

@@ -1,0 +1,2043 @@
+{
+ "issue": 414,
+ "sweep": "414-interface",
+ "modules": [
+  "ja4plus/__init__.py",
+  "ja4plus/cli.py",
+  "ja4plus/ja4db.py",
+  "ja4plus/output.py",
+  "ja4plus/processor.py",
+  "ja4plus/types.py",
+  "ja4plus/watch.py"
+ ],
+ "scope": {
+  "rule": "Each module is swept against the smallest test-file set that still runs every mutation line of that module. The user ruled on 2026-08-09, and Amendment 3 of #414 records the ruling. The seven modules hold 556 mutations, and the product of the mutation count and the measured cost of each cover is 1.27 hours against a ceiling of four hours.",
+  "limits": [
+   "Every mutation keeps a reader, so a mutation that no case kills is still found. The surviving-mutation signal is preserved.",
+   "The cover is conservative in the safe direction. A test file the cover drops might have killed a mutation, so the cover can report a survivor that a wider run would have killed. It over-reports survivors and it does not under-report them.",
+   "The candidate set shrinks, because fewer cases are evaluated. The seven sweeps collected 676 cases against the 4411 outcomes of the whole suite. A case the cover drops stays unmeasured against that module, and it is unmeasured and not clean.",
+   "tests/test_cli.py runs all 27 reachable mutation lines of ja4plus/output.py on its own, so the cover of that module holds it alone. tests/test_output_schema.py and tests/test_cli_output_option.py hold the larger part of the output cases, and no case of either file is measured against ja4plus/output.py here.",
+   "The cover rule drops the lines the import runs, because every test file that imports ja4plus runs them. The rule assumes a mutation line sits inside a function, and 95 of the 279 surviving mutations of these seven modules sit on a line the import runs. ja4plus/__init__.py measures the cost: the cover the rule builds is tests/test_parity.py, and the sweep reads 1 killed and 31 survived. The same 32 mutations against tests/test_public_interface.py, which compares ja4plus.__all__ against a hand-written list, read 25 killed and 7 survived. 24 of the 31 survivors are therefore over-reported, and #433 records the defect in the cover rule."
+  ],
+  "cover": {
+   "ja4plus/__init__.py": [
+    "tests/test_parity.py"
+   ],
+   "ja4plus/cli.py": [
+    "tests/test_cli.py",
+    "tests/test_cli_lookup_opt_in.py",
+    "tests/test_cli_output_option.py",
+    "tests/test_db_cache_directory.py",
+    "tests/test_output_schema.py",
+    "tests/test_watch.py",
+    "tests/test_watch_capture.py",
+    "tests/test_watch_statistics.py"
+   ],
+   "ja4plus/ja4db.py": [
+    "tests/test_bare_exception_reading.py",
+    "tests/test_cli_lookup_opt_in.py",
+    "tests/test_db_cache_directory.py",
+    "tests/test_db_item_access.py",
+    "tests/test_db_lookup_many.py",
+    "tests/test_db_offline.py"
+   ],
+   "ja4plus/output.py": [
+    "tests/test_cli.py"
+   ],
+   "ja4plus/processor.py": [
+    "tests/fuzz/test_malformed_captures.py",
+    "tests/test_bare_exception_reading.py",
+    "tests/test_cli.py",
+    "tests/test_documentation_samples.py",
+    "tests/test_parity.py",
+    "tests/test_processor.py",
+    "tests/test_thread_safety.py"
+   ],
+   "ja4plus/types.py": [
+    "tests/test_documentation_samples.py"
+   ],
+   "ja4plus/watch.py": [
+    "tests/test_watch.py",
+    "tests/test_watch_capture.py",
+    "tests/test_watch_statistics.py",
+    "tests/test_watch_stop.py"
+   ]
+  },
+  "cover_seconds": {
+   "ja4plus/__init__.py": 1.01,
+   "ja4plus/cli.py": 10.78,
+   "ja4plus/ja4db.py": 2.51,
+   "ja4plus/output.py": 1.68,
+   "ja4plus/processor.py": 21.84,
+   "ja4plus/types.py": 9.45,
+   "ja4plus/watch.py": 5.7
+  },
+  "module_set": "The seven Python modules of the top directory of the package. `tests/mutation_sweep.py --module 'ja4plus/*.py'` selects them, because `Path.glob` reads `*` as one path part. **The body of #414 asks a worker to confirm the list against `git ls-files 'ja4plus/*.py'`, and that command names 31 files**, because a git pathspec matches `*` across a directory separator. The instruction is unsatisfiable as written, and this record names the seven files rather than the command. `.claude/rules/conformance.md` already warns about the same reading of `ja4plus/**/*.py`, which names 24."
+ },
+ "settlements": [
+  {
+   "candidate": "tests/fuzz/test_malformed_captures.py::test_a_foxio_malformed_capture_produces_no_exception[CVE-2018-6794.pcap]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/fuzz/test_malformed_captures.py::test_a_foxio_malformed_capture_produces_no_exception[badcurveball.pcap]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/fuzz/test_malformed_captures.py::test_a_foxio_malformed_capture_produces_no_exception[ssh2-malformed.pcap]",
+   "verdict": "correct",
+   "reason": "The case asserts that a malformed capture raises no exception, and the mutation `0` -> `1` at ja4plus/processor.py:131 changes the first value of a packet count that this case never reads. Measured live: the case passes with `        self._packet_counts = {name: 1 for name, _ in self._SPEC}` and with `        self._packet_counts = {name: 0 for name, _ in self._SPEC}`. tests/test_processor_stats.py reads the count, and the cover of this module drops that file, so the mutation is unmeasured here rather than unkillable.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/fuzz/test_malformed_captures.py::test_a_foxio_malformed_capture_produces_no_exception[ssh2-moloch-crash.pcap]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/fuzz/test_malformed_captures.py::test_a_foxio_malformed_capture_reaches_the_parser_it_names[CVE-2018-6794.pcap]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/fuzz/test_malformed_captures.py::test_a_foxio_malformed_capture_reaches_the_parser_it_names[badcurveball.pcap]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/fuzz/test_malformed_captures.py::test_a_foxio_malformed_capture_reaches_the_parser_it_names[ssh2-malformed.pcap]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/fuzz/test_malformed_captures.py::test_a_foxio_malformed_capture_reaches_the_parser_it_names[ssh2-moloch-crash.pcap]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_a_group_one_reader_names_no_bare_exception[compute_ja4x_from_pem]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_a_group_one_reader_names_no_bare_exception[decrypt_quic_initial_crypto]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_a_group_one_reader_names_no_bare_exception[decrypt_quic_server_initial_crypto]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_a_group_one_reader_names_no_bare_exception[parse_quic_initial]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_client_initial_reader_returns_nothing_for_each_error_it_names[IndexError-]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_client_initial_reader_returns_nothing_for_each_error_it_names[InvalidTag-]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_client_initial_reader_returns_nothing_for_each_error_it_names[ValueError-]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_frame_reader_returns_the_frames_it_read_before_a_truncated_one",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_lookup_returns_no_match_when_the_service_fails",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_pem_reader_returns_nothing_and_raises_nothing_for_hostile_input",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_pem_reader_returns_nothing_for_a_certificate_of_an_unknown_version",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_pem_reader_returns_nothing_for_a_certificate_that_holds_no_certificate",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_processor_loses_no_window_when_one_method_fails",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_processor_reports_the_error_of_a_method_rather_than_raising",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_processor_returns_when_a_method_fails_to_drop_its_state",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_quic_readers_return_nothing_and_raise_nothing_for_hostile_input",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_quic_readers_return_nothing_for_a_datagram_that_ends_inside_a_crypto_frame",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_server_initial_reader_returns_nothing_for_each_error_it_names[IndexError-]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_server_initial_reader_returns_nothing_for_each_error_it_names[InvalidTag-]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_bare_exception_reading.py::test_the_server_initial_reader_returns_nothing_for_each_error_it_names[ValueError-]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_csv_format",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_file_not_found",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/output.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/output.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/output.py of 22, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/output.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_json_format",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_pcap",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_table_has_header",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestAnalyzePcap::test_analyze_types_filter",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestCertCommand::test_cert_command",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestCertCommand::test_cert_file_not_found",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/output.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/output.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/output.py of 22, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/output.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestCertCommand::test_cert_json_format",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestInvalidTypes::test_invalid_types",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/output.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/output.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/output.py of 22, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/output.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestInvalidTypes::test_valid_types_accepted",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/output.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/output.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/output.py of 22, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/output.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli.py::TestVersionFlag::test_version_flag",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/output.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/output.py of 68, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/output.py of 22, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/output.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheAbsentRequestsPackage::test_the_environment_variable_exits_with_status_1_too",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheAbsentRequestsPackage::test_the_remote_option_exits_with_status_1",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheAbsentRequestsPackage::test_the_remote_option_names_the_extra_to_install",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheEnvironmentVariable::test_a_value_other_than_one_attempts_no_request['']",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheEnvironmentVariable::test_a_value_other_than_one_attempts_no_request['0']",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheEnvironmentVariable::test_a_value_other_than_one_attempts_no_request['01']",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheEnvironmentVariable::test_a_value_other_than_one_attempts_no_request['2']",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheEnvironmentVariable::test_a_value_other_than_one_attempts_no_request['true']",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheEnvironmentVariable::test_a_value_other_than_one_attempts_no_request['yes']",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheEnvironmentVariable::test_the_variable_alone_performs_no_lookup",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheLocalOption::test_no_option_attempts_no_request",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheLocalOption::test_the_local_option_writes_no_notice",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_lookup_opt_in.py::TestTheRemoteOption::test_the_remote_option_reaches_the_lookup_service",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_output_option.py::TheProgramExitsQuietlyWhenTheReaderClosesThePipe::test_the_program_writes_no_broken_pipe_message",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_cli_output_option.py::TheProgramExitsQuietlyWhenTheReaderClosesThePipe::test_the_program_writes_no_shutdown_message",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestDbUpdateWritesToTheCacheDirectory::test_db_update_leaves_the_installed_package_unchanged",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheCacheDirectoryFollowsThePlatformConvention::test_the_cache_directory_falls_back_to_the_home_directory",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheCacheDirectoryFollowsThePlatformConvention::test_the_cache_directory_is_outside_the_installed_package",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheCacheDirectoryFollowsThePlatformConvention::test_the_cache_directory_is_under_the_library_on_macos",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheCacheDirectoryFollowsThePlatformConvention::test_the_cache_directory_reads_xdg_cache_home",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheCacheDirectoryFollowsThePlatformConvention::test_the_cache_file_carries_the_name_of_the_mapping_file",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheClientPrefersTheCachedMappingFile::test_a_cache_file_that_the_client_cannot_read_falls_back_to_the_bundled_file",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheClientPrefersTheCachedMappingFile::test_a_corrupt_cache_file_falls_back_to_the_bundled_file",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheClientPrefersTheCachedMappingFile::test_a_corrupt_cache_file_reports_the_problem_at_warning",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheClientPrefersTheCachedMappingFile::test_an_empty_cache_file_falls_back_to_the_bundled_file",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheClientPrefersTheCachedMappingFile::test_the_client_reads_the_bundled_mapping_file_when_no_cache_file_exists",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_cache_directory.py::TestTheClientPrefersTheCachedMappingFile::test_the_client_reads_the_cached_mapping_file",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_item_access.py::test_attribute_access_emits_no_warning",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_item_access.py::test_every_key_of_version_0_6_0_names_a_field",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_item_access.py::test_item_assignment_raises_a_type_error",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_lookup_many.py::TestBulkLookup::test_the_client_publishes_the_signature_the_specification_states",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_lookup_many.py::TestTheShapeOfALookupResult::test_a_lookup_result_holds_the_four_published_fields",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestARemoteLookupFailure::test_a_response_with_an_unexpected_shape_returns_none[empty application]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestARemoteLookupFailure::test_a_response_with_an_unexpected_shape_returns_none[empty list]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestARemoteLookupFailure::test_a_response_with_an_unexpected_shape_returns_none[empty object]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestARemoteLookupFailure::test_a_response_with_an_unexpected_shape_returns_none[error object]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestARemoteLookupFailure::test_a_response_with_an_unexpected_shape_returns_none[list of one match]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestARemoteLookupFailure::test_a_response_with_an_unexpected_shape_returns_none[null application]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestARemoteLookupFailure::test_a_response_with_an_unexpected_shape_returns_none[numeric application]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error[int]",
+   "verdict": "repaired",
+   "case": "tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error[int]",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ],
+   "note": "The case read the type of the error and no message, so the mutation of the message at ja4plus/ja4db.py:294 changed nothing it compared. The case now matches the message against an anchored pattern. The first repair used an unanchored `match`, and `allow_remote takes True or False_mutated` holds the pattern, so it passed; both anchors close that. Live: the mutation reads `            raise TypeError(\"allow_remote takes True or False_mutated\")` and four cases fail; the revert reads `            raise TypeError(\"allow_remote takes True or False\")` and five pass."
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error[none]",
+   "verdict": "repaired",
+   "case": "tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error[none]",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ],
+   "note": "The case read the type of the error and no message, so the mutation of the message at ja4plus/ja4db.py:294 changed nothing it compared. The case now matches the message against an anchored pattern. The first repair used an unanchored `match`, and `allow_remote takes True or False_mutated` holds the pattern, so it passed; both anchors close that. Live: the mutation reads `            raise TypeError(\"allow_remote takes True or False_mutated\")` and four cases fail; the revert reads `            raise TypeError(\"allow_remote takes True or False\")` and five pass."
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error[str]",
+   "verdict": "repaired",
+   "case": "tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error[str]",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ],
+   "note": "The case read the type of the error and no message, so the mutation of the message at ja4plus/ja4db.py:294 changed nothing it compared. The case now matches the message against an anchored pattern. The first repair used an unanchored `match`, and `allow_remote takes True or False_mutated` holds the pattern, so it passed; both anchors close that. Live: the mutation reads `            raise TypeError(\"allow_remote takes True or False_mutated\")` and four cases fail; the revert reads `            raise TypeError(\"allow_remote takes True or False\")` and five pass."
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error[zero]",
+   "verdict": "repaired",
+   "case": "tests/test_db_offline.py::TestTheConstructorRefusesAnAmbiguousCall::test_a_value_that_is_no_bool_raises_type_error[zero]",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ],
+   "note": "The case read the type of the error and no message, so the mutation of the message at ja4plus/ja4db.py:294 changed nothing it compared. The case now matches the message against an anchored pattern. The first repair used an unanchored `match`, and `allow_remote takes True or False_mutated` holds the pattern, so it passed; both anchors close that. Live: the mutation reads `            raise TypeError(\"allow_remote takes True or False_mutated\")` and four cases fail; the revert reads `            raise TypeError(\"allow_remote takes True or False\")` and five pass."
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestTheDefaultClientReachesNoNetwork::test_the_fixture_blocks_an_outbound_socket",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_db_offline.py::TestTheOptInClient::test_the_constructor_publishes_no_timeout_parameter",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/ja4db.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/ja4db.py of 68) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/ja4db.py of 2.",
+   "modules": [
+    "ja4plus/ja4db.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_each_page_holds_at_least_its_measured_count_of_blocks[README.md]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_each_page_holds_at_least_its_measured_count_of_blocks[docs/api_reference.md]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_each_page_holds_at_least_its_measured_count_of_blocks[docs/implementation_notes.md]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_each_page_holds_at_least_its_measured_count_of_blocks[docs/output-schema.md]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_each_page_holds_at_least_its_measured_count_of_blocks[docs/usage.md]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_block_carries_one_disposition",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_marker_sits_on_a_block_the_harness_runs",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_python_sample_of_the_page_runs[README.md]",
+   "verdict": "correct",
+   "reason": "The case asserts that every Python sample of the README runs, and the mutation `>` -> `>=` at ja4plus/processor.py:362 reorders the endpoints of a shard key that no sample of that page compares. Measured live: the case passes with `        if (src_ip >= dst_ip) or (src_ip == dst_ip and sport > dport):` and with `        if (src_ip > dst_ip) or (src_ip == dst_ip and sport > dport):`. The second `>` of that line is equivalent, because the swap it guards runs only where src_ip equals dst_ip, and swapping two equal ports changes no key.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_python_sample_of_the_page_runs[docs/api_reference.md]",
+   "verdict": "repaired",
+   "case": "tests/test_documentation_samples.py::test_every_python_sample_of_the_page_runs[docs/api_reference.md]",
+   "modules": [
+    "ja4plus/types.py"
+   ],
+   "note": "The case read the type of the error and no line. The block of docs/api_reference.md:284 holds two lines, the second one raises KeyError, and the mutation `not in` -> `in` at ja4plus/types.py:74 moved the raise to the first line with the type unchanged. The case now reads the line the error came from, so a sample whose earlier line raises fails. Live: the mutation reads `        if key in _FIELD_NAMES:` and the case fails; the revert reads `        if key not in _FIELD_NAMES:` and the case passes."
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_python_sample_of_the_page_runs[docs/usage.md]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_shell_sample_runs[README.md:234]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_shell_sample_runs[README.md:74]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_shell_sample_runs[docs/usage.md:368]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_every_skipped_sample_names_its_reason",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_no_block_the_reader_calls_output_holds_a_code_sample",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_no_new_fence_hides_inside_a_blockquote",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_the_execution_cases_reach_every_sample_the_reader_calls_runnable",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_the_floor_table_names_no_page_the_repository_lacks",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_the_harness_runs_at_least_the_measured_count_of_samples",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_the_reader_finds_at_least_the_measured_count_of_blocks",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_the_user_documentation_holds_no_fence_inside_a_blockquote",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_documentation_samples.py::test_two_readers_count_the_same_fenced_blocks",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py and ja4plus/types.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54, ja4plus/types.py of 11) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2, ja4plus/types.py of 9.",
+   "modules": [
+    "ja4plus/processor.py",
+    "ja4plus/types.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheCsvHeader::test_the_module_column_list_matches_the_documented_column_order",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheCsvRows::test_a_column_with_no_value_is_empty_rather_than_absent",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheCsvRows::test_the_csv_writer_quotes_a_fingerprint_that_holds_a_comma",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheEndpointReaders::test_the_reader_returns_the_four_values_of_an_ipv4_tcp_packet",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheEndpointReaders::test_the_reader_returns_the_four_values_of_an_ipv6_udp_packet",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheEndpointReaders::test_the_reader_returns_the_port_zero_for_a_packet_that_carries_no_port",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheJsonLinesObject::test_a_field_with_no_value_is_null_rather_than_absent",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheJsonLinesObject::test_the_json_object_holds_the_identified_name_that_the_lookup_returned",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaDocument::test_the_document_describes_every_field",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaDocument::test_the_document_lists_every_column_in_the_written_order",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaDocument::test_the_document_states_the_rule_that_raises_the_version",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaDocument::test_the_document_states_the_schema_version_the_module_writes",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaDocument::test_the_document_states_which_format_carries_a_stability_promise",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaDocument::test_the_repository_holds_the_schema_document",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaVersion::test_the_module_writes_the_schema_version_the_specification_states",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaVersion::test_the_table_format_writes_no_schema_version",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaVersionRule::test_a_released_column_keeps_its_position_until_the_version_rises",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaVersionRule::test_a_released_field_stays_in_the_json_object_until_the_version_rises",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaVersionRule::test_every_csv_column_carries_the_value_of_the_column_it_names",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaVersionRule::test_every_json_field_carries_the_value_of_the_field_it_names",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaVersionRule::test_the_history_holds_no_version_above_the_version_the_module_writes",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheSchemaVersionRule::test_the_history_records_the_version_the_module_writes",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheTableFormat::test_the_table_writes_the_endpoints_as_one_source_column",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_output_schema.py::TheTimestamp::test_the_writer_states_the_timestamp_in_rfc_3339_form",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_parity.py::test_compute_ja4x_from_pem_returns_none_for_text_that_is_not_a_certificate",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_parity.py::test_the_command_line_program_accepts_every_type_name_and_reports_two_reference_values",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/__init__.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/__init__.py of 32) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/__init__.py of 28.",
+   "modules": [
+    "ja4plus/__init__.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_parity.py::test_the_ja4_raw_forms_match_the_reference",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/__init__.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/__init__.py of 32, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/__init__.py of 28, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/__init__.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_parity.py::test_the_ja4s_raw_forms_match_the_reference",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/__init__.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/__init__.py of 32, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/__init__.py of 28, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/__init__.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_parity.py::test_the_ja4x_helpers_produce_the_reference_value",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/__init__.py and ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/__init__.py of 32, ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/__init__.py of 28, ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/__init__.py",
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_parity.py::test_the_shard_key_matches_the_port_format",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/__init__.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/__init__.py of 32) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/__init__.py of 28.",
+   "modules": [
+    "ja4plus/__init__.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_thread_safety.py::TestResetWhileEightThreadsProcessPackets::test_reset_waits_for_the_thread_that_writes_a_stored_index",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_thread_safety.py::TestResetWhileEightThreadsProcessPackets::test_two_threads_never_store_one_index_for_two_connections",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_thread_safety.py::TestTheConcurrencyContract::test_eight_sharded_threads_read_the_set_one_thread_reads[http1.pcapng]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_thread_safety.py::TestTheConcurrencyContract::test_eight_sharded_threads_read_the_set_one_thread_reads[tls-sni.pcapng]",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_thread_safety.py::TestTheProcessorAcquiresNoLockWhenThreadSafeIsFalse::test_a_thread_safe_processor_acquires_the_lock",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_thread_safety.py::TestTheThreadSafeArgument::test_the_lock_admits_the_thread_that_already_holds_it",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_thread_safety.py::TestTheThreadSafeArgument::test_the_null_lock_admits_every_caller",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_thread_safety.py::TestTheThreadSafeArgument::test_the_processor_accepts_a_thread_safe_argument",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/processor.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/processor.py of 54) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/processor.py of 2.",
+   "modules": [
+    "ja4plus/processor.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheCommandInstallsTheTwoHandlers::test_a_real_sigint_sets_the_flag",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheCommandInstallsTheTwoHandlers::test_a_real_sigterm_sets_the_flag",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheCommandInstallsTheTwoHandlers::test_the_call_restores_the_handler_after_an_error",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheCommandInstallsTheTwoHandlers::test_the_call_restores_the_handler_it_replaced",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheCommandPassesTheBoundsToTheMonitor::test_the_command_refuses_a_maximum_below_one",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheCommandPassesTheBoundsToTheMonitor::test_the_command_refuses_a_timeout_below_zero",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheConnectionKeyNamesOneConnection::test_the_key_of_a_packet_that_carries_no_port_is_none",
+   "verdict": "correct",
+   "reason": "A second check masks the mutation for the input this case feeds. The mutation `is` -> `is not` at ja4plus/watch.py:127 skips the early return, and packet_endpoints then reports no address for a packet that carries no port layer, so connection_key returns None by the later path. Measured live: the case passes with `    if port_layer is not None:` and with `    if port_layer is None:`. The sweep records that mutation as killed, so another case of the cover measures the guard.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheConnectionKeyNamesOneConnection::test_the_key_of_the_two_directions_of_one_connection_is_one_key",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheEvictionDropsThePerMethodState::test_the_processor_holds_both_connections_when_the_bound_holds_both",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheEvictionDropsThePerMethodState::test_the_processor_holds_no_entry_of_the_connection_the_monitor_evicts",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheHandlerSetsTheFlagAndReturns::test_the_flag_is_clear_before_a_signal_arrives",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheHandlerSetsTheFlagAndReturns::test_the_handler_raises_no_system_exit",
+   "verdict": "correct",
+   "reason": "The case asserts that the handler raises no SystemExit, and the mutation `True` -> `False` at ja4plus/watch.py:557 changes the value of the stop flag and raises nothing. Measured live: the case passes with `        self._requested = False` and with `        self._requested = True`. The sweep records that mutation as timeout and not as survived, because a monitor whose stop flag never sets does not end.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheHandlerSetsTheFlagAndReturns::test_the_handler_sets_the_flag",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheHandlerSetsTheFlagAndReturns::test_the_stop_filter_reads_the_flag",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheLiveCommandIsAnAliasOfWatch::test_the_two_commands_accept_the_same_options",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheMonitorBoundsTheConnectionCount::test_one_hundred_thousand_packets_hold_the_count_at_the_maximum",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheMonitorBoundsTheConnectionCount::test_the_monitor_calls_cleanup_connection_for_the_connection_it_evicts",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheMonitorBoundsTheConnectionCount::test_the_monitor_evicts_the_least_recently_used_connection",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheMonitorEvictsAnIdleConnection::test_a_connection_that_keeps_sending_stays_in_the_table",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheMonitorEvictsAnIdleConnection::test_a_connection_that_stops_sending_leaves_the_table",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheMonitorEvictsAnIdleConnection::test_the_timeout_the_caller_states_decides_the_age",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheMonitorReportsEveryPacket::test_the_monitor_reports_a_packet_that_names_no_connection",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheMonitorReportsEveryPacket::test_the_monitor_reports_one_packet_once",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheWatchCommandDocumentsItsOptions::test_the_help_names_the_two_connection_table_options",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch.py::TheWatchCommandDocumentsItsOptions::test_the_help_states_the_default_of_each_option",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCaptureFailureEndsTheRunWithTheStatusOne::test_an_invalid_filter_ends_the_run_with_the_status_one",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCaptureFailureEndsTheRunWithTheStatusOne::test_the_command_reports_no_statistics_line_after_a_failed_start",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCaptureFailuresNameTheClassesTheCaptureLayerRaises::test_the_broken_pipe_reads_as_no_capture_failure",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCaptureFailuresNameTheClassesTheCaptureLayerRaises::test_the_three_real_failures_are_all_caught",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCaptureFilterReachesTheCaptureLayer::test_the_capture_call_passes_the_filter_to_the_socket_it_opens",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCaptureFilterReachesTheCaptureLayer::test_the_help_names_the_option",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCapturePrivilegeCaseGuardsOnTheHostState::test_the_case_runs_and_passes_where_the_host_denies_the_privilege",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCapturePrivilegeCaseGuardsOnTheHostState::test_the_case_skips_where_the_host_grants_the_privilege",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCapturePrivilegeCaseGuardsOnTheHostState::test_the_probe_closes_the_descriptor_a_granting_host_returns",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandListsTheInterfacesItFound::test_a_capture_layer_that_reports_no_list_produces_an_empty_list",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandListsTheInterfacesItFound::test_a_missing_device_number_reads_as_an_absent_interface",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandListsTheInterfacesItFound::test_the_interface_list_of_this_host_holds_a_name",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandListsTheInterfacesItFound::test_the_message_lists_every_interface_the_host_holds",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandListsTheInterfacesItFound::test_the_message_reads_a_host_that_holds_no_interface",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_names_both_privileges_the_two_platforms_use",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_names_the_command_that_raises_the_privilege",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_reads_the_failure_this_host_reports",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_repeats_what_the_capture_layer_reported",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandReportsAFailureOfNoCaptureClass::test_the_command_reports_it_and_ends_with_the_status_one",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandReportsAnUnclassifiedFailure::test_the_message_repeats_what_the_capture_layer_reported",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandReportsTheFilterError::test_a_filter_error_of_the_linux_socket_reads_as_a_filter_error",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandReportsTheFilterError::test_a_privilege_failure_reads_as_a_privilege_failure_beside_a_filter",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandReportsTheFilterError::test_the_message_names_the_filter_the_operator_stated",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandReportsTheFilterError::test_the_message_repeats_what_the_capture_layer_reported",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandRunsOnLinuxAndOnMacOS::test_linux_carries_the_monitor",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandRunsOnLinuxAndOnMacOS::test_macos_carries_the_monitor",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandRunsOnLinuxAndOnMacOS::test_the_command_reports_that_windows_carries_no_monitor",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheCommandRunsOnLinuxAndOnMacOS::test_the_command_reports_the_same_for_cygwin",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_capture.py::TheExampleDaemonIsAbsent::test_the_repository_holds_no_monitoring_daemon_example",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCommandDocumentsTheOption::test_the_command_refuses_an_interval_of_zero",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCommandDocumentsTheOption::test_the_command_refuses_an_interval_that_is_no_finite_number",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCommandDocumentsTheOption::test_the_command_refuses_an_interval_that_is_no_number",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCommandDocumentsTheOption::test_the_help_names_the_option",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCountsReportTheTrafficTheMonitorRead::test_a_monitor_that_read_no_packet_reports_zero_counts",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCountsReportTheTrafficTheMonitorRead::test_the_connection_count_reports_the_entries_the_table_holds",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCountsReportTheTrafficTheMonitorRead::test_the_eviction_count_reports_every_connection_the_table_evicted",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCountsReportTheTrafficTheMonitorRead::test_the_fingerprint_count_reports_every_fingerprint_the_monitor_reported",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheCountsReportTheTrafficTheMonitorRead::test_the_packet_count_reports_every_packet_the_monitor_read",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheDropCountComesFromTheCaptureLayer::test_a_source_that_reports_nothing_leaves_the_count_null",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheDropCountComesFromTheCaptureLayer::test_the_count_is_null_when_the_capture_layer_states_none",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheDropCountComesFromTheCaptureLayer::test_the_count_reads_the_source_the_caller_states",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterStopsCleanly::test_a_second_stop_raises_nothing",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterStopsCleanly::test_the_stop_waits_no_whole_interval",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterStopsCleanly::test_the_thread_ends_after_the_stop",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterStopsCleanly::test_the_thread_writes_no_line_after_the_stop",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py and ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226, ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8, ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/cli.py",
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterWritesOneLinePerInterval::test_the_reporter_asks_the_wait_for_the_interval_the_caller_states",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterWritesOneLinePerInterval::test_the_reporter_flushes_each_line",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterWritesOneLinePerInterval::test_the_reporter_waits_on_the_stop_event_when_the_caller_injects_no_wait",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterWritesOneLinePerInterval::test_the_reporter_writes_no_line_before_the_first_interval_passes",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterWritesOneLinePerInterval::test_the_reporter_writes_no_second_line_for_one_interval",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheReporterWritesOneLinePerInterval::test_the_reporter_writes_one_line_for_each_interval_that_passes",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheSnapshotReadsOneInstant::test_a_write_waits_while_a_read_holds_the_guarded_region",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheSnapshotReadsOneInstant::test_eight_writers_lose_no_count",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheSnapshotReadsOneInstant::test_the_snapshot_reads_no_connection_table",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheStatisticsLineHoldsTheFieldsTheSpecificationStates::test_the_line_equals_the_line_the_specification_publishes",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheStatisticsLineHoldsTheFieldsTheSpecificationStates::test_the_line_truncates_the_uptime_to_a_whole_second",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheStatisticsLineHoldsTheFieldsTheSpecificationStates::test_the_line_writes_null_where_the_capture_layer_reports_no_drop_count",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheStatisticsLineHoldsTheFieldsTheSpecificationStates::test_the_line_writes_the_drop_count_the_capture_layer_states",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheStatisticsLineHoldsTheFieldsTheSpecificationStates::test_the_snapshot_repr_names_every_count",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheUptimeReportsTheSecondsSinceTheMonitorStarted::test_the_uptime_of_a_monitor_that_just_started_is_zero",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheUptimeReportsTheSecondsSinceTheMonitorStarted::test_the_uptime_reads_the_clock_the_monitor_started_from",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_statistics.py::TheWriterWritesOneLine::test_the_writer_writes_one_line_that_ends_with_a_line_feed",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/cli.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/cli.py of 226) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/cli.py of 8.",
+   "modules": [
+    "ja4plus/cli.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_stop.py::TheCaptureFilterReachesTheSocket::test_the_socket_open_reads_no_filter_without_the_option",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_stop.py::ThePollIntervalIsAPositiveFiniteNumber::test_the_call_opens_no_socket_for_a_poll_interval_it_refuses",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_stop.py::ThePollIntervalIsAPositiveFiniteNumber::test_the_call_refuses_a_poll_interval_of_zero",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  },
+  {
+   "candidate": "tests/test_watch_stop.py::ThePollIntervalIsAPositiveFiniteNumber::test_the_call_refuses_a_poll_interval_that_is_no_finite_number",
+   "verdict": "correct",
+   "reason": "Coverage with one context for each case reports that this case runs no mutated line of ja4plus/watch.py inside a function body, so no mutation of a function of those modules reaches it. The mutations that remain sit on a line the interpreter runs at import, and they change a module-level value; the sweep applied every mutation of each module (ja4plus/watch.py of 97) with this case in the suite and the case passed each one, so it reads none of those values. The import-time mutation counts are ja4plus/watch.py of 24.",
+   "modules": [
+    "ja4plus/watch.py"
+   ]
+  }
+ ]
+}
