@@ -505,6 +505,32 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **Two timing cases read the work performed rather than the seconds elapsed** (#430).
+  Round TBD. Both cases compared wall-clock durations. Each one reported the load of the
+  host beside the state of the package. #412 met both of them failing beside a mutation
+  sweep.
+  `tests/test_tcp_stream.py::TestTCPStreamReassembler::test_the_cost_of_a_segment_does_not_grow_with_the_segment_count`
+  compared `elapsed(20000)` against `elapsed(5000) * 8`. **That case also passed the
+  defect it exists to catch.** `DEFAULT_MAX_STREAM_SEGMENTS` stores 4096 segments and
+  refuses the rest. Both readings therefore stopped at the same 4096 stored segments. A
+  duplicate check that scans the stored segments read a ratio of 5.975 against the
+  threshold of 8. The case now holds no clock. It raises the segment cap to the count it
+  feeds. It counts the reads of the stored segments through a `CountingSegmentList`. The
+  set of seen segments reads 0.0 segments for each segment at 5000 and at 20000. The scan
+  reads 2499.5 and 9999.5. The bound is 4.
+  `tests/test_throughput.py::TestTheWorkControl` keeps its clock, because the rise of the
+  elapsed time is the property the control exists to prove. It now feeds 1000 packets and
+  then 2000, three runs of each count. It compares the fastest run of one count against
+  the fastest run of the other. A loaded host adds seconds to a run and removes none, so
+  the fastest run of a count is the run the load moved least. The control states no
+  tolerance. A runner that writes a constant elapsed time still fails it with
+  `assert 1.0 > 1.0`. **A floor on the ratio of the two readings is declined.** The two
+  fastest runs read a ratio of 1.219 under a load average of 20 on a ten-core laptop,
+  against 1.96 on a quiet host, so a floor of 1.5 fails there. **A deliberate load
+  reproduced the failure of #412.** One reading pair of the nine inverted, at 0.8261
+  seconds for 1000 packets against 0.7926 for 2000, and the fastest runs kept the order.
+  The 20000-packet run of the earlier form leaves the unit suite. No file under
+  `ja4plus/` changes and no fingerprint moves.
 - **The periodic statistics case states the schedule rather than samples it** (#371).
   Round TBD.
   `tests/test_watch_statistics.py::TheStatisticsGoToStandardError::test_the_periodic_line_reaches_standard_error`
