@@ -133,11 +133,15 @@ class TestMalformedTLS(unittest.TestCase):
 
         The payload is random, so one draw measures one byte string. The case reads
         many draws, and `tests/fuzz/test_synthetic_hostile_input.py` reads more.
-        """
-        import os
 
+        The generator carries a fixed seed, so a failure repeats. `os.urandom` gives a
+        case that fails on one run in many and passes on the next.
+        """
+        import random
+
+        source = random.Random(338)
         for _ in range(64):
-            data = os.urandom(256)
+            data = bytes(source.getrandbits(8) for _ in range(256))
             packet = IP() / TCP(sport=12345, dport=443) / Raw(load=data)
             self.assertIsNone(self.ja4.process_packet(packet))
 
