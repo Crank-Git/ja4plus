@@ -133,8 +133,15 @@ class TestTheDefaultClientReachesNoNetwork:
         assert recorder.calls == []
 
 
+@pytest.mark.usefixtures("no_network")
 class TestTheConstructorRefusesAnAmbiguousCall:
-    """`cache_size` was the first parameter before #57."""
+    """`cache_size` was the first parameter before #57.
+
+    The class blocks every outbound socket, because #414 repaired the case below and
+    `FR-pre-release-validation-26a` bars a case of this feature set from reaching
+    `https://ja4db.com`. A refused constructor sends no request, and the fixture states
+    that as a condition rather than leaving it to a reader.
+    """
 
     @pytest.mark.parametrize("value", [100, "yes", None, 0], ids=["int", "str", "none", "zero"])
     def test_a_value_that_is_no_bool_raises_type_error(self, value):
