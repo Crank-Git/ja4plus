@@ -6,6 +6,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`--lookup-remote` and `JA4PLUS_DB_LOOKUP` ask for the remote lookup** (#58). Round
+  TBD. `--lookup` reads the bundled mapping file and makes no network request.
+  `--lookup-remote` identifies each fingerprint, and it sends every fingerprint the
+  mapping file holds no entry for to `https://ja4db.com`. It asks for the lookup as well
+  as for the disclosure, so an operator who passes it needs no `--lookup`.
+  `JA4PLUS_DB_LOOKUP=1` permits the same request, for an operator who runs a command line
+  another program builds. The variable permits the request on the value `1` and on no
+  other value, and it asks for no lookup. The option and the variable each permit the
+  request, and neither one refuses it, so `JA4PLUS_DB_LOOKUP=0` cancels no option. The
+  command writes one notice to standard error for each run that permits the remote
+  lookup. The notice names the lookup service and the two ways to stop the request, and
+  it appears once whatever count of fingerprints the run looks up. Where the operator
+  asks for the remote lookup and the `requests` package is absent, the command names the
+  `lookup` extra and ends the run with the status 1.
+
 ### Changed
 
 - **The remote lookup is opt-in at the client** (#57). Round TBD. Through version 0.6.0

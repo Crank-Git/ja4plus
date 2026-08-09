@@ -69,8 +69,11 @@ sudo ja4plus watch eth0 --bpf "tcp port 443"
 # Fingerprint a certificate
 ja4plus cert server.der
 
-# Identify known fingerprints
+# Identify known fingerprints from the bundled database. It makes no network request
 ja4plus --lookup analyze capture.pcap
+
+# Identify them, and ask https://ja4db.com about each fingerprint the database misses
+ja4plus --lookup-remote analyze capture.pcap
 
 # Write the results to a file
 ja4plus analyze capture.pcap --format json --output results.json
@@ -79,10 +82,10 @@ ja4plus analyze capture.pcap --format json --output results.json
 ja4plus analyze capture.pcap --format json --output results.json --force
 ```
 
-The five output options run before the subcommand name and after it.
+The six output options run before the subcommand name and after it.
 `ja4plus --format json analyze capture.pcap` and
-`ja4plus analyze capture.pcap --format json` do the same thing. The five are
-`--format`, `--types`, `--lookup`, `--output` and `--force`.
+`ja4plus analyze capture.pcap --format json` do the same thing. The six are
+`--format`, `--types`, `--lookup`, `--lookup-remote`, `--output` and `--force`.
 
 `--max-connections`, `--connection-timeout`, `--stats-interval` and `--bpf` belong to
 `watch` alone, so they run after the subcommand name.
@@ -172,6 +175,34 @@ offline = JA4DBClient()
 # Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
 online = JA4DBClient(allow_remote=True)
 ```
+
+The command asks for the same request with `--lookup-remote`:
+
+```bash
+# The default of the command. Every lookup reads the bundled mapping file.
+ja4plus analyze capture.pcap --lookup
+
+# Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
+ja4plus analyze capture.pcap --lookup-remote
+
+# The variable permits the same request, for a command line you cannot change.
+JA4PLUS_DB_LOOKUP=1 ja4plus analyze capture.pcap --lookup
+```
+
+The command writes one notice to standard error for a run that permits the remote
+lookup. The notice names the lookup service and the two ways to stop the request. It
+appears once whatever count of fingerprints the run looks up. It goes to standard error,
+so it enters no pipe that carries the results.
+
+The option and the variable each permit the request, and neither one refuses it.
+`JA4PLUS_DB_LOOKUP=0` therefore cancels no option. To stop the request, pass `--lookup`
+and unset the variable. The variable permits the request on the value `1` and on no
+other value. The variable asks for no lookup, so a command that names no option looks
+nothing up.
+
+The remote lookup needs the `requests` package. Where you ask for the remote lookup and
+the package is absent, the command names the extra to install and ends the run with the
+status 1.
 
 To stop the request again, build the client with no argument. The remote lookup waits 5
 seconds at most. A request that fails returns None, and it raises nothing. The `lookup`
