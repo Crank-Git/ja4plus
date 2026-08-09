@@ -66,8 +66,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `docs/specs/spec.md` already carried. **The move of the Python floor holds the new round
   135 in both files**, because neither file recorded it. **A comparison between two records
   finds no change that is absent from both sides.** #302 holds `CHANGELOG.md` and
-  `docs/specs/spec.md` to the same round for every entry that exists in both, and the two
-  files agreed on the Python floor by recording it nowhere. **New file
+  `docs/specs/spec.md` to the same round for every entry that exists in both. The two files
+  recorded the Python floor nowhere, so they agreed and both were wrong. **New file
   `tests/test_breaking_change_record.py` compares the record against the package instead.**
   It holds the 25 modules of version 0.6.0, which `git ls-tree -r --name-only v0.6.0
   ja4plus/` reports, and it reads each one with `importlib.util.find_spec`.

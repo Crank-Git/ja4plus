@@ -72,7 +72,7 @@ SPECIFICATION_ROW = re.compile(r"^\|\s*(\d+)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|")
 
 # The specification held this many numbered Changelog rows when #395 landed. A parser
 # that reads nothing passes every case below, so the floor fails such a parser.
-MINIMUM_SPECIFICATION_ROWS = 134
+MINIMUM_SPECIFICATION_ROWS = 135
 
 # `CHANGELOG.md` opens each section with a third-level heading, as `### Removed`.
 CHANGELOG_HEADING = re.compile(r"^###\s+(.+?)\s*$")
@@ -156,7 +156,13 @@ def _python_floor() -> str:
 
 
 def test_the_census_holds_every_module_the_release_published() -> None:
-    """The census of version 0.6.0 holds the module count that release carried."""
+    """The census of version 0.6.0 holds the module count that release carried.
+
+    **This case compares two constants of this file and it reads no package.** It bars a
+    census that shrinks to nothing, because an empty census passes every case below. A
+    reader who changes both constants together defeats it, and
+    `git ls-tree -r --name-only v0.6.0 ja4plus/` is the check on the census itself.
+    """
     assert len(RELEASED_MODULES) == RELEASED_MODULE_COUNT, (
         f"the census holds {len(RELEASED_MODULES)} modules, and the count is "
         f"{RELEASED_MODULE_COUNT}"
@@ -164,7 +170,13 @@ def test_the_census_holds_every_module_the_release_published() -> None:
 
 
 def test_a_removed_module_reaches_no_importer() -> None:
-    """A module the census holds and the package drops raises no import today."""
+    """A module the census holds and the package drops raises no import today.
+
+    **Every census name sits under the `ja4plus` package, which imports.**
+    `importlib.util.find_spec` returns `None` for a missing module under a parent that
+    imports, and it raises `ModuleNotFoundError` where the parent itself is missing. A
+    census entry under a parent that does not exist therefore errors here.
+    """
     absent = [name for name in RELEASED_MODULES if importlib.util.find_spec(name) is None]
     assert absent == ["ja4plus.collector"], (
         f"the package drops these modules of version 0.6.0: {absent}"
