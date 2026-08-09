@@ -73,7 +73,7 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
-- **The package states a measured packet throughput** (#415). Round TBD. New file
+- **The package states a measured packet throughput** (#415). Round 151. New file
   `tests/throughput_run.py` feeds one `Processor` a stated packet run in an interpreter of
   its own. It writes one JSON object, and the object holds `packets`, `connections`,
   `elapsed_seconds`, `packets_per_second`, `fingerprints`, `python_version`, `platform`
@@ -109,7 +109,7 @@ holds every breaking change of this record against a row of that page.
   reports neither as true. No check tells a slow package from a slow host, and no check
   states whether a rate is adequate. No file under `ja4plus/` changes and no fingerprint
   moves.
-- **The granted Linux host measured the gates for the first time** (#410). Round TBD.
+- **The granted Linux host measured the gates for the first time** (#410). Round 149.
   The host is `bigboy`, Ubuntu 24.10, kernel `6.11.0-29-generic`, 56 cores, 137 GiB and
   `python3.12` only. It holds a checkout at `/home/e/ja4plus-verify`, which
   `.issue-flow.json` recorded nowhere, and the run created
@@ -141,7 +141,7 @@ holds every breaking change of this record against a row of that page.
   adds no continuous-integration job.** **No file under `ja4plus/` changes, no file under
   `tests/foxio_vectors/` changes, and no fingerprint moves.**
 - **One case fingerprints a capture from the installed source distribution** (#409).
-  Round TBD. `tests/test_installed_wheel.py` gains nine cases, and no new file appears.
+  Round 148. `tests/test_installed_wheel.py` gains nine cases, and no new file appears.
   #408 wrote four functions that take the artifact as a parameter: the build, the
   clean-environment creation, the probe run and the comparison. This entry passes the
   source distribution to the same four. The run repeats the three paths of #408 against
@@ -188,7 +188,7 @@ holds every breaking change of this record against a row of that page.
   fingerprint.
   Verified against: https://pip.pypa.io/en/stable/cli/pip_install/ and
   https://build.pypa.io/en/stable/reference/cli.html (retrieved 2026-08-09).
-- **One case fingerprints a capture from the installed wheel** (#408). Round TBD. New
+- **One case fingerprints a capture from the installed wheel** (#408). Round 146. New
   file `tests/test_installed_wheel.py`, and the new `installed_wheel` marker in
   `pyproject.toml`. The case builds both artifacts with `python -m build`, and it installs
   the wheel into a clean environment. It reads three paths from that environment:
@@ -225,7 +225,7 @@ holds every breaking change of this record against a row of that page.
   runner starts with a cold `pip` cache and takes longer. This entry changes no file under
   `ja4plus/` and it moves no fingerprint.
 - **Every sweep candidate of the twelve fingerprinter modules is settled** (#413).
-  Round TBD. New files `docs/mutation_reports/413-fingerprinters.json` and
+  Round 154. New files `docs/mutation_reports/413-fingerprinters.json` and
   `docs/mutation_settlements/413-fingerprinters.json`. Twelve single-module sweeps read
   `ja4plus/fingerprinters/` with `--max-per-module 0`, one for each module, over **1569
   mutations**: `ja4ssh.py` 265, `ja4l.py` 239, `ja4.py` 203, `ja4d6.py` 194, `ja4h.py` 169,
@@ -260,7 +260,7 @@ holds every breaking change of this record against a row of that page.
   **Eight candidates cannot fail**, because the unmutated suite state reports them as
   xfailed: seven of `tests/test_ja4_alpn.py` and one of `tests/test_ja4h_spec.py`. No
   candidate is skipped. **No fingerprint moves.**
-- **Every sweep candidate of the seven interface modules is settled** (#414). Round TBD.
+- **Every sweep candidate of the seven interface modules is settled** (#414). Round 155.
   New files `docs/mutation_reports/414-interface.json`,
   `docs/mutation_settlements/414-interface.json` and
   `tests/test_settlement_procedure.py`. Seven single-module sweeps read the seven Python modules of the top directory of the package, which `tests/mutation_sweep.py --module 'ja4plus/*.py'` selects with `Path.glob`,
@@ -308,7 +308,7 @@ holds every breaking change of this record against a row of that page.
   is unmeasured and not clean, and the record states it. No file under `ja4plus/` changes,
   no file under `tests/foxio_vectors/` changes, and no fingerprint moves.
 - **Every sweep candidate of the eleven protocol parsing modules is settled** (#412).
-  Round TBD. New files `docs/mutation_reports/412-utils.json` and
+  Round 153. New files `docs/mutation_reports/412-utils.json` and
   `docs/mutation_settlements/412-utils.json`. Eleven single-module sweeps read
   `ja4plus/utils/` with `--max-per-module 0`, one for each module, over **1420 mutations**:
   `tls_utils.py` 335, `quic_utils.py` 315, `ssh_utils.py` 252, `x509_utils.py` 173,
@@ -355,7 +355,7 @@ holds every breaking change of this record against a row of that page.
   status, how to build a minimal cover from a measurement, and the non-vacuity rule.
   **No file under `ja4plus/` changes and no fingerprint moves.**
 - **The sweep report names the commit it read, and a census counts the open candidates**
-  (#411). Round TBD. `tests/mutation_sweep.py` writes a `commit` key and a `Commit` row,
+  (#411). Round 147. `tests/mutation_sweep.py` writes a `commit` key and a `Commit` row,
   read from `git rev-parse HEAD` before the first mutation lands.
   `FR-pre-release-validation-17` asks for it, and the report of 2026-08-07 states no
   commit. New file `tests/mutation_census.py` reads every `*.json` report of
@@ -376,7 +376,7 @@ holds every breaking change of this record against a row of that page.
   and new file `tests/test_mutation_sweep_module_list.py` fails when the module list one
   sweep reads stops matching the tracked Python files of the package. **No file under
   `ja4plus/` changes and no fingerprint moves.**
-- **The specification records Epic 11, pre-release validation** (#407). Round TBD. New
+- **The specification records Epic 11, pre-release validation** (#407). Round 145. New
   file `docs/specs/features/11-pre-release-validation.md`. It states 33 requirements, and
   every sub-issue of #406 quotes one. **The epic measures four statements that version
   1.0.0 makes and that nothing checks today.** No case runs the shipped package. Every
@@ -470,7 +470,7 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
-- **The capture privilege case read a host that grants the privilege** (#424). Round TBD.
+- **The capture privilege case read a host that grants the privilege** (#424). Round 152.
   `tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_reads_the_failure_this_host_reports`
   asks the real capture layer of the host for the failure it reports without the
   privilege. It guarded on `sys.platform` and on `os.geteuid()`, and it did not guard on
@@ -492,7 +492,7 @@ holds every breaking change of this record against a row of that page.
   which the earlier form leaked on every granting host. No file under `ja4plus/` changes,
   the privilege message does not move, and no fingerprint moves.
 - **The network rule of Epic 11 bound every case, and every install case had to violate
-  it** (#419). Round TBD. `FR-pre-release-validation-26` read `No case of this feature set
+  it** (#419). Round 150. `FR-pre-release-validation-26` read `No case of this feature set
   opens a network connection.` `pip install <the wheel>` resolves the shipped dependency
   list, so an install into a clean environment reaches a package index by construction.
   **A measurement of 2026-08-09 states it rather than infers it.** A clean environment that
