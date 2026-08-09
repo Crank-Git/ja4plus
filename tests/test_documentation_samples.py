@@ -455,6 +455,13 @@ def _last_code_line(block: FencedBlock) -> int:
     Returns:
         The 1-based line number, counted inside the block. A blank line and a comment
         line carry no code, so neither one reaches the result.
+
+    Warning: the reader counts physical lines and it reads no statement. Where the last
+    statement of a block spans several lines, the interpreter reports the line the
+    statement opens and this reader reports the line it closes, so the caller fails a
+    block that is correct. Both `raises` blocks of the documentation raise on a
+    single-line statement today. Split the statement, or teach this reader `ast`, before
+    you add a `raises` block whose last statement wraps.
     """
     numbered = [
         index
