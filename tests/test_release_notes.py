@@ -100,14 +100,18 @@ def _release_notes() -> str:
 
 
 def _table_under(text: str, heading: str) -> list[str]:
-    """Return every table row that sits under one heading.
+    """Return every data row of the table that sits under one heading.
+
+    **The header row matches the row pattern, and the reader drops it.** A count that held
+    the header would read one row more than the table carries, and every floor below would
+    then pass on a table that lost a row.
 
     Args:
         text: The text to read.
         heading: The heading line, as `#### The interface changes`.
 
     Returns:
-        One string for each row, holding the whole row text.
+        One string for each data row, holding the whole row text.
 
     Raises:
         AssertionError: The text holds no such heading.
@@ -120,7 +124,8 @@ def _table_under(text: str, heading: str) -> list[str]:
             break
         if TABLE_ROW.match(line):
             rows.append(line)
-    return rows
+    assert rows, f"the table under {heading!r} holds no row"
+    return rows[1:]
 
 
 def _issues(rows: list[str]) -> set[int]:
