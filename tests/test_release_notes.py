@@ -21,11 +21,12 @@ file compared the `Record` cell of the notes against the cell of the migration p
 error. The same rule now reads the citations of the migration page against the same table,
 because a page that copies a wrong round from another document reads as correct.
 
-**These cases read one direction and not the other.** The notes hold a change the migration
-page omits. #319 narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`, so an input
-that returned `None` can now raise. #397 recorded the change under round 133, and the
-migration page carries no row for it. A two-way comparison would fail on a page this issue
-does not own, and #399 holds the repair of that page.
+**These cases read both directions.** #66 wrote the first direction alone, because the notes
+held a change the page omitted. #319 narrowed `compute_ja4x_from_pem` and
+`compute_ja4x_from_der`, so an input that returned `None` can now raise. #397 recorded the
+change under round 133, and #399 added the row the page lacked.
+`test_every_breaking_change_of_the_record_reaches_the_migration_page` reads the other
+direction, so a breaking change the record names and the page omits fails a case.
 
 These cases read prose. They import nothing from `ja4plus` and they produce no fingerprint.
 """
@@ -94,14 +95,18 @@ MINIMUM_BREAKING_ENTRIES = 8
 MINIMUM_INTERFACE_ROWS = 13
 MINIMUM_FINGERPRINT_ROWS = 8
 
-# The migration page held eleven breaking rows when #66 landed, and #401 parted one row into
-# two, so the page holds twelve rows today.
-MINIMUM_MIGRATION_ROWS = 12
+# The migration page held eleven breaking rows when #66 landed. #401 parted one row into two
+# and #399 added the row of #319, so the page holds thirteen rows today.
+MINIMUM_MIGRATION_ROWS = 13
 
 # The migration page cites this many `Round N, #M` pairs today: one for each breaking row,
 # and one in the fingerprint table. A reader that finds no citation passes the citation case
 # on an empty set, so the floor fails such a reader.
-MINIMUM_MIGRATION_CITATIONS = 13
+MINIMUM_MIGRATION_CITATIONS = 14
+
+# The breaking-change record names this many issues today. A reader that finds none passes
+# the completeness case on an empty set, so the floor fails such a reader.
+MINIMUM_RECORD_ISSUES = 20
 
 
 def _release_notes() -> str:
@@ -290,6 +295,46 @@ def _migration_breaking_rows() -> list[str]:
     return rows
 
 
+def _migration_issues() -> set[int]:
+    """Return every issue the migration page records as a breaking change.
+
+    **The fingerprint section reaches this set through its prose and not through its table
+    alone.** #214 sits in a paragraph under the table, because it adds a value rather than
+    move one.
+
+    Returns:
+        The set of issue numbers.
+    """
+    section = _migration_section(MIGRATION_FINGERPRINT_HEADING)
+    return _issues(_migration_breaking_rows()) | {
+        int(number) for number in ISSUE_REFERENCE.findall(section)
+    }
+
+
+def _record_issues() -> set[int]:
+    """Return every issue the breaking-change record of `CHANGELOG.md` names.
+
+    The record is the two tables of the release notes and every entry that opens with the
+    `**BREAKING` marker. **The prose of the notes reaches no part of this set.** That prose
+    names #47 and #94, which the sweep of #395 judged marginal, and it names the issues that
+    own a gap rather than a change.
+
+    Returns:
+        The set of issue numbers.
+
+    Raises:
+        AssertionError: The reader found fewer issues than the recorded floor.
+    """
+    issues = _notes_issues()
+    for entry in _breaking_entries():
+        issues |= _cited_issues(entry)
+    assert len(issues) >= MINIMUM_RECORD_ISSUES, (
+        f"the reader found {len(issues)} recorded breaking changes, and the floor is "
+        f"{MINIMUM_RECORD_ISSUES}"
+    )
+    return issues
+
+
 def _breaking_entries() -> list[str]:
     """Return every entry of `CHANGELOG.md` that opens with the breaking-change marker.
 
@@ -466,12 +511,27 @@ def test_every_citation_of_the_migration_page_names_the_row_that_records_it() ->
     assert wrong == [], f"these citations of the migration page name the wrong row: {wrong}"
 
 
+def test_every_breaking_change_of_the_record_reaches_the_migration_page() -> None:
+    """Every breaking change the record names reaches a row of the migration page.
+
+    `FR-documentation-12` asks the page to list every breaking change of this release.
+    **`test_every_breaking_change_of_the_migration_page_reaches_the_release_notes` reads the
+    other direction, and a page that holds fewer changes than the record passes it.** #319
+    narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`, the record held it under
+    round 133, and the page carried no row for it. #399 holds the repair.
+    """
+    missing = sorted(_record_issues() - _migration_issues())
+    assert missing == [], (
+        f"the record names these breaking changes and the migration page omits them: {missing}"
+    )
+
+
 def test_the_release_notes_name_the_narrowed_certificate_readers() -> None:
-    """The release notes hold the breaking change of #319, which the migration page omits.
+    """The release notes hold the breaking change of #319.
 
     #319 narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`, so an input that
     returned `None` now raises. #397 swept `v0.6.0..HEAD` and named the change under round
-    133. `docs/migration-0.6-to-1.0.md` carries no row for it, and #65 owns that page, so
-    #66 records the gap here rather than edit the page.
+    133. #66 found that `docs/migration-0.6-to-1.0.md` carried no row for it and recorded
+    the gap here, and #399 added the row.
     """
     assert 319 in _notes_issues(), "the release notes omit the narrowed certificate readers"
