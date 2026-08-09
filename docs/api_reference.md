@@ -867,4 +867,6 @@ client writes one `WARNING` record that names the path.
 
 `ja4plus db info` reports the source, the path, the entry count and the modification time
 of the mapping file the client reads, FR-db-enrichment-11. The source is `bundled` or
-`cache`.
+`cache`. Where the source is `bundled`, the command names the cache file as well. It
+reports that the cache file holds no entry, or that no cache file exists, and it names
+`ja4plus db update` in each case.

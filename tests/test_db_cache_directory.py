@@ -323,8 +323,8 @@ class TestTheClientPrefersTheCachedMappingFile:
     def test_a_cache_file_that_the_client_cannot_read_falls_back_to_the_bundled_file(
         self, cache_home, no_network
     ):
-        """A file this program did not write is hostile input. An unreadable one takes
-        the client down for every fingerprint it would answer."""
+        """A file this program did not write is hostile input. The client reads the
+        bundled file instead, and it raises nothing."""
         path = self.write_cache_file(cache_home, CACHE_CSV)
         os.chmod(path, 0o000)
         if os.access(path, os.R_OK):
@@ -374,6 +374,15 @@ class TestDbInfoReportsTheSource:
         out, _, status = run_cli("db", "info")
         assert status == 0
         assert "Source:   bundled" in out
+
+    def test_db_info_reports_a_cache_file_that_holds_no_entry(self, cache_home, no_network):
+        """A hint that names no cache file would contradict the file on disk."""
+        os.makedirs(cache_home)
+        with open(os.path.join(cache_home, "ja4plus-mapping.csv"), "wb") as handle:
+            handle.write(b"\x00\x01\x02 not a mapping file \xff\xfe")
+        out, _, _ = run_cli("db", "info")
+        assert "No cache file at" not in out
+        assert f"The cache file at {ja4db.cache_file_path()} holds no entry." in out
 
     def test_db_info_names_the_cache_file_the_operator_has_not_downloaded(
         self, cache_home, no_network

@@ -39,7 +39,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   client reports the problem at `WARNING`. `db info` reports the source on its first
   line, as `bundled` or `cache`, and it names the mapping file path on the second. It
   wrote the FoxIO address on a line named `Source` through version 0.6.0, and that line
-  is now named `Mapping`.
+  is now named `Mapping`. Where the source is `bundled`, `db info` names the cache file
+  as well. It reports that the cache file holds no entry, or that no cache file exists.
 
 - **The remote lookup is opt-in at the client** (#57). Round TBD. Through version 0.6.0
   `JA4DBClient.lookup` sent every fingerprint the bundled mapping file held no entry for

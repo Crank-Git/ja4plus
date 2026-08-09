@@ -709,9 +709,17 @@ def cmd_db(args: argparse.Namespace) -> None:
             print(f"Updated:  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))}")
         print(f"Mapping:  {_MAPPING_URL}")
         if source != "cache":
-            # `runDBInfo` of `cmd/ja4plus/main.go:389` prints the same hint.
-            print(f"\nNo cache file at {cache_file_path()}")
-            print("Run `ja4plus db update` to download the latest from FoxIO.")
+            # The `Screens & states` table of `features/07-db-enrichment.md` names three
+            # states, and a cache file that the client read no entry from is the third.
+            # A hint that names no cache file would contradict the file on disk.
+            cache_file = cache_file_path()
+            if os.path.exists(cache_file):
+                print(f"\nThe cache file at {cache_file} holds no entry.")
+                print("Run `ja4plus db update` to write it again.")
+            else:
+                # `runDBInfo` of `cmd/ja4plus/main.go:389` prints the same hint.
+                print(f"\nNo cache file at {cache_file}")
+                print("Run `ja4plus db update` to download the latest from FoxIO.")
         return
 
     # db update
