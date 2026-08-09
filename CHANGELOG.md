@@ -552,6 +552,43 @@ holds every breaking change of this record against a row of that page.
   `ja4plus/cli.py:871` as killed, at a killed count of 1, and it named this case as the
   sample. That guard reads `seconds <= 0`, and `--stats-interval 0.05` is the one interval
   below one that any case of the suite passes. The repair therefore holds that argument.
+- **Four more cases read ambient host state under no guard** (#426). Round TBD. The sweep
+  of #424 read all 154 files under `tests/` and found four cases of the shape it repaired.
+  This round guards all four, and it deletes none of them. **Each case states a real
+  requirement, so a guard skips where the host cannot answer and the reason names the
+  state.** `the_filter_failure` of `tests/test_watch_capture.py` calls `compile_filter`,
+  and `scapy` 2.7.0 raises `ImportError("libpcap is not available. Cannot compile filter !")`
+  at `scapy/arch/common.py:87` where the loader cannot open `libpcap`. The call caught
+  `Scapy_Exception` alone, so a host without `libpcap` ended four cases with an error
+  rather than with a failure, and a minimal Linux container is such a host. The helper now
+  returns `None` there, and `the_filter_failure_or_skip` skips the four cases that read it.
+  `the_absent_interface_failure` raised `AssertionError` where the host holds an interface
+  named `nosuchif0`, and it now returns `None` and skips the four cases that read it.
+  `test_the_interface_list_of_this_host_holds_a_name` required this host to hold one
+  interface, and it now skips where the capture layer reports none.
+  `test_three_hundred_calls_hold_the_open_descriptor_count` of `tests/test_watch_stop.py`
+  read `os.listdir("/dev/fd")` under no platform guard, and Windows holds no such
+  directory; `the_open_descriptor_count` now returns `None` there and the case skips.
+  **A guard proved in one direction can skip on every host, and a case that always skips
+  measures nothing.** Three new classes therefore run the guarded cases themselves and read
+  both directions: `TheFilterCasesGuardOnTheAmbientLibpcap`,
+  `TheAbsentInterfaceCasesGuardOnTheNameTheHostHolds` and
+  `TheInterfaceListCaseGuardsOnTheListTheHostReports`, beside
+  `TheDescriptorCountCaseGuardsOnTheDirectoryItReads` of `tests/test_watch_stop.py`.
+  **The `libpcap` direction reaches the real `scapy` translation and no stand-in.** A
+  finder on `sys.meta_path` raises `OSError` from the import of `scapy.libs.winpcapy`,
+  which is the failure the loader reports, and `scapy` raises the `ImportError` itself.
+  **Every run-direction prover reads the ambient state by a route that passes the guard
+  it proves.** The first form read the state through the guard, and a mutation that made
+  the guard skip always then made the prover skip as well, so it measured nothing; the
+  mutation now turns four subtests red. **The count case carried a second defect and this
+  round repairs it too.** The reading covers every descriptor of the process, so another
+  part of the run that opens one moved it, and the case compared for equality.
+  `DESCRIPTOR_TOLERANCE` is 16 against the 600 descriptors the leak opens over 300 calls,
+  and `test_the_case_fails_where_the_monitor_leaks_a_descriptor_for_each_call` opens one
+  descriptor inside each capture call and requires the count case to fail. No file under
+  `ja4plus/` changes and no fingerprint moves.
+
 - **The capture privilege case read a host that grants the privilege** (#424). Round 152.
   `tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_reads_the_failure_this_host_reports`
   asks the real capture layer of the host for the failure it reports without the

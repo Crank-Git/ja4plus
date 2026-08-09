@@ -16,6 +16,8 @@ a call that opens none, and they feed that failure to the classifier. The comman
 cases inject the failure into the capture call.
 """
 
+import contextlib
+import importlib.abc
 import io
 import os
 import sys
@@ -39,6 +41,60 @@ ABSENT_INTERFACE = "nosuchif0"
 
 # A filter expression `libpcap` refuses. `tcp port` names no port number.
 INVALID_FILTER = "tcp port"
+
+# The module `compile_filter` imports to reach `libpcap`. `scapy` 2.7.0 imports it at
+# `scapy/arch/common.py:81`, and the loader raises `OSError` there where the host holds no
+# such shared library.
+LIBPCAP_MODULE = "scapy.libs.winpcapy"
+
+
+@contextlib.contextmanager
+def no_libpcap():
+    """Hold `compile_filter` in the state a host without `libpcap` produces.
+
+    The finder here raises `OSError` from the import of `scapy.libs.winpcapy`, which is
+    the failure the loader reports where it cannot open the shared library. `scapy` 2.7.0
+    catches that class at `scapy/arch/common.py:86` and raises
+    `ImportError("libpcap is not available. Cannot compile filter !")` at line 87. A
+    stand-in for `compile_filter` would prove the guard against a class this file chose,
+    and this route proves it against the class `scapy` raises.
+
+    Yields:
+        None, while the import of `scapy.libs.winpcapy` fails.
+    """
+
+    class Finder(importlib.abc.MetaPathFinder):
+        """A finder that refuses one module and answers for no other."""
+
+        def find_spec(self, fullname, path=None, target=None):
+            """Raise `OSError` for the `libpcap` module and return None for the rest.
+
+            Args:
+                fullname: The name of the module the import system asks for.
+                path: The search path, which this finder does not read.
+                target: The module to reload, which this finder does not read.
+
+            Returns:
+                None, so the next finder answers.
+
+            Raises:
+                OSError: The import asks for `scapy.libs.winpcapy`.
+            """
+            if fullname == LIBPCAP_MODULE:
+                raise OSError("the case reports that this host holds no libpcap")
+            return None
+
+    finder = Finder()
+    # An import reads `sys.modules` before it reads `sys.meta_path`, so a cached module
+    # would reach `compile_filter` and the finder would never run.
+    cached = sys.modules.pop(LIBPCAP_MODULE, None)
+    sys.meta_path.insert(0, finder)
+    try:
+        yield
+    finally:
+        sys.meta_path.remove(finder)
+        if cached is not None:
+            sys.modules[LIBPCAP_MODULE] = cached
 
 
 def run_watch(*argv, source=None, failure=None, calls=None, platform=None, euid=0):
@@ -138,13 +194,13 @@ def the_privilege_failure():
 def the_absent_interface_failure():
     """Return the failure `scapy` reports for an interface no host holds.
 
-    The call reads the interface list of the host and it opens no interface.
+    The call reads the interface list of the host and it opens no interface. A host that
+    holds an interface named `nosuchif0` resolves the name, and this call then reports no
+    failure. The caller reads that result as the state of the host. #426 records why: the
+    name is a premise about the host, and this project does not control the interface list.
 
     Returns:
-        The `ValueError` the call raised.
-
-    Raises:
-        AssertionError: The call raised nothing.
+        The `ValueError` the call raised, or None where the host holds the interface.
     """
     from scapy.all import resolve_iface
 
@@ -152,20 +208,38 @@ def the_absent_interface_failure():
         resolve_iface(ABSENT_INTERFACE)
     except ValueError as error:
         return error
-    raise AssertionError("the host holds an interface named " + ABSENT_INTERFACE)
+    return None
+
+
+def the_absent_interface_failure_or_skip(case):
+    """Return the absent interface failure, or skip the case that reads it.
+
+    Args:
+        case: The case that reads the failure.
+
+    Returns:
+        The `ValueError` `resolve_iface` raised.
+    """
+    error = the_absent_interface_failure()
+    if error is None:
+        case.skipTest("this host holds an interface named " + ABSENT_INTERFACE)
+    return error
 
 
 def the_filter_failure():
     """Return the failure `libpcap` reports for a filter it refuses.
 
     The call compiles the expression against the Ethernet link type and it opens no
-    interface.
+    interface. A host that holds no `libpcap` compiles no expression, and this call then
+    reports no failure. The caller reads that result as the state of the host. #426
+    records why: a minimal Linux container holds no `libpcap`, and the earlier form ended
+    such a run with an error rather than with a skip.
 
     Returns:
-        The `Scapy_Exception` the call raised.
+        The `Scapy_Exception` the call raised, or None where the host holds no `libpcap`.
 
     Raises:
-        AssertionError: The call raised nothing.
+        AssertionError: `libpcap` accepted the expression.
     """
     from scapy.arch.common import compile_filter
 
@@ -175,7 +249,29 @@ def the_filter_failure():
         compile_filter(INVALID_FILTER, linktype=1)
     except Scapy_Exception as error:
         return error
+    except ImportError:
+        # `scapy` 2.7.0 raises this class at `scapy/arch/common.py:87` where the loader
+        # cannot open `libpcap`. It reports the state of the host and not a fault of the
+        # expression, so no case that reads the expression can run here.
+        return None
+    # A host that compiled `tcp port` reports no filter failure for any expression, and
+    # that is a finding rather than a state of the host.
     raise AssertionError("libpcap accepted the expression " + INVALID_FILTER)
+
+
+def the_filter_failure_or_skip(case):
+    """Return the filter failure, or skip the case that reads it.
+
+    Args:
+        case: The case that reads the failure.
+
+    Returns:
+        The `Scapy_Exception` `compile_filter` raised.
+    """
+    error = the_filter_failure()
+    if error is None:
+        case.skipTest("this host holds no libpcap, so it compiles no filter expression")
+    return error
 
 
 def describe(error, capture_filter=None, interfaces=("en0", "lo0")):
@@ -294,12 +390,14 @@ class TheCommandListsTheInterfacesItFound(unittest.TestCase):
     """FR-live-capture-12 — an absent interface produces a list of the real ones."""
 
     def test_the_message_lists_every_interface_the_host_holds(self):
-        message = describe(the_absent_interface_failure(), interfaces=("en0", "lo0"))
+        error = the_absent_interface_failure_or_skip(self)
+        message = describe(error, interfaces=("en0", "lo0"))
         self.assertIn("en0", message)
         self.assertIn("lo0", message)
 
     def test_the_message_reads_a_host_that_holds_no_interface(self):
-        message = describe(the_absent_interface_failure(), interfaces=())
+        error = the_absent_interface_failure_or_skip(self)
+        message = describe(error, interfaces=())
         self.assertIn("no interface", message)
 
     def test_a_missing_device_number_reads_as_an_absent_interface(self):
@@ -310,7 +408,10 @@ class TheCommandListsTheInterfacesItFound(unittest.TestCase):
     def test_the_interface_list_of_this_host_holds_a_name(self):
         """`available_interfaces` needs no privilege, so an error message can read it."""
         names = available_interfaces()
-        self.assertTrue(names, "the host reported no interface")
+        if not names:
+            # #426 records the guard. A minimal container reports no interface, and the
+            # empty list is then the state of the host rather than a fault of the call.
+            self.skipTest("the capture layer of this host reports no interface")
         self.assertTrue(all(isinstance(name, str) for name in names))
 
     def test_a_capture_layer_that_reports_no_list_produces_an_empty_list(self):
@@ -330,11 +431,13 @@ class TheCommandReportsTheFilterError(unittest.TestCase):
     """FR-live-capture-11 — an invalid capture filter produces the filter error."""
 
     def test_the_message_names_the_filter_the_operator_stated(self):
-        message = describe(the_filter_failure(), capture_filter=INVALID_FILTER)
+        error = the_filter_failure_or_skip(self)
+        message = describe(error, capture_filter=INVALID_FILTER)
         self.assertIn(INVALID_FILTER, message)
 
     def test_the_message_repeats_what_the_capture_layer_reported(self):
-        message = describe(the_filter_failure(), capture_filter=INVALID_FILTER)
+        error = the_filter_failure_or_skip(self)
+        message = describe(error, capture_filter=INVALID_FILTER)
         self.assertIn("Failed to compile filter expression", message)
 
     def test_a_filter_error_of_the_linux_socket_reads_as_a_filter_error(self):
@@ -386,7 +489,7 @@ class TheCaptureFailureEndsTheRunWithTheStatusOne(unittest.TestCase):
 
     def test_an_absent_interface_ends_the_run_with_the_status_one(self):
         _, err, status = run_watch(
-            "watch", ABSENT_INTERFACE, failure=the_absent_interface_failure()
+            "watch", ABSENT_INTERFACE, failure=the_absent_interface_failure_or_skip(self)
         )
         self.assertEqual(status, 1)
         self.assertIn(ABSENT_INTERFACE, err)
@@ -395,7 +498,7 @@ class TheCaptureFailureEndsTheRunWithTheStatusOne(unittest.TestCase):
 
     def test_an_invalid_filter_ends_the_run_with_the_status_one(self):
         _, err, status = run_watch(
-            "watch", "eth0", "--bpf", INVALID_FILTER, failure=the_filter_failure()
+            "watch", "eth0", "--bpf", INVALID_FILTER, failure=the_filter_failure_or_skip(self)
         )
         self.assertEqual(status, 1)
         self.assertIn(INVALID_FILTER, err)
@@ -507,8 +610,8 @@ class TheCaptureFailuresNameTheClassesTheCaptureLayerRaises(unittest.TestCase):
     def test_the_three_real_failures_are_all_caught(self):
         for error in (
             PermissionError(1, "Operation not permitted"),
-            the_absent_interface_failure(),
-            the_filter_failure(),
+            the_absent_interface_failure_or_skip(self),
+            the_filter_failure_or_skip(self),
         ):
             self.assertIsInstance(error, CAPTURE_FAILURES)
 
@@ -535,6 +638,246 @@ class TheExampleDaemonIsAbsent(unittest.TestCase):
     def test_the_repository_holds_no_monitoring_daemon_example(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.assertFalse(os.path.exists(os.path.join(root, "examples", "monitoring_daemon.py")))
+
+
+class TheFilterCasesGuardOnTheAmbientLibpcap(unittest.TestCase):
+    """#426 — the four cases that read a real filter failure guard on `libpcap`.
+
+    `the_filter_failure` calls `compile_filter`, and that call reaches `libpcap` through
+    the host. A host that holds no `libpcap` compiles no expression, so the four cases
+    below read a state this project does not control. A guard proved in one direction can
+    skip on every host, and a case that always skips measures nothing. Each case here
+    forces one direction and reads what the four guarded cases do.
+    """
+
+    def the_guarded_cases(self):
+        """Return the four cases that read a real filter failure, ready to run.
+
+        The list is built here and not in the class body, because two of the four classes
+        are defined below this one.
+
+        Returns:
+            A list of pairs, each holding the case name and the case.
+        """
+        names = (
+            (
+                TheCommandReportsTheFilterError,
+                "test_the_message_names_the_filter_the_operator_stated",
+            ),
+            (
+                TheCommandReportsTheFilterError,
+                "test_the_message_repeats_what_the_capture_layer_reported",
+            ),
+            (
+                TheCaptureFailureEndsTheRunWithTheStatusOne,
+                "test_an_invalid_filter_ends_the_run_with_the_status_one",
+            ),
+            (
+                TheCaptureFailuresNameTheClassesTheCaptureLayerRaises,
+                "test_the_three_real_failures_are_all_caught",
+            ),
+        )
+        return [(name, case(name)) for case, name in names]
+
+    def this_host_holds_libpcap(self):
+        """Return whether `compile_filter` reaches `libpcap` on this host.
+
+        The read calls `compile_filter` and not `the_filter_failure`. A prover that read
+        the state through the guard it proves cannot tell a guard that skips on every host
+        from a host that holds no `libpcap`, and the run direction is the direction that
+        reading loses.
+
+        Returns:
+            True where `compile_filter` compiled the expression or refused it.
+        """
+        from scapy.arch.common import compile_filter
+
+        try:
+            compile_filter(INVALID_FILTER, linktype=1)
+        except Scapy_Exception:
+            return True
+        except ImportError:
+            return False
+        return True
+
+    def test_the_probe_reads_the_import_error_scapy_raises(self):
+        """`compile_filter` raises `ImportError` where the host holds no `libpcap`."""
+        from scapy.arch.common import compile_filter
+
+        with no_libpcap():
+            with self.assertRaises(ImportError) as raised:
+                compile_filter(INVALID_FILTER, linktype=1)
+        # The guard reads the class. The message reaches the reader of a skip reason, so
+        # the case holds the class exactly and the message by the one word that names it.
+        self.assertIn("libpcap", str(raised.exception))
+
+    def test_the_probe_reports_no_failure_where_the_host_holds_no_libpcap(self):
+        """`the_filter_failure` returns None, because the expression reached no `libpcap`."""
+        with no_libpcap():
+            self.assertIsNone(the_filter_failure())
+
+    def test_each_case_skips_where_the_host_holds_no_libpcap(self):
+        """A host without `libpcap` skips all four cases, and each reason names it."""
+        with no_libpcap():
+            results = [(name, case.run()) for name, case in self.the_guarded_cases()]
+        for name, result in results:
+            with self.subTest(case=name):
+                self.assertEqual(result.errors, [])
+                self.assertEqual(result.failures, [])
+                self.assertEqual(len(result.skipped), 1)
+                self.assertIn("libpcap", result.skipped[0][1])
+
+    def test_each_case_runs_and_passes_where_the_host_holds_libpcap(self):
+        """A host with `libpcap` runs all four cases, and each one passes."""
+        if not self.this_host_holds_libpcap():
+            self.skipTest("this host holds no libpcap, so no case here can run")
+        for name, case in self.the_guarded_cases():
+            with self.subTest(case=name):
+                result = case.run()
+                self.assertEqual(result.testsRun, 1)
+                self.assertEqual(result.errors, [])
+                self.assertEqual(result.failures, [])
+                self.assertEqual(result.skipped, [])
+
+
+class TheAbsentInterfaceCasesGuardOnTheNameTheHostHolds(unittest.TestCase):
+    """#426 — the four cases that read an absent interface guard on the name.
+
+    `the_absent_interface_failure` asks `resolve_iface` for `nosuchif0`, and a host that
+    holds an interface of that name resolves it. The name is a premise about the host, and
+    this project does not control it. A guard proved in one direction can skip on every
+    host, and a case that always skips measures nothing. Each case here forces one
+    direction and reads what the four guarded cases do.
+    """
+
+    class ResolvedInterface:
+        """A stand-in for the interface a host that holds `nosuchif0` would resolve.
+
+        `resolve_iface` returns a `NetworkInterface` for a name the host holds. No case
+        here reads a member of the result, because the guard reads whether the call
+        raised.
+        """
+
+    def the_guarded_cases(self):
+        """Return the four cases that read an absent interface, ready to run.
+
+        Returns:
+            A list of pairs, each holding the case name and the case.
+        """
+        names = (
+            (
+                TheCommandListsTheInterfacesItFound,
+                "test_the_message_lists_every_interface_the_host_holds",
+            ),
+            (
+                TheCommandListsTheInterfacesItFound,
+                "test_the_message_reads_a_host_that_holds_no_interface",
+            ),
+            (
+                TheCaptureFailureEndsTheRunWithTheStatusOne,
+                "test_an_absent_interface_ends_the_run_with_the_status_one",
+            ),
+            (
+                TheCaptureFailuresNameTheClassesTheCaptureLayerRaises,
+                "test_the_three_real_failures_are_all_caught",
+            ),
+        )
+        return [(name, case(name)) for case, name in names]
+
+    @contextlib.contextmanager
+    def a_host_that_holds_the_name(self):
+        """Hold `resolve_iface` in the state a host that holds `nosuchif0` produces.
+
+        Yields:
+            None, while `resolve_iface` resolves every name.
+        """
+        with patch("scapy.all.resolve_iface", return_value=self.ResolvedInterface()):
+            yield
+
+    def this_host_holds_the_name(self):
+        """Return whether this host holds an interface named `nosuchif0`.
+
+        The read calls `resolve_iface` and not `the_absent_interface_failure`. A prover
+        that read the state through the guard it proves cannot tell a guard that skips on
+        every host from a host that holds the name.
+
+        Returns:
+            True where `resolve_iface` resolved the name.
+        """
+        from scapy.all import resolve_iface
+
+        try:
+            resolve_iface(ABSENT_INTERFACE)
+        except ValueError:
+            return False
+        return True
+
+    def test_the_probe_reports_no_failure_where_the_host_holds_the_name(self):
+        """`the_absent_interface_failure` returns None, because the call raised nothing."""
+        with self.a_host_that_holds_the_name():
+            self.assertIsNone(the_absent_interface_failure())
+
+    def test_each_case_skips_where_the_host_holds_the_name(self):
+        """A host that holds `nosuchif0` skips all four cases, and each reason names it."""
+        with self.a_host_that_holds_the_name():
+            results = [(name, case.run()) for name, case in self.the_guarded_cases()]
+        for name, result in results:
+            with self.subTest(case=name):
+                self.assertEqual(result.errors, [])
+                self.assertEqual(result.failures, [])
+                self.assertEqual(len(result.skipped), 1)
+                self.assertIn(ABSENT_INTERFACE, result.skipped[0][1])
+
+    def test_each_case_runs_and_passes_where_the_host_holds_no_such_name(self):
+        """A host without `nosuchif0` runs all four cases, and each one passes."""
+        if self.this_host_holds_the_name():
+            self.skipTest("this host holds an interface named " + ABSENT_INTERFACE)
+        for name, case in self.the_guarded_cases():
+            with self.subTest(case=name):
+                result = case.run()
+                self.assertEqual(result.testsRun, 1)
+                self.assertEqual(result.errors, [])
+                self.assertEqual(result.failures, [])
+                self.assertEqual(result.skipped, [])
+
+
+class TheInterfaceListCaseGuardsOnTheListTheHostReports(unittest.TestCase):
+    """#426 — the case that reads the interface list guards on the list.
+
+    `test_the_interface_list_of_this_host_holds_a_name` asks the capture layer for the
+    interface list of the host. A host whose capture layer reports no interface fails it,
+    and a container is such a host. A guard proved in one direction can skip on every
+    host, and a case that always skips measures nothing. The two cases here force each
+    direction.
+    """
+
+    def the_guarded_case(self):
+        """Return the case that reads the interface list, ready to run.
+
+        Returns:
+            The `TheCommandListsTheInterfacesItFound` case that reads this host.
+        """
+        return TheCommandListsTheInterfacesItFound(
+            "test_the_interface_list_of_this_host_holds_a_name"
+        )
+
+    def test_the_case_skips_where_the_host_reports_no_interface(self):
+        """A capture layer that reports no interface skips the case."""
+        with patch("scapy.all.get_if_list", return_value=[]):
+            result = self.the_guarded_case().run()
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
+        self.assertEqual(len(result.skipped), 1)
+        self.assertIn("no interface", result.skipped[0][1])
+
+    def test_the_case_runs_and_passes_where_the_host_reports_one_interface(self):
+        """A capture layer that reports one interface runs the case, and it passes."""
+        with patch("scapy.all.get_if_list", return_value=["en0"]):
+            result = self.the_guarded_case().run()
+        self.assertEqual(result.testsRun, 1)
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
+        self.assertEqual(result.skipped, [])
 
 
 if __name__ == "__main__":
