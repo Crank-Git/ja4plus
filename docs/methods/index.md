@@ -17,8 +17,8 @@ the standard itself, read the
 | JA4 | TLS and QUIC | [The TLS client fingerprint](ja4.md) | Yes |
 | JA4S | TLS and QUIC | [The TLS server fingerprint](ja4s.md) | Yes |
 | JA4H | HTTP | [The HTTP client fingerprint](ja4h.md) | Yes |
-| JA4L | TCP and QUIC | [The client latency value](ja4l.md) | Yes |
-| JA4LS | TCP and QUIC | [The server latency value](ja4ls.md) | Yes |
+| JA4L | TCP and QUIC | [The client latency fingerprint](ja4l.md) | Yes |
+| JA4LS | TCP and QUIC | [The server latency fingerprint](ja4ls.md) | Yes |
 | JA4X | X.509 | [The certificate fingerprint](ja4x.md) | Yes |
 | JA4SSH | SSH | [The SSH session fingerprint](ja4ssh.md) | Yes |
 | JA4T | TCP | [The TCP client fingerprint](ja4t.md) | Yes |
@@ -38,10 +38,10 @@ accepts ten tokens, and `ja4l` names both JA4L and JA4LS.
 
 ## Why this project builds no JA4TScan
 
-**JA4TScan is declined by decision, and it is not an omission.** It sends crafted
-packets to a host the operator names, and it reads the responses. Every other method
-reads traffic that already exists, so JA4TScan reaches a network the operator did not
-capture. That capability is larger than fingerprint production.
+**This project declines JA4TScan by decision, and the absence is no omission.** JA4TScan
+sends crafted packets to a host the operator names, and it reads the responses. Every
+other method reads traffic that already exists, so JA4TScan reaches a network the
+operator did not capture. That capability is larger than fingerprint production.
 
 `docs/specs/spec.md` holds the decision under `Non-goals`, and #197 holds the reading.
 The decision is reversible.

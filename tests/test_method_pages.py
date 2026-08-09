@@ -55,11 +55,37 @@ DECLINED_METHOD = "JA4TScan"
 # error that reads the ten classes as ten methods.
 IMPLEMENTED_METHODS = tuple(name for name in FOXIO_METHODS if name != DECLINED_METHOD)
 
+# Nine cases parametrize over the tuple above, and pytest reads it at collection time. A
+# tuple that shrank would collect fewer cases rather than fail one, which reads as a green
+# run. This check runs at import and it names the shrink.
+assert len(IMPLEMENTED_METHODS) == 11, (
+    f"the case file parametrizes over {len(IMPLEMENTED_METHODS)} methods, and this "
+    f"project implements eleven"
+)
+assert DECLINED_METHOD in FOXIO_METHODS, (
+    f"{DECLINED_METHOD} left FOXIO_METHODS, so the tuple above declines nothing"
+)
+
 # The heading of the table that holds the machine-read facts of one page.
 FACTS_HEADING = "## The facts"
 
 # The heading of the table that names one capture and the value it produces.
 EXAMPLE_HEADING = "## An example"
+
+# The header row each table carries. `_table_rows` reads the first table of a section, so
+# a stray table above the intended one would be read instead. The header names which
+# table the caller means, and `_table_rows` refuses any other.
+FACTS_HEADER = ["Item", "Value"]
+EXAMPLE_HEADER = ["Capture", "Value"]
+INDEX_HEADER = ["Method", "Protocol", "Page", "Implemented"]
+RAW_FORMS_HEADER = ["Method", "`raw`", "`raw_original_order`"]
+MIGRATION_HEADER = [
+    "Change",
+    "The version 0.6.0 form",
+    "The version 1.0.0 form",
+    "Why",
+    "Record",
+]
 
 # The two values the `raw` rows accept. A page states one of them, and a case compares it
 # against what the fingerprinter writes into the field.
@@ -85,6 +111,10 @@ INVENTORY_FILE = re.compile(r"^\|\s*`([A-Za-z0-9_.]+)`\s*\|\s*\d+\s*\|", re.MULT
 # empty list, and the project has met that defect. #64 records the same floor for the
 # link checker.
 MINIMUM_PAGES = 11
+
+# The count of breaking changes the record held when #65 landed. It grows and it never
+# falls, because a released breaking change stays breaking.
+MINIMUM_BREAKING_CHANGES = 11
 
 
 def _page(method: str) -> Path:
@@ -127,18 +157,23 @@ def _section(text: str, heading: str) -> str:
     return "\n".join(lines)
 
 
-def _table_rows(section: str) -> list[list[str]]:
+def _table_rows(section: str, header: list[str]) -> list[list[str]]:
     """Return the data rows of the first Markdown table of one section.
+
+    **This function reads the first table of the section and never the intended one.**
+    A stray table placed above it would be read instead, with no diagnostic, so every
+    caller states the header it expects and this function compares it.
 
     Args:
         section: The body of one section.
+        header: The cells of the header row the caller expects.
 
     Returns:
         One list of stripped cells for each data row. The header row and the alignment
         row are absent.
 
     Raises:
-        AssertionError: The section holds no table.
+        AssertionError: The section holds no table, or the table carries another header.
     """
     lines: list[str] = []
     for line in section.splitlines():
@@ -148,6 +183,7 @@ def _table_rows(section: str) -> list[list[str]]:
             break
     assert lines, "the section holds no table"
     rows = [[cell.strip() for cell in line.strip("|").split("|")] for line in lines]
+    assert rows[0] == header, f"the first table of the section carries the header {rows[0]}"
     # Row 0 names the columns and row 1 is the alignment row that Markdown requires.
     return rows[2:]
 
@@ -166,8 +202,26 @@ def _facts(method: str) -> dict[str, str]:
     """
     page = _page(method)
     assert page.is_file(), f"{page.relative_to(REPO_ROOT)} does not exist"
-    rows = _table_rows(_section(page.read_text(encoding="utf-8"), FACTS_HEADING))
+    rows = _table_rows(_section(page.read_text(encoding="utf-8"), FACTS_HEADING), FACTS_HEADER)
     return {row[0]: row[1] for row in rows}
+
+
+def _fact_cell(method: str, item: str) -> str:
+    """Return one fact of one method page, exactly as the cell writes it.
+
+    Args:
+        method: The FoxIO method name.
+        item: The text of the `Item` cell.
+
+    Returns:
+        The `Value` cell, with every backtick it holds.
+
+    Raises:
+        AssertionError: The fact table holds no such row.
+    """
+    facts = _facts(method)
+    assert item in facts, f"{_page(method).name} states no {item!r} row, and holds {sorted(facts)}"
+    return facts[item]
 
 
 def _fact(method: str, item: str) -> str:
@@ -183,9 +237,7 @@ def _fact(method: str, item: str) -> str:
     Raises:
         AssertionError: The fact table holds no such row.
     """
-    facts = _facts(method)
-    assert item in facts, f"{_page(method).name} states no {item!r} row, and holds {sorted(facts)}"
-    return facts[item].strip("`")
+    return _fact_cell(method, item).strip("`")
 
 
 def _examples(method: str) -> list[tuple[str, str]]:
@@ -201,7 +253,7 @@ def _examples(method: str) -> list[tuple[str, str]]:
         AssertionError: The page holds no example table.
     """
     text = _page(method).read_text(encoding="utf-8")
-    rows = _table_rows(_section(text, EXAMPLE_HEADING))
+    rows = _table_rows(_section(text, EXAMPLE_HEADING), EXAMPLE_HEADER)
     return [(row[0].strip("`"), row[1].strip("`")) for row in rows]
 
 
@@ -236,16 +288,15 @@ def _inventory_files() -> set[str]:
 
 
 def _run(capture: str) -> list[Any]:
-    """Return every fingerprint one committed capture produces.
-
-    The result of `close_open_windows` is a dict rather than a `FingerprintResult`, so
-    this function reads the two shapes with one accessor.
+    """Return every record one committed capture produces.
 
     Args:
         capture: The repository-relative path of the capture.
 
     Returns:
-        One pair for each fingerprint: the `type` value and the fingerprint string.
+        Every `FingerprintResult` of `process_packet`, then every record of
+        `close_open_windows`. The second call returns a dict and not a result, so a
+        reader of the list checks the shape.
 
     Raises:
         AssertionError: The capture produces no fingerprint.
@@ -259,15 +310,51 @@ def _run(capture: str) -> list[Any]:
     for packet in rdpcap(str(REPO_ROOT / capture)):
         produced += processor.process_packet(packet)
     produced += list(processor.close_open_windows())
-    pairs = [
+    assert produced, f"{capture} produced no fingerprint"
+    return produced
+
+
+def _pairs(capture: str) -> list[tuple[str, str]]:
+    """Return the method and the fingerprint of every record one capture produces.
+
+    Args:
+        capture: The repository-relative path of the capture.
+
+    Returns:
+        One pair for each record: the `type` value and the fingerprint string.
+    """
+    return [
         (
             record["type"] if isinstance(record, dict) else record.type,
             record["fingerprint"] if isinstance(record, dict) else record.fingerprint,
         )
-        for record in produced
+        for record in _cached_run(capture)
     ]
-    assert pairs, f"{capture} produced no fingerprint"
-    return pairs
+
+
+def _result_for(capture: str, value: str) -> Any:
+    """Return the typed result one capture produced for one fingerprint.
+
+    A dict of `close_open_windows` carries no raw field, so this function reads a
+    `FingerprintResult` alone.
+
+    Args:
+        capture: The repository-relative path of the capture.
+        value: The fingerprint string the page states.
+
+    Returns:
+        The first `FingerprintResult` whose fingerprint equals the value.
+
+    Raises:
+        AssertionError: The capture produced no such result.
+    """
+    matches = [
+        record
+        for record in _cached_run(capture)
+        if not isinstance(record, dict) and record.fingerprint == value
+    ]
+    assert matches, f"{capture} produced no result whose fingerprint is {value!r}"
+    return matches[0]
 
 
 _RUNS: dict[str, list[Any]] = {}
@@ -388,30 +475,21 @@ def test_each_method_page_states_the_raw_fields_the_method_writes(method: str) -
     """The two raw rows of each page agree with the fields the method fills.
 
     `docs/output-schema.md` states the same two facts for the output line, and
-    `tests/test_output_schema.py` holds that page. This case reads the library result.
+    `test_the_raw_forms_table_of_the_schema_page_states_what_the_writer_writes` reads
+    that page against the same result.
     """
-    from scapy.utils import rdpcap
-
-    from ja4plus import Processor
-
     capture, value = _examples(method)[0]
-    processor = Processor()
-    matches = []
-    for packet in rdpcap(str(REPO_ROOT / capture)):
-        matches += [
-            result for result in processor.process_packet(packet) if result.fingerprint == value
-        ]
-    assert matches, f"{capture} produced no result whose fingerprint is {value!r}"
+    result = _result_for(capture, value)
     for field, item in (
         ("raw", "The `raw` field"),
         ("raw_original_order", "The `raw_original_order` field"),
     ):
-        written = getattr(matches[0], field) is not None
-        stated = _facts(method)[item]
+        written = getattr(result, field) is not None
+        stated = _fact_cell(method, item)
         expected = RAW_PRESENT if written else RAW_ABSENT
         assert stated == expected, (
             f"{method} states {stated!r} for `{field}`, and the result carries "
-            f"{getattr(matches[0], field)!r}"
+            f"{getattr(result, field)!r}"
         )
 
 
@@ -428,9 +506,12 @@ def test_the_example_of_each_method_page_comes_from_the_capture_it_names(method:
     for capture, value in examples:
         produced = {
             fingerprint
-            for fingerprint_type, fingerprint in _cached_run(capture)
+            for fingerprint_type, fingerprint in _pairs(capture)
             if fingerprint_type == token
         }
+        # A capture that emits nothing for the token would make the comparison below
+        # vacuous, so this case names that state rather than pass through it.
+        assert produced, f"{capture} emitted no {token} fingerprint"
         assert value in produced, (
             f"{method} states the example {value!r}, and {capture} produced {sorted(produced)}"
         )
@@ -449,7 +530,8 @@ def test_the_index_of_the_methods_states_the_decline_of_the_one_method_not_built
 def test_the_index_of_the_methods_names_every_foxio_method(method: str) -> None:
     """The index table holds one row for each of the twelve methods FoxIO publishes."""
     rows = _table_rows(
-        _section((METHODS_DIR / "index.md").read_text(encoding="utf-8"), "## The methods")
+        _section((METHODS_DIR / "index.md").read_text(encoding="utf-8"), "## The methods"),
+        INDEX_HEADER,
     )
     names = {row[0].strip("`") for row in rows}
     assert method in names, f"the index table holds no row for {method}, and holds {sorted(names)}"
@@ -487,34 +569,31 @@ def test_the_raw_forms_table_of_the_schema_page_states_what_the_writer_writes(to
     whether the line carries a `raw` value and a `raw_original_order` value. This case
     runs the captures the method pages name and compares.
     """
-    rows = _table_rows(_section(SCHEMA_PAGE.read_text(encoding="utf-8"), "## The raw forms"))
-    stated = {}
+    rows = _table_rows(
+        _section(SCHEMA_PAGE.read_text(encoding="utf-8"), "## The raw forms"), RAW_FORMS_HEADER
+    )
+    stated: dict[str, tuple[str, str]] = {}
     for row in rows:
         for name in row[0].split(","):
             stated[name.strip().strip("`")] = (row[1], row[2])
-    assert token in stated, (
-        f"the raw-forms table holds no row for {token}, and holds {sorted(stated)}"
+    assert set(stated) == set(VALID_TYPES), (
+        f"the raw-forms table names {sorted(stated)} against the ten of VALID_TYPES"
     )
+    assert token in stated, f"the raw-forms table holds no row for {token}"
 
-    # Read the method page that owns the token, so the two documents cannot disagree.
+    # Run the capture the method page of this token names, and read the result itself.
+    # A comparison against the method page alone would compare two documents.
     method = next(
         name for name in IMPLEMENTED_METHODS if _fact(name, "The `--types` token") == token
     )
     capture, value = _examples(method)[0]
-    written = [
-        (fingerprint_type, fingerprint) for fingerprint_type, fingerprint in _cached_run(capture)
-    ]
-    assert any(fingerprint == value for _, fingerprint in written), f"{capture} wrote no {value!r}"
-    page_says = (
-        _facts(method)["The `raw` field"],
-        _facts(method)["The `raw_original_order` field"],
-    )
-    schema_says = tuple(
-        "Always `null`" if cell == "`null`" else RAW_PRESENT for cell in stated[token]
-    )
-    assert schema_says == page_says, (
-        f"the schema page states {stated[token]} for {token}, and {method} states {page_says}"
-    )
+    result = _result_for(capture, value)
+    for field, cell in zip(("raw", "raw_original_order"), stated[token]):
+        written = getattr(result, field) is not None
+        assert written == (cell != "`null`"), (
+            f"the schema page states {cell!r} for the `{field}` of {token}, and the "
+            f"result of {capture} carries {getattr(result, field)!r}"
+        )
 
 
 def test_the_site_serves_the_migration_page() -> None:
@@ -541,9 +620,18 @@ def _migration_changes() -> list[list[str]]:
 
     Returns:
         One list of cells for each breaking change.
+
+    Raises:
+        AssertionError: The table holds fewer rows than the record carries. **An empty
+            table passes every check that reads it**, so the floor guards the two cases
+            below.
     """
     text = MIGRATION_PAGE.read_text(encoding="utf-8")
-    return _table_rows(_section(text, "## The breaking changes"))
+    rows = _table_rows(_section(text, "## The breaking changes"), MIGRATION_HEADER)
+    assert len(rows) >= MINIMUM_BREAKING_CHANGES, (
+        f"the page lists {len(rows)} breaking changes, and the floor is {MINIMUM_BREAKING_CHANGES}"
+    )
+    return rows
 
 
 def test_the_migration_page_states_an_old_form_and_a_new_form_for_each_change() -> None:

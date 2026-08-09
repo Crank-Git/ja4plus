@@ -1,8 +1,8 @@
 # JA4LS
 
 JA4LS reports the one-way latency from the server to the client. It reads the TCP
-handshake, or the QUIC Initial packet and Handshake packet, and it emits one value for
-each connection.
+handshake, or the QUIC Initial packet and Handshake packet, and it emits one fingerprint
+for each connection.
 
 **JA4LS and [JA4L](ja4l.md) are two methods, and one fingerprinter writes both.** The
 `--types` option names the two together as `ja4l`, so the output line of a JA4LS value

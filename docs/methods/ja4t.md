@@ -38,9 +38,14 @@ function.
 **The option list holds every option kind and not the six kinds a name list holds.** #215
 records the reading as D3.
 
-**The two-digit form of the MSS part and the window scale part is a decision.** The
-Wireshark dissector and the Zeek script both write it, and the FoxIO Rust implementation
-writes one digit. The `Divergence register` of `docs/specs/spec.md` records the cost.
+**The two-digit form is a decision, and it covers three cases.** An empty option list
+writes `00`, the MSS part writes two digits, and a window scale of zero writes `00`. A
+window scale above zero writes its own digits and no padding, which is why the example
+below ends in `7` and not `07`.
+
+The Wireshark dissector and the Zeek script both write that form, and the FoxIO Rust
+implementation writes one digit. #215 records the decision as D1, and the
+`Divergence register` of `docs/specs/spec.md` records the cost.
 
 ## The hash rule
 

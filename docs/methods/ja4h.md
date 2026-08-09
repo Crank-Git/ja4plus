@@ -80,7 +80,7 @@ that carries no cookie, so the third part and the fourth part hold the zero sent
 rule, the two-digit header count that omits `Cookie` and `Referer`. It builds no
 fingerprint, so JA4H is an image method.
 
-`technical_details/JA4H.png` publishes the algorithm as a diagram.
+`technical_details/JA4H.png` publishes the method as a diagram.
 `docs/specs/foxio/JA4H.md` holds this project's transcription of it, and
 `docs/specs/foxio/README.md` holds the inventory and the SHA-256 of each file.
 

@@ -29,7 +29,7 @@ fingerprint.
 | Part | Width | What it holds |
 |---|---|---|
 | Message type | 5 | The name of the DHCP message type, as `disco` for Discover and `reqst` for Request. A type with no name writes its number in five digits. |
-| Maximum message size | 4 | The maximum DHCP message size the message advertises. It stops at `9999`, and it is `0000` when the message carries no such option. |
+| Maximum message size | 4 | The size of the largest message the sender accepts, in bytes. It stops at `9999`, and it is `0000` when the message carries no such option. |
 | Requested address | 1 | `i` when the message carries a requested IP address, and `n` when it carries none. |
 | FQDN | 1 | `d` when the message carries a fully qualified domain name, and `n` when it carries none. |
 | Option list | | The code of each DHCP option, in wire order, joined with a hyphen. |

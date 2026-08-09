@@ -12,15 +12,15 @@ holds the design.
 Several threads may share one `Processor()`, and each fingerprinter guards its own state
 with a reentrant lock.
 
+**Warning: a caller that splits the packets of one connection across threads gets
+undefined results.** The state of that connection then advances out of capture order.
+
 Give each thread whole connections, which is what `get_shard_key` returns. Eight threads
 then read the value set one thread reads.
 
-**A caller that splits the packets of one connection across threads gets undefined
-results.** The state of that connection then advances out of capture order.
-
-A caller that runs one processor for each shard constructs `Processor(thread_safe=False)`
-to acquire no lock. **`thread_safe=False` is a promise the caller makes, and not a mode
-the library checks.**
+**Warning: `thread_safe=False` is a promise the caller makes, and not a mode the library
+checks.** A caller that runs one processor for each shard constructs
+`Processor(thread_safe=False)` to acquire no lock.
 
 ## Why one processor reads one timeline
 
@@ -68,9 +68,9 @@ memory below that number.
 fingerprint it produces, and that list holds no bound, so a longer run reads more memory.
 The same traffic passes 512 MiB at 1500000 packets.
 
-`Processor.reset()` drops those results, and it drops every state table with them. **A
-caller that runs `reset()` in the middle of a capture loses the connection state the next
-packet needs.**
+**Warning: a caller that runs `reset()` in the middle of a capture loses the connection
+state the next packet needs.** `Processor.reset()` drops every fingerprint the run
+produced, and it drops every state table with them.
 
 ## Where to read more
 

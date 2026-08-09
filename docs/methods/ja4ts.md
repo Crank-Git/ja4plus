@@ -1,7 +1,7 @@
 # JA4TS
 
 JA4TS fingerprints the TCP server. It reads one SYN-ACK packet and it emits one
-fingerprint. It appends the retransmission timing when the server answers more than
+fingerprint. It appends the retransmission delays when the server answers more than
 once.
 
 **JA4TS reads a SYN-ACK packet and never a SYN packet.**
