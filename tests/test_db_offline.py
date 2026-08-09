@@ -133,14 +133,30 @@ class TestTheDefaultClientReachesNoNetwork:
         assert recorder.calls == []
 
 
+@pytest.mark.usefixtures("no_network")
 class TestTheConstructorRefusesAnAmbiguousCall:
-    """`cache_size` was the first parameter before #57."""
+    """`cache_size` was the first parameter before #57.
+
+    The class blocks every outbound socket, because #414 repaired the case below and
+    `FR-pre-release-validation-26a` bars a case of this feature set from reaching
+    `https://ja4db.com`. A refused constructor sends no request, and the fixture states
+    that as a condition rather than leaving it to a reader.
+    """
 
     @pytest.mark.parametrize("value", [100, "yes", None, 0], ids=["int", "str", "none", "zero"])
     def test_a_value_that_is_no_bool_raises_type_error(self, value):
         """`JA4DBClient(100)` asked for a lookup cache of 100 entries. It now reads as a
-        request for the remote lookup, so the client refuses it."""
-        with pytest.raises(TypeError):
+        request for the remote lookup, so the client refuses it.
+
+        The message is the part an operator reads, and it names the two values the
+        parameter takes. #414 found that the case read the type of the error alone, so
+        every message this constructor could raise passed it.
+
+        The pattern carries both anchors, because `match` searches rather than compares.
+        An unanchored pattern passes on any message that holds it, and
+        `allow_remote takes True or False_mutated` is such a message.
+        """
+        with pytest.raises(TypeError, match=r"^allow_remote takes True or False$"):
             JA4DBClient(value)
 
     def test_a_bool_builds_the_client(self):
