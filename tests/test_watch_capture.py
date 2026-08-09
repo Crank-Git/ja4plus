@@ -114,10 +114,11 @@ def the_privilege_failure():
     """Return the failure the macOS capture layer reports without the privilege.
 
     The call opens `/dev/bpf0` and it opens no interface. A host that grants the
-    privilege returns the file descriptor instead, and this call reports no failure.
-    The caller reads that result as the state of the host, and #424 records why: the
-    user identity and the platform do not decide the grant, and a case that reads the
-    grant through those two alone fails on a host that chowned the `/dev/bpf*` devices.
+    privilege returns the file descriptor instead, and this call then reports no
+    failure. The caller reads that result as the state of the host. #424 records why:
+    the user identity and the platform do not decide the grant. A case that reads the
+    grant through those two alone fails on a host that grants read access to the
+    `/dev/bpf*` devices.
 
     Returns:
         The `Scapy_Exception` the call raised, or None where the host granted the
@@ -233,7 +234,8 @@ class TheCapturePrivilegeCaseGuardsOnTheHostState(unittest.TestCase):
     The case above reads the failure of this host, so its result depends on whether
     this host grants the capture privilege to this account. A guard proved in one
     direction can skip on every host, and a case that always skips measures nothing.
-    The two cases here force each direction and read what the guarded case then does.
+    The first two cases here force each direction and read what the guarded case does.
+    The third case reads the descriptor a granting host returns.
     """
 
     # The message `scapy` 2.7.0 raises at `scapy/arch/bpf/core.py:59`, read on
