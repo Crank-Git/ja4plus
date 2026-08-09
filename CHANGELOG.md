@@ -63,10 +63,13 @@ marginal.** `ja4plus.__all__` names 25 entries, so a `from ja4plus import *` tha
 name outside the 25 loses it, under Round 90, #47. `import ja4plus` registers the tunnel
 dissectors of scapy for the whole process, under Round 12, #94.
 
-**One breaking change reaches this record and reaches no row of the migration page.** #319
-narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der`, and #397 recorded the change
-under round 133. #65 owns `docs/migration-0.6-to-1.0.md`, so #66 records the gap here and
-edits no page of another issue.
+**The record and the migration page name the same breaking changes.** #319 narrowed
+`compute_ja4x_from_pem` and `compute_ja4x_from_der`, and #397 recorded the change. The
+interface table above carries the row, and #66 found that `docs/migration-0.6-to-1.0.md`
+held none. #66 edited no page of another issue. #399 added the row, and #403 corrected
+this paragraph.
+`tests/test_release_notes.py::test_every_breaking_change_of_the_record_reaches_the_migration_page`
+holds every breaking change of this record against a row of that page.
 
 ### Added
 
@@ -141,7 +144,7 @@ edits no page of another issue.
 ### Fixed
 
 - **The migration page cited round 122 for the item access, and it recorded the narrowed
-  certificate readers not at all** (#399, #401). Round TBD. The page held eleven breaking
+  certificate readers not at all** (#399, #401, #403). Round TBD. The page held eleven breaking
   changes and none recorded #319. That round narrowed `compute_ja4x_from_pem` and
   `compute_ja4x_from_der`, so an input that returned `None` in version 0.6.0 can now raise.
   The page also cited one row under `Round 122, #59 and #364`. The Changelog table of
@@ -157,9 +160,17 @@ edits no page of another issue.
   a comparison that never runs.
   `test_every_breaking_change_of_the_record_reaches_the_migration_page` reads the direction
   #66 left open. The case that reads the other direction passes on a page that holds fewer
-  changes than the record. Four mutations prove the two cases discriminate, and each was
-  restored. The unit suite rises from 2499 passed to 2501, coverage holds at 94,
-  and the conformance suite reports 134 xfailed against 134 register keys. This entry
+  changes than the record. **#403 is the sentence this repair falsified.** The release
+  notes read "One breaking change reaches this record and reaches no row of the migration
+  page", and the new row of #319 made that untrue. **No case read the paragraph**, so a
+  reader found it and the suite did not.
+  `test_the_release_notes_report_the_gap_the_record_shows_and_no_other` connects the prose
+  to the measurement. It reads a present-tense gap claim against the set difference of the
+  record and the page, and it fails in both directions: on a claim the record does not
+  show, and on a gap the notes report not at all. Six mutations prove the three cases
+  discriminate, and each was restored. The unit suite rises from 2499 passed to 2502, and
+  coverage holds at 94. The conformance suite reports 134 xfailed against 134 register
+  keys. This entry
   changes no file under `ja4plus/` and no fingerprint moves.
 
 - **`generate_ja4` reads a TLS info dictionary, and the documentation stated a packet**

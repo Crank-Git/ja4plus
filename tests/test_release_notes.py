@@ -108,6 +108,15 @@ MINIMUM_MIGRATION_CITATIONS = 14
 # the completeness case on an empty set, so the floor fails such a reader.
 MINIMUM_RECORD_ISSUES = 20
 
+# A sentence of the release notes that claims the migration page misses a breaking change.
+# **Both forms read the present tense, and that is deliberate.** A past-tense sentence
+# records a gap that an issue closed, which stays true forever and carries value to a later
+# reader. A present-tense sentence claims a live gap, and the record decides whether one
+# exists. #403 records the sentence that went stale here.
+GAP_CLAIM = re.compile(
+    r"reaches no row of the migration page|the migration page (?:holds|carries) no row"
+)
+
 
 def _release_notes() -> str:
     """Return the text of the version 1.0.0 section of `CHANGELOG.md`.
@@ -523,6 +532,39 @@ def test_every_breaking_change_of_the_record_reaches_the_migration_page() -> Non
     assert missing == [], (
         f"the record names these breaking changes and the migration page omits them: {missing}"
     )
+
+
+def test_the_release_notes_report_the_gap_the_record_shows_and_no_other() -> None:
+    """The release notes claim a gap against the migration page when the record shows one.
+
+    **The prose of the notes asserted the same thing as
+    `test_every_breaking_change_of_the_record_reaches_the_migration_page`, in the opposite
+    direction, and nothing connected the two.** The notes read "One breaking change reaches
+    this record and reaches no row of the migration page", #399 added that row, and the
+    sentence became false. No case read the paragraph, so a reader found it and the suite
+    did not. #403 records it.
+
+    **This case reads the prose against the measured set difference and never against a
+    second file.** The claim is a third thing, and the comparison of the record with the
+    page is the evidence that decides it.
+
+    **The reader takes a present-tense claim alone**, because a past-tense sentence records
+    a gap that an issue closed and stays true. A gap claim in words `GAP_CLAIM` does not
+    hold escapes this case. That asymmetry is acceptable: the failure this case exists to
+    stop is a sentence that survives a repair unchanged, and unchanged text matches.
+    """
+    gap = sorted(_record_issues() - _migration_issues())
+    claimed = GAP_CLAIM.search(_breaking_subsection())
+    if gap:
+        assert claimed, (
+            f"the record shows these breaking changes the migration page omits, and the "
+            f"release notes report no gap: {gap}"
+        )
+    else:
+        assert claimed is None, (
+            f"the release notes claim the migration page misses a breaking change, and the "
+            f"record shows none: {claimed.group(0)!r}"  # type: ignore[union-attr]
+        )
 
 
 def test_the_release_notes_name_the_narrowed_certificate_readers() -> None:
