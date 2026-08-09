@@ -39,7 +39,10 @@ REQUIREMENT = re.compile(r"^(FR-[a-z0-9-]+-\d+[a-z]?) — (.*)$")
 # The scope forms that reach every case of a feature set. `this feature set` is the form
 # `FR-pre-release-validation-26` carried. The second form drops the noun phrase and states
 # the same scope, as `No case opens a network connection`.
-SET_SCOPE = re.compile(r"this feature set|\b(?:no|every|each|any) case\b", re.IGNORECASE)
+# **The plural reaches the same scope, and the first form of this pattern missed it.** A
+# writer who rewrites the repaired rule as `No cases open a network connection` states the
+# defect again, so `cases?` carries the pattern. The self-review of #419 found the gap.
+SET_SCOPE = re.compile(r"this feature set|\b(?:no|every|each) cases?\b", re.IGNORECASE)
 
 # The named scope: one path under `tests/`, inside backticks.
 TEST_PATH = re.compile(r"`tests/[A-Za-z0-9_./-]+`")
