@@ -84,35 +84,69 @@ class TestFindPnOffset(unittest.TestCase):
 
 
 class TestParseQuicInitial(unittest.TestCase):
+    # A packet of dummy bytes makes the reader return None whichever guard runs, so such
+    # a case measures the decryption rather than the guard it names. Every guard case
+    # below therefore carries a protected ClientHello the reader decrypts. The AEAD tag
+    # covers the header, so each case builds the rejected header rather than changing a
+    # byte of a built packet. #348 records the measurement.
+    DCID = bytes.fromhex("8394c8f03e515708")
+
+    def rejected_packet(self, **header):
+        """Return one client Initial packet that decrypts and carries a ClientHello.
+
+        Args:
+            header: The header fields `client_initial_crypto` writes.
+
+        Returns:
+            The bytes of the UDP payload.
+        """
+        from tests.quic_builder import client_hello, client_initial_crypto, crypto_frame
+
+        return client_initial_crypto(
+            self.DCID, crypto_frame(0, client_hello("guard.example.com")), **header
+        )
+
     def test_too_short(self):
         from ja4plus.utils.quic_utils import parse_quic_initial
 
         self.assertIsNone(parse_quic_initial(b"\x00" * 10))
 
-    def test_short_header(self):
+    def test_a_truncated_long_header_returns_none_rather_than_raising(self):
+        """The reader returns None for a long header that holds three version bytes.
+
+        The reader unpacks the version field outside its `try` block, so the length
+        guard is the only thing that stops a `struct.error` reaching the caller. No
+        packet under 20 bytes can carry a ClientHello, so this case measures the length
+        guard by the exception it prevents rather than by a result.
+        """
         from ja4plus.utils.quic_utils import parse_quic_initial
 
-        self.assertIsNone(parse_quic_initial(b"\x40" + b"\x00" * 30))
+        self.assertIsNone(parse_quic_initial(b"\xc0\x00\x00\x00"))
+
+    def test_short_header(self):
+        """A packet whose header form bit is clear produces no ClientHello."""
+        from ja4plus.utils.quic_utils import parse_quic_initial
+
+        self.assertIsNone(parse_quic_initial(self.rejected_packet(long_header=False)))
 
     def test_version_negotiation(self):
+        """A packet whose version number is zero produces no ClientHello."""
         from ja4plus.utils.quic_utils import parse_quic_initial
 
-        pkt = bytearray(b"\xc0") + b"\x00\x00\x00\x00" + b"\x00" * 30
-        self.assertIsNone(parse_quic_initial(bytes(pkt)))
+        # The reader reads version 0 as version 1, so the builder protects the packet
+        # under the version 1 salt. The version guard is then the only rejection.
+        packet = self.rejected_packet(version=0, type_code=0, key_version=1)
+        self.assertIsNone(parse_quic_initial(packet))
 
     def test_non_initial_type(self):
+        """A QUIC version 1 Handshake packet produces no ClientHello."""
         from ja4plus.utils.quic_utils import parse_quic_initial
 
-        pkt = bytearray()
-        pkt.append(0xC0 | (0x02 << 4))
-        pkt += b"\x00\x00\x00\x01" + b"\x00" * 30
-        self.assertIsNone(parse_quic_initial(bytes(pkt)))
+        # The packet holds the type code 2, which version 1 gives a Handshake packet.
+        self.assertIsNone(parse_quic_initial(self.rejected_packet(type_code=2)))
 
     # QUIC version 2 gives an Initial packet the long-header type code 1, where version 1
-    # gives it the code 0. RFC 9369 Section 3.2 states both codes. The three cases below
-    # build a packet that decrypts, because a packet that fails decryption returns None
-    # for two reasons, and the type check is only one of them.
-    DCID = bytes.fromhex("8394c8f03e515708")
+    # gives it the code 0. RFC 9369 Section 3.2 states both codes.
 
     def test_v2_initial_yields_the_client_hello(self):
         """A QUIC version 2 Initial packet produces the ClientHello it carries."""
@@ -195,36 +229,109 @@ class TestExtractCryptoFrames(unittest.TestCase):
 class TestParseQuicServerInitial(unittest.TestCase):
     """Tests for parse_quic_server_initial() — the server-side QUIC Initial decoder."""
 
+    # Every guard case below carries a protected ServerHello the reader decrypts, so the
+    # guard the case names is the only reason the reader returns None. The AEAD tag
+    # covers the header, so each case builds the rejected header rather than changing a
+    # byte of a built packet. #348 records the measurement.
+    CLIENT_DCID = bytes.fromhex("203f9e9f68698274")
+
+    def rejected_packet(self, client_dcid=None, **header):
+        """Return one server Initial packet that decrypts and carries a ServerHello.
+
+        Args:
+            client_dcid: The connection ID the server Initial keys derive from. The
+                default is `CLIENT_DCID`.
+            header: The header fields `server_initial` writes.
+
+        Returns:
+            The bytes of the UDP payload.
+        """
+        from tests.quic_builder import crypto_frame, server_hello, server_initial
+
+        if client_dcid is None:
+            client_dcid = self.CLIENT_DCID
+        return server_initial(client_dcid, crypto_frame(0, server_hello()), **header)
+
+    def test_an_initial_packet_yields_the_server_hello(self):
+        """A server Initial packet produces the ServerHello it carries.
+
+        Every rejection case below builds the same packet under a rejected header, so
+        this case states what those cases would produce if their guard were absent.
+        """
+        from ja4plus.utils.quic_utils import parse_quic_server_initial
+
+        tls_info = parse_quic_server_initial(self.rejected_packet(), self.CLIENT_DCID)
+        self.assertIsNotNone(tls_info)
+        self.assertEqual(tls_info["handshake_type"], "server_hello")
+
     def test_too_short_returns_none(self):
         from ja4plus.utils.quic_utils import parse_quic_server_initial
 
         self.assertIsNone(parse_quic_server_initial(b"\x00" * 4, b"\x01" * 8))
 
-    def test_empty_client_dcid_returns_none(self):
+    def test_a_truncated_long_header_returns_none_rather_than_raising(self):
+        """The reader returns None for a long header that holds three version bytes.
+
+        The reader unpacks the version field outside its `try` block, so the length
+        guard is the only thing that stops a `struct.error` reaching the caller. No
+        packet under five bytes can carry a ServerHello, so this case measures the
+        length guard by the exception it prevents rather than by a result.
+        """
         from ja4plus.utils.quic_utils import parse_quic_server_initial
 
-        self.assertIsNone(parse_quic_server_initial(b"\xc0" + b"\x00" * 40, b""))
+        self.assertIsNone(parse_quic_server_initial(b"\xc0\x00\x00\x00", b"\x01" * 8))
+
+    def test_empty_client_dcid_returns_none(self):
+        """The reader returns None when the caller passes no connection ID."""
+        from ja4plus.utils.quic_utils import parse_quic_server_initial
+
+        # The packet derives its keys from the empty connection ID, so a reader that
+        # drops this guard derives the keys the packet holds and returns the ServerHello.
+        self.assertIsNone(parse_quic_server_initial(self.rejected_packet(b""), b""))
 
     def test_short_header_returns_none(self):
+        """A packet whose header form bit is clear produces no ServerHello."""
         from ja4plus.utils.quic_utils import parse_quic_server_initial
 
-        # Short header: bit 7 clear
-        pkt = b"\x40" + b"\x00\x00\x00\x01" + b"\x00" * 40
-        self.assertIsNone(parse_quic_server_initial(pkt, b"\x01" * 8))
+        packet = self.rejected_packet(long_header=False)
+        self.assertIsNone(parse_quic_server_initial(packet, self.CLIENT_DCID))
 
     def test_version_negotiation_returns_none(self):
+        """A packet whose version number is zero produces no ServerHello."""
         from ja4plus.utils.quic_utils import parse_quic_server_initial
 
-        pkt = b"\xc0" + b"\x00\x00\x00\x00" + b"\x00" * 40
-        self.assertIsNone(parse_quic_server_initial(pkt, b"\x01" * 8))
+        # The reader reads version 0 as version 1, so the builder protects the packet
+        # under the version 1 salt. The version guard is then the only rejection.
+        packet = self.rejected_packet(version=0, type_code=0, key_version=1)
+        self.assertIsNone(parse_quic_server_initial(packet, self.CLIENT_DCID))
 
     def test_wrong_packet_type_returns_none(self):
+        """A QUIC version 1 Handshake packet produces no ServerHello."""
         from ja4plus.utils.quic_utils import parse_quic_server_initial
 
-        # QUIC v1 Handshake type (0x02 in bits 4-5), not Initial (0x00)
-        first_byte = 0xC0 | (0x02 << 4)
-        pkt = bytes([first_byte]) + b"\x00\x00\x00\x01" + b"\x00" * 40
-        self.assertIsNone(parse_quic_server_initial(pkt, b"\x01" * 8))
+        # The packet holds the type code 2, which version 1 gives a Handshake packet.
+        packet = self.rejected_packet(type_code=2)
+        self.assertIsNone(parse_quic_server_initial(packet, self.CLIENT_DCID))
+
+    def test_a_version_2_wrong_packet_type_returns_none(self):
+        """A QUIC version 2 Handshake packet produces no ServerHello."""
+        from ja4plus.utils.quic_utils import parse_quic_server_initial
+        from tests.quic_builder import QUIC_VERSION_2
+
+        # Version 2 gives a Handshake packet the type code 3. RFC 9369 Section 3.2
+        # states the code. The version 2 arm of the type guard rejects it.
+        packet = self.rejected_packet(version=QUIC_VERSION_2, type_code=3)
+        self.assertIsNone(parse_quic_server_initial(packet, self.CLIENT_DCID))
+
+    def test_a_version_2_initial_packet_yields_the_server_hello(self):
+        """A QUIC version 2 server Initial packet produces the ServerHello it carries."""
+        from ja4plus.utils.quic_utils import parse_quic_server_initial
+        from tests.quic_builder import QUIC_VERSION_2
+
+        packet = self.rejected_packet(version=QUIC_VERSION_2)
+        tls_info = parse_quic_server_initial(packet, self.CLIENT_DCID)
+        self.assertIsNotNone(tls_info)
+        self.assertEqual(tls_info["handshake_type"], "server_hello")
 
     def test_invalid_encrypted_data_returns_none(self):
         """A structurally valid but undecryptable packet returns None (not an exception)."""

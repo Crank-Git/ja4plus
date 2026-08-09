@@ -18,6 +18,7 @@ from ja4plus.utils.quic_utils import (
 )
 from tests.quic_builder import (
     ACK_FRAME,
+    QUIC_VERSION_2,
     client_initial,
     crypto_frame,
     server_hello,
@@ -91,27 +92,78 @@ def test_the_server_reader_rejects_a_wrong_connection_id():
     assert decrypt_quic_server_initial_crypto(packet, b"\x01" * 8) is None
 
 
+# A packet of dummy bytes makes the reader return None whichever guard runs, so such a
+# case measures the decryption rather than the guard it names. Every guard case below
+# therefore carries a protected ServerHello the reader decrypts. The AEAD tag covers the
+# header, so each case builds the rejected header rather than changing a byte of a built
+# packet. #348 records the measurement.
+def rejected_packet(client_dcid=CLIENT_DCID, **header):
+    """Return one server Initial packet that decrypts and carries a ServerHello.
+
+    Args:
+        client_dcid: The connection ID the server Initial keys derive from.
+        header: The header fields `server_initial` writes.
+
+    Returns:
+        The bytes of the UDP payload.
+    """
+    return server_initial(client_dcid, crypto_frame(0, server_hello()), **header)
+
+
+def test_the_server_reader_returns_none_for_a_truncated_long_header():
+    """The reader returns None for a long header that holds three version bytes.
+
+    The reader unpacks the version field outside its `try` block, so the length guard is
+    the only thing that stops a `struct.error` reaching the caller. No packet under five
+    bytes can carry a ServerHello, so this case measures the length guard by the
+    exception it prevents rather than by a result.
+    """
+    assert decrypt_quic_server_initial_crypto(b"\xc0\x00\x00\x00", CLIENT_DCID) is None
+
+
 def test_the_server_reader_rejects_a_short_header():
     """The reader returns None for a datagram that holds a short header."""
-    assert decrypt_quic_server_initial_crypto(b"\x40" + b"\x00" * 40, CLIENT_DCID) is None
+    assert (
+        decrypt_quic_server_initial_crypto(rejected_packet(long_header=False), CLIENT_DCID) is None
+    )
 
 
 def test_the_server_reader_rejects_an_empty_connection_id():
-    """The reader returns None when the caller passes no connection ID."""
-    packet = server_initial(CLIENT_DCID, crypto_frame(0, server_hello()))
-    assert decrypt_quic_server_initial_crypto(packet, b"") is None
+    """The reader returns None when the caller passes no connection ID.
+
+    The packet derives its keys from the empty connection ID, so a reader that drops
+    this guard derives the keys the packet holds and returns the CRYPTO fragments.
+    """
+    assert decrypt_quic_server_initial_crypto(rejected_packet(b""), b"") is None
 
 
 def test_the_server_reader_rejects_a_version_negotiation_packet():
     """The reader returns None for a packet whose version number is zero."""
-    packet = b"\xc0" + b"\x00\x00\x00\x00" + b"\x00" * 40
+    # The reader reads version 0 as version 1, so the builder protects the packet under
+    # the version 1 salt. The version guard is then the only rejection.
+    packet = rejected_packet(version=0, type_code=0, key_version=1)
     assert decrypt_quic_server_initial_crypto(packet, CLIENT_DCID) is None
 
 
 def test_the_server_reader_rejects_a_handshake_packet():
     """The reader returns None for a packet that is no Initial packet."""
-    packet = bytes([0xC0 | (QUIC_HANDSHAKE << 4)]) + b"\x00\x00\x00\x01" + b"\x00" * 40
+    packet = rejected_packet(type_code=QUIC_HANDSHAKE)
     assert decrypt_quic_server_initial_crypto(packet, CLIENT_DCID) is None
+
+
+def test_the_server_reader_rejects_a_version_2_handshake_packet():
+    """The reader returns None for a version 2 packet that is no Initial packet."""
+    # Version 2 gives a Handshake packet the type code 3. RFC 9369 Section 3.2 states
+    # the code. The version 2 arm of the type guard rejects it.
+    packet = rejected_packet(version=QUIC_VERSION_2, type_code=3)
+    assert decrypt_quic_server_initial_crypto(packet, CLIENT_DCID) is None
+
+
+def test_the_server_reader_reads_a_version_2_initial_packet():
+    """The reader returns the CRYPTO fragments a version 2 Initial packet carries."""
+    message = server_hello()
+    packet = server_initial(CLIENT_DCID, crypto_frame(0, message), version=QUIC_VERSION_2)
+    assert decrypt_quic_server_initial_crypto(packet, CLIENT_DCID) == [(0, message)]
 
 
 def test_the_server_initial_parser_drops_a_fragment_that_names_a_huge_offset():
