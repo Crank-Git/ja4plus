@@ -7,36 +7,47 @@ from ja4plus.fingerprinters.ja4x import JA4XFingerprinter
 
 
 class TestJA4XReassembly(unittest.TestCase):
-    def test_in_order_still_works(self):
+    """The reassembler restores the segment order of one stream.
+
+    #339 records that the two cases below asserted nothing. Each one now reads the bytes
+    the reassembler holds, so a reassembler that drops a segment or that keeps the
+    arrival order fails.
+    """
+
+    STREAM_KEY = "10.0.0.1:443-10.0.0.2:12345"
+
+    def _segment(self, seq, load):
+        """Return one packet of the stream, at the given sequence number."""
+        return (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=443, dport=12345, seq=seq)
+            / Raw(load=load)
+        )
+
+    def test_one_segment_reaches_the_stream_whole(self):
         fp = JA4XFingerprinter()
         data = b"\x16\x03\x01\x00\x05\x0b\x00\x00\x01\x00"
-        pkt = (
-            IP(src="10.0.0.1", dst="10.0.0.2")
-            / TCP(sport=443, dport=12345, seq=100)
-            / Raw(load=data)
-        )
-        fp.process_packet(pkt)
-        # May return None (not enough cert data), but should not crash
 
-    def test_out_of_order_segments(self):
+        # The record holds no whole certificate, so the method emits nothing.
+        self.assertIsNone(fp.process_packet(self._segment(100, data)))
+
+        self.assertEqual(fp.reassembler.get_stream(self.STREAM_KEY), data)
+        self.assertEqual(fp.reassembler.base_seq(self.STREAM_KEY), 100)
+        self.assertEqual(fp.get_fingerprints(), [])
+
+    def test_two_segments_that_arrive_out_of_order_reach_the_stream_in_order(self):
         fp = JA4XFingerprinter()
         tls_header = b"\x16\x03\x01\x00\x0a"
         tls_body = b"\x0b\x00\x00\x06\x00\x00\x03\x00\x00\x00"
         part1 = tls_header + tls_body[:5]
         part2 = tls_body[5:]
-        pkt2 = (
-            IP(src="10.0.0.1", dst="10.0.0.2")
-            / TCP(sport=443, dport=12345, seq=100 + len(part1))
-            / Raw(load=part2)
-        )
-        fp.process_packet(pkt2)
-        pkt1 = (
-            IP(src="10.0.0.1", dst="10.0.0.2")
-            / TCP(sport=443, dport=12345, seq=100)
-            / Raw(load=part1)
-        )
-        fp.process_packet(pkt1)
-        # Should not crash; reassembly should handle ordering
+
+        self.assertIsNone(fp.process_packet(self._segment(100 + len(part1), part2)))
+        self.assertIsNone(fp.process_packet(self._segment(100, part1)))
+
+        self.assertEqual(fp.reassembler.get_stream(self.STREAM_KEY), tls_header + tls_body)
+        self.assertEqual(fp.reassembler.base_seq(self.STREAM_KEY), 100)
+        self.assertEqual(fp.get_fingerprints(), [])
 
 
 class TestJA4XStreamAge(unittest.TestCase):
