@@ -133,6 +133,51 @@ jobs:
           name: fuzz-results
           path: fuzz-results.xml
 
+  samples:
+    # `FR-documentation-4`, `FR-documentation-5` and `FR-documentation-6`. Every code
+    # sample of the README, every code sample of `docs/`, and every script of
+    # `examples/` runs here. This job names the harness, so a rotten sample is visible
+    # without a log search.
+    #
+    # This job runs one Python version. The `test` job reads `tests/`, so it runs the
+    # same harness on every version of the matrix and on macOS.
+    #
+    # No sample reaches a network and no sample opens a capture socket. A sample that
+    # cannot run carries a marker that names the reason, and
+    # `tests/test_documentation_samples.py` fails a marker that names none.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run every documentation sample and every example script
+        run: |
+          python -m pytest tests/test_documentation_samples.py tests/test_examples.py \
+            -v --tb=short --junitxml=sample-results.xml
+
+      - name: Report the sample census
+        if: always()
+        run: |
+          python -c "from tests.documentation_samples import census; \
+            print('Documentation sample census:', census())" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the sample results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: sample-results
+          path: sample-results.xml
+
   conformance:
     # `FR-foundation-4`. The vectors are committed under `tests/foxio_vectors`, so this
     # job reads no network. Never add a step that runs `tests/download_test_vectors.py`:
