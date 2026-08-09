@@ -710,7 +710,7 @@ starts, and `report_statistics` starts it only when the caller states an interva
 | `StatisticsSnapshot` | The counts one statistics line reports |
 | `format_statistics(snapshot)` | Return the statistics line of one snapshot |
 | `write_statistics(stats, stream)` | Write one statistics line, and flush the stream |
-| `StatisticsReporter(stats, interval, stream)` | The thread that writes a statistics line on a schedule |
+| `StatisticsReporter(stats, interval, stream, wait)` | The thread that writes a statistics line on a schedule |
 | `report_statistics(stats, interval, stream)` | Yield the reporter, and stop it when the body returns |
 
 The capture thread writes the counts and the statistics thread reads them. Every write
@@ -721,6 +721,12 @@ reads `MonitorStats` and never the connection table.
 The `dropped` field reports the count a `dropped_source` returns, and `null` where the
 caller passes none. `ja4plus watch` passes none, because `scapy` 2.7.0 reports no drop
 count to a caller of `sniff`. Issue #326 records the measurement.
+
+The `wait` parameter of `StatisticsReporter` is a test seam. It receives the interval and
+returns True when the stop arrives, which matches `threading.Event.wait`. The default
+waits on the stop event, and `ja4plus watch` passes no other call. A test passes its own
+call and reads an exact line count, rather than count the lines a loaded host delivered.
+Issue #369 added the parameter.
 
 `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
 The handler sets the stop request and returns. It calls `sys.exit` never, because a

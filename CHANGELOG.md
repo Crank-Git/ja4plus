@@ -9,7 +9,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **Four QUIC and certificate readers name the errors they expect, and ten wide catches
-  state why they stay wide** (#319). Round TBD. `grep -rn "except Exception" ja4plus/`
+  state why they stay wide** (#319). Round 133. `grep -rn "except Exception" ja4plus/`
   reads 14 sites across five files. **#319 is a reading of all fourteen, and it narrows
   the four that `CLAUDE.md` binds.** A parser that cannot read a packet returns nothing,
   and it does not raise. `decrypt_quic_initial_crypto`, `decrypt_quic_server_initial_crypto`
@@ -25,7 +25,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Each of those ten now carries a comment that states the reason.
 
 - **The QUIC frame reader returns the frames it read when a CRYPTO frame is truncated**
-  (#382, absorbed by #319). Round TBD. The CRYPTO branch of `parse_crypto_frames` read a
+  (#382, absorbed by #319). Round 133. The CRYPTO branch of `parse_crypto_frames` read a
   varint behind the frame type byte and guarded no index. A plaintext that ends on that
   byte made `_decode_varint` raise `IndexError`. **Two of the three callers call that
   reader outside their handler**, so the error reached the caller of a parser, which
@@ -37,7 +37,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   134 register keys.**
 
 - **JA4L emits one server value for one connection, and the six open JA4L register
-  entries now hold a live owner** (#272). Round TBD. `ja4plus/fingerprinters/ja4l.py`
+  entries now hold a live owner** (#272). Round 130. `ja4plus/fingerprinters/ja4l.py`
   returned the server value on every SYN-ACK, so a retransmitted SYN-ACK repeated the
   value the first SYN-ACK gave. A retransmitted SYN-ACK moves neither the server
   measurement point nor the server TTL, so the repeat described no second measurement.
@@ -52,7 +52,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   method. This project was never emitting more than the reference. The reference
   published nothing to compare. `tests/foxio_deviations.json` falls from 135 keys to
   134, and the conformance suite falls from 135 `xfailed` to 134.
-- **`ruff` enforces the F401 rule, and 54 unused imports are gone** (#297). Round TBD.
+- **`ruff` enforces the F401 rule, and 54 unused imports are gone** (#297). Round 131.
   `pyproject.toml` no longer holds `F401` in the `ignore` list of `[tool.ruff.lint]`.
   **Every count the issue recorded is stale.** The issue read 58 findings across 28
   files on `issue/47-py-typed` at `ruff 0.14.5`, and this round reads **54 findings
@@ -72,7 +72,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   93, and the missed line count stays at 287. **No fingerprint moves.**
 
 - **The lookup cache remembers no key it evicts, and it saves 16.06 MiB** (#359).
-  Round TBD. `StateTable` remembers the key of every entry it evicts, and that memory
+  Round 129. `StateTable` remembers the key of every entry it evicts, and that memory
   buys `returned_connections`. `Processor.stats` collects the state tables of the
   fingerprinters, and `JA4DBClient` is no fingerprinter, so nothing under `ja4plus/`
   reads the count for the lookup cache. `BoundedStateTable` now takes
@@ -92,7 +92,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - **Every entry of this file states the round its specification row states** (#302).
-  Round TBD. Eight entries read `Round TBD` while `docs/specs/spec.md` had already
+  Round 134. Eight entries read `Round TBD` while `docs/specs/spec.md` had already
   assigned their round. A reader who follows such an entry reaches nothing, and version
   1.0.0 is close. **Each entry names the round its row records, and this repair invents
   no number, adds no row and moves no number.** Three entries of Epic 4 name round 90,
@@ -120,7 +120,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4plus/` changes and no fingerprint moves.
 
 - **The marker rule states the decided-entry count the register holds, and a case
-  holds it there** (#345). Round `TBD`. The `## The marker rule` section of
+  holds it there** (#345). Round 132. The `## The marker rule` section of
   `tests/foxio_deviations.py` read `38 of the 128 decided entries`. The register holds
   134 decided entries of 134 keys, measured on the base commit `f238c15`. **The
   denominator went stale twice**, because nothing measured it. #341 found the first
@@ -133,7 +133,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Three mutations prove that it fails when the register moves and the prose does not,
   and each run restored the file it moved. No register entry changed, no file under
   `ja4plus/` changed, and no fingerprint moved.
-- **The `capability` field alone bars the rows of #129** (#347). Round `TBD`.
+- **The `capability` field alone bars the rows of #129** (#347). Round 127.
   #341 shipped the field on all 135 register entries and reported that it could not
   prove the one thing it exists for. **The bar stood twice**: once in the field, and once
   in an absent measurement. #334 measured the 35 source values of #129 and left them out
@@ -159,7 +159,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   under `ja4plus/` changes, no register entry changes, no fingerprint moves, and the
   register holds 135 keys against 135 xfailed.
 
-- **Every Changelog round number of the specification names one row** (#258). Round TBD.
+- **Every Changelog round number of the specification names one row** (#258). Round 128.
   `docs/specs/spec.md` carried the number 9 on two rows, and a round number is a citation
   target. **The two rows are not two rounds.** One row records the shipment of Epic 1
   batch 1, and it names #80 as a member. The other row details #80 on the same date.
@@ -189,6 +189,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fails on the base commit `8ef8acc` and passes after the removal. `ja4plus watch` is
   the supported monitor, and `docs/usage.md` documents it. No file under `ja4plus/`
   changes, no fingerprint moves, and the register holds 135 keys against 135 xfailed.
+- **The statistics interval cases state the schedule rather than sample it** (#369).
+  Round 125. `TheReporterWritesOneLinePerInterval` started the reporter at a 0.05 second
+  interval, slept a fraction of a second, and counted the lines that arrived. That count
+  measures how promptly the host schedules a thread. The `macos-latest, 3.12` job of the
+  run for `8ef8acc` read 2 lines where the case asked for 3, and `dev` went red on a
+  package that holds no defect. `StatisticsReporter` gains a `wait` parameter, which
+  receives the interval and returns True when the stop arrives. The default waits on the
+  stop event, and `ja4plus watch` passes no other call, so the shipped behaviour is
+  unchanged. Each case now drives the reporter from a scripted wait and reads an exact
+  line count. The class asserts the interval the reporter passed to the wait, which is
+  what FR-live-capture-9 states, and it sleeps not at all.
 
 - **The Zeek reference page reads the current comparison** (#327). Round 113.
   `docs/specs/foxio/zeek.md` read as though #214 were open, in three places. #214 made
@@ -217,7 +228,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- **The package states a memory ceiling of 512 MiB** (#279). Round TBD. One
+- **The package states a memory ceiling of 512 MiB** (#279). Round 126. One
   `Processor()` at the shipped defaults reads 1000000 packets across 100000 distinct
   connections and holds resident memory below 512 MiB. Four runs measured 383.47 MiB,
   388.25 MiB, 392.05 MiB and 394.94 MiB, and the highest is 77 percent of the ceiling.
