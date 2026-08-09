@@ -19,17 +19,17 @@ The cases below measure four things.
   module, so the case fails on a stale `.pyc` that still holds the old handler.
 - One case reaches each named error of each group 1 site. The case fails if the clause
   drops that name, because the error then leaves the reader.
-- Every group 1 reader returns nothing for input that reaches its handler, over more than
-  one input.
+- Every group 1 reader returns nothing and raises nothing for hostile input, over more
+  than one input.
 - A group 2 or group 3 caller returns rather than raises. #319 states the rule of each
   wide catch as a condition a case tests, because prose alone stated five earlier rules
   that no case measured.
 
-**Warning: the hostile-input case below reaches no code behind the decryption.** A random
-datagram never authenticates, so the AEAD rejects it first. #382 records one datagram that
-does authenticate and makes `decrypt_quic_initial_crypto` raise `IndexError` from a call
-that sits outside the handler. That defect predates #319 and the same datagram raises the
-same error against the base commit.
+**Warning: a random datagram never authenticates, so no fuzz reaches the code behind the
+decryption.** The Initial keys derive from the destination connection ID, and the datagram
+carries that value in the clear, so any sender builds a datagram that decrypts.
+`build_authenticating_initial` builds one, and the case that reads a truncated CRYPTO
+frame needs it. #382 reported the defect that case measures, and #319 repaired it.
 
 The three QUIC payloads are short and constructive. `_find_pn_offset` reads offset 9 for
 a header that names a zero-length connection ID, a zero-length source connection ID, a
@@ -52,6 +52,7 @@ from cryptography import x509
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.x509.oid import NameOID
 from scapy.all import IP, TCP
 
@@ -167,7 +168,7 @@ def test_the_quic_readers_return_nothing_and_raise_nothing_for_hostile_input():
 
     The case runs 6000 datagrams through the three readers. A clause that misses an error
     the reader meets turns this case red. **No datagram here authenticates**, so the case
-    measures the handler and not the code behind the decryption. #382 holds that path.
+    measures the handler alone. The case below reaches the code behind the decryption.
     """
     generator = random.Random(319)
     for _ in range(2000):
@@ -181,6 +182,111 @@ def test_the_quic_readers_return_nothing_and_raise_nothing_for_hostile_input():
         assert quic_utils.decrypt_quic_initial_crypto(datagram) == (None, None)
         assert quic_utils.decrypt_quic_server_initial_crypto(datagram, CLIENT_DCID) is None
         assert quic_utils.parse_quic_initial(datagram) is None
+
+
+def build_authenticating_initial(plaintext: bytes, server: bool = False) -> bytes:
+    """Return a QUIC version 1 Initial datagram that decrypts to the plaintext.
+
+    **A random datagram never authenticates, so no fuzz reaches the code behind the
+    decryption.** RFC 9001 Section 5.2 derives the Initial keys from the destination
+    connection ID, and the Initial packet carries that value in the clear. Any sender
+    therefore builds a datagram that decrypts, and a case must build one too.
+
+    Args:
+        plaintext: The QUIC frames the datagram carries.
+        server: True encrypts under the server key, and False under the client key.
+
+    Returns:
+        The bytes of one UDP payload.
+    """
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+    client_secret, server_secret = quic_utils.derive_initial_secrets(BUILDER_DCID, 1)
+    key, iv, hp_key = quic_utils.derive_key_iv_hp(server_secret if server else client_secret)
+
+    packet_number = 0
+    pn_length = 1
+    header = (
+        bytes([0xC0])
+        + struct.pack("!I", 1)
+        + bytes([len(BUILDER_DCID)])
+        + BUILDER_DCID
+        + bytes([0x00])  # The datagram names no source connection ID.
+        + bytes([0x00])  # The datagram carries no token.
+    )
+    # The Length field covers the packet number, the frames and the 16-byte AEAD tag.
+    header += struct.pack("!H", (pn_length + len(plaintext) + 16) | 0x4000)
+    pn_offset = len(header)
+    header += bytes([packet_number])
+
+    nonce = bytearray(iv)
+    number_bytes = packet_number.to_bytes(len(nonce), "big")
+    for i in range(len(nonce)):
+        nonce[i] ^= number_bytes[i]
+    datagram = bytearray(header + AESGCM(key).encrypt(bytes(nonce), plaintext, header))
+
+    # RFC 9001 Section 5.4.3 states AES-ECB for the header-protection mask.
+    sample = bytes(datagram[pn_offset + 4 : pn_offset + 20])
+    encryptor = Cipher(algorithms.AES(hp_key), modes.ECB()).encryptor()
+    mask = encryptor.update(sample) + encryptor.finalize()
+    datagram[0] ^= mask[0] & 0x0F
+    datagram[pn_offset] ^= mask[1]
+    return bytes(datagram)
+
+
+# The connection ID this builder names. Its 8 bytes make the datagram 76 bytes long,
+# which is the length #382 reports.
+BUILDER_DCID = b"\x01\x02\x03\x04\x05\x06\x07\x08"
+
+# 40 PADDING frames that the reader skips, then one CRYPTO frame type byte at the end.
+# The varint behind that byte needs a byte the plaintext does not hold. The padding also
+# makes the datagram long enough to carry a full 16-byte header-protection sample.
+TRUNCATED_CRYPTO_FRAME = b"\x00" * 40 + b"\x06"
+
+
+@pytest.fixture(scope="module")
+def truncated_crypto_datagrams() -> tuple[bytes, bytes]:
+    """Return the client datagram and the server datagram that end inside a CRYPTO frame."""
+    return (
+        build_authenticating_initial(TRUNCATED_CRYPTO_FRAME),
+        build_authenticating_initial(TRUNCATED_CRYPTO_FRAME, server=True),
+    )
+
+
+def test_the_quic_readers_return_nothing_for_a_datagram_that_ends_inside_a_crypto_frame(
+    truncated_crypto_datagrams,
+):
+    """A reader that cannot read a CRYPTO frame returns nothing, and it does not raise.
+
+    `CLAUDE.md` states the rule. The two decryption readers call `parse_crypto_frames`
+    outside their handler, so an error that call raises reaches the caller. The CRYPTO
+    branch of `parse_crypto_frames` reads a varint behind the frame type byte, and a
+    plaintext that ends on that byte leaves no byte for it.
+
+    **The datagram authenticates, so it reaches the code behind the decryption.** The
+    case fails if the CRYPTO branch drops its guard. #382 reported the defect and #319
+    repaired it.
+    """
+    client_datagram, server_datagram = truncated_crypto_datagrams
+
+    # The decryption succeeds, so the reader reaches the frame reader behind it.
+    assert len(client_datagram) == 76
+    with pytest.raises(IndexError):
+        quic_utils._decode_varint(b"")
+
+    assert quic_utils.decrypt_quic_initial_crypto(client_datagram) == ([], BUILDER_DCID)
+    assert quic_utils.decrypt_quic_server_initial_crypto(server_datagram, BUILDER_DCID) == []
+    assert quic_utils.parse_quic_initial(client_datagram) is None
+
+
+def test_the_frame_reader_returns_the_frames_it_read_before_a_truncated_one():
+    """`parse_crypto_frames` keeps every complete frame that comes before a truncated one.
+
+    The guard stops the read. It discards no fragment the reader already holds.
+    """
+    complete = b"\x06\x00\x04ABCD"
+    assert quic_utils.parse_crypto_frames(complete) == [(0, b"ABCD")]
+    assert quic_utils.parse_crypto_frames(complete + b"\x06") == [(0, b"ABCD")]
 
 
 def _self_signed_der() -> bytes:

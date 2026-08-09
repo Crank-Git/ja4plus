@@ -253,10 +253,18 @@ def parse_crypto_frames(plaintext: bytes) -> list[tuple[int, bytes]]:
 
         if frame_type == 0x06:  # CRYPTO
             pos += 1
-            offset, consumed = _decode_varint(plaintext[pos:])
-            pos += consumed
-            length, consumed = _decode_varint(plaintext[pos:])
-            pos += consumed
+            # `_decode_varint` reads `data[0]`, so a plaintext that ends on the frame type
+            # byte leaves it no byte and it raises `IndexError`. Two of the three callers
+            # of this reader call it outside their handler, so that error reached the
+            # caller of a parser. The ACK branch below holds the same guard. #382 reported
+            # the defect and #319 repaired it.
+            try:
+                offset, consumed = _decode_varint(plaintext[pos:])
+                pos += consumed
+                length, consumed = _decode_varint(plaintext[pos:])
+                pos += consumed
+            except (IndexError, ValueError):
+                break
             if pos + length > len(plaintext):
                 break
             fragments.append((offset, bytes(plaintext[pos : pos + length])))

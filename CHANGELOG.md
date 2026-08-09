@@ -22,12 +22,19 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ClientHello proves that `struct.error` reaches no site. **The three sites of
   `ja4plus/processor.py` hand each failure to the caller, and #45 decided that.** The five
   sites of `ja4plus/cli.py` and the two of `ja4plus/ja4db.py` report a failure and return.
-  Each of those ten now carries a comment that states the reason. **The self-review found
-  one defect that this round files and leaves, and #382 records it.**
-  `decrypt_quic_initial_crypto` calls `parse_crypto_frames` outside the handler, and that
-  call guards no index. The defect predates this round, and the same datagram raises the
-  same `IndexError` against the base commit. **No fingerprint moves, and the conformance
-  suite reports 134 xfailed against 134 register keys.**
+  Each of those ten now carries a comment that states the reason.
+
+- **The QUIC frame reader returns the frames it read when a CRYPTO frame is truncated**
+  (#382, absorbed by #319). Round TBD. The CRYPTO branch of `parse_crypto_frames` read a
+  varint behind the frame type byte and guarded no index. A plaintext that ends on that
+  byte made `_decode_varint` raise `IndexError`. **Two of the three callers call that
+  reader outside their handler**, so the error reached the caller of a parser, which
+  `CLAUDE.md` rule 2 forbids. **The defect is remotely triggerable by construction**,
+  because the Initial keys derive from the destination connection ID that the packet
+  carries in the clear. The branch now holds the guard its own ACK branch already used.
+  The defect predates #319, and the same datagram raises the same error against the base
+  commit. **No fingerprint moves, and the conformance suite reports 134 xfailed against
+  134 register keys.**
 
 - **JA4L emits one server value for one connection, and the six open JA4L register
   entries now hold a live owner** (#272). Round TBD. `ja4plus/fingerprinters/ja4l.py`
