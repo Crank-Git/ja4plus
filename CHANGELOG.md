@@ -8,7 +8,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- **The documentation states what a fingerprint is evidence of** (#343). Round TBD.
+- **The documentation states what a fingerprint is evidence of** (#343). Round 110.
   ja4plus adds no plausibility guard, so a structurally valid ClientHello produces a
   fingerprint whatever its body holds. This change records the behaviour and changes
   none of it, so no file under `ja4plus/` moves. A fingerprint is evidence of the bytes
