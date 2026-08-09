@@ -417,6 +417,18 @@ def _pinned_version(name: str) -> str:
     raise AssertionError(f"the docs extra pins no {name}: {docs}")
 
 
+def _version_tuple(version: str) -> tuple[int, ...]:
+    """Return one version as the integers a comparison reads.
+
+    Args:
+        version: The version, as `0.30.1`.
+
+    Returns:
+        The numbers of the version, in order.
+    """
+    return tuple(int(part) for part in re.findall(r"\d+", version))
+
+
 def test_the_mkdocstrings_pin_holds_the_handler_module_its_handler_imports() -> None:
     """An exact pin can still be an incompatible pin, and #391 records the instance.
 
@@ -429,15 +441,29 @@ def test_the_mkdocstrings_pin_holds_the_handler_module_its_handler_imports() -> 
     https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md, which lists
     `mkdocstrings.handlers` under the breaking changes of 1.0.0, retrieved 2026-08-09.
 
-    This case reads two pins as text. It proves no build. The `docs` job of
-    `.github/workflows/docs.yml` proves the build.
+    This case reads two pins as text. It proves no build. The `build` job of
+    `.github/workflows/docs-build.yml` proves the build.
     """
-    handler = _pinned_version("mkdocstrings-python")
-    generator = _pinned_version("mkdocstrings")
-    if handler.startswith("1."):
-        assert generator.startswith("0."), (
+    handler = _version_tuple(_pinned_version("mkdocstrings-python"))
+    generator = _version_tuple(_pinned_version("mkdocstrings"))
+    # **The bound belongs to the line of `mkdocstrings-python`, so an unmeasured line
+    # fails here rather than passing on an `if` that no longer fires.** A guard that a
+    # version bump switches off is the shape #391 exists to bar.
+    assert handler[0] in (1, 2), (
+        f"mkdocstrings-python {handler} is a line this case has not read; read the "
+        "changelog of the handler and state the bound it needs"
+    )
+    if handler[0] == 1:
+        assert generator < (1, 0), (
             f"mkdocstrings-python {handler} imports `mkdocstrings.handlers`, and "
             f"mkdocstrings {generator} removed it"
+        )
+    else:
+        # The 2.x handler imports from `mkdocstrings` directly and declares
+        # `mkdocstrings>=0.30`. The lower bound replaces the upper one.
+        assert generator >= (0, 30), (
+            f"mkdocstrings-python {handler} needs mkdocstrings 0.30 or later, and the "
+            f"extra pins {generator}"
         )
 
 
@@ -456,17 +482,30 @@ def test_a_continuous_integration_job_installs_the_documentation_pins_and_builds
     )
     assert "mkdocs build --strict" in text, f"{DOCS_WORKFLOW.name} runs no `mkdocs build --strict`"
     # The `dev` extra brings a second resolution into the environment, and the release
-    # installs no such set. A job that installs it measures the wrong artefact.
+    # installs no such set. A job that installs it measures the wrong artifact.
     assert "[dev" not in text, f"{DOCS_WORKFLOW.name} installs the dev extra beside the docs extra"
 
 
 def test_the_documentation_job_runs_when_a_pin_or_a_page_changes() -> None:
-    """A guard that no change starts is a guard that never runs.
+    """The path filter of the job covers each file that can break the build.
 
-    The pins live in `pyproject.toml`, the site configuration in `mkdocs.yml`, and the
+    A job that no change starts reports nothing. The pins live in `pyproject.toml`, the site configuration in `mkdocs.yml`, and the
     pages under `docs/`. A change to any one of the three can break the build.
+
+    **Each trigger carries its own filter, and this case reads each one.** A filter that
+    covers `push` alone leaves every pull request unguarded, and the pull request is where
+    the batch model reads the result.
     """
     assert DOCS_WORKFLOW.is_file(), f"{DOCS_WORKFLOW} holds no documentation job"
     text = DOCS_WORKFLOW.read_text(encoding="utf-8")
-    for path in ("pyproject.toml", "mkdocs.yml", "docs/**"):
-        assert f'"{path}"' in text, f"{DOCS_WORKFLOW.name} names no path filter for {path}"
+    # A block runs to the next trigger of the same indentation, or to the job list.
+    boundaries = ("\n  push:", "\n  pull_request:", "\n  workflow_dispatch:", "\njobs:")
+    for trigger in ("push:", "pull_request:"):
+        start = text.find(f"\n  {trigger}\n")
+        assert start != -1, f"{DOCS_WORKFLOW.name} carries no {trigger} trigger"
+        after = [text.find(boundary, start + 1) for boundary in boundaries]
+        block = text[start : min(position for position in after if position != -1)]
+        for path in ("pyproject.toml", "mkdocs.yml", "docs/**"):
+            assert f'"{path}"' in block, (
+                f"the {trigger} trigger of {DOCS_WORKFLOW.name} names no filter for {path}"
+            )

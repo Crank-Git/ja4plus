@@ -12,7 +12,7 @@ name: Documentation
 #
 # **Never add the `dev` extra to the install step.** It brings a second resolution into
 # the environment, the release installs no such set, and a job that installs it measures
-# the wrong artefact.
+# the wrong artifact.
 #
 # **This job publishes nothing.** #66 owns the publish workflow, so keep this one to an
 # install and a build.
@@ -45,8 +45,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Set up Python
-        # The `docs` extra needs Python 3.10 or later. `griffe` 2.1.0 requires it, and no
-        # user builds the site, so the package floor of Python 3.9 is not affected.
+        # The `docs` extra needs Python 3.10 or later, because `griffe` 2.1.0 requires it.
+        # The package floor of Python 3.9 stays, because no user builds the site.
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.13"
@@ -68,8 +68,11 @@ jobs:
         # A build that produces empty pages exits 0. `mkdocstrings` reads the docstrings
         # of the source, so this step reads two results back out of the generated HTML.
         run: |
-          grep -q "runs every JA4+ fingerprinter on each packet" \
-            site/reference/processor/index.html
+          if ! grep -q "runs every JA4+ fingerprinter on each packet" \
+            site/reference/processor/index.html; then
+            echo "::error::The Processor page carries no docstring text from the source."
+            exit 1
+          fi
           page=site/reference/fingerprinters/index.html
           missing=""
           for name in ja4 ja4d ja4d6 ja4h ja4l ja4s ja4ssh ja4t ja4ts ja4x; do

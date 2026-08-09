@@ -58,8 +58,8 @@ lookup = [
 # then fails the build with
 # `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. #391 records the
 # measurement. **An exact pin can still be an incompatible pin**, so
-# `.github/workflows/docs.yml` installs this list into an empty environment and builds
-# the site.
+# `.github/workflows/docs-build.yml` installs this list into an empty environment and
+# builds the site.
 #
 # The declared range does not carry the constraint: `mkdocstrings-python` 1.15.0 accepts
 # `mkdocstrings>=0.28` and `griffe>=0.49`, and 1.0.6 satisfies the first one. The upper

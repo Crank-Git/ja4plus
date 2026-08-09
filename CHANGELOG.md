@@ -120,13 +120,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `mkdocstrings` 1.0.0 removed it. The pin is now `mkdocstrings==0.30.1`, and no other
   version moves. **An exact pin can still be an incompatible pin**, which is why
   `test_every_documentation_dependency_pins_one_version` passed while the site did not
-  build. **Two records measured the wrong artefact.** #64 built the site inside a virtual
-  environment that an earlier resolution had already filled, and the gate then repeated
-  that measurement in the same environment. Nobody installed the committed set from
+  build. **Two records measured the wrong artifact.** #64 built the site inside a virtual
+  environment that an earlier resolution had already filled. The gate then repeated that
+  measurement in the same environment. Nobody installed the committed set from
   scratch. `.github/workflows/docs-build.yml` installs the `docs` extra alone into an
   empty environment, runs `mkdocs build --strict`, and reads the `Processor` docstring
   and the ten one-shot functions back out of the generated HTML. It runs on a change to
-  `pyproject.toml`, to `mkdocs.yml` or to `docs/`. **The job was measured red on
+  `pyproject.toml`, to `mkdocs.yml` or to `docs/`. **The steps of the job run red on
   `da2338d` and green on the repair**, on macOS with Python 3.11 and on Linux with Python
   3.12. `test_the_mkdocstrings_pin_holds_the_handler_module_its_handler_imports` states
   the upper bound as text, so a reader of `pyproject.toml` alone still sees it. No file
