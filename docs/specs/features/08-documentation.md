@@ -116,9 +116,14 @@ project writes no theme, so this feature set has no mockup.
 - The README stays the front door. It is short, and it links the site for detail.
 - The README states method coverage as a table with an implemented column, so that
   the reader can see the two gaps rather than infer them.
-- A code sample is tested by `pytest --doctest-glob`. A sample that cannot run in
-  continuous integration, because it needs a capture interface, is marked and
-  excluded, and the marker names the reason.
+- Warning: the `--doctest-glob` option collects an interactive session, written as
+  `>>>` lines above the expected output. Every code sample of this project is a
+  fenced code block, so that option collects nothing here. The samples stay fenced,
+  because a fenced block is what a reader copies.
+- `pytest tests/test_documentation_samples.py` runs every code sample of the README
+  and of `docs/`. A sample that cannot run in continuous integration, because it
+  needs a capture interface, carries a marker, and the marker names the reason.
+- `pytest tests/test_examples.py` runs every script of `examples/`.
 - An example script runs against a committed capture, not against a live
   interface.
 - The migration page lists a breaking change with the old form, the new form, and
@@ -156,7 +161,7 @@ and the repository must have GitHub Pages set to build from GitHub Actions.
 
 | Case | What happens |
 |---|---|
-| A code sample raises. | The doctest run fails and names the file and the line. |
+| A code sample raises. | The harness case fails and names the file and the line. |
 | A sample needs a capture interface. | It is marked as not runnable, and the marker names the reason. |
 | An internal link points at a page that does not exist. | `mkdocs build --strict` fails. |
 | An example script needs a capture that is not committed. | The example test skips and names the missing capture. |
@@ -172,7 +177,7 @@ and the repository must have GitHub Pages set to build from GitHub Actions.
       between threads.
 - [ ] The README states the default maximum connection count and the default
       maximum connection age.
-- [ ] `pytest --doctest-glob="*.md" README.md docs/` passes.
+- [ ] `pytest tests/test_documentation_samples.py` passes.
 - [ ] `pytest tests/test_examples.py` runs every script in `examples/` and passes.
 - [ ] `mkdocs build --strict` succeeds.
 - [ ] The documentation workflow publishes the site on a push to the live branch.
