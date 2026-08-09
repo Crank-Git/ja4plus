@@ -24,7 +24,11 @@ measurement before the publish.
 2. **Every Linux result comes from a continuous-integration runner.** The development
    host is macOS. The user granted one Linux host on 2026-08-09, and no run has used it.
 3. **The mutation sweep names 976 candidates, and #172 settled two of them.** #206
-   records the count, and `docs/mutation_sweep.md` states it in the `Candidates` row.
+   records the count, and the report of 2026-08-07 states it in the `Candidates` row.
+   **That count is stale, and no later count replaces it here.** It comes from one sweep
+   of the whole package, against a commit that `dev` no longer holds. #412, #413 and #414
+   each run one sweep and write one report under `docs/mutation_reports/`, and the union
+   of those reports carries the count this epic settles.
 4. **The package states no throughput.** `Non-goals` of `docs/specs/spec.md` states that
    this project measures throughput and reports it.
    `docs/specs/features/03-concurrency-safety.md` states the memory ceiling, and that
@@ -91,19 +95,28 @@ no `ubuntu-latest` result.
 FR-pre-release-validation-15 — Every record of a Linux gate states that the host measures
 `python3.12` alone.
 
-FR-pre-release-validation-16 — One sweep applies every mutation of every module that
-`git ls-files 'ja4plus/**/*.py'` lists.
+FR-pre-release-validation-16 — The sweeps together apply every mutation of every module
+that `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` lists. One sweep for each module group
+satisfies this, and one sweep of the whole package satisfies it too.
 
-FR-pre-release-validation-17 — `docs/mutation_sweep.md` states the commit the sweep read.
+FR-pre-release-validation-16a — A case fails when the module list one sweep reads differs
+from the tracked Python files of `ja4plus/`. **Never write `git ls-files
+'ja4plus/**/*.py'`.** Git reads `**` in a pathspec as one or more directories. That
+pattern therefore lists 24 files where the package holds 31. It drops every module of the
+top directory of the package.
+
+FR-pre-release-validation-17 — The report of each sweep states the commit the sweep read.
 
 FR-pre-release-validation-18 — That commit is an ancestor of the head of the branch under
 test.
 
-FR-pre-release-validation-19 — `tests/mutation_census.py` reads the JSON report of the
+FR-pre-release-validation-19 — `tests/mutation_census.py` reads the JSON report of each
 sweep, and it opens no Markdown file.
 
 FR-pre-release-validation-20 — `tests/test_mutation_census.py` fails when the candidate
-count of one module group changes by one.
+count of one test file changes by one. **A candidate is keyed by the sweep that named it
+and by the case**, because two sweeps may name the same case and that is one candidate for
+each sweep.
 
 FR-pre-release-validation-21 — `docs/mutation_settlements/` holds one settlement record
 for each module group.
@@ -179,7 +192,7 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 | Screen | Purpose | States |
 |---|---|---|
 | Gate summary line | Report the result of one gate run. | Passed; failed at a named case. |
-| `docs/mutation_sweep.md` | Report every mutation and every candidate of one sweep. | Sampled at 12 mutations for each module; applied whole. |
+| `docs/mutation_reports/` | Report every mutation and every candidate of one sweep. | One report for each module group; each one applied whole. |
 | `docs/mutation_settlements/` | Report the verdict of each candidate. | `repaired` with the case name; `correct` with the reason. |
 | `docs/performance.md` | Report the throughput of each named packet run. | One row for each host, each Python version and each commit. |
 | #410 | Hold the verbatim transcript of the Linux gates. | Recorded with the caveat; not yet run. |
@@ -201,6 +214,20 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
   test file at `tests/mutation_sweep.py:396`. A candidate survives every mutation of
   every swept module, so no module owns it. A count for one module comes from a sweep
   that names that module alone.
+- **The union of the per-module sweeps is larger than the candidate set of one
+  whole-package sweep, and the union is the correct input for settlement.** A
+  whole-package sweep names the cases that no mutation of any module kills. A sweep of
+  module X names the cases that no mutation of X kills, and a case that module Y kills
+  still reaches that list. So a case can be a candidate of the sweep of X and reach no
+  list of the whole-package sweep. **A reader who compares the two counts reads a
+  regression that did not happen.** #411 measured the whole-package run at 71.6 hours and
+  the project manager partitioned it on 2026-08-09, so the union is the set this project
+  settles.
+- **The partitioned sweep is the method this project already documents.**
+  `tests/mutation_sweep.py:340` directs a reader to settle a case with
+  `--max-per-module 0 --tests tests/<file>.py`, and `tests/mutation_sweep.py:482` runs the
+  whole suite for each mutation when `--tests` names nothing. A sweep scoped to the test
+  files that read one module therefore runs a small suite for each mutation.
 - A checkpoint belongs to one commit, because it keys each result on the position of the
   expression in the file. A worker deletes the checkpoint file before the first sweep of
   a new commit.
@@ -233,8 +260,10 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 - New file `tests/test_throughput.py`.
 - New file `tests/test_specification_terms.py`.
 - New directory `docs/mutation_settlements/`, with one record for each module group.
+- New directory `docs/mutation_reports/`, with one JSON report for each sweep.
 - New file `docs/performance.md`.
-- Changed file `docs/mutation_sweep.md`, and the JSON report beside it.
+- Changed file `.claude/rules/conformance.md`, which carries the measured cost of one
+  sweep and the census schema.
 - Changed file `pyproject.toml`, which gains the `installed_wheel` marker.
 - Changed file `.github/workflows/test.yml`, which gains the `installed-wheel` job.
 - Changed file `docs/specs/spec.md`.
@@ -295,8 +324,10 @@ the checkout is.
       `pytest tests/ -m "not spec_validation"` reports 0 failed.
 - [ ] #410 holds the caveat, and it states that `python3.12` is the only version the host
       measured.
-- [ ] `mutation_sweep.json` holds one `modules` entry for every file that
-      `git ls-files 'ja4plus/**/*.py'` lists.
+- [ ] The reports of `docs/mutation_reports/` together hold one `modules` entry for every
+      file that `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` lists.
+- [ ] One case fails when the module list one sweep reads differs from the tracked Python
+      files of `ja4plus/`, so no writer reintroduces the `**` pathspec in silence.
 - [ ] `tests/test_mutation_census.py` reports 0 unsettled candidates for every module of
       `ja4plus/utils/`, `ja4plus/fingerprinters/` and the interface modules.
 - [ ] Each settlement record holds one row for each candidate, and the row count equals
@@ -332,13 +363,11 @@ the checkout is.
 
 ## Open questions
 
-- Whether `tests/mutation_sweep.py` writes a commit field.
-  `FR-pre-release-validation-17` asks `docs/mutation_sweep.md` to state the commit, and
-  the report of 2026-08-07 holds a `Date` field and no commit field. #411 adds the field
-  or states why the commit belongs elsewhere.
-- Whether the acceptance criteria of #411 can group the `candidates` key by module.
-  `tests/mutation_sweep.py:396` groups that key by test file, and a candidate survives
-  every mutation of every swept module. #411 decides whether the census reads one
-  per-module sweep for each module group instead.
+- ~~Whether `tests/mutation_sweep.py` writes a commit field.~~ **Settled by #411 on
+  2026-08-09.** The sweep writes a `commit` key and a `Commit` row, read from
+  `git rev-parse HEAD` before the first mutation lands.
+- ~~Whether the acceptance criteria of #411 can group the `candidates` key by module.~~
+  **Settled by #411 on 2026-08-09.** The census groups by test file, and the sweep is
+  partitioned into one sweep for each module group.
 - Which checkout path the granted Linux host holds. `.issue-flow.json` records none, and
   #410 states it after the first run.
