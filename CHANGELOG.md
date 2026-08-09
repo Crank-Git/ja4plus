@@ -28,6 +28,25 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Every Changelog round number of the specification names one row** (#258). Round TBD.
+  `docs/specs/spec.md` carried the number 9 on two rows, and a round number is a citation
+  target. The two rows are not two rounds: one records the shipment of Epic 1 batch 1 and
+  names #80 as a member, and the other details #80 on the same date. **The repair folds
+  the detail row into the shipment row and renumbers no row.** Every sentence of the
+  folded row is preserved. **A round number is an identifier and not an ordering, and the
+  date column carries the order.** Rounds 10 through 124 are all taken, so the repeated
+  number has no free neighbour, and shifting the rows above it would invalidate every
+  citation of a round number. Those citations are load-bearing: round 67 holds the #226
+  part e decision and is cited from #215 and #226. **Three premises of the issue were
+  stale, and this round re-measured all three.** The ruling named `spec.md:542` and
+  `:546`, and the rows were at 569 and 573. The ruling named 88 as the highest round, and
+  the highest was 124. The ruling searched `[Rr]ound 9\b` and found no citation, and that
+  pattern misses the one citation that exists: round 12 closed with "The rounds below hold
+  two entries numbered 9", which the fold makes false, so round 12 now records the repair.
+  `tests/test_specification_changelog.py` holds the invariant, and both of its cases fail
+  when the duplicate returns. No file under `ja4plus/` changes, no fingerprint moves, and
+  the register holds 135 keys against 135 xfailed.
+
 - **The example that a merge restored is absent again** (#368). Round 124.
   #56 removed `examples/monitoring_daemon.py` and added
   `tests/test_watch_capture.py::TheExampleDaemonIsAbsent`, which asserts that the file
