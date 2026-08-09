@@ -59,6 +59,37 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The record names the two breaking changes it never captured** (#395). Round TBD.
+  #65 found both gaps while it wrote `docs/migration-0.6-to-1.0.md`, and it stated each one
+  in a row rather than hide it. This round records them. **The removal of
+  `ja4plus.collector` now holds an entry of this file under round 71**, which
+  `docs/specs/spec.md` already carried. **The move of the Python floor holds the new round
+  135 in both files**, because neither file recorded it. **A comparison between two records
+  finds no change that is absent from both sides.** #302 holds `CHANGELOG.md` and
+  `docs/specs/spec.md` to the same round for every entry that exists in both. The two files
+  recorded the Python floor nowhere, so they agreed and both were wrong. **New file
+  `tests/test_breaking_change_record.py` compares the record against the package instead.**
+  It holds the 25 modules of version 0.6.0, which `git ls-tree -r --name-only v0.6.0
+  ja4plus/` reports, and it reads each one with `importlib.util.find_spec`.
+  `ja4plus.collector` is the one module the package drops. It reads `requires-python` out
+  of `pyproject.toml`, and it requires both files to name the value. **Three of the six
+  cases failed on the unchanged branch and three passed.** Two mutations prove the cases
+  discriminate: a floor of `>=3.10` fails the two floor cases, and `ja4plus/collector.py`
+  restored from the tag fails `test_a_removed_module_reaches_no_importer`. **A sweep of `v0.6.0..HEAD` found no
+  third gap**, and the pull request holds the whole table. **No file under `ja4plus/`
+  changes and no fingerprint moves.**
+
+- **BREAKING — `requires-python` moves from `>=3.8` to `>=3.9`** (#76). Round 135.
+  **This entry is the record that was missing.** Commit `02ee772` raised the floor on
+  2026-08-06, and no round recorded the move. Round 4 covers Epic 0 and it names #27 alone.
+  Python 3.8 reached its end of life in October 2024. **A user on Python 3.8 cannot install
+  version 1.0.0**, because `pip` reads `requires-python` and refuses the distribution. The
+  `Programming Language :: Python :: 3.8` classifier left `pyproject.toml` in the same
+  commit, and `README.md` states the same floor. Continuous integration runs Python 3.9
+  through Python 3.13. #65 found the gap while it wrote `docs/migration-0.6-to-1.0.md`, and
+  #395 records it here. `tests/test_breaking_change_record.py` reads the value of
+  `requires-python` and requires both files to name it.
+
 - **The README states eleven of the twelve FoxIO methods, the two contracts and the four
   default bounds** (#62). Round TBD. The README claimed "all ten JA4+ methods". FoxIO
   publishes twelve, and `technical_details/README.md:5-16` at the pinned commit lists
@@ -1008,6 +1039,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   equals the reference.
 
 ### Removed
+
+- **BREAKING — the `ja4plus.collector` module leaves the package** (#191). Round 71.
+  **This entry is the record that was missing.** #191 removed `ja4plus/collector.py` on
+  2026-08-08, and round 71 of `docs/specs/spec.md` recorded it. This file named the module
+  nowhere, so a reader who works from the Changelog alone met no removal. #65 found the
+  gap while it wrote `docs/migration-0.6-to-1.0.md`, and #395 records it here. **No new
+  round records the removal**, because round 71 already records it, and a second round
+  would give one change two citation targets. `import ja4plus.collector` raises
+  `ModuleNotFoundError`. The module held module-level state that grew without a bound, and
+  it carried its own removal notice for version 0.4.0. Use `Processor` instead.
+  `tests/test_breaking_change_record.py` reads the 25 modules of version 0.6.0 against the
+  package, so a later removal that no round records fails a case.
 
 - **Four X.509 helpers leave `ja4plus/utils/x509_utils.py`** (#314). Round 99. The
   user decided on 2026-08-08 that `extract_certificate_info` leaves the package before
