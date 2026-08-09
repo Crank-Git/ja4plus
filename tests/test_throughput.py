@@ -9,7 +9,9 @@ close the three ways this measurement fails while it still reports a number.
 1. **The packet count control.** A run that feeds fewer packets than the case states
    reads a shorter elapsed time. The rate then describes a run nobody asked for.
 2. **The work control.** Twice the packets must report a longer elapsed time. A
-   measurement that reads the process start rather than the traffic does not rise.
+   measurement that reads the process start rather than the traffic does not rise. The
+   control takes several runs of each count and reads the fastest of them, because a
+   loaded host adds seconds to one run and states nothing about the package.
 3. **The result control.** A processor that produces no fingerprint reads the highest
    rate of all, because it does no work.
 
@@ -70,14 +72,30 @@ def run_packets(packets):
 
 THROUGHPUT_RUN_PACKETS = run_packets(THROUGHPUT_PACKETS)
 
-# The packets the work control feeds. The rounding above applies to this run too, so a
-# doubled ask is not always a doubled run, and the case reads this count rather than
-# twice the first one.
-DOUBLE_RUN_PACKETS = run_packets(2 * THROUGHPUT_PACKETS)
+# The packets the work control feeds, and the packets its second run feeds. The control
+# states that the elapsed time rises with the traffic. That statement holds at any count,
+# so the control reads a count of its own far below the published run. Two reasons fix the
+# count here rather than reading `THROUGHPUT_PACKETS`. A reader who raises the published
+# count pays nothing for this control. A reader of a failure reads the same two counts on
+# every host. The rounding above applies to each run, so a doubled ask is not always a
+# doubled run. The cases therefore read these counts rather than twice the ask.
+WORK_CONTROL_PACKETS = 1000
+WORK_CONTROL_RUN_PACKETS = run_packets(WORK_CONTROL_PACKETS)
+WORK_CONTROL_DOUBLE_PACKETS = run_packets(2 * WORK_CONTROL_PACKETS)
+
+# The runs the work control takes of each count. **A loaded host adds seconds to a run and
+# removes none**, so the fastest of several runs describes the traffic and the slowest
+# describes the load. The control reads the fastest run of each count, and it then states
+# the rise the traffic causes. #430 records the failure this repairs. One run of the
+# shorter count landed beside a mutation sweep, and it read longer than the run of the
+# doubled count. **Three runs of each count hold a margin of 22% under a load average of
+# 20 on a ten-core laptop.** One reading pair of the nine inverted in that measurement, so
+# the earlier form of this control failed there and this form passed.
+WORK_CONTROL_RUNS = 3
 
 # The seconds one measurement may take. #279 read 481 seconds for 1000000 packets on a
 # ten-core laptop, so the limit holds about four times that rate. The work control feeds
-# twice the packets, so its own run reads twice this allowance.
+# 2000 packets at most, so this allowance covers each of its runs many times over.
 THROUGHPUT_TIMEOUT = 120 + THROUGHPUT_PACKETS // 500
 
 # The share by which the reported rate may differ from the rate the caller computes.
@@ -153,9 +171,23 @@ def measurement():
 
 
 @pytest.fixture(scope="module")
-def double_measurement():
-    """Return the measurement of the same run at twice the packets."""
-    return measure_throughput(2 * THROUGHPUT_PACKETS, timeout=2 * THROUGHPUT_TIMEOUT)
+def fastest_runs():
+    """Return the fastest run of each count the work control feeds.
+
+    The fixture takes `WORK_CONTROL_RUNS` runs of each count and keeps the run that read
+    the shortest elapsed time. Load adds seconds to a run and removes none, so the kept
+    run is the one that the load of the host moved least.
+
+    Returns:
+        A dict that maps the packets one run asks for to the fastest measurement of that
+        ask. The fed count is a field of the measurement, because the run rounds the ask
+        up to a whole connection.
+    """
+    fastest = {}
+    for packets in (WORK_CONTROL_PACKETS, 2 * WORK_CONTROL_PACKETS):
+        runs = [measure_throughput(packets) for _ in range(WORK_CONTROL_RUNS)]
+        fastest[packets] = min(runs, key=lambda run: run["elapsed_seconds"])
+    return fastest
 
 
 @pytest.fixture(scope="module")
@@ -201,16 +233,35 @@ class TestThePacketCountControl:
 
 
 class TestTheWorkControl:
-    """Twice the packets reports a longer elapsed time."""
+    """Twice the packets reports a longer elapsed time.
 
-    def test_the_double_run_feeds_more_packets_than_the_first(
-        self, measurement, double_measurement
-    ):
-        assert double_measurement["packets"] == DOUBLE_RUN_PACKETS
-        assert DOUBLE_RUN_PACKETS > measurement["packets"]
+    The control compares the fastest run of each count. It states no tolerance: the
+    doubled run must read a longer elapsed time than the shorter one. A clock that reads
+    the process start rather than the traffic reads the same time at both counts, and
+    this control then fails.
 
-    def test_the_double_run_reports_a_longer_elapsed_time(self, measurement, double_measurement):
-        assert double_measurement["elapsed_seconds"] > measurement["elapsed_seconds"]
+    **The control reads a rise and it reads no slope.** A clock whose reading carries a
+    large constant and a small share of the traffic still rises, so this control passes
+    it. A floor on the ratio of the two readings would fail such a clock, and #430
+    declined one. The two fastest runs read a ratio of 1.219 under a load average of 20 on
+    this ten-core laptop, against 1.96 on a quiet host, so a floor of 1.5 fails there.
+    That floor would trade this defect for a flaky case, and the flaky case is the defect
+    #430 repairs. **`WORK_CONTROL_RUNS` is the knob a later flake turns.** Each added run
+    lowers the fastest reading of both counts toward the reading of a quiet host, so it
+    widens the margin this comparison holds.
+    """
+
+    def test_the_double_run_feeds_more_packets_than_the_first(self, fastest_runs):
+        single = fastest_runs[WORK_CONTROL_PACKETS]
+        double = fastest_runs[2 * WORK_CONTROL_PACKETS]
+        assert single["packets"] == WORK_CONTROL_RUN_PACKETS
+        assert double["packets"] == WORK_CONTROL_DOUBLE_PACKETS
+        assert double["packets"] > single["packets"]
+
+    def test_the_double_run_reports_a_longer_elapsed_time(self, fastest_runs):
+        single = fastest_runs[WORK_CONTROL_PACKETS]
+        double = fastest_runs[2 * WORK_CONTROL_PACKETS]
+        assert double["elapsed_seconds"] > single["elapsed_seconds"]
 
 
 class TestTheResultControl:

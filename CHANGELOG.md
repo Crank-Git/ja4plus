@@ -73,6 +73,41 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **A change set that records no round fails a case** (#429). Round 156. New file
+  `tests/test_round_entry_existence.py` reads the change set of the branch and requires one
+  new round entry in `CHANGELOG.md` and one new Changelog row in `docs/specs/spec.md`. The
+  three cases of `tests/test_changelog_round_agreement.py` hold the two records against
+  each other, and **two absent records agree**, so all three passed the change set of #412:
+  eleven sweeps, two repairs, a new test file, no entry and no row. The project manager
+  read the diff at the merge gate and caught it, and that is not a check. **The reference
+  point is the merge base of `HEAD` and the integration branch**, which `git merge-base`
+  reads against `origin/dev` and then `dev`. The change set joins two readings:
+  `git diff --name-only <merge base>`, which reports an uncommitted change to a tracked
+  file, and `git ls-files --others --exclude-standard`, which reports the new file that
+  #412 shipped. A change set of `CHANGELOG.md` and `docs/specs/spec.md` alone demands no
+  entry, because the round assignment of the project manager edits those two files alone.
+  **The case counts an unassigned entry and a numbered entry alike**, because the project
+  manager assigns the number at the batch gate on one batch and hands the number to the
+  worker on another, and a case that demanded `TBD` would fail on the second. **Where the
+  change set cannot be read, the case skips and the reason names the state.** A shallow
+  clone carries no `origin/dev` ref, and the `actions/checkout` step of
+  `.github/workflows/test.yml` makes such a clone, so the case skips on the GitHub runner
+  and runs on the local gate of a worker. #438 owns the ref the runner needs. **The case
+  was proved in both directions on this repository.** With this entry absent it reported
+  `the change set holds these paths outside the two records: tests/test_round_entry_existence.py. CHANGELOG.md holds 68 round entries against 68 at the reference commit`,
+  and with this entry and its row present it passed. **One case reads the change set of
+  #412 itself.** It reads commit `46aa502` against its parent and reports
+  `the change set holds these paths outside the two records: .claude/rules/conformance.md, docs/mutation_reports/412-utils.json, docs/mutation_settlements/412-utils.json and 3 more. CHANGELOG.md holds 64 round entries against 64 at the reference commit`,
+  so the new case fails the change set the whole unit gate passed. Thirteen more cases build
+  a scratch repository with `git init` and prove the same pair over a committed change, an
+  uncommitted change, an entry that reaches one record alone, a change set of each record
+  alone, a file an ignore rule covers, a repository that holds no integration branch and a
+  directory that holds no repository.
+  **A case here cannot test that an entry is true**, only that one exists. Three more
+  limits reach the docstring of the module, and the widest one is that the count reads the
+  whole branch, so an integration branch whose members each recorded a round satisfies a
+  member that recorded none. No file under `ja4plus/` changes, no fingerprint moves, and
+  the register holds 134 keys against 134 xfailed.
 - **The package states a measured packet throughput** (#415). Round 151. New file
   `tests/throughput_run.py` feeds one `Processor` a stated packet run in an interpreter of
   its own. It writes one JSON object, and the object holds `packets`, `connections`,
@@ -469,6 +504,91 @@ holds every breaking change of this record against a row of that page.
   No file under `ja4plus/` changes and no fingerprint moves.
 
 ### Fixed
+
+- **Two timing cases read the work performed rather than the seconds elapsed** (#430).
+  Round 158. Both cases compared wall-clock durations. Each one reported the load of the
+  host beside the state of the package. #412 met both of them failing beside a mutation
+  sweep.
+  `tests/test_tcp_stream.py::TestTCPStreamReassembler::test_the_cost_of_a_segment_does_not_grow_with_the_segment_count`
+  compared `elapsed(20000)` against `elapsed(5000) * 8`. **That case also passed the
+  defect it exists to catch.** `DEFAULT_MAX_STREAM_SEGMENTS` stores 4096 segments and
+  refuses the rest. Both readings therefore stopped at the same 4096 stored segments. A
+  duplicate check that scans the stored segments read a ratio of 5.975 against the
+  threshold of 8. The case now holds no clock. It raises the segment cap to the count it
+  feeds. It counts the reads of the stored segments through a `CountingSegmentList`. The
+  set of seen segments reads 0.0 segments for each segment at 5000 and at 20000. The scan
+  reads 2499.5 and 9999.5. The bound is 4.
+  `tests/test_throughput.py::TestTheWorkControl` keeps its clock, because the rise of the
+  elapsed time is the property the control exists to prove. It now feeds 1000 packets and
+  then 2000, three runs of each count. It compares the fastest run of one count against
+  the fastest run of the other. A loaded host adds seconds to a run and removes none, so
+  the fastest run of a count is the run the load moved least. The control states no
+  tolerance. A runner that writes a constant elapsed time still fails it with
+  `assert 1.0 > 1.0`. **A floor on the ratio of the two readings is declined.** The two
+  fastest runs read a ratio of 1.219 under a load average of 20 on a ten-core laptop,
+  against 1.96 on a quiet host, so a floor of 1.5 fails there. **A deliberate load
+  reproduced the failure of #412.** One reading pair of the nine inverted, at 0.8261
+  seconds for 1000 packets against 0.7926 for 2000, and the fastest runs kept the order.
+  The 20000-packet run of the earlier form leaves the unit suite. No file under
+  `ja4plus/` changes and no fingerprint moves.
+- **The periodic statistics case states the schedule rather than samples it** (#371).
+  Round 157.
+  `tests/test_watch_statistics.py::TheStatisticsGoToStandardError::test_the_periodic_line_reaches_standard_error`
+  ran `ja4plus watch` with `--stats-interval 0.05`, slept 0.3 seconds inside the capture,
+  and asserted that at least 2 statistics lines reached standard error. That count measures
+  how promptly the host schedules a thread, which is the fault #369 repaired inside
+  `TheReporterWritesOneLinePerInterval`. **#369 could not reach this case with the seam it
+  added**, because the case builds no reporter and reaches the reporter through
+  `cmd_watch`. `report_statistics` now carries the same `wait` parameter and forwards it to
+  `StatisticsReporter`. `ja4plus/cli.py` passes nothing, so the default still waits on the
+  stop event and the shipped behaviour is unchanged. The case drives the command through
+  `ScriptedReport`, which records the interval and the stream `cmd_watch` passed and carries
+  a scripted wait to the reporter. It asserts an exact count of four statistics lines, three
+  periodic and one exit summary, where the earlier form asserted a lower bound. It also
+  asserts that the interval reaches the wait unchanged, and that the stream is standard
+  error. The case therefore proves more of FR-live-capture-9 and FR-live-capture-10 than the
+  earlier form proved, and it holds no sleep. **The repair keeps the one argument that
+  carries a unique mutation kill.** The sweep of #414 recorded the mutation `0` to `1` at
+  `ja4plus/cli.py:871` as killed, at a killed count of 1, and it named this case as the
+  sample. That guard reads `seconds <= 0`, and `--stats-interval 0.05` is the one interval
+  below one that any case of the suite passes. The repair therefore holds that argument.
+- **Four more cases read ambient host state under no guard** (#426). Round 159. The sweep
+  of #424 read all 154 files under `tests/` and found four cases of the shape it repaired.
+  This round guards all four, and it deletes none of them. **Each case states a real
+  requirement, so a guard skips where the host cannot answer and the reason names the
+  state.** `the_filter_failure` of `tests/test_watch_capture.py` calls `compile_filter`,
+  and `scapy` 2.7.0 raises `ImportError("libpcap is not available. Cannot compile filter !")`
+  at `scapy/arch/common.py:87` where the loader cannot open `libpcap`. The call caught
+  `Scapy_Exception` alone, so a host without `libpcap` ended four cases with an error
+  rather than with a failure. A minimal Linux container is such a host. The helper now
+  returns `None` there, and `the_filter_failure_or_skip` skips the four cases that read it.
+  `the_absent_interface_failure` raised `AssertionError` where the host holds an interface
+  named `nosuchif0`, and it now returns `None` and skips the four cases that read it.
+  `test_the_interface_list_of_this_host_holds_a_name` required this host to hold one
+  interface, and it now skips where the capture layer reports none.
+  `test_three_hundred_calls_hold_the_open_descriptor_count` of `tests/test_watch_stop.py`
+  read `os.listdir("/dev/fd")` under no platform guard, and Windows holds no such
+  directory; `the_open_descriptor_count` now returns `None` there and the case skips.
+  **A guard proved in one direction can skip on every host, and a case that always skips
+  measures nothing.** Three new classes therefore run the guarded cases themselves and read
+  both directions: `TheFilterCasesGuardOnTheAmbientLibpcap`,
+  `TheAbsentInterfaceCasesGuardOnTheNameTheHostHolds` and
+  `TheInterfaceListCaseGuardsOnTheListTheHostReports`, beside
+  `TheDescriptorCountCaseGuardsOnTheDirectoryItReads` of `tests/test_watch_stop.py`.
+  **The `libpcap` direction reaches the real `scapy` translation and no stand-in.** A
+  finder on `sys.meta_path` raises `OSError` from the import of `scapy.libs.winpcapy`,
+  which is the failure the loader reports, and `scapy` raises the `ImportError` itself.
+  **Every run-direction prover reads the ambient state by a route that passes the guard
+  it proves.** The first form read the state through the guard. A mutation that made the
+  guard skip always then made the prover skip as well, so it measured nothing. The mutation
+  now turns four subtests red. **The count case carried a second defect and this
+  round repairs it too.** The reading covers every descriptor of the process, so another
+  part of the run that opens one moved it, and the case compared for equality.
+  `DESCRIPTOR_TOLERANCE` is 16 against the 600 descriptors the leak opens over 300 calls.
+  `test_the_case_fails_where_the_monitor_leaks_a_descriptor_for_each_call` opens one
+  descriptor inside each capture call and requires the count case to fail. **The tolerance
+  states one limit.** A leak below it passes where the equality failed, and the case states
+  that trade. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The capture privilege case read a host that grants the privilege** (#424). Round 152.
   `tests/test_watch_capture.py::TheCommandNamesTheCapturePrivilege::test_the_message_reads_the_failure_this_host_reports`

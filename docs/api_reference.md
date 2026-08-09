@@ -717,7 +717,7 @@ starts, and `report_statistics` starts it only when the caller states an interva
 | `format_statistics(snapshot)` | Return the statistics line of one snapshot |
 | `write_statistics(stats, stream)` | Write one statistics line, and flush the stream |
 | `StatisticsReporter(stats, interval, stream, wait)` | The thread that writes a statistics line on a schedule |
-| `report_statistics(stats, interval, stream)` | Yield the reporter, and stop it when the body returns |
+| `report_statistics(stats, interval, stream, wait)` | Yield the reporter, and stop it when the body returns |
 
 The capture thread writes the counts and the statistics thread reads them. Every write
 and every read holds one lock, so a reader reads the counts of one instant. The capture
@@ -733,6 +733,11 @@ returns True when the stop arrives, which matches `threading.Event.wait`. The de
 waits on the stop event, and `ja4plus watch` passes no other call. A test passes its own
 call and reads an exact line count, rather than count the lines a loaded host delivered.
 Issue #369 added the parameter.
+
+`report_statistics` carries the same parameter, and it forwards the call to the reporter.
+A test that reaches the reporter through `cmd_watch` builds no reporter of its own. The
+seam of `StatisticsReporter` alone therefore left that test on the wall clock. Issue #371
+added the parameter.
 
 `SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
 The handler sets the stop request and returns. It calls `sys.exit` never, because a

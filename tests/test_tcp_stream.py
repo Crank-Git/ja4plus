@@ -10,6 +10,51 @@ VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 # boundary, so a reassembler that compares raw numbers orders these segments backwards.
 WRAP_SEQ = 0xFFFFFFFE
 
+# The reads of the stored segments that `add_segment` may take for each segment it adds.
+# The current duplicate check reads none, and a check that peeks at one neighbour reads
+# one. A scan of the stored segments reads half the stored count for each segment, which
+# is 2499.5 at 5000 segments and 9999.5 at 20000. The bound therefore sits far below the
+# scan at either count, and it needs no clock.
+SEGMENT_READS_PER_SEGMENT = 4
+
+
+class CountingSegmentList(list):
+    """A segment list that counts every read of a stored segment.
+
+    `add_segment` refuses a duplicate segment. A check that scans the stored segments
+    reads one stored segment for each one it holds, so the count rises with the segment
+    count. A check against the set of seen segments reads none. The count therefore
+    states the cost of one segment as work performed, and a loaded host moves no
+    reading of it.
+    """
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.reads = 0
+
+    def __iter__(self):
+        # A scan that stops early reads fewer segments than this count states, so the
+        # count is an upper bound on the reads of one iteration.
+        self.reads += len(self)
+        return super().__iter__()
+
+    def __getitem__(self, index):
+        # A slice reads as many segments as it spans, and a count of one for a slice
+        # would leave a scan of the last thousand segments below the bound.
+        if isinstance(index, slice):
+            self.reads += len(range(*index.indices(len(self))))
+        else:
+            self.reads += 1
+        return super().__getitem__(index)
+
+    def __contains__(self, value):
+        self.reads += len(self)
+        return super().__contains__(value)
+
+    def __reversed__(self):
+        self.reads += len(self)
+        return super().__reversed__()
+
 
 class TestTCPStreamReassembler(unittest.TestCase):
     def test_in_order_reassembly(self):
@@ -151,17 +196,31 @@ class TestTCPStreamReassembler(unittest.TestCase):
     def test_the_cost_of_a_segment_does_not_grow_with_the_segment_count(self):
         from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
-        def elapsed(count):
-            r = TCPStreamReassembler()
-            start = time.perf_counter()
-            for i in range(count):
+        def reads_for_each_segment(count):
+            # `DEFAULT_MAX_STREAM_SEGMENTS` stores 4096 segments and refuses the rest,
+            # so a default reassembler holds 4096 segments at every count above 4096.
+            # The cap here holds the whole count, and the reading then describes the
+            # count the case states. #430 records the earlier form of this case, which
+            # read a duration and passed the scan it exists to catch, because both of
+            # its readings stopped at the same 4096 stored segments.
+            # **This case calls no `trim_stream`.** `trim_stream` rebinds
+            # `stream["segments"]` to a plain list, and the counting list then leaves the
+            # reassembler and counts nothing more.
+            r = TCPStreamReassembler(max_stream_segments=count)
+            r.add_segment("stream1", seq=0, data=b"abcd")
+            stream = r.streams["stream1"]
+            segments = CountingSegmentList(stream["segments"])
+            stream["segments"] = segments
+            for i in range(1, count):
                 r.add_segment("stream1", seq=i * 4, data=b"abcd")
-            return time.perf_counter() - start
+            self.assertEqual(len(segments), count)
+            return segments.reads / count
 
-        # A scan of every stored segment costs the square of the count, so four times
-        # the segments costs sixteen times the time. A constant-cost check costs four.
-        # The threshold sits between the two readings, clear of the noise of either.
-        self.assertLess(elapsed(20000), elapsed(5000) * 8)
+        # Four times the segments leaves the cost of one segment where it is. The case
+        # reads the work performed rather than the seconds elapsed, so the load of the
+        # host moves neither reading.
+        for count in (5000, 20000):
+            self.assertLessEqual(reads_for_each_segment(count), SEGMENT_READS_PER_SEGMENT)
 
     def test_the_segment_order_does_not_depend_on_the_arrival_order(self):
         import itertools

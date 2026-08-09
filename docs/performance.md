@@ -43,6 +43,23 @@ the three ways this measurement fails while it still reports a number.
 #415 injected one defect for each control and read the control turn red, then restored the
 file and read it turn green. The pull request of #415 holds the transcript.
 
+**The work control reads its own runs, and it reads the fastest of them.** It feeds 1000
+packets and then 2000 packets, three runs of each count. It compares the fastest run of one
+count against the fastest run of the other. A loaded host adds seconds to a run and removes
+none, so the fastest run of a count is the run the load moved least. #430 records the
+reason. One run of the shorter count landed beside a mutation sweep. It read longer than the
+run of the doubled count, and the control then failed for a reason outside the package. The
+control states no tolerance. Where the clock reads a constant, the control still fails with
+`assert 1.0 > 1.0`.
+
+**The control reads a rise and it reads no slope.** A clock that carries a large constant
+and a small share of the traffic still rises, so this control passes it. #430 declined a
+floor on the ratio of the two readings. The two fastest runs read a ratio of 1.219 under a
+load average of 20 on a ten-core laptop, against 1.96 on a quiet host. A floor of 1.5 fails
+there, so that floor would trade one defect for a flaky case. The control reads a count of
+its own rather than the published count, so a reader who raises
+`JA4PLUS_THROUGHPUT_PACKETS` pays nothing for it.
+
 ## The synthetic run
 
 The run feeds `ceiling_traffic` of `tests/test_memory_bounds.py`, so this measurement and

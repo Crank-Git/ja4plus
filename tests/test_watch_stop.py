@@ -47,6 +47,37 @@ TEST_POLL_INTERVAL = 0.05
 # The bound the first acceptance criterion of #320 states, in seconds.
 STOP_BOUND = 1.0
 
+# The directory that lists the open descriptors of this process. Windows holds no such
+# directory, and `os.listdir` raises `FileNotFoundError` there. #426 records the case that
+# read it under no guard.
+DESCRIPTOR_DIRECTORY = "/dev/fd"
+
+# The count of descriptors the count case accepts above the count it read before the run.
+# The reading covers every descriptor of the process, so another part of the run that opens
+# one moves it, and #426 records that second defect. The leak the case exists to detect
+# opens two descriptors for each `sniff` call. That is 600 descriptors over 300 calls, so
+# this tolerance leaves the detection whole. A leak below the tolerance passes, and
+# `test_the_case_fails_where_the_monitor_leaks_a_descriptor_for_each_call` states the limit.
+DESCRIPTOR_TOLERANCE = 16
+
+# The count of calls the count case makes. A monitor calls `sniff` four times each second,
+# so 300 calls is 75 seconds of a real monitor.
+DESCRIPTOR_CALLS = 300
+
+
+def the_open_descriptor_count():
+    """Return the count of descriptors this process holds open.
+
+    Returns:
+        The count, or None where the host holds no `/dev/fd` directory.
+    """
+    try:
+        return len(os.listdir(DESCRIPTOR_DIRECTORY))
+    except FileNotFoundError:
+        # The catch names one class. A wider catch would report a directory this host holds
+        # as a directory it lacks. The skip reason would then name the wrong state.
+        return None
+
 
 class SilentSocket:
     """A capture socket that reports no packet until a case delivers one.
@@ -430,16 +461,20 @@ class TheMonitorHoldsNoFileDescriptorAcrossTheCalls(unittest.TestCase):
     """A monitor runs for weeks, and it calls `sniff` four times every second."""
 
     def test_three_hundred_calls_hold_the_open_descriptor_count(self):
+        before = the_open_descriptor_count()
+        if before is None:
+            # #426 records the guard. Windows holds no such directory, and the earlier
+            # form ended that run with `FileNotFoundError`.
+            self.skipTest("this host holds no " + DESCRIPTOR_DIRECTORY + " directory")
         capture = BlockingSocket()
         rounds = []
         counts = []
 
         def stop_requested():
             rounds.append(1)
-            counts.append(len(os.listdir("/dev/fd")))
-            return len(rounds) >= 300
+            counts.append(the_open_descriptor_count())
+            return len(rounds) >= DESCRIPTOR_CALLS
 
-        before = len(os.listdir("/dev/fd"))
         read_interface(
             "eth0",
             lambda packet: None,
@@ -448,8 +483,109 @@ class TheMonitorHoldsNoFileDescriptorAcrossTheCalls(unittest.TestCase):
             poll_interval=0.0005,
             open_socket=one_socket(capture),
         )
-        self.assertEqual(len(rounds), 300)
-        self.assertEqual(max(counts), before)
+        self.assertEqual(len(rounds), DESCRIPTOR_CALLS)
+        # #426 records the second defect of this case. The reading covers every descriptor
+        # of the process, so a comparison for equality fails where another part of the run
+        # opens one. The tolerance sits far below the 600 descriptors the leak opens.
+        self.assertLessEqual(max(counts) - before, DESCRIPTOR_TOLERANCE)
+
+
+class TheDescriptorCountCaseGuardsOnTheDirectoryItReads(unittest.TestCase):
+    """#426 — the case that counts descriptors guards on the directory it reads.
+
+    `the_open_descriptor_count` reads `/dev/fd`, and Windows holds no such directory. The
+    case above therefore reads a state of the host that this project does not control. A
+    guard proved in one direction can skip on every host, and a case that always skips
+    measures nothing. The first two cases here force each direction.
+    """
+
+    # A path no host holds. `/dev/fd` holds descriptors and no directory, so a name below
+    # it cannot exist.
+    ABSENT_DIRECTORY = "/dev/fd/ja4plus-no-such-directory"
+
+    def the_guarded_case(self):
+        """Return the case that counts descriptors, ready to run.
+
+        Returns:
+            The `TheMonitorHoldsNoFileDescriptorAcrossTheCalls` case.
+        """
+        return TheMonitorHoldsNoFileDescriptorAcrossTheCalls(
+            "test_three_hundred_calls_hold_the_open_descriptor_count"
+        )
+
+    def test_the_reading_reports_no_count_where_the_host_holds_no_directory(self):
+        """`the_open_descriptor_count` returns None where the directory is absent."""
+        self.assertFalse(os.path.exists(self.ABSENT_DIRECTORY))
+        with patch(__name__ + ".DESCRIPTOR_DIRECTORY", self.ABSENT_DIRECTORY):
+            self.assertIsNone(the_open_descriptor_count())
+
+    def test_the_case_skips_where_the_host_holds_no_descriptor_directory(self):
+        """A host without the directory skips the case, and the reason names the path."""
+        with patch(__name__ + ".DESCRIPTOR_DIRECTORY", self.ABSENT_DIRECTORY):
+            result = self.the_guarded_case().run()
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
+        self.assertEqual(len(result.skipped), 1)
+        self.assertIn(self.ABSENT_DIRECTORY, result.skipped[0][1])
+
+    def test_the_case_runs_and_passes_where_the_host_holds_the_directory(self):
+        """A host with the directory runs the case, and it passes."""
+        # The read calls `os.path.isdir` and not `the_open_descriptor_count`. A prover that
+        # reads the state through the guard it proves cannot tell two states apart. One is
+        # a guard that skips on every host. The other is a host that holds no such
+        # directory.
+        if not os.path.isdir(DESCRIPTOR_DIRECTORY):
+            self.skipTest("this host holds no " + DESCRIPTOR_DIRECTORY + " directory")
+        result = self.the_guarded_case().run()
+        self.assertEqual(result.testsRun, 1)
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
+        self.assertEqual(result.skipped, [])
+
+    def test_the_case_fails_where_the_monitor_leaks_a_descriptor_for_each_call(self):
+        """A monitor that leaks one descriptor for each call fails the case above.
+
+        The case above accepts a drift of `DESCRIPTOR_TOLERANCE` descriptors, because the
+        reading covers every descriptor of the process. A tolerance that also covered a
+        real leak would measure nothing. This case therefore opens one descriptor inside
+        each capture call and requires the case above to fail, which is the leak that case
+        exists to detect.
+
+        The tolerance states one limit, and this case does not remove it. A leak of fewer
+        than `DESCRIPTOR_TOLERANCE` descriptors over the whole run passes the case above,
+        where the earlier comparison for equality failed it. #426 records the trade: the
+        equality read every descriptor of the process, so it failed on a run that opened one
+        elsewhere.
+        """
+        # The read calls `os.path.isdir` and not `the_open_descriptor_count`. A prover that
+        # reads the state through the guard it proves cannot tell two states apart. One is
+        # a guard that skips on every host. The other is a host that holds no such
+        # directory.
+        if not os.path.isdir(DESCRIPTOR_DIRECTORY):
+            self.skipTest("this host holds no " + DESCRIPTOR_DIRECTORY + " directory")
+        self.assertGreater(
+            DESCRIPTOR_CALLS,
+            DESCRIPTOR_TOLERANCE,
+            "the leak of one descriptor for each call must pass the tolerance",
+        )
+        leaked = []
+        waited = BlockingSocket.select
+
+        def select(capture, sockets, remain=None):
+            """Return the sockets the socket reports, after this call opens one descriptor."""
+            leaked.append(os.open(os.devnull, os.O_RDONLY))
+            return waited(capture, sockets, remain)
+
+        try:
+            with patch.object(BlockingSocket, "select", select):
+                result = self.the_guarded_case().run()
+        finally:
+            for descriptor in leaked:
+                os.close(descriptor)
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.skipped, [])
+        self.assertEqual(len(result.failures), 1)
+        self.assertIn("not less than or equal to", result.failures[0][1])
 
 
 class ThePollIntervalIsAPositiveFiniteNumber(unittest.TestCase):
