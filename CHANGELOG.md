@@ -8,6 +8,21 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The remote lookup is opt-in at the client** (#57). Round TBD. Through version 0.6.0
+  `JA4DBClient.lookup` sent every fingerprint the bundled mapping file held no entry for
+  to `https://ja4db.com`, and no caller asked for that. A fingerprint describes traffic
+  the operator observed, so each request told a third party what the operator watched.
+  `JA4DBClient()` now performs no network request. `JA4DBClient(allow_remote=True)`
+  permits one request per miss, and it is the only way to reach the service.
+  `ja4plus --lookup analyze` and `ja4plus.ja4db.lookup` both hold the new default, so
+  the command-line program makes no network request. #58 adds the command-line option
+  that permits the remote lookup. The remote lookup waits 5 seconds at most, and
+  version 1.0.0 is the first release that may make the interval configurable. A request
+  that fails returns None and raises nothing. The lookup service publishes no versioned
+  API document, so the client accepts one shape: an object that carries a non-empty
+  `application` string. Version 0.6.0 read an object without that field as the
+  application `Unknown`, and the client now reads it as a miss.
+
 - **The command-line program separates results from diagnostics and gains `--output`**
   (#52). Round 95. The program writes results to standard output and every diagnostic
   to standard error, so a pipe that reads standard output reads results alone. The

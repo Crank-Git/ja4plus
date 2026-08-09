@@ -315,8 +315,8 @@ class TestCLILookupFlag:
             ],
             capture_output=True,
             text=True,
-            # Every fingerprint the bundled database does not hold costs one remote
-            # lookup of 5 seconds. The file produces enough of them to pass 30 seconds.
+            # #57 made the remote lookup opt-in, so every fingerprint the bundled
+            # database does not hold now costs one cache write and no request.
             timeout=180,
         )
         if result.returncode == 0 and result.stdout.strip():

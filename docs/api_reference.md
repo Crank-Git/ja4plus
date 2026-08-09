@@ -629,7 +629,7 @@ ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
 |--------|-------------|
 | `--format table\|json\|csv` | Output format (default: table) |
 | `--types ja4,ja4s,...` | Filter to specific fingerprint types |
-| `--lookup` | Identify fingerprints using bundled ja4db database |
+| `--lookup` | Identify fingerprints from the bundled database. It makes no network request |
 | `--output FILE` | Write the results to FILE instead of standard output |
 | `--force` | Overwrite the file that `--output` names when it exists |
 | `--version` | Print version |
@@ -747,9 +747,32 @@ result = client.lookup(fingerprint_string)
 
 | Class/Function | Description |
 |----------------|-------------|
-| `JA4DBClient(cache_size=100000)` | Client with a bounded lookup cache and the bundled database |
+| `JA4DBClient(allow_remote=False, cache_size=100000)` | Client with a bounded lookup cache and the bundled database |
 | `JA4DBClient.lookup(fingerprint)` | Look up a fingerprint, returns dict or None |
 | `lookup(fingerprint)` | Module-level convenience using a shared client |
+
+#### The remote lookup is opt-in
+
+A fingerprint describes traffic the operator observed. A request to the lookup service
+`ja4db.com` discloses that traffic to a third party. The client therefore reads the
+bundled mapping file and performs no network request by default, FR-db-enrichment-1. The
+module-level `lookup` function holds the same default.
+
+`JA4DBClient(allow_remote=True)` permits one request for each fingerprint the mapping
+file holds no entry for, FR-db-enrichment-2. The request goes to
+`https://ja4db.com/api/read/<fingerprint>`, and it waits 5 seconds at most,
+FR-db-enrichment-14. Version 1.0.0 is the first release that may make the interval
+configurable.
+
+The request needs the `requests` package, which the `lookup` extra installs. A client
+that reaches no service returns None for the miss, and it raises nothing,
+FR-db-enrichment-15. The same holds for a request that times out, for a status other
+than 200, and for a package that is absent.
+
+The lookup service publishes no versioned API document. The client therefore accepts one
+shape: an object that carries a non-empty `application` string. It reads `type` and
+`notes` as strings, and it substitutes an empty string for a field of another type. It
+returns None for every other shape, so no unchecked value reaches a caller.
 
 #### The concurrency contract of the lookup client
 
