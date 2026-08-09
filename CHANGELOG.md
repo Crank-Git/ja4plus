@@ -16,8 +16,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   **`ssh2.pcapng` stream 15 is the one vector that reaches the rule**: the FoxIO Python
   file holds `JA4L-S=6252_58` once, and `ja4plus` produced it twice. A replay of the 38
   committed captures moved exactly one value, and it is that duplicate. No JA4L value
-  moved on any other capture. **Five of the six entries are declined instead of
-  repaired, because the comparison is unreachable and not satisfied.**
+  moved on any other capture. **#272 declines five of the six entries instead of
+  repairing them, because the comparison is unreachable and not satisfied.**
   `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng` publish no JA4L
   key at all, because `python/ja4.py:339` runs
   `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another

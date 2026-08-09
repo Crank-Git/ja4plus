@@ -480,7 +480,7 @@ class TestTheOpenRegisterEntries:
             assert "python/ja4.py:339" in load_register()[key].cause, key
 
     def test_every_method_filter_entry_states_that_the_comparison_is_unreachable(self):
-        """The wrong wording makes the decline read as a pass, so the cause states it.
+        """The cause states the reading in exact words, because wrong words read as a pass.
 
         This project was never emitting more than the reference on these five. The
         reference published nothing to compare, because the method filter deleted the key.
