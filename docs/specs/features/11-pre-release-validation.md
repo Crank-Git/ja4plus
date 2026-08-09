@@ -3,7 +3,7 @@ id: pre-release-validation
 feature: Pre-release validation
 epic: "Epic 11: Pre-release validation"
 status: issued
-issues: [406, 407, 408, 409, 410, 411, 412, 413, 414, 415]
+issues: [406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 419]
 mockups: []
 number_gap: "The file number equals the epic number. Epic 10 (#194) holds no feature
   document, so `features/10-*.md` does not exist. The directory sequence carries a gap,
@@ -134,7 +134,17 @@ fingerprint when the guard alone is removed.
 FR-pre-release-validation-25 — A repaired output case reads one parsed output line or one
 result, and it asserts on one named field.
 
-FR-pre-release-validation-26 — No case of this feature set opens a network connection.
+FR-pre-release-validation-26 — A case of `tests/test_db_offline.py` that asserts that
+`ja4plus/ja4db.py` sends no request reads the recorded transport `RecordingRequests`.
+
+FR-pre-release-validation-26a — That case reaches no address of the lookup service at
+`https://ja4db.com`.
+
+FR-pre-release-validation-26b — The install cases of `tests/test_installed_wheel.py`
+reach a package index.
+
+FR-pre-release-validation-26c — `pip` resolves `scapy` and `cryptography` from that index
+for each clean environment those cases build.
 
 FR-pre-release-validation-27 — `tests/throughput_run.py` writes one JSON object that
 holds `packets`, `connections`, `elapsed_seconds`, `packets_per_second`,
@@ -248,6 +258,14 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
   that omits them states more than the host measured.
 - The clean environment installs no development extra, so the run reads the shipped
   dependency list.
+- **The install cases reach a package index, and that index is part of the interface
+  under test.** An install that resolves no dependency measures no shipped dependency
+  list, and that list is what `FR-pre-release-validation-1` exists to check.
+- **A rule of this feature set that binds the cases names the case file.** The set holds
+  install cases and lookup cases. The two carry opposite network rules. A rule over every
+  case of the set therefore binds cases it was not written for.
+  `tests/test_requirement_scope.py` reads the requirement text of every feature document.
+  It fails a rule that names no case file. #419 records the repair.
 - A case that installs the shipped package builds and installs before it measures, so its
   cost follows the host rather than the case count. #410 measured 71.56 s on the granted
   Linux host against the 23 s #408 measured on macOS.
@@ -266,6 +284,7 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 - New file `tests/throughput_run.py`.
 - New file `tests/test_throughput.py`.
 - New file `tests/test_specification_terms.py`.
+- New file `tests/test_requirement_scope.py`.
 - New directory `docs/mutation_settlements/`, with one record for each module group.
 - New directory `docs/mutation_reports/`, with one JSON report for each sweep.
 - New file `docs/performance.md`.
@@ -347,6 +366,8 @@ the checkout is.
 - [ ] `pytest tests/ -m spec_validation` reports 1532 passed, 143 skipped and 134 xfailed
       against 134 keys of `tests/foxio_deviations.json`.
 - [ ] `git diff --name-only` lists no file under `tests/foxio_vectors/`.
+- [ ] `pytest tests/test_requirement_scope.py` passes, so every requirement that binds a
+      feature set names one path under `tests/`.
 
 **Two statements here are not checkable, and each names its reason.**
 
