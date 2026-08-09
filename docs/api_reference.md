@@ -833,5 +833,11 @@ A caller that shares one client between threads therefore receives a result the 
 looked up before, or a result the client looks up now. An entry that leaves the lookup
 cache costs the next caller one more lookup, and it changes no result.
 
+A full lookup cache holds about 47 MiB. Two methods agree on that total: `tracemalloc`
+reads 47.06 MiB and `sys.getsizeof` reads 46.95 MiB. The figure covers two structures,
+because the client also remembers the 100000 keys it evicted. A run of 200000 distinct
+lookups fills both, and a run of 100000 fills the entries alone at 25.34 MiB. #279 holds
+the memory ceiling of this package, and it states no decided number yet.
+
 The client reads the mapping file once, at construction. A caller that replaces the
 mapping file builds a new client, and the new client holds an empty lookup cache.
