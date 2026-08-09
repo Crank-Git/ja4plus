@@ -179,8 +179,10 @@ jobs:
           path: sample-results.xml
 
   installed-wheel:
-    # `FR-pre-release-validation-7`. This job builds the wheel, installs it into a clean
-    # environment, and produces a fingerprint from that environment.
+    # `FR-pre-release-validation-7`. This job builds the wheel and the source
+    # distribution, installs each one into a clean environment, and produces a
+    # fingerprint from that environment. The job name keeps the `installed-wheel` form
+    # that `FR-pre-release-validation-7` names.
     #
     # Every other job of this file installs with `pip install -e ".[dev]"`, which puts
     # the source tree on the import path. A case that only imports `ja4plus` therefore
@@ -207,9 +209,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Fingerprint a capture from the installed wheel
+      - name: Fingerprint a capture from the installed package
         # The clean environment installs no development extra, so `pip` reads the
-        # dependency list the wheel ships.
+        # dependency list the artifact ships.
+        #
+        # #409 added the source-distribution path to the same file. The step therefore
+        # builds both artifacts and installs each one, and the marker covers both.
         run: |
           python -m pytest tests/test_installed_wheel.py -m installed_wheel \
             -v --tb=short --junitxml=installed-wheel-results.xml

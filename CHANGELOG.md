@@ -73,6 +73,54 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **One case fingerprints a capture from the installed source distribution** (#409).
+  Round TBD. `tests/test_installed_wheel.py` gains nine cases, and no new file appears.
+  #408 wrote four functions that take the artifact as a parameter: the build, the
+  clean-environment creation, the probe run and the comparison. This entry passes the
+  source distribution to the same four. The run repeats the three paths of #408 against
+  that artifact.
+  - `ja4plus --version`.
+  - `ja4plus analyze --format json`.
+  - One script that imports `ja4plus` and drives a `Processor`.
+
+  **`pip install <the sdist>` must build the source distribution and not resolve a
+  wheel.** A run that resolves a wheel measures the artifact of #408 again and reports a
+  pass. The install passes `--no-binary ja4plus`, and
+  `test_pip_built_the_package_from_the_source_distribution` reads the recorded output for
+  three facts.
+  - `pip` names the source distribution as the input.
+  - `pip` writes `Building wheel for ja4plus`.
+  - `pip` writes no `Downloading ja4plus-<version>.whl` and no
+    `Using cached ja4plus-<version>.whl`.
+
+  **The option alone does not settle it.** The pip documentation states "Do not download
+  binary packages. Cached binary packages may still be used." A mutation that installs
+  `artifacts["wheel"]` proved the case fails:
+  `AssertionError: pip read another input than .../ja4plus-0.6.0.tar.gz`. **The mapping
+  file is the likeliest failure**, so two cases read it. One compares the byte count of
+  `ja4plus/data/ja4plus-mapping.csv` in the clean environment against the byte count in
+  the repository. One looks a named fingerprint up, because a present file is not a read
+  file. **The control case is not optional.** It removes the mapping file from a second
+  clean environment. It reads one probe twice: `70 True` before the removal, and
+  `0 False` after it.
+
+  **The evidence contradicts one premise of #409, and this entry works around it.** #409
+  states that a package-data rule carries the mapping file. A mutation that removed
+  `data/*.csv` from `[tool.setuptools.package-data]` still shipped the file in both
+  artifacts. A mutation that added `[tool.setuptools.exclude-package-data]` shipped it
+  too. `include-package-data` defaults to true for a `pyproject.toml` project, and the
+  `setuptools-scm` file finder lists every tracked file. A second rule therefore carries
+  the same file. Only `include-package-data = false` beside the removal dropped it, and
+  both cases then failed live. **The source distribution carries the test material.** It
+  lists 396 members, and `tests/foxio_deviations.json` is one of them.
+  `test_the_source_distribution_lists_the_deviation_register` reads that listing.
+  `tests/test_installed_wheel_selection.py` raises `EXPECTED_CASE_COUNT` from 7 to 16.
+  **The marked run costs about 26 s on macOS with a warm `pip` cache**, against about
+  23 s for the wheel alone. Two more clean environments install the artifact, and that is
+  the whole difference. This entry changes no file under `ja4plus/` and it moves no
+  fingerprint.
+  Verified against: https://pip.pypa.io/en/stable/cli/pip_install/ and
+  https://build.pypa.io/en/stable/reference/cli.html (retrieved 2026-08-09).
 - **One case fingerprints a capture from the installed wheel** (#408). Round TBD. New
   file `tests/test_installed_wheel.py`, and the new `installed_wheel` marker in
   `pyproject.toml`. The case builds both artifacts with `python -m build`, and it installs
