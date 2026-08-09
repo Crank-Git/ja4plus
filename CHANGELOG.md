@@ -15,8 +15,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reads the count for the lookup cache. `BoundedStateTable` now takes
   `track_evictions`, it defaults to True, and every existing caller keeps the statistic
   it had. The lookup cache is the one caller that states False. **A full lookup cache of
-  100000 entries falls from 47.06 MiB to 31.00 MiB under `tracemalloc`, and from
-  44.66 MiB to 28.60 MiB under `sys.getsizeof`.** The two methods agree on the saving to
+  100000 entries falls from 47.06 MiB to 31.00 MiB under `tracemalloc`.** It falls
+  from 44.66 MiB to 28.60 MiB under `sys.getsizeof`. The two methods agree on the saving to
   0.00 MiB. The eviction count stands, so FR-concurrency-safety-12 holds for this table,
   and the invariant `inserts == entries + evictions + removals` holds. **#279 measured
   the 512 MiB ceiling case without a lookup cache**, so this saving moves none of its
@@ -24,7 +24,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the register holds 135 keys against 135 xfailed. **A first form of the new cases
   turned the resident-memory control of #279 red**, because each one loaded the whole
   mapping file into the session. The cases now patch `load_mapping_file` to an empty
-  mapping, and a deselect run proves the production change is not implicated.
+  mapping. A deselect run proves that the production change causes none of it.
 
 ### Fixed
 

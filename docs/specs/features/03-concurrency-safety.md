@@ -280,8 +280,9 @@ full lookup cache of 100000 entries falls from 47.06 MiB to 31.00 MiB under
 `tracemalloc`, and from 44.66 MiB to 28.60 MiB under `sys.getsizeof`. The eviction count
 stands, so FR-concurrency-safety-12 holds for this table. **#279 measured the ceiling
 case without a lookup cache**, so this saving moves no number of the four runs below. It
-moves the worst case of a program that runs a monitor and a full lookup cache together,
-from 442.00 MiB to 425.94 MiB against the 512 MiB ceiling.
+moves the worst case of a program that runs a monitor and a full lookup cache
+together. That worst case falls from 442.00 MiB to 425.94 MiB, against the 512 MiB
+ceiling.
 
 ## The concurrency contract, as #43 measured it
 
