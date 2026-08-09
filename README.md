@@ -153,7 +153,21 @@ ja4plus includes a bundled database of known JA4+ fingerprints from FoxIO's [ja4
 from ja4plus.ja4db import lookup
 
 result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
-# {"application": "Chromium Browser", "type": "ja4", "notes": ""}
+# LookupResult(application="Chromium Browser", type="ja4", notes="", source="embedded")
+```
+
+Every result records its source: `embedded` for the mapping file inside the package,
+`cache` for the file `ja4plus db update` wrote, and `remote` for the lookup service. You
+need to know where a name came from to judge how much to trust it.
+
+`lookup_many` identifies a sequence of fingerprints in one call, and it returns one entry
+per fingerprint:
+
+```python
+from ja4plus.ja4db import JA4DBClient
+
+results = JA4DBClient().lookup_many(fingerprints)
+# {"t13d1516h2_8daaf6152771_02713d6af862": LookupResult(...), "t99z9999h0_0_0": None}
 ```
 
 ### The lookup makes no network request unless you ask for one

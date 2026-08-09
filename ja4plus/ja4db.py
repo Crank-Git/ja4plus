@@ -280,14 +280,14 @@ class JA4DBClient:
         )
 
     def lookup(self, fingerprint: str) -> LookupResult | None:
-        """
-        Look up a fingerprint.
+        """Return the match for one fingerprint.
 
         Args:
-            fingerprint: JA4+ fingerprint string
+            fingerprint: A JA4+ fingerprint string.
 
         Returns:
-            dict with 'application', 'type', 'notes' keys, or None if unknown.
+            The match, with the source it came from, or None when no source holds an
+            entry.
         """
         with self._cache_lock:
             # The lookup cache reads no packet, so one lookup announces itself as one
