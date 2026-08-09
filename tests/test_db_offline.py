@@ -5,6 +5,7 @@ discloses that traffic to a third party. The cases below prove that the default 
 attempts no request, and that `allow_remote=True` permits one.
 """
 
+import inspect
 import socket
 from unittest.mock import patch
 
@@ -194,6 +195,17 @@ class TestTheOptInClient:
             client.lookup(MISSING_FINGERPRINT)
         assert recorder.calls[0][1]["timeout"] == _REMOTE_TIMEOUT
         assert _REMOTE_TIMEOUT == 5.0
+
+    def test_the_constructor_publishes_no_timeout_parameter(self):
+        """No operator configures the remote timeout before version 1.0.0, issue #354.
+
+        The `Interfaces` block of `docs/specs/features/07-db-enrichment.md` published a
+        `timeout` parameter that the behaviour rule of the same file refuses. This case
+        pins the parameter list, so the next reader of that block cannot resolve the
+        question from its own judgment.
+        """
+        parameters = list(inspect.signature(JA4DBClient.__init__).parameters)
+        assert parameters == ["self", "allow_remote", "cache_size"]
 
 
 class TestARemoteLookupFailure:
