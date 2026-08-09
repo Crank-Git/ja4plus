@@ -112,16 +112,18 @@ CONTROL_BOUND = 100
 # the two.
 CONTROL_GROWTH_RATIO = 0.85
 
-# The memory blocks the shipped run must add for each packet it feeds, before the ratio
-# above means anything. A run that added nothing would divide one small number by another.
-# #389 measured 12.6 blocks for each packet on Linux and 12.4 on macOS, so the floor sits
-# an order of magnitude below the reading. The floor reads a rate rather than a count,
-# because `CEILING_PACKETS` sets the size of the run.
+# Before the ratio above means anything, the shipped run must add this many memory blocks
+# for each packet it feeds. A run that added nothing would divide one small number by
+# another.
+# The floor reads a rate rather than a count, because `CEILING_PACKETS` sets the size of
+# the run. #389 measured 12.37 blocks for each packet at 30000 packets, 13.99 at 5000 and
+# 15.08 at 1000, so the reading sits 3.1 times above this floor at the default size. The
+# retired MiB floor sat 2.9 times below its reading, and this rate holds that strength.
 #
 # The floor read 10.0 MiB until #389. A MiB floor is the reading a host under memory
 # pressure moves: under a memory limit of 70 MiB the shipped run added 0.00 MiB and
 # 376954 blocks.
-CONTROL_FLOOR_BLOCKS_PER_PACKET = 1
+CONTROL_FLOOR_BLOCKS_PER_PACKET = 4
 
 # The seconds one measurement may take. #279 read 481 seconds for 1000000 packets on a
 # ten-core laptop, so the limit holds about four times that rate.
@@ -394,8 +396,8 @@ def measure_resident_memory(packets, bound=0):
         bound: The entry count every state table reads. Zero keeps the shipped bounds.
 
     Returns:
-        A dict with the keys `idle_resident_mib`, `final_resident_mib`, `peak_mib`,
-        `packets`, `connections` and `bound`.
+        A dict with the keys `idle_resident_mib`, `final_resident_mib`, `idle_blocks`,
+        `final_blocks`, `peak_mib`, `packets`, `connections` and `bound`.
 
     Raises:
         subprocess.CalledProcessError: The run failed.
@@ -935,7 +937,7 @@ class TestTheBlockReading:
         "bound": 100,
     }
 
-    def test_the_recorded_resident_pair_fails_the_threshold_the_block_pair_passes(self):
+    def test_the_block_pair_holds_where_the_recorded_resident_pair_fails(self):
         """The reading that #389 repairs. One pair of runs, two answers.
 
         The first assertion holds the evidence: the recorded resident readings state that

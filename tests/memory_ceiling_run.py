@@ -131,8 +131,8 @@ def main(argv=None):
 
     # The resident reading comes first at both points, so the collection below moves no
     # part of it. A block count taken between two collections holds the cyclic garbage the
-    # collector has not reached, and the point it reaches depends on the allocation
-    # history. The collection makes the count read the blocks the run holds live.
+    # collector has not reached. The point it reaches depends on the allocation history.
+    # The collection makes the count read the blocks the run holds and no other block.
     idle_resident = current_resident_mib()
     gc.collect()
     idle_blocks = sys.getallocatedblocks()

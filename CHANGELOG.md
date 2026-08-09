@@ -56,24 +56,26 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   count of memory blocks the run holds, and it carries the name
   `test_a_smaller_entry_count_holds_fewer_memory_blocks`. **Memory pressure is the
   mechanism, and processor contention is not.** A resident reading states what the host
-  left in memory, and a host under memory pressure reclaims the pages of a running
-  process, reaching the run that holds the most memory first. The reclaim moves the two
-  runs by different amounts, and it moves the ratio toward one. **The reproduction ran on
-  one Ubuntu 24.10 host with 56 cores**, each measurement run under `systemd-run --user
-  --scope -p MemoryMax=<limit>`. The resident ratio read 0.434 at no limit, 0.962 at
-  80 MiB and 0.786 at 75 MiB, and at 70 MiB both runs added 0.00 MiB. **The block ratio
-  read 0.392 at every one of the four.** A deliberate processor load of 56 spinners held
-  the load average at 58 for three rounds and moved neither reading. **A rule that repeats
-  the pair and takes the median repairs nothing**, because three rounds at the 80 MiB limit
-  read 1.047, 0.885 and 1.045, and the rule costs three times the wall clock. The run
-  collects the cyclic garbage before it counts the blocks, which drops the macOS ratio
-  from a spread of 0.612 to 0.664 down to 0.398 at every round. **`CONTROL_GROWTH_RATIO`
-  stays 0.85**, and the mutation that raises the control bound to the shipped 10000 reads
-  1.361 on Linux and 1.367 on macOS. **The floor moves from 10.0 MiB to one block for each
-  packet**, because a MiB floor is the reading the host moves: under the 70 MiB limit the
-  shipped run added 0.00 MiB and 376954 blocks. The measured rate is 12.6 blocks for each
-  packet, so the new floor sits 12.6 times below the reading where the MiB floor sat 2.9
-  times below it. **No file under `ja4plus/` changes and no fingerprint moves.**
+  left in memory. A host under memory pressure reclaims the pages of a running process,
+  and it reaches the run that holds the most memory first. The reclaim moves the two runs
+  by different amounts, and it moves the growth ratio toward one. **The reproduction ran
+  on one Ubuntu 24.10 host with 56 cores.** Each measurement run ran under `systemd-run
+  --user --scope -p MemoryMax=<limit>`. The resident ratio read 0.434 at no limit, 0.962
+  at 80 MiB and 0.786 at 75 MiB, and at 70 MiB both runs added 0.00 MiB. **The block ratio
+  read 0.392 at every one of the four.** A deliberate processor load of 56 processes that
+  hold a processor busy held the load average at 58 for three rounds, and it moved neither
+  reading. **A rule that repeats the pair and takes the median repairs nothing.** Three
+  rounds at the 80 MiB limit read 1.047, 0.885 and 1.045. The rule also costs three times
+  the wall clock. The run collects the cyclic garbage before it counts the blocks. That
+  collection moves the macOS ratio from 0.612 and 0.664 across two rounds to 0.398 at each
+  of three. **`CONTROL_GROWTH_RATIO` stays 0.85**, and the mutation that raises the control
+  bound to the shipped 10000 reads 1.361 on Linux and 1.367 on macOS. **The floor moves
+  from 10.0 MiB to four blocks for each packet**, because a MiB floor is the reading the
+  host moves. Under the 70 MiB limit the shipped run added 0.00 MiB and 376954 blocks. The
+  measured rate is 12.37 blocks for each packet at the default size, so the reading sits
+  3.1 times above the new floor. The retired MiB floor sat 2.9 times below its reading, so
+  the new floor holds the strength the old one held. **No file under `ja4plus/` changes and
+  no fingerprint moves.**
 
 - **`generate_ja4` reads a TLS info dictionary, and the documentation stated a packet**
   (#63). Round TBD. `README.md` and `docs/api_reference.md` each wrote

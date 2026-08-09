@@ -566,8 +566,9 @@ MemoryMax=<limit>`.
 | 75 MiB | 6.13 MiB, 4.82 MiB | 0.786 | 0.392 |
 | 70 MiB | 0.00 MiB, 0.00 MiB | no reading | 0.392 |
 
-The block growth of the shipped run held between 376952 and 376965 across all four, a
-spread of 13 blocks in 376955. **The repaired case passes at every one of the four**, and
+The block growth of the shipped run held between 376952 and 376965 across all four, so
+the four readings differ by 13 blocks. **The repaired case passes at every one of the
+four**, and
 the case that reads the resident growth fails at 80 MiB on the ratio, at 75 MiB on the
 floor, and at 70 MiB on the floor.
 
@@ -594,17 +595,18 @@ shipped bounds added 370945 blocks, a ratio of 1.367, so the entry count changed
 
 **The run collects the cyclic garbage before it counts the blocks.** A count taken
 between two collections holds the garbage the collector has not reached, and the point it
-reaches moves with the allocation history. Without the collection three macOS rounds read
-a control growth of 230616, 247991 and a ratio between 0.612 and 0.664. With it the same
+reaches moves with the allocation history. Without the collection two macOS readings gave
+a control growth of 230616 and 247991, at a ratio of 0.612 and 0.664. With the collection
 three rounds read 147562, 147566 and 147569, and the ratio reads 0.398 at each. The
 collection runs after the resident reading at both points, so it moves no part of the
 ceiling reading.
 
-**The floor reads a rate of one block for each packet, and it read 10.0 MiB until #389.**
-A MiB floor is the reading a host moves: under the 70 MiB limit the shipped run added
-0.00 MiB and 376954 blocks. The measured rate is 12.6 blocks for each packet on Linux and
-12.4 on macOS, so the floor sits an order of magnitude below the reading, where the MiB
-floor sat at 2.9 times below it.
+**The floor reads a rate of four blocks for each packet, and it read 10.0 MiB until
+#389.** A MiB floor is the reading a host moves: under the 70 MiB limit the shipped run
+added 0.00 MiB and 376954 blocks. The measured rate is 12.37 blocks for each packet at
+30000 packets, 13.99 at 5000 and 15.08 at 1000, so the reading sits 3.1 times above the
+floor at the default size. The retired MiB floor sat 2.9 times below its reading, so the
+rate holds the strength the MiB floor held.
 
 ## Data touched
 
