@@ -1,0 +1,134 @@
+# The documentation site of ja4plus.
+#
+# `FR-documentation-7` asks the site to build from the Markdown files that already exist,
+# so `docs_dir` is the `docs/` directory of the repository and no page moves.
+# `FR-documentation-9` asks for an API reference the docstrings generate, and the
+# `mkdocstrings` plugin reads them from the source under `docs/reference/`.
+# `FR-documentation-15` asks a broken internal link to fail the build. `strict: true` and
+# the `validation` block below carry that requirement together, and neither one carries
+# it alone.
+#
+# Build the site with `mkdocs build --strict`. Install the generator with
+# `pip install -e ".[docs]"`, which pins every version.
+#
+# Verified against https://www.mkdocs.org/user-guide/configuration/ (MkDocs 1.6),
+# https://squidfunk.github.io/mkdocs-material/ (Material 9.7.7) and
+# https://mkdocstrings.github.io/python/usage/ (mkdocstrings-python 1.15.0),
+# retrieved 2026-08-09.
+
+site_name: ja4plus
+site_description: >-
+  A Python implementation of the JA4+ network fingerprinting methods. FoxIO owns the JA4+
+  standard, and this project is an independent implementation of it.
+site_url: https://crank-git.github.io/ja4plus/
+repo_url: https://github.com/Crank-Git/ja4plus
+repo_name: Crank-Git/ja4plus
+edit_uri: edit/dev/docs/
+
+docs_dir: docs
+site_dir: site
+
+# A warning stops the build. Every diagnostic the `validation` block raises to `warn`
+# therefore fails `mkdocs build --strict`.
+strict: true
+
+# `docs/specs/` holds the specification package, which is design material and not a
+# published page. It carries links that point outside `docs_dir`, and MkDocs resolves
+# none of them, so a site that published it could never build under `strict`.
+# `.gitignore` syntax carries this key.
+exclude_docs: |
+  specs/
+
+# MkDocs reports a broken link as a warning and a broken anchor as information, and
+# strict mode fails on a warning alone. Without `anchors: warn` the site builds while an
+# anchor is dead, and `FR-documentation-15` asks for the opposite.
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: warn
+  links:
+    not_found: warn
+    anchors: warn
+    absolute_links: warn
+    unrecognized_links: warn
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to the dark theme
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to the light theme
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          # The package sits at the repository root, so the handler imports `ja4plus`
+          # from there and reads the docstrings of the working tree.
+          paths: [.]
+          options:
+            docstring_style: google
+            docstring_section_style: table
+            show_source: false
+            show_root_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            separate_signature: true
+            signature_crossrefs: true
+            filters: ["!^_"]
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  # **The default slug of Python-Markdown is not the slug of GitHub, and every existing
+  # page writes the GitHub form.** The default collapses a run of hyphens and spaces into
+  # one hyphen, so `## JA4 - TLS Client` gains the anchor `ja4-tls-client`. GitHub keeps
+  # the run and writes `ja4---tls-client`, which is the anchor that `docs/README.md` and
+  # `docs/usage.md` link. `pymdownx.slugs.slugify` writes the GitHub form, so one link
+  # resolves in both readers and no page changes.
+  #
+  # Verified against
+  # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown/ and
+  # https://facelessuser.github.io/pymdown-extensions/extras/slugs/, retrieved 2026-08-09.
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+
+nav:
+  - Home: README.md
+  - Usage guide: usage.md
+  - Output schema: output-schema.md
+  - API reference:
+      - reference/index.md
+      - Processor: reference/processor.md
+      - Result: reference/types.md
+      - Fingerprinters: reference/fingerprinters.md
+      - Lookup: reference/ja4db.md
+  - Public interface: api_reference.md
+  - Implementation notes: implementation_notes.md
+  - The mutation sweep: mutation_sweep.md
