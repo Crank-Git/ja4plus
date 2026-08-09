@@ -24,14 +24,14 @@ SPECIFICATION = REPO_ROOT / "docs" / "specs" / "spec.md"
 
 # A Changelog row opens with the round number and the date, as
 # `| 9 | 2026-08-06 | ... |`. The date distinguishes a Changelog row from every other
-# table of the page, so a row of the Terms table or the divergence register never
-# reaches these cases.
+# table of the page. A row of the Terms table or the divergence register therefore
+# reaches no case here.
 CHANGELOG_ROW = re.compile(r"^\|\s*(\d+)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|")
 
-# The Changelog held this many numbered rows when #258 landed. The floor fails a regular
-# expression that stops matching the rows, because a parser that reads nothing passes
-# every case below on an empty list. A row whose round is the literal `TBD` carries no
-# number, so it reaches no case here until the project manager assigns its round.
+# The Changelog held this many numbered rows when #258 landed. A parser that reads
+# nothing passes every case below on an empty list. The floor fails such a parser.
+# A row whose round is the literal `TBD` carries no number, so it reaches no case here
+# until the project manager assigns its round.
 MINIMUM_ROWS = 124
 
 
