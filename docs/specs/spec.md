@@ -737,6 +737,8 @@ Created by `spec-to-issues` on 2026-08-06 against `Crank-Git/ja4plus`.
 | `FR-db-enrichment-13` | #61 |
 | `FR-db-enrichment-14` | #57 |
 | `FR-db-enrichment-15` | #57 |
+| `FR-db-enrichment-16` | #364 |
+| `FR-db-enrichment-17` | #364 |
 | `FR-documentation-1` | #62 |
 | `FR-documentation-2` | #62 |
 | `FR-documentation-3` | #62 |

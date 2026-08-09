@@ -71,6 +71,11 @@ FR-db-enrichment-14 — The remote lookup has a timeout.
 
 FR-db-enrichment-15 — A remote lookup failure returns nothing and does not raise.
 
+FR-db-enrichment-16 — A `LookupResult` supports item access by field name, so that
+code written against the dictionary keeps working for one major version.
+
+FR-db-enrichment-17 — Item access on a `LookupResult` emits a `DeprecationWarning`.
+
 ## User flows
 
 **An analyst identifies fingerprints from a capture.**
@@ -162,11 +167,19 @@ class LookupResult:
     type: str
     notes: str
     source: str          # "embedded" | "cache" | "remote"
+
+    def __getitem__(self, key: str) -> Any: ...
 ```
 
 `LookupResult` carries the port's three fields plus `source`. The behaviour rule above
 states the three source values, and #61 settled the first of them as `embedded`. #59
 repaired this block, which published `bundled` until then.
+
+`__getitem__` reads the field the key names, FR-db-enrichment-16, and it emits a
+`DeprecationWarning`, FR-db-enrichment-17. `FingerprintResult` of
+`docs/specs/features/04-typed-api.md` holds the same method under `FR-typed-api-5` and
+`FR-typed-api-6`, and #364 adopted that spelling rather than a second one. The three keys
+version 0.6.0 published each name a field, so no key of version 0.6.0 raises `KeyError`.
 
 The constructor publishes no `timeout` parameter. The behaviour rule above refuses one
 before version 1.0.0, and the Go port publishes none either. `RemoteLookupConfig` of

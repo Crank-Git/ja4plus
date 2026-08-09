@@ -780,6 +780,24 @@ parity rule 2 adopts them.
 Version 0.6.0 returned a dict from `lookup`. Version 1.0.0 returns the frozen result, so
 a caller reads `result.application` where it read `result["application"]` before.
 
+#### The deprecated item access
+
+A result reads by field name too, so that code written against the dict of version 0.6.0
+keeps working for one major version, FR-db-enrichment-16. Version 0.6.0 published the
+three keys `application`, `type` and `notes`, and each one names a field, so no key of
+version 0.6.0 returns the value of another field.
+
+Warning: item access emits a `DeprecationWarning`, FR-db-enrichment-17. Read the
+attribute instead.
+
+```python
+result["application"]   # the same value, and one DeprecationWarning
+result["method"]        # KeyError. `LookupResult` holds no field of that name.
+```
+
+The item access covers reading only. `result["application"] = "x"` raises `TypeError`,
+and `result.application = "x"` raises `dataclasses.FrozenInstanceError`.
+
 #### One call identifies many fingerprints
 
 `lookup_many` accepts a sequence of fingerprints and returns one entry per fingerprint,

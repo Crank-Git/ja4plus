@@ -16,12 +16,15 @@ Usage:
 from __future__ import annotations
 
 import csv
+import dataclasses
 import logging
 import os
 import sys
 import threading
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import quote
 
 from ja4plus.utils.state_table import DEFAULT_MAX_CONNECTION_AGE, BoundedStateTable
@@ -52,6 +55,37 @@ class LookupResult:
     notes: str
     source: str
 
+    def __getitem__(self, key: str) -> Any:
+        """Return the value of the field the key names.
+
+        Version 0.6.0 returned a dictionary. This method keeps that caller working for
+        one major version, and it warns the caller to read the attribute instead.
+
+        Args:
+            key: A field name of this dataclass.
+
+        Returns:
+            The value the field of that name holds.
+
+        Raises:
+            KeyError: This dataclass holds no field of that name. Version 0.6.0
+                published the three keys `application`, `type` and `notes`, and each
+                one names a field, so no key of version 0.6.0 reaches this.
+        """
+        if key not in _FIELD_NAMES:
+            raise KeyError(key)
+        warnings.warn(
+            f"Item access on a LookupResult is deprecated. Read result.{key} instead.",
+            DeprecationWarning,
+            # The caller's line is the useful one, not this method's line.
+            stacklevel=2,
+        )
+        return getattr(self, key)
+
+
+# The membership test of `__getitem__` reads this set, so item access reaches a field
+# and no other attribute.
+_FIELD_NAMES = frozenset(field.name for field in dataclasses.fields(LookupResult))
 
 # Bundled mapping from FoxIO's ja4plus-mapping.csv
 _MAPPING_URL = "https://raw.githubusercontent.com/FoxIO-LLC/ja4/main/ja4plus-mapping.csv"

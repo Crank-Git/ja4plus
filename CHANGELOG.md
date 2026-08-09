@@ -8,6 +8,16 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **A `LookupResult` supports item access by field name** (#364). Round TBD. Version
+  0.6.0 returned a dict with the keys `application`, `type` and `notes`, and #59 replaced
+  it with a frozen `LookupResult`. A caller that reads `result["application"]` keeps
+  working for one major version, and that read emits a `DeprecationWarning` that names
+  the attribute to read instead. Every key version 0.6.0 published names a field of
+  `LookupResult`, so no key returns the value of another field. A key that names no field
+  raises `KeyError` and emits no warning. Item access reads a field and writes none, so
+  a `LookupResult` stays frozen. `FingerprintResult` holds the same behaviour from #44,
+  under `FR-typed-api-5` and `FR-typed-api-6`.
+
 - **`JA4DBClient.lookup_many` identifies many fingerprints in one call** (#59). Round
   TBD. It accepts a sequence of fingerprints and returns one entry per fingerprint. A
   miss holds `None`, so a caller reads one entry for every fingerprint it passed. The
