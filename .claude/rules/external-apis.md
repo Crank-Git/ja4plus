@@ -118,7 +118,8 @@ reader checks each one.
    that file omits, and the Rust snapshot rule above decides that case.
 2. The entry carries `"decided": true`, so a recorded decision names the issue.
    `tests/foxio_deviations.py` states the marker rule.
-3. The entry is a value decline and not a capability decline.
+3. The entry carries `"capability": false`, so it is a value decline and not a capability
+   decline. `tests/foxio_deviations.py` states the field.
 4. Another FoxIO source holds a value for the same method, the same connection and the
    same occurrence.
 5. The remaining sources hold one value between them.
@@ -137,14 +138,14 @@ decision, and the Wireshark file holds the decrypted values. #129 carries 37 dec
 value-form keys, and another FoxIO source holds a value for 35 of them. Naming those as
 the reference would create 35 permanent divergences of a kind this project chose.
 
-**The register records no field that separates the two kinds of decline.** Fact 3
-therefore names the issue today, and `tests/test_precedence_exception.py` holds
-`CAPABILITY_DECLINES`. **Proposal: give each entry a `"capability": true` field, set on
-the entry whose cause records a capability boundary.** `tests/foxio_deviations.py` reads
-it beside `decided`, `tests/test_foxio_deviations.py` gates it the way it gates the
-`decided` marker, and fact 3 then reads one field of one entry. #334 records the
-proposal, and the user decides whether to build it. Never infer the kind of a decline
-from the prose of its cause.
+**The register records the kind of every decline.** Each entry carries a `"capability"`
+field: `true` records a capability this project chose not to build, and `false` records a
+disagreement about the value. `tests/foxio_deviations.py` reads it beside `decided`, and
+`unrecorded_kinds` in `tests/test_foxio_deviations.py` requires it on every decided
+entry, so a new decline states its kind where the decline is recorded. **Fact 3 reads one
+field of one entry.** 43 entries record a capability decline today, and all 43 name #129.
+#334 proposed the field and #341 built it. **Never infer the kind of a decline from the
+prose of its cause.** Read the field.
 
 **A disagreement between the remaining sources bars the row.** Where the remaining FoxIO
 sources hold different values, **no source holds the reference and the row stays declined

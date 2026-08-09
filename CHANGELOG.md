@@ -35,6 +35,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The register records the kind of every decline** (#341). Round TBD.
+  `tests/foxio_deviations.json` carries a `capability` field on all 135 entries, and
+  `CAPABILITY_DECLINES` is gone from `tests/test_precedence_exception.py`. #334 shipped
+  bar 1 of the precedence exception as a constant set of issue numbers, so a new
+  capability decline would have reached the exception unless somebody edited a test that
+  named it nowhere near the decline. **`true` records a capability this project chose not
+  to build, and `false` records a disagreement about the value.** `tests/foxio_deviations.py`
+  reads the field beside `decided` and states the default in the schema, and
+  `unrecorded_kinds` requires the field on every decided entry. **43 entries record a
+  capability decline, and all 43 name #129**, which the recorded cause of each of the 135
+  entries decides. No entry was undeterminable. **The reach of the exception is 6 rows
+  before and after**, and the six rows are unchanged. No fingerprint moves, no file under
+  `ja4plus/` changes, and no vector is adopted.
+
 - **The precedence exception is source-neutral** (#334). Round TBD.
   `.claude/rules/external-apis.md` wrote the exception of #332 for the Zeek baseline
   alone, because that was the case #327 raised. Where `tests/foxio_deviations.json`
