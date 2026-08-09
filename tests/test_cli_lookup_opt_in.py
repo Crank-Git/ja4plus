@@ -144,6 +144,13 @@ class TestTheRemoteOption:
         out, err, code = analyze(recorder, "--lookup-remote")
         assert notice_count(err) == 1
 
+    def test_the_two_options_together_build_one_client_and_write_one_notice(self, recorder, no_env):
+        """An operator who passes both options asks for one lookup and one disclosure."""
+        out, err, code = analyze(recorder, "--lookup", "--lookup-remote")
+        assert code == 0, err
+        assert recorder.calls != []
+        assert notice_count(err) == 1
+
     def test_the_remote_option_reaches_the_lookup_service(self, recorder, no_env):
         """Every request the run sends names the service the notice names."""
         analyze(recorder, "--lookup-remote")
