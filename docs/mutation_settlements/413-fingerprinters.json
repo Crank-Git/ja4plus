@@ -2996,7 +2996,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[FingerprintResult]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3004,7 +3004,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4D6Fingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3012,7 +3012,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4DFingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3020,7 +3020,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4Fingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3028,7 +3028,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4HFingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3036,7 +3036,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4LFingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3044,7 +3044,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4SFingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3052,7 +3052,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4SSHFingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3060,7 +3060,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4TFingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3068,7 +3068,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4TSFingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3076,7 +3076,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[JA4XFingerprinter]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3084,7 +3084,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[Processor]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3092,7 +3092,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[__version__]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3100,7 +3100,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[compute_ja4x_from_der]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3108,7 +3108,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[compute_ja4x_from_pem]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3116,7 +3116,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3124,7 +3124,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4d6]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3132,7 +3132,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4d]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3140,7 +3140,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4h]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3148,7 +3148,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4l]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3156,7 +3156,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4s]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3164,7 +3164,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4ssh]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3172,7 +3172,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4t]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3180,7 +3180,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4ts]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3188,7 +3188,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_every_public_name_is_importable_from_the_package[generate_ja4x]",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3196,7 +3196,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_the_build_ships_the_marker_as_package_data",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3204,7 +3204,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_the_package_declares_its_public_interface",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3212,7 +3212,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_the_package_ships_the_py_typed_marker",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3220,7 +3220,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_the_processor_module_declares_ProcessorStats_public",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3228,7 +3228,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_the_public_interface_holds_no_duplicate_name",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
@@ -3236,7 +3236,7 @@
     {
       "candidate": "tests/test_public_interface.py::test_the_side_effect_helpers_stay_out_of_the_public_interface",
       "verdict": "correct",
-      "reason": "One coverage context for each case reports that the case runs no line of ja4plus/fingerprinters/__init__.py, so no mutation of that module reaches it.",
+      "reason": "The module holds nine export names and nine import statements, and Python runs both at import and not inside a case. No case reads ja4plus.fingerprinters.__all__, so no name it holds is measured, and #413 records the reason rather than a case for a name.",
       "modules": [
         "ja4plus/fingerprinters/__init__.py"
       ]
