@@ -506,7 +506,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **The documentation behaviour rule names a command that runs, and a case holds every named
-  command to a collection** (#393). Round TBD. The Behaviour rules of
+  command to a collection** (#393). Round 163. The Behaviour rules of
   `docs/specs/features/08-documentation.md` read **A code sample is tested by
   `pytest --doctest-glob`**, and the Acceptance criteria named
   `pytest --doctest-glob="*.md" README.md docs/`. **That command collects nothing.** It
@@ -569,7 +569,7 @@ holds every breaking change of this record against a row of that page.
   fingerprint moves, and the register holds 134 keys against 134 xfailed.**
 
 - **The precedence exception states the register key count the register holds, and a case
-  holds it there** (#380). Round TBD. `.claude/rules/external-apis.md` read **The exception
+  holds it there** (#380). Round 160. `.claude/rules/external-apis.md` read **The exception
   reaches 6 rows of the 135 the register holds**, and the register holds 134 keys. #272
   removed `ssh2.pcapng/JA4L-S` on 2026-08-09, because the repair to
   `ja4plus/fingerprinters/ja4l.py` made the comparison pass, and the prose kept the earlier
@@ -813,7 +813,7 @@ holds every breaking change of this record against a row of that page.
   entry repairs the two documents and changes no signature.
 
 - **Six documents stated a count of ten methods, and the count is eleven** (#387). Round
-  TBD. `JA4LFingerprinter` writes `JA4L-S=` at `ja4plus/fingerprinters/ja4l.py:446` and
+  162. `JA4LFingerprinter` writes `JA4L-S=` at `ja4plus/fingerprinters/ja4l.py:446` and
   `JA4L-C=` at `:482`, so ten fingerprinter classes carry eleven methods. **The measurement
   reproduces on the base commit `d123ab9` and it carries no number from the issue body.**
   `__all__` names ten `generate_` functions, the module of `generate_ja4l` writes both value
@@ -865,7 +865,7 @@ holds every breaking change of this record against a row of that page.
 ### Changed
 
 - **The `ruff` pin is exact, so the lint gate cannot change without a commit** (#378).
-  Round TBD. `pyproject.toml` declared `ruff>=0.6`. `pip` therefore resolved the newest
+  Round 161. `pyproject.toml` declared `ruff>=0.6`. `pip` therefore resolved the newest
   release at the moment of each install, and the gate read a different tool on two days.
   The `dev` extra now states `ruff==0.16.2`. **#297 measured the drift on this
   repository.** Against `ruff` 0.14.5 it read 58 `F401` findings, 28 files and 82 `I001`
