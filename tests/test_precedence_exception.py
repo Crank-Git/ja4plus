@@ -406,6 +406,18 @@ def stated_exception_reach_counts(document):
     return int(matches[0][0]), int(matches[0][1])
 
 
+def measured_exception_reach_counts(register):
+    """Return the two counts the register holds for the reach of the exception.
+
+    Args:
+        register: The register that `load_register` returns.
+
+    Returns:
+        The count of rows the exception reaches, then the count of register keys.
+    """
+    return len(exception_reach(register)), len(register)
+
+
 def flatten(path):
     """Return the text of one page with every run of whitespace as one space.
 
@@ -692,30 +704,6 @@ class TestThePagesThatCarryTheRule:
         assert "ssh2.pcapng/14:57377/JA4SSH.2" in page
         assert "A declined FoxIO Python value forfeits its precedence" in page
 
-    def test_the_rule_states_the_reach_the_register_holds(self):
-        assert stated_exception_reach_counts(flatten(RULE_PAGE))[0] == len(
-            exception_reach(load_register())
-        )
-
-    def test_the_rule_states_the_register_key_count_the_register_holds(self):
-        assert stated_exception_reach_counts(flatten(RULE_PAGE))[1] == len(load_register())
-
-    def test_the_reader_rejects_a_document_that_states_the_counts_nowhere(self):
-        with pytest.raises(ValueError, match="0 sentences"):
-            stated_exception_reach_counts("The exception reaches the rows the rule names.")
-
-    def test_the_reader_rejects_a_document_that_states_the_counts_twice(self):
-        document = (
-            "The exception reaches 1 row of the 2 the register holds."
-            " The exception reaches 3 rows of the 4 the register holds."
-        )
-        with pytest.raises(ValueError, match="2 sentences"):
-            stated_exception_reach_counts(document)
-
-    def test_the_reader_reads_the_two_counts_the_sentence_states(self):
-        document = "The exception reaches 6 rows of the 134 the register holds."
-        assert stated_exception_reach_counts(document) == (6, 134)
-
     def test_the_zeek_page_rates_the_baseline_the_exception_reaches(self):
         rows = [line for line in ZEEK_PAGE.read_text().splitlines() if SSH2_BASELINE in line]
         assert rows, "{} holds no rating row for {}".format(ZEEK_PAGE, SSH2_BASELINE)
@@ -723,3 +711,58 @@ class TestThePagesThatCarryTheRule:
             assert "Undecided" not in row, "{} rates {} as undecided".format(
                 ZEEK_PAGE, SSH2_BASELINE
             )
+
+
+class TestTheExceptionReachCounts:
+    """Check that the rule states the two counts the register holds.
+
+    `.claude/rules/external-apis.md` states how many rows the exception reaches, and how
+    many keys the register holds. #272 removed a key under that sentence and no case caught
+    the move. #380 reads the two counts out of the prose and measures them against the
+    register, so the next move fails here.
+    """
+
+    def _stated(self):
+        return stated_exception_reach_counts(flatten(RULE_PAGE))
+
+    def _measured(self):
+        return measured_exception_reach_counts(load_register())
+
+    def test_the_rule_states_the_reach_the_register_holds(self):
+        assert self._stated()[0] == self._measured()[0]
+
+    def test_the_rule_states_the_register_key_count_the_register_holds(self):
+        assert self._stated()[1] == self._measured()[1]
+
+    def test_the_measurement_counts_every_register_key(self):
+        register = load_register()
+        assert measured_exception_reach_counts(register)[1] == len(register)
+
+    def test_the_measurement_counts_the_rows_the_reach_holds(self):
+        register = load_register()
+        assert measured_exception_reach_counts(register)[0] == len(REACHED_KEYS)
+
+    def test_the_reader_reads_the_two_counts_the_sentence_states(self):
+        document = "The exception reaches 6 rows of the 134 the register holds."
+        assert stated_exception_reach_counts(document) == (6, 134)
+
+    def test_the_reader_reads_a_sentence_that_states_one_row(self):
+        """The rule read `1 row` under #332, so the reader holds the singular form.
+
+        A reader that required `rows` would raise on the earlier sentence rather than
+        measure it. The count of 1 is the reach #332 recorded.
+        """
+        document = "The exception reaches 1 row of the 135 the register holds."
+        assert stated_exception_reach_counts(document) == (1, 135)
+
+    def test_the_reader_rejects_a_document_that_states_the_counts_nowhere(self):
+        with pytest.raises(ValueError, match="on 0 sentences"):
+            stated_exception_reach_counts("The exception reaches the rows the rule names.")
+
+    def test_the_reader_rejects_a_document_that_states_the_counts_twice(self):
+        document = (
+            "The exception reaches 1 row of the 2 the register holds."
+            " The exception reaches 3 rows of the 4 the register holds."
+        )
+        with pytest.raises(ValueError, match="on 2 sentences"):
+            stated_exception_reach_counts(document)

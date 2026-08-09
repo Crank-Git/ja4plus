@@ -510,30 +510,41 @@ holds every breaking change of this record against a row of that page.
   reaches 6 rows of the 135 the register holds**, and the register holds 134 keys. #272
   removed `ssh2.pcapng/JA4L-S` on 2026-08-09, because the repair to
   `ja4plus/fingerprinters/ja4l.py` made the comparison pass, and the prose kept the earlier
-  count. **The reach of 6 was correct and the key count alone was stale**, which the two
-  new cases prove: the reach case passed on the unrepaired prose and the key-count case
+  count. **The reach of 6 was correct, and the key count alone was stale.** The two new
+  cases prove that split. The reach case passed on the unrepaired prose. The key-count case
   failed with `assert 135 == 134`. **A count that no case measures goes stale.** #345
   repaired this shape in `tests/foxio_deviations.py`, and this round repairs the second
   sentence of the pair. `stated_exception_reach_counts` in
   `tests/test_precedence_exception.py` reads both numbers out of the sentence, and
-  `TestThePagesThatCarryTheRule` measures them against `exception_reach(load_register())`
-  and against `len(load_register())`. **The reader rejects a document that states the
-  counts on no sentence, and one that states them twice**, so a rewording that removes the
-  sentence fails the gate rather than passing it. Two more cases prove the reader against a
-  document that states the counts once and against a document that states them twice.
+  `measured_exception_reach_counts` reads the same two counts out of the register.
+  `TestTheExceptionReachCounts` holds the two against each other, and it follows the
+  `TestTheMarkerRuleCounts` shape of #345. **The reader raises `ValueError` on a document that
+  states the counts on no sentence, and on one that states them twice.** A rewording that
+  removes the sentence therefore fails the gate. **A check that a rewording defeats is not
+  a check**, and two further cases prove the reader in both of those directions. **Both
+  counts were proved live**, with `PYTHONDONTWRITEBYTECODE=1` and a cleared `__pycache__`. A
+  stale key count fails with `assert 135 == 134`. A stale reach fails with `assert 5 == 6`.
+  A removed sentence fails with `ValueError: the rule states the reach counts on 0
+  sentences, and it states them on one`.
   **The sweep read every count of register entries in `docs/`, `.claude/` and the root
-  documents, and it changed one sentence.** Four other live claims state 134 and each one
-  agrees with the register: `docs/specs/spec.md:539`,
-  `docs/specs/features/11-pre-release-validation.md:172` in `FR-pre-release-validation-33`,
-  the same page at line 370, and the marker rule of `tests/foxio_deviations.py:63`, which
-  #345 already holds under a case. `.claude/rules/external-apis.md` states 43 capability
-  entries and 37 decided value-form keys of #129, and both agree. **A dated record of a
-  past measurement is quoted, not
-  rewritten**, so `tests/test_foxio_deviations.py:660`, the docstring of
-  `tests/test_precedence_exception.py`, every count under `docs/implementation_notes.md`
-  and every Changelog row that states a past count stay as they read. No file under
-  `ja4plus/` changes, no fingerprint moves, and the register holds 134 keys against 134
-  xfailed.
+  documents, and it changed one sentence.** Four other live claims state 134, and each one
+  agrees with the register.
+  - `docs/specs/spec.md:539`.
+  - `docs/specs/features/11-pre-release-validation.md:172`, in
+    `FR-pre-release-validation-33`.
+  - `docs/specs/features/11-pre-release-validation.md:370`.
+  - The marker rule of `tests/foxio_deviations.py:63`, which #345 already holds under a
+    case.
+
+  `.claude/rules/external-apis.md` states 43 capability entries and 37 decided value-form
+  keys of #129, and the register measures both. **A dated record of a past
+  measurement is quoted, not rewritten.** `tests/test_foxio_deviations.py:660` records what
+  #341 measured. The module docstring of `tests/test_precedence_exception.py` records the
+  135 keys the run of #334 read at the pinned commit. `docs/implementation_notes.md` and
+  every page under `docs/specs/foxio/` record the readings of earlier issues. Every
+  Changelog row that states a past count records that round. **A correction inside a record
+  falsifies the record**, so all of them stay as they read. No file under `ja4plus/`
+  changes, no fingerprint moves, and the register holds 134 keys against 134 xfailed.
 - **Two timing cases read the work performed rather than the seconds elapsed** (#430).
   Round 158. Both cases compared wall-clock durations. Each one reported the load of the
   host beside the state of the package. #412 met both of them failing beside a mutation
