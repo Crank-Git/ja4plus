@@ -8,6 +8,28 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The README states eleven of the twelve FoxIO methods, the two contracts and the four
+  default bounds** (#62). Round TBD. The README claimed "all ten JA4+ methods". FoxIO
+  publishes twelve, and `technical_details/README.md:5-16` at the pinned commit lists
+  JA4LS and JA4TScan as rows of their own. **The claim was false in two directions**: the
+  project builds no JA4TScan, and it builds JA4LS, which the table never named. **The
+  issue body and `docs/specs/features/08-documentation.md` each say ten of the twelve,
+  and eleven is the number.** `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`, so
+  ten fingerprinters carry eleven methods, and the count of ten counts fingerprinters.
+  `docs/specs/spec.md:42` already read eleven. The method table now holds twelve rows and
+  an `Implemented` column, and JA4TScan alone reads `No`. **The README states the four
+  default bounds in one table**: 10000 entries and 600 seconds for a state table, 10000
+  connections and 300 seconds for the monitor. **The concurrency contract and the
+  independent-implementation sentence were already present**, so two new cases record
+  that rather than change prose. `tests/test_readme_contracts.py` holds fifteen case
+  functions, and each reads its number out of `ja4plus/` instead of restating it. Four
+  mutations prove them, and the mutation of `DEFAULT_MAX_CONNECTION_AGE` to 900 in the
+  code is the one that proves the bound cases read the code. **The self-review then
+  evaded three of the cases**, with a name left in a comment, a fresh wording of the
+  coverage claim, and a sentence that undercuts itself while keeping the words. All
+  three now fail, and two cases were added that tie the prose count to the table. No file under `ja4plus/`
+  changes and no fingerprint moves.
+
 - **Four QUIC and certificate readers name the errors they expect, and ten wide catches
   state why they stay wide** (#319). Round 133. `grep -rn "except Exception" ja4plus/`
   reads 14 sites across five files. **#319 is a reading of all fourteen, and it narrows

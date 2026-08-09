@@ -1,28 +1,53 @@
 <p align="center"><img src="assets/logo.png" width="300"></p>
 
-A Python library and CLI for JA4+ network fingerprinting. Implements all ten JA4+ methods for identifying and classifying network traffic based on TLS, TCP, HTTP, SSH, X.509, and DHCP characteristics. Supports QUIC, IPv4/IPv6, and multi-segment TCP reassembly.
+A Python library and command-line program that produces JA4+ fingerprints. It reads TLS,
+TCP, HTTP, SSH and DHCP traffic, and it reads an X.509 certificate. It supports QUIC,
+IPv4, IPv6 and multi-segment TCP reassembly.
 
-JA4+ is a set of network fingerprinting standards created by [FoxIO](https://foxio.io). This library is an independent Python implementation of the published specification. For the original spec, see the [FoxIO JA4+ repository](https://github.com/FoxIO-LLC/ja4).
+**FoxIO publishes twelve JA4+ methods, and this project implements eleven of them.** The
+twelfth is JA4TScan. `Methods` below names each method, and it states whether this
+project builds it.
+
+FoxIO owns the JA4+ standard, and [FoxIO](https://foxio.io) publishes it. This library is
+an independent implementation of that standard. FoxIO wrote no part of it. For the
+standard itself, read the
+[FoxIO JA4+ repository](https://github.com/FoxIO-LLC/ja4).
 
 [![Tests](https://github.com/Crank-Git/ja4plus/actions/workflows/test.yml/badge.svg)](https://github.com/Crank-Git/ja4plus/actions/workflows/test.yml)
 [![PyPI version](https://badge.fury.io/py/ja4plus.svg)](https://pypi.org/project/ja4plus/)
 [![Python versions](https://img.shields.io/pypi/pyversions/ja4plus.svg)](https://pypi.org/project/ja4plus/)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-## Supported Fingerprint Types
+## Methods
 
-| Type | Protocol | Description |
-|------|----------|-------------|
-| JA4 | TLS/QUIC | Client fingerprint from ClientHello messages |
-| JA4S | TLS/QUIC | Server fingerprint from ServerHello messages |
-| JA4H | HTTP | Client fingerprint from request headers and cookies |
-| JA4T | TCP | Client OS fingerprint from SYN packets |
-| JA4TS | TCP | Server fingerprint from SYN-ACK packets |
-| JA4L | TCP/QUIC | Light distance and latency estimation |
-| JA4X | X.509 | Certificate structure fingerprint from OID sequences |
-| JA4SSH | SSH | Session type classification from traffic patterns |
-| JA4D | DHCPv4 | DHCP client/server fingerprint (FoxIO PR #267/#270) |
-| JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint (FoxIO PR #267/#270) |
+The table holds the twelve methods FoxIO publishes at
+[`technical_details/README.md`](https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/README.md).
+The `Implemented` column states whether this project builds the method.
+
+| Method | Protocol | Description | Implemented |
+|------|----------|-------------|-------------|
+| JA4 | TLS/QUIC | Client fingerprint from ClientHello messages | Yes |
+| JA4S | TLS/QUIC | Server fingerprint from ServerHello messages | Yes |
+| JA4H | HTTP | Client fingerprint from request headers and cookies | Yes |
+| JA4L | TCP/QUIC | Client-to-server latency, written as `JA4L-C=` | Yes |
+| JA4LS | TCP/QUIC | Server-to-client latency, written as `JA4L-S=` | Yes |
+| JA4X | X.509 | Certificate structure fingerprint from OID sequences | Yes |
+| JA4SSH | SSH | Session type classification from traffic patterns | Yes |
+| JA4T | TCP | Client OS fingerprint from SYN packets | Yes |
+| JA4TS | TCP | Server fingerprint from SYN-ACK packets | Yes |
+| JA4TScan | TCP | Active TCP fingerprint scanner | No |
+| JA4D | DHCPv4 | DHCP client/server fingerprint (FoxIO PR #267/#270) | Yes |
+| JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint (FoxIO PR #267/#270) | Yes |
+
+**JA4TScan is declined by decision, and it is not an omission.** It sends crafted packets
+to a host the operator names and reads the responses. Every other method reads traffic
+that already exists, so JA4TScan reaches a network the operator did not capture. That
+capability is larger than fingerprint production.
+[`docs/specs/spec.md`](docs/specs/spec.md) holds the decision under `Non-goals`, and the
+decision is reversible.
+
+`JA4LFingerprinter` builds both JA4L and JA4LS, so ten fingerprinters carry eleven
+methods. The `--types` option names the two together as `ja4l`.
 
 QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS ClientHellos. IPv4 and IPv6 are both supported across all fingerprinters.
 
@@ -324,6 +349,24 @@ the least recently used entry. A connection can therefore leave a long capture a
 return, and the fingerprint of a returned connection may be incomplete.
 `Processor.stats()` reports the count of returned connections for each method. Eviction
 runs on packet arrival and the library starts no thread.
+
+#### The default bounds
+
+| Bound | Default |
+|---|---|
+| The maximum entry count of one state table | 10000 entries |
+| The maximum age of one entry of a state table | 600 seconds |
+| The maximum count of connections the monitor holds | 10000 connections |
+| The maximum age of one connection of the monitor | 300 seconds |
+
+`ja4plus/utils/state_table.py` sets the first two, and a table that needs a smaller bound
+states its own. `ja4plus/watch.py` sets the last two, and `--max-connections` and
+`--connection-timeout` change them for one run. **The monitor holds an idle connection
+for a shorter time than a state table does**, so the monitor evicts a connection first.
+[`docs/specs/features/03-concurrency-safety.md`](docs/specs/features/03-concurrency-safety.md)
+states the entry count and the age of every table.
+
+#### The memory ceiling
 
 This package states a memory ceiling of **512 MiB**. One `Processor()` at the shipped
 defaults reads 1000000 packets across 100000 distinct connections and holds resident
