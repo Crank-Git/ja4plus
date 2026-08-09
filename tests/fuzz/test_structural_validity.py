@@ -72,6 +72,20 @@ def random_client_hellos():
     return random_payloads(DRAWS, BODY_SIZE, prefix=VALID_HEADERS)
 
 
+def read_every_random_client_hello():
+    """Return the fingerprint of each random ClientHello.
+
+    A guard makes the reader return nothing, so the two count cases below would raise
+    `TypeError` on that value. Each count case measures a count, so this reader drops a
+    value of None and lets the count report the guard.
+
+    Returns:
+        A list of fingerprints, one for each draw the reader answered.
+    """
+    produced = [read_ja4(load) for load in random_client_hellos()]
+    return [value for value in produced if value is not None]
+
+
 def test_a_structurally_valid_client_hello_with_a_random_body_produces_a_fingerprint(
     parser_calls,
 ):
@@ -93,7 +107,7 @@ def test_a_random_body_produces_the_version_token_00_on_511_draws_of_512():
     A guard on the version token therefore rejects almost every draw. It still leaves
     one draw of 512, so it narrows the hole and it closes none of it.
     """
-    produced = [read_ja4(load) for load in random_client_hellos()]
+    produced = read_every_random_client_hello()
 
     assert sum(1 for value in produced if value[1:3] == "00") == VERSION_TOKEN_00_DRAWS
 
@@ -104,7 +118,7 @@ def test_a_random_body_carries_no_cipher_suite_and_no_extension_on_79_draws_of_5
     The count is far below the draw count, so this guard narrows the hole less than the
     version guard does.
     """
-    produced = [read_ja4(load) for load in random_client_hellos()]
+    produced = read_every_random_client_hello()
 
     assert sum(1 for value in produced if value[4:8] == "0000") == NO_CIPHER_NO_EXTENSION_DRAWS
 
