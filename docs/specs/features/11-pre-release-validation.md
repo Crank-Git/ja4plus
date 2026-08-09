@@ -195,7 +195,7 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 | `docs/mutation_reports/` | Report every mutation and every candidate of one sweep. | One report for each module group; each one applied whole. |
 | `docs/mutation_settlements/` | Report the verdict of each candidate. | `repaired` with the case name; `correct` with the reason. |
 | `docs/performance.md` | Report the throughput of each named packet run. | One row for each host, each Python version and each commit. |
-| #410 | Hold the verbatim transcript of the Linux gates. | Recorded with the caveat; not yet run. |
+| #410 | Hold the verbatim transcript of the Linux gates. | Run on 2026-08-09 at commit `3991712`; recorded with the caveat. |
 
 ## Behaviour rules
 
@@ -242,8 +242,15 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 - The Linux host verifies a Linux code path. It predicts no `ubuntu-latest` result,
   because the runner holds another kernel, another processor count, another memory size
   and another Python version.
+- The Linux host measures `python3.12` alone. It holds no other interpreter, so the 3.9,
+  the 3.10, the 3.11 and the 3.13 rows of the matrix get no measurement on that host.
+- Every measurement this host produces carries the two rules above beside it. A record
+  that omits them states more than the host measured.
 - The clean environment installs no development extra, so the run reads the shipped
   dependency list.
+- A case that installs the shipped package builds and installs before it measures, so its
+  cost follows the host rather than the case count. #410 measured 71.56 s on the granted
+  Linux host against the 23 s #408 measured on macOS.
 - **This feature set sets no throughput target, and it adds no gate on a throughput
   value.** `Non-goals` of `docs/specs/spec.md` states the reason.
 - A throughput measurement of this feature set becomes no floor. A floor derived from one
@@ -369,5 +376,6 @@ the checkout is.
 - ~~Whether the acceptance criteria of #411 can group the `candidates` key by module.~~
   **Settled by #411 on 2026-08-09.** The census groups by test file, and the sweep is
   partitioned into one sweep for each module group.
-- Which checkout path the granted Linux host holds. `.issue-flow.json` records none, and
-  #410 states it after the first run.
+- ~~Which checkout path the granted Linux host holds.~~ **Settled by #410 on 2026-08-09.**
+  The host holds a checkout at `/home/e/ja4plus-verify`, and its environment is
+  `/home/e/ja4plus-verify/.venv` on `python3.12`.

@@ -73,6 +73,37 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **The granted Linux host measured the gates for the first time** (#410). Round TBD.
+  The host is `bigboy`, Ubuntu 24.10, kernel `6.11.0-29-generic`, 56 cores, 137 GiB and
+  `python3.12` only. It holds a checkout at `/home/e/ja4plus-verify`, which
+  `.issue-flow.json` recorded nowhere, and the run created
+  `/home/e/ja4plus-verify/.venv` on `Python 3.12.7`. The checkout held
+  `3991712f08fbb11996fad69a3b457150d585463b`, the head of
+  `epic/406-pre-release-validation`. #410 holds every transcript verbatim.
+  **The gates report no failure.** The unit suite reads
+  `2547 passed, 3 skipped, 1825 deselected, 8 xfailed, 16 warnings in 393.15s (0:06:33)`.
+  Coverage reads 94 percent against the `COVERAGE_FLOOR` of 70. The conformance suite reads
+  `1532 passed, 143 skipped, 2574 deselected, 134 xfailed, 1 warning in 16.21s` against
+  the 134 keys of `tests/foxio_deviations.json`, which matches the premise the issue
+  states. `ruff check` reads `All checks passed!`, `ruff format --check` reads
+  `183 files already formatted`, and `mypy --strict ja4plus/` reads
+  `Success: no issues found in 31 source files`. The fuzz job reads `127 passed`.
+  `TestTheStatedMemoryCeiling` reads `4 passed`, and
+  `tests/memory_ceiling_run.py --packets 30000 --connections 3000 --bound 0` writes
+  `peak_mib` 115.37 against the stated 512 MiB ceiling.
+  **The installed-wheel marker took 71.56 s on Linux against the 23 s #408 measured on
+  macOS.** That case builds an artifact and installs it, so its cost follows the host.
+  **The caveat binds every measurement above.** The host verifies a Linux code path. It
+  predicts no `ubuntu-latest` result, because the runner holds another kernel, another
+  processor count, another memory size and another Python version. The host measures
+  `python3.12` alone, so the 3.9, the 3.10, the 3.11 and the 3.13 rows of the matrix get
+  no measurement here. **Three statements of #410 are not checkable, and each names its
+  reason.** No check confirms that a transcript came from that host. No check confirms
+  that no load generator ran. No check turns a Linux pass into an `ubuntu-latest`
+  prediction. `docs/specs/features/11-pre-release-validation.md` states the caveat, states
+  the version gap, and settles the open question about the checkout path. **This entry
+  adds no continuous-integration job.** **No file under `ja4plus/` changes, no file under
+  `tests/foxio_vectors/` changes, and no fingerprint moves.**
 - **One case fingerprints a capture from the installed source distribution** (#409).
   Round TBD. `tests/test_installed_wheel.py` gains nine cases, and no new file appears.
   #408 wrote four functions that take the artifact as a parameter: the build, the
