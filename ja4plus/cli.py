@@ -447,8 +447,10 @@ def _init_lookup(args: argparse.Namespace) -> JA4DBClient | None:
         from ja4plus.ja4db import JA4DBClient
 
         client = JA4DBClient(allow_remote=allow_remote)
+    # The wide catch is the design, and #319 read the site and narrowed nothing. The
+    # lookup enriches a result the command already produced, so a client this command
+    # cannot build costs the operator a warning and no fingerprint.
     except Exception as e:
-        # #319 owns this wide handler.
         print(f"Warning: could not initialize ja4db lookup: {e}", file=sys.stderr)
         return None
 
@@ -505,6 +507,10 @@ def cmd_analyze(args: argparse.Namespace) -> None:
             # The reader of standard output went away. `main` ends the run quietly, and
             # the catch below would report it as a read error of the capture file.
             raise
+        # The wide catch is the design, and #319 read the site and narrowed nothing. The
+        # capture reader is `scapy`, which publishes no exception list for a corrupt
+        # file. A traceback tells the operator less about a bad capture than this
+        # message, so the command reports the failure and exits.
         except Exception as e:
             err = str(e)
             if "not a pcap" in err.lower() or "magic" in err.lower() or "truncated" in err.lower():
@@ -616,9 +622,11 @@ def cmd_watch(args: argparse.Namespace) -> None:
                 file=sys.stderr,
             )
             sys.exit(1)
+        # The wide catch is the design, and #319 read the site and narrowed nothing. The
+        # capture layer raises one of `CAPTURE_FAILURES`, which the clause above names,
+        # so this clause reads a failure of the report path. No case reaches it, because
+        # this host grants no capture socket, and the reading rests on the code alone.
         except Exception as e:
-            # The capture layer raises one of `CAPTURE_FAILURES`, so this clause reads a
-            # failure of the report path. #319 owns the bare catches of this module.
             print(f"Error during capture: {e}", file=sys.stderr)
             sys.exit(1)
 
@@ -666,6 +674,10 @@ def cmd_cert(args: argparse.Namespace) -> None:
             from cryptography.hazmat.primitives.serialization import Encoding
 
             cert_bytes = cert.public_bytes(Encoding.DER)
+        # The wide catch is the design, and #319 read the site and narrowed nothing. The
+        # command reports the failure to the operator and exits, where the library form
+        # of the same read returns nothing. `compute_ja4x_from_pem` of `ja4plus/__init__`
+        # holds that form, and #319 narrowed it.
         except Exception as e:
             print(f"Error parsing PEM certificate: {e}", file=sys.stderr)
             sys.exit(1)
@@ -729,9 +741,11 @@ def cmd_db(args: argparse.Namespace) -> None:
     try:
         import urllib.request
 
-        # #319 owns this wide handler. `urlopen` raises `URLError`, `HTTPError`,
-        # `OSError`, `ValueError` and `UnicodeDecodeError` for the cases here.
         data = urllib.request.urlopen(_MAPPING_URL, timeout=15).read().decode("utf-8")
+    # The wide catch is the design, and #319 read the site and narrowed nothing.
+    # `urlopen` raises `URLError`, `HTTPError`, `OSError`, `ValueError` and
+    # `UnicodeDecodeError` for the cases here, and a proxy or a TLS failure of the host
+    # adds more. The command reports the failure to the operator and exits.
     except Exception as e:
         print(f"Error: could not download database: {e}", file=sys.stderr)
         sys.exit(1)
