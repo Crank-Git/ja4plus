@@ -29,6 +29,10 @@ features:
     file: features/08-documentation.md
   - id: release
     file: features/09-release.md
+  # The file number equals the epic number. Epic 10 (#194) holds no feature document,
+  # so `features/10-*.md` does not exist and the sequence loses no file.
+  - id: pre-release-validation
+    file: features/11-pre-release-validation.md
 ---
 
 # ja4plus 1.0
@@ -128,6 +132,11 @@ that user, because comparison is the only thing a fingerprint is for.
 | alias | noun | One recorded pair that maps the stream identity a FoxIO reference names to the stream identity `ja4plus` produces. | mapping, translation, synonym |
 | value decline | noun | One register entry that records a disagreement with a FoxIO value. An implementation change on either side could close it. The entry carries `"capability": false`. | value dispute, defect entry |
 | capability decline | noun | One register entry that records a capability this project chose not to build. No implementation change closes it, because the difference is the scope this project chose. The entry carries `"capability": true`. | scope decline, boundary decline |
+| mutation | noun | One change that a sweep applies to one expression of one module under `ja4plus/`. The sweep runs the suite against the change and then reverts it. | mutant, tweak, defect injection |
+| sweep | noun | One run of `tests/mutation_sweep.py` over a named module set. It records the result of every mutation it applies. | campaign, mutation testing, sweep run |
+| candidate | noun | One test case that no mutation of one sweep makes fail. The sweep does not count it as a failure before it applies a mutation. A candidate belongs to the sweep that named it. | survivor, weak case, untested case |
+| clean environment | noun | One virtual environment that holds the installed package, and that holds no source tree on its import path. `features/11-pre-release-validation.md` states the cases that build it. | fresh environment, sandbox, virtualenv |
+| throughput | noun | The count of packets one processor reads for each second of elapsed time, for one named packet run on one named host. | packet rate, bandwidth, processing speed |
 
 ## Goals
 
@@ -191,6 +200,7 @@ that user, because comparison is the only thing a fingerprint is for.
 | Database enrichment | `features/07-db-enrichment.md` | Epic 7: Database enrichment | — |
 | Documentation | `features/08-documentation.md` | Epic 8: Documentation | — |
 | Release | `features/09-release.md` | Epic 9: Release | — |
+| Pre-release validation | `features/11-pre-release-validation.md` | Epic 11: Pre-release validation | — |
 
 ## Architecture & stack
 
@@ -504,10 +514,31 @@ method coverage.
 
 Goal: publish version 1.0.0.
 
-Covers `features/09-release.md`. Depends on Epic 8.
+Covers `features/09-release.md`. Depends on Epic 8 and on Epic 11. #406 blocks #20, so
+version 1.0.0 does not publish before Epic 11 closes.
 
 Exit criteria: version 1.0.0 is on PyPI. The wheel installs into a clean
 environment. The GitHub release carries the changelog entry.
+
+### Epic 11: Pre-release validation
+
+Goal: produce the evidence that version 1.0.0 is fit to publish, before Epic 9
+publishes it.
+
+Covers `features/11-pre-release-validation.md`. Depends on Epic 8, because the gates and
+the documentation it measures must exist first. **The file number equals the epic
+number.** Epic 10 (#194) holds no feature document, so `features/10-*.md` does not exist.
+
+Exit criteria: one case installs the built wheel into a clean environment and produces a
+fingerprint. Another case does the same for the source distribution. The five gates run
+on the granted Linux host, and #410 holds the verbatim output of each one. A sweep
+reaches every module whole, and a worker settles every candidate of those modules. One
+recorded measurement states the throughput of the processor for a named packet run on a
+named host. The conformance suite reports 1532 passed, 143 skipped and 134 xfailed
+against 134 keys of `tests/foxio_deviations.json`.
+
+**This epic publishes nothing, it sets no throughput target, and it moves no
+fingerprint.**
 
 ## Milestones
 
@@ -717,6 +748,7 @@ Two items blocked approval. Both are now decided.
 | 142 | 2026-08-09 | #66 landed and the documentation site publishes to GitHub Pages, while `CHANGELOG.md` holds the release notes of version 1.0.0. **The publish workflow builds nothing of its own.** `.github/workflows/docs-build.yml` installs the committed `docs` pins into an empty environment and runs `mkdocs build --strict`, and a publish job that rebuilt the site with a second recipe would be a second source of truth. That job gains a `workflow_call` trigger and one conditional upload step, so `.github/workflows/docs.yml` calls it and deploys the artifact it uploads. The input is absent on a `push` trigger and on a `pull_request` trigger, so a pull request uploads nothing. No pin and no build step changes. **This repository holds no GitHub Pages site, and no run has ever deployed.** `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides whether to turn Pages on, because that change publishes a public website. The first job of the workflow reads `GET /repos/{owner}/{repo}/pages` and names the setting in the failure. A 404 reports that the site is absent, a `build_type` other than `workflow` reports the wrong source, and any other status reports the status it read. **The deployment stays unverified until the user changes the setting**, and no case claims otherwise. **The release notes name thirteen interface changes and eight fingerprints that move.** `tests/test_release_notes.py` holds the two tables against the `**BREAKING` entries of `CHANGELOG.md`, against `docs/migration-0.6-to-1.0.md` and against this table, so a breaking change that reaches the record and reaches no table fails a case. **Two defects of the record reached the release notes, and the notes report both.** #319 narrowed `compute_ja4x_from_pem` and `compute_ja4x_from_der` under round 133, and the migration page holds no row for it, which #399 records. The same page cites `Round 122, #59 and #364`, and row 123 of this table is the row that records #364, which #401 records. **A case that compared the two `Record` cells passed on the second defect, because both files held one error.** The case now reads this table, which is the authority both files copy. #65 owns the page, so the notes hold the correct citation and the page stays as it is. **No file under `ja4plus/` changes and no fingerprint moves.** |
 | 143 | 2026-08-09 | #399, #401 and #403 landed together and `docs/migration-0.6-to-1.0.md` answers to the record. **One worker carried all three, because all three change one page or the record of it, and two workers on one file collide for no gain.** #401 is a conflated citation: the page cited one row under `Round 122, #59 and #364`, and this table holds round 122 for #59 and round 123 for #364. Row 122 records `lookup_many` and the source field, row 123 records the item access of a `LookupResult`, and a reader who followed `Round 122` for the item-access rule reached the wrong row. #399 is a missing row: the page held eleven breaking changes and none recorded #319, which narrowed the handlers of `compute_ja4x_from_pem` and `compute_ja4x_from_der`, so an input that returned `None` in version 0.6.0 can now raise. **The page holds thirteen rows today.** The conflated row parts into two, each naming the round that records it, and the certificate readers gain one row that states the old form, the new form, the reason and `Round 133, #319`. **The two edits are the smaller half of this round.** Both defects sit in a page this epic created, and #66 found them only because it wrote the release notes against the page and compared. The question this round answers is why the cases of the page did not. **The first citation case of #66 compared two copies of one claim.** It read the `Record` cell of the release notes against the `Record` cell of the migration page. Both files held the same wrong round, so the two agreed. The case passed on the very error #401 records. #66 replaced it with a case that reads this table. **That is the eighteenth recorded instance of a comparison that never runs**, and #395 records the seventeenth. **`test_every_citation_of_the_migration_page_names_the_row_that_records_it` holds the page to the same authority.** It reads every `Round N, #M` citation of the page against this table, and it opens no second file. `_specification_rows`, `_citations` and `_wrong_citations` now serve the notes case and the page case, so one reader holds both files to one table. **`test_every_breaking_change_of_the_record_reaches_the_migration_page` reads the direction #66 left open.** `test_every_breaking_change_of_the_migration_page_reaches_the_release_notes` reads the page into the notes, and a page that holds fewer changes than the record passes it. That is why the gap of #319 survived a green suite. The record is the two release-notes tables of `CHANGELOG.md` and every entry that opens with the `**BREAKING` marker, which is 20 issues. **The `**BREAKING` marker alone would not have caught #319.** Eight entries carry it and all eight already reached the page; the interface table of the notes is the record that holds the thirteenth change. **The prose of the notes reaches neither reader.** It names #47 and #94, which the sweep of #395 judged marginal, and a reader that took the prose would demand a row for each. **Six mutations prove the three cases discriminate, and each was restored.** `Round 123, #364` back to `Round 122, #364` fails the citation case alone with `round 122 records no #364`. `Round 999, #364` fails it with `the migration page cites rounds the specification does not hold: [999]`. The `Record` cell of the new row moved from `Round 133, #319` to `Round 135, #76` holds the row count at thirteen. It fails the completeness case alone, with `the record names these breaking changes and the migration page omits them: [319]`. The removal of the whole row fails five cases, the row floor among them. **The floors rise with the page.** `MINIMUM_BREAKING_CHANGES` of `tests/test_method_pages.py` and `MINIMUM_MIGRATION_ROWS` of `tests/test_release_notes.py` read 13, `MINIMUM_MIGRATION_CITATIONS` reads 14 and `MINIMUM_RECORD_ISSUES` reads 20. **This round re-measured the record on its base commit `2a1fb33` and it carried no number from the brief.** This table holds 135 assigned rounds, numbered 1 through 135 with no gap and no duplicate, and 7 rows reading `TBD`. **#403 is the sentence this repair falsified, and the project manager widened the scope of this round to absorb it.** `CHANGELOG.md` read "One breaking change reaches this record and reaches no row of the migration page", and the new row of #319 made that untrue. The worker filed the finding and declined the edit, because #66 owned the release notes. **#66 sub-merged as `2a1fb33` before the worker finished, so the paragraph belonged to nobody and the worker held the context.** The paragraph now states that the record and the page name the same breaking changes, and it keeps the record that the gap existed and that #399 closed it. **The interesting half is that no case read the paragraph.** The prose asserted the same thing as `test_every_breaking_change_of_the_record_reaches_the_migration_page`, in the opposite direction, and nothing connected the two. `test_the_release_notes_report_the_gap_the_record_shows_and_no_other` connects them. It reads a present-tense gap claim of the notes against the set difference of the record and the page, and never against a second copy of the claim. **It fails in both directions, and two more mutations prove it.** The stale sentence restored fails it alone, with `the release notes claim the migration page misses a breaking change, and the record shows none: 'reaches no row of the migration page'`. The `Round 135, #76` mutation, which holds the row count at thirteen, fails it beside the completeness case, with `the record shows these breaking changes the migration page omits, and the release notes report no gap: [319]`. **The reader takes a present-tense claim alone, and that is deliberate.** A past-tense sentence records a gap an issue closed and stays true, so the paragraph keeps its history. A gap claim in words `GAP_CLAIM` does not hold escapes the case, and the docstring states the asymmetry: the failure this case stops is a sentence that survives a repair unchanged, and unchanged text matches. **Two findings reach no repair here.** `_citations` reads the first `Round` of a line and every issue behind it, which is right for a table row and over-strict for wrapped prose; it failed on this round's own corrected paragraph, where `Round 133, #319. #66 found` read as `round 133 records no #66`. It fails loud and never passes silently, so the paragraph drops the round rather than the reader loosening. The intro of the release notes states that a change the migration page records reaches a row or fails a case, and it names the new direction not at all; the sentence is true and incomplete. **The whole gate ran on this host.** The unit suite reports 2502 passed against the 2499 of the base commit, and the three new cases are the difference; 2 skipped, 8 xfailed and 98 subtests hold. **Coverage holds at 94**, and the missed line count reads 273 of 4232 statements. The conformance suite reports 1532 passed, 143 skipped and 134 xfailed, against the 134 keys of `tests/foxio_deviations.json`. `mypy --strict` finds no issue in 31 source files, `ruff check` and `ruff format --check` pass on 175 files, and `mkdocs build --strict` exits 0 with the two new citations rendered on `site/migration-0.6-to-1.0/index.html`. `TestTheStatedMemoryCeiling::test_a_smaller_entry_count_holds_less_resident_memory` passed on this quiet host, and #389 owns it. **No file under `ja4plus/` changes and no fingerprint moves.** |
 | 144 | 2026-08-09 | #389 landed and the memory ceiling control reads a quantity a busy host does not move. **`TestTheStatedMemoryCeiling::test_a_smaller_entry_count_holds_less_resident_memory` failed and then passed on an unchanged tree, and five workers reported it.** #62 saw one failure, #64 saw three of five, #65 saw one at load average 8.66 and a pass at 17.60, and #391 and #395 saw passes at 6.4 and 5.31. **The case is the control that proves the entry count bound holds the ceiling, and a control that fails when nothing is wrong teaches a reader to disregard it.** This project records eighteen instances of a comparison that is never made reading as a comparison that passes. **The mechanism is memory pressure, and it is not processor contention.** A resident reading states what the host left in memory, and a host under memory pressure reclaims the pages of a running process, reaching the run that holds the most memory first. The reclaim moves the two runs of the control by different amounts, and it moves the ratio toward one. **The margin explains the platform difference the issue recorded.** The growth of each run holds a term the entry count bound governs and a term it does not, because `BaseFingerprinter.fingerprints` grows with the packet count in both runs. The governed term is 57 percent of the Linux reading and 25 percent of the macOS reading, so the same perturbation crosses the threshold on macOS first. **The reproduction ran on `bigboy`, an Ubuntu 24.10 host with 56 cores, 137 GiB and `python3.12`.** Each measurement run ran under `systemd-run --user --scope -p MemoryMax=<limit>`, which reclaims the pages of that run alone and leaves the host untouched. **A deliberate processor load reproduced nothing, and that reading names the mechanism.** 56 processes that hold a processor busy held the load average at 58 on 56 cores for three rounds, and that matches the ratio of load to cores at every reported failure. The runs took 59 to 67 seconds against 27 quiet, and the resident ratio read 0.361, 0.445 and 0.407. **Memory pressure moved it at once.** The resident ratio read 0.434 at no limit, 0.962 at 80 MiB and 0.786 at 75 MiB, and at 70 MiB both runs added 0.00 MiB. The case that reads the resident growth fails at 80 MiB on the ratio and at 75 MiB and 70 MiB on the floor, and one base-commit run read `the shipped run added 0.87 MiB, which is too little to read`. **Three rounds at the 80 MiB limit read 1.047, 0.885 and 1.045**, so a rule that repeats the pair and takes the median fails at every round and costs three times the wall clock at 57 seconds a round. That reading declines shape 2 of the issue. **The block count read 0.392 at every one of the four limits**, and the block growth of the shipped run held between 376952 and 376965, so the four readings differ by 13 blocks. **The case now reads `sys.getallocatedblocks`, and it carries the name `test_a_smaller_entry_count_holds_fewer_memory_blocks`.** The run reports `idle_blocks` and `final_blocks` beside the unchanged resident readings, `traffic_growth_blocks` refuses a reading that holds no block pair, and `TestTheBlockReading` holds two cases that start no interpreter and read the recorded 80 MiB pair. **The run collects the cyclic garbage before it counts the blocks.** A count taken between two collections holds the garbage the collector has not reached, and the point it reaches moves with the allocation history. Without the collection two macOS readings gave a control growth of 230616 and 247991, at a ratio of 0.612 and 0.664, and with the collection three rounds read 147562, 147566 and 147569 at a ratio of 0.398. The collection runs after the resident reading at both points, so it moves no part of the ceiling reading. **`CONTROL_GROWTH_RATIO` stays 0.85 and the mutation proves the case still discriminates.** With the control bound raised from 100 to the shipped 10000 the case fails, at 1.361 on Linux and 1.367 on macOS, and it reads `a bound of 10000 added 506935 blocks and the shipped bounds added 370945 blocks, a ratio of 1.367, so the entry count changed nothing`. The file was restored after each mutation. **`CONTROL_FLOOR_MIB` is retired and the floor reads four blocks for each packet.** A MiB floor is the reading the host moves: under the 70 MiB limit the shipped run added 0.00 MiB and 376954 blocks. The measured rate is 12.37 blocks for each packet at 30000 packets, 13.99 at 5000 and 15.08 at 1000, so the reading sits 3.1 times above the floor at the default size. The retired MiB floor sat 2.9 times below its reading, so the rate holds the strength the MiB floor held. **The repaired case passes at all four limits, including the 70 MiB limit where the resident growth reads 0.00 MiB.** **The ceiling case and the two other controls are unchanged and each still passes under the mutation.** The ceiling reads a high-water mark and asserts an upper bound, so memory pressure only lowers that reading and never turns it red. **No file under `ja4plus/` changes and no fingerprint moves.** |
+| TBD | 2026-08-09 | #407 landed and the specification records Epic 11. **Nothing measures four statements version 1.0.0 makes**, so #406 opens the epic that measures them. No case runs the shipped package. Every Linux result comes from a runner. The sweep leaves 974 of its 976 candidates unsettled. The package states no throughput. `features/11-pre-release-validation.md` holds 33 requirements, and every sub-issue of #406 quotes one. **The file number equals the epic number.** Epic 10 (#194) holds no feature document, so `features/10-*.md` does not exist and the sequence loses no file. `Terms` gains `mutation`, `sweep`, `candidate`, `clean environment` and `throughput`. **A count of the table read 67 rows, and the table held none of the five under any spelling.** No row of this round therefore rotates a synonym of an existing row. `tests/test_specification_terms.py` now fails a term that two rows carry, because a reader who scrolls a 72-row table does not see the duplicate. **The evidence contradicts two premises of the epic, and this round works around neither.** `tests/mutation_sweep.py:396` groups the `candidates` key by test file and not by module. A candidate survives every mutation of every swept module, so the per-module census that #411 states needs one sweep for each module group. The report of 2026-08-07 also holds a `Date` field and no commit field, so #411 adds one. `Open questions` of the feature document records both. |
 
 ## Issue map
 
@@ -736,6 +768,7 @@ Created by `spec-to-issues` on 2026-08-06 against `Crank-Git/ja4plus`.
 | Epic 7: Database enrichment | `features/07-db-enrichment.md` | #18 | #57, #58, #59, #60, #61 |
 | Epic 8: Documentation | `features/08-documentation.md` | #19 | #62, #63, #64, #65, #66 |
 | Epic 9: Release | `features/09-release.md` | #20 | #67, #68, #69, #70 |
+| Epic 11: Pre-release validation | `features/11-pre-release-validation.md` | #406 | #407, #408, #409, #410, #411, #412, #413, #414, #415 |
 
 ### Requirements
 
@@ -836,6 +869,39 @@ Created by `spec-to-issues` on 2026-08-06 against `Crank-Git/ja4plus`.
 | `FR-live-capture-12` | #56 |
 | `FR-live-capture-13` | #56 |
 | `FR-live-capture-14` | #53 |
+| `FR-pre-release-validation-1` | #408 |
+| `FR-pre-release-validation-2` | #408 |
+| `FR-pre-release-validation-3` | #408 |
+| `FR-pre-release-validation-4` | #408 |
+| `FR-pre-release-validation-5` | #408 |
+| `FR-pre-release-validation-6` | #408 |
+| `FR-pre-release-validation-7` | #408 |
+| `FR-pre-release-validation-8` | #409 |
+| `FR-pre-release-validation-9` | #409 |
+| `FR-pre-release-validation-10` | #409 |
+| `FR-pre-release-validation-11` | #409 |
+| `FR-pre-release-validation-12` | #410 |
+| `FR-pre-release-validation-13` | #410 |
+| `FR-pre-release-validation-14` | #410 |
+| `FR-pre-release-validation-15` | #410 |
+| `FR-pre-release-validation-16` | #411 |
+| `FR-pre-release-validation-17` | #411 |
+| `FR-pre-release-validation-18` | #411 |
+| `FR-pre-release-validation-19` | #411 |
+| `FR-pre-release-validation-20` | #411 |
+| `FR-pre-release-validation-21` | #411, #412, #413, #414 |
+| `FR-pre-release-validation-22` | #412, #413, #414 |
+| `FR-pre-release-validation-23` | #412, #413, #414 |
+| `FR-pre-release-validation-24` | #412 |
+| `FR-pre-release-validation-25` | #414 |
+| `FR-pre-release-validation-26` | #414 |
+| `FR-pre-release-validation-27` | #415 |
+| `FR-pre-release-validation-28` | #415 |
+| `FR-pre-release-validation-29` | #415 |
+| `FR-pre-release-validation-30` | #415 |
+| `FR-pre-release-validation-31` | #415 |
+| `FR-pre-release-validation-32` | #415 |
+| `FR-pre-release-validation-33` | #407, #408, #409, #410, #411, #412, #413, #414, #415 |
 | `FR-release-1` | #67 |
 | `FR-release-2` | #67 |
 | `FR-release-3` | #67 |

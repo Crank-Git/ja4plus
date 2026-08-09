@@ -73,6 +73,30 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **The specification records Epic 11, pre-release validation** (#407). Round TBD. New
+  file `docs/specs/features/11-pre-release-validation.md`. It states 33 requirements, and
+  every sub-issue of #406 quotes one. **The epic measures four statements that version
+  1.0.0 makes and that nothing checks today.** No case runs the shipped package. Every
+  Linux result comes from a continuous-integration runner. The sweep leaves 974 of its
+  976 candidates unsettled. The package states no throughput. **The epic publishes
+  nothing. It sets no throughput target, and it moves no fingerprint.**
+  `docs/specs/spec.md` gains the feature entry, the `Feature map` row, the `Epics`
+  section, both `Issue map` tables and five `Terms` rows. **The file number equals the
+  epic number.** Epic 10 (#194) holds no feature document, so `features/10-*.md` does not
+  exist and the sequence loses no file.
+  `Terms` gains `mutation`, `sweep`, `candidate`, `clean environment` and `throughput`.
+  **A count of the table read 67 rows, and the table held none of the five under any
+  spelling.** No row of this round therefore rotates a synonym of an existing row. New
+  file `tests/test_specification_terms.py` fails a term that two rows carry, and fails a
+  row that bars no synonym. A reader who scrolls a 72-row table sees neither by eye.
+  **The evidence contradicts two premises of the epic, and the feature document records
+  both rather than a repair.** `tests/mutation_sweep.py:396` groups the
+  `candidates` key of the report by test file and not by module. A candidate is a case
+  that survived every mutation of every swept module, so no module owns one. The
+  per-module census that #411 states therefore reads one sweep for each module group. The
+  report of 2026-08-07 also holds a `Date` field and no commit field, so
+  `FR-pre-release-validation-17` asks #411 to add one. This entry changes no file under
+  `ja4plus/`.
 - **The documentation site publishes to GitHub Pages, and this file holds the release
   notes of version 1.0.0** (#66). Round 142. New file `.github/workflows/docs.yml`. It
   fires on a push to `master`, which is the live branch, and a promotion from `dev` to
