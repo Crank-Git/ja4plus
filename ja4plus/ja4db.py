@@ -18,6 +18,7 @@ from __future__ import annotations
 import csv
 import logging
 import os
+import sys
 import threading
 from urllib.parse import quote
 
@@ -32,6 +33,12 @@ LookupResult = dict[str, str]
 # Bundled mapping from FoxIO's ja4plus-mapping.csv
 _MAPPING_URL = "https://raw.githubusercontent.com/FoxIO-LLC/ja4/main/ja4plus-mapping.csv"
 _BUNDLED_CSV = os.path.join(os.path.dirname(__file__), "data", "ja4plus-mapping.csv")
+
+# The directory name and the file name that `db update` writes under the platform cache
+# directory. `CachedDatabasePath` of `lookup.go:210` writes the same two names, so one
+# `db update` serves both implementations.
+_CACHE_DIR_NAME = "ja4plus"
+_CACHE_FILE_NAME = "ja4plus-mapping.csv"
 
 # The maximum entry count of the lookup cache. `features/07-db-enrichment.md` line 112
 # states 100000, and line 134 publishes the same number as the `cache_size` default.
@@ -59,12 +66,74 @@ _REMOTE_TIMEOUT = 5.0
 _UNCACHED = object()
 
 
+def cache_dir_path() -> str:
+    """Return the cache directory of the program.
+
+    The path follows the platform convention that
+    `features/07-db-enrichment.md` states: `$XDG_CACHE_HOME/ja4plus` or `~/.cache/ja4plus`
+    on Linux, and `~/Library/Caches/ja4plus` on macOS. `os.UserCacheDir` of the port reads
+    the same two names.
+
+    Returns:
+        The directory path. The caller creates the directory.
+    """
+    if sys.platform == "darwin":
+        base = os.path.join(os.path.expanduser("~"), "Library", "Caches")
+    else:
+        base = os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
+    return os.path.join(base, _CACHE_DIR_NAME)
+
+
+def cache_file_path() -> str:
+    """Return the path of the cached mapping file.
+
+    Returns:
+        The path. The file exists only after one `db update` run.
+    """
+    return os.path.join(cache_dir_path(), _CACHE_FILE_NAME)
+
+
+def load_mapping_file() -> tuple[dict[str, LookupResult], str, str]:
+    """Return the mapping the client reads, with the source and the path it came from.
+
+    The client prefers the cached mapping file over the bundled one,
+    FR-db-enrichment-13. This program did not write the cached file, so a cached file that
+    holds no entry falls back to the bundled file. An empty file, a corrupt file and a
+    file the user cannot read all reach that fallback.
+
+    Returns:
+        The mapping, the source as `bundled` or `cache`, and the path of the file read.
+    """
+    path = cache_file_path()
+    if os.path.exists(path):
+        cached = _read_mapping_file(path)
+        if cached:
+            return cached, "cache", path
+        logger.warning(
+            "The cached mapping file at %s holds no entry. The bundled file answers "
+            "instead. Run `ja4plus db update` to write it again.",
+            path,
+        )
+    return _load_bundled_db(), "bundled", _BUNDLED_CSV
+
+
 def _load_bundled_db() -> dict[str, LookupResult]:
     """Load the bundled ja4plus-mapping.csv into a lookup dict."""
+    return _read_mapping_file(_BUNDLED_CSV)
+
+
+def _read_mapping_file(csv_path: str) -> dict[str, LookupResult]:
+    """Return the mapping that one ja4plus-mapping.csv file holds.
+
+    Args:
+        csv_path: The path of the file to read.
+
+    Returns:
+        The mapping, or an empty mapping when the file is absent, unreadable or corrupt.
+    """
     db: dict[str, LookupResult] = {}
-    csv_path = _BUNDLED_CSV
     if not os.path.exists(csv_path):
-        logger.debug("No bundled mapping CSV found at %s", csv_path)
+        logger.debug("No mapping file found at %s", csv_path)
         return db
 
     try:
@@ -92,8 +161,10 @@ def _load_bundled_db() -> dict[str, LookupResult]:
                             "type": fp_type,
                             "notes": notes,
                         }
-    except (OSError, csv.Error) as e:
-        logger.warning("Failed to load bundled mapping CSV: %s", e)
+    # A cached mapping file is input that this program did not write. A file of arbitrary
+    # bytes raises `UnicodeDecodeError`, which is no `OSError`, so the handler names it.
+    except (OSError, csv.Error, UnicodeDecodeError) as e:
+        logger.warning("Failed to load the mapping file at %s: %s", csv_path, e)
 
     return db
 
@@ -128,7 +199,8 @@ class JA4DBClient:
     Several threads may share one client. The client holds a lock over the lookup cache
     read and over the lookup cache write.
 
-    The client reads the bundled mapping file and reaches no network. A fingerprint
+    The client reads the cached mapping file when one exists, and the bundled mapping
+    file otherwise. The client reaches no network of its own. A fingerprint
     describes traffic the operator observed, so a request to `ja4db.com` discloses that
     traffic to a third party. The operator asks for that disclosure with
     `allow_remote=True`.
@@ -161,8 +233,15 @@ class JA4DBClient:
         )
         self._cache_lock = threading.Lock()
         self._allow_remote = allow_remote
-        self._db = _load_bundled_db()
-        logger.debug("JA4DB client initialized with %d bundled entries", len(self._db))
+        # The client prefers the cached mapping file over the bundled one,
+        # FR-db-enrichment-13. An operator who ran `db update` reads the newer file.
+        self._db, source, path = load_mapping_file()
+        logger.debug(
+            "JA4DB client initialized with %d entries from the %s mapping file at %s",
+            len(self._db),
+            source,
+            path,
+        )
 
     def lookup(self, fingerprint: str) -> LookupResult | None:
         """

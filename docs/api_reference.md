@@ -623,6 +623,8 @@ ja4plus analyze <pcap_file>   # Fingerprint a PCAP file
 ja4plus watch <interface>     # Read an interface (needs the capture privilege)
 ja4plus live <interface>      # An alias of watch
 ja4plus cert <cert_file>      # Fingerprint an X.509 certificate
+ja4plus db update             # Download the mapping file to the cache directory
+ja4plus db info               # Report the mapping file the client reads
 ```
 
 | Option | Description |
@@ -841,3 +843,28 @@ the memory ceiling of this package, and it states no decided number yet.
 
 The client reads the mapping file once, at construction. A caller that replaces the
 mapping file builds a new client, and the new client holds an empty lookup cache.
+
+#### The cached mapping file
+
+`ja4plus db update` downloads `ja4plus-mapping.csv` from FoxIO and writes it to the cache
+directory, FR-db-enrichment-12. It writes no file inside the installed package. A package
+directory may be read-only, several users may share it, and the next `pip install`
+discards a file written there. The cache directory follows the platform convention.
+
+| Platform | Cache directory |
+|---|---|
+| Linux | `$XDG_CACHE_HOME/ja4plus`, or `~/.cache/ja4plus` where the variable holds no value |
+| macOS | `~/Library/Caches/ja4plus` |
+
+The command writes a temporary file and renames it, so a reader of the cache file reads
+the whole new file or the file the last run wrote. Where the command creates no cache
+directory, it names the directory and ends the run with the status 1. Where the download
+fails, it leaves the cache file as it was and ends the run with the status 1.
+
+`JA4DBClient` prefers the cached mapping file over the bundled one, FR-db-enrichment-13.
+A cache file that is empty, corrupt or unreadable falls back to the bundled file, and the
+client writes one `WARNING` record that names the path.
+
+`ja4plus db info` reports the source, the path, the entry count and the modification time
+of the mapping file the client reads, FR-db-enrichment-11. The source is `bundled` or
+`cache`.

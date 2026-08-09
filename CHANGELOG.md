@@ -25,6 +25,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **`ja4plus db update` writes to the cache directory, and the client prefers that file**
+  (#61). Round TBD. Through version 0.6.0 `db update` wrote the download over
+  `ja4plus/data/ja4plus-mapping.csv` inside the installed package. That directory may be
+  read-only, several users may share it, and the next `pip install` discards the file.
+  `db update` now writes `ja4plus-mapping.csv` to the platform cache directory:
+  `$XDG_CACHE_HOME/ja4plus` or `~/.cache/ja4plus` on Linux, and
+  `~/Library/Caches/ja4plus` on macOS. It writes a temporary file and renames it, so a
+  reader sees the whole new file or the file the last run wrote. It leaves the installed
+  package byte for byte as it was. `JA4DBClient` and `ja4plus db info` now read the
+  cached mapping file when one exists, and the bundled mapping file otherwise. A cache
+  file that is empty, corrupt or unreadable falls back to the bundled file, and the
+  client reports the problem at `WARNING`. `db info` reports the source on its first
+  line, as `bundled` or `cache`, and it names the mapping file path on the second. It
+  wrote the FoxIO address on a line named `Source` through version 0.6.0, and that line
+  is now named `Mapping`.
+
 - **The remote lookup is opt-in at the client** (#57). Round TBD. Through version 0.6.0
   `JA4DBClient.lookup` sent every fingerprint the bundled mapping file held no entry for
   to `https://ja4db.com`, and no caller asked for that. A fingerprint describes traffic
