@@ -36,7 +36,25 @@ dev = [
     # 5.0 is the first release that requires `coverage` 7.5, which carries
     # `coverage report --format=total`. The continuous-integration floor reads that value.
     "pytest-cov>=5.0",
-    "ruff>=0.6",
+    # **The version is exact, because a floating pin let the lint gate turn red without a
+    # commit.** #297 measured 58 `F401` findings, 28 files and 82 `I001` findings against
+    # `ruff` 0.14.5, and 54, 27 and 76 against 0.16.2, on an unchanged tree. A gate whose
+    # result depends on the day it runs measures something other than what it names. #378
+    # records the decision, and it declines both a compatible range and the drift.
+    #
+    # **A version change is a deliberate commit, and this line is its whole diff.** The
+    # cost is maintenance. A pinned tool falls behind, and nothing raises the number by
+    # itself. A bump re-measures four things before it lands.
+    #
+    #   1. `ruff check ja4plus/ tests/`.
+    #   2. `ruff format --check ja4plus/ tests/`.
+    #   3. The finding count of each rule the new release widened.
+    #   4. The `ignore` list of `[tool.ruff.lint]` below.
+    #
+    # `tests/test_lint_gate_pin.py` holds this pin. It reads the installed release, every
+    # file under `.github/workflows/` and `requirements.txt`. The `dev` extra therefore
+    # stays the one place a tool reads the version from.
+    "ruff==0.16.2",
     "mypy>=1.11",
     # `tests/test_installed_wheel.py` runs `python -m build`, and the `installed_wheel`
     # marker is inside `pytest tests/ -m "not spec_validation"`. Every environment that
