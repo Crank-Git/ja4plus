@@ -33,6 +33,11 @@ CONFIGURATION = REPO_ROOT / "mkdocs.yml"
 DOCS_DIR = REPO_ROOT / "docs"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 
+# The job that installs the `docs` extra into an empty environment and builds the site.
+# **The name `docs.yml` belongs to #66**, which publishes the site, so this job takes a
+# name of its own and the two never collide.
+DOCS_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "docs-build.yml"
+
 # `mkdocs.yml` excludes this directory from the site. A page under it is design material
 # and it carries links that the site never resolves.
 EXCLUDED_DIRECTORY = "specs"
@@ -391,3 +396,79 @@ def test_every_documentation_dependency_pins_one_version() -> None:
     docs = _dependency_block(PYPROJECT.read_text(encoding="utf-8"), "docs = [")
     floating = [entry for entry in docs if "==" not in entry]
     assert floating == [], f"these documentation dependencies float: {floating}"
+
+
+def _pinned_version(name: str) -> str:
+    """Return the exact version the `docs` extra pins for one distribution.
+
+    Args:
+        name: The distribution name, as `mkdocstrings`.
+
+    Returns:
+        The version after `==`.
+
+    Raises:
+        AssertionError: The extra pins no such distribution.
+    """
+    docs = _dependency_block(PYPROJECT.read_text(encoding="utf-8"), "docs = [")
+    for entry in docs:
+        if entry.startswith(f"{name}=="):
+            return entry.split("==", maxsplit=1)[1].strip()
+    raise AssertionError(f"the docs extra pins no {name}: {docs}")
+
+
+def test_the_mkdocstrings_pin_holds_the_handler_module_its_handler_imports() -> None:
+    """An exact pin can still be an incompatible pin, and #391 records the instance.
+
+    `mkdocstrings_handlers/python/handler.py` of the 1.x line imports
+    `mkdocstrings.handlers.base`. `mkdocstrings` 1.0.0 removed that public module, so the
+    pair `mkdocstrings==1.0.6` with `mkdocstrings-python==1.15.0` fails the build with
+    `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`.
+
+    Verified against
+    https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md, which lists
+    `mkdocstrings.handlers` under the breaking changes of 1.0.0, retrieved 2026-08-09.
+
+    This case reads two pins as text. It proves no build. The `docs` job of
+    `.github/workflows/docs.yml` proves the build.
+    """
+    handler = _pinned_version("mkdocstrings-python")
+    generator = _pinned_version("mkdocstrings")
+    if handler.startswith("1."):
+        assert generator.startswith("0."), (
+            f"mkdocstrings-python {handler} imports `mkdocstrings.handlers`, and "
+            f"mkdocstrings {generator} removed it"
+        )
+
+
+def test_a_continuous_integration_job_installs_the_documentation_pins_and_builds() -> None:
+    """No case in this suite can prove that the committed pins build the site.
+
+    The suite runs inside an environment that another resolution already filled, so a
+    case that imports `mkdocs` measures that environment and not `pyproject.toml`. The
+    instrument is a job that starts from an empty environment. #391 records the defect
+    that reached the integration branch while every case here passed.
+    """
+    assert DOCS_WORKFLOW.is_file(), f"{DOCS_WORKFLOW} holds no documentation job"
+    text = DOCS_WORKFLOW.read_text(encoding="utf-8")
+    assert 'pip install -e ".[docs]"' in text, (
+        f"{DOCS_WORKFLOW.name} installs some other set than the committed `docs` pins"
+    )
+    assert "mkdocs build --strict" in text, (
+        f"{DOCS_WORKFLOW.name} runs no `mkdocs build --strict`"
+    )
+    # The `dev` extra brings a second resolution into the environment, and the release
+    # installs no such set. A job that installs it measures the wrong artefact.
+    assert '[dev' not in text, f"{DOCS_WORKFLOW.name} installs the dev extra beside the docs extra"
+
+
+def test_the_documentation_job_runs_when_a_pin_or_a_page_changes() -> None:
+    """A guard that no change starts is a guard that never runs.
+
+    The pins live in `pyproject.toml`, the site configuration in `mkdocs.yml`, and the
+    pages under `docs/`. A change to any one of the three can break the build.
+    """
+    assert DOCS_WORKFLOW.is_file(), f"{DOCS_WORKFLOW} holds no documentation job"
+    text = DOCS_WORKFLOW.read_text(encoding="utf-8")
+    for path in ("pyproject.toml", "mkdocs.yml", "docs/**"):
+        assert f'"{path}"' in text, f"{DOCS_WORKFLOW.name} names no path filter for {path}"
