@@ -505,6 +505,109 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The documentation behaviour rule names a command that runs, and a case holds every named
+  command to a collection** (#393). Round 163. The Behaviour rules of
+  `docs/specs/features/08-documentation.md` read **A code sample is tested by
+  `pytest --doctest-glob`**, and the Acceptance criteria named
+  `pytest --doctest-glob="*.md" README.md docs/`. **That command collects nothing.** It
+  writes `no tests ran` and it exits with the status 5. `--doctest-glob` collects an
+  interactive session, written as `>>>` lines above the expected output. Every code sample of
+  this project is a fenced code block. The two forms share nothing, so the rule named no
+  check at all, and a reader of the page believed the rule covered the samples.
+  **The requirements themselves hold.** `tests/test_documentation_samples.py` runs 45
+  samples for FR-documentation-4 and FR-documentation-5, and `tests/test_examples.py` runs
+  the five scripts of `examples/` under nine cases for FR-documentation-6. #63 built that
+  harness, met the requirements, and stopped at the rule rather than editing the
+  specification inside a feature diff. **The project manager ruled that the criterion is
+  amended and the samples stay fenced.** A rewrite of 44 fenced samples into doctest sessions
+  would make several unrunnable, and it would buy no coverage the harness already provides. A
+  token doctest added to make the command green would prove nothing. **The defect lived in a
+  second file.** The Documentation row of the Testing strategy table of `docs/specs/spec.md`
+  named the same command, so one rule stood in two records and this round repairs both.
+  `CLAUDE.md` carries no doctest command, and its `## Commands` section holds none.
+  **Three sentences of the feature page change and one row of the specification changes.**
+  The Behaviour rules now name `pytest tests/test_documentation_samples.py` and
+  `pytest tests/test_examples.py`. They state that `--doctest-glob` reads an interactive
+  session and collects nothing here. They record that the samples stay fenced, because a
+  fenced block is what a reader copies. The Edge cases row reads `The harness case fails`
+  where it read `The doctest run fails`.
+  **New file `tests/test_documentation_behaviour_rule.py` holds 20 cases in four groups.**
+  The command cases run every backticked `pytest` command of the Behaviour rules under
+  `--collect-only`, and each one must collect at least one case. The floor case requires two
+  such commands. **An aggregate over an empty set passes**, so a deleted rule would satisfy
+  the command cases in silence. The discrimination cases prove the measurement fails where it
+  must. The doctest command collects 0 cases and exits 5, and the counter reads 0 for a file
+  that holds no case. The reader cases prove that `stated_command` raises on an absent
+  sentence, on a repeated sentence, and on the text the rules held before this round.
+  **The reader parses the case count and never greps it.** A page that held the words
+  `0 tests collected` would match a substring search, so the reader matches the summary line
+  and reads the exit status beside it. **The recorded reason takes two clauses, and a case
+  reads each one.** A reader of the first clause alone would accept a sentence that reverses
+  the claim, because the words `collects an interactive session` refuse nothing.
+  **Six cases failed on the unamended records, and seven mutations prove the new cases
+  discriminate.** This round wrote each mutation to disk, measured it, and restored it, and
+  the file compared equal after every restore. A mutation that deletes the sample rule fails
+  two cases, and the floor is one of them. A mutation that names the doctest command in the
+  rule sentence fails two. A mutation that names `tests/test_no_such_harness.py` fails the
+  same two. A mutation that deletes the recorded reason fails one. A mutation that keeps the first
+  clause of the reason and drops the consequence fails the consequence case alone. A mutation that reverts
+  the row of `docs/specs/spec.md` fails one alone. A mutation that renames the
+  `## Behaviour rules` heading fails five. **One premise of the issue was stale and this
+  round re-measured it.** The issue reported 45 samples, which is right, and 14 samples
+  carrying a marker, which is not. `disposition` reads 15 explicit `skip` markers today, and
+  17 markers with the two `raises` markers of `docs/api_reference.md`. This round names no
+  page as the fifteenth, because the marker set moved across several rounds of this epic.
+  The four-word reason case reaches all 95 skipped blocks and not the marked ones alone.
+  **The sweep read every command of `docs/specs/features/*.md`, and three findings reach no
+  repair here.** Two acceptance criteria state counts the repository no longer holds.
+  `00-foundation.md:214` expects 75 files under `tests/foxio_vectors/` where `git ls-files`
+  reports 90. `09-release.md:144` expects the string `0.6.0` in one file where `grep -rn`
+  reports eight. `09-release.md:156` requires the wheel to carry no file under `docs/`, and
+  `python -m build` on this base produces a wheel of 96 entries that holds 56 of them. That
+  third one is a defect rather than a stale count, and #69 already owns it, so this round
+  files no duplicate and reports the measurement. **No file under `ja4plus/` changes, no
+  fingerprint moves, and the register holds 134 keys against 134 xfailed.**
+
+- **The precedence exception states the register key count the register holds, and a case
+  holds it there** (#380). Round 160. `.claude/rules/external-apis.md` read **The exception
+  reaches 6 rows of the 135 the register holds**, and the register holds 134 keys. #272
+  removed `ssh2.pcapng/JA4L-S` on 2026-08-09, because the repair to
+  `ja4plus/fingerprinters/ja4l.py` made the comparison pass, and the prose kept the earlier
+  count. **The reach of 6 was correct, and the key count alone was stale.** The two new
+  cases prove that split. The reach case passed on the unrepaired prose. The key-count case
+  failed with `assert 135 == 134`. **A count that no case measures goes stale.** #345
+  repaired this shape in `tests/foxio_deviations.py`, and this round repairs the second
+  sentence of the pair. `stated_exception_reach_counts` in
+  `tests/test_precedence_exception.py` reads both numbers out of the sentence, and
+  `measured_exception_reach_counts` reads the same two counts out of the register.
+  `TestTheExceptionReachCounts` holds the two against each other, and it follows the
+  `TestTheMarkerRuleCounts` shape of #345. **The reader raises `ValueError` on a document that
+  states the counts on no sentence, and on one that states them twice.** A rewording that
+  removes the sentence therefore fails the gate. **A check that a rewording defeats is not
+  a check**, and two further cases prove the reader in both of those directions. **Both
+  counts were proved live**, with `PYTHONDONTWRITEBYTECODE=1` and a cleared `__pycache__`. A
+  stale key count fails with `assert 135 == 134`. A stale reach fails with `assert 5 == 6`.
+  A removed sentence fails with `ValueError: the rule states the reach counts on 0
+  sentences, and it states them on one`.
+  **The sweep read every count of register entries in `docs/`, `.claude/` and the root
+  documents, and it changed one sentence.** Four other live claims state 134, and each one
+  agrees with the register.
+  - `docs/specs/spec.md:539`.
+  - `docs/specs/features/11-pre-release-validation.md:172`, in
+    `FR-pre-release-validation-33`.
+  - `docs/specs/features/11-pre-release-validation.md:370`.
+  - The marker rule of `tests/foxio_deviations.py:63`, which #345 already holds under a
+    case.
+
+  `.claude/rules/external-apis.md` states 43 capability entries and 37 decided value-form
+  keys of #129, and the register measures both. **A dated record of a past
+  measurement is quoted, not rewritten.** `tests/test_foxio_deviations.py:660` records what
+  #341 measured. The module docstring of `tests/test_precedence_exception.py` records the
+  135 keys the run of #334 read at the pinned commit. `docs/implementation_notes.md` and
+  every page under `docs/specs/foxio/` record the readings of earlier issues. Every
+  Changelog row that states a past count records that round. **A correction inside a record
+  falsifies the record**, so all of them stay as they read. No file under `ja4plus/`
+  changes, no fingerprint moves, and the register holds 134 keys against 134 xfailed.
 - **Two timing cases read the work performed rather than the seconds elapsed** (#430).
   Round 158. Both cases compared wall-clock durations. Each one reported the load of the
   host beside the state of the package. #412 met both of them failing beside a mutation
@@ -709,7 +812,127 @@ holds every breaking change of this record against a row of that page.
   first green run, and no case reached it before**, because nothing ran the sample. This
   entry repairs the two documents and changes no signature.
 
+- **Six documents stated a count of ten methods, and the count is eleven** (#387). Round
+  162. `JA4LFingerprinter` writes `JA4L-S=` at `ja4plus/fingerprinters/ja4l.py:446` and
+  `JA4L-C=` at `:482`, so ten fingerprinter classes carry eleven methods. **The measurement
+  reproduces on the base commit `d123ab9` and it carries no number from the issue body.**
+  `__all__` names ten `generate_` functions, the module of `generate_ja4l` writes both value
+  prefixes, and `FOXIO_METHODS` holds twelve names, so eleven of twelve reach a generator
+  and JA4TScan reaches none. **The issue named three documents and a sweep of the whole
+  corpus found six.** `docs/specs/features/08-documentation.md` and `docs/specs/spec.html`
+  held the implemented count of ten, and `docs/api_reference.md`, `docs/usage.md`,
+  `docs/specs/features/03-concurrency-safety.md` and the `Data model` table of
+  `docs/specs/spec.md` called the ten fingerprinters ten methods. **The prose now counts
+  fingerprinters and values where it counted methods**, matching the
+  `FingerprintResult.type` docstring that round 139 wrote. **The reason stands beside the
+  number in every document that states it**, because a bare eleven invites the next reader
+  to count the classes and correct it back. New file
+  `tests/test_documented_method_count.py` holds 151 cases. It reads the method set out of
+  `__all__` and out of the return lines of each generator's module. A case that restated
+  eleven would pass on a document that contradicts the package. **The cases came first and
+  they bite**: 10 failed against the unchanged documents and 128 passed. **Seven mutations
+  prove they discriminate.** The first replaces `JA4L-S=` with `JA4L-X=` on the return lines
+  of `ja4plus/fingerprinters/ja4l.py` and leaves the docstring that states the same format.
+  It drops the count to ten and fails all five documents that state eleven. The second
+  removes `generate_ja4d6` from `__all__`. The other five restate ten in one document, drop
+  the reason from one document, and apply the class count to the word `method` on two pages.
+  Each was restored, and `inspect.getsource` confirmed the live source in both directions.
+  **The self-review found two defects in the reader and each is now closed.** The first read
+  the whole module source for a value prefix, so the docstring of
+  `ja4plus/fingerprinters/ja4l.py:6` satisfied the check on its own. A change that deleted
+  every emitter would have kept the count at eleven, and the reader now reads the return
+  lines alone. The second searched the joined page for a quoted passage. It paired a
+  quotation mark of one line of `docs/usage.md` with a mark 40 lines below it, and it
+  dropped every word between them, so the reader matched nothing on that page. It now drops
+  a quotation one line at a time. **The review also proposed five rewordings that the first
+  reader read nothing in**, among them "supports ten of FoxIO's methods" and "ten of twelve
+  implemented". The reader now holds a set of claim verbs rather than the one verb
+  `implement`, and it allows two words between the count and the noun.
+  **Five findings reach no repair here.** #449 records that `docs/specs/spec.html` states
+  "Seven of twelve FoxIO methods are specified only as images" where the same page states
+  eleven, and that `SUPERSEDED_COUNT` of `tests/test_documentation_image_count.py` reads over
+  it because the page writes no `the`. #450 records the ten files under `tests/` that call
+  the ten fingerprinters ten methods, and it names the decision that `ProcessorStats.method`
+  needs. **Four docstrings of `ja4plus/watch.py` carry the same counting error**, at lines
+  13, 81, 115 and 518, and the criteria of #387 forbid a change under `ja4plus/`, so #450
+  records them too. #453 records a separate stale number the sweep met:
+  `docs/specs/features/03-concurrency-safety.md` states sixteen state tables where
+  `docs/api_reference.md` states seventeen, and a live `Processor().stats()` reports
+  seventeen. The body of #62 still states ten of the twelve, and it is a tracker record
+  rather than a document of this repository. **No file under `ja4plus/` changes and no
+  fingerprint moves.**
+
 ### Changed
+
+- **The `ruff` pin is exact, so the lint gate cannot change without a commit** (#378).
+  Round 161. `pyproject.toml` declared `ruff>=0.6`. `pip` therefore resolved the newest
+  release at the moment of each install, and the gate read a different tool on two days.
+  The `dev` extra now states `ruff==0.16.2`. **#297 measured the drift on this
+  repository.** Against `ruff` 0.14.5 it read 58 `F401` findings, 28 files and 82 `I001`
+  findings. Against 0.16.2 it read 54, 27 and 76. The tree did not change and every number
+  differed. #297 changed no pin, because the pin sat outside its scope. **The project
+  manager ruled the exact pin.** It declined a compatible range and it declined the
+  recorded drift. A gate whose result depends on the day it runs measures something other
+  than what it names. **The pin moves what this gate installs today not at all.** That is a
+  measurement and not an assumption. `pip index versions ruff` reports 0.16.2 as the newest
+  release, so the floating specifier already resolved it. Both lint commands report no
+  finding before the change and after it. **The pinned release therefore reports no finding
+  the floating one did not**, which is the condition the plan asked a worker to report
+  rather than repair. **The `dev` extra is the one place a tool reads the version from, and
+  three readings state it.**
+
+    1. No file under `.github/workflows/` names `ruff` with a version specifier.
+    2. Every job of `.github/workflows/test.yml` installs the extra.
+    3. The tracked `requirements.txt` names no `ruff`.
+
+  **New file `tests/test_lint_gate_pin.py` holds 6 cases.** The entry is one exact pin. The
+  comment beside it cites #378. That comment states that a version change is a commit. No
+  workflow states a version. No second dependency file states one. The installed release
+  equals the pin. **The tests came first.** The unrepaired tree failed 4 of the 6 with
+  `AssertionError: the dev extra states no exact version for ruff: 'ruff>=0.6'`. **Eleven
+  mutations prove the cases discriminate, and each one isolates to the case it targets.** A
+  pin of 0.16.1 fails the installed-release case alone. A comment that drops `#378` fails
+  the citation case alone. A comment that drops the word `commit` fails the commit rule
+  alone. **The comment reader binds to the pin and not to the list.** The pin moved above
+  its own comment gives the empty string, and it fails both comment cases. A workflow that
+  appends a specifier fails the workflow case alone. A `ruff` line appended to
+  `requirements.txt` fails the dependency-file case alone. A second `ruff` entry fails the
+  pin case. The floating specifier restored fails the pin case and the installed-release
+  case. **Each mutation restored from a snapshot of the implemented tree.** The first
+  harness restored from the index instead, and it contaminated six of its own readings.
+  **The self-review found three defects in the first form of this file, and three more
+  mutations prove the repairs.** All three are the shape this project records most often: a
+  case that cannot fail.
+  - **A substring test read the comment of the wrong entry.** The reader matched the line
+    that held `"ruff`. A decoy `ruff-lsp` entry above the pin, with a one-line comment of
+    its own, satisfied both comment cases while the pin carried no comment. `_distribution`
+    now compares the whole name, and the decoy fails both cases.
+  - **The specifier pattern missed a one-character operator.** It read `[=<>!~]=` and
+    demanded a trailing `=`, so `ruff>0.6` escaped it. That is the shape of the specifier
+    this pin replaced. The pattern now reads `ruff>0.6`, `ruff===0.16.2` and
+    `ruff[extra]==1.0`, and a workflow that appends `"ruff>0.6"` fails the workflow case.
+  - **The shared list parser counted a string inside a comment.** `_dependency_block` of
+    `tests/test_documentation_site.py` collects every double-quoted substring of the block,
+    and the `dev` extra carries comments inside its brackets. It already returned
+    `not spec_validation` from the comment beside `build>=1.0`. A comment that quoted
+    `"ruff==0.14.5"` would have failed a case on the wording of a comment, which is a check
+    a rewording defeats. `_dev_entries` strips the comment lines first, and such a comment
+    now moves no case. `_dependency_block` stays correct where it is used, because the
+    `docs` list and the runtime list carry no comment inside the brackets.
+
+  **The case that reads the installed release catches a drifted environment.** It skips
+  where the environment holds no `ruff`, so a reader of the skip sees the gap. **A case here
+  reads no prose.** This entry quotes the pin inside backticks, and no tool installs from a
+  record. **`FR-foundation-8b` and `FR-foundation-8c` carry the two requirements.** Two
+  behaviour rules of `docs/specs/features/00-foundation.md` state the cost. A pinned tool
+  falls behind, and a bump re-measures the lint gate and the `ignore` list of
+  `[tool.ruff.lint]`. The `Terms` table gains `pin` and `lint gate`. **Two findings reach no
+  repair here, because both sit outside the acceptance criteria of #378.** `mypy>=1.11`
+  resolves 2.3.0 and `pytest>=7.0` resolves 9.1.1, so the same defect stands on the rest of
+  the `dev` extra. The tracked `requirements.txt` states `pytest-cov>=3.0.0` against the
+  `>=5.0` of `pyproject.toml`, and the comment beside that entry states why the coverage
+  floor needs 5.0. #446 carries both, and it holds the `mypy` question open rather than pin
+  by symmetry. **No file under `ja4plus/` changes and no fingerprint moves.**
 
 - **The record names the two breaking changes it never captured** (#395). Round 141.
   #65 found both gaps while it wrote `docs/migration-0.6-to-1.0.md`, and it stated each one

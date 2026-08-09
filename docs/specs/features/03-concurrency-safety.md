@@ -205,7 +205,7 @@ it grows without a limit, and Goal 3 covers it.
 
 #41 landed the statistics, and this section records what the code holds now.
 
-- `Processor.stats` returns a dict that maps each of the ten method names to one
+- `Processor.stats` returns a dict that maps each of the ten fingerprinter names to one
   `ProcessorStats`. `ProcessorStats` is a plain object; Epic 4 makes it a typed
   dataclass.
 - `ProcessorStats` states the packet count of the method and one `TableStats` for each
@@ -234,7 +234,7 @@ it grows without a limit, and Goal 3 covers it.
   fingerprinter, because the counts of one method describe one instant. It acquires one
   lock at a time and holds two never.
 - The report describes ten instants and not one. A caller that needs one instant across
-  the ten methods stops the packet source first.
+  the ten fingerprinters stops the packet source first.
 - `Processor.reset` returns every packet count to zero, because a reset drops the state
   tables that the counts describe.
 - `max_connections` and `max_connection_age` stay targets on `Processor.__init__`.

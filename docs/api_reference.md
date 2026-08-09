@@ -251,7 +251,7 @@ dataclass, because a result describes something that already happened.
 
 | Field | Type | Constraint |
 |---|---|---|
-| `type` | `str` | One of the ten method names, lowercase. |
+| `type` | `str` | The method name, lowercase. One of the ten values `--types` accepts, and ten values carry eleven methods. |
 | `fingerprint` | `str` | The fingerprint string. Never empty. |
 | `raw` | `str \| None` | The raw form, when the method defines one. |
 | `raw_original_order` | `str \| None` | The original-order raw form, when the method defines one. |
@@ -307,7 +307,7 @@ carries a connection key and no `FingerprintResult` field holds one.
 | `.get_shard_key(packet)` | Return one stable key for the connection of a packet |
 | `.cleanup_connection(src_ip, src_port, dst_ip, dst_port, proto)` | Drop the state of one connection across every fingerprinter |
 | `.reset()` | Reset every fingerprinter, and return every count to zero |
-| `.stats()` | Return one `ProcessorStats` for each of the ten methods |
+| `.stats()` | Return one `ProcessorStats` for each of the ten fingerprinters |
 | `.thread_safe` | The value the constructor read |
 
 #### How to read the parse failures
@@ -352,7 +352,7 @@ log the error inside the loop that reads it.
 reads no packet timestamp. The field holds `None`.
 
 `stats()` reports what the state tables hold, and #41 built it. One processor holds
-**seventeen** state tables across the ten methods: the fifteen `BoundedStateTable`
+**seventeen** state tables across the ten fingerprinters: the fifteen `BoundedStateTable`
 instances and the two `TCPStreamReassembler` instances of JA4H and JA4X. A method that
 holds no state reports an empty `tables` list.
 
@@ -377,7 +377,7 @@ against neither the locks of the fingerprinters nor the module lock of `ja4plus.
 #### The concurrency contract of the processor
 
 Several threads may call `process_packet` on one `Processor()`. Each fingerprinter holds
-one `threading.RLock` of its own, so ten threads work at once on ten methods rather than
+one `threading.RLock` of its own, so ten threads work at once on ten fingerprinters rather than
 waiting on one lock. The lock is reentrant, because `Processor.process_packet` holds the
 lock of a fingerprinter and then calls a method that holds it again.
 
@@ -463,7 +463,7 @@ result = generate_ja4(extract_tls_info(packet))
 
 ## Processor Statistics
 
-`Processor.stats()` returns a dict that maps each of the ten method names to one
+`Processor.stats()` returns a dict that maps each of the ten fingerprinter names to one
 `ProcessorStats`. FR-concurrency-safety-11 and FR-concurrency-safety-12 state the
 requirement, and #41 built it.
 
@@ -520,12 +520,12 @@ holds the entry bound of its own table. The seventeen tables of one processor ho
 remembered keys between them, at 187 bytes for one key, so the memory costs 10.2 MiB
 when every table is full and every entry of every table has been replaced.
 
-Ten methods hold seventeen state tables between them. `JA4DFingerprinter` and
+Ten fingerprinters hold seventeen state tables between them. `JA4DFingerprinter` and
 `JA4D6Fingerprinter` hold none, and each reports an empty `tables` dict.
 
 `stats()` holds the lock of one fingerprinter across the read of that fingerprinter, so
 the counts of one method describe one instant. The report describes ten instants and not
-one. If you need one instant across the ten methods, stop the packet source first.
+one. If you need one instant across the ten fingerprinters, stop the packet source first.
 
 `Processor.reset()` returns every packet count to zero, because a reset drops the state
 tables that the counts describe.
@@ -684,7 +684,7 @@ reads, and it evicts a connection on two bounds.
   `--connection-timeout` seconds of capture time.
 
 Each eviction calls `Processor.cleanup_connection`, so it drops the entry of the
-connection table and the per-connection state of all ten methods together. Version 0.6.0
+connection table and the per-connection state of all ten fingerprinters together. Version 0.6.0
 called `cleanup_connection` never, and its monitor grew until the host stopped it.
 
 Eviction runs on packet arrival. The statistics thread is the only thread the module

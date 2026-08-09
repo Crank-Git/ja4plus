@@ -123,9 +123,11 @@ of defects that only appear on traffic the vectors do not cover.</p>
       <code>ja4plus live</code> never calls it. <code>base.py:38</code> stores the packet
       object itself on every fingerprint.</li>
     <li><strong>Two published statements are false.</strong> The README claims the project
-      implements all JA4+ methods; FoxIO documents twelve and this project implements ten.
-      No code sample in the README, in <code>docs/</code>, or in <code>examples/</code> is
-      executed by anything.</li>
+      implements all JA4+ methods; FoxIO documents twelve and this project implements
+      eleven. <code>JA4LFingerprinter</code> writes both JA4L and JA4LS, so ten
+      fingerprinter classes carry eleven methods. #387 corrected the count of ten that this
+      finding first stated. No code sample in the README, in <code>docs/</code>, or in
+      <code>examples/</code> is executed by anything.</li>
   </ol>
 </div>
 

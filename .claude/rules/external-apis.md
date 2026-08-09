@@ -183,8 +183,9 @@ decides what the bar covers.
 reference value, and adoption is its own decision. "Which baselines are usable as
 vectors" in `docs/specs/foxio/zeek.md` holds that decision for the Zeek package.
 
-**The exception reaches 6 rows of the 135 the register holds.**
-`tests/test_precedence_exception.py` measures the reach, and #334 records the search.
+**The exception reaches 6 rows of the 134 the register holds.**
+`tests/test_precedence_exception.py` measures the reach and both counts, and #334 records
+the search. A case reads this sentence, so a register move fails the gate here.
 
 | Row | Decline | The source that may hold the reference |
 |---|---|---|

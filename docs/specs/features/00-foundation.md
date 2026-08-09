@@ -76,6 +76,14 @@ and that commit changes no behaviour.
 > file produces a large diff that hides the real change. Record the commit
 > identifier in `.git-blame-ignore-revs`.
 
+FR-foundation-8b — The `dev` extra of `pyproject.toml` states one exact `ruff` version.
+
+FR-foundation-8c — The `dev` extra is the one place a tool reads the `ruff` version from.
+
+> `tests/test_lint_gate_pin.py` holds both requirements. It reads the pin against the
+> installed release, against every file under `.github/workflows/` and against
+> `requirements.txt`.
+
 FR-foundation-9 — `mypy ja4plus/` runs on every pull request.
 
 FR-foundation-10 — The test job measures line coverage and writes the number to the
@@ -145,6 +153,12 @@ summary.
 - `ruff` runs with the default rule set plus `I` for import order. A rule that
   produces more than 50 findings on the existing code is disabled with a comment
   that names the epic that will enable it.
+- The `ruff` pin is exact. A floating pin let the lint gate turn red on an unchanged
+  tree, because `pip` resolved a newer release that widened a rule. #378 records the
+  measurement and #297 holds the counts.
+- A `ruff` version change is a deliberate commit. That commit re-measures the lint gate
+  and the `ignore` list of `[tool.ruff.lint]`, and it reports a finding the pinned
+  version did not report.
 - The vector download script never runs during a test. A test reads a committed
   file or it skips with a message that names the missing file.
 
