@@ -132,7 +132,6 @@ class JA4DBClient:
         self,
         allow_remote: bool = False,
         cache_size: int = 100_000,
-        timeout: float = 5.0,
     ) -> None: ...
 
     def lookup(self, fingerprint: str) -> LookupResult | None: ...
@@ -147,6 +146,12 @@ class LookupResult:
     notes: str
     source: str          # "bundled" | "cache" | "remote"
 ```
+
+The constructor publishes no `timeout` parameter. The behaviour rule above refuses one
+before version 1.0.0, and the Go port publishes none either. `RemoteLookupConfig` of
+`lookup.go` names two fields, `Endpoint` and `HTTPClient`, and it names no timeout.
+`tests/test_db_offline.py` pins the parameter list, so a parameter that this file does
+not publish fails the unit suite. #354 records the reading.
 
 `LookupResult` carries the port's three fields plus `source`.
 
