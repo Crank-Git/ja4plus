@@ -74,7 +74,7 @@ holds every breaking change of this record against a row of that page.
 ### Added
 
 - **The documentation site publishes to GitHub Pages, and this file holds the release
-  notes of version 1.0.0** (#66). Round TBD. New file `.github/workflows/docs.yml`. It
+  notes of version 1.0.0** (#66). Round 142. New file `.github/workflows/docs.yml`. It
   fires on a push to `master`, which is the live branch, and a promotion from `dev` to
   `master` is a step the user approves. **The workflow builds nothing of its own.**
   `.github/workflows/docs-build.yml` already installs the committed `docs` pins into an
@@ -104,7 +104,7 @@ holds every breaking change of this record against a row of that page.
   no finding on either one. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **Every code sample and every example script runs in continuous integration** (#63).
-  Round TBD. Nothing ran a sample before this round, so a sample that stopped working
+  Round 138. Nothing ran a sample before this round, so a sample that stopped working
   stopped working in silence. That is the shape this project records seventeen times: a
   comparison that never runs reads as a comparison that passes. **The reader finds 157
   fenced blocks across `README.md` and `docs/`, and a second reader agrees on every
@@ -144,7 +144,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **The migration page cited round 122 for the item access, and it recorded the narrowed
-  certificate readers not at all** (#399, #401, #403). Round TBD. The page held eleven breaking
+  certificate readers not at all** (#399, #401, #403). Round 143. The page held eleven breaking
   changes and none recorded #319. That round narrowed `compute_ja4x_from_pem` and
   `compute_ja4x_from_der`, so an input that returned `None` in version 0.6.0 can now raise.
   The page also cited one row under `Round 122, #59 and #364`. The Changelog table of
@@ -173,7 +173,7 @@ holds every breaking change of this record against a row of that page.
   keys. This entry
   changes no file under `ja4plus/` and no fingerprint moves.
 - **The memory ceiling control reads a block count, and a busy host no longer moves it**
-  (#389). Round TBD. `TestTheStatedMemoryCeiling::test_a_smaller_entry_count_holds_less_resident_memory`
+  (#389). Round 144. `TestTheStatedMemoryCeiling::test_a_smaller_entry_count_holds_less_resident_memory`
   failed and then passed on an unchanged tree, and five workers reported it. The case is
   the control that proves the entry count bound holds the ceiling, and **a control that
   fails when nothing is wrong teaches a reader to disregard it.** The case now reads the
@@ -202,7 +202,7 @@ holds every breaking change of this record against a row of that page.
   no fingerprint moves.**
 
 - **`generate_ja4` reads a TLS info dictionary, and the documentation stated a packet**
-  (#63). Round TBD. `README.md` and `docs/api_reference.md` each wrote
+  (#63). Round 138. `README.md` and `docs/api_reference.md` each wrote
   `generate_ja4(packet)`, and the call raises `AttributeError: get`. The function reads
   the dictionary that `ja4plus.utils.tls_utils.extract_tls_info` returns. Eight of the
   nine other one-shot functions read a packet. `generate_ja4x` reads a dictionary that
@@ -212,7 +212,7 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
-- **The record names the two breaking changes it never captured** (#395). Round TBD.
+- **The record names the two breaking changes it never captured** (#395). Round 141.
   #65 found both gaps while it wrote `docs/migration-0.6-to-1.0.md`, and it stated each one
   in a row rather than hide it. This round records them. **The removal of
   `ja4plus.collector` now holds an entry of this file under round 71**, which
@@ -244,7 +244,7 @@ holds every breaking change of this record against a row of that page.
   `requires-python` and requires both files to name it.
 
 - **The README states eleven of the twelve FoxIO methods, the two contracts and the four
-  default bounds** (#62). Round TBD. The README claimed "all ten JA4+ methods". FoxIO
+  default bounds** (#62). Round 136. The README claimed "all ten JA4+ methods". FoxIO
   publishes twelve, and `technical_details/README.md:5-16` at the pinned commit lists
   JA4LS and JA4TScan as rows of their own. **The claim was false in two directions**: the
   project builds no JA4TScan, and it builds JA4LS, which the table never named. **The
@@ -349,7 +349,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **The documentation extra pins a `mkdocstrings` the site can build with** (#391).
-  Round TBD. `mkdocstrings==1.0.6` installed and the build then failed with
+  Round 140. `mkdocstrings==1.0.6` installed and the build then failed with
   `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`.
   `mkdocstrings_handlers/python/handler.py` of the 1.x line imports that module, and
   `mkdocstrings` 1.0.0 removed it. The pin is now `mkdocstrings==0.30.1`, and no other
@@ -612,7 +612,7 @@ holds every breaking change of this record against a row of that page.
 ### Added
 
 - **The site carries a page per method, the output schema and the migration page**
-  (#65). Round TBD. `docs/methods/` holds eleven method pages and an index. **FoxIO
+  (#65). Round 139. `docs/methods/` holds eleven method pages and an index. **FoxIO
   publishes twelve methods, this project implements eleven, and ten fingerprinter classes
   carry the eleven**, because `JA4LFingerprinter` writes `JA4L-S=` at
   `ja4plus/fingerprinters/ja4l.py:446` and `JA4L-C=` at `:482`. The set was measured
@@ -635,7 +635,7 @@ holds every breaking change of this record against a row of that page.
   the two default bounds out of `ja4plus/utils/state_table.py`.
 
 - **The site carries a migration page for the move from version 0.6.0 to version 1.0.0**
-  (#65). Round TBD. `docs/migration-0.6-to-1.0.md` lists eleven breaking changes with the
+  (#65). Round 139. `docs/migration-0.6-to-1.0.md` lists eleven breaking changes with the
   old form, the new form, the reason and the round, plus the seven fingerprints that
   move. **The issue body listed five breaking changes and the record holds eleven.**
   **Two gaps in the record are findings and this round repairs neither.** `CHANGELOG.md`
@@ -646,20 +646,20 @@ holds every breaking change of this record against a row of that page.
   belongs to #66, so this round writes no release notes.
 
 - **The documentation site builds from the Markdown files that already exist** (#64).
-  Round TBD. `mkdocs.yml` at the repository root configures MkDocs 1.6.1 with the
+  Round 137. `mkdocs.yml` at the repository root configures MkDocs 1.6.1 with the
   Material theme 9.7.7. `docs_dir` is `docs/`, so no page moves. Build the site with
   `pip install -e ".[docs]"` and `mkdocs build --strict`. `docs/specs/` stays out of the
   site, because the specification package is design material. The new `docs` extra holds
   every generator, and no entry of it reaches the runtime dependencies, so a user who
   installs `ja4plus` installs no site generator. Every version in the extra is exact.
 
-- **The site carries an API reference the docstrings generate** (#64). Round TBD. The
+- **The site carries an API reference the docstrings generate** (#64). Round 137. The
   five pages under `docs/reference/` name objects rather than describe them, and
   `mkdocstrings-python` 1.15.0 reads the docstrings of the source, so the reference
   cannot fall behind the code. The reference covers `Processor`, `ProcessorStats`,
   `FingerprintResult`, the ten fingerprinter modules and the lookup.
 
-- **A broken internal link fails the documentation build** (#64). Round TBD.
+- **A broken internal link fails the documentation build** (#64). Round 137.
   `strict: true` fails the build on a warning, and `validation.links.anchors: warn`
   raises a broken anchor from information to a warning. Without the second setting the
   site builds while an anchor is dead. A link changed to a page that does not exist and
