@@ -438,7 +438,7 @@ The command evicts a connection on either bound.
   seconds of capture time.
 
 Each eviction drops the entry of the connection table and the per-connection state of
-all ten methods together. Eviction runs on packet arrival, and the command starts no
+all ten fingerprinters together. Eviction runs on packet arrival, and the command starts no
 thread for it.
 
 ### How to write a capture filter
