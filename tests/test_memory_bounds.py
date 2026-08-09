@@ -104,15 +104,26 @@ CEILING_RUN_PACKETS = CEILING_CONNECTIONS * PACKETS_PER_CONNECTION
 CONTROL_BOUND = 100
 
 # The share of the shipped run's memory that the control run may reach. The reading is a
-# ratio and not a MiB figure, because the absolute numbers move with the platform and the
-# interpreter while the ratio measures the bound itself. #279 read five runs at the
-# default size: the ratio held between 0.746 and 0.769, and a control bound raised to the
-# shipped 10000 read 0.955. The threshold sits between the two.
+# ratio and not an absolute figure, because the absolute numbers move with the platform
+# and the interpreter while the ratio measures the bound itself. #279 set the threshold
+# from a resident reading, and #389 moved the control to a block count and re-measured it.
+# The block ratio reads 0.392 on Linux and 0.398 on macOS, and a control bound raised to
+# the shipped 10000 reads 1.361 on Linux and 1.367 on macOS. The threshold sits between
+# the two.
 CONTROL_GROWTH_RATIO = 0.85
 
-# The MiB the shipped run must add before the ratio above means anything. A run that added
-# nothing would divide one small number by another.
-CONTROL_FLOOR_MIB = 10.0
+# Before the ratio above means anything, the shipped run must add this many memory blocks
+# for each packet it feeds. A run that added nothing would divide one small number by
+# another.
+# The floor reads a rate rather than a count, because `CEILING_PACKETS` sets the size of
+# the run. #389 measured 12.37 blocks for each packet at 30000 packets, 13.99 at 5000 and
+# 15.08 at 1000, so the reading sits 3.1 times above this floor at the default size. The
+# retired MiB floor sat 2.9 times below its reading, and this rate holds that strength.
+#
+# The floor read 10.0 MiB until #389. A MiB floor is the reading a host under memory
+# pressure moves: under a memory limit of 70 MiB the shipped run added 0.00 MiB and
+# 376954 blocks.
+CONTROL_FLOOR_BLOCKS_PER_PACKET = 4
 
 # The seconds one measurement may take. #279 read 481 seconds for 1000000 packets on a
 # ten-core laptop, so the limit holds about four times that rate.
@@ -345,6 +356,34 @@ def traffic_growth_mib(reading):
     return reading["final_resident_mib"] - reading["idle_resident_mib"]
 
 
+def traffic_growth_blocks(reading):
+    """Return the count of memory blocks the traffic of one run added.
+
+    A resident reading states what the host left in memory, and this reading states what
+    the program holds. A host under memory pressure reclaims the pages of a running
+    process, and it reaches the run that holds the most memory first. #389 measured the
+    shipped run at four memory limits: the resident growth fell from 29.34 MiB to
+    0.00 MiB, and the block growth held between 376952 and 376965.
+
+    Args:
+        reading: One JSON object of `tests/memory_ceiling_run.py`.
+
+    Returns:
+        The count of blocks the traffic added. The number may be negative, and a caller
+        that needs a positive reading states that comparison itself.
+
+    Raises:
+        ValueError: The reading carries no block pair. An older runner wrote such a
+            reading, and it states nothing about the blocks rather than stating none.
+    """
+    pair = ("idle_blocks", "final_blocks")
+    if any(key not in reading for key in pair):
+        raise ValueError(
+            f"the reading holds no block pair, so the measurement is void: {sorted(reading)}"
+        )
+    return reading["final_blocks"] - reading["idle_blocks"]
+
+
 def measure_resident_memory(packets, bound=0):
     """Return the memory reading of one packet run, taken in a clean interpreter.
 
@@ -357,8 +396,8 @@ def measure_resident_memory(packets, bound=0):
         bound: The entry count every state table reads. Zero keeps the shipped bounds.
 
     Returns:
-        A dict with the keys `idle_resident_mib`, `final_resident_mib`, `peak_mib`,
-        `packets`, `connections` and `bound`.
+        A dict with the keys `idle_resident_mib`, `final_resident_mib`, `idle_blocks`,
+        `final_blocks`, `peak_mib`, `packets`, `connections` and `bound`.
 
     Raises:
         subprocess.CalledProcessError: The run failed.
@@ -724,17 +763,25 @@ class TestTheStatedMemoryCeiling:
     lowers every entry count and reads a smaller number, which is the reading that proves
     the entry count bound is measured here at all.
 
-    The third control compares a ratio and not a MiB figure. A resident memory reading
-    moves with the platform and with the interpreter, and an absolute margin that suits
-    one platform can sit above the whole signal on another.
+    The third control compares a ratio and not an absolute figure. A memory reading moves
+    with the platform and with the interpreter, and an absolute margin that suits one
+    platform can sit above the whole signal on another.
 
-    **The ceiling reads a high-water mark, and the second and third controls read the
-    current resident set.** The two kinds answer different questions, and the split is
-    what repairs the controls. A high-water mark never falls, so the difference between
-    two of them states `max(0, later mark - earlier mark)`. The import of scapy reaches a
-    mark on Ubuntu that the traffic then stays below, and both controls therefore read a
-    difference of exactly zero on a run that allocated tens of MiB. `traffic_growth_mib`
-    holds the rule, and `TestTheGrowthReading` measures it against the Ubuntu numbers.
+    **The ceiling reads a high-water mark, the second control reads the current resident
+    set, and the third control reads a block count.** The three kinds answer different
+    questions, and the split is what repairs the controls. A high-water mark never falls,
+    so the difference between two of them states `max(0, later mark - earlier mark)`. The
+    import of scapy reaches a mark on Ubuntu that the traffic then stays below, and a
+    control that subtracts two marks therefore reads exactly zero on a run that allocated
+    tens of MiB. `traffic_growth_mib` holds that rule, and `TestTheGrowthReading` measures
+    it against the Ubuntu numbers.
+
+    **A resident reading states what the host left in memory, and the third control needs
+    a reading the host does not move.** A host under memory pressure reclaims the pages of
+    a running process, and it reaches the run that holds the most memory first. #389
+    measured a resident ratio of 0.434 at no memory limit and 0.962 at a limit of 80 MiB,
+    with the block ratio at 0.392 throughout. `traffic_growth_blocks` holds the reading,
+    and `TestTheBlockReading` measures it against the recorded pair.
     """
 
     def test_the_packet_run_holds_resident_memory_below_the_stated_ceiling(self, shipped_reading):
@@ -769,22 +816,29 @@ class TestTheStatedMemoryCeiling:
             f"{shipped_reading['final_resident_mib']} MiB, so the mark covers no run"
         )
 
-    def test_a_smaller_entry_count_holds_less_resident_memory(
+    def test_a_smaller_entry_count_holds_fewer_memory_blocks(
         self, shipped_reading, control_reading
     ):
         """The third control. It proves the entry count bound holds the ceiling.
 
         A package that ignored its entry count bound would read one number for both runs.
         The comparison is a ratio, because the absolute readings move with the platform.
+
+        The case read the resident growth until #389, and it then failed on a host under
+        load. A resident reading states what the host left in memory, and `TestTheBlockReading`
+        holds the measurement. The block count answers the same question, and no host moves
+        it.
         """
-        shipped_growth = traffic_growth_mib(shipped_reading)
-        control_growth = traffic_growth_mib(control_reading)
-        assert shipped_growth > CONTROL_FLOOR_MIB, (
-            f"the shipped run added {shipped_growth:.2f} MiB, which is too little to read"
+        shipped_growth = traffic_growth_blocks(shipped_reading)
+        control_growth = traffic_growth_blocks(control_reading)
+        floor = shipped_reading["packets"] * CONTROL_FLOOR_BLOCKS_PER_PACKET
+        assert shipped_growth > floor, (
+            f"the shipped run added {shipped_growth} blocks across "
+            f"{shipped_reading['packets']} packets, which is too little to read"
         )
         assert control_growth < shipped_growth * CONTROL_GROWTH_RATIO, (
-            f"a bound of {CONTROL_BOUND} added {control_growth:.2f} MiB and the shipped "
-            f"bounds added {shipped_growth:.2f} MiB, a ratio of "
+            f"a bound of {CONTROL_BOUND} added {control_growth} blocks and the shipped "
+            f"bounds added {shipped_growth} blocks, a ratio of "
             f"{control_growth / shipped_growth:.3f}, so the entry count changed nothing"
         )
 
@@ -835,6 +889,86 @@ class TestTheGrowthReading:
         """
         reading = {"idle_resident_mib": 140.0, "final_resident_mib": 120.0}
         assert traffic_growth_mib(reading) == pytest.approx(-20.0)
+
+
+class TestTheBlockReading:
+    """`traffic_growth_blocks` reads a growth that a host under memory pressure holds.
+
+    A resident reading states what the host left in memory, and a block count states what
+    the program holds. A host under memory pressure reclaims the pages of a running
+    process, and it reaches the run that holds the most memory first. The reclaim
+    therefore moves the two runs of the third control by different amounts, and it moves
+    the ratio toward one.
+
+    #389 measured both readings across four memory limits on one Ubuntu 24.10 host, with
+    `python3.12` and 30000 packets. Each run held a memory limit of its own, under
+    `systemd-run --user --scope -p MemoryMax=<limit>`. The resident ratio read 0.434 at no
+    limit, 0.962 at 80 MiB and 0.786 at 75 MiB, and at 70 MiB both runs added 0.00 MiB.
+    **The block ratio read 0.392 at every one of the four.** The two readings below are
+    the pair the 80 MiB limit produced.
+
+    These cases read numbers and start no interpreter, so they run in a millisecond on
+    every platform.
+    """
+
+    # One reading of `tests/memory_ceiling_run.py` at the shipped bounds, taken under a
+    # memory limit of 80 MiB. The host held the resident set of the run flat, and the run
+    # allocated the same blocks it allocates at no limit.
+    CLIPPED_SHIPPED_READING = {
+        "idle_resident_mib": 84.34,
+        "final_resident_mib": 95.32,
+        "idle_blocks": 597169,
+        "final_blocks": 974134,
+        "peak_mib": 97.07,
+        "packets": 30000,
+        "connections": 3000,
+        "bound": 0,
+    }
+
+    # The same run under the same limit, with every entry count lowered to 100.
+    CLIPPED_CONTROL_READING = {
+        "idle_resident_mib": 85.15,
+        "final_resident_mib": 95.71,
+        "idle_blocks": 597208,
+        "final_blocks": 744977,
+        "peak_mib": 97.46,
+        "packets": 30000,
+        "connections": 3000,
+        "bound": 100,
+    }
+
+    def test_the_block_pair_holds_where_the_recorded_resident_pair_fails(self):
+        """The reading that #389 repairs. One pair of runs, two answers.
+
+        The first assertion holds the evidence: the recorded resident readings state that
+        the entry count bound changed nothing, and the entry count bound held. The case
+        that reads them is the case that failed on five workers' hosts.
+        """
+        shipped_mib = traffic_growth_mib(self.CLIPPED_SHIPPED_READING)
+        control_mib = traffic_growth_mib(self.CLIPPED_CONTROL_READING)
+        assert control_mib / shipped_mib > CONTROL_GROWTH_RATIO, (
+            f"the recorded resident readings hold a ratio of {control_mib / shipped_mib:.3f}, "
+            "so they no longer reproduce the failure of #389"
+        )
+
+        shipped_blocks = traffic_growth_blocks(self.CLIPPED_SHIPPED_READING)
+        control_blocks = traffic_growth_blocks(self.CLIPPED_CONTROL_READING)
+        floor = self.CLIPPED_SHIPPED_READING["packets"] * CONTROL_FLOOR_BLOCKS_PER_PACKET
+        assert shipped_blocks > floor
+        assert control_blocks < shipped_blocks * CONTROL_GROWTH_RATIO, (
+            f"the block growth holds a ratio of {control_blocks / shipped_blocks:.3f}, "
+            "so the block count moves with the host as the resident set does"
+        )
+
+    def test_a_reading_that_holds_no_block_pair_reads_as_a_void_measurement(self):
+        """The control. A reading of an older runner states nothing about the blocks.
+
+        `traffic_growth_mib` refuses a reading that holds no current resident pair, and
+        the block reading needs the same refusal. A helper that returned zero would report
+        a run that allocated 381284 blocks as a run that allocated none.
+        """
+        with pytest.raises(ValueError, match="void"):
+            traffic_growth_blocks(TestTheGrowthReading.UBUNTU_HIGH_WATER_READING)
 
 
 class TestTheStructuresThatHoldNoBound:

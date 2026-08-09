@@ -5,10 +5,19 @@ A separate interpreter is what makes the reading mean anything: `ru_maxrss` repo
 high-water mark of the whole process, so a reading taken inside a pytest session measures
 every case that ran before it as well.
 
-**The program takes two kinds of reading, and the two answer different questions.**
+**The program takes three kinds of reading, and the three answer different questions.**
 `peak_mib` is the high-water mark, and the memory ceiling is a claim about that mark.
 `idle_resident_mib` and `final_resident_mib` are the current resident set before and
 after the traffic, and the memory the traffic adds is the difference between those two.
+`idle_blocks` and `final_blocks` are the count of memory blocks the interpreter holds
+before and after the traffic.
+
+**A resident reading states what the host left in memory, and a block count states what
+the program holds.** A host under memory pressure reclaims the pages of a running
+process, and the reclaim reaches the run that holds the most memory first. #389 measured
+both readings across four memory limits on one Linux host. The resident growth of the
+shipped run fell from 29.34 MiB to 0.00 MiB, and the block growth held between 376952 and
+376965. Read a block count for a comparison that a busy host must not move.
 
 **Never subtract two high-water marks.** A high-water mark rises and never falls, so the
 difference between two of them is `max(0, later mark - earlier mark)` and not the growth
@@ -26,6 +35,7 @@ Run it by hand like this:
 """
 
 import argparse
+import gc
 import json
 import os
 import resource
@@ -118,7 +128,14 @@ def main(argv=None):
     processor = Processor()
     if arguments.bound:
         lower_every_bound(processor, arguments.bound)
+
+    # The resident reading comes first at both points, so the collection below moves no
+    # part of it. A block count taken between two collections holds the cyclic garbage the
+    # collector has not reached. The point it reaches depends on the allocation history.
+    # The collection makes the count read the blocks the run holds and no other block.
     idle_resident = current_resident_mib()
+    gc.collect()
+    idle_blocks = sys.getallocatedblocks()
 
     fed = 0
     index = 0
@@ -131,11 +148,15 @@ def main(argv=None):
     # The current reading comes first, so the high-water mark below covers it. The mark
     # never falls, and `current_resident_mib` may start one `ps` process on Darwin.
     final_resident = current_resident_mib()
+    gc.collect()
+    final_blocks = sys.getallocatedblocks()
 
     json.dump(
         {
             "idle_resident_mib": round(idle_resident, 2),
             "final_resident_mib": round(final_resident, 2),
+            "idle_blocks": idle_blocks,
+            "final_blocks": final_blocks,
             "peak_mib": round(resident_mib(), 2),
             "packets": fed,
             "connections": min(index, arguments.connections),
