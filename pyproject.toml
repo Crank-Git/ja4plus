@@ -127,7 +127,7 @@ dev = [
     # the test matrix runs Python 3.9. 6.2.0 is the newest release that states
     # `requires_python` `>=3.9`. Verified against https://pypi.org/pypi/twine/json, retrieved
     # 2026-08-10.
-    "twine==6.2.0",
+    "twine==7.0.0",
 ]
 lookup = [
     "requests>=2.20.0",
