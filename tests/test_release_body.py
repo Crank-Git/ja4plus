@@ -310,6 +310,40 @@ def test_the_reader_rewrites_no_link_inside_a_code_block() -> None:
     )
 
 
+def test_the_reader_reads_a_link_whose_text_holds_brackets() -> None:
+    """A link text of one bracket level reaches the reader.
+
+    The self-review of #566 measured a flat reader against `[a [b] c](x)`, and that reader
+    matched nothing, so the link stayed relative and no case reported it.
+    """
+    written = absolute_links("[a [b] c](docs/index.md) states the form.\n", "v1.0.0")
+    assert f"[a [b] c]({REPOSITORY_URL}/blob/v1.0.0/docs/index.md)" in written, (
+        f"the reader wrote {written!r}"
+    )
+
+
+def test_the_reader_reads_a_target_that_holds_parentheses() -> None:
+    """A target of one parenthesis level reaches the reader whole.
+
+    The self-review of #566 measured a flat reader against `docs/note(1).md`. That reader
+    took the target `docs/note(1` and left `.md)` outside the link, so it wrote a URL that
+    reads as complete and is not.
+
+    **The rendered text does not measure this gap.** The truncated target and the leftover
+    `.md)` join back into the same characters, so a case that reads the written text passes
+    against both readers. The self-review of #566 measured that vacuous case with the
+    seventh mutation, and this case reads the parsed target instead.
+    """
+    text = "[the note](docs/note(1).md) states the form.\n"
+    assert link_targets(text) == ["docs/note(1).md"], (
+        f"the reader read the target {link_targets(text)}"
+    )
+    written = absolute_links(text, "v1.0.0")
+    assert link_targets(written) == [f"{REPOSITORY_URL}/blob/v1.0.0/docs/note(1).md"], (
+        f"the reader wrote the target {link_targets(written)}"
+    )
+
+
 def test_the_relative_link_reader_names_the_target_of_a_text_that_holds_one() -> None:
     """The fault reader finds a relative target, so a clean report states a clean body.
 

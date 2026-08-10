@@ -75,7 +75,9 @@ of the changelog section for that version, and it links `CHANGELOG.md` at the ta
 rest.
 
 FR-release-14a — The GitHub release body names every link absolutely, against the tag of
-the version, and it keeps an anchor of the same body as an anchor.
+the version.
+
+FR-release-14b — The GitHub release body keeps an anchor of the same body as an anchor.
 
 **The user restated `FR-release-14` on 2026-08-10.** The earlier form asked the body to
 hold the whole changelog section. That form cannot hold, because the `## [1.0.0]` section
@@ -338,8 +340,9 @@ file that release never shipped.
 
 ### Every link of the release body names an address
 
-`FR-release-14a` states the requirement, and #566 raised it. The body of version 1.0.0 held
-one relative target at line 9, and the record holds the same target.
+`FR-release-14a` and `FR-release-14b` state the two requirements, and #566 raised them. The
+body of version 1.0.0 held one relative target at line 9, and the record holds the same
+target.
 
 ```
 [`docs/migration-0.6-to-1.0.md`](docs/migration-0.6-to-1.0.md) states the old form, the new
@@ -361,10 +364,32 @@ The reader holds three forms, and one case reads each one.
 
 **An anchor stays an anchor, because the release body holds the heading it names.** The
 body of version 1.0.0 names `#the-fingerprints-that-move`, and the breaking-change table
-below it carries that heading. An absolute URL there would carry a reader out of the page.
+below it carries that heading. `FR-release-14b` states the rule. An absolute URL there
+opens the repository file instead of the heading the release page already holds.
 
 **The reader writes into no code block.** A rewrite there changes an example a reader
 copies, and `breaking_heading_end` reads the same fence for the same reason.
+
+**The reader passes over an image, which the leading mark names.** An image needs the raw
+host, and every URL the reader writes names `blob`. The named part holds no image today.
+
+#### The reader reads one nested level in each half of a link
+
+**The self-review of #566 measured two gaps of a flat reader, and a run found neither.**
+Each gap is a form that `CHANGELOG.md` may hold on any later round.
+
+| Form | What the flat reader did | The case that holds the repair |
+|---|---|---|
+| `[a [b] c](x)`, a link text of one bracket level. | It matched nothing, so the link stayed relative and no case reported it. | `test_the_reader_reads_a_link_whose_text_holds_brackets` |
+| `[a](docs/note(1).md)`, a target of one parenthesis level. | It took the target `docs/note(1` and left `.md)` outside the link. | `test_the_reader_reads_a_target_that_holds_parentheses` |
+
+**The second reader writes a URL that reads as complete and is not**, which is the failure
+this project records many times. `LINK` therefore reads one bracket level in the text and
+one parenthesis level in the target.
+
+**A target that carries a title reaches the reader unchanged**, because the target holds no
+space. Such a link stays relative, and `relative_link_targets` reports it rather than passes
+it, so the body case names it.
 
 #### What the provider documentation settles, and what it does not
 

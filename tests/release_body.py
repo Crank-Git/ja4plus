@@ -95,9 +95,16 @@ TAG_FORM = "v{version}"
 # host, and every URL this module writes names `blob`, so a rewritten image target would
 # render nothing. The named part holds no image today.
 #
+# **The text reads one level of brackets and the target reads one level of parentheses.**
+# The self-review of #566 measured both gaps against a flat reader. `[a [b] c](x)` reached
+# no match at all, and `[a](p(1).md)` matched the target `p(1` and left `.md)` outside the
+# link. **The second reader writes a URL that reads as complete and is not**, which is the
+# failure this project records many times, so the reader reads the nested form rather than
+# reports it.
+#
 # The target holds no space, so a link that carries a title reaches the reader unchanged.
 # Such a link stays relative, and `relative_link_targets` reports it rather than passes it.
-LINK = re.compile(r"(?<!!)\[([^\]\n]*)\]\(([^)\s]+)\)")
+LINK = re.compile(r"(?<!!)\[((?:[^\[\]\n]|\[[^\[\]\n]*\])*)\]\(((?:[^()\s]|\([^()\s]*\))+)\)")
 
 # The opening of a target that already names an address, as `https:` or `mailto:`.
 SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
