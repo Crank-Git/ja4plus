@@ -820,6 +820,52 @@ holds every breaking change of this record against a row of that page.
   finding and this round ends them. No file under `ja4plus/` changes and no fingerprint
   moves.
 
+- **The exemption of the writing standard covers rule 3 as well as rule 1** (#502).
+  Round TBD. Rule 3 of `.claude/rules/ste.md` reads `One topic per paragraph, six
+  sentences at most.` The self-review of #484 found its own Changelog row past that limit,
+  and that finding is correct against the letter of the rule. **One row records one round,
+  which is one topic**, so the sentence count of a row follows from how much that round
+  measured. **The user ruled on 2026-08-10 that the exemption widens to rule 3 for the same
+  two records**, the entries of this file and the `## Changelog` table of
+  `docs/specs/spec.md`. #457 exempted rule 1 on that same reason and this round repeats it
+  for rule 3. **The exemption covers rule 1 and rule 3, and it covers no other rule of the
+  standard.** A read of 2026-08-10 reports 178 of the 190 rows of the specification table
+  past six sentences, and 113 of the 136 entries of this file past six, so the exemption
+  does work. Both counts include the entry and the row of this round. The section of the
+  standard is now `## The exemption` rather than `## The one exemption`, and it names the
+  rules it covers, the fourteen rules that reach both records, and the two rulings by
+  issue. The checklist of the standard gains one item for the paragraph limit.
+  **The reader holds the section against the numbered rule list rather than against a
+  transcribed count.** `standard_rules` reads the 16 rules of `## The rules`, `exempt_rules`
+  and `rules_that_reach_the_records` read the two placement sentences, and `rule_failures`
+  reports five states: a rule set below the floor of 16, a covered set that is not rule 1
+  and rule 3, a rule the section places on both sides, a rule the section places nowhere,
+  and a rule the section names that the standard states nowhere. **A rule this project adds
+  later therefore needs a reading before it ships.** `uncovered_failures` measures the
+  exempt region of each record under every rule the exemption drops, so a record that
+  breaks an uncovered rule fails a case. `paragraphs` and `record_units` read one entry and
+  one table row as one paragraph. **A list is not a paragraph**, so the paragraph reader
+  parts one item from the next, and a reader that joined them would report the 16 rules of
+  the standard as one paragraph of 16 sentences. **The cases came first.** The 51 cases of
+  `tests/test_changelog_sentence_exemption.py` failed 17 against the writing standard of
+  the base commit, among them
+  `test_the_exemption_covers_rule_one_and_rule_three`, which read
+  `the ruling exempts the rules [1, 3], and the exemption covers []`. **Five mutations of
+  the shipped standard prove that the cases bite in the failing direction**, and each one
+  runs inside a case rather than against the working tree: an exemption that drops rule 3
+  reports every long entry and every long row, an exemption that drops rule 1 reports every
+  long sentence, an exemption that names rule 2 on both sides fails the placement, and an
+  exemption that places rule 2 on neither side fails it too. `mutated_rule` refuses a mutation that matches no
+  span, because a mutation that matches nothing proves nothing. **An aggregate over an empty
+  set passes**, so the rule floor of 16 and the document floor of 40 each carry a case that
+  feeds the reader nothing. **No other prose loses rule 3**: the standard itself, and a page
+  outside the two records, each hold the paragraph limit under a case. **No file under
+  `ja4plus/` changes and no fingerprint moves.** The unit suite reports 3974 passed, 4
+  skipped and 8 xfailed, and the conformance suite reports 1532 passed, 143 skipped and 134
+  xfailed, which are the three counts the base commit reports. **Coverage holds at 94%**
+  with 4292 statements and 273 misses, which are the counts the base commit reports.
+  `ruff check`, `ruff format --check` and `mypy --strict ja4plus/` each report no issue.
+
 - **The prose names the statistics thread by its controlled term** (#441). Round 183. The
   `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
   thread, and the prose of the package used `the reporter` throughout. The self-review of
