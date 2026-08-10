@@ -168,8 +168,8 @@ of `CHANGELOG.md` is 242778 characters and the provider accepts 125000.
 inside `pytest tests/ -m "not spec_validation"`, which the `test` job of
 `.github/workflows/test.yml` runs on every entry of the matrix. Each of those six entries
 is a required status check of `dev`, so a disagreement fails continuous integration.
-`.claude/rules/batch-gate.md` lists the eleven required contexts, and a new job would add
-a twelfth context that the rule does not require.
+`.claude/rules/batch-gate.md` lists the twelve required contexts, and a new job would add
+a thirteenth context that the rule does not require.
 
 ### Why the version lives in the package
 
