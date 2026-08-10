@@ -918,7 +918,7 @@ holds every breaking change of this record against a row of that page.
   that rule holds, and the batch gate reads the run conclusion. **No file under `ja4plus/`
   changes and no fingerprint moves.**
 
-- **The skip gate reads the report of every job that runs cases** (#530). Round TBD.
+- **The skip gate reads the report of every job that runs cases** (#530). Round 201.
   **A reader that covers part of the suite reports a clean corpus over the part it cannot
   see**, and #524 bound the gate to the six reports of the `test` job. That job runs
   `pytest tests/ -m "not spec_validation"` and `tests/conftest.py` deselects the
@@ -987,7 +987,7 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
-- **The documentation slug case runs on one job of the matrix** (#529). Round TBD. **The
+- **The documentation slug case runs on one job of the matrix** (#529). Round 200. **The
   census of #524 read `tests/test_documentation_site.py:222` as a class c site**: the case
   skipped on all six jobs of `.github/workflows/test.yml`, and no limit of the runner
   explained it. Run https://github.com/Crank-Git/ja4plus/actions/runs/31408763259 holds the
@@ -1028,7 +1028,7 @@ holds every breaking change of this record against a row of that page.
   it. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **Every argument parser of the repository states a description that `python -OO` does not
-  remove** (#513). Round TBD. **`python -OO` sets `__doc__` to None on every module**, so a
+  remove** (#513). Round 198. **`python -OO` sets `__doc__` to None on every module**, so a
   parser that reads `__doc__.splitlines()[0]` for its description raises
   `AttributeError: 'NoneType' object has no attribute 'splitlines'` before it reads one
   argument. **#70 repaired that line at `tests/release_body.py:139` at round 191, and the
@@ -1067,7 +1067,7 @@ holds every breaking change of this record against a row of that page.
   changes and no fingerprint moves.
 
 - **The change-set defect case runs on the runner** (#528). Round
-  TBD. **A skip is not a pass, and this case had never run on any job.**
+  199. **A skip is not a pass, and this case had never run on any job.**
   `tests/test_round_entry_existence.py::test_the_reading_fails_the_change_set_of_the_defect`
   reads commit `46aa502` against its parent, which is the change set #412 shipped: eleven
   sweeps, two repairs, a new test file, no `CHANGELOG.md` entry and a green gate. It is the
