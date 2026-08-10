@@ -913,6 +913,65 @@ holds every breaking change of this record against a row of that page.
   with 4292 statements and 273 misses, which are the counts the base commit reports.
   `ruff check`, `ruff format --check` and `mypy --strict ja4plus/` each report no issue.
 
+- **The runner reads the change set of a pull request** (#438). Round TBD. #429 built
+  `tests/test_round_entry_existence.py`, which fails a change set that edits a tracked file
+  and records no round. **That case skipped on every job of `.github/workflows/test.yml`,
+  so it guarded the local gate of a worker and it guarded no pull request.** The
+  `actions/checkout` step of that workflow names no `fetch-depth`, so it makes a clone of
+  depth 1. That clone carries no `origin/dev` ref and no history behind the checked-out
+  commit, and `git merge-base` fails on it. **The `test` job now fetches the base commit of
+  the pull request at depth 1 and writes it into the `ROUND_ENTRY_REFERENCE` environment
+  variable.** `environment_reference` reads that variable, `named_commit` resolves it
+  against the repository, and `reference_commit` prefers it over the merge base. A name the
+  repository cannot read reads as no name, so a stale value leaves the local gate of a
+  worker exactly as it is. **`git diff` and `git show` read a commit that no history
+  connects to `HEAD`, and `git merge-base` does not.** A diff compares two trees, so one
+  extra commit is the whole requirement. A read of 2026-08-10 against a clone of depth 1
+  reports that the diff and the show each answered and that `git merge-base` exited 1.
+  **The measured cost decided the reading.** A clone of depth 1 holds 14844 KB, the extra
+  fetch of one commit raises it to 15452 KB, and `fetch-depth: 0` raises it to 18728 KB, so
+  this step costs 608 KB against 3884 KB on each of the six jobs of the matrix. The
+  `fetch-depth: 0` cost also rises with every commit the project makes, and the cost of one
+  commit does not. **#438 declined a second fetch of `dev` at depth 1 on a measurement**,
+  because two shallow histories share no commit and `git merge-base` fails between them, so
+  the case would skip exactly as before. **The base commit is a stricter reference than the
+  merge base with `dev`**, because it reads the change set of one pull request rather than
+  the change set of a whole integration branch. A push event carries no base commit, so the
+  case skips there, and a push to the integration branch has no change set to read. **The
+  fetch writes the ref `refs/ja4plus/round-entry-base`, because a commit that no ref reaches
+  is unreachable.** A bare `git fetch origin <sha>` writes `FETCH_HEAD` and no ref, and a
+  read of 2026-08-10 on a clone of depth 1 reports that the ref form survives
+  `git gc --prune=now` and that `git diff` and `git show` still read the commit after it.
+  **The self-review raised `continue-on-error` on the fetch step and #438 declined it**,
+  because a failed fetch leaves the variable empty, the case skips, and a green job over a
+  silent skip is the failure this round exists to remove. **The expression reaches the
+  `env` block and never the `run` block**, because an expression inside a shell command is
+  a script-injection path. **Ten
+  new cases hold the reading.** The self-review also found that `named_commit` rested on
+  its one caller to drop the space around a name, and the reader now drops it itself. Two
+  of the ten build an orphan branch, which reproduces the
+  runner state where `git merge-base` reports nothing and the diff still answers, and two
+  read `.github/workflows/test.yml` for the fetch step. **The cases came first**, and
+  `test_the_test_job_fetches_the_base_commit_of_a_pull_request` failed against the workflow
+  of the base commit with
+  `AssertionError: assert 'BASE_SHA: ${{ github.event.pull_request.base.sha }}' in 'name: Tests\n\n# ...'`.
+  **No reading of the runner proves this round in the failing direction yet, and #438
+  measured the reason.** `.github/workflows/test.yml` reads
+  `pull_request: branches: [master, dev]`, and that filter matches the base branch of a
+  pull request. **A pull request into an integration branch therefore creates no run at
+  all.** Pull request #519 carried a keyword-free head that edited two tracked files and
+  recorded no round, it targeted `batch/510-dry-run-and-gates`, and the provider held no
+  run for it after 150 seconds. Every pull-request run this repository holds carries an
+  integration branch as its head, so no run has ever come from a pull request into one.
+  **The batch pull request of #510 is the first run that reads this reading**, because it
+  targets `dev`. A local run reproduced both directions against the same reference the
+  runner reads. With `ROUND_ENTRY_REFERENCE` set to the tip of the integration branch, the
+  change set of #519 failed with
+  `the change set holds these paths outside the two records: .github/workflows/test.yml, tests/test_round_entry_existence.py. CHANGELOG.md holds 104 round entries against 104 at the reference commit`,
+  and the branch of this round passes the same reading. **A green run alone proves nothing
+  here**, because the case skipped before and a skip is not a pass, so #438 stays open on
+  the failing direction. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **The prose names the statistics thread by its controlled term** (#441). Round 183. The
   `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
   thread, and the prose of the package used `the reporter` throughout. The self-review of
