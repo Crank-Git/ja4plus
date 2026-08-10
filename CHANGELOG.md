@@ -682,6 +682,53 @@ holds every breaking change of this record against a row of that page.
   The branch then took the integration branch of batch #499, and the merged tree reports
   3901 passed and the same conformance counts.
 
+- **The `dropped` field of the statistics line reports the drop count of the capture
+  socket on Linux** (#326). Round TBD. #423 closed the macOS half and it left the Linux
+  half open, because no Linux host had run the reading. **`scapy` 2.7.0 calls `getsockopt`
+  in no file**, which a `grep` over the installed package of the granted host confirms.
+  The kernel reports a drop count, `scapy` reads it nowhere, and `ja4plus` now reads the
+  socket option itself in `packet_statistics_drops`. That reader reaches the packet socket
+  through `SuperSocket.ins`, which holds the `socket.socket` the Linux capture opened.
+  **The Python `socket` module publishes neither constant**, and both names read `None`
+  there, so `ja4plus/watch.py` defines them from the kernel headers of that host.
+  `/usr/include/x86_64-linux-gnu/bits/socket.h:151` reads `SOL_PACKET 263` and
+  `/usr/include/linux/if_packet.h:44` reads `PACKET_STATISTICS 6`. `struct tpacket_stats`
+  at `/usr/include/linux/if_packet.h:77` holds `tp_packets` and then `tp_drops`, each one
+  an `unsigned int` of the host byte order, so the reader unpacks eight bytes and takes
+  the second field. A reader of the first field would report the received count as the
+  drop count. **Warning: the kernel resets both counters as the read returns them.**
+  `man 7 packet` of that host states the rule: `Receiving statistics resets the internal
+  counters.` `CaptureDropCount` therefore adds each Linux reading to a running total,
+  where the macOS reader reports the count of the socket and accumulates nothing.
+  **The reset is a measurement here and not a premise.** One packet socket on `lo`, with a
+  2304-byte receive buffer, answered `first=(100, 99)` and then answered `second=(0, 0)`,
+  with no packet between the two reads. **Each live case captures on the loopback
+  interface and it generates every packet it reads.** A monitor on `lo` read 4 packets of
+  one TCP connection this run opened, over an `L2ListenSocket`, and reported `dropped=0`.
+  **A count of 0 on a clean capture proves nothing**, because a field no code writes reads
+  the same way. A second case therefore sends 50 UDP packets of 1400 bytes to the loopback
+  address and reads a total of 99 drops, then sends 8 more packets and reads a total of
+  115. **The second burst is far smaller than the first one**, so a monitor that reported
+  the last reading would report a smaller count after it. **A mutation proves that the
+  case bites**: `self._dropped = increment` in place of the sum fails 5 cases, among them
+  the live one, which reports `AssertionError: 0 not greater than 0`. The mutation was
+  restored. **The cases came first**, and the whole file failed to collect against the
+  base implementation with `ImportError: cannot import name 'PACKET_STATISTICS' from
+  'ja4plus.watch'`. **Where the host grants no `CAP_NET_RAW`, each live case skips and
+  none of them passes.** `docs/specs/features/06-live-capture.md` gains
+  FR-live-capture-17, one behaviour rule, two acceptance criteria and the section
+  `## The Linux drop count`, and it now records no open question.
+  `tests/test_watch_drop_count.py` rises from 22 cases to 38. **The live measurements ran
+  on Linux 6.11.0-29-generic, against `scapy` 2.7.0 and Python 3.12.7, on 2026-08-10.**
+  The host is shared, so the run read `uptime` before and after: `load average: 6.08` and
+  then `load average: 5.91`, on 56 cores. The five gates ran on macOS 26.6.1, build 25G76,
+  against `scapy` 2.7.0 and Python 3.14.3. **No file under `ja4plus/fingerprinters/`
+  changes and no fingerprint moves.** The conformance suite reports 1532 passed, 143
+  skipped and 134 xfailed before and after. The unit suite rises from 3950 passed and 4
+  skipped to 3963 passed and 7 skipped, and the three new skips are the Linux cases on a
+  macOS host. **Coverage holds at 94%**, the total misses hold at 273 while the statement
+  count rises from 4292 to 4316, and `ja4plus/watch.py` holds 99%.
+
 ### Fixed
 
 - **The sentence-length rule exempts the two records and no other document** (#457).
