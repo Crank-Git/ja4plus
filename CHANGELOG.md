@@ -558,7 +558,7 @@ holds every breaking change of this record against a row of that page.
   once more before it closes the socket**, because the exit summary of FR-live-capture-8
   runs after the capture returned, and the kernel gives the file descriptor of a closed
   socket to the next file the process opens. New file `tests/test_watch_drop_count.py`
-  holds 18 cases, and the whole file failed to collect before the change with
+  holds 22 cases, and the whole file failed to collect before the change with
   `ImportError: cannot import name 'CaptureDropCount' from 'ja4plus.watch'`. **Where no
   `/dev/bpf` node opens, the two live cases skip and neither one passes**, and a probe that
   refused the device reported the skip reason
@@ -566,14 +566,27 @@ holds every breaking change of this record against a row of that page.
   mutations prove the wiring**: a drop count that reports nothing fails 10 cases, a capture
   that attaches no socket fails 3, a capture that reads no count before the close fails 3,
   a command that passes no drop count fails 2, and a holder that keeps no last count fails
-  4. Each mutation was restored. `docs/specs/features/06-live-capture.md` gains
-  FR-live-capture-15 and FR-live-capture-16, and the `## Terms` table gains `drop count`.
-  The measurements ran on macOS 26.6.1, build 25G76, against `scapy` 2.7.0 and Python
-  3.14.3, on 2026-08-10. **No file under `ja4plus/fingerprinters/` changes and no
-  fingerprint moves.** The conformance suite reports 1532 passed, 143 skipped and 134
-  xfailed before and after. The unit suite rises from 3827 passed to 3847 passed. Coverage
-  holds at 94%, the total misses hold at 273 while the statement count rises from 4253 to
-  4281, and `ja4plus/watch.py` holds 99%.
+  4. Each mutation was restored. **The self-review found a race between the statistics
+  thread and the close, and the class now holds a lock.** The statistics thread reads the
+  socket while the capture closes it, and `SuperSocket.close` calls `os.close` and then
+  sets `closed`, so a reader between the two statements reads a released file descriptor.
+  `CaptureDropCount.release` holds the lock over the last read and over the drop of the
+  socket, and `read_interface` calls it before the close. **Two of the three mutations that
+  cover the guard passed against the first form of the cases**, which is the fault this
+  project records sixteen times, and both cases were repaired until each mutation failed
+  one. A socket that made every read wait blocked the release inside the ioctl rather than
+  on the lock, so only the first read waits now. A case that read a closed socket could not
+  see the difference between a release and a refresh, so it reopens the socket under
+  another count and models the reused file descriptor. **The release now runs inside its
+  own `try`**, because an exception there would leave the capture socket open for as long
+  as the process runs. `docs/specs/features/06-live-capture.md` gains FR-live-capture-15
+  and FR-live-capture-16, and the `## Terms` table gains `drop count`. The measurements ran
+  on macOS 26.6.1, build 25G76, against `scapy` 2.7.0 and Python 3.14.3, on 2026-08-10.
+  **No file under `ja4plus/fingerprinters/` changes and no fingerprint moves.** The
+  conformance suite reports 1532 passed, 143 skipped and 134 xfailed before and after. The
+  unit suite rises from 3827 passed to 3851 passed. Coverage holds at 94%, the total misses
+  hold at 273 while the statement count rises from 4253 to 4292, and `ja4plus/watch.py`
+  holds 99%.
 
 ### Fixed
 

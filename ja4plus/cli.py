@@ -570,7 +570,7 @@ def cmd_watch(args: argparse.Namespace) -> None:
                 # the packet and the report counts what the packet produced.
                 monitor.stats.count_fingerprints(len(batch))
 
-        # FR-live-capture-8 asks for the count of dropped packets. The capture attaches
+        # FR-live-capture-8 asks for the drop count. The capture attaches
         # the socket it opens to this object, so the `dropped` field reports the
         # `BIOCGSTATS` reading of that socket. #423 owns the reading.
         drop_count = CaptureDropCount()

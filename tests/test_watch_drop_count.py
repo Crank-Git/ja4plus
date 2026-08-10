@@ -1,11 +1,12 @@
 """The drop count the monitor reads from its capture socket.
 
 `docs/specs/features/06-live-capture.md` states the requirement this file measures.
-FR-live-capture-8 asks the statistics line to report the count of dropped packets, and
-the `dropped` field carries it.
+FR-live-capture-15 asks the statistics line to report the drop count, and the `dropped`
+field holds it.
 
-#423 states the boundary. **An injected socket proves the plumbing and it proves no
-capture layer.** The live cases of this file open a real capture socket of this host and
+#423 states the boundary. **An injected socket proves that the code connects the parts,
+and it proves no capture layer.** The live cases of this file open a real capture socket
+of this host and
 read the `BIOCGSTATS` ioctl through `_L2bpfSocket.get_stats`. **Where no `/dev/bpf` node
 opens, each live case skips and none of them passes.** A green run on a host that grants
 no capture device therefore reports no met criterion.
@@ -46,15 +47,23 @@ LIVE_UDP_PORT = 18428
 # states 65535, and a smaller buffer overflows on a burst a case can afford to send.
 SMALL_BUFFER_LENGTH = 4096
 
-# The count of packets the drop case sends, and the length of each one. The product
-# stands far above `SMALL_BUFFER_LENGTH`, so the kernel drops what the buffer cannot
+# The count of packets the drop case sends, and the length of each one. The product is
+# far greater than `SMALL_BUFFER_LENGTH`, so the kernel drops what the buffer cannot
 # hold.
 BURST_PACKETS = 50
 BURST_LENGTH = 1400
 
-# The count of seconds a live case waits before it gives up. A case that hangs reports
+# The count of seconds a live case waits before it stops. A case that hangs reports
 # nothing, so every live loop holds a deadline.
 LIVE_DEADLINE = 20.0
+
+# The count of seconds a case waits for a thread it expects to stay blocked. A longer
+# wait costs the whole suite that time on every run.
+BLOCKED_WAIT = 0.2
+
+# The count of seconds the drop case waits for the kernel to count the burst. A loaded
+# host counts the burst later than an idle one, and the case reads the count again.
+COUNT_DEADLINE = 5.0
 
 
 class FakeCaptureSocket:
@@ -99,12 +108,18 @@ class StatisticsSocket(SilentSocket):
     Args:
         dropped: The count the fake ioctl reports as dropped.
         received: The count the fake ioctl reports as received.
+
+    Attributes:
+        stats_reads: The count of `get_stats` calls the socket answered.
+        reads_at_close: The value of `stats_reads` at the close, or None before it.
     """
 
     def __init__(self, dropped=0, received=0):
         super().__init__()
         self.dropped = dropped
         self.received = received
+        self.stats_reads = 0
+        self.reads_at_close = None
 
     def get_stats(self):
         """Return the received count and the drop count.
@@ -112,7 +127,13 @@ class StatisticsSocket(SilentSocket):
         Returns:
             A tuple of two counts, in the order `_L2bpfSocket.get_stats` returns them.
         """
+        self.stats_reads += 1
         return (self.received, self.dropped)
+
+    def close(self):
+        """Record the count of reads the socket answered, and close it."""
+        self.reads_at_close = self.stats_reads
+        super().close()
 
 
 def the_capture_socket_or_skip(case, capture_filter, buffer_length=None):
@@ -250,9 +271,76 @@ class TheDropCountHoldsTheCaptureSocket(unittest.TestCase):
         drop_count.refresh()
         self.assertIsNone(drop_count())
 
+    def test_it_reads_the_socket_no_more_after_the_release(self):
+        capture_socket = FakeCaptureSocket(dropped=5)
+        drop_count = CaptureDropCount()
+        drop_count.attach(capture_socket)
+        self.assertEqual(drop_count.release(), 5)
+        capture_socket.dropped = 9
+        self.assertEqual(drop_count(), 5)
+
+    def test_the_release_reads_the_socket_one_last_time(self):
+        capture_socket = FakeCaptureSocket(dropped=5)
+        drop_count = CaptureDropCount()
+        drop_count.attach(capture_socket)
+        capture_socket.dropped = 11
+        self.assertEqual(drop_count.release(), 11)
+
+
+class TheReleaseWaitsForTheStatisticsThread(unittest.TestCase):
+    """The release of the capture socket waits while another thread reads the socket.
+
+    The capture closes the socket after the release returns, and the kernel gives the
+    file descriptor of a closed socket to the next file the process opens. A release
+    that returned while the statistics thread stood inside the ioctl would leave that
+    thread reading a file this project does not own.
+    """
+
+    def test_the_release_waits_while_a_read_holds_the_socket(self):
+        entered = threading.Event()
+        allowed = threading.Event()
+
+        class BlockingSocket(FakeCaptureSocket):
+            """A capture socket whose first ioctl waits until the case allows it.
+
+            **Only the first read waits.** A socket that made every read wait would
+            block the release inside the ioctl too, and the case would then pass against
+            a release that acquires no lock.
+            """
+
+            def get_stats(self):
+                """Return the two counts, after the case allows the first return.
+
+                Returns:
+                    A tuple of two counts.
+                """
+                if not entered.is_set():
+                    entered.set()
+                    allowed.wait(LIVE_DEADLINE)
+                return (0, 4)
+
+        drop_count = CaptureDropCount()
+        drop_count.attach(BlockingSocket())
+        released = []
+
+        reader = threading.Thread(target=drop_count)
+        reader.start()
+        self.assertTrue(entered.wait(LIVE_DEADLINE))
+
+        releaser = threading.Thread(target=lambda: released.append(drop_count.release()))
+        releaser.start()
+        releaser.join(BLOCKED_WAIT)
+        self.assertEqual(released, [], "the release returned while a read held the socket")
+
+        allowed.set()
+        releaser.join(LIVE_DEADLINE)
+        reader.join(LIVE_DEADLINE)
+        self.assertEqual(released, [4])
+        self.assertFalse(releaser.is_alive())
+
 
 class TheStatisticsLineReadsTheDropCount(unittest.TestCase):
-    """The `dropped` field of the statistics line carries the count of the socket."""
+    """The `dropped` field of the statistics line holds the count of the socket."""
 
     def test_the_line_reads_the_count_of_the_attached_socket(self):
         drop_count = CaptureDropCount()
@@ -296,6 +384,27 @@ class TheCaptureReportsItsSocket(unittest.TestCase):
         )
         self.assertTrue(capture_socket.closed)
         self.assertEqual(drop_count(), 5)
+
+    def test_it_releases_the_socket_before_it_closes_the_socket(self):
+        capture_socket = StatisticsSocket(dropped=5)
+        drop_count = CaptureDropCount()
+        read_interface(
+            "eth0",
+            lambda packet: None,
+            stop_requested=lambda: True,
+            open_socket=one_socket(capture_socket),
+            drop_count=drop_count,
+        )
+        # The capture read the socket while it was open, and the release then dropped it.
+        self.assertGreaterEqual(capture_socket.reads_at_close, 1)
+        # The kernel gives the file descriptor of a closed socket to the next file the
+        # process opens. A socket that reads open again, under another count, models
+        # that state. A drop count that still held the socket would read the new file.
+        capture_socket.closed = False
+        capture_socket.dropped = 9
+        reads = capture_socket.stats_reads
+        self.assertEqual(drop_count(), 5)
+        self.assertEqual(capture_socket.stats_reads, reads)
 
     def test_it_opens_the_capture_without_a_drop_count(self):
         capture_socket = StatisticsSocket()
@@ -439,8 +548,13 @@ class TheDroppedFieldReadsRealDrops(unittest.TestCase):
             self.assertEqual(stats.snapshot().dropped, 0)
 
             send_one_loopback_burst(LIVE_UDP_PORT)
-            # The kernel counts a packet after it delivers it to the capture socket.
-            time.sleep(0.5)
+            # The kernel counts a packet after it delivers it to the capture socket, so
+            # a case that read once would read the state of one instant. The read
+            # repeats until the count rises or the deadline passes, and a burst that
+            # dropped nothing therefore fails the assertion below rather than the wait.
+            deadline = time.monotonic() + COUNT_DEADLINE
+            while time.monotonic() < deadline and stats.snapshot().dropped == 0:
+                time.sleep(0.05)
 
             snapshot = stats.snapshot()
             received, dropped = capture_socket.get_stats()

@@ -242,7 +242,7 @@ name a refused privilege, and `ENODEV` names an interface the host does not hold
 ## The macOS drop count
 
 **#423 closed the macOS half of the question above, and it took the reading from a real
-capture socket of the development host.** The `dropped` field carries a whole number on
+capture socket of the development host.** The `dropped` field holds a whole number on
 macOS.
 
 `open_capture_socket` opens an `_L2bpfSocket`, `read_interface` attaches that socket to a
