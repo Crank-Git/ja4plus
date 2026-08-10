@@ -139,15 +139,15 @@ jobs:
       - name: Install the documentation extra on one job of the matrix
         # `tests/test_documentation_site.py` holds `_slug` against
         # `pymdownx.slugs.slugify`, which the `docs` extra installs and the `dev` extra does
-        # not. The census of #524 read that case as a class c site: it skipped on all six
+        # not. The census of #524 read that case as a class c site. It skipped on all six
         # jobs and no limit of the runner explained it. #529 removed the finding.
         #
         # **The extra reaches one job and not six.** `griffe` 2.1.0 requires Python 3.10 and
         # the matrix runs Python 3.9, so the Python 3.9 job can never install this extra.
         # The skip gate reads the union of the six reports, so one run of the case is the
-        # whole requirement, and five more installs buy nothing. A read of 2026-08-10
-        # measured 28 packages and 125476 KB for this step, against 197200 KB for the `dev`
-        # extra alone.
+        # whole requirement. Five more installs buy nothing. A read of 2026-08-10 measured
+        # 28 packages and 125476 KB for this step, against 197200 KB for the `dev` extra
+        # alone.
         #
         # **The step names one job, so the matrix keeps its six check names.** A matrix
         # variable would reach the job name, and the branch protection rule of `dev` holds

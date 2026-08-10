@@ -56,6 +56,14 @@ DOCS_EXTRA_CONDITIONS = ("matrix.os == 'ubuntu-latest'", "matrix.python-version 
 # One step of a job, as `.github/workflows/test.yml` indents it.
 WORKFLOW_STEP = "\n      - name: "
 
+# The job of `.github/workflows/test.yml` that runs the unit suite on the matrix.
+MATRIX_JOB = "test"
+
+# The key of one job, at the indentation `.github/workflows/test.yml` gives it. Every job of
+# that file indents a step the same way, so a reader of the whole file accepts a step in a
+# job that runs no matrix, and `matrix.python-version` resolves to nothing there.
+JOB_KEY = re.compile(r"^  [a-z-]+:$", re.MULTILINE)
+
 # The job that installs the `docs` extra into an empty environment and builds the site.
 # **The name `docs.yml` belongs to #66**, which publishes the site, so this job takes a
 # name of its own and the two never collide.
@@ -239,9 +247,9 @@ def test_the_slug_of_a_case_matches_the_slug_of_the_build() -> None:
 
     **The Python 3.13 job on `ubuntu-latest` installs the `docs` extra, and this case runs
     there.** `.github/workflows/test.yml` holds that step. The five other jobs of the matrix
-    install the `dev` extra alone and report a skip, which the skip gate reads as correct
-    because one job ran the case. #529 records the repair, and #524 measured the state
-    before it: the case ran on no job at all.
+    install the `dev` extra alone and report a skip. The skip gate reads that skip as
+    correct, because one job ran the case. #529 records the repair. #524 measured the state
+    before it, where the case ran on no job at all.
     """
     slugs = pytest.importorskip(
         "pymdownx.slugs", reason="the `docs` extra installs pymdownx, and `dev` does not"
@@ -266,11 +274,31 @@ def test_the_slug_of_a_case_matches_the_slug_of_the_build() -> None:
     )
 
 
-def _step_that_runs(text: str, command: str) -> str:
-    """Return the one step of a workflow whose `run` block holds the command.
+def _job_block(text: str, job: str) -> str:
+    """Return one job of a workflow, from its key to the key of the next job.
 
     Args:
         text: The whole workflow file.
+        job: The name of the job.
+
+    Returns:
+        The job block.
+
+    Raises:
+        AssertionError: The workflow holds no such job.
+    """
+    opener = f"\n  {job}:\n"
+    assert opener in text, f"{TEST_WORKFLOW.name} holds no job named {job}"
+    start = text.index(opener) + 1
+    following = [match.start() for match in JOB_KEY.finditer(text) if match.start() > start]
+    return text[start : following[0]] if following else text[start:]
+
+
+def _step_that_runs(text: str, command: str) -> str:
+    """Return the one step of one job whose `run` block holds the command.
+
+    Args:
+        text: The job block.
         command: The command the step runs.
 
     Returns:
@@ -281,7 +309,7 @@ def _step_that_runs(text: str, command: str) -> str:
     """
     steps = [step for step in text.split(WORKFLOW_STEP) if command in step]
     assert len(steps) == 1, (
-        f"{len(steps)} steps of {TEST_WORKFLOW.name} run `{command}`, and the reading needs one"
+        f"{len(steps)} steps of the {MATRIX_JOB} job run `{command}`, and the reading needs one"
     )
     return steps[0]
 
@@ -296,10 +324,14 @@ def test_one_job_of_the_test_matrix_installs_the_documentation_extra() -> None:
     **The extra reaches one job and not six.** `griffe` 2.1.0 requires Python 3.10, and the
     matrix runs Python 3.9, so the Python 3.9 job can never install this extra. One report
     of a run is what the skip gate reads, so one job carries the extra.
+
+    **The reading covers the `test` job alone.** `matrix.python-version` resolves to nothing
+    in a job that runs no matrix, so a step of another job would install the extra on every
+    run of that job or on none.
     """
     assert TEST_WORKFLOW.is_file(), f"{TEST_WORKFLOW} holds no test workflow"
-    text = TEST_WORKFLOW.read_text(encoding="utf-8")
-    step = _step_that_runs(text, DOCS_INSTALL)
+    block = _job_block(TEST_WORKFLOW.read_text(encoding="utf-8"), MATRIX_JOB)
+    step = _step_that_runs(block, DOCS_INSTALL)
     for condition in DOCS_EXTRA_CONDITIONS:
         assert condition in step, (
             f"the step that runs `{DOCS_INSTALL}` names no {condition}, so the reading does "

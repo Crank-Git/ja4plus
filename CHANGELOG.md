@@ -949,8 +949,16 @@ holds every breaking change of this record against a row of that page.
   cases of `tests/test_documentation_site.py` hold the repair:
   `test_one_job_of_the_test_matrix_installs_the_documentation_extra` reads the step and its
   condition, and `test_the_skip_allowlist_holds_no_entry_for_the_slug_case` reads the
-  allowlist. `FR-pre-release-validation-38a` states the requirement. No file under
-  `ja4plus/` changes and no fingerprint moves.
+  allowlist. `FR-pre-release-validation-38a` states the requirement. **The repair is proven
+  on the runner at https://github.com/Crank-Git/ja4plus/actions/runs/31418704343**, a manual
+  run of the branch head. The report of `test (ubuntu-latest, 3.13)` records the case as run
+  in 0.048 s, and the five other reports carry the skip. **The census of `skip-gate` reads 11
+  cases that ran on no job of the matrix, and this case is none of them.** **A manual run
+  carries no pull request**, so the step `Fetch the base commit of the pull request` runs
+  nowhere and
+  `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
+  skips on all six jobs. That case reads a pull-request event, so the batch pull request runs
+  it. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **Every argument parser of the repository states a description that `python -OO` does not
   remove** (#513). Round TBD. **`python -OO` sets `__doc__` to None on every module**, so a
