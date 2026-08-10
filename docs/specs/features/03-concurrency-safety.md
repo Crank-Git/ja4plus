@@ -186,6 +186,7 @@ every fingerprinter table onto `BoundedStateTable`, and wrote this form.
 | `JA4XFingerprinter.scan_offsets` | 50 | 600 seconds | 1000 |
 | `JA4SSHFingerprinter.connections` | 10000 | 600 seconds | 1000 |
 | `JA4SSHFingerprinter._handshake_clients` | 1000 | 600 seconds | 1000 |
+| `JA4TFingerprinter.connections` | 10000 | 600 seconds | 1000 |
 | `SynAckTracker.times`, held by JA4TS | 1000 | 120 seconds | 1 |
 | `SynAckTracker.prefixes`, held by JA4TS | 1000 | 120 seconds | none |
 | `JA4DBClient._cache`, held by the lookup client | 100000 | 600 seconds | 100000 reads |
@@ -199,7 +200,9 @@ Every row other than the first two and `BaseFingerprinter.fingerprints` is a
 `_quic_fragment_seen` and `_quic_server_crypto_seen`, because the state table holds the
 age of each entry. #42 moved `JA4DBClient._cache`, which reads no packet, so its age
 pass counts reads rather than packets. #285 moved `SynAckTracker.prefixes`, the
-fourteenth, which #246 added while Epic 3 was live.
+fourteenth, which #246 added while Epic 3 was live. #215 added
+`JA4TFingerprinter.connections`, the fifteenth, and it carries the two values
+`JA4SSHFingerprinter.connections` already held.
 
 `SynAckTracker.prefixes` runs no age pass of its own, and the table above states no
 eviction interval for it. `SynAckTracker.times` holds the eviction hook that
@@ -237,12 +240,13 @@ it grows without a limit, and Goal 3 covers it.
 - `TableStats` states six counts: `entries`, `max_entries`, `inserts`, `evictions`,
   `removals` and `returned_connections`. The six hold the invariant
   `inserts == entries + evictions + removals`.
-- **The report covers sixteen state tables, and not thirteen.** Round 82 counted the
+- **The report covers seventeen state tables, and not thirteen.** Round 82 counted the
   thirteen `BoundedStateTable` instances. `JA4HFingerprinter.reassembler` and
   `JA4XFingerprinter.reassembler` each hold per-connection data across packets, so the
   `## Terms` table names each one a state table too. `TCPStreamReassembler` therefore
   inherits `StateTable` and counts the same six things. Round 87 adds the sixteenth,
-  `SynAckTracker.prefixes`.
+  `SynAckTracker.prefixes`, and round 93 adds the seventeenth,
+  `JA4TFingerprinter.connections`.
 - `StateTable` is the base class both hold. `BaseFingerprinter.state_tables` finds a
   state table by that type, so a new table reaches the report with no further change.
   The search descends one level, which reaches `SynAckTracker.times` and
@@ -250,8 +254,8 @@ it grows without a limit, and Goal 3 covers it.
 - A returned connection is a connection the table evicted and then saw again. The table
   remembers the keys it evicted, and it bounds that memory at its own entry count. A
   key the caller removed leaves no memory, so a connection that returns after
-  `cleanup_connection` counts as a first sighting. The sixteen tables hold 47400
-  remembered keys between them, at 187 bytes for one key, so the memory costs 8.5 MiB
+  `cleanup_connection` counts as a first sighting. The seventeen tables hold 57400
+  remembered keys between them, at 187 bytes for one key, so the memory costs 10.2 MiB
   at its worst.
 - `Processor.stats` holds the lock of one fingerprinter across the read of that
   fingerprinter, because the counts of one method describe one instant. It acquires one
@@ -440,14 +444,23 @@ connections raises the entry count by zero while the eviction count rises.
 
 **#41 landed before #43, so the contract states the statistics it built.**
 `docs/api_reference.md` holds a `stats()` row, the six fields of `ProcessorStats`, and
-the definition of a returned connection. **#285 re-measured the table count and reads
-sixteen**: `Processor.stats()` reports 16 tables across 10 methods, and the walk of
-`tests/test_memory_bounds.py` reads 16 by an independent route.
+the definition of a returned connection. **#215 re-measured the table count and reads
+seventeen**: `Processor.stats()` reports seventeen state tables across the ten
+fingerprinters, and the walk of `tests/test_memory_bounds.py` reads seventeen state tables
+by an independent route.
 `test_the_walk_of_this_file_agrees_with_the_report_of_the_processor` compares the two, so
 a change that hides a table from one of them fails. The count moved four times, from six
-in #179 to thirteen in #39 to fifteen in #41 to sixteen in #285. Three of the four moves
-followed a better walk rather than new code, and #285 is the one that followed new code:
-#246 added `SynAckTracker.prefixes` while Epic 3 was live.
+in #179 to thirteen in #39 to fifteen in #41 to sixteen in #285 to seventeen in #215. Two
+of the four moves followed a better walk rather than new code, and two followed new code:
+#246 added `SynAckTracker.prefixes` while Epic 3 was live, and #215 added
+`JA4TFingerprinter.connections`.
+
+**This file stated sixteen until #453, and #215 moved the count without moving this
+file.** A count that a reader states in prose goes stale on the day the code moves, so
+`tests/test_documented_state_table_count.py` reads the count out of a live `Processor` and
+compares every document against it. It reads the two numbers that rest on the count as
+well, and it reads the state-bound table above row by row, because that table lost the
+`JA4TFingerprinter.connections` row for the same reason.
 
 ## The memory ceiling this package states
 
