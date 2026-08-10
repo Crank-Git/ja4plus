@@ -22,6 +22,7 @@ produce no fingerprint.
 """
 
 from pathlib import Path
+import json
 import re
 import unicodedata
 
@@ -34,6 +35,34 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIGURATION = REPO_ROOT / "mkdocs.yml"
 DOCS_DIR = REPO_ROOT / "docs"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
+
+# The workflow that runs the unit suite on the six jobs of the matrix.
+TEST_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "test.yml"
+
+# The allowlist of the skip gate. An entry here records a case that runs on no job.
+SKIP_ALLOWLIST = REPO_ROOT / "tests" / "universal_skips.json"
+
+# The slug case, in the form `tests/skip_gate.py` reads from a JUnit report.
+SLUG_CASE = "tests.test_documentation_site::test_the_slug_of_a_case_matches_the_slug_of_the_build"
+
+# The install command that puts `pymdownx` on the import path of a job.
+DOCS_INSTALL = 'pip install -e ".[docs]"'
+
+# The one job of the matrix that installs the `docs` extra. **The extra needs Python 3.10
+# or later**, so the Python 3.9 job of the matrix can never hold it, and an install on all
+# six jobs is no reading at all.
+DOCS_EXTRA_CONDITIONS = ("matrix.os == 'ubuntu-latest'", "matrix.python-version == '3.13'")
+
+# One step of a job, as `.github/workflows/test.yml` indents it.
+WORKFLOW_STEP = "\n      - name: "
+
+# The job of `.github/workflows/test.yml` that runs the unit suite on the matrix.
+MATRIX_JOB = "test"
+
+# The key of one job, at the indentation `.github/workflows/test.yml` gives it. Every job of
+# that file indents a step the same way, so a reader of the whole file accepts a step in a
+# job that runs no matrix, and `matrix.python-version` resolves to nothing there.
+JOB_KEY = re.compile(r"^  [a-z-]+:$", re.MULTILINE)
 
 # The job that installs the `docs` extra into an empty environment and builds the site.
 # **The name `docs.yml` belongs to #66**, which publishes the site, so this job takes a
@@ -216,8 +245,11 @@ def test_the_slug_of_a_case_matches_the_slug_of_the_build() -> None:
     disagreed on 84 headings of 268. No link pointed at one of the 84, so the anchor case
     compared the wrong value and still passed.
 
-    The case runs where the `docs` extra is installed. The unit suite installs the `dev`
-    extra alone and reports a skip, which names the gap rather than hiding it.
+    **The Python 3.13 job on `ubuntu-latest` installs the `docs` extra, and this case runs
+    there.** `.github/workflows/test.yml` holds that step. The five other jobs of the matrix
+    install the `dev` extra alone and report a skip. The skip gate reads that skip as
+    correct, because one job ran the case. #529 records the repair. #524 measured the state
+    before it, where the case ran on no job at all.
     """
     slugs = pytest.importorskip(
         "pymdownx.slugs", reason="the `docs` extra installs pymdownx, and `dev` does not"
@@ -239,6 +271,84 @@ def test_the_slug_of_a_case_matches_the_slug_of_the_build() -> None:
     )
     assert disagreements == [], (
         f"`_slug` disagrees with the build on these headings: {disagreements}"
+    )
+
+
+def _job_block(text: str, job: str) -> str:
+    """Return one job of a workflow, from its key to the key of the next job.
+
+    Args:
+        text: The whole workflow file.
+        job: The name of the job.
+
+    Returns:
+        The job block.
+
+    Raises:
+        AssertionError: The workflow holds no such job.
+    """
+    opener = f"\n  {job}:\n"
+    assert opener in text, f"{TEST_WORKFLOW.name} holds no job named {job}"
+    start = text.index(opener) + 1
+    following = [match.start() for match in JOB_KEY.finditer(text) if match.start() > start]
+    return text[start : following[0]] if following else text[start:]
+
+
+def _step_that_runs(text: str, command: str) -> str:
+    """Return the one step of one job whose `run` block holds the command.
+
+    Args:
+        text: The job block.
+        command: The command the step runs.
+
+    Returns:
+        The step, from its `- name:` line to the next one.
+
+    Raises:
+        AssertionError: No step holds the command, or several steps hold it.
+    """
+    steps = [step for step in text.split(WORKFLOW_STEP) if command in step]
+    assert len(steps) == 1, (
+        f"{len(steps)} steps of the {MATRIX_JOB} job run `{command}`, and the reading needs one"
+    )
+    return steps[0]
+
+
+def test_one_job_of_the_test_matrix_installs_the_documentation_extra() -> None:
+    """One job of the matrix holds `pymdownx`, so the slug case runs on that job.
+
+    **A case that skips on every job of the matrix fails the `skip-gate` job.** The census
+    of #524 measured the slug case as such a case, because every job installed the `dev`
+    extra alone. #529 removed the finding.
+
+    **The extra reaches one job and not six.** `griffe` 2.1.0 requires Python 3.10, and the
+    matrix runs Python 3.9, so the Python 3.9 job can never install this extra. One report
+    of a run is what the skip gate reads, so one job carries the extra.
+
+    **The reading covers the `test` job alone.** `matrix.python-version` resolves to nothing
+    in a job that runs no matrix, so a step of another job would install the extra on every
+    run of that job or on none.
+    """
+    assert TEST_WORKFLOW.is_file(), f"{TEST_WORKFLOW} holds no test workflow"
+    block = _job_block(TEST_WORKFLOW.read_text(encoding="utf-8"), MATRIX_JOB)
+    step = _step_that_runs(block, DOCS_INSTALL)
+    for condition in DOCS_EXTRA_CONDITIONS:
+        assert condition in step, (
+            f"the step that runs `{DOCS_INSTALL}` names no {condition}, so the reading does "
+            "not state which job of the matrix installs the extra"
+        )
+
+
+def test_the_skip_allowlist_holds_no_entry_for_the_slug_case() -> None:
+    """The allowlist records no environment limit against the slug case.
+
+    A runner installs either extra, so no limit of the runner ever explained this skip. The
+    case now runs on one job, and an allowlist entry beside it would allow a skip that the
+    repair removed.
+    """
+    entries = json.loads(SKIP_ALLOWLIST.read_text(encoding="utf-8"))["entries"]
+    assert SLUG_CASE not in [entry["case"] for entry in entries], (
+        f"{SKIP_ALLOWLIST.name} allows {SLUG_CASE}, and one job of the matrix runs it"
     )
 
 

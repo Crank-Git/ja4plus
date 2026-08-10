@@ -213,6 +213,13 @@ FR-pre-release-validation-38 — `tests/universal_skips.json` allows a universal
 environment limit explains, and each entry names that limit.
 `tests/skip_gate.py` fails an entry that names no limit, whatever the reports hold.
 
+FR-pre-release-validation-38a — One job of the matrix of `.github/workflows/test.yml`
+installs the `docs` extra beside the `dev` extra. That job runs
+`test_the_slug_of_a_case_matches_the_slug_of_the_build` of
+`tests/test_documentation_site.py`, and the skip gate therefore reads one run of that case.
+The `docs` extra needs Python 3.10 or later, so the Python 3.9 job of the matrix holds no
+such install.
+
 FR-pre-release-validation-39 — No tracked module reads the module docstring for the
 description of an argument parser. `tests/test_parser_description.py` reads the tracked
 file list of `git ls-files` and it fails a module that reads `__doc__` there.
