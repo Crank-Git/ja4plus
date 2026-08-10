@@ -144,7 +144,7 @@ lookup = [
 # `mkdocstrings-python` stays on the 1.x line, and **`mkdocstrings` therefore stays below
 # 1.0.0**. `mkdocstrings_handlers/python/handler.py` of the 1.x line imports
 # `mkdocstrings.handlers.base`, and `mkdocstrings` 1.0.0 removed that public module. The
-# pair `mkdocstrings==1.0.6` with `mkdocstrings-python==1.15.0` therefore installs and
+# pair `mkdocstrings==1.0.6` with `mkdocstrings-python==2.0.5` therefore installs and
 # then fails the build with
 # `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. #391 records the
 # measurement. **An exact pin can still be an incompatible pin**, so
@@ -168,7 +168,7 @@ docs = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
     "mkdocstrings==0.30.1",
-    "mkdocstrings-python==1.15.0",
+    "mkdocstrings-python==2.0.5",
     "griffe==2.1.0",
 ]
 
