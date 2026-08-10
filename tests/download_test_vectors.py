@@ -22,10 +22,12 @@ PCAP_DIR = "pcap"
 EXPECTED_DIR = "python/test/testdata"
 WIRESHARK_EXPECTED_DIR = "wireshark/test/testdata"
 RUST_EXPECTED_DIR = "rust/ja4/src/snapshots"
+ZEEK_EXPECTED_DIR = "zeek/tests/Traces"
 
 VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 WIRESHARK_DIR = VECTORS_DIR / "wireshark_expected"
 RUST_DIR = VECTORS_DIR / "rust_expected"
+ZEEK_DIR = VECTORS_DIR / "zeek_expected"
 
 # Every capture in the upstream `pcap/` directory that has an expected-output file.
 # `dtls-udp.notest.cap` carries a `notest` marker upstream and has no expected
@@ -73,9 +75,38 @@ CAPTURES = [
 # The FoxIO Python implementation emits no JA4D and no JA4D6, so the expected-output
 # file of each DHCP capture holds an empty array. The Wireshark dissector is the only
 # FoxIO implementation that writes a reference value for the two methods.
+#
+# The 24 files after the two DHCP captures hold the 58 JA4TS values the dissector writes.
+# The FoxIO Python implementation writes no JA4TS value for any capture, so these files
+# and the Zeek baselines are the whole FoxIO reference the method reaches. #515 measured
+# the directory and committed them.
 WIRESHARK_CAPTURES = [
     "dhcp.pcapng",
     "dhcpv6.pcap",
+    "CVE-2018-6794.pcap",
+    "badcurveball.pcap",
+    "browsers-x509.pcapng",
+    "chrome-cloudflare-quic-with-secrets.pcapng",
+    "gre-erspan-vxlan.pcap",
+    "http-empty-useragent.pcap",
+    "http1-with-cookies.pcapng",
+    "http2-with-cookies.pcapng",
+    "https-connect.pcap",
+    "https3-301-get.pcap",
+    "ipv6.pcapng",
+    "latest.pcapng",
+    "socks-https-example.pcap",
+    "socks4-https.pcap",
+    "ssh-r.pcap",
+    "ssh-scp-1050.pcap",
+    "ssh2-malformed.pcap",
+    "ssh2-moloch-crash.pcap",
+    "ssh2.pcapng",
+    "sshv1.pcap",
+    "tcpdump-geneve.pcap",
+    "tls-alpn-h2.pcap",
+    "tls3.pcapng",
+    "v6.pcap",
 ]
 
 # The FoxIO Python implementation reads no QUIC handshake, it reads no TLS on a port it
@@ -109,6 +140,21 @@ RUST_SNAPSHOT_NAME = "ja4__insta@{capture}.snap"
 # none of them reaches no case.
 RUST_COMPARED_FIELDS = (b"ja4: ", b"ja4s: ", b"ja4t: ", b"ja4x: ")
 
+# The seven btest baselines of the FoxIO Zeek package, each with the log it writes. The
+# FoxIO Zeek package is the one FoxIO implementation that publishes a JA4TS value, so
+# these files are the only FoxIO reference JA4TS reaches. #515 committed them.
+# `zeek/tests/btest.cfg` points every test at the `pcap/` directory above, so each
+# baseline reads a capture `CAPTURES` already names.
+ZEEK_BASELINES = [
+    ("Scripts.ja4-conn", "conn.log"),
+    ("Scripts.ja4-conn-tls3", "conn.log"),
+    ("Scripts.ja4-conn-quic", "conn.log"),
+    ("Scripts.ja4-dhcp", "ja4d.log"),
+    ("Scripts.ja4-http1-with-cookies", "http.log"),
+    ("Scripts.ja4-ssh2", "ja4ssh.log"),
+    ("Scripts.ja4-tls-handshake", "ssl.log"),
+]
+
 NOTICE_TEMPLATE = """\
 FoxIO JA4+ conformance vectors
 ==============================
@@ -131,15 +177,26 @@ This directory holds {count} captures and {count} expected-output files.
 `dtls-udp.notest.cap` is present upstream but is not copied here. It carries a
 `notest` marker and has no expected-output file, so it is not a vector.
 
-The subdirectory `wireshark_expected/` holds two more expected-output files:
+The subdirectory `wireshark_expected/` holds {wireshark_count} more expected-output
+files:
 
-    {wireshark_dir}/dhcp.pcapng.json  ->  tests/foxio_vectors/wireshark_expected/dhcp.pcapng.json
-    {wireshark_dir}/dhcpv6.pcap.json  ->  tests/foxio_vectors/wireshark_expected/dhcpv6.pcap.json
+    {wireshark_dir}/<capture>.json
+        ->  tests/foxio_vectors/wireshark_expected/<capture>.json
 
-The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files under
-`{expected_dir}` hold an empty array. The Wireshark dissector is the only FoxIO
+for each of these captures:
+
+{wireshark_captures}
+
+The FoxIO Python implementation emits no JA4D and no JA4D6, so the two DHCP files
+under `{expected_dir}` hold an empty array. The Wireshark dissector is the only FoxIO
 implementation that writes a reference value for the two methods.
 `docs/implementation_notes.md` records the reading.
+
+The 24 files after the two DHCP captures hold the 58 JA4TS values the dissector
+writes. The FoxIO Python implementation writes no JA4TS value for any capture, so
+these files and the Zeek baselines below are the whole FoxIO reference the method
+reaches. `tests/test_foxio_wireshark_ja4ts.py` compares all 58, and issue #515
+measured the directory and committed them.
 
 The subdirectory `rust_expected/` holds {rust_count} more expected-output files:
 
@@ -162,7 +219,23 @@ writes no JA4T value for any capture, so its snapshot holds the one local JA4T v
 that reaches D1 of `docs/specs/foxio/JA4T.md`. The two references name that stream by
 different addresses, and issue #242 records the pair.
 
-The conformance suite reads only the top level of this directory, so neither
+The subdirectory `zeek_expected/` holds {zeek_count} btest baselines:
+
+    {zeek_dir}/<directory>/<log>
+        ->  tests/foxio_vectors/zeek_expected/<directory>/<log>
+
+for each of these baselines:
+
+{zeek_baselines}
+
+The FoxIO Zeek package is the one FoxIO implementation that publishes a JA4TS
+value, so these baselines hold the only FoxIO reference the method reaches.
+`tests/test_foxio_zeek_ja4ts.py` compares the nine values this project adopts, and
+`tests/compare_zeek_baselines.py` reads all seven files with no external checkout.
+`docs/specs/foxio/zeek.md` records which baseline is usable as a vector, and issue
+#515 committed the copies.
+
+The conformance suite reads only the top level of this directory, so no
 subdirectory adds a case to it.
 
 Captures the ja4plus authors built
@@ -231,6 +304,7 @@ def download() -> None:
     VECTORS_DIR.mkdir(parents=True, exist_ok=True)
     WIRESHARK_DIR.mkdir(parents=True, exist_ok=True)
     RUST_DIR.mkdir(parents=True, exist_ok=True)
+    ZEEK_DIR.mkdir(parents=True, exist_ok=True)
 
     for capture in CAPTURES:
         print(f"{capture}")
@@ -270,6 +344,20 @@ def download() -> None:
             raise ValueError(f"rust_expected/{snapshot_name} holds no fingerprint value")
         (RUST_DIR / snapshot_name).write_bytes(snapshot)
 
+    for directory, log_name in ZEEK_BASELINES:
+        print(f"zeek_expected/{directory}/{log_name}")
+        baseline = _fetch(f"{FOXIO_RAW}/{ZEEK_EXPECTED_DIR}/{directory}/{log_name}")
+        # A baseline with no `#fields` line names no column, so every reader of it
+        # returns nothing and the comparison reports a pass on nothing. A baseline with
+        # no data row compares no value for the same reason.
+        lines = [line.strip() for line in baseline.splitlines()]
+        if not any(line.startswith(b"#fields") for line in lines):
+            raise ValueError(f"zeek_expected/{directory}/{log_name} names no column")
+        if not any(line and not line.startswith(b"#") for line in lines):
+            raise ValueError(f"zeek_expected/{directory}/{log_name} holds no data row")
+        (ZEEK_DIR / directory).mkdir(parents=True, exist_ok=True)
+        (ZEEK_DIR / directory / log_name).write_bytes(baseline)
+
     (VECTORS_DIR / "NOTICE").write_text(
         NOTICE_TEMPLATE.format(
             repo=FOXIO_REPO,
@@ -277,15 +365,23 @@ def download() -> None:
             pcap_dir=PCAP_DIR,
             expected_dir=EXPECTED_DIR,
             wireshark_dir=WIRESHARK_EXPECTED_DIR,
+            wireshark_count=len(WIRESHARK_CAPTURES),
+            wireshark_captures="\n".join("    {}".format(name) for name in WIRESHARK_CAPTURES),
             rust_dir=RUST_EXPECTED_DIR,
             count=len(CAPTURES),
             rust_count=len(RUST_CAPTURES),
             rust_captures="\n".join("    {}".format(name) for name in RUST_CAPTURES),
+            zeek_dir=ZEEK_EXPECTED_DIR,
+            zeek_count=len(ZEEK_BASELINES),
+            zeek_baselines="\n".join(
+                "    {}/{}".format(directory, log_name) for directory, log_name in ZEEK_BASELINES
+            ),
         )
     )
     print(f"{len(CAPTURES)} vectors written to {VECTORS_DIR}")
     print(f"{len(WIRESHARK_CAPTURES)} expected-output files written to {WIRESHARK_DIR}")
     print(f"{len(RUST_CAPTURES)} expected-output files written to {RUST_DIR}")
+    print(f"{len(ZEEK_BASELINES)} baselines written to {ZEEK_DIR}")
 
 
 if __name__ == "__main__":

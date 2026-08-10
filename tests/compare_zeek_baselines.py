@@ -9,7 +9,12 @@ The script reads the reference. It never writes to it, and it changes no fingerp
 
 Usage, from the root of a checkout:
 
+    python tests/compare_zeek_baselines.py
     python tests/compare_zeek_baselines.py <path-to-FoxIO-ja4-checkout>
+
+The first form reads the seven baselines under `tests/foxio_vectors/zeek_expected/`, which
+#515 committed. The second form reads a `FoxIO-LLC/ja4` checkout, which is how a reader
+proves that the committed copy still equals the reference.
 
 The report is Markdown. `docs/specs/foxio/zeek.md` records the reading it produced.
 
@@ -27,6 +32,11 @@ from collections import defaultdict
 from pathlib import Path
 
 VECTORS = Path(__file__).parent / "foxio_vectors"
+
+# The committed copy of the seven Zeek baselines. #515 committed them, so the comparison
+# runs with no external checkout and a gate reads it. `tests/foxio_vectors/NOTICE` records
+# the upstream path of each file.
+BASELINE_DIR = VECTORS / "zeek_expected"
 
 # The schema version this reader understands. `docs/output-schema.md` states that a
 # parser accepts an output line at this version and rejects one above it. A version rises
@@ -166,11 +176,36 @@ def ja4plus_readings(capture: Path) -> dict[tuple[str, str], dict[str, list[str]
     return out
 
 
-def compare(reference: Path) -> int:
-    """Print the comparison and return the count of connections that differ."""
+def baseline_path(reference: Path | None, directory: str, log_name: str) -> Path:
+    """Return the path of one baseline.
+
+    Args:
+        reference: The root of a `FoxIO-LLC/ja4` checkout, or None. None selects the
+            committed copy under `tests/foxio_vectors/zeek_expected/`.
+        directory: The btest directory name, such as `Scripts.ja4-conn`.
+        log_name: The log file name, such as `conn.log`.
+
+    Returns:
+        The path of the baseline file.
+    """
+    if reference is None:
+        return BASELINE_DIR / directory / log_name
+    return reference / "zeek" / "tests" / "Traces" / directory / log_name
+
+
+def compare(reference: Path | None = None) -> int:
+    """Print the comparison and return the count of connections that differ.
+
+    Args:
+        reference: The root of a `FoxIO-LLC/ja4` checkout, or None. None reads the
+            committed baselines.
+
+    Returns:
+        The count of connection-and-method pairs whose two values differ.
+    """
     differences = 0
     for directory, log_name, capture_name in BASELINES:
-        log = reference / "zeek" / "tests" / "Traces" / directory / log_name
+        log = baseline_path(reference, directory, log_name)
         capture = VECTORS / capture_name
         print(f"\n## {directory}/{log_name} — capture `{capture_name}`\n")
         if not log.is_file():
@@ -202,10 +237,10 @@ def compare(reference: Path) -> int:
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
+    if len(sys.argv) > 2:
         print(__doc__)
         return 2
-    reference = Path(sys.argv[1])
+    reference = Path(sys.argv[1]) if len(sys.argv) == 2 else None
     differences = compare(reference)
     print(f"\nConnection-and-method pairs that differ: {differences}")
     return 0

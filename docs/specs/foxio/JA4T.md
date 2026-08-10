@@ -451,7 +451,8 @@ connection holds more than one SYN-ACK. The image states that part e appears onl
 JA4TScan. **The user decided against the image on 2026-08-08**, and #226 built part e.
 R12 states the rule and R2 names the three FoxIO sources.
 
-**D7 — open. `ja4ts.py` writes no value on a RST, and the Wireshark dissector writes one.**
+**D7 — measured. `ja4ts.py` writes no value on a RST, and the Wireshark dissector writes
+one.**
 
 `wireshark/source/packet-ja4.c:1295` marks a RST, and line 1608 writes a second `JA4TS`
 value from the stored connection values, with the `-R<interval>` suffix. The image's
@@ -459,6 +460,27 @@ example part e ends with `R6`, which corroborates the suffix shape. `ja4ts.py` r
 SYN-ACK alone and reaches no RST.
 
 **#226 measured that D7 separates from D6, so #246 owns D7.** R13 states the measurement.
+
+**#515 brought D7 into the conformance suite, and it reaches 6 of the 58 Wireshark JA4TS
+values.** Every one of the 6 sits on a connection the server answered once, so the
+dissector writes the four parts again with no part e. R13 rule 2 states that a RST on a
+connection with no delay produces no value in this project, and
+`.claude/rules/conformance.md` declines a value that describes no packet of its own.
+`tests/foxio_deviations.json` holds the 6 keys under #246, each marked decided.
+
+| Register key | Frame | The value the dissector repeats |
+|---|---|---|
+| `browsers-x509.pcapng/2:54603/JA4TS.2` | 174 | `64400_2-1-3-4-0-0_1400_2` |
+| `https3-301-get.pcap/0:62599/JA4TS.2` | 20 | `14240_2-4-8-1-3_1436_10` |
+| `https3-301-get.pcap/0:62599/JA4TS.3` | 21 | `14240_2-4-8-1-3_1436_10` |
+| `https3-301-get.pcap/0:62599/JA4TS.4` | 23 | `14240_2-4-8-1-3_1436_10` |
+| `ssh2.pcapng/5:57368/JA4TS.2` | 849 | `42600_2-1-1-4-1-3_1300_9` |
+| `ssh2.pcapng/5:57368/JA4TS.3` | 850 | `42600_2-1-1-4-1-3_1300_9` |
+
+`TestTheDifferencesAreTheRecordedResetDecline` measures three facts of each row, so the
+decline stays proven rather than asserted. Each frame carries the RST flag alone, each
+value equals the value the first SYN-ACK of that stream produced, and `ja4plus` writes one
+value for the stream.
 
 ## The search for a reference value
 
@@ -468,7 +490,7 @@ value. **The measurement contradicts that statement for JA4T.**
 | Source searched | Result |
 |---|---|
 | `rust/ja4/src/snapshots/` | **64 `ja4t` values in 26 files, 19 of them distinct.** No `ja4ts` value. |
-| `wireshark/test/testdata/` | No `ja4t` value and no `ja4ts` value. |
+| `wireshark/test/testdata/` | **118 `ja4.ja4t` values and 58 `ja4.ja4ts` values, in 24 of the 37 files.** #515 corrected this row, and the section below states the correction. |
 | `python/test/testdata/` | No `ja4t` value and no `ja4ts` value. |
 | FoxIO `pcap/` | 38 captures. They carry the TCP traffic, and they hold no expected value of their own. |
 | `README.md` at the pinned commit | Two documented values, at lines 152 and 153. |
@@ -565,21 +587,59 @@ carries, so `tests/test_ja4t_form.py` holds constructed cases for both. #242 bro
 into the comparison, and "The snapshot the comparison now reaches" section below records
 how.
 
-## JA4TS stays uncovered
+## JA4TS reaches a FoxIO reference value, and #515 committed it
 
-**No local Rust snapshot holds a `ja4ts` field.** The measurement of 2026-08-08 reads all
-eleven files under `tests/foxio_vectors/rust_expected/` and finds none, which confirms the
-count in "The search for a reference value" above. No FoxIO Python expected-output file
-holds a `JA4T` key or a `JA4TS` key either.
+**This section held the reading `JA4TS stays uncovered` until 2026-08-10.** That reading
+rested on one wrong row of the table above, and this section states the correction. The
+superseded wording is quoted below rather than rewritten.
 
-**JA4TS therefore reaches no FoxIO reference value in this repository.** Its only
-reference values are the Zeek baselines, which #198 owns and `docs/specs/foxio/zeek.md`
-records. `TestTheLocalSnapshotsHoldNoJa4tsValue` states both facts as checks, so a vector
+> **JA4TS therefore reaches no FoxIO reference value in this repository.** Its only
+> reference values are the Zeek baselines, which #198 owns and `docs/specs/foxio/zeek.md`
+> records.
+
+**No local Rust snapshot holds a `ja4ts` field**, and that half of the reading stands. The
+measurement of 2026-08-08 reads all eleven files under `tests/foxio_vectors/rust_expected/`
+and finds none. No FoxIO Python expected-output file holds a `JA4T` key or a `JA4TS` key
+either. `TestTheLocalSnapshotsHoldNoJa4tsValue` states both facts as checks, so a vector
 refresh that adds a `ja4ts` field fails and names the file.
 
-**This is why part e moved no conformance case.** #226 added part e, and the conformance
-suite reported 116 `xfailed` before the change and 116 after, against 116 keys in
-`tests/foxio_deviations.json`. No case compares a JA4TS value, so none could move.
+**The FoxIO Wireshark dissector writes 58 JA4TS values, and the earlier reading searched
+for the wrong key.** The dissector writes the field name `ja4.ja4ts`, and a search for
+`ja4ts` alone finds it. The earlier search read the key `ja4t`, which the directory holds
+nowhere. Reproduce the count from a checkout at the pinned commit.
+
+```bash
+grep -c '"ja4.ja4ts"' wireshark/test/testdata/*.json
+```
+
+`tests/foxio_vectors/wireshark_expected/` now holds the 24 files that carry a value, and
+`tests/test_foxio_wireshark_ja4ts.py` compares all 58 against `ja4plus`. **52 values match
+byte for byte and 6 reach the register**, and all 6 are the RST decline that R13 records.
+`tests/foxio_vectors/zeek_expected/` holds the seven Zeek baselines beside them, and
+`tests/test_foxio_zeek_ja4ts.py` compares 9 of their 10 JA4TS values.
+
+**Two FoxIO implementations therefore corroborate JA4TS, and they agree on the one
+connection both read.** `ipv6.pcapng` is that connection. The dissector writes
+`65535_2-1-1-4-1-3_1346_10`, which is the value `ja4plus` writes, and the Zeek baseline
+writes `65535_00_00_00` from the `DLT_NULL` defect that `docs/specs/foxio/zeek.md` proves.
+**The dissector is the second FoxIO source that reads the options of that packet**, so it
+corroborates the defect from outside the Zeek script.
+
+**Warning: no value of either source carries a delay list of more than one delay, so part e
+stays measured by a constructed case alone.** The self-review of #515 mutated the
+separator of the delay list in `ja4plus/fingerprinters/ja4ts.py`, from `"-".join(...)` to
+`",".join(...)`, and no case of the 58 Wireshark values or the 9 adopted Zeek values
+failed. **The gap belongs to the FoxIO material and not to the two modules.** No capture
+of the vector set holds a connection the server answered three times, which "What part e
+moved" below already measures: the largest reading is two SYN-ACKs.
+`tests/test_ja4ts_part_e.py` therefore keeps the constructed cases that measure the
+separator, the rounding rule and both bounds.
+
+**Read this as the reason part e moved no conformance case in 2026-08-08.** #226 added part
+e, and the conformance suite reported 116 `xfailed` before the change and 116 after,
+against 116 keys in `tests/foxio_deviations.json`. No case compared a JA4TS value then,
+so none could move. **A case compares one now**, and the suite reports 140 `xfailed`
+against 140 keys.
 
 ## The snapshot the comparison now reaches
 
@@ -652,9 +712,11 @@ The register key `gre-erspan-vxlan.pcap/0:65174/JA4T.1` names #215, and it carri
 3. **`gre-erspan-vxlan.pcap` is the one case that measures the empty part b. Done.** #242
    committed the snapshot and recorded the stream identity, and "The snapshot the
    comparison now reaches" above states the mechanism.
-4. **JA4TS reaches no FoxIO reference value except the Zeek baseline. Measured.** No Rust
-   snapshot and no Wireshark expected-output file holds one. #198 owns the Zeek reading,
-   and "JA4TS stays uncovered" above holds the measurement.
+4. **JA4TS reaches two FoxIO reference sources. Done, and #515 corrected this item.** The
+   item read that no Wireshark expected-output file holds a JA4TS value, and the directory
+   holds 58 of them. No Rust snapshot holds one, which stands. #198 owns the Zeek reading,
+   and "JA4TS reaches a FoxIO reference value, and #515 committed it" above holds the
+   measurement and the correction.
 
 ## What the deleted text specification adds
 

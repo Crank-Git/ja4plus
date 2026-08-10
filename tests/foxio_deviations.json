@@ -107,6 +107,12 @@
     "decided": true,
     "capability": false
   },
+  "browsers-x509.pcapng/2:54603/JA4TS.2": {
+    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "issue": 246,
+    "decided": true,
+    "capability": false
+  },
   "browsers-x509.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 151,
@@ -467,6 +473,24 @@
     "decided": true,
     "capability": false
   },
+  "https3-301-get.pcap/0:62599/JA4TS.2": {
+    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "issue": 246,
+    "decided": true,
+    "capability": false
+  },
+  "https3-301-get.pcap/0:62599/JA4TS.3": {
+    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "issue": 246,
+    "decided": true,
+    "capability": false
+  },
+  "https3-301-get.pcap/0:62599/JA4TS.4": {
+    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "issue": 246,
+    "decided": true,
+    "capability": false
+  },
   "latest.pcapng/JA4S": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4S value ja4plus produces. The server coalesces the ServerHello, the Certificate and the ServerHelloDone into one handshake record that spans several TCP segments, and the FoxIO Python implementation reads no such ServerHello, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 151,
@@ -578,6 +602,18 @@
   "ssh2.pcapng/36:61861/JA4L-S.1": {
     "cause": "ja4plus writes the quic marker as the third part on a QUIC connection, and the FoxIO Python reference writes two parts. The two timing parts agree, so the marker is the whole difference. #225 holds the decision. Changelog round 66 settled it on 2026-08-08, and the decision is reversible. `packet-ja4.c:1441` and `packet-ja4.c:1447` write the marker, and `wireshark/test/testdata/` publishes it on 18 of 88 values.",
     "issue": 225,
+    "decided": true,
+    "capability": false
+  },
+  "ssh2.pcapng/5:57368/JA4TS.2": {
+    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "issue": 246,
+    "decided": true,
+    "capability": false
+  },
+  "ssh2.pcapng/5:57368/JA4TS.3": {
+    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "issue": 246,
     "decided": true,
     "capability": false
   },
