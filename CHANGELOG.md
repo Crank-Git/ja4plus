@@ -994,6 +994,63 @@ holds every breaking change of this record against a row of that page.
   keyword-free head into the same integration branch, and the provider held no run for it
   after 150 seconds. No file under `ja4plus/` changes and no fingerprint moves.
 
+- **JA4TS reaches a FoxIO reference value** (#515). Round
+  TBD. The conformance audit of 2026-08-10 read JA4TS as the one method of twelve that
+  reached no FoxIO-produced expected output. It stood on transcribed prose of a file FoxIO
+  deleted, plus a capture this project writes itself, and a self-generated capture proves
+  the implementation against itself. **The finding that outranks the rest of this round is
+  that this project recorded a wrong measurement, and that record is what hid the
+  reference.** The table `The search for a reference value` in `docs/specs/foxio/JA4T.md`
+  read `No ja4t value and no ja4ts value` for `wireshark/test/testdata/`. **That directory
+  holds 118 `ja4.ja4t` values and 58 `ja4.ja4ts` values, in 24 of its 37 files.** The
+  earlier search read the key `ja4t`, and the FoxIO Wireshark dissector writes the key
+  `ja4.ja4t`, so the search matched nothing and the reader wrote a negative result.
+  `## The search for a JA4TS reference value` in `docs/specs/spec.md` records every source
+  this round read and what each one returned, so no later reader repeats the search.
+  **`tests/foxio_vectors/wireshark_expected/` rises from 2 files to 26**, and new file
+  `tests/test_foxio_wireshark_ja4ts.py` compares all 58 values. **52 match byte for byte
+  and 6 reach the register.** The dissector names a frame rather than a stream, so the
+  reader takes the frame out of the capture, reads the address pair and the port pair of
+  that packet, and counts the occurrence in frame order. **A tunneled capture needs the
+  `ja4plus` import before the read**, because `ja4plus` loads the scapy contrib layers that
+  dissect ERSPAN, VXLAN and Geneve. A read of 2026-08-10 reports `gre-erspan-vxlan.pcap`
+  frame 2 as `Ether / IP / GRE / Raw` without that import and as a chain that ends in `TCP`
+  with it. **All 6 registered values are the RST decline that R13 of
+  `docs/specs/foxio/JA4T.md` already records**, and #246 owns each one. The dissector writes
+  a second JA4TS value on a RST packet of a connection with no delay, that value repeats
+  the value the SYN-ACK produced, and `.claude/rules/conformance.md` declines a value that
+  describes no packet of its own. **The decline stays proven rather than asserted.**
+  `TestTheDifferencesAreTheRecordedResetDecline` reads the TCP flags of each of the six
+  frames as `R`, reads each value against the value of the first SYN-ACK of that stream,
+  and reads the `ja4plus` value count of the stream. **New directory
+  `tests/foxio_vectors/zeek_expected/` holds all seven Zeek baselines**, which
+  `docs/specs/foxio/zeek.md` asked a later issue to commit. New file
+  `tests/test_foxio_zeek_ja4ts.py` compares 9 of their 10 JA4TS values, and `ja4plus`
+  produces all nine. **The tenth is barred and the bar is measured.**
+  `zeek/ja4t/main.zeek:66-68` returns an empty option record when the link layer is not
+  Ethernet, the link type of `ipv6.pcapng` is `DLT_NULL`, and the Zeek baseline writes
+  `65535_00_00_00` where `ja4plus` writes `65535_2-1-1-4-1-3_1346_10`. **The FoxIO
+  Wireshark dissector writes the `ja4plus` value for that same connection**, so a second
+  FoxIO implementation corroborates the bar and it rests on no reading of this project.
+  **`tests/compare_zeek_baselines.py` ran by hand until this round and no gate read it**,
+  because it needed a `FoxIO-LLC/ja4` checkout that a worktree holds none of. It now reads
+  the committed baselines when it gets no path, and `TestTheCommittedBaselinesRunAsAGate`
+  states the counts of the whole comparison. **The run against the committed copy reads 98
+  rows, 63 matches and 35 differences, which are the three counts the run of #327 measured
+  against a checkout**, so the committed copy reproduces the reference.
+  `tests/conformance_index.py` gains the JA4TS fingerprinter, and `REPORTED_METHODS` in
+  `tests/test_spec_validation.py` names neither JA4T nor JA4TS, so the addition adds no case
+  there. **The cases came first**, and the ten comparison cases of
+  `tests/test_foxio_zeek_ja4ts.py` failed against the base index with
+  `assert () == ('65535_2-1-1-4-1-3_1346_10',)`. `tests/download_test_vectors.py` fetches
+  and validates both new file sets and it rewrites `tests/foxio_vectors/NOTICE` with them,
+  so a refresh at a newer commit carries them. A baseline that names no column and a
+  baseline that holds no data row each fail the refresh. **No file under `ja4plus/` changes
+  and no fingerprint moves.** `tests/foxio_deviations.json` rises from 134 keys to 140 and
+  the conformance suite rises from 134 `xfailed` to 140, so the register invariant holds on
+  both sides. The conformance suite reports 1635 passed where it reported 1532, and 143
+  skipped on both.
+
 - **The prose names the statistics thread by its controlled term** (#441). Round 183. The
   `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
   thread, and the prose of the package used `the reporter` throughout. The self-review of
