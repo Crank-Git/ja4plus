@@ -505,6 +505,51 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The sentence-length rule exempts the two records and no other document** (#457).
+  Round TBD. #393 found about twelve sentences of its own Changelog row past the 25-word
+  limit, and that finding is correct against the letter of the rule. All 159 numbered rows
+  read the same way, so a row written to the limit is a house-style change for the whole
+  record. **The user ruled on 2026-08-10 that the record is exempt.** A dated record of a
+  past measurement is quoted and not rewritten. A rewrite of the rows falsifies nothing they
+  record, and it does mean that the text a past reader saw is not the text a future reader
+  sees. `.claude/rules/ste.md` gains the section `## The one exemption`, which names the
+  entries of `CHANGELOG.md` and the `## Changelog` table of `docs/specs/spec.md`. **The
+  exemption names a path and never a class of files.** A blanket exemption for any file
+  whose name holds the word `changelog` reaches `docs/CHANGELOG.md`, which this ruling never
+  read. New file `tests/test_changelog_sentence_exemption.py` holds 27 cases.
+  `exempt_records` reads the list of that section alone, `reaches` matches one document
+  against one record, and `evaluate` reports three states: a record the ruling names
+  nowhere, a document the exemption reaches outside the two records, and a document set
+  below the floor of 40. The document set reads `git ls-files -z '*.md'`, which names 59
+  pages, and an anchor case holds one page of each depth and of each root. **An aggregate
+  over an empty set passes**, so a reading over no document fails there rather than
+  reporting a green result. **The reader reads a path before a blanket word.** The first
+  item holds the word `each` in the clause `which each record one round`, and the first form
+  of the reader read that item as a class of files. **The sentence reader drops the emphasis
+  marks first.** This project opens a paragraph with a bold sentence, the mark stands
+  between the period and the space, and a reader that keeps the mark joins two sentences
+  into one. **The cases came first and they bite**: against the unrepaired rule they failed
+  5 of 27. **Two live mutations prove the failing direction.** A third record, the entries
+  of `docs/CHANGELOG.md`, added to the shipped rule kills 2 cases, and one failure reads
+  `the exemption reaches these documents outside the two records: ['docs/CHANGELOG.md']`. A
+  blanket item that exempts any file whose name holds the word `changelog` kills 4 cases.
+  Each mutation was restored and the 27 cases are green after each restore. **A self-review
+  found a third widening and two cases now close it.** The first form of the reader kept the
+  first path of an item alone, so the item
+  that names the entries of `CHANGELOG.md` and `docs/CHANGELOG.md` reported nothing, and the
+  exemption reached a third document. `exempt_records` now returns one record for each path of an
+  item. **A case measures the two records, and it measures no other document of this
+  repository.** The entries of `CHANGELOG.md` hold 191 sentences past the limit and the
+  `## Changelog` table of the specification holds 787, so the exemption does work. Both
+  counts include the entry and the row of this round. `.claude/rules/ste.md` holds
+  no such sentence, and a case reads that file against the limit it states. **A sweep that
+  measured every sentence of every page is separate work, and this ruling orders none.**
+  Every other measurement here runs on a document the case writes. **A worker's self-review
+  that reaches a Changelog row's
+  sentence length now reads the exemption and records nothing.** #393 raised the second such
+  finding and this round ends them. No file under `ja4plus/` changes and no fingerprint
+  moves.
+
 - **One pass at the batch gate assigns every round number of a batch** (#482). Round 175.
   The project manager assigned a round number at each sub-merge. A sub-merge is an event of
   one batch, and the round sequence is global to the repository. One live integration branch
