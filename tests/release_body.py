@@ -38,7 +38,7 @@ import argparse
 import pathlib
 import re
 import sys
-from typing import List, Optional
+from typing import Iterator, List, Optional, Tuple
 
 from tests.version_gate import package_version
 
@@ -88,6 +88,118 @@ REPOSITORY_URL = "https://github.com/Crank-Git/ja4plus"
 
 # The tag of a release, as the release skill writes it.
 TAG_FORM = "v{version}"
+
+# One inline Markdown link, as `[text](target)`.
+#
+# **The reader passes over an image, which the leading mark names.** An image needs the raw
+# host, and every URL this module writes names `blob`, so a rewritten image target would
+# render nothing. The named part holds no image today.
+#
+# The target holds no space, so a link that carries a title reaches the reader unchanged.
+# Such a link stays relative, and `relative_link_targets` reports it rather than passes it.
+LINK = re.compile(r"(?<!!)\[([^\]\n]*)\]\(([^)\s]+)\)")
+
+# The opening of a target that already names an address, as `https:` or `mailto:`.
+SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
+
+
+def unfenced_lines(text: str) -> Iterator[Tuple[str, bool]]:
+    """Return each line of the text beside the state of the code fence.
+
+    A fence line reads as fenced, so no reader writes into the line that opens a block.
+
+    Args:
+        text: Any Markdown text.
+
+    Returns:
+        One pair for each line: the line, and True where the line stands in a code block.
+    """
+    fenced = False
+    for line in text.splitlines(True):
+        if CODE_FENCE.match(line):
+            fenced = not fenced
+            yield line, True
+        else:
+            yield line, fenced
+
+
+def absolute_target(target: str, tag: str) -> str:
+    """Return the address a reader outside the repository resolves for one link target.
+
+    **A release body carries no base**, so a relative target resolves against nothing there.
+    An anchor is the one relative form the body itself answers, because the body holds the
+    heading it names.
+
+    Args:
+        target: The target of one Markdown link.
+        tag: The tag of the release, as `v1.0.0`.
+
+    Returns:
+        The target unchanged where it names an anchor or an address, and the absolute URL
+        of that path at the tag in every other case.
+    """
+    if target.startswith("#"):
+        return target
+    if target.startswith("//") or SCHEME.match(target):
+        return target
+    if target.startswith("/"):
+        return f"{REPOSITORY_URL}/blob/{tag}{target}"
+    return f"{REPOSITORY_URL}/blob/{tag}/{target}"
+
+
+def link_targets(text: str) -> List[str]:
+    """Return the target of every Markdown link the text holds outside a code block.
+
+    Args:
+        text: Any Markdown text.
+
+    Returns:
+        One target for each link, in the order the text holds them.
+    """
+    return [
+        match.group(2)
+        for line, fenced in unfenced_lines(text)
+        if not fenced
+        for match in LINK.finditer(line)
+    ]
+
+
+def relative_link_targets(text: str) -> List[str]:
+    """Return every link target of the text that names no address a release page carries.
+
+    The reader states the condition once, so this report and `absolute_links` never
+    disagree. The tag it passes reaches no result, because a target the reader keeps is a
+    target no tag changes.
+
+    Args:
+        text: Any Markdown text.
+
+    Returns:
+        One target for each relative link, in the order the text holds them.
+    """
+    return [target for target in link_targets(text) if absolute_target(target, "v0.0.0") != target]
+
+
+def absolute_links(text: str, tag: str) -> str:
+    """Return the text with an absolute URL in place of every relative link target.
+
+    **The reader writes into no code block.** A rewrite there changes an example a reader
+    copies, and `breaking_heading_end` reads the same fence for the same reason.
+
+    Args:
+        text: Any Markdown text.
+        tag: The tag of the release, as `v1.0.0`.
+
+    Returns:
+        The text, with each relative target written against the repository and the tag.
+    """
+
+    def written(match: "re.Match[str]") -> str:
+        return f"[{match.group(1)}]({absolute_target(match.group(2), tag)})"
+
+    return "".join(
+        line if fenced else LINK.sub(written, line) for line, fenced in unfenced_lines(text)
+    )
 
 
 def changelog_section(changelog_text: str, version: str) -> str:
@@ -226,6 +338,10 @@ def release_body(changelog_text: str, package_text: str) -> str:
     **The reader still refuses a body above the limit, and it truncates nothing.** A named
     part that grows past the limit fails the release at a named step.
 
+    **The body names every link absolutely, and `CHANGELOG.md` keeps its relative links.** A
+    reader of the repository follows a relative link and a reader of the stored body does
+    not. `absolute_links` writes the copy, and this module edits no line of the record.
+
     Args:
         changelog_text: The text of `CHANGELOG.md`.
         package_text: The text of `ja4plus/__init__.py`.
@@ -242,7 +358,8 @@ def release_body(changelog_text: str, package_text: str) -> str:
     if version is None:
         raise RuntimeError("`ja4plus/__init__.py` declares no `__version__`")
     section = changelog_section(changelog_text, version)
-    body = f"{named_part(section)}\n\n{changelog_link(version)}"
+    part = absolute_links(named_part(section), TAG_FORM.format(version=version))
+    body = f"{part}\n\n{changelog_link(version)}"
     fault = body_fault(body)
     if fault is not None:
         raise RuntimeError(f"{fault}, and the named part of `## [{version}]` is the body")
