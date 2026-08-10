@@ -71,12 +71,12 @@ from the day it was written, and every job stayed green while the case refused n
 
 **One job reads no such case, because one job reads one environment.** A macOS case that
 skips on Linux is correct, and a Linux case that skips on macOS is correct. The union of
-the six reports of the `test` job is the first reading that tells a correct skip from a
-case the suite runs nowhere.
+the reports is the first reading that tells a correct skip from a case the suite runs
+nowhere.
 
-The `skip-gate` job of `.github/workflows/test.yml` holds that reading. It depends on the
-`test` job, it downloads the six `test-results-*` artifacts, and it fails a case that every
-report records as skipped. `tests/skip_gate.py` holds the condition and
+The `skip-gate` job of `.github/workflows/test.yml` holds that reading. It depends on every
+job of the file that runs cases, it downloads the report of each one, and it fails a case
+that every report records as skipped. `tests/skip_gate.py` holds the condition and
 `tests/test_skip_gate.py` holds that file. Read the same condition by hand:
 
 ```bash
@@ -86,6 +86,66 @@ python -m tests.skip_gate --reports <download directory>
 **Warning: add an entry to `tests/universal_skips.json` only where a runner can never hold
 the condition the case needs.** A capture grant is such a condition. Every entry names a
 reason, and the gate fails an entry that names none.
+
+### The gate reads ten reports, and #530 measured what the six missed
+
+**Warning: a reader that covers part of the suite reports a clean corpus over the part it
+cannot see.** #524 bound the gate to the six reports of the `test` job. That job runs
+`pytest tests/ -m "not spec_validation"`, and `tests/conftest.py` deselects the
+`installed_wheel` marker as well. A read of 2026-08-10 measured each job of the workflow.
+
+| Job | Cases | Cases no report of `test` holds | Skips |
+|---|---|---|---|
+| `test` | 4150 | 0 | 7 |
+| `conformance` | 1918 | 1918 | 143 |
+| `installed-wheel` | 43 | 43 | 0 |
+| `fuzz` | 127 | 0 | 0 |
+| `samples` | 31 | 0 | 0 |
+
+**The suite holds 6111 cases and the six reports held 4150 of them.** The gate therefore
+reported a clean corpus over 1961 cases, which is 32 percent of the suite. The `skip-gate`
+job waits for all five jobs and it downloads ten reports.
+
+**The `fuzz` job and the `samples` job added no case at that read, and the gate reads them
+anyway.** A gate bound to the jobs that one read finds goes stale on the day a job changes
+its selection. `tests/test_skip_gate.py` reads `.github/workflows/test.yml` instead, and it
+holds three rules.
+
+1. Every job that runs `pytest` writes one JUnit report and uploads it.
+2. The download pattern of `skip-gate` matches the artifact name of every one of them.
+3. The `needs` list of `skip-gate` names every one of them.
+
+**The verdict reads over the jobs that select the case, and over no other job.** A case the
+whole matrix collects rests on six environments. A conformance case rests on one, because
+the `conformance` job is the one job that selects the `spec_validation` marker. The census
+names the report that holds each case it lists. A reader therefore takes that scope from
+the run, and never from a field that somebody keeps by hand. **#530 declined a job field on
+an allowlist entry on that reading.**
+
+**A case that no job selects at all reaches no report, and this gate holds no such case.**
+That is a different finding, and `.claude/rules/batch-gate.md` records it here so that no
+reader takes a green gate for a statement about it.
+
+### One entry covers one class of skip
+
+**An entry names one case under `case`, or one class of skip under `skip_message_prefix`.**
+The conformance suite parametrizes one case over each vector and each method. A cell where
+the vector holds no value and this project produces none reports the message below, and 143
+cells reported it on 2026-08-10.
+
+```
+not applicable: CVE-2018-6794.pcap holds no JA4SSH value and ja4plus produces none
+```
+
+**All 143 belong to one function that ran 199 other parameter sets**, so that function
+asserts and no case runs nowhere. A pass in place of the skip would assert an equality over
+two empty sets, which #524 put out of scope. `tests/universal_skips.json` therefore holds
+one prefix entry in place of 143 case entries.
+
+**Warning: a prefix entry covers a case only where every report that skips it states that
+same prefix.** A second reason on one job takes the case back out of the class and the gate
+names it. The census reports the count each prefix entry covers, and it names none of those
+cases one by one.
 
 **An entry that records an open finding names the issue that removes it.** The census of
 #524 found two cases that run on no job while no limit of the runner explains either one.

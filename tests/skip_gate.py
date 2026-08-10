@@ -1,4 +1,4 @@
-"""The skip gate reads the report of every matrix job, and a case that ran nowhere fails.
+"""The skip gate reads the report of every job that runs cases, and a case that ran nowhere fails.
 
 **A skip is not a pass, and a case that runs nowhere is not a case.** #438 measured that
 shape. `tests/test_round_entry_existence.py` reported a skip on every job of the matrix
@@ -7,18 +7,45 @@ a merge base that clone did not hold. Every job stayed green and the case refuse
 
 **One job reads no such case, because one job reads one environment.** A macOS case that
 skips on Linux is correct, and a Linux case that skips on macOS is correct. The defect is
-a case that skips in every environment. The union of the six reports of the matrix is the
-first reading that tells the two apart, so this gate runs after the matrix and reads all
-six reports together.
+a case that skips in every environment. The union of the reports is the first reading that
+tells the two apart, so this gate runs after every job that runs cases.
+
+**The gate reads ten reports of five jobs, and #530 measured why the four outside the
+matrix belong here.** The `test` job runs `pytest tests/ -m "not spec_validation"`, and
+`tests/conftest.py` deselects the `installed_wheel` marker as well, so that job collects
+4150 cases of the 6111 the suite holds. The `conformance` job holds the other 1918 and the
+`installed-wheel` job holds the other 43. A read of 2026-08-10 reports that no report of
+the `test` job holds any one of those 1961 cases, so a reader of the matrix alone reports a
+clean corpus over 32 percent of the suite it cannot see.
+
+**The `fuzz` job and the `samples` job add no case to that corpus, and the gate reads them
+anyway.** The same read reports 127 cases of the `fuzz` job and 31 of the `samples` job,
+and the `test` job holds every one of them. A gate bound to the jobs that one read finds
+goes stale on the day a job changes its selection. This gate binds every job that runs
+cases, and `tests/test_skip_gate.py` holds the workflow against that rule.
+
+**A case one job alone selects reads one environment, and the gate says so.** The union
+means `the suite ran this case nowhere`, and it means that over the jobs that select the
+case rather than over ten reports. A conformance case therefore rests on one runner, and
+the census names the report count of every case it lists. **A case no job selects at all
+reaches no report**, so it is a different finding and this gate does not hold it.
 
 **The reading is free of a new dependency.** `.github/workflows/test.yml` already writes
-one JUnit report for each job of the matrix, with `pytest --junitxml`. A `testcase`
+one JUnit report for each job that runs cases, with `pytest --junitxml`. A `testcase`
 element with a `skipped` child names a case that job ran no assertion for. The `skip-gate`
-job downloads the six artifacts and this file holds the condition.
+job downloads the ten artifacts and this file holds the condition.
 
 **An allowlist entry is permitted and it names a reason.** A case that needs a capture
 grant no runner holds is a legitimate entry. An entry that names no reason is the defect
 #524 exists to remove, so the gate fails such an entry whatever the reports hold.
+
+**An entry names one case, or it names the prefix of a skip message.** A prefix entry
+records one class of skip that the suite produces once for each parameter set of a cross
+product. `not applicable:` is such a class: 143 parameter sets of
+`tests/test_spec_validation.py` report it, because the vector holds no value for the method
+and this project produces none. Those 143 sets belong to one function that ran 199 other
+sets, so the function asserts and no repair of it is available. **A pass in place of the
+skip would assert an equality over two empty sets**, which #524 put out of scope.
 
 **The gate reads one download directory and never the checkout.** #473 measured a reader
 that walked the repository root and picked up a worker worktree under `.claude/`, so its
@@ -46,7 +73,7 @@ import sys
 # Python documentation lists need a declaration this input never carries. #524 declined
 # `defusedxml` on that reading, because the gate takes no new dependency.
 import xml.etree.ElementTree as ElementTree
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence
 
@@ -59,7 +86,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # all. `tests/test_parser_description.py` holds every parser of the repository against that
 # run.
 DESCRIPTION = (
-    "The skip gate reads the report of every matrix job, and a case that ran nowhere fails."
+    "The skip gate reads the report of every job that runs cases, and a case that ran "
+    "nowhere fails."
 )
 
 # The allowlist the runner reads. Each entry names one case and the environment limit that
@@ -71,6 +99,18 @@ ALLOWLIST_PATH = REPO_ROOT / "tests" / "universal_skips.json"
 # universal that another job ran. The gate therefore refuses a smaller report set rather
 # than reading it.
 MATRIX_JOB_COUNT = 6
+
+# The four other jobs of `.github/workflows/test.yml` that run cases. Each one writes one
+# JUnit report, so the download holds one report for each name here.
+#
+# **#530 measured the reach of each one on 2026-08-10.** `conformance` holds 1918 cases
+# that no report of the `test` job holds, and `installed-wheel` holds 43 more. `fuzz` holds
+# 127 and `samples` holds 31, and the `test` job holds every one of those 158.
+CASE_JOBS_OUTSIDE_THE_MATRIX = ("conformance", "fuzz", "installed-wheel", "samples")
+
+# The number of reports the download holds. An absent report is not a passed job, so the
+# gate refuses a smaller set rather than reading it.
+MINIMUM_REPORTS = MATRIX_JOB_COUNT + len(CASE_JOBS_OUTSIDE_THE_MATRIX)
 
 # `pytest --junitxml` writes one `testcase` element for each case, and a `skipped` child
 # where the case reported a skip.
@@ -90,18 +130,34 @@ XFAIL_TYPE = "pytest.xfail"
 
 @dataclass(frozen=True)
 class Report:
-    """The skip report of one job of the matrix."""
+    """The skip report of one job that runs cases."""
 
     label: str
     cases: Mapping[str, bool]
+    # The reason each skipped case states. A prefix entry of the allowlist reads this map,
+    # so a class of skip reaches the gate without one entry for each parameter set.
+    messages: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class Allowance:
-    """One allowlist entry, as the tracked file states it."""
+    """One allowlist entry, as the tracked file states it.
 
-    case: str
-    reason: str
+    An entry names one case, or it names the prefix of a skip message. A prefix entry
+    covers a class of skip that one cross product produces once for each parameter set.
+    """
+
+    case: str = ""
+    reason: str = ""
+    message_prefix: str = ""
+
+    def label(self) -> str:
+        """Return the text that names this entry in a gate reason.
+
+        Returns:
+            The case identifier, or the skip message prefix.
+        """
+        return self.case or f"the skip message prefix {self.message_prefix!r}"
 
 
 def case_identifier(element: ElementTree.Element) -> str:
@@ -147,6 +203,25 @@ def reports_a_skip(element: ElementTree.Element) -> bool:
     return skipped.get("type") != XFAIL_TYPE
 
 
+def skip_message(element: ElementTree.Element) -> str:
+    """Return the reason one `testcase` element states for its skip.
+
+    `pytest --junitxml` writes the reason into the `message` attribute of the `skipped`
+    child. A skip that states no reason reads as an empty message, which matches no prefix
+    entry of the allowlist.
+
+    Args:
+        element: One `testcase` element.
+
+    Returns:
+        The reason, or an empty string where the element states none.
+    """
+    skipped = element.find(SKIPPED_ELEMENT)
+    if skipped is None:
+        return ""
+    return skipped.get("message") or ""
+
+
 def read_report(path: Path) -> Report:
     """Return the skip state of every case one JUnit report holds.
 
@@ -164,11 +239,15 @@ def read_report(path: Path) -> Report:
     except ElementTree.ParseError as error:
         raise ValueError(f"{path} is no readable JUnit report: {error}") from error
     cases: Dict[str, bool] = {}
+    messages: Dict[str, str] = {}
     for element in tree.getroot().iter(CASE_ELEMENT):
-        cases[case_identifier(element)] = reports_a_skip(element)
+        identifier = case_identifier(element)
+        cases[identifier] = reports_a_skip(element)
+        if cases[identifier]:
+            messages[identifier] = skip_message(element)
     if not cases:
         raise ValueError(f"{path} holds no case, and a job that ran nothing is not a pass")
-    return Report(label=path.parent.name, cases=cases)
+    return Report(label=path.parent.name, cases=cases, messages=messages)
 
 
 def read_reports(directory: Path) -> List[Report]:
@@ -218,8 +297,9 @@ def universal_skips(reports: Sequence[Report]) -> List[str]:
 def read_allowlist(path: Path = ALLOWLIST_PATH) -> List[Allowance]:
     """Return the entries of the allowlist, exactly as the file states them.
 
-    The reader validates no reason. `gate_reasons` holds the reason rule, so a reasonless
-    entry reaches the gate report rather than a parse failure.
+    An entry names one case under `case`, or one class of skip under
+    `skip_message_prefix`. The reader validates no reason. `gate_reasons` holds the reason
+    rule, so a reasonless entry reaches the gate report rather than a parse failure.
 
     Args:
         path: The allowlist file.
@@ -241,10 +321,21 @@ def read_allowlist(path: Path = ALLOWLIST_PATH) -> List[Allowance]:
         if not isinstance(entry, dict):
             raise ValueError(f"{path} holds an entry that is no object: {entry!r}")
         case = entry.get("case")
-        if not isinstance(case, str) or not case:
-            raise ValueError(f"{path} holds an entry that names no case: {entry!r}")
+        prefix = entry.get("skip_message_prefix")
+        case = case if isinstance(case, str) else ""
+        prefix = prefix if isinstance(prefix, str) else ""
+        if not case and not prefix:
+            raise ValueError(
+                f"{path} holds an entry that names no case and no skip message prefix: {entry!r}"
+            )
         reason = entry.get("reason")
-        allowances.append(Allowance(case=case, reason=reason if isinstance(reason, str) else ""))
+        allowances.append(
+            Allowance(
+                case=case,
+                reason=reason if isinstance(reason, str) else "",
+                message_prefix=prefix,
+            )
+        )
     return allowances
 
 
@@ -264,15 +355,62 @@ def counted(count: int, noun: str) -> str:
     return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
 
 
+def holders(reports: Sequence[Report], case: str) -> List[str]:
+    """Return the label of every report that holds one case.
+
+    The count is the job scope of that case. A case the whole matrix collects rests on six
+    environments, and a case one job alone selects rests on one. #530 declined a job field
+    on an allowlist entry because this reading derives the same scope from the reports.
+
+    Args:
+        reports: The reports of the download.
+        case: The case identifier.
+
+    Returns:
+        The labels, in report order.
+    """
+    return [report.label for report in reports if case in report.cases]
+
+
+def covering_prefix(
+    reports: Sequence[Report], case: str, allowances: Sequence[Allowance]
+) -> Optional[Allowance]:
+    """Return the prefix entry that covers one universal skip, or None.
+
+    An entry covers the case where every report that records a skip of it states a message
+    that starts with the prefix. A report that states another message therefore takes the
+    case back out of the class, so one class entry hides no second reason.
+
+    Args:
+        reports: The reports of the download.
+        case: The case identifier.
+        allowances: The allowlist entries.
+
+    Returns:
+        The first entry that covers the case, or None.
+    """
+    messages = [
+        report.messages.get(case, "") for report in reports if report.cases.get(case, False)
+    ]
+    if not messages:
+        return None
+    for entry in allowances:
+        if not entry.message_prefix:
+            continue
+        if all(message.startswith(entry.message_prefix) for message in messages):
+            return entry
+    return None
+
+
 def gate_reasons(
     reports: Sequence[Report],
     allowances: Sequence[Allowance],
-    minimum_reports: int = MATRIX_JOB_COUNT,
+    minimum_reports: int = MINIMUM_REPORTS,
 ) -> List[str]:
     """Return every reason the gate holds against one set of reports.
 
     Args:
-        reports: The reports of the matrix.
+        reports: The reports of the download.
         allowances: The allowlist entries.
         minimum_reports: The number of reports the gate requires.
 
@@ -283,22 +421,27 @@ def gate_reasons(
     if len(reports) < minimum_reports:
         reasons.append(
             f"the download holds {counted(len(reports), 'report')} of the "
-            f"{minimum_reports} the matrix runs, and an absent report is not a passed job: "
-            f"{[report.label for report in reports]}"
+            f"{minimum_reports} the workflow runs, and an absent report is not a passed "
+            f"job: {[report.label for report in reports]}"
         )
-    nameless = [entry.case for entry in allowances if not entry.reason.strip()]
-    for case in nameless:
+    for entry in allowances:
+        if entry.reason.strip():
+            continue
         reasons.append(
-            f"{ALLOWLIST_PATH.name} allows {case} and names no reason, so the entry states "
-            "no environment limit a reader can hold it against"
+            f"{ALLOWLIST_PATH.name} allows {entry.label()} and names no reason, so the "
+            "entry states no environment limit a reader can hold it against"
         )
-    allowed = {entry.case for entry in allowances}
+    allowed = {entry.case for entry in allowances if entry.case}
     for case in universal_skips(reports):
         if case in allowed:
             continue
+        if covering_prefix(reports, case, allowances) is not None:
+            continue
+        scope = counted(len(holders(reports, case)), "report")
         reasons.append(
-            f"{case} skipped on every job of the matrix, so the suite ran it nowhere. "
-            f"Repair the case, or record the environment limit in {ALLOWLIST_PATH.name}"
+            f"{case} skipped on every job that selects it, so the suite ran it nowhere. "
+            f"The download holds {scope} of it. Repair the case, or record the "
+            f"environment limit in {ALLOWLIST_PATH.name}"
         )
     return reasons
 
@@ -309,25 +452,45 @@ def census_lines(reports: Sequence[Report], allowances: Sequence[Allowance]) -> 
     A verdict alone would leave the census to a log search. #524 states that the census is
     half of the deliverable, so the gate writes it on a pass and on a failure.
 
+    **The census names the corpus size, because that number is the reach of the reader.**
+    The six reports of the matrix hold 4150 cases and the ten reports hold 6111, so a
+    reader of this line sees at once which jobs reached the gate.
+
+    **A prefix entry reports its count and never its cases.** The `not applicable:` class
+    holds 143 cases, and 143 near-identical lines would bury every case-level line under
+    them.
+
     Args:
-        reports: The reports of the matrix.
+        reports: The reports of the download.
         allowances: The allowlist entries.
 
     Returns:
         The lines, ready for the job summary.
     """
-    reason_of = {entry.case: entry.reason for entry in allowances}
+    reason_of = {entry.case: entry.reason for entry in allowances if entry.case}
     cases = universal_skips(reports)
+    corpus = {case for report in reports for case in report.cases}
     lines = [
-        f"The skip gate read {counted(len(reports), 'report')} and found "
-        f"{counted(len(cases), 'case')} that ran on no job of the matrix."
+        f"The skip gate read {counted(len(reports), 'report')} that hold "
+        f"{counted(len(corpus), 'case')} between them, and found "
+        f"{counted(len(cases), 'case')} that ran on no job."
     ]
+    covered: Dict[str, List[str]] = {}
     for case in cases:
+        entry = covering_prefix(reports, case, allowances)
+        if entry is not None:
+            covered.setdefault(entry.message_prefix, []).append(case)
+            continue
+        scope = f"held by {', '.join(holders(reports, case))}"
         reason = reason_of.get(case)
         if reason is None:
-            lines.append(f"- {case}: no allowlist entry")
+            lines.append(f"- {case}: no allowlist entry, {scope}")
         else:
-            lines.append(f"- {case}: allowed, {reason}")
+            lines.append(f"- {case}: allowed, {scope}, {reason}")
+    for prefix, group in sorted(covered.items()):
+        lines.append(
+            f"- {counted(len(group), 'case')}: allowed by the skip message prefix {prefix!r}"
+        )
     return lines
 
 
@@ -345,9 +508,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--allowlist", default=ALLOWLIST_PATH, type=Path, help="the allowlist")
     parser.add_argument(
         "--minimum-reports",
-        default=MATRIX_JOB_COUNT,
+        default=MINIMUM_REPORTS,
         type=int,
-        help="the number of reports the matrix runs",
+        help="the number of reports the workflow runs",
     )
     arguments = parser.parse_args(argv)
     try:

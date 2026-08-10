@@ -345,11 +345,35 @@ def test_the_skip_allowlist_holds_no_entry_for_the_slug_case() -> None:
     A runner installs either extra, so no limit of the runner ever explained this skip. The
     case now runs on one job, and an allowlist entry beside it would allow a skip that the
     repair removed.
+
+    **The reader reads `case` with `get` and never with an index.** #530 added an entry form
+    that names one class of skip under `skip_message_prefix` and names no case at all, and
+    an index raises `KeyError` on such an entry. `get` reports None there, and None equals
+    no case identifier, so this reading stays exactly as strong as an index.
     """
     entries = json.loads(SKIP_ALLOWLIST.read_text(encoding="utf-8"))["entries"]
-    assert SLUG_CASE not in [entry["case"] for entry in entries], (
+    assert SLUG_CASE not in [entry.get("case") for entry in entries], (
         f"{SKIP_ALLOWLIST.name} allows {SLUG_CASE}, and one job of the matrix runs it"
     )
+
+
+def test_the_slug_reader_accepts_an_entry_that_names_a_class_of_skip() -> None:
+    """A prefix entry of #530 names no case, and a reader that indexes `case` raises.
+
+    The sub-merge gate of batch #535 measured that failure on the merge result of #529 and
+    #530. Each change set passed on its own branch.
+    """
+    entries = [
+        {"skip_message_prefix": "not applicable:", "reason": "the cell holds no data"},
+        {"case": "tests.test_other::test_c", "reason": "a limit of the runner"},
+    ]
+    assert SLUG_CASE not in [entry.get("case") for entry in entries]
+
+
+def test_the_slug_reader_still_finds_the_slug_case_in_an_entry() -> None:
+    """A reader that found nothing would pass the case above on an empty set."""
+    entries = [{"case": SLUG_CASE, "reason": "a limit of the runner"}]
+    assert SLUG_CASE in [entry.get("case") for entry in entries]
 
 
 def test_the_repository_holds_a_site_configuration() -> None:

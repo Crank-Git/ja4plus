@@ -230,17 +230,30 @@ jobs:
     #
     # **One job reads no such case, because one job reads one environment.** A macOS case
     # that skips on Linux is correct, and a Linux case that skips on macOS is correct. The
-    # union of the six reports of the `test` job is the first reading that tells a correct
-    # skip from a case the suite runs nowhere.
+    # union of the ten reports is the first reading that tells a correct skip from a case
+    # the suite runs nowhere.
     #
-    # **`needs: test` holds this job behind all six matrix jobs**, so the download finds six
-    # reports. A matrix job that fails leaves this job unrun, and the run then fails on that
-    # matrix job instead.
+    # **`needs` holds this job behind every job that runs cases**, so the download finds ten
+    # reports. A job that fails leaves this job unrun, and the run then fails on that job
+    # instead.
+    #
+    # **#530 measured why the four jobs outside the matrix belong here.** The `test` job
+    # runs `pytest tests/ -m "not spec_validation"` and `tests/conftest.py` deselects the
+    # `installed_wheel` marker, so that job collects 4150 cases of the 6111 the suite holds.
+    # A read of 2026-08-10 reports 1918 cases of the `conformance` job and 43 of the
+    # `installed-wheel` job that no report of the `test` job holds. **A reader of the matrix
+    # alone therefore reports a clean corpus over 32 percent of the suite it cannot see.**
+    #
+    # The `fuzz` job and the `samples` job add no case to that corpus today, and this job
+    # reads them anyway. A gate bound to the jobs that add a case today goes stale on the
+    # day a job changes its selection, and
+    # `tests/test_skip_gate.py::test_the_skip_gate_job_depends_on_every_job_that_runs_cases`
+    # holds this list against the workflow.
     #
     # `tests/skip_gate.py` holds the condition and `tests/universal_skips.json` holds the
     # allowlist. The gate reads the standard library alone, so this job installs no
     # dependency and it runs in seconds.
-    needs: test
+    needs: [test, conformance, fuzz, installed-wheel, samples]
     runs-on: ubuntu-latest
 
     steps:
@@ -251,17 +264,23 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Download the skip report of every matrix job
+      - name: Download the skip report of every job that runs cases
         # `merge-multiple` stays at its default of false, so each artifact extracts into a
         # directory named after it and the gate labels each report by that name. Verified
         # against https://github.com/actions/download-artifact/tree/v7.0.0 (retrieved
         # 2026-08-10).
+        #
+        # The pattern matches the six `test-results-*` artifacts and the four others:
+        # `conformance-results`, `fuzz-results`, `installed-wheel-results` and
+        # `sample-results`. `tests/test_skip_gate.py` reads every uploaded artifact name of
+        # this file against this pattern, so a new job that writes a report either matches
+        # it or fails a case.
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
         with:
-          pattern: test-results-*
+          pattern: "*-results*"
           path: skip-reports
 
-      - name: Fail a case that skipped on every job of the matrix
+      - name: Fail a case that skipped on every job that selects it
         # The step writes the census to the log and to the job summary, and it then exits
         # with the status of the gate. A pipe into `tee` would rest on `pipefail`, which the
         # default shell of a `run` block does not set, so the status reaches a variable
