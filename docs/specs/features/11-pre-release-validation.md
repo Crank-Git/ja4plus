@@ -198,6 +198,21 @@ constant `Literal[False]` beside the 94 `BitOr` nodes.
 `--dry-run --max-per-module 0` over `ja4plus/fingerprinters/*.py` reported 1569 mutations
 before the reader and it reports 1474 after it.
 
+FR-pre-release-validation-35 — `.github/workflows/test.yml` holds one job named
+`skip-gate`. That job depends on the `test` job, it downloads the six `test-results-*`
+artifacts, and it fails where one case carries a skip in every one of them.
+
+FR-pre-release-validation-36 — `tests/skip_gate.py` reads a case as a universal skip where
+no report of the download records a run of it. A report that omits the case records no run
+of it.
+
+FR-pre-release-validation-37 — `tests/skip_gate.py` fails where the download holds fewer
+reports than the matrix runs. `tests/test_skip_gate.py` holds that reading.
+
+FR-pre-release-validation-38 — `tests/universal_skips.json` allows a universal skip that an
+environment limit explains, and each entry names that limit.
+`tests/skip_gate.py` fails an entry that names no limit, whatever the reports hold.
+
 ## User flows
 
 **A maintainer proves the shipped package runs.**
@@ -398,6 +413,12 @@ the checkout is.
 - [ ] `pytest tests/ -m spec_validation` reports 1532 passed, 143 skipped and 134 xfailed
       against 134 keys of `tests/foxio_deviations.json`.
 - [ ] `git diff --name-only` lists no file under `tests/foxio_vectors/`.
+- [ ] The `skip-gate` job fails a run where one case carries a skip in all six reports of
+      the `test` job, and it passes the suite as it stands.
+- [ ] `python -m tests.skip_gate` exits 1 where the download holds fewer reports than the
+      matrix runs.
+- [ ] `python -m tests.skip_gate` exits 1 where one entry of `tests/universal_skips.json`
+      names no reason.
 - [ ] `pytest tests/test_requirement_scope.py` passes, so every requirement that binds a
       feature set names one path under `tests/`.
 - [ ] `pytest tests/test_settlement_procedure.py` passes, so every `repaired` verdict names

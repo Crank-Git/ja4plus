@@ -1,0 +1,4 @@
+{
+  "note": "Each entry names one case that skips on every job of the matrix, and the environment limit that stops it. tests/skip_gate.py reads this file and it fails an entry that names no reason. Repair a case rather than add an entry, unless a runner can never hold the condition the case needs.",
+  "entries": []
+}

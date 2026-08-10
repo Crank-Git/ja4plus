@@ -161,6 +161,59 @@ jobs:
           name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
           path: test-results.xml
 
+  skip-gate:
+    # `FR-pre-release-validation-35`. **A skip is not a pass, and a case that runs nowhere
+    # is not a case.** #438 measured that shape. `tests/test_round_entry_existence.py`
+    # reported a skip on every job of the matrix from the day it was written, and every job
+    # stayed green while the case refused nothing.
+    #
+    # **One job reads no such case, because one job reads one environment.** A macOS case
+    # that skips on Linux is correct, and a Linux case that skips on macOS is correct. The
+    # union of the six reports of the `test` job is the first reading that tells a correct
+    # skip from a case the suite runs nowhere.
+    #
+    # **`needs: test` holds this job behind all six matrix jobs**, so the download finds six
+    # reports. A matrix job that fails leaves this job unrun, and the run then fails on that
+    # matrix job instead.
+    #
+    # `tests/skip_gate.py` holds the condition and `tests/universal_skips.json` holds the
+    # allowlist. The gate reads the standard library alone, so this job installs no
+    # dependency and it runs in seconds.
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Download the skip report of every matrix job
+        # `merge-multiple` stays at its default of false, so each artifact extracts into a
+        # directory named after it and the gate labels each report by that name. Verified
+        # against https://github.com/actions/download-artifact/tree/v7.0.0 (retrieved
+        # 2026-08-10).
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        with:
+          pattern: test-results-*
+          path: skip-reports
+
+      - name: Fail a case that skipped on every job of the matrix
+        # The step writes the census to the log and to the job summary, and it then exits
+        # with the status of the gate. A pipe into `tee` would rest on `pipefail`, which the
+        # default shell of a `run` block does not set, so the status reaches a variable
+        # instead.
+        run: |
+          set +e
+          python -m tests.skip_gate --reports skip-reports > skip-gate.txt
+          status=$?
+          set -e
+          cat skip-gate.txt
+          cat skip-gate.txt >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
   fuzz:
     # `FR-correctness-audit-13`. The malformed-input suite runs on each pull request
     # the `on:` block above accepts. This job names the suite, so a red

@@ -820,6 +820,34 @@ holds every breaking change of this record against a row of that page.
   macOS host. **Coverage holds at 94%**, the total misses hold at 273 while the statement
   count rises from 4292 to 4316, and `ja4plus/watch.py` holds 99%.
 
+- **A case that skips on every job of the matrix fails the run** (#524). Round TBD. **A
+  skip is not a pass, and a case that runs nowhere is not a case.** #438 measured that
+  shape: `tests/test_round_entry_existence.py` reported a skip on every job of
+  `.github/workflows/test.yml` from the day it was written, and every job stayed green
+  while the case refused nothing. **One job reads no such case, because one job reads one
+  environment.** A macOS case that skips on Linux is correct, and a Linux case that skips
+  on macOS is correct. **The union of the six reports of the `test` job is the first
+  reading that tells a correct skip from a case the suite runs nowhere.**
+  `.github/workflows/test.yml` gains the job `skip-gate`, which depends on the `test` job,
+  downloads the six `test-results-*` artifacts and fails a case that every report records
+  as skipped. `tests/skip_gate.py` holds the condition and `tests/test_skip_gate.py` holds
+  that file with 23 cases. **The reading takes no new dependency**: the workflow already
+  writes one JUnit report for each matrix job with `pytest --junitxml`, and a `testcase`
+  element with a `skipped` child names a case that job ran no assertion for.
+  `tests/universal_skips.json` holds the allowlist, each entry names the environment limit
+  that stops its case, and the gate fails an entry that names no limit whatever the reports
+  hold. **A report the download omits is not a passed job**, so the gate also fails a
+  download smaller than the matrix. **The gate reads one download directory and never the
+  checkout**, because #473 measured a reader that walked the repository root and picked up
+  a worker worktree under `.claude/`. `docs/specs/features/11-pre-release-validation.md`
+  gains `FR-pre-release-validation-35` through `FR-pre-release-validation-38` and three
+  acceptance criteria, and `.claude/rules/batch-gate.md` gains the section
+  `## A case that skips on every job fails the run`. **`skip-gate` is a twelfth check and
+  the required list of `dev` holds eleven names**, so the branch protection rule reaches
+  this check once the user adds the name to it. A red `skip-gate` fails the run whatever
+  that rule holds, and the batch gate reads the run conclusion. **No file under `ja4plus/`
+  changes and no fingerprint moves.**
+
 ### Fixed
 
 - **The sentence-length rule exempts the two records and no other document** (#457).
