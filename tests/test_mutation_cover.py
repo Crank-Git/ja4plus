@@ -1,14 +1,14 @@
-"""Tests that a mutation of a module body keeps a reader in the cover rule.
+"""Tests that a mutation of a module body keeps a body reader in the cover rule.
 
 `.claude/rules/conformance.md` states the cover procedure. Step 2 of that procedure
-subtracts the lines the import runs, so a mutation of a module body keeps no reader and
-the cost rule then holds the cheapest test file. #414 measured the result on
+subtracts the lines the import runs. A mutation of a module body then keeps no case that
+reads it, and the cost rule holds the cheapest test file. #414 measured the result on
 `ja4plus/__init__.py`: the cover the cost rule builds is `tests/test_parity.py`, and the
 sweep reads 1 killed and 31 survived.
 
-`tests/mutation_cover.py` gives that line class its own reader. It reads the names the
+`tests/mutation_cover.py` names the body reader of that module. It reads the names the
 module body binds and the identifier strings those statements build, and it names the
-test file whose source holds the most of them.
+test file whose own source holds the most of them.
 
 These cases read no packet and they produce no fingerprint.
 """
@@ -48,6 +48,38 @@ class TestTheTokensOfOneModuleBody:
         assert "inner" not in found
         assert "dropped" not in found
 
+    def test_the_token_set_holds_the_names_of_a_tuple_target(self, tmp_path: Path) -> None:
+        module = tmp_path / "four.py"
+        module.write_text('FIRST, SECOND = "one", "two"\n*REST, LAST = [1, 2, 3]\n')
+        found = mutation_cover.body_tokens(module)
+        assert "FIRST" in found
+        assert "SECOND" in found
+        assert "REST" in found
+        assert "LAST" in found
+
+    def test_the_token_set_holds_a_name_an_import_guard_binds(self, tmp_path: Path) -> None:
+        # The import runs the body of an `if` block and the body of a `try` block, so an
+        # assignment there is a module-body assignment.
+        module = tmp_path / "five.py"
+        module.write_text(
+            "import sys\n\nif sys.version_info >= (3, 10):\n"
+            '    GUARDED = "new_value"\nelse:\n    GUARDED = "old_value"\n'
+            "\ntry:\n    IMPORTED = 1\nexcept ImportError:\n    IMPORTED = 0\n"
+        )
+        found = mutation_cover.body_tokens(module)
+        assert "GUARDED" in found
+        assert "new_value" in found
+        assert "old_value" in found
+        assert "IMPORTED" in found
+
+    def test_the_token_set_drops_a_name_a_class_body_binds(self, tmp_path: Path) -> None:
+        module = tmp_path / "six.py"
+        module.write_text('TOP = 1\n\n\nclass One:\n    attribute = "dropped_value"\n')
+        found = mutation_cover.body_tokens(module)
+        assert "TOP" in found
+        assert "attribute" not in found
+        assert "dropped_value" not in found
+
     def test_the_token_set_of_a_module_body_that_binds_nothing_is_empty(
         self, tmp_path: Path
     ) -> None:
@@ -63,7 +95,7 @@ class TestTheReaderOfOneModuleBody:
         found = mutation_cover.body_reader(REPO_ROOT, Path("ja4plus/__init__.py"))
         assert found == "tests/test_public_interface.py"
 
-    def test_the_reader_beats_the_file_the_cost_rule_holds(self) -> None:
+    def test_the_body_reader_names_more_tokens_than_the_cost_rule_file(self) -> None:
         # #414 built the cover of this module from cost alone and reached
         # tests/test_parity.py, which kills 1 of the 32 mutations.
         ranked = dict(mutation_cover.body_readers(REPO_ROOT, Path("ja4plus/__init__.py")))
@@ -84,8 +116,8 @@ class TestTheReaderOfOneModuleBody:
 
     def test_a_module_body_that_no_test_file_reads_names_no_reader(self, tmp_path: Path) -> None:
         module = tmp_path / "three.py"
-        # The two halves join at run time, so no source file of the suite holds the token
-        # and this case reads the empty answer rather than reading itself.
+        # The two halves join at run time, so no source file names the token. This case
+        # then reads the empty answer rather than naming its own file.
         module.write_text("UNREAD" + "_TOKEN_OF_433 = 1\n")
         assert mutation_cover.body_reader(REPO_ROOT, module) is None
 

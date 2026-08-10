@@ -3,7 +3,7 @@
 `.claude/rules/conformance.md` states the cover procedure of one sweep. Step 2 of that
 procedure subtracts the lines the import runs, because every test file that imports
 `ja4plus` runs every module-level statement. A mutation of a module body therefore keeps
-no reader, and the cost rule of step 3 then holds the cheapest test file.
+no case that reads it, and the cost rule of step 3 then holds the cheapest test file.
 
 This module reads the value rather than the line. It takes the names a module body binds
 and the identifier strings those statements build, and it ranks the test files by the
@@ -24,7 +24,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 # `git ls-files 'tests/**/test_*.py'` reads `**` as one or more directories, so it drops
 # every file of the top directory of the suite. #411 measured that failure against the
@@ -38,6 +38,45 @@ SECTION = "## How to scope one sweep: the minimal cover"
 SECONDS = re.compile(r"\d+(?:\.\d+)?\s+seconds")
 
 
+ASSIGNMENT = (ast.Assign, ast.AnnAssign, ast.AugAssign)
+
+# The import runs the body of an `if` block and the body of a `try` block, so an
+# assignment inside one is a module-body assignment. It runs no body of a function and no
+# body of a class, so a name bound there belongs to another line class.
+NESTED = (ast.If, ast.Try, ast.With, ast.For, ast.While)
+
+
+def _body_statements(statements: Sequence[ast.stmt]) -> List[ast.stmt]:
+    """Return every assignment the import runs, at any depth the import reaches."""
+    found: List[ast.stmt] = []
+    for node in statements:
+        if isinstance(node, ASSIGNMENT):
+            found.append(node)
+        elif isinstance(node, NESTED):
+            for name in ("body", "orelse", "finalbody", "handlers"):
+                inner = getattr(node, name, [])
+                for item in inner:
+                    if isinstance(item, ast.ExceptHandler):
+                        found.extend(_body_statements(item.body))
+                    else:
+                        found.extend(_body_statements([item]))
+    return found
+
+
+def _target_names(target: ast.expr) -> List[str]:
+    """Return every name one assignment target binds, at any depth of the target."""
+    if isinstance(target, ast.Name):
+        return [target.id]
+    if isinstance(target, ast.Starred):
+        return _target_names(target.value)
+    if isinstance(target, (ast.Tuple, ast.List)):
+        names: List[str] = []
+        for item in target.elts:
+            names.extend(_target_names(item))
+        return names
+    return []
+
+
 def body_tokens(path: Path) -> List[str]:
     """Return the tokens one module body builds.
 
@@ -45,25 +84,23 @@ def body_tokens(path: Path) -> List[str]:
         path: The module to read.
 
     Returns:
-        Every name a module-level assignment binds, and every identifier string those
-        statements hold, in sorted order. The list is empty when the module body binds
-        no name.
+        Every name an assignment of the module body binds, and every identifier string
+        those statements hold, in sorted order. A tuple target and a starred target each
+        state their names, and an assignment inside an `if` block or a `try` block of the
+        module body counts. The list is empty when the module body binds no name.
 
     Raises:
         SyntaxError: The file holds no parsable Python source.
     """
-    tree = ast.parse(path.read_text())
-    found = set()
-    for node in tree.body:
-        if not isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
-            continue
+    found: Set[str] = set()
+    for node in _body_statements(ast.parse(path.read_text()).body):
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         for target in targets:
-            if isinstance(target, ast.Name):
-                found.add(target.id)
+            found.update(_target_names(target))
         for inner in ast.walk(node):
             # A mutation of `__all__` changes one entry string, so the entry is the value
-            # a reader reads. A string that is no identifier names no value of the code.
+            # a body reader reads. A string that is no identifier names no value of the
+            # code.
             if isinstance(inner, ast.Constant) and isinstance(inner.value, str):
                 if inner.value.isidentifier():
                     found.add(inner.value)

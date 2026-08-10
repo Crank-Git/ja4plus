@@ -507,12 +507,12 @@ holds every breaking change of this record against a row of that page.
 
 - **A mutation of a module body keeps a reader in the cover rule** (#433). Round TBD. Step 2
   of the cover procedure in `.claude/rules/conformance.md` subtracts the lines the import
-  runs, so every mutation of a module body lost its reader and the cost rule then held the
-  cheapest test file. #414 measured the outcome on `ja4plus/__init__.py`: the cover the cost
+  runs. Every mutation of a module body then lost the case that reads it, and the cost rule
+  held the cheapest test file. #414 measured the outcome on `ja4plus/__init__.py`: the cover the cost
   rule builds is `tests/test_parity.py`, that sweep reads 1 killed and 31 survived, and all
   25 entries of `__all__` survive it.
-  **The defect follows from the construction and not from an accident of cost**, because the
-  subtraction removes the whole line class at once. New step 4 names a reader by the value
+  **The defect follows from the subtraction of step 2 and not from the cost measurement**,
+  because that subtraction removes the whole line class at once. New step 4 names a reader by the value
   rather than by the cost. New file `tests/mutation_cover.py` reads the names a module body
   binds and the identifier strings those statements build, and it names the test file whose
   own source holds the most of those tokens. The module body of `ja4plus/__init__.py` holds
@@ -524,8 +524,8 @@ holds every breaking change of this record against a row of that page.
   limit.** The reader kills a mutation of the value it reads and no other mutation of the
   module body, so `__version__`, `__author__` and `__license__` survive it and the record
   says so. **Two cases prove the prose prover in the failing direction.** The rule text with
-  every line naming `tests/mutation_cover.py` removed fails the reader case, and the rule
-  text with every line naming a second count removed fails the cost case. A reworded step
+  every line naming `tests/mutation_cover.py` removed fails the reader case. The rule text
+  with every line naming a second count removed fails the cost case. A reworded step
   passes both, so a rewording defeats neither. **A floor case reads the ranked list**, because
   an aggregate over an empty set passes, and two more cases read a module body that binds
   nothing and a module body that no test file reads.
