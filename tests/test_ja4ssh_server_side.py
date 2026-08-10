@@ -144,7 +144,7 @@ def test_an_endpoint_on_port_22_decides_before_the_handshake():
     ids=["a handshake", "no handshake"],
 )
 def test_the_fingerprint_entry_records_how_the_server_was_decided(description, packets, expected):
-    """Every JA4SSH entry names the source of the server decision.
+    """Every JA4SSH entry names the rule that named the server.
 
     A consumer reads a measured side and a guessed side differently, so the source
     reaches the result and not only a log line.

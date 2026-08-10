@@ -20,7 +20,7 @@ METHOD_TOKEN_CHARACTERS = r"!#$%&'*+\-.^_`|~0-9A-Za-z"
 
 # The pattern reads the first two characters of any method, as `python/ja4h.py:9` does,
 # and it names no method. A closed list of nine produced no JA4H value for a request that
-# carries a method such as `PROPFIND`. #219 records the decision and the `Divergence
+# carries a method such as `PROPFIND`. #219 records the ruling and the `Divergence
 # register` of `docs/specs/spec.md` records what it departs from.
 #
 # The version token holds a minor version, or it names major version 2 or 3, which carry
@@ -102,7 +102,7 @@ def parse_http_request(data: bytes | str) -> dict[str, Any] | None:
 
         # The three parse paths read one request-line pattern, so the three read one
         # method list and one version list. The list of methods is open. #219 records
-        # the decision.
+        # the ruling.
         request_line_match = re.match(REQUEST_LINE_PATTERN, lines[0])
         if not request_line_match:
             return None
@@ -203,7 +203,7 @@ def is_http_request(data: bytes | str) -> bool:
     # whole request line. The nine-token test admits `GET ` on its own, and a wider test
     # of the same shape would admit an SSH banner, which starts with method characters
     # and one space. `ja4l.py:365` reads this function, so a payload it admits by mistake
-    # moves a JA4L measurement point. #219 records the decision.
+    # moves a JA4L measurement point. #219 records the ruling.
     text = data[:REQUEST_LINE_LIMIT].decode("utf-8", errors="ignore")
     return re.match(REQUEST_LINE_PATTERN, text) is not None
 

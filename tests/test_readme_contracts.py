@@ -43,7 +43,7 @@ BOUNDS_HEADING = "#### The default bounds"
 CONCURRENCY_HEADING = "#### The concurrency contract"
 
 # The one method FoxIO publishes that this project declines. `docs/specs/spec.md`
-# § Non-goals holds the decision and #197 holds the reading.
+# § Non-goals holds the ruling and #197 holds the reading.
 DECLINED_METHOD = "JA4TScan"
 
 # The claim #62 removes. The project implements eleven of the twelve FoxIO methods, so a

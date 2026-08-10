@@ -2,7 +2,7 @@
 
 `docs/specs/foxio/JA4H.md` transcribes `technical_details/JA4H.png` and measures four
 readings where this project disagreed with every FoxIO reference. #219 holds the four
-decisions.
+rulings.
 
 - D1. R3 states that field a1 is the first two characters of the method.
   `http_utils.py` named nine methods and produced no JA4H value for any other.
@@ -96,7 +96,7 @@ def test_writes_n_when_the_request_carries_no_cookie_header(parse):
 def test_a_valueless_cookie_header_leaves_part_c_and_part_d_at_twelve_zeros(parse):
     """R17. The header carries no cookie pair, so part c and part d write 12 zeros.
 
-    The decision moves field a3 alone. This case holds part c and part d still.
+    The ruling moves field a3 alone. This case holds part c and part d still.
     """
     parts = parse(VALUELESS_COOKIE).split("_")
     assert parts[2] == NO_COOKIE

@@ -2858,6 +2858,73 @@ holds every breaking change of this record against a row of that page.
   `.github/workflows/test.yml` filters no path and accepts every pull request into `dev`. No
   repair is needed for that, and it is a property of the batch model rather than a defect of
   this case. **This round moves no fingerprint, and no file under `ja4plus/` changes.**
+- **The ruling vocabulary case reads the Python prose corpus** (#548). Round
+  TBD. Round 205 built `tests/test_ruling_vocabulary.py` over the Markdown corpus, and its
+  module docstring stated the hole rather than hid it: the case read no Python file, because
+  #533 barred a change under `ja4plus/`. **A read of the base commit `d0d7c81` found the
+  barred noun in nine comments and docstrings under the package**, five in
+  `ja4plus/fingerprinters/ja4ssh.py`, three in `ja4plus/utils/http_utils.py` and one in
+  `ja4plus/fingerprinters/ja4l.py`. This round extends that reader rather than writes a
+  second one. **A case reads a Python file as prose and never as text.** `python_prose` of
+  `tests/test_documented_method_count.py` parses the file and returns the comments and the
+  docstrings alone, and `without_quoted` then cuts every code span, every fenced block and
+  every blockquote line, exactly as it cuts one of a Markdown page. **A string literal that
+  is no docstring reaches no case, and the reader leaves it exactly as it reads.** Such a
+  literal is data and not prose: a case compares it, an assertion states it, a schema names
+  it, or a fixture holds the sentence the case measures, and the verbatim list of
+  `.claude/rules/ste.md` covers each of those. `tests/test_foxio_deviations.py` is the
+  standing control, because lines 39, 578 and 580 each hold `records the decision` inside a
+  literal and that file passes the new case. **An identifier reaches no case either**, so
+  `unmarked_decisions`, `DECISION_CITATION`, `DECISION_ISSUE` and the field `decided_by` of
+  `ja4plus/fingerprinters/ja4ssh.py` all stay. **The corpus comes from `git ls-files` and it
+  walks no directory**, because #473 measured that a walk reads the sources of every live
+  worker worktree. The pathspec is `*.py` and it names 227 tracked sources: 31 under
+  `ja4plus/`, 191 under `tests/` and 5 under `examples/`, which hold none of the barred word.
+  **The package carries its own floor of 25 beside the corpus floor of 120**, because 191
+  suite files alone pass the wider floor and a corpus that dropped the package would read no
+  comment of the library. **The pattern stays `\bdecisions?\b` and it matches no verb form**,
+  so `decides` and `decided` stay, the `decided` schema key of `tests/foxio_deviations.json`
+  does not move, and the rule of `CLAUDE.md` that the specification decides intent and schema
+  keeps its verb. **25 sources failed the new case before the sweep**, and the sweep took the
+  barred noun out of 84 places across them: 9 under `ja4plus/` and 75 across 22 files under
+  `tests/`. **A self-review found that 15 of the 84 named something other than a
+  determination of the user, and each of the 15 names the mechanism instead.** Round 205 met
+  the same class once, at `docs/specs/spec.html:92`, and reverted it there. The other 69
+  take the controlled term. **Three sites under `ja4plus/fingerprinters/ja4ssh.py` name the
+  endpoint rules and no person**, because `_decide_endpoints` picks the client and the server
+  from the port, the handshake and the lower port, and its docstring opens `Three rules
+  decide`. Line 160 now reads `move the endpoint pair`, line 208 reads `never from the
+  endpoint rules again`, and line 433 reads `the rule that named the server`.
+  `tests/test_ja4ssh_server_side.py:147` names the same field and it now reads `names the
+  rule that named the server`. **The other 11 stand in
+  `tests/test_documentation_fallback_rule.py`, where the word named precedence handed to a
+  source.** That file reads the vector fallback, which gives the expected-output files the
+  authority over an ambiguous image, and an expected-output file issues no ruling. Each of
+  the 11 now reads `authority` or `authority clause`, which is the word that file already
+  binds in `AUTHORITY`, `AUTHORITY_SOURCE` and `AUTHORITY_FIRST`. **`decision` reaches no
+  case there either**, so the repair states the mechanism rather than restores the barred
+  word. **Two
+  mutations prove that the case bites, and both are restored.** A comment under the package
+  reports ``AssertionError: ja4plus/fingerprinters/ja4l.py names 'decision' at ['ne as a
+  reference value. #225 holds the decision'], and the `## Terms` row of 'ruling' rejects that
+  word``, and a module docstring under the suite reports ``AssertionError:
+  tests/test_ja4x_raw.py names 'decision' at ['the same value, and #267 holds the decision'],
+  and the `## Terms` row of 'ruling' rejects that word``. Two floors fail a reader that
+  collected nothing, and the package floor reports `the corpus holds 0 sources under
+  ja4plus/, below the floor of 25, and the suite alone passes the floor above`. **A change
+  under `ja4plus/` is proven and not asserted, and this round repeats the technique of
+  #484.** Each of the three changed package files parses at `d0d7c81` and at the head, every
+  docstring comes out of both trees, and `ast.dump` reports the two trees identical for all
+  three. **The conformance suite reports 1635 passed, 143 skipped and 140 xfailed before this
+  round and the same three counts after it**, so no fingerprint moves. **A docstring carries
+  no statement, so the coverage count does not move**: `--cov=ja4plus` reports 4316
+  statements, 273 missed and 94 percent before and after. The unit suite runs 4355 cases
+  before and 4595 after, and the 240 new cases are the 227 parametrized sources, 4 anchors
+  and 9 readings of the reader itself. `tests/test_ruling_vocabulary.py` held 142 cases after
+  round 205 and it holds 382 now. **One limit of `python_prose` reaches this reader**: a bare
+  string below a class attribute is no docstring, because `ast.get_docstring` reads the first
+  statement of a node alone. A read of 2026-08-10 counted zero such strings over the 227
+  sources, so the limit costs this reader nothing today, and the module docstring states it.
 - **One file declares the version, and two gates hold it against the project metadata and
   the changelog** (#67). Round 187. `pyproject.toml` declared `version = "0.6.0"` at line 7
   and `ja4plus/__init__.py` declared it again at line 94, so the two records could

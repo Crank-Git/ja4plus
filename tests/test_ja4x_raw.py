@@ -3,7 +3,7 @@
 R11 of `docs/specs/foxio/JA4X.md` states the rule. `rust/ja4x/src/lib.rs` writes
 `let ja4x_r = with_raw.then(|| parts.join("_"));`, and `wireshark/source/packet-ja4.c:1726`
 registers the field `ja4.ja4x_r`. The user decided on 2026-08-08 that this project writes
-the same value, and #267 holds the decision.
+the same value, and #267 holds the ruling.
 
 No expected-output file under `tests/foxio_vectors/` holds a `JA4X_r` key, so the raw form
 reaches its reference value through the hash. `hash12` of each part of the raw form is the

@@ -25,12 +25,38 @@ here. Two records rest on that limit.
 - "The specification decides intent and schema" states a rule of `CLAUDE.md`, and the verb
   names the authority of a document rather than a determination of the user.
 
-## What stays out of reach, and why
+## How a case reads a Python file
 
-**A case reads the Markdown corpus, and it reads no Python file.** #533 states that no file
-under `ja4plus/` changes, and a read of 2026-08-10 finds the noun in nine comments and
-docstrings there. A reader of the Python corpus would therefore fail a case that #533 bars
-the repair of. **That limit is deliberate and it is a hole**, and #548 holds it.
+**A case reads a Python file as prose and never as text.** `python_prose` of
+`tests/test_documented_method_count.py` parses the file, and it returns the comments and the
+docstrings alone. The prose then passes `without_quoted`. A code span, a fenced block and a
+blockquote line therefore come out of a docstring as they come out of a Markdown page.
+
+**A string literal that is no docstring reaches no case, and the reader leaves it exactly as
+it reads.** Such a literal is data and not prose. Four shapes carry it.
+
+- A case compares it.
+- An assertion states it.
+- A schema names it.
+- A fixture holds the sentence the case measures.
+
+The verbatim list of `.claude/rules/ste.md` covers each of those four.
+`test_the_reader_reads_no_code_span` builds one such literal, which names a branch of #266.
+A rewrite there would move what the case compares.
+
+**An identifier reaches no case either.** `python_prose` reads no code, so a function name, a
+variable name and a key name all stay. `RULED_WORD` of this module binds the barred word, and
+`decided_by` of `ja4plus/fingerprinters/ja4ssh.py` names a field.
+
+**Warning: a bare string below a class attribute reaches no case, and that is a limit rather
+than a reading.** `ast.get_docstring` reads the first statement of a node alone, so a second
+string that documents an attribute stays out. **A read of 2026-08-10 counted zero such
+strings over the 227 sources of the corpus**, so the limit costs this reader nothing today.
+`tests/test_documented_method_count.py` records the same limit.
+
+**#548 reached the Python corpus, and #533 left the hole it filled.** #533 states that no
+file under `ja4plus/` changes, so its reader read the Markdown corpus alone. Nine comments
+and docstrings under the package named the barred word at that moment.
 
 **A dated record of a past measurement is quoted, not rewritten.** `CHANGELOG.md` records
 one past round in every entry, and the `## Changelog` table of `docs/specs/spec.md` holds
@@ -68,6 +94,8 @@ from pathlib import Path
 from typing import List
 
 import pytest
+
+from tests.test_documented_method_count import python_prose
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -145,6 +173,33 @@ ANCHOR_FILES = (
     "docs/implementation_notes.md",
     "docs/specs/foxio/JA4X.md",
     RENDERED_PAGE,
+)
+
+
+# The git pathspec that names every tracked Python source. **In a default git pathspec `*`
+# crosses `/`**, so this one term reaches the package, the suite and the examples.
+PYTHON_PATHSPEC = "*.py"
+
+# The least count of Python sources the corpus holds. **An aggregate over an empty set
+# passes**, so a reader that named no source would report a green result for every case.
+PYTHON_FLOOR = 120
+
+# The least count of package sources the corpus holds. **The suite alone passes
+# `PYTHON_FLOOR`**, so a corpus that dropped `ja4plus/` would meet that floor and read no
+# comment of the library. A read of 2026-08-10 counts 31 sources under `ja4plus/`.
+PACKAGE_FLOOR = 25
+
+# The directory of the package, as the corpus names it.
+PACKAGE_DIRECTORY = "ja4plus/"
+
+# Three sources that held the barred word before #548, and the reader itself. A case names
+# each one, so a corpus that stops reaching the package fails here rather than passes over
+# nothing.
+PYTHON_ANCHOR_FILES = (
+    "ja4plus/fingerprinters/ja4ssh.py",
+    "ja4plus/fingerprinters/ja4l.py",
+    "ja4plus/utils/http_utils.py",
+    "tests/test_ruling_vocabulary.py",
 )
 
 
@@ -321,6 +376,56 @@ def tracked_pages(pathspec: str) -> List[str]:
     return sorted(name for name in listed if name)
 
 
+def python_sources(pathspec: str = PYTHON_PATHSPEC) -> List[str]:
+    """Return every Python source a case reads, relative to the repository root.
+
+    **The reader asks git for the files and it walks no directory.** A walk would read the
+    sources of every live worker worktree, and the corpus would grow with the count of live
+    workers. #473 records the measurement.
+
+    Args:
+        pathspec: The git pathspec that names the sources. A case passes another pathspec to
+            measure the floor.
+
+    Returns:
+        One path for each tracked Python source, sorted.
+
+    Raises:
+        AssertionError: The corpus holds fewer sources than `PYTHON_FLOOR`, or fewer package
+            sources than `PACKAGE_FLOOR`.
+    """
+    found = tracked_pages(pathspec)
+    assert len(found) >= PYTHON_FLOOR, (
+        f"the corpus holds {len(found)} Python sources, below the floor of {PYTHON_FLOOR}, "
+        "and an aggregate over an empty set passes"
+    )
+    package = [name for name in found if name.startswith(PACKAGE_DIRECTORY)]
+    assert len(package) >= PACKAGE_FLOOR, (
+        f"the corpus holds {len(package)} sources under {PACKAGE_DIRECTORY}, below the floor "
+        f"of {PACKAGE_FLOOR}, and the suite alone passes the floor above"
+    )
+    return found
+
+
+def python_readable_prose(text: str) -> str:
+    """Return the prose of one Python source, with every passage a case does not read removed.
+
+    The reader takes the comments and the docstrings, and it takes no other text. A string
+    literal that is no docstring therefore stays exactly as it reads. A case compares such a
+    literal, and the writing standard reproduces it verbatim.
+
+    Args:
+        text: The whole source of one Python file.
+
+    Returns:
+        The prose a case reads, with no fenced block, no code span and no blockquote line.
+
+    Raises:
+        SyntaxError: The text parses as no Python module.
+    """
+    return without_quoted(python_prose(text))
+
+
 def headings_of(prose: str) -> List[str]:
     """Return the text of every heading of one document.
 
@@ -415,6 +520,7 @@ def stale_cross_references(prose: str, headings: List[str]) -> List[str]:
 
 MARKDOWN_DOCUMENTS = markdown_documents()
 CORPUS_HEADINGS = corpus_headings()
+PYTHON_SOURCES = python_sources()
 
 
 def test_the_terms_table_holds_the_row_for_the_ruled_term() -> None:
@@ -603,3 +709,94 @@ def test_the_floor_fails_a_corpus_that_names_no_document() -> None:
     assert tracked_pages("*.nomatch") == [], "the pathspec names a tracked file"
     with pytest.raises(AssertionError, match="below the floor"):
         markdown_documents("*.nomatch")
+
+
+@pytest.mark.parametrize("name", PYTHON_SOURCES)
+def test_no_python_source_names_a_determination_of_the_user_by_the_rejected_word(
+    name: str,
+) -> None:
+    """No comment and no docstring names a determination of the user by the rejected word."""
+    text = (REPO_ROOT / name).read_text(encoding="utf-8")
+    offenders = rejected_uses(python_readable_prose(text), RULED_WORD)
+    assert offenders == [], (
+        f"{name} names {RULED_WORD!r} at {offenders}, and the `## Terms` row of "
+        f"{CONTROLLED_TERM!r} rejects that word"
+    )
+
+
+@pytest.mark.parametrize("name", PYTHON_ANCHOR_FILES)
+def test_the_python_corpus_holds_every_anchor_source(name: str) -> None:
+    """A corpus names each Python source the reader must reach."""
+    assert name in PYTHON_SOURCES, f"no corpus names {name}"
+
+
+def test_the_python_floor_fails_a_corpus_that_names_no_source() -> None:
+    """The floor fails a reader that names no Python source.
+
+    **An aggregate over an empty set passes**, so a corpus that read nothing would report a
+    green run over no source at all.
+    """
+    with pytest.raises(AssertionError, match="below the floor"):
+        python_sources("*.nomatch")
+
+
+def test_the_package_floor_fails_a_corpus_that_names_no_package_source() -> None:
+    """The floor fails a reader that reaches the suite and misses the package.
+
+    **The suite alone stands above `PYTHON_FLOOR`**, so a corpus that dropped `ja4plus/`
+    would pass that floor and read no comment of the library.
+    """
+    with pytest.raises(AssertionError, match=f"below the floor of {PACKAGE_FLOOR}"):
+        python_sources("tests/*.py")
+
+
+def test_the_python_reader_reads_a_comment() -> None:
+    """The reader reads the rejected word where a comment names it."""
+    source = "# The decision is reversible.\nvalue = 1\n"
+    assert rejected_uses(python_readable_prose(source), RULED_WORD) == ["# The decision"]
+
+
+def test_the_python_reader_reads_a_docstring() -> None:
+    """The reader reads the rejected word where a docstring names it."""
+    source = 'def f() -> None:\n    """Return nothing. The decision is reversible."""\n'
+    assert rejected_uses(python_readable_prose(source), RULED_WORD) == [
+        "Return nothing. The decision"
+    ]
+
+
+def test_the_python_reader_reads_no_string_literal() -> None:
+    """The reader reads no string literal, which is data and not prose.
+
+    A case compares such a literal, so a rewrite there moves what the case measures.
+    `tests/foxio_deviations.json` carries the same shape in its schema key.
+    """
+    source = 'BRANCH = "batch/266-register-gate-and-decisions"\nMESSAGE = "one decision"\n'
+    assert rejected_uses(python_readable_prose(source), RULED_WORD) == []
+
+
+def test_the_python_reader_reads_no_identifier() -> None:
+    """The reader reads no identifier, because it reads no code."""
+    source = "decision_count = 1\n\n\ndef read_decisions() -> int:\n    return decision_count\n"
+    assert rejected_uses(python_readable_prose(source), RULED_WORD) == []
+
+
+def test_the_python_reader_reads_no_code_span_of_a_docstring() -> None:
+    """The reader reads no word inside a code span of a docstring."""
+    source = 'def f() -> None:\n    """Return nothing. `The decision` names a field."""\n'
+    assert rejected_uses(python_readable_prose(source), RULED_WORD) == []
+
+
+def test_the_python_reader_reads_no_verb_form() -> None:
+    """The reader reads no verb form of a comment, so the authority rule stays."""
+    source = "# The specification decides intent and schema.\nvalue = 1\n"
+    assert rejected_uses(python_readable_prose(source), RULED_WORD) == []
+
+
+def test_the_python_corpus_holds_prose_of_every_anchor_source() -> None:
+    """Each anchor source yields prose, so the reader reads more than an empty text.
+
+    **A reader that extracted nothing would report a clean corpus over every source.**
+    """
+    for name in PYTHON_ANCHOR_FILES:
+        text = (REPO_ROOT / name).read_text(encoding="utf-8")
+        assert python_readable_prose(text).strip(), f"{name} yields no prose"

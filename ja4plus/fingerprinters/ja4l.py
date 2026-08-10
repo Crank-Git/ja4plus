@@ -58,7 +58,7 @@ QUIC_PORT = 443
 # writes `quic` at `packet-ja4.c:1441` and `packet-ja4.c:1447`, and
 # `wireshark/test/testdata/` publishes that spelling on 18 values. The Zeek script writes
 # `q`, and `.claude/rules/external-apis.md:95` declines every JA4L value of a Zeek
-# baseline as a reference value. #225 holds the decision.
+# baseline as a reference value. #225 holds the ruling.
 QUIC_MARKER = "quic"
 
 # A TCP sequence number and acknowledgement number are 32 bits wide, so a relative
