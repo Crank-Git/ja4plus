@@ -4,8 +4,8 @@
 `BINOP_SWAP`, and `ast.BitOr` is one of them. A type annotation written `str | None` holds
 a `BitOr`, so the sweep changed it to `str & None`.
 
-**Every module of `ja4plus/` carries `from __future__ import annotations`.** Python then
-holds each annotation as a string and evaluates none of them, so a changed annotation
+**28 of the 31 modules of `ja4plus/` carry `from __future__ import annotations`.** Python
+then holds each annotation as a string. It evaluates none of them, so a changed annotation
 reaches no run-time value. No case can fail for such a mutation, and the sweep spends one
 suite run on it.
 

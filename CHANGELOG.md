@@ -1089,13 +1089,15 @@ holds every breaking change of this record against a row of that page.
 - **The mutation sweep builds no mutation inside a type annotation** (#431). Round TBD.
   `tests/mutation_sweep.py` built one mutation for each `BinOp` node whose operator sits in
   `BINOP_SWAP`, and `ast.BitOr` is one of them. A type annotation written `str | None` holds
-  a `BitOr`, so the sweep changed it to `str & None`. **Every module of `ja4plus/` carries
-  `from __future__ import annotations`**, so Python holds each annotation as a string and
-  evaluates none of them. A changed annotation reaches no run-time value, and no case can
-  fail for it. **#413 measured the cost.** 94 of the 675 surviving mutations of
+  a `BitOr`, so the sweep changed it to `str & None`. **28 of the 31 modules of `ja4plus/`
+  carry `from __future__ import annotations`**, so Python holds each annotation as a string
+  and evaluates none of them. A changed annotation reaches no run-time value, and no case can
+  fail for it. The three modules that carry no such import hold one annotation node between
+  them, the `-> None` of `ja4plus/utils/loopback.py`, and no operator sits in it.
+  **#413 measured the cost.** 94 of the 675 surviving mutations of
   `ja4plus/fingerprinters/` sat inside an annotation, and all 94 survived. That is 14
-  percent of the survivors of the module group, and each one asks a reader for a settlement
-  it cannot earn. **New reader `_annotation_nodes` names the nodes of an argument
+  percent of the survivors of the module group. A reader reads each one and finds no case
+  that it can ever fail. **New reader `_annotation_nodes` names the nodes of an argument
   annotation, of a return annotation and of an `AnnAssign` annotation**, in the shape
   `_docstring_nodes` and `_logging_argument_nodes` already set. `generate_mutations` reads
   it for every node kind, because the earlier `skip` set reaches the constant branch alone

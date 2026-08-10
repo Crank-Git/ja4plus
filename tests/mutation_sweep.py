@@ -167,11 +167,16 @@ def _logging_argument_nodes(tree: ast.AST) -> Set[int]:
 def _annotation_nodes(tree: ast.AST) -> Set[int]:
     """Return the id of every node inside a type annotation.
 
-    Every module of `ja4plus/` carries `from __future__ import annotations`. Python then
-    holds each annotation as a string and evaluates none of them, so a changed annotation
-    reaches no run-time value and no case can fail for it. #431 records the measurement:
-    94 of the 675 surviving mutations of `ja4plus/fingerprinters/` sat inside an
-    annotation, and all 94 survived.
+    28 of the 31 modules of `ja4plus/` carry `from __future__ import annotations`. Python
+    then holds each annotation as a string. It evaluates none of them, so a changed
+    annotation reaches no run-time value. No case can fail for it. #431 records the
+    measurement: 94 of the 675 surviving mutations of `ja4plus/fingerprinters/` sat inside
+    an annotation, and all 94 survived.
+
+    The three modules that carry no such import hold one annotation node between them.
+    `ja4plus/utils/loopback.py` holds `-> None`, and no operator sits in it. A module that
+    evaluates an annotation and holds a changed one raises at import, so the sweep records
+    that mutation `unusable` rather than a survivor.
 
     Args:
         tree: The parsed module.
@@ -222,8 +227,9 @@ def generate_mutations(path: Path, root: Path) -> List[Mutation]:
     tree = ast.parse(source)
     starts = _line_starts(source)
     skip = _docstring_nodes(tree) | _logging_argument_nodes(tree)
-    # `skip` reaches the constant branch alone, and an annotation holds a `BitOr` that the
-    # binop branch reads. The annotation set therefore stands apart and bars every kind.
+    # `skip` reaches the constant branch alone. An annotation holds a `BitOr` that the
+    # binop branch reads. The annotation set is therefore separate from `skip`, and it
+    # bars every mutation kind.
     annotations = _annotation_nodes(tree)
     name = path.relative_to(root).as_posix()
     mutations: List[Mutation] = []

@@ -177,8 +177,8 @@ inside a type annotation. `_annotation_nodes` names the nodes of an argument ann
 of a return annotation and of an `AnnAssign` annotation.
 `tests/test_mutation_sweep_annotation_skip.py` holds the reader in both directions.
 
-FR-pre-release-validation-34a — A node the reader names builds no mutation, and a `BitOr`
-outside every annotation still builds one. Every module of `ja4plus/` carries
+FR-pre-release-validation-34a — A node the reader names builds no mutation. A `BitOr`
+outside every annotation still builds one. 28 of the 31 modules of `ja4plus/` carry
 `from __future__ import annotations`, so Python holds each annotation as a string and a
 changed annotation reaches no run-time value. #431 records the measurement: 94 of the 675
 surviving mutations of `ja4plus/fingerprinters/` sat inside an annotation, and all 94
