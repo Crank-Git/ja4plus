@@ -575,6 +575,51 @@ holds every breaking change of this record against a row of that page.
   finding and this round ends them. No file under `ja4plus/` changes and no fingerprint
   moves.
 
+- **The prose names the statistics thread by its controlled term** (#441). Round TBD. The
+  `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
+  thread, and the prose of the package used `the reporter` throughout. The self-review of
+  #371 found the disagreement and declined the repair, because a repair inside that diff
+  would have stood `the reporter` and `the statistics thread` in adjacent sentences of one
+  paragraph. **The user ruled on 2026-08-10 that the prose changes and every identifier
+  holds its name.** `.claude/rules/ste.md` exempts an identifier from the standard, so
+  `StatisticsReporter`, `report_statistics` and `TheReporterWritesOneLinePerInterval` keep
+  their names. **A rename of a published name is a breaking change this ruling does not
+  make**, and the two published names reach a caller. **A dated record of a past
+  measurement is quoted, not rewritten.** The Changelog rows of #55, #369 and #371 each
+  name the rejected word, this round read all three, and it leaves all three exactly as
+  they read. **The case is worth more than the edit, so the case came first.** New file
+  `tests/test_statistics_thread_term.py` holds 283 cases at this commit. `rejected_words` reads the
+  fourth column of the `## Terms` row, so a change to the row changes what every case
+  forbids, and a case fails where the row stops rejecting the word. Two parametrized cases
+  read the Markdown corpus of `git ls-files '*.md'` and the Python corpus of
+  `git ls-files 'ja4plus/*.py' 'tests/*.py'`. The Markdown corpus holds
+  `docs/specs/spec.html` beside the Markdown pages, because a writer edits that page by
+  hand. `python_prose` of
+  `tests/test_documented_method_count.py` extracts the comments and the docstrings of a
+  Python file, so no line of code reaches a case. **The reader reads a whole word alone**,
+  so no part of a compound identifier reaches a case, and six exempt identifiers hold that
+  boundary. **It drops every fenced block and every code span first**, because the
+  standard reproduces an identifier verbatim. **The reader drops a code span one line at a
+  time**, because a search over a whole page pairs a backtick of one line with a backtick
+  far below it. **An aggregate over an empty set passes**, so each corpus carries a floor
+  and a case proves the floor fails a corpus of no file. `readable_prose` cuts
+  `CHANGELOG.md`, the `## Changelog` table of the specification and the `## Terms`
+  section, which is the authority the cases read. **The cases bite**: against the
+  unrepaired prose they failed 3 cases and named `docs/api_reference.md`,
+  `ja4plus/watch.py` and `tests/test_watch_statistics.py`. **This round read each paragraph
+  whole after the change, and not line by line**, which is the defect rule 7 names. The repair
+  removes 24 prose occurrences of the rejected word, across the docstrings of
+  `ja4plus/watch.py`, one table cell and one paragraph of `docs/api_reference.md`, and the
+  docstrings and the comments of `tests/test_watch_statistics.py`. Seventeen of them now
+  read `the statistics thread`. The other seven read `the thread` or a pronoun, where the
+  full term would repeat inside one sentence. One message of an assertion reads the term
+  too. **A string literal that is no docstring reaches no case**, so that message is a
+  hole this module records rather than closes. **The row rejects `timer` and `ticker`
+  beside `reporter`, and no case forbids either one.** Two feature pages state that
+  eviction runs on packet arrival and on no timer, each sentence names a general mechanism
+  rather than the statistics thread, and the ruling names `reporter` alone. No file under
+  `ja4plus/fingerprinters/` changes and no fingerprint moves.
+
 - **One pass at the batch gate assigns every round number of a batch** (#482). Round 175.
   The project manager assigned a round number at each sub-merge. A sub-merge is an event of
   one batch, and the round sequence is global to the repository. One live integration branch

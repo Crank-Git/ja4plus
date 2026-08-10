@@ -390,13 +390,13 @@ class TheSnapshotReadsOneInstant(unittest.TestCase):
 class ScriptedWait:
     """A wait that the test scripts, in place of the wait on the stop event.
 
-    The reporter calls the wait once for each interval. It writes one line for each call
-    that returns False. This call returns False for the count of intervals the test
-    states, and True after them. The count of lines is therefore the count the test
+    The statistics thread calls the wait once for each interval. It writes one line for
+    each call that returns False. This call returns False for the count of intervals the
+    test states, and True after them. The count of lines is therefore the count the test
     states, and not the count the host delivered.
 
     The call records every timeout it received, so a case reads the interval the
-    reporter asked for.
+    statistics thread asked for.
 
     Args:
         intervals: The count of intervals that pass before the stop arrives.
@@ -423,9 +423,9 @@ class ScriptedReport:
     wait. The count of periodic lines is therefore the count the test states, and not the
     count the host delivered.
 
-    The call replaces no other behaviour. `report_statistics` builds the reporter, starts
-    the thread and stops it, and `stop` joins the thread. Every line the test counts
-    therefore reaches the stream before `main` returns.
+    The call replaces no other behaviour. `report_statistics` builds the statistics
+    thread, starts it and stops it, and `stop` joins that thread. Every line the test
+    counts therefore reaches the stream before `main` returns.
 
     Args:
         intervals: The count of intervals that pass before the stop arrives.
@@ -450,29 +450,29 @@ class ScriptedReport:
 class TheReporterWritesOneLinePerInterval(unittest.TestCase):
     """FR-live-capture-9 — `--stats-interval 1` writes a statistics line every second.
 
-    Every case here drives the reporter from a scripted wait, so it states the schedule
-    rather than samples it. #369 removed the earlier form, which slept a fraction of a
-    second and counted the lines that arrived. That form measured how promptly the host
-    scheduled a thread. The `macos-latest, 3.12` job of the run for `8ef8acc` read 2
-    lines where the case asked for 3. The sweep of #369 read 4 lines of 5 due, on an
-    idle host, at a 0.25 second sleep.
+    Every case here drives the statistics thread from a scripted wait, so it states the
+    schedule rather than samples it. #369 removed the earlier form, which slept a
+    fraction of a second and counted the lines that arrived. That form measured how
+    promptly the host scheduled a thread. The `macos-latest, 3.12` job of the run for
+    `8ef8acc` read 2 lines where the case asked for 3. The sweep of #369 read 4 lines of
+    5 due, on an idle host, at a 0.25 second sleep.
 
     A case that waits one second per line costs the suite more than it measures. A case
     that waits less than that reports a defect the package does not hold. **No case here
     asserts the elapsed time between two lines**, and #369 removed that assertion on
     purpose, because the host decides that time.
 
-    The reporter still runs on its own thread here, so the cases measure the thread and
-    not a loop the case wrote. `stop` joins that thread. The thread blocks on nothing
-    once the scripted wait returns True, so the join is a liveness bound and no
-    measurement of promptness. Each case names the end of the thread, so a join that
-    timed out reports itself rather than shortening a stream.
+    The statistics thread still runs here, so the cases measure that thread and not a
+    loop the case wrote. `stop` joins that thread. The thread blocks on nothing once the
+    scripted wait returns True, so the join is a liveness bound and no measurement of
+    promptness. Each case names the end of the thread, so a join that timed out reports
+    itself rather than shortening a stream.
 
     `TheReporterStopsCleanly` measures the default wait against the real stop event.
     """
 
     def run_reporter(self, intervals, interval=0.05, stream=None):
-        """Return the stream and the scripted wait, after the reporter thread ends.
+        """Return the stream and the scripted wait, after the statistics thread ends.
 
         Args:
             intervals: The count of intervals that pass before the stop arrives.
@@ -487,7 +487,7 @@ class TheReporterWritesOneLinePerInterval(unittest.TestCase):
         reporter = StatisticsReporter(MonitorStats(), interval, stream, wait=wait)
         reporter.start()
         reporter.stop()
-        self.assertFalse(reporter.is_alive(), "the reporter thread did not end")
+        self.assertFalse(reporter.is_alive(), "the statistics thread did not end")
         return stream, wait
 
     def test_the_reporter_writes_one_line_for_each_interval_that_passes(self):
@@ -495,16 +495,16 @@ class TheReporterWritesOneLinePerInterval(unittest.TestCase):
         self.assertEqual(len(statistics_lines(stream.getvalue())), 4)
 
     def test_the_reporter_writes_no_second_line_for_one_interval(self):
-        """One interval produces one line, so a reporter that wrote a pair fails here."""
+        """One interval produces one line, so a thread that wrote a pair fails here."""
         stream, _ = self.run_reporter(intervals=1)
         self.assertEqual(len(statistics_lines(stream.getvalue())), 1)
 
     def test_the_reporter_asks_the_wait_for_the_interval_the_caller_states(self):
         """FR-live-capture-9 — the interval reaches the wait unchanged.
 
-        The reporter asks for one timeout per interval, and one more for the call that
-        reports the stop. Two intervals run, so a reporter that holds a constant fails
-        one of them.
+        The statistics thread asks for one timeout per interval, and one more for the
+        call that reports the stop. Two intervals run, so a thread that holds a constant
+        fails one of them.
         """
         for interval in (0.05, 1.0):
             with self.subTest(interval=interval):
@@ -532,10 +532,10 @@ class TheReporterWritesOneLinePerInterval(unittest.TestCase):
     def test_the_reporter_waits_on_the_stop_event_when_the_caller_injects_no_wait(self):
         """The scripted wait proves nothing unless the default wait is the real one.
 
-        The cases above read the timeout the reporter passed to an injected wait. This
-        case binds that seam to the shipped path: a reporter the caller builds without a
-        wait waits on the event that `stop` sets. `TheReporterStopsCleanly` then
-        measures that the stop ends the thread.
+        The cases above read the timeout the statistics thread passed to an injected
+        wait. This case binds that seam to the shipped path: a thread the caller builds
+        without a wait waits on the event that `stop` sets. `TheReporterStopsCleanly`
+        then measures that the stop ends the thread.
         """
         reporter = StatisticsReporter(MonitorStats(), 60.0, io.StringIO())
         self.assertEqual(reporter._wait, reporter._stop.wait)
@@ -629,7 +629,7 @@ class TheStatisticsGoToStandardError(unittest.TestCase):
 
         The scripted report states the schedule, so the count is exact. It also reads the
         two arguments the command passed. The case therefore proves that `--stats-interval`
-        reaches the reporter, and that the reporter writes to standard error.
+        reaches the statistics thread, and that the thread writes to standard error.
 
         Warning: keep the interval `0.05`. The sweep of #414 recorded the mutation `0` to
         `1` at `ja4plus/cli.py:871` as killed, at a killed count of 1. It named this case
@@ -647,12 +647,12 @@ class TheStatisticsGoToStandardError(unittest.TestCase):
         # order.
         self.assertEqual(len(lines), 4)
         self.assertNotIn("[ja4plus] packets=", out)
-        # FR-live-capture-9 — the interval reaches the reporter unchanged. The wait receives
-        # it four times: once for each of the three intervals, and once for the call that
-        # reports the stop.
+        # FR-live-capture-9 — the interval reaches the statistics thread unchanged. The
+        # wait receives it four times: once for each of the three intervals, and once for
+        # the call that reports the stop.
         self.assertEqual(report.seconds, [0.05])
         self.assertEqual(report.waits[0].timeouts, [0.05] * 4)
-        # FR-live-capture-10 — the reporter writes to standard error.
+        # FR-live-capture-10 — the statistics thread writes to standard error.
         self.assertEqual(report.reached_standard_error, [True])
 
     def test_the_final_line_reports_the_packets_the_monitor_read(self):
