@@ -222,9 +222,9 @@ so the classifier and the version reached the repository together.
 
 **A case now reads the classifier against the declaration, and a later version cannot
 return to the alpha classifier without a failure.**
-`classifier_disagreement` of `tests/version_gate.py` holds the rule: a version of 1.0.0 or
-later states `Development Status :: 5 - Production/Stable`, and a version below 1.0.0
-states `Development Status :: 3 - Alpha`. The reader takes the version from
+`classifier_disagreement` of `tests/version_gate.py` holds the rule. A version of 1.0.0 or
+later states `Development Status :: 5 - Production/Stable`. A version below 1.0.0 states
+`Development Status :: 3 - Alpha`. The reader takes the version from
 `ja4plus/__init__.py` and never from a literal, so the rule follows every later bump.
 `test_the_gate_reports_a_stable_version_that_carries_the_alpha_classifier` measures the
 direction that matters, against version 2.0.0.
