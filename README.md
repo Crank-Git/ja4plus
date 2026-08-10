@@ -360,8 +360,8 @@ is a promise the caller makes, not a mode the library checks. Feed one processor
 packets of one timeline. Every state table evicts an entry that receives no packet for
 its maximum age. Two packet sources whose clocks sit far apart therefore age out state
 that the later source still needs. The age pass of one thread reads the clock of that
-thread and it holds every entry of another thread, so the value set does not depend on
-how far one thread ran ahead of another. The entry of a thread that ends stays until the
+thread. It holds every entry of another thread, so the value set does not depend on how
+far one thread ran ahead of another. The entry of a thread that ends stays until the
 entry count bound removes it.
 
 #### The memory bound

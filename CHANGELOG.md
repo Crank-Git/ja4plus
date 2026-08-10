@@ -1107,15 +1107,23 @@ holds every breaking change of this record against a row of that page.
   read it last, and `evict_aged` passes over every entry of another thread. One thread
   owns every entry it stores, so a caller that runs one thread reads the pass this project
   always ran. **The entry of a thread that ends now stays until the entry count bound
-  removes it**, and that bound is the one that holds the memory.
-  `FR-concurrency-safety-8`, `FR-concurrency-safety-8a` and `FR-concurrency-safety-8b`
-  state the rule. **`TestTheConcurrencyContract` passed 50 of 50 consecutive runs on
-  macOS**, against the one failure in four runs the issue records. **Three new cases hold
-  the repair and every one was proved in both directions.** With the shard filter of
-  `evict_aged` removed, `inspect.getsource` reported 0 occurrences of it and 2 of 2 cases
-  failed; the restore read 1 occurrence and both passed. With the thread clock of
-  `on_packet` removed, the reader read 0 and 1 of 1 case failed; the restore read 1 and it
-  passed. **No file under `ja4plus/fingerprinters/` changes and no fingerprint moves.** A
+  removes it**, and that bound is the one that holds the memory. **One wall clock serves
+  every thread, so the pass still evicts an entry that the wall clock dated, whichever
+  thread stored it.** `JA4DBClient` builds the one table that reads the wall clock, and
+  its callers share every entry under one lock rather than owning whole connections. A
+  self-review found that a pass scoped by thread alone would age out nothing there.
+  `FR-concurrency-safety-8`, `FR-concurrency-safety-8a`, `FR-concurrency-safety-8b` and
+  `FR-concurrency-safety-8c` state the rule. **`TestTheConcurrencyContract` passed 50 of
+  50 consecutive runs on macOS**, against the one failure in four runs the issue records.
+  **Nine new cases hold the repair and five live mutations prove them.** Every run cleared
+  every `__pycache__` outside `.venv/` and set `PYTHONDONTWRITEBYTECODE=1`, and
+  `inspect.getsource` read the loaded source in both directions. The shard filter of
+  `evict_aged` removed reads 1 occurrence clean and 0 mutated, and it kills 2 cases. The
+  thread clock of `on_packet` removed kills 1 case. The owner write of `__contains__`
+  removed kills 1 case, and the owner write of `__getitem__` removed kills 1 case. The
+  wall-clock exemption of the pass removed kills 1 case. Every case passes clean and after
+  the restore. **No file under `ja4plus/fingerprinters/` changes and no fingerprint
+  moves.** A
   replay of all 38 committed captures produced 783 values, and the SHA-256 of that output
   is `04014a1d7a1863bc3244e1348ce61b5f39f9805a988310af657a6a931a2d8907` before the change
   and after it. The conformance suite reports 1532 passed, 143 skipped and 134 xfailed

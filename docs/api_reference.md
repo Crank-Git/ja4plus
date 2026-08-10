@@ -618,11 +618,14 @@ Warning: state the packet timestamp on every packet of one capture, or on none o
 One `on_packet()` call that states no timestamp moves the table to the wall clock, and a
 replay of a capture recorded in the past then ages out whole.
 
-The clock belongs to the thread that announces the packet, and the entry belongs to the
-thread that read it last. Eight sharded threads stand at eight points of one timeline, so
-one clock for every thread lets the thread that stands furthest ahead evict a connection
-that a slower thread still reads. #461 measured that eviction, and the JA4TS value of the
-evicted connection lost part e. The entry of a thread that ends stays until the entry
+The clock belongs to the thread that announces the packet. The entry belongs to the
+thread that read it last. Eight sharded threads stand at eight points of one timeline.
+One clock for the whole table then lets the thread that stands furthest ahead evict a
+connection a slower thread still reads. #461 measured that eviction, and the JA4TS value
+of the evicted connection lost part e.
+
+One wall clock serves every thread, so the pass evicts an entry that the wall clock
+dated, whichever thread stored it. The entry of a thread that ends stays until the entry
 count bound removes it. A thread that announces no packet reads the timestamp of the most
 recent packet of any thread.
 

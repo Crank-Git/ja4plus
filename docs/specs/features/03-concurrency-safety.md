@@ -52,14 +52,17 @@ fingerprinter it builds.
 FR-concurrency-safety-7 — Every state table holds no more than a maximum entry
 count.
 
-FR-concurrency-safety-8 — Every state table evicts an entry of the thread that runs the
-age pass, when that entry has not been read for longer than a maximum age.
+FR-concurrency-safety-8 — When an entry of the calling thread waits past the maximum
+age, the age pass evicts that entry.
 
-FR-concurrency-safety-8a — The age pass of one thread holds every entry of another
-thread.
+FR-concurrency-safety-8a — The age pass of one thread holds every entry that another
+thread dated with a packet timestamp.
 
 FR-concurrency-safety-8b — A state table measures an age against the timestamp of the
 most recent packet of the thread that reads the table.
+
+FR-concurrency-safety-8c — The age pass evicts an entry that the wall clock dated,
+whichever thread stored that entry.
 
 FR-concurrency-safety-9 — The maximum entry count and the maximum age are
 constructor arguments.
@@ -123,14 +126,18 @@ This feature set has no screen. The processor reports its own statistics.
 - Eviction by age uses the packet timestamp when the packet carries one, and the
   wall clock otherwise. A capture file replays faster than real time, and a wall
   clock would evict entries that the capture still needs.
-- The packet timestamp belongs to the thread that announces it, and an entry belongs to
-  the thread that read it last. The age pass of one thread therefore reads its own clock
-  and it holds every entry of another thread. Eight sharded threads stand at eight points
-  of one timeline, and #461 measured what one shared clock costs there: the thread that
-  stood 132 seconds ahead evicted a live connection of a slower thread, and the JA4TS
-  value of that connection lost part e.
+- The packet timestamp belongs to the thread that announces it. An entry belongs to the
+  thread that read it last. The age pass of one thread therefore reads its own clock, and
+  it holds every entry of another thread. Eight sharded threads stand at eight points of
+  one timeline. #461 measured the cost of one shared clock there. The thread that stood
+  132 seconds ahead evicted a live connection of a slower thread, and the JA4TS value of
+  that connection lost part e.
+- One wall clock serves every thread, so those readings compare. The age pass therefore
+  evicts an entry that the wall clock dated, whichever thread stored it. `JA4DBClient`
+  builds the one table that reads the wall clock. Its callers share every entry under one
+  lock rather than owning whole connections.
 - The entry of a thread that ends stays until the entry count bound removes it. The entry
-  count bound is the bound that holds the memory, and the age bound holds the memory of a
+  count bound is the bound that holds the memory. The age bound holds the memory of a
   thread that keeps running. A caller who runs one thread reads the age pass this project
   always ran, because that thread owns every entry.
 - The default maximum age is 600 seconds. A measurement sets it. The longest gap

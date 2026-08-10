@@ -15,7 +15,8 @@ The table evicts on two conditions.
   traffic. The clock belongs to the thread as well, because eight sharded threads stand
   at eight points of one timeline. #461 measured what one shared clock costs: the thread
   that stood 132 seconds ahead evicted a connection that a slower thread still read, and
-  the fingerprint of that connection lost its last field.
+  the fingerprint of that connection lost its last field. A table that reads the wall
+  clock holds one clock for every thread, so every age pass evicts every entry of it.
 
 The library starts no thread. Eviction runs on packet arrival.
 
@@ -63,7 +64,8 @@ DEFAULT_EVICTION_INTERVAL = 1000
 # The positions inside one stored entry. The entry is a list rather than a tuple,
 # because a read rewrites the timestamp and a tuple allocates a new object each time.
 # `_SHARD` holds the identifier of the thread that touched the entry last, and
-# `evict_aged` reads it.
+# `evict_aged` reads it. It holds None where that thread read the wall clock, because one
+# wall clock serves every thread and no thread owns such an entry.
 _VALUE = 0
 _LAST_SEEN = 1
 _SHARD = 2
@@ -375,13 +377,17 @@ class BoundedStateTable(StateTable, MutableMapping[Any, Any]):
     def evict_aged(self, now: float | None = None) -> int:
         """Remove the entries of the calling thread that receive no read for the maximum age.
 
-        The pass holds the entry of every other thread. A caller who gives each thread
-        whole connections gives each thread whole entries, and those threads stand at
-        different points of one timeline. A pass that read every entry would let the
-        thread that stands furthest ahead evict a connection that a slower thread still
-        reads, and #461 measured the fingerprint that loses. One thread owns every entry
-        it stores, so a caller that runs one thread reads the pass this class always
-        ran.
+        The pass holds the entry of every other thread that a packet timestamp dated. A
+        caller who gives each thread whole connections gives each thread whole entries.
+        Those threads stand at different points of one timeline. A pass that read every
+        such entry would let the thread that stands furthest ahead evict a live
+        connection of a slower thread. #461 measured the fingerprint that loses. One
+        thread owns every entry it stores, so a caller that runs one thread reads the
+        pass this class always ran.
+
+        The pass evicts an entry that the wall clock dated, whichever thread stored it.
+        One wall clock serves every thread, so those readings compare and no thread owns
+        such an entry. `JA4DBClient` builds the one table that reads the wall clock.
 
         Warning: the entry of a thread that ends stays until the entry count bound
         removes it. The entry count bound is the bound that holds the memory, and the
@@ -403,7 +409,7 @@ class BoundedStateTable(StateTable, MutableMapping[Any, Any]):
         # not follow the entry age. The pass therefore reads every entry.
         removed = 0
         for key, entry in list(self._entries.items()):
-            if entry[_SHARD] != shard:
+            if entry[_SHARD] is not None and entry[_SHARD] != shard:
                 continue
             if now - entry[_LAST_SEEN] > self.max_connection_age:
                 self.evict_key(key)
@@ -433,37 +439,60 @@ class BoundedStateTable(StateTable, MutableMapping[Any, Any]):
             self.on_eviction(key)
         return True
 
-    def _read_clock(self) -> float:
-        """Return the time the table measures an age against, in seconds.
+    def _stated_clock(self) -> float | None:
+        """Return the packet timestamp this operation reads, or None for the wall clock.
 
         Returns:
             The timestamp of the most recent packet of the calling thread. A thread that
             announced no packet reads the timestamp of the most recent packet of any
-            thread, and the wall clock reading answers when no packet carried one. Every
-            reading counts seconds since the epoch, so the three compare.
+            thread. None reports that the operation reads the wall clock.
         """
         # `on_packet(None)` states a reading, so the absence of the attribute is the only
         # way to tell a thread that announced no packet from one that announced a packet
         # with no timestamp.
-        reading: float | None
         if hasattr(self._clock, "now"):
-            reading = self._clock.now
+            reading: float | None = self._clock.now
         else:
             reading = self._now
+        return reading
+
+    def _read_clock(self) -> float:
+        """Return the time the table measures an age against, in seconds.
+
+        Returns:
+            The packet timestamp this operation reads, or the wall clock reading when it
+            reads no packet timestamp. Both count seconds since the epoch, so the two
+            compare.
+        """
+        reading = self._stated_clock()
         if reading is None:
             return time.time()
         return reading
 
+    def _read_shard(self) -> int | None:
+        """Return the thread that owns an entry this operation touches, or None.
+
+        Returns:
+            The identifier of the calling thread, when that thread reads a packet
+            timestamp. Such a thread stands at its own point of one timeline, so the age
+            pass of another thread reads no comparable clock. None reports that the
+            operation reads the wall clock, which every thread reads alike, so the entry
+            belongs to no thread and every age pass may evict it.
+        """
+        if self._stated_clock() is None:
+            return None
+        return threading.get_ident()
+
     def __getitem__(self, key: Any) -> Any:
         entry = self._entries[key]
         entry[_LAST_SEEN] = self._read_clock()
-        entry[_SHARD] = threading.get_ident()
+        entry[_SHARD] = self._read_shard()
         self._entries.move_to_end(key)
         return entry[_VALUE]
 
     def __setitem__(self, key: Any, value: Any) -> None:
         now = self._read_clock()
-        shard = threading.get_ident()
+        shard = self._read_shard()
 
         entry = self._entries.get(key)
         if entry is not None:
@@ -502,7 +531,7 @@ class BoundedStateTable(StateTable, MutableMapping[Any, Any]):
         if entry is None:
             return False
         entry[_LAST_SEEN] = self._read_clock()
-        entry[_SHARD] = threading.get_ident()
+        entry[_SHARD] = self._read_shard()
         self._entries.move_to_end(key)
         return True
 
