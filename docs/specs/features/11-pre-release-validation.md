@@ -96,14 +96,25 @@ FR-pre-release-validation-15 — Every record of a Linux gate states that the ho
 `python3.12` alone.
 
 FR-pre-release-validation-16 — The sweeps together apply every mutation of every module
-that `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` lists. One sweep for each module group
-satisfies this, and one sweep of the whole package satisfies it too.
+that `git ls-files 'ja4plus/*.py'` lists. **In a default git pathspec, `*` crosses `/`.**
+That one term therefore lists every module of the package, at every depth. One sweep for
+each module group satisfies this, and one sweep of the whole package satisfies it too.
 
 FR-pre-release-validation-16a — A case fails when the module list one sweep reads differs
 from the tracked Python files of `ja4plus/`. **Never write `git ls-files
 'ja4plus/**/*.py'`.** Git reads `**` in a pathspec as one or more directories. That
 pattern therefore lists 24 files where the package holds 31. It drops every module of the
 top directory of the package.
+
+FR-pre-release-validation-16b — A case runs the pathspec that
+`FR-pre-release-validation-16` states. That case fails when the file set of the pathspec
+differs from the module set one sweep reads. It fails when one term of the pathspec lists
+no file the other terms miss. `tests/test_mutation_sweep_module_list.py` holds the cases.
+
+FR-pre-release-validation-16c — Only `:(glob)` magic stops `*` at a separator. A read of
+2026-08-09 reports four counts: `git ls-files 'ja4plus/*.py'` lists 31 files,
+`git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` lists 31, `git ls-files 'ja4plus/**/*.py'`
+lists 24, and `git ls-files ':(glob)ja4plus/*.py'` lists 7.
 
 FR-pre-release-validation-17 — The report of each sweep states the commit the sweep read.
 
@@ -171,6 +182,21 @@ FR-pre-release-validation-32 — No continuous-integration job gates on a throug
 FR-pre-release-validation-33 — Every issue of this feature set holds the conformance
 suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 `tests/foxio_deviations.json`.
+
+FR-pre-release-validation-34 — `tests/mutation_sweep.py` builds no mutation of a node
+inside a type annotation. `_annotation_nodes` names the nodes of an argument annotation,
+of a return annotation and of an `AnnAssign` annotation.
+`tests/test_mutation_sweep_annotation_skip.py` holds the reader in both directions.
+
+FR-pre-release-validation-34a — A node the reader names builds no mutation. A `BitOr`
+outside every annotation still builds one. 28 of the 31 modules of `ja4plus/` carry
+`from __future__ import annotations`, so Python holds each annotation as a string and a
+changed annotation reaches no run-time value. #431 records the measurement: 94 of the 675
+surviving mutations of `ja4plus/fingerprinters/` sat inside an annotation, and all 94
+survived. The reader removes 95, because `ja4plus/fingerprinters/base.py:43` holds the
+constant `Literal[False]` beside the 94 `BitOr` nodes.
+`--dry-run --max-per-module 0` over `ja4plus/fingerprinters/*.py` reported 1569 mutations
+before the reader and it reports 1474 after it.
 
 ## User flows
 
@@ -292,8 +318,10 @@ suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 - New directory `docs/mutation_settlements/`, with one record for each module group.
 - New directory `docs/mutation_reports/`, with one JSON report for each sweep.
 - New file `docs/performance.md`.
+- New file `tests/mutation_cover.py`.
+- New file `tests/test_mutation_cover.py`.
 - Changed file `.claude/rules/conformance.md`, which carries the measured cost of one
-  sweep and the census schema.
+  sweep, the census schema and the reader of a module body.
 - Changed file `pyproject.toml`, which gains the `installed_wheel` marker.
 - Changed file `.github/workflows/test.yml`, which gains the `installed-wheel` job.
 - Changed file `docs/specs/spec.md`.
@@ -355,7 +383,7 @@ the checkout is.
 - [ ] #410 holds the caveat, and it states that `python3.12` is the only version the host
       measured.
 - [ ] The reports of `docs/mutation_reports/` together hold one `modules` entry for every
-      file that `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` lists.
+      file that `git ls-files 'ja4plus/*.py'` lists.
 - [ ] One case fails when the module list one sweep reads differs from the tracked Python
       files of `ja4plus/`, so no writer reintroduces the `**` pathspec in silence.
 - [ ] `tests/test_mutation_census.py` reports 0 unsettled candidates for every module of

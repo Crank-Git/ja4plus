@@ -505,6 +505,33 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **A mutation of a module body keeps a reader in the cover rule** (#433). Round 169. Step 2
+  of the cover procedure in `.claude/rules/conformance.md` subtracts the lines the import
+  runs. Every mutation of a module body then lost the case that reads it, and the cost rule
+  held the cheapest test file. #414 measured the outcome on `ja4plus/__init__.py`: the cover the cost
+  rule builds is `tests/test_parity.py`, that sweep reads 1 killed and 31 survived, and all
+  25 entries of `__all__` survive it.
+  **The defect follows from the subtraction of step 2 and not from the cost measurement**,
+  because that subtraction removes the whole line class at once. New step 4 names a reader by the value
+  rather than by the cost. New file `tests/mutation_cover.py` reads the names a module body
+  binds and the identifier strings those statements build, and it names the test file whose
+  own source holds the most of those tokens. The module body of `ja4plus/__init__.py` holds
+  28 tokens, and the tool names `tests/test_public_interface.py` at 26 of them against 15 for
+  the next file. **The cost is a run and not an estimate.** At commit `00a0c42`, over all 32
+  mutations of that module, the repaired cover reads 26 killed and 6 survived in 48.0
+  seconds, against 1 killed and 31 survived, and it leaves no survivor on the 25 entries of
+  `__all__`. One sweep of the reader alone costs 39.9 seconds. **The rule states a fourth
+  limit.** The reader kills a mutation of the value it reads and no other mutation of the
+  module body, so `__version__`, `__author__` and `__license__` survive it and the record
+  says so. **Two cases prove the prose prover in the failing direction.** The rule text with
+  every line naming `tests/mutation_cover.py` removed fails the reader case. The rule text
+  with every line naming a second count removed fails the cost case. A reworded step
+  passes both, so a rewording defeats neither. **A floor case reads the ranked list**, because
+  an aggregate over an empty set passes, and two more cases read a module body that binds
+  nothing and a module body that no test file reads.
+  `docs/mutation_settlements/414-interface.json` keeps the numbers #414 measured, because
+  that record states the sweeps that ran. No file under `ja4plus/` changes, no file under
+  `tests/foxio_vectors/` changes, and no fingerprint moves.
 - **The fingerprint move count of the migration page states the row count of its own table**
   (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
   rows. #395 measured the difference and filed the issue rather than repair it. **The count
@@ -1086,6 +1113,107 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **`FR-pre-release-validation-16` names a pathspec whose plain reading equals what it
+  matches** (#436). Round 170. The requirement named
+  `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'`, which lists all 31 modules of the
+  package. Its first term alone lists all 31 too. **In a default git pathspec, `*` crosses
+  `/`, and only `:(glob)` magic stops it at a separator.** A read of 2026-08-09 reports
+  four counts: `git ls-files 'ja4plus/*.py'` lists 31, the pair lists 31,
+  `git ls-files 'ja4plus/**/*.py'` lists 24, and `git ls-files ':(glob)ja4plus/*.py'`
+  lists 7. **The count was right and the rule was not.** The second term read as proof
+  that `*` stops at a separator, so the next writer who reasoned from the requirement
+  reproduced the defect. #411 and #414 each met that reading, and #414 reported the
+  contradiction. The requirement now names `git ls-files 'ja4plus/*.py'` alone, and it
+  states the separator rule. New `FR-pre-release-validation-16b` binds the cases, and new
+  `FR-pre-release-validation-16c` records the four counts.
+  **`tests/test_mutation_sweep_module_list.py` reads the pathspec out of the requirement
+  text and runs it.** A requirement that names a pathspec listing a different set than the
+  sweep reads therefore fails a case. The file gains four cases. Two compare the file set
+  of the stated pathspec against the module set the sweep reads and against the tracked
+  Python files of the package. One fails where a term of the pathspec lists no file the
+  other terms miss. One reads the separator rule out of the requirement. A floor case
+  refuses a pathspec of no term and refuses an empty file set, because a set comparison
+  over an empty set passes on its own. **Every case was proved in both directions.**
+  Against the unrepaired requirement the redundancy case read
+  `AssertionError: the term ja4plus/*/*.py lists no file the other terms miss`, and the
+  separator case read that the requirement holds no such sentence. A `**` form restored
+  into the requirement failed the two comparison cases, which named the seven
+  top-directory modules as extra items, and the revert returned all nine cases to green.
+  **`DEFAULT_MODULE_PATTERNS` keeps its two patterns.** It reaches `Path.glob`, where `*`
+  stops at `/`, so the sweep needs the depth the requirement needs one term for.
+  `.claude/rules/conformance.md` and the acceptance list of
+  `docs/specs/features/11-pre-release-validation.md` state the same reading. No file under
+  `ja4plus/` changes and no fingerprint moves.
+- **A state table reads the clock of the thread that touches it** (#461). Round 171.
+  Eight sharded threads wrote a JA4TS value that one thread does not write, and the
+  reading is
+  `At index 10 diff: '64240_2-1-1-4-1-3_1460_7' != '64240_2-1-1-4-1-3_1460_7_0'` on
+  `test (macos-latest, 3.12)`, run `31342645430`, merge commit `d94d8c1` of batch #445.
+  The sharded value lost part e, the delay list of the SYN-ACK retransmissions.
+  **`BoundedStateTable` held one clock for every thread, and the age pass read every
+  entry.** `SynAckTracker.times` runs one pass on every packet and holds a maximum age of
+  120 seconds. On the concatenated timeline of `TestTheConcurrencyContract`, packet 578
+  opens `('184.150.157.177', 80, '172.16.225.48', 57380)` at 19.2378 seconds and packet
+  581 retransmits the SYN-ACK 5.8 milliseconds later. Packet 1773 belongs to another
+  connection and another shard, and it stands at 151.678 seconds. It announced its
+  timestamp to the shared clock, the pass read 132.44 seconds of age, and it evicted the
+  connection. Packet 581 then found no entry, `SynAckTracker.record` returned an empty
+  delay list, and `_part_e` wrote an empty string. **The reproduction is three packets on
+  two threads and it holds no race**, so it fails every run rather than one run in four.
+  **The repair scopes the clock and the pass to the thread.** `on_packet` writes the
+  timestamp into a `threading.local`, each entry carries the identifier of the thread that
+  read it last, and `evict_aged` passes over every entry of another thread. One thread
+  owns every entry it stores, so a caller that runs one thread reads the pass this project
+  always ran. **The entry of a thread that ends now stays until the entry count bound
+  removes it**, and that bound is the one that holds the memory. **One wall clock serves
+  every thread, so the pass still evicts an entry that the wall clock dated, whichever
+  thread stored it.** `JA4DBClient` builds the one table that reads the wall clock, and
+  its callers share every entry under one lock rather than owning whole connections. A
+  self-review found that a pass scoped by thread alone would age out nothing there.
+  `FR-concurrency-safety-8`, `FR-concurrency-safety-8a`, `FR-concurrency-safety-8b` and
+  `FR-concurrency-safety-8c` state the rule. **`TestTheConcurrencyContract` passed 50 of
+  50 consecutive runs on macOS**, against the one failure in four runs the issue records.
+  **Nine new cases hold the repair and five live mutations prove them.** Every run cleared
+  every `__pycache__` outside `.venv/` and set `PYTHONDONTWRITEBYTECODE=1`, and
+  `inspect.getsource` read the loaded source in both directions. The shard filter of
+  `evict_aged` removed reads 1 occurrence clean and 0 mutated, and it kills 2 cases. The
+  thread clock of `on_packet` removed kills 1 case. The owner write of `__contains__`
+  removed kills 1 case, and the owner write of `__getitem__` removed kills 1 case. The
+  wall-clock exemption of the pass removed kills 1 case. Every case passes clean and after
+  the restore. **No file under `ja4plus/fingerprinters/` changes and no fingerprint
+  moves.** A
+  replay of all 38 committed captures produced 783 values, and the SHA-256 of that output
+  is `04014a1d7a1863bc3244e1348ce61b5f39f9805a988310af657a6a931a2d8907` before the change
+  and after it. The conformance suite reports 1532 passed, 143 skipped and 134 xfailed
+  against 134 register keys.
+- **The mutation sweep builds no mutation inside a type annotation** (#431). Round 168.
+  `tests/mutation_sweep.py` built one mutation for each `BinOp` node whose operator sits in
+  `BINOP_SWAP`, and `ast.BitOr` is one of them. A type annotation written `str | None` holds
+  a `BitOr`, so the sweep changed it to `str & None`. **28 of the 31 modules of `ja4plus/`
+  carry `from __future__ import annotations`**, so Python holds each annotation as a string
+  and evaluates none of them. A changed annotation reaches no run-time value, and no case can
+  fail for it. The three modules that carry no such import hold one annotation node between
+  them, the `-> None` of `ja4plus/utils/loopback.py`, and no operator sits in it.
+  **#413 measured the cost.** 94 of the 675 surviving mutations of
+  `ja4plus/fingerprinters/` sat inside an annotation, and all 94 survived. That is 14
+  percent of the survivors of the module group. A reader reads each one and finds no case
+  that it can ever fail. **New reader `_annotation_nodes` names the nodes of an argument
+  annotation, of a return annotation and of an `AnnAssign` annotation**, in the shape
+  `_docstring_nodes` and `_logging_argument_nodes` already set. `generate_mutations` reads
+  it for every node kind, because the earlier `skip` set reaches the constant branch alone
+  and an annotation holds a `BitOr` that the binop branch reads. **The reader removes 95
+  mutations and not 94.** `ja4plus/fingerprinters/base.py:43` holds `-> Literal[False]:`,
+  and that constant reaches no run-time value either. `--dry-run --max-per-module 0` over
+  `ja4plus/fingerprinters/*.py` reported 1569 mutations before the reader and it reports
+  1474 after it. **New file `tests/test_mutation_sweep_annotation_skip.py` holds nine cases
+  and every one was proved in both directions.** The five reader cases failed with
+  `AttributeError: module 'tests.mutation_sweep' has no attribute '_annotation_nodes'`
+  before the reader existed. The three sweep cases failed against a control that reads an
+  empty set in place of the reader, one with `assert 4 not in {4, 6, 7}` and one with
+  `assert 4 == 1`. A `BitOr` outside every annotation still builds its mutation, so the
+  change removes no real mutation. The floor case reads the four `BitOr` nodes of the
+  fixture, so a reader that names nothing fails rather than passes an aggregate over an
+  empty set. No file under `ja4plus/` changes and no fingerprint moves.
 - **The `ruff` pin is exact, so the lint gate cannot change without a commit** (#378).
   Round 161. `pyproject.toml` declared `ruff>=0.6`. `pip` therefore resolved the newest
   release at the moment of each install, and the gate read a different tool on two days.

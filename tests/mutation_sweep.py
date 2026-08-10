@@ -164,6 +164,44 @@ def _logging_argument_nodes(tree: ast.AST) -> Set[int]:
     return found
 
 
+def _annotation_nodes(tree: ast.AST) -> Set[int]:
+    """Return the id of every node inside a type annotation.
+
+    28 of the 31 modules of `ja4plus/` carry `from __future__ import annotations`. Python
+    then holds each annotation as a string. It evaluates none of them, so a changed
+    annotation reaches no run-time value. No case can fail for it. #431 records the
+    measurement: 94 of the 675 surviving mutations of `ja4plus/fingerprinters/` sat inside
+    an annotation, and all 94 survived.
+
+    The three modules that carry no such import hold one annotation node between them.
+    `ja4plus/utils/loopback.py` holds `-> None`, and no operator sits in it. A module that
+    evaluates an annotation and holds a changed one raises at import, so the sweep records
+    that mutation `unusable` rather than a survivor.
+
+    Args:
+        tree: The parsed module.
+
+    Returns:
+        The id of every node of an argument annotation, of a return annotation and of an
+        `AnnAssign` annotation.
+    """
+    found: Set[int] = set()
+    for node in ast.walk(tree):
+        annotation: Optional[ast.expr] = None
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            annotation = node.returns
+        elif isinstance(node, ast.arg):
+            annotation = node.annotation
+        elif isinstance(node, ast.AnnAssign):
+            # The value of an `AnnAssign` runs, so `x: int = 4 | 1` keeps its mutation.
+            annotation = node.annotation
+        if annotation is None:
+            continue
+        for inner in ast.walk(annotation):
+            found.add(id(inner))
+    return found
+
+
 def _span_swap(
     source: str,
     start: int,
@@ -189,6 +227,10 @@ def generate_mutations(path: Path, root: Path) -> List[Mutation]:
     tree = ast.parse(source)
     starts = _line_starts(source)
     skip = _docstring_nodes(tree) | _logging_argument_nodes(tree)
+    # `skip` reaches the constant branch alone. An annotation holds a `BitOr` that the
+    # binop branch reads. The annotation set is therefore separate from `skip`, and it
+    # bars every mutation kind.
+    annotations = _annotation_nodes(tree)
     name = path.relative_to(root).as_posix()
     mutations: List[Mutation] = []
 
@@ -207,6 +249,8 @@ def generate_mutations(path: Path, root: Path) -> List[Mutation]:
         )
 
     for node in ast.walk(tree):
+        if id(node) in annotations:
+            continue
         if isinstance(node, ast.Compare):
             left: ast.expr = node.left
             for index, operator in enumerate(node.ops):
