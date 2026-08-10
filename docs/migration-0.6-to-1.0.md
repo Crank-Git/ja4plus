@@ -1,6 +1,6 @@
 # How to move from version 0.6.0 to version 1.0.0
 
-Version 0.6.0 is the released version on PyPI. Version 1.0.0 is not released yet.
+Version 1.0.0 follows version 0.6.0, and no version stands between them.
 
 This page states what a reader must change. It lists each breaking change with the old
 form, the new form and the reason. `CHANGELOG.md` and the `## Changelog` table of
