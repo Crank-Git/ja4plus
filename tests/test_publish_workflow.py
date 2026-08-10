@@ -15,11 +15,11 @@ because a run of it would publish. The cases split the claim in two instead.
 **The conformance suite lives under `tests/`, and #455 removed `tests/` from the wheel.**
 `FR-release-7` therefore means one thing alone: install the wheel into a clean
 environment, then run the suite of the checkout against that installed package. **A run
-that starts in the repository root proves nothing about the wheel**, because `python -m`
-puts the working directory on `sys.path` and `pytest` inserts the parent of the `tests`
-package there as well. Both paths name the checkout, so `import ja4plus` reads the source
-tree. `test_the_repository_root_resolves_the_source_tree` measures that state, so the
-positive case beside it cannot pass on a mechanism that measures nothing.
+that starts in the repository root proves nothing about the wheel.** `python -m` puts the
+working directory on `sys.path`. `pytest` inserts the parent of the `tests` package there
+as well. Both paths name the checkout, so `import ja4plus` reads the source tree.
+`test_the_repository_root_resolves_the_source_tree` measures that state, so the positive
+case beside it cannot pass on a mechanism that measures nothing.
 
 Every case that builds an artifact carries the `installed_wheel` marker, and
 `tests/conftest.py` deselects that marker from a run that does not name it. The
@@ -43,6 +43,7 @@ from tests.release_verification import (
     PACKAGE_DIRECTORY,
     ReleaseCheck,
     compare_collections,
+    passing_summary,
     runner_requirement,
     twine_check,
     verification_root,
@@ -67,9 +68,15 @@ TRUSTED_PUBLISHER_PERMISSION = "id-token: write"
 # where every check passed, so no step of this workflow carries either one.
 CONTINUATION_KEYS = ("continue-on-error", "if: always()")
 
-# A step of the publish job starts at six spaces, a dash and a space. The reader matches
-# the text, because no gate of this repository installs a YAML parser.
+# A step of the publish job starts at six spaces, a dash and a space, and the step list
+# opens at the `steps:` key. The reader matches the text, because no gate of this repository
+# installs a YAML parser.
+STEPS_KEY = re.compile(r"^    steps:\s*$")
 STEP_LINE = re.compile(r"^      - (\S.*)$")
+
+# One key of the `on:` block, at two spaces. The workflow holds `release` and no second key,
+# so a trigger this project never reviewed fails a case rather than publishes.
+TRIGGER_KEY = re.compile(r"^  (\w+):")
 
 # The action reference of one step, without its version comment. Each one pins a commit,
 # so a moved tag reaches no run of this workflow.
@@ -80,19 +87,50 @@ PINNED_COMMIT = re.compile(r"^[^@]+@[0-9a-f]{40}$")
 def _steps() -> List[str]:
     """Return the steps of the publish job, in file order.
 
+    The reader starts at the `steps:` key and it stops at the next key of the job. A list
+    that stands elsewhere in the job therefore reaches no step, and a `strategy` block
+    cannot add one.
+
     Returns:
         One string for each step, holding every line of that step.
     """
-    lines = WORKFLOW.read_text(encoding="utf-8").splitlines()
     steps: List[List[str]] = []
-    for line in lines:
+    inside = False
+    for line in WORKFLOW.read_text(encoding="utf-8").splitlines():
+        if STEPS_KEY.match(line):
+            inside = True
+            continue
+        if not inside:
+            continue
+        if line.strip() and not line.startswith("      "):
+            break
         if STEP_LINE.match(line):
             steps.append([line])
-        elif steps and line.startswith("        "):
-            steps[-1].append(line)
-        elif steps and line.strip() == "":
+        elif steps:
             steps[-1].append(line)
     return ["\n".join(step) for step in steps]
+
+
+def _trigger_keys() -> List[str]:
+    """Return the keys the `on:` block of the workflow holds.
+
+    Returns:
+        One name for each key, in file order.
+    """
+    keys: List[str] = []
+    inside = False
+    for line in WORKFLOW.read_text(encoding="utf-8").splitlines():
+        if line.rstrip() == "on:":
+            inside = True
+            continue
+        if not inside:
+            continue
+        if line.strip() and not line.startswith(" "):
+            break
+        match = TRIGGER_KEY.match(line)
+        if match:
+            keys.append(match.group(1))
+    return keys
 
 
 def test_the_publish_workflow_runs_on_a_published_release() -> None:
@@ -104,8 +142,9 @@ def test_the_publish_workflow_runs_on_a_published_release() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for line in RELEASE_TRIGGER:
         assert f"\n{line}\n" in text, f"{WORKFLOW.name} holds no line {line!r}"
-    assert "workflow_dispatch" not in text, f"{WORKFLOW.name} accepts a second trigger"
-    assert "\n  push:\n" not in text, f"{WORKFLOW.name} accepts a push event"
+    assert _trigger_keys() == ["release"], (
+        f"the on: block of {WORKFLOW.name} holds the keys {_trigger_keys()}"
+    )
 
 
 def test_the_publish_workflow_declares_the_trusted_publisher_permission() -> None:
@@ -209,6 +248,38 @@ def test_the_release_check_refuses_a_clean_environment_that_dropped_a_case() -> 
         compare_collections(checkout, checkout[:1])
 
 
+def test_the_release_check_reads_the_summary_line_of_a_passing_run() -> None:
+    """The reader returns the summary line of a run that passed cases."""
+    summary = "1532 passed, 143 skipped, 134 xfailed, 1 warning in 8.17s"
+    assert passing_summary(f"collecting cases\n{summary}\n") == summary
+
+
+def test_the_release_check_refuses_a_conformance_run_that_skipped_every_case() -> None:
+    """A run of nothing but skips fails the check.
+
+    **A status of zero is not a passing run.** `pytest` reports a run whose every case
+    skipped as a success, so the release would ship against a suite that measured nothing.
+    """
+    with pytest.raises(RuntimeError, match="passed no case"):
+        passing_summary("0 passed, 1809 skipped in 1.20s\n")
+
+
+def test_the_release_check_refuses_a_conformance_run_that_reported_a_failure() -> None:
+    """A summary line that names a failure fails the check."""
+    with pytest.raises(RuntimeError, match="1 failed"):
+        passing_summary("1 failed, 1531 passed in 8.20s\n")
+
+
+def test_the_release_check_reads_a_registered_deviation_as_no_failure() -> None:
+    """An `xfailed` count names a registered deviation, and the reader accepts it.
+
+    `tests/foxio_deviations.json` registers each known deviation and the suite marks it
+    `xfail(strict=True)`, so the conformance suite reports 134 of them on a green run.
+    """
+    summary = "1532 passed, 143 skipped, 134 xfailed in 8.17s"
+    assert passing_summary(summary) == summary
+
+
 @pytest.fixture(scope="session")
 def release_check(tmp_path_factory: pytest.TempPathFactory) -> ReleaseCheck:
     """Run the whole release check once for this file.
@@ -291,9 +362,9 @@ def test_the_conformance_run_resolves_the_installed_package(
 def test_the_repository_root_resolves_the_source_tree(release_check: ReleaseCheck) -> None:
     """The same probe reads the checkout when it starts in the repository root.
 
-    Warning: never remove this case. It proves the verification root is load-bearing. The
-    case above passes on any path below `site-packages`, and a check that cannot fail
-    measures nothing.
+    Warning: never remove this case. The case above passes on any path below
+    `site-packages`, and a check that cannot fail measures nothing. This case reads the same
+    probe from the repository root and it requires the checkout path.
     """
     from_the_checkout = package_file_of(release_check.python, REPOSITORY_ROOT)
     assert from_the_checkout.startswith(str(REPOSITORY_ROOT)), (
@@ -325,8 +396,8 @@ def test_the_conformance_run_reads_every_case_the_checkout_collects(
 ) -> None:
     """`FR-release-7`. The clean environment collects the case list of the checkout.
 
-    A file the run dropped would leave a green result over a smaller suite, and nothing in
-    the summary line would report it.
+    A file the run dropped would leave a passing result over a smaller suite. The summary
+    line reports no such loss.
     """
     assert release_check.collected, "the conformance run collected no case"
     assert release_check.collected == release_check.collected_in_the_checkout
@@ -336,10 +407,14 @@ def test_the_conformance_run_reads_every_case_the_checkout_collects(
 def test_the_conformance_run_reports_no_failure(release_check: ReleaseCheck) -> None:
     """`FR-release-7`. The conformance suite passes against the installed package.
 
-    The summary line states the counts. The passed count stands above zero, because a run
-    that collected nothing reports no failure either.
+    The check itself reads this line, so a run that passed no case refuses the release
+    rather than reaches this case. This case reads the line the check kept, and it holds the
+    same three facts against the real run.
     """
-    summary = release_check.conformance_output.strip().splitlines()[-1]
+    summary = release_check.conformance_summary
+    assert summary == release_check.conformance_output.strip().splitlines()[-1], (
+        f"the check kept {summary!r} against the last output line of the run"
+    )
     assert " failed" not in summary and " error" not in summary, (
         f"the conformance run against the installed package reported {summary!r}"
     )
@@ -360,8 +435,8 @@ def test_the_conformance_run_selects_the_marker_of_the_conformance_suite(
 def test_the_installed_wheel_job_runs_the_marker_over_the_whole_suite() -> None:
     """The job that runs the marker reads every file that carries it.
 
-    A command that names one file runs no case this file adds, and a case nobody runs is a
-    check nobody has.
+    A command that names one file runs no case this file adds. A case that no job runs
+    measures nothing.
     """
     text = (REPOSITORY_ROOT / ".github" / "workflows" / "test.yml").read_text(encoding="utf-8")
     assert "pytest tests/ -m installed_wheel" in text, (
@@ -399,8 +474,9 @@ def test_the_release_feature_records_the_publish_check() -> None:
 def test_the_release_skill_verifies_the_wheel_outside_the_checkout() -> None:
     """`.claude/skills/release/SKILL.md` runs the conformance suite outside the checkout.
 
-    The manual procedure holds the same trap as the workflow. A `pytest` run that starts
-    in the repository root reads the source tree, so the released package gets no check.
+    The manual procedure meets the same condition as the workflow. A `pytest` run that
+    starts in the repository root reads the source tree, and the released package then gets
+    no check.
     """
     skill = (REPOSITORY_ROOT / ".claude" / "skills" / "release" / "SKILL.md").read_text(
         encoding="utf-8"

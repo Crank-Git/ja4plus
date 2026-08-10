@@ -14,10 +14,10 @@ The check runs five commands in this order.
 
 **The conformance suite lives under `tests/`, and #455 removed `tests/` from the wheel.**
 The suite therefore comes from the checkout and the package comes from the environment.
-**A run that starts in the repository root reads the source tree**: `python -m` puts the
-working directory on `sys.path`, and `pytest` inserts the parent of the `tests` package
-there as well. Both paths name the checkout, and both hold `ja4plus/`. `verification_root`
-copies the suite to a directory that holds no package source, and the check reads
+**A run that starts in the repository root reads the source tree.** `python -m` puts the
+working directory on `sys.path`. `pytest` inserts the parent of the `tests` package there
+as well. Both paths name the checkout, and both hold `ja4plus/`. `verification_root` copies
+the suite to a directory that holds no package source. The check then reads
 `ja4plus.__file__` from that directory before it runs one case.
 
 **This module rewrites no part of the repair #408 built.** `build_artifacts`,
@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -80,6 +81,11 @@ COPIED_NAMES = ("tests", "pyproject.toml")
 # name, and that absence is what sends `import ja4plus` to `site-packages`.
 PACKAGE_DIRECTORY = "ja4plus"
 
+# The words a `pytest` summary line writes for a case that did not pass. `passing_summary`
+# refuses a summary that holds one of them. The leading space keeps the reader off the word
+# `xfailed`, which names a registered deviation and not a failure.
+FAILURE_WORDS = (" failed", " error")
+
 
 @dataclasses.dataclass(frozen=True)
 class ReleaseCheck:
@@ -97,6 +103,8 @@ class ReleaseCheck:
         collected_in_the_checkout: The conformance cases the checkout collects.
         collected: The conformance cases the clean environment collects.
         conformance_output: The output of the conformance run.
+        conformance_summary: The summary line of that run, which names a passed count above
+            zero and no failure.
     """
 
     wheel: pathlib.Path
@@ -110,6 +118,7 @@ class ReleaseCheck:
     collected_in_the_checkout: List[str]
     collected: List[str]
     conformance_output: str
+    conformance_summary: str
 
 
 def runner_requirement(text: str) -> str:
@@ -304,6 +313,39 @@ def install_test_runner(environment: CleanEnvironment, requirement: str) -> None
     )
 
 
+def passing_summary(output: str) -> str:
+    """Return the summary line of a conformance run that passed cases.
+
+    **A status of zero is not a passing run.** `pytest` reports a run whose every case
+    skipped as a success. A vector tree the copy missed produces that state, and the
+    release then ships against a suite that measured nothing. This reader holds the passed
+    count above zero, and it refuses a summary that names a failure.
+
+    Args:
+        output: The output of the conformance run.
+
+    Returns:
+        The summary line.
+
+    Raises:
+        RuntimeError: The output holds no summary line, the run passed no case, or the
+            summary names a failure.
+    """
+    lines = [line for line in output.strip().splitlines() if line.strip()]
+    if not lines:
+        raise RuntimeError("the conformance run wrote no output")
+    summary = lines[-1]
+    for word in FAILURE_WORDS:
+        if word in summary:
+            raise RuntimeError(f"the conformance run reported {summary!r}")
+    match = re.search(r"(\d+) passed", summary)
+    if match is None:
+        raise RuntimeError(f"the conformance run wrote no passed count: {summary!r}")
+    if int(match.group(1)) == 0:
+        raise RuntimeError(f"the conformance run passed no case: {summary!r}")
+    return summary
+
+
 def run_conformance(
     python: pathlib.Path, root: pathlib.Path, targets: Sequence[str], cache_home: pathlib.Path
 ) -> str:
@@ -399,6 +441,7 @@ def verify(work: pathlib.Path, dist: pathlib.Path) -> ReleaseCheck:
         collected_in_the_checkout=in_the_checkout,
         collected=collected,
         conformance_output=conformance_output,
+        conformance_summary=passing_summary(conformance_output),
     )
 
 
@@ -445,7 +488,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"release check: the clean environment holds {check.package_file}.")
     print(f"release check: the console script wrote {check.version_line!r}.")
     print(f"release check: the conformance suite ran {len(check.collected)} cases.")
-    print(f"release check: {check.conformance_output.strip().splitlines()[-1]}")
+    print(f"release check: {check.conformance_summary}")
     print("release check: PASSED. The release is ready to publish.")
     return 0
 

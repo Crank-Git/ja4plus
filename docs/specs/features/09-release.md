@@ -116,9 +116,10 @@ version.
   `tests/test_publish_workflow.py::test_the_repository_root_resolves_the_source_tree`
   measures that state.
 - The verification step reads the case list of the checkout and the case list of the
-  clean environment, and it refuses a run that collected fewer cases.
-  `tests/test_publish_workflow.py` holds the floor, because a run of zero cases reports
-  zero failures.
+  clean environment. It refuses a run that collected fewer cases.
+- The verification step refuses a conformance run that passed no case. A status of zero is
+  not a passing run, because `pytest` reports a run of nothing but skips as a success.
+  `tests/test_publish_workflow.py` holds both floors.
 - The clean environment installs the shipped dependency list first, and it gains the
   test runner after that. The runner is the `pytest` entry of the `dev` extra, so one
   record states the version.
@@ -168,6 +169,7 @@ TestPyPI site.
 | The conformance suite fails against the installed wheel. | The workflow stops and does not publish. |
 | The conformance run starts in the checkout. | The run imports the source tree, so it measures the working copy. `verification_root` of `tests/release_verification.py` removes that state, and `test_the_repository_root_resolves_the_source_tree` measures it. |
 | The conformance run collects no case. | `compare_collections` raises, because a run of zero cases reports zero failures. |
+| Every case of the conformance run skips. | `passing_summary` raises. `pytest` reports that run as a success, and a vector tree the copy missed produces it. |
 | `twine check` reads no file. | `twine_check` raises. A check over no file reports no failure. |
 | A built file holds no archive. | `twine check` reports a non-zero status and the check raises. `test_the_release_check_refuses_a_built_file_that_twine_rejects` proves it. |
 | The clean environment holds no test runner. | `install_test_runner` adds the `pytest` entry of the `dev` extra, after the wheel install measured the shipped dependency list. |

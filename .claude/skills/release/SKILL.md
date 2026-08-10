@@ -44,9 +44,13 @@ Confirm all of the following. Stop and report if any is false.
    python -m tests.release_verification --dist dist
    ```
 
-   It builds the source distribution and the wheel, reads both with `twine check`,
-   installs the wheel into a clean environment, runs the console script of that
-   environment, and runs the conformance suite against the installed package.
+   The command runs five checks in this order.
+
+   1. It builds the source distribution and the wheel.
+   2. It reads both files with `twine check`.
+   3. It installs the wheel into a clean environment.
+   4. It runs the console script of that environment.
+   5. It runs the conformance suite against the installed package.
 
    **Warning: never run the conformance suite from the repository root against a clean
    environment.** `python -m` puts the working directory on `sys.path`, and `pytest`

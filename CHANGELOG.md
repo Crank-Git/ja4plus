@@ -98,8 +98,15 @@ holds every breaking change of this record against a row of that page.
   count reads 2 against two files, and `compare_collections` refuses a clean environment whose
   case list differs from the checkout. The clean environment collected 1809 cases against 1809
   in the checkout, and the run reported 1532 passed, 143 skipped and 134 xfailed, which are the
-  three counts the checkout reports. New file `tests/test_publish_workflow.py` holds 24 cases,
-  10 of them under the `installed_wheel` marker. **The cases came first**, and the whole file
+  three counts the checkout reports. **A fourth floor came from the self-review, and it is the
+  one that mattered.** The first form of the check read the exit status of the conformance run
+  alone, and `pytest` reports a run whose every case skipped as a success. A vector tree the
+  copy missed would then have printed `release check: PASSED`. `passing_summary` now reads the
+  summary line, refuses a passed count of zero and refuses a summary that names a failure, and
+  `verify` keeps the line it read. A run reduced to a collection refuses the release with
+  `RuntimeError: the conformance run wrote no passed count: '1809 tests collected in 0.23s'`.
+  New file `tests/test_publish_workflow.py` holds 28 cases, 10 of them under the
+  `installed_wheel` marker. **The cases came first**, and the whole file
   failed to collect against the base commit `589c5ee` with
   `ModuleNotFoundError: No module named 'tests.release_verification'`. **Three mutations prove
   the cases bite, and each one was restored.** The workflow of the base commit fails 2 cases,
