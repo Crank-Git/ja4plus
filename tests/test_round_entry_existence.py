@@ -54,12 +54,14 @@ stayed empty, `git merge-base` found no `origin/dev` ref in the clone of depth 1
 case skipped on all six jobs of the matrix. The `skip-gate` job then failed every manual
 run, which is the recovery path `.claude/rules/batch-gate.md` names. **A case that a given
 event does not select is no finding of that event**, so the `test` job now names a
-reference commit on a manual run as well. It reads the merge base of `GITHUB_SHA` and `dev`
-from the provider, because the clone holds no history for `git merge-base` to read.
+reference commit wherever the event carries no pull request. It reads the merge base of
+`GITHUB_SHA` and `dev` from the provider, because the clone holds no history for
+`git merge-base` to read.
 
-**A push event needs no such step.** `actions/checkout` writes `origin/dev` on a push to
-`dev`, so `git merge-base` answers there and the case runs. This workflow accepts a push to
-`master` and to `dev` alone.
+**A push reaches that step too, and a push to `master` needs it.** `actions/checkout`
+writes the one remote-tracking ref the event names. A push to `dev` therefore holds
+`origin/dev` and `git merge-base` answers, and a push to `master` holds `origin/master`
+alone and it answers nothing. A promotion to `master` is a push of the second kind.
 
 **Where the change set cannot be read, a case here skips and the reason names the state.**
 `evaluate` returns the skip
@@ -152,10 +154,16 @@ WORKFLOW_BASE_FILTER = 'branches: [master, dev, "batch/**", "epic/**"]'
 # The rule file that states which pull request creates a run.
 BATCH_GATE_RULE_PATH = ".claude/rules/batch-gate.md"
 
-# The `if` condition of the step that names the reference commit of a manual run. The step
-# above it reads the base commit of a pull request, so the two conditions together cover
-# every event that reaches the `test` job with no `origin/dev` ref.
-MANUAL_EVENT_CONDITION = "if: github.event_name == 'workflow_dispatch'"
+# The step that names the reference commit where the event carries no pull request.
+NO_PULL_REQUEST_STEP = "Resolve the reference commit of a run that carries no pull request"
+
+# The `if` condition of that step. The step above it reads the base commit of a pull
+# request, so the two conditions together cover every event the workflow accepts.
+#
+# **A manual run and a push to `master` each reach this condition.** `actions/checkout`
+# writes the one remote-tracking ref the event names, so neither one holds `origin/dev` for
+# `git merge-base` to read. A promotion to `master` is a push of that kind.
+NO_PULL_REQUEST_CONDITION = "if: github.event_name != 'pull_request'"
 
 # The read that names the merge base of the checked-out commit and the integration branch.
 # A clone of depth 1 holds no history behind that commit, so `git merge-base` answers
@@ -882,9 +890,10 @@ def test_the_test_job_writes_the_reference_variable() -> None:
 
 
 def test_the_test_job_resolves_the_reference_commit_of_a_manual_run() -> None:
-    """The `test` job reads the merge base from the provider on a manual run."""
+    """The `test` job reads the merge base from the provider where no pull request runs."""
     workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
-    assert MANUAL_EVENT_CONDITION in workflow
+    assert NO_PULL_REQUEST_STEP in workflow
+    assert NO_PULL_REQUEST_CONDITION in workflow
     assert MERGE_BASE_READ in workflow
     assert 'git fetch --depth=1 origin "+$MERGE_BASE:refs/ja4plus/round-entry-base"' in workflow
     assert f'{REFERENCE_ENVIRONMENT_VARIABLE}=$MERGE_BASE" >> "$GITHUB_ENV"' in workflow

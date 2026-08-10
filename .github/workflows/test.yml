@@ -126,9 +126,9 @@ jobs:
           git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"
           echo "ROUND_ENTRY_REFERENCE=$BASE_SHA" >> "$GITHUB_ENV"
 
-      - name: Resolve the reference commit of a manual run
+      - name: Resolve the reference commit of a run that carries no pull request
         # **A manual run carries no pull request, so the step above runs nowhere.** #541
-        # measured the result: `ROUND_ENTRY_REFERENCE` stayed empty,
+        # measured the result on a manual run: `ROUND_ENTRY_REFERENCE` stayed empty,
         # `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
         # skipped on all six jobs of the matrix, and the `skip-gate` job then failed the run
         # on a case the suite ran nowhere. Run
@@ -140,10 +140,13 @@ jobs:
         # leaves a reader unable to tell a real failure from that state, so this step gives
         # the case a reference commit rather than excuse its skip.
         #
-        # **A push event needs no step, because `actions/checkout` writes `origin/dev` on a
-        # push to `dev`.** `git merge-base` then answers, and this workflow accepts a push
-        # to `master` and to `dev` alone. The two `if` conditions therefore cover every
-        # event this file accepts.
+        # **This step reads every event that carries no pull request, and a push is such an
+        # event.** `actions/checkout` writes one remote-tracking ref, which is the ref the
+        # event names. A push to `dev` therefore holds `origin/dev` and `git merge-base`
+        # answers, and a push to `master` holds `origin/master` alone and it answers
+        # nothing. **A promotion to `master` is a push of the second kind**, so a condition
+        # that named the manual event alone would leave the release run red. The two `if`
+        # conditions now cover every event this file accepts.
         #
         # **The clone of depth 1 holds no history, so the provider reads the merge base.**
         # The basehead form is `BASE...HEAD` and the response holds `merge_base_commit`.
@@ -160,7 +163,7 @@ jobs:
         #
         # `GITHUB_REPOSITORY` and `GITHUB_SHA` reach the shell as environment variables, so
         # no `${{ }}` expression reaches a `run` block.
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

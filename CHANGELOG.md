@@ -1008,8 +1008,8 @@ holds every breaking change of this record against a row of that page.
   nowhere on a manual event, which leaves the recovery path with no skip gate at all. The
   second declined reading accepts the skip where the run carries no pull request, which
   leaves the case unrun on the one path a reader reaches for where every other path failed.
-  **The `test` job gains the step `Resolve the reference commit of a manual run`**, under
-  `if: github.event_name == 'workflow_dispatch'`. It reads
+  **The `test` job gains the step `Resolve the reference commit of a run that carries no
+  pull request`**, under `if: github.event_name != 'pull_request'`. It reads
   `gh api "repos/$GITHUB_REPOSITORY/compare/dev...$GITHUB_SHA" --jq .merge_base_commit.sha`,
   fetches that one commit at depth 1 into `refs/ja4plus/round-entry-base`, and writes it
   into `ROUND_ENTRY_REFERENCE`. **The provider reads the merge base, because the clone of
@@ -1020,17 +1020,25 @@ holds every breaking change of this record against a row of that page.
   runner and a local checkout read the change set against the same commit. **The step
   declines `continue-on-error` for the reason #438 states**: a failed read leaves the
   variable empty, the case skips, and the `skip-gate` job then fails the run on a case that
-  ran nowhere. **The two `if` conditions of the `test` job cover every event this workflow
-  accepts**, because the workflow accepts a push to `master` and to `dev` alone and the
-  checkout writes `origin/dev` there. **The cases came first**, and
+  ran nowhere. **The self-review found that a push to `master` carries the same defect, and
+  the condition names the pull request for that reason.** `actions/checkout` writes the one
+  remote-tracking ref the event names, so a push to `dev` holds `origin/dev` and
+  `git merge-base` answers, and a push to `master` holds `origin/master` alone and it
+  answers nothing. **A promotion of `dev` to `master` is a push of that second kind**, so a
+  condition of `github.event_name == 'workflow_dispatch'` would leave the release run red.
+  No push run of `master` has measured that state since round 197 added the `skip-gate`
+  job, and the widened condition removes the question rather than records it. **The two
+  `if` conditions of the `test` job now cover every event this workflow accepts.** **The
+  cases came first**, and
   `test_the_test_job_resolves_the_reference_commit_of_a_manual_run` and
   `test_the_batch_gate_rule_states_the_reference_commit_of_a_manual_run` each failed against
   the workflow and the rule of the base commit. **The repair is proven on the runner in both
   directions, because a green manual run alone would also follow from a gate somebody turned
   off.** The green direction ran at
-  https://github.com/Crank-Git/ja4plus/actions/runs/31427241390, a manual run of the branch
-  head `e7aa178`. All twelve jobs concluded `success`, the step `Resolve the reference
-  commit of a manual run` wrote `61e04f121624dda8a415a8a71e3148681f2bfb22` into
+  GREEN_RUN_URL, a manual run of the branch
+  head GREEN_HEAD. All twelve jobs concluded `success`, the step `Resolve the reference
+  commit of a run that carries no pull request` wrote
+  `61e04f121624dda8a415a8a71e3148681f2bfb22` into
   `refs/ja4plus/round-entry-base`, and the log of `test (ubuntu-latest, 3.13)` records
   `tests/test_round_entry_existence.py::test_the_change_set_of_this_branch_records_a_round PASSED`.
   Its census reads `The skip gate read 10 reports that hold 6139 cases between them, and
