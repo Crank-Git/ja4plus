@@ -530,7 +530,7 @@ holds every breaking change of this record against a row of that page.
   **`.github/workflows/test.yml` is the one required workflow**, because it accepts every pull
   request into `dev` and it filters no path. `.github/workflows/docs-build.yml` filters four
   paths, so an absent run of it proves nothing, and a red run of it still refuses the merge.
-  **New file `tests/test_batch_gate.py` holds 44 cases and every one failed before the module
+  **New file `tests/test_batch_gate.py` holds 48 cases and every one failed before the module
   existed.** They cover an absent run, a run of another commit, a queued run, a run in
   progress, four terminal conclusions that are not `success`, a `skipped` conclusion, a re-run
   that passed after a failure, a failure after a success, a red run of the unrequired
@@ -539,7 +539,30 @@ holds every breaking change of this record against a row of that page.
   because an aggregate over an empty set passes.** **The gate names the cause it cannot
   otherwise show.** Where a required run is absent and the head commit message holds a
   keyword, the failure names the keyword and this issue. It names no keyword where a run
-  exists and failed, because a red run has a cause in its log. **The procedure reaches the
+  exists and failed, because a red run has a cause in its log.
+  **The self-review found three defects in the first form of this gate and each is closed.**
+  **The first is the fault this project records most often, and it reached the gate itself.**
+  One workflow holds two runs at one commit where a push event and a pull-request event both
+  reach it, and two runs can carry one creation time. `max` returns the first of several equal
+  keys, so a green run listed before a red one made the gate report a pass. A measurement
+  proves it: on the unrepaired reader the order `success, failure` reads `PASSED` and the
+  order `failure, success` reads `REFUSED`, on one input. **The verdict rested on the order of
+  the response.** The reader now breaks that tie toward a refusal, and it refuses both orders.
+  **The second is a check name that names no check.** The rule file listed the six job names
+  of `.github/workflows/test.yml` as the required checks. The `test` job runs a matrix, so the
+  provider publishes one check for each combination, and a read of commit `b593de5` reports
+  `test (ubuntu-latest, 3.9)` and five more. A required check named `test` would have matched
+  nothing. The rule now lists the eleven names, and it bars the `build` check of the
+  path-filtered workflow, because a required `build` would block every batch that touches
+  none of its four paths. `test_the_rule_names_every_job_of_the_required_workflow` reads the
+  `jobs:` keys against the rule file. **The third is a reader that tested a region it never
+  found.** The two path-filter cases sliced the file on the text `pull_request:`, and a slice
+  that landed wrong would have satisfied `paths: not in trigger` on a claim nobody read. The
+  reader now takes the `on:` block by indent, and it raises where the region it took holds no
+  `branches:` key. Against `.github/workflows/publish.yml` it raises
+  `accepts no pull-request event` rather than returning a region.
+  **A caller that passed the upper form of a commit identifier read an absent run**, so the
+  comparison now folds the case and a fourth new case reads it. **The procedure reaches the
   loop and not an issue alone.** New file `.claude/rules/batch-gate.md` states it, `CLAUDE.md`
   names that file under `## Branch model`, and `.issue-flow.json` replaces the note that read
   "A batch pull request into dev starts a run, so provider continuous integration is the batch

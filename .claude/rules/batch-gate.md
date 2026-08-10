@@ -92,7 +92,30 @@ exact steps.
 1. Open `https://github.com/Crank-Git/ja4plus/settings/branches`.
 2. Add a branch protection rule for `dev`.
 3. Turn on `Require status checks to pass before merging`.
-4. Add the checks `lint`, `test`, `fuzz`, `samples`, `installed-wheel` and `conformance`.
+4. Add the eleven check names of the list below.
+
+**Warning: a check name is not a job name.** The `test` job of
+`.github/workflows/test.yml` runs a matrix, so the provider publishes one check for each
+combination. A required check named `test` matches nothing. These are the names a read of
+commit `b593de5` reports.
+
+```
+lint
+test (ubuntu-latest, 3.9)
+test (ubuntu-latest, 3.10)
+test (ubuntu-latest, 3.11)
+test (ubuntu-latest, 3.12)
+test (ubuntu-latest, 3.13)
+test (macos-latest, 3.12)
+fuzz
+samples
+installed-wheel
+conformance
+```
+
+**Warning: leave the `build` check out of the required list.** It belongs to
+`.github/workflows/docs-build.yml`, which filters four paths. A batch that touches none of
+those paths creates no run of it, so a required `build` would block every such batch.
 
 A required check that never reports blocks the merge, which is the condition this file
 otherwise reads by hand.

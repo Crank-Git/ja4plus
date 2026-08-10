@@ -150,16 +150,30 @@ def read_runs(payload: object) -> list[WorkflowRun]:
 
 
 def _newest(runs: Iterable[WorkflowRun]) -> WorkflowRun:
-    """Return the run a person reads on the pull request, which is the newest one.
+    """Return the run that decides one workflow at one head commit.
+
+    One workflow holds two runs at one commit where a push event and a pull-request event
+    both reached it, so the newest run is the one a person reads.
+
+    **Two runs can carry one creation time.** `max` then returns the first of them, so the
+    order of the response would decide the verdict. This reader breaks that tie toward a
+    refusal instead, because a gate that reports a green run on an ordering accident is the
+    failure this file exists to stop.
 
     Args:
-        runs: Two or more runs of one workflow at one head commit.
+        runs: One or more runs of one workflow at one head commit.
 
     Returns:
-        The run with the latest creation time. The provider writes an RFC 3339 time in
-        UTC, so a string comparison orders it.
+        The run with the latest creation time. Among several runs of that one time, the
+        first that did not conclude `success`, and otherwise the first of them. The
+        provider writes an RFC 3339 time in UTC, so a string comparison orders it.
     """
-    return max(runs, key=lambda run: run.created_at)
+    latest = max(run.created_at for run in runs)
+    tied = [run for run in runs if run.created_at == latest]
+    for run in tied:
+        if run.status != TERMINAL_STATUS or run.conclusion != PASSING_CONCLUSION:
+            return run
+    return tied[0]
 
 
 def gate_reasons(
@@ -188,6 +202,11 @@ def gate_reasons(
     """
     reasons: list[str] = []
 
+    # The provider writes a lowercase identifier. A caller that passed the upper form would
+    # otherwise match no run, and the gate would report an absent run for a commit that has
+    # one. The normalization refuses nothing that the comparison below would accept.
+    head_sha = head_sha.strip().lower()
+
     if not COMMIT_IDENTIFIER.match(head_sha):
         # A caller that read no head commit, or an abbreviated one, can compare nothing.
         return [
@@ -202,7 +221,7 @@ def gate_reasons(
             "the required workflow set is empty, so this gate would pass on an absent run"
         )
 
-    at_head = [run for run in runs if run.head_sha == head_sha]
+    at_head = [run for run in runs if run.head_sha.strip().lower() == head_sha]
 
     grouped: dict[str, list[WorkflowRun]] = {}
     for run in at_head:

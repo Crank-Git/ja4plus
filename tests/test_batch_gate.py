@@ -101,6 +101,65 @@ def _run(
     }
 
 
+def _trigger_block(path: str) -> str:
+    """Return the `on:` block of one workflow file, and never a comment above it.
+
+    The header comment of each workflow discusses a pull request in prose, so a search for
+    the word alone would read the comment. The block opens at a line that holds `on:` and
+    nothing else, and it ends at the first line that starts in column one after it.
+
+    Args:
+        path: The workflow file, relative to the repository root.
+
+    Returns:
+        The lines of the `on:` block, joined by newlines.
+
+    Raises:
+        AssertionError: The file holds no such line, or it holds more than one. A reader
+            that guessed here would test a region it did not find, and that case would pass
+            on a claim nobody read.
+    """
+    lines = (REPO_ROOT / path).read_text(encoding="utf-8").splitlines()
+    opens = [number for number, line in enumerate(lines) if line.rstrip() == "on:"]
+    assert len(opens) == 1, f"{path} holds {len(opens)} lines that read exactly `on:`"
+    block: list[str] = []
+    for line in lines[opens[0] + 1 :]:
+        if line and not line.startswith((" ", "\t", "#")):
+            break
+        block.append(line)
+    return "\n".join(block)
+
+
+def _pull_request_trigger(path: str) -> str:
+    """Return the `pull_request:` trigger of one workflow file.
+
+    Args:
+        path: The workflow file, relative to the repository root.
+
+    Returns:
+        The lines of the trigger, from `pull_request:` to the next key of the same indent.
+
+    Raises:
+        AssertionError: The block holds no `pull_request:` key, or the region the reader
+            took holds no `branches:` key. The second check proves the reader found the
+            trigger and not a neighbouring region.
+    """
+    block = _trigger_block(path)
+    assert "  pull_request:" in block, f"{path} accepts no pull-request event"
+    tail = block.split("  pull_request:", 1)[1].splitlines()
+    trigger: list[str] = []
+    for line in tail:
+        if line.startswith("  ") and not line.startswith("    "):
+            break
+        trigger.append(line)
+    joined = "\n".join(trigger)
+    assert "branches:" in joined, (
+        f"the pull-request trigger this reader took from {path} holds no `branches:` key, so "
+        "it read the wrong region and the case that reads it would prove nothing"
+    )
+    return joined
+
+
 def _payload(*runs: dict) -> dict:
     """Return a provider response that holds the runs.
 
@@ -297,6 +356,36 @@ class TestTheGateVerdict:
         """A caller that read no head commit cannot compare a run against it."""
         assert gate_reasons("", read_runs(_payload())) != []
 
+    def test_two_runs_of_one_time_break_the_tie_toward_a_refusal(self) -> None:
+        """A push event and a pull-request event can reach one commit at one second.
+
+        `max` returns the first of several equal keys, so the order of the response would
+        otherwise decide the verdict. A gate that reported a green run on an ordering
+        accident is the failure this whole file stops, so the tie refuses the merge.
+        """
+        red = _run(conclusion="failure", created_at="2026-08-09T23:37:51Z")
+        green = _run(conclusion="success", created_at="2026-08-09T23:37:51Z")
+        assert gate_reasons(HEAD, read_runs(_payload(red, green))) != []
+        assert gate_reasons(HEAD, read_runs(_payload(green, red))) != []
+
+    def test_an_older_red_run_moves_no_verdict(self) -> None:
+        """The tie rule reaches one creation time alone, and it is no rule about every run."""
+        runs = read_runs(
+            _payload(
+                _run(conclusion="failure", created_at="2026-08-09T22:00:00Z"),
+                _run(conclusion="success", created_at="2026-08-09T23:00:00Z"),
+            )
+        )
+        assert gate_reasons(HEAD, runs) == []
+
+    def test_the_upper_form_of_a_commit_identifier_reads_the_same_run(self) -> None:
+        """The provider writes the lower form, and the upper form must match no absence.
+
+        A caller that passed the upper form would otherwise read an absent run for a
+        commit that holds a green one, which sends a reader after a cause that is not there.
+        """
+        assert gate_reasons(HEAD.upper(), read_runs(_payload(_run()))) == []
+
     def test_a_head_commit_that_is_no_commit_identifier_fails_the_gate(self) -> None:
         """An abbreviated identifier fails, because the provider writes the full form.
 
@@ -346,8 +435,7 @@ class TestTheWorkflowFilesHoldTheClaimsTheGateMakes:
         A `paths` filter added to that trigger would make the run conditional, and the
         gate would then demand a run the provider never creates.
         """
-        text = (REPO_ROOT / TESTS_WORKFLOW).read_text(encoding="utf-8")
-        trigger = text.split("pull_request:", 1)[1].split("workflow_dispatch:", 1)[0]
+        trigger = _pull_request_trigger(TESTS_WORKFLOW)
         assert "paths:" not in trigger, (
             f"{TESTS_WORKFLOW} filters its pull-request trigger by path, so the gate can no "
             "longer require a run of it"
@@ -355,8 +443,7 @@ class TestTheWorkflowFilesHoldTheClaimsTheGateMakes:
 
     def test_the_unrequired_workflow_reads_a_path_filter(self) -> None:
         """`Documentation` runs on a path filter, which is the reason the gate requires none."""
-        text = (REPO_ROOT / DOCUMENTATION_WORKFLOW).read_text(encoding="utf-8")
-        trigger = text.split("pull_request:", 1)[1].split("workflow_dispatch:", 1)[0]
+        trigger = _pull_request_trigger(DOCUMENTATION_WORKFLOW)
         assert "paths:" in trigger, (
             f"{DOCUMENTATION_WORKFLOW} filters no pull-request trigger by path, so the gate "
             "may require a run of it"
@@ -370,7 +457,8 @@ class TestTheWorkflowFilesHoldTheClaimsTheGateMakes:
         commit message.
         """
         text = (REPO_ROOT / TESTS_WORKFLOW).read_text(encoding="utf-8")
-        header = text.split("on:", 1)[0]
+        header = text.split("\non:\n", 1)[0]
+        assert header != text, f"{TESTS_WORKFLOW} holds no line that reads exactly `on:`"
         assert "#459" in header, f"{TESTS_WORKFLOW} records no cause for an absent run"
         assert "skip ci" in header, (
             f"{TESTS_WORKFLOW} names no skip keyword, so a reader of an absent run reaches no cause"
@@ -396,6 +484,31 @@ class TestTheProcedureReachesTheLoop:
         text = BATCH_GATE_RULE.read_text(encoding="utf-8")
         for fact in ["#459", "#444", "#458", "skip ci"]:
             assert fact in text, f"{BATCH_GATE_RULE.name} states no {fact}"
+
+    def test_the_rule_names_every_job_of_the_required_workflow(self) -> None:
+        """The branch-protection list must reach every job, or it guards a subset in silence.
+
+        A job added to `.github/workflows/test.yml` publishes a check that the required
+        list does not hold, and a merge then passes while that job is red. The first form
+        of this rule named `test` as a check, and the provider publishes one check for each
+        matrix combination instead, so a required `test` would have matched nothing.
+        """
+        workflow = (REPO_ROOT / TESTS_WORKFLOW).read_text(encoding="utf-8")
+        body = workflow.split("\njobs:", 1)[1]
+        # A job key opens a line with two spaces and it ends with a colon. A step key of a
+        # job sits deeper, so the indent tells the two apart.
+        jobs = [
+            line.strip().rstrip(":")
+            for line in body.splitlines()
+            if line.startswith("  ") and not line.startswith("   ") and line.rstrip().endswith(":")
+        ]
+        assert len(jobs) >= 6, f"{TESTS_WORKFLOW} reports {len(jobs)} jobs, which reads too few"
+        text = BATCH_GATE_RULE.read_text(encoding="utf-8")
+        missing = [job for job in jobs if job not in text]
+        assert missing == [], (
+            f"{BATCH_GATE_RULE.name} names no required check for these jobs of "
+            f"{TESTS_WORKFLOW}: {missing}"
+        )
 
     def test_the_rule_bars_the_keyword_from_a_head_commit_message(self) -> None:
         """The cause repeats where nothing bars the sentence that produced it."""
