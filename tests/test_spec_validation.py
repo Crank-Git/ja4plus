@@ -566,13 +566,16 @@ def test_every_register_entry_matches_a_collected_case():
     matches nothing is also what a landed fix leaves behind when it removes a case.
 
     `tests/test_foxio_rust_parity.py` keys its JA4T cases and one JA4X stream into the
-    same register, so the check reads both lists. An entry of that module matches no
-    case of this one.
+    same register, and `tests/test_foxio_wireshark_ja4ts.py` keys its JA4TS cases into it,
+    so the check reads all three lists. An entry of either module matches no case of this
+    one.
     """
     from tests.test_foxio_rust_parity import register_keys
+    from tests.test_foxio_wireshark_ja4ts import register_keys as wireshark_register_keys
 
     collected = set(collected_register_keys())
     collected.update(register_keys())
+    collected.update(wireshark_register_keys())
     orphans = sorted(set(DEVIATIONS) - collected)
     assert not orphans, "{} register entr(ies) match no collected case: {}".format(
         len(orphans), orphans
