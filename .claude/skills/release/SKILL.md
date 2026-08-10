@@ -35,33 +35,32 @@ Confirm all of the following. Stop and report if any is false.
    PY
    ```
 
-3. Build the package.
+3. Build the release and verify it in a clean environment. This one command runs every
+   check the publish workflow runs, and `.github/workflows/publish.yml` runs the same
+   command.
 
    ```bash
    rm -rf dist/ build/
-   python -m build
-   twine check dist/*
+   python -m tests.release_verification --dist dist
    ```
+
+   It builds the source distribution and the wheel, reads both with `twine check`,
+   installs the wheel into a clean environment, runs the console script of that
+   environment, and runs the conformance suite against the installed package.
+
+   **Warning: never run the conformance suite from the repository root against a clean
+   environment.** `python -m` puts the working directory on `sys.path`, and `pytest`
+   inserts the parent of the `tests` package there as well. Both paths hold `ja4plus/` in
+   the checkout, so the run reads the source tree and it proves nothing about the wheel.
+   The command above copies the suite to a directory that holds no package source.
 
 4. Confirm the wheel holds what it must, and nothing it must not.
 
    ```bash
-   unzip -l dist/*.whl | grep -E "py.typed|ja4plus-mapping.csv"
-   unzip -l dist/*.whl | grep -E "tests/|examples/|docs/" && echo "FAIL: wheel holds files it should not"
+   python -m pytest tests/ -m installed_wheel -q
    ```
 
-5. Verify the wheel in a clean environment. The source tree must not be on the path, so
-   an import cannot resolve to the working copy.
-
-   ```bash
-   TMP=$(mktemp -d)
-   python -m venv "$TMP/venv"
-   "$TMP/venv/bin/pip" install --quiet dist/*.whl pytest
-   (cd "$TMP" && "$TMP/venv/bin/ja4plus" --version)
-   "$TMP/venv/bin/python" -m pytest tests/ -m spec_validation -q
-   ```
-
-6. Create the GitHub release. The publish workflow triggers on a published release and
+5. Create the GitHub release. The publish workflow triggers on a published release and
    uses trusted publishing, so no token is needed.
 
    ```bash
@@ -75,7 +74,7 @@ Confirm all of the following. Stop and report if any is false.
    )
    ```
 
-7. Confirm the publish.
+6. Confirm the publish.
 
    ```bash
    gh run list --workflow=publish.yml --limit 1

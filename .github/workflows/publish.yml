@@ -1,5 +1,17 @@
 name: Publish to PyPI
 
+# A publish to PyPI cannot be undone, so every check runs in front of the publish step and
+# never after it. GitHub stops a job at the first step that reports a failure, and no step
+# of this file carries `continue-on-error` or `if: always()`, so the publish step runs only
+# where each earlier step passed. `FR-release-8` states that rule and
+# `tests/test_publish_workflow.py` holds the step order against it.
+#
+# The published-release event is the one trigger. A second trigger would publish outside a
+# release.
+#
+# Trusted publishing needs `id-token: write` and the configured environment, and it stores
+# no token. Verified against https://docs.pypi.org/trusted-publishers/, retrieved
+# 2026-08-10.
 on:
   release:
     types: [published]
@@ -20,13 +32,26 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install build tools
+      - name: Install the development extra
+        # The check builds with `build`, it reads the built files with `twine`, and it runs
+        # the conformance suite with `pytest`. The `dev` extra of `pyproject.toml` states
+        # the version of each one, so no line here states a version of its own.
         run: |
           python -m pip install --upgrade pip
-          pip install build
+          pip install -e ".[dev]"
 
-      - name: Build package
-        run: python -m build
+      - name: Build the release and verify it in a clean environment
+        # `FR-release-4` to `FR-release-7` and `FR-release-9`. The check builds both
+        # artifacts, reads them with `twine check`, installs the wheel into a clean
+        # environment, runs the console script of that environment, and runs the conformance
+        # suite against the installed package.
+        #
+        # **The conformance suite runs outside the checkout.** `#455` removed `tests/` from
+        # the wheel, so the suite comes from this checkout and the package comes from the
+        # environment. A run that starts in the workspace imports the source tree, and it
+        # proves nothing about the wheel. `tests/release_verification.py` states the whole
+        # reading.
+        run: python -m tests.release_verification --dist dist
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
