@@ -19,15 +19,51 @@ This directory holds 37 captures and 37 expected-output files.
 `dtls-udp.notest.cap` is present upstream but is not copied here. It carries a
 `notest` marker and has no expected-output file, so it is not a vector.
 
-The subdirectory `wireshark_expected/` holds two more expected-output files:
+The subdirectory `wireshark_expected/` holds 26 more expected-output
+files:
 
-    wireshark/test/testdata/dhcp.pcapng.json  ->  tests/foxio_vectors/wireshark_expected/dhcp.pcapng.json
-    wireshark/test/testdata/dhcpv6.pcap.json  ->  tests/foxio_vectors/wireshark_expected/dhcpv6.pcap.json
+    wireshark/test/testdata/<capture>.json
+        ->  tests/foxio_vectors/wireshark_expected/<capture>.json
 
-The FoxIO Python implementation emits no JA4D and no JA4D6, so the two files under
-`python/test/testdata` hold an empty array. The Wireshark dissector is the only FoxIO
+for each of these captures:
+
+    dhcp.pcapng
+    dhcpv6.pcap
+    CVE-2018-6794.pcap
+    badcurveball.pcap
+    browsers-x509.pcapng
+    chrome-cloudflare-quic-with-secrets.pcapng
+    gre-erspan-vxlan.pcap
+    http-empty-useragent.pcap
+    http1-with-cookies.pcapng
+    http2-with-cookies.pcapng
+    https-connect.pcap
+    https3-301-get.pcap
+    ipv6.pcapng
+    latest.pcapng
+    socks-https-example.pcap
+    socks4-https.pcap
+    ssh-r.pcap
+    ssh-scp-1050.pcap
+    ssh2-malformed.pcap
+    ssh2-moloch-crash.pcap
+    ssh2.pcapng
+    sshv1.pcap
+    tcpdump-geneve.pcap
+    tls-alpn-h2.pcap
+    tls3.pcapng
+    v6.pcap
+
+The FoxIO Python implementation emits no JA4D and no JA4D6, so the two DHCP files
+under `python/test/testdata` hold an empty array. The Wireshark dissector is the only FoxIO
 implementation that writes a reference value for the two methods.
 `docs/implementation_notes.md` records the reading.
+
+The 24 files after the two DHCP captures hold the 58 JA4TS values the dissector
+writes. The FoxIO Python implementation writes no JA4TS value for any capture, so
+these files and the Zeek baselines below are the whole FoxIO reference the method
+reaches. `tests/test_foxio_wireshark_ja4ts.py` compares all 58, and issue #515
+measured the directory and committed them.
 
 The subdirectory `rust_expected/` holds 11 more expected-output files:
 
@@ -60,7 +96,29 @@ writes no JA4T value for any capture, so its snapshot holds the one local JA4T v
 that reaches D1 of `docs/specs/foxio/JA4T.md`. The two references name that stream by
 different addresses, and issue #242 records the pair.
 
-The conformance suite reads only the top level of this directory, so neither
+The subdirectory `zeek_expected/` holds 7 btest baselines:
+
+    zeek/tests/Traces/<directory>/<log>
+        ->  tests/foxio_vectors/zeek_expected/<directory>/<log>
+
+for each of these baselines:
+
+    Scripts.ja4-conn/conn.log
+    Scripts.ja4-conn-tls3/conn.log
+    Scripts.ja4-conn-quic/conn.log
+    Scripts.ja4-dhcp/ja4d.log
+    Scripts.ja4-http1-with-cookies/http.log
+    Scripts.ja4-ssh2/ja4ssh.log
+    Scripts.ja4-tls-handshake/ssl.log
+
+The FoxIO Zeek package is the one FoxIO implementation that publishes a JA4TS
+value, so these baselines hold the only FoxIO reference the method reaches.
+`tests/test_foxio_zeek_ja4ts.py` compares the nine values this project adopts, and
+`tests/compare_zeek_baselines.py` reads all seven files with no external checkout.
+`docs/specs/foxio/zeek.md` records which baseline is usable as a vector, and issue
+#515 committed the copies.
+
+The conformance suite reads only the top level of this directory, so no
 subdirectory adds a case to it.
 
 Captures the ja4plus authors built

@@ -71,6 +71,33 @@ is the only FoxIO implementation that writes a reference value for the two metho
 baseline `zeek/tests/Traces/Scripts.ja4-dhcp/ja4d.log` holds the same four JA4D values.
 `docs/implementation_notes.md` records the reading.
 
+**JA4TS is a second exception, and #515 measured it.** The FoxIO Python implementation
+writes no JA4TS value for any capture, so no file under `python/test/testdata/` holds one.
+Two FoxIO implementations write the method: the Wireshark dissector writes 58 values in 24
+files under `wireshark/test/testdata/`, and the Zeek package writes 10 in three `conn.log`
+baselines. **Each of the two therefore holds a JA4TS reference value**, and the rule above
+about `python/test/testdata/` breaks no tie here, because that directory holds no value to
+break it with.
+
+**Read the dissector value first, and read a Zeek JA4TS value under the `DLT_NULL` bar.**
+The two sources read one connection in common, `ipv6.pcapng`, and they disagree on it. The
+dissector holds `65535_2-1-1-4-1-3_1346_10` and the Zeek baseline holds `65535_00_00_00`,
+which `zeek/ja4t/main.zeek:66-68` produces because the link layer is not Ethernet.
+`docs/specs/foxio/zeek.md` proves that defect and `docs/specs/foxio/JA4T.md` records the
+corroboration.
+
+**Read no JA4TS value of a Zeek baseline whose capture carries a link type that is not
+Ethernet as a reference value.** That bar reaches one baseline, `Scripts.ja4-conn`, and
+`TestTheBarredBaselineRestsOnAProvenZeekDefect` in `tests/test_foxio_zeek_ja4ts.py`
+measures every part of it. The bar rests on a proven defect of the Zeek script and on the
+value a second FoxIO implementation writes, so no reading of which value looks right
+reaches it.
+
+**The earlier reading of `wireshark/test/testdata/` was wrong for these two methods.**
+`docs/specs/foxio/JA4T.md` recorded `No ja4t value and no ja4ts value` for that directory,
+and the directory holds 118 `ja4.ja4t` values and 58 `ja4.ja4ts` values. The earlier search
+read the key `ja4t`, and the dissector writes the key `ja4.ja4t`. #515 corrected the row.
+
 **A snapshot under `rust/ja4/src/snapshots/` decides for a stream the Python file omits.**
 The unit is the stream, not the file. `python/test/testdata/tls3.pcapng.json` holds seven
 streams and omits six, and the Rust snapshot holds all thirteen. Where the Python file
@@ -183,7 +210,7 @@ decides what the bar covers.
 reference value, and adoption is its own decision. "Which baselines are usable as
 vectors" in `docs/specs/foxio/zeek.md` holds that decision for the Zeek package.
 
-**The exception reaches 6 rows of the 134 the register holds.**
+**The exception reaches 6 rows of the 140 the register holds.**
 `tests/test_precedence_exception.py` measures the reach and both counts, and #334 records
 the search. A case reads this sentence, so a register move fails the gate here.
 
