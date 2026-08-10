@@ -987,6 +987,58 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **A manual run of `Tests` names its own reference commit** (#541). Round
+  TBD. **A manual run carried no pull request, so the step `Fetch the base commit of the
+  pull request` ran nowhere and the `skip-gate` job failed every manual run.** Run
+  https://github.com/Crank-Git/ja4plus/actions/runs/31421263768 holds the measurement. It
+  reads `event=workflow_dispatch` and `conclusion=failure`, its `skip-gate` job reads
+  `failure`, and every other job of that run reads `success`.
+  `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
+  skipped on all six jobs of the matrix, because `ROUND_ENTRY_REFERENCE` stayed empty and
+  the clone of depth 1 holds no `origin/dev` ref for `git merge-base` to read. **A push
+  event is unaffected, and that is measured rather than assumed**: `actions/checkout`
+  writes `origin/dev` on a push to `dev`, and the push run of `dev` at `31cca24` holds the
+  `skip-gate` job and concluded `success`. **`.claude/rules/batch-gate.md` names the manual
+  run as the recovery path where a push event and a pull-request event created none**, so
+  the defect produced a red run on every branch and left a reader unable to tell a real
+  failure from that one. **The gate is right about what it measures and wrong about what it
+  concludes**: a case that a given event does not select is no finding of that event. **This
+  round takes the reading that makes the case run on every event, and it declines the two
+  readings that excuse the skip on one.** The first declined reading runs `skip-gate`
+  nowhere on a manual event, which leaves the recovery path with no skip gate at all. The
+  second declined reading accepts the skip where the run carries no pull request, which
+  leaves the case unrun on the one path a reader reaches for where every other path failed.
+  **The `test` job gains the step `Resolve the reference commit of a manual run`**, under
+  `if: github.event_name == 'workflow_dispatch'`. It reads
+  `gh api "repos/$GITHUB_REPOSITORY/compare/dev...$GITHUB_SHA" --jq .merge_base_commit.sha`,
+  fetches that one commit at depth 1 into `refs/ja4plus/round-entry-base`, and writes it
+  into `ROUND_ENTRY_REFERENCE`. **The provider reads the merge base, because the clone of
+  depth 1 holds no history for `git merge-base` to read.** The basehead form is
+  `BASE...HEAD` and the response holds `merge_base_commit`. Verified against
+  https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28 (retrieved
+  2026-08-10). The read names `dev`, which is the first ref of `REFERENCE_BRANCHES`, so the
+  runner and a local checkout read the change set against the same commit. **The step
+  declines `continue-on-error` for the reason #438 states**: a failed read leaves the
+  variable empty, the case skips, and the `skip-gate` job then fails the run on a case that
+  ran nowhere. **The two `if` conditions of the `test` job cover every event this workflow
+  accepts**, because the workflow accepts a push to `master` and to `dev` alone and the
+  checkout writes `origin/dev` there. **The cases came first**, and
+  `test_the_test_job_resolves_the_reference_commit_of_a_manual_run` and
+  `test_the_batch_gate_rule_states_the_reference_commit_of_a_manual_run` each failed against
+  the workflow and the rule of the base commit. **The repair is proven on the runner in both
+  directions, because a green manual run alone would also follow from a gate somebody turned
+  off.** The green direction ran at GREEN_RUN_URL, a manual run of the branch head, where
+  every job concluded `success` and the `skip-gate` census names the change-set case
+  nowhere. The red direction ran at RED_RUN_URL, a pull-request run of RED_PR_NUMBER into
+  `batch/544-release-blockers`, which carried the deliberately universal skip
+  `tests.test_universal_skip_proof::test_the_case_that_skips_in_every_environment` that
+  round 197 used. Every other job of that run concluded `success` and `skip-gate` concluded
+  `failure` on that case. That pull request landed in no branch, and it is closed with its
+  branch deleted. `FR-pre-release-validation-41` states the requirement, one acceptance
+  criterion reads it, and `.claude/rules/batch-gate.md` gains the subsection
+  `### A manual run names its own reference commit`. No file under `ja4plus/` changes and no
+  fingerprint moves.
+
 - **The documentation slug case runs on one job of the matrix** (#529). Round 200. **The
   census of #524 read `tests/test_documentation_site.py:222` as a class c site**: the case
   skipped on all six jobs of `.github/workflows/test.yml`, and no limit of the runner

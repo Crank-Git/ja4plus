@@ -263,6 +263,11 @@ two recorded commits of `tests/test_round_entry_existence.py`, each at depth 2. 
 records no round and the other records one, so the runner reads the check in both
 directions.
 
+FR-pre-release-validation-41 — The `test` job of `.github/workflows/test.yml` names a
+reference commit on a manual run. It reads the merge base of the checked-out commit and
+`dev` from the provider, so the change-set case runs on a manual event as well as on a
+pull-request event.
+
 ## User flows
 
 **A maintainer proves the shipped package runs.**
@@ -484,6 +489,10 @@ the checkout is.
       feature set names one path under `tests/`.
 - [ ] `pytest tests/test_settlement_procedure.py` passes, so every `repaired` verdict names
       a case the suite collects.
+- [ ] A manual run of `Tests` on a branch that records a round concludes `success`, and its
+      `skip-gate` census names
+      `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
+      nowhere.
 
 **Three statements here are not checkable, and each names its reason.**
 
