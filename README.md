@@ -487,7 +487,7 @@ pytest tests/ -v
 
 This library is released under the **BSD 3-Clause License**.
 
-The JA4+ fingerprinting specifications were created by [FoxIO](https://foxio.io). JA4 (TLS Client) is open source under BSD-3-Clause per FoxIO. Other JA4+ methods (JA4S, JA4H, JA4T, JA4TS, JA4L, JA4X, JA4SSH) implement FoxIO's specifications under the [FoxIO License 1.1](https://github.com/FoxIO-LLC/ja4/blob/main/LICENSE), which is permissive for academic, internal business, and security research use.
+The JA4+ fingerprinting specifications were created by [FoxIO](https://foxio.io). JA4 (TLS Client) is open source under BSD-3-Clause per FoxIO. The other methods this project implements carry the [FoxIO License 1.1](https://github.com/FoxIO-LLC/ja4/blob/main/LICENSE): JA4S, JA4H, JA4L, JA4LS, JA4X, JA4SSH, JA4T, JA4TS, JA4D and JA4D6. That license is permissive for academic, internal business, and security research use. FoxIO names each of them at line 5 of [`License FAQ.md`](https://github.com/FoxIO-LLC/ja4/blob/main/License%20FAQ.md), at commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`. That FoxIO list is wider than this one, because it also names methods this project does not implement.
 
 See [LICENSE](LICENSE) for full details.
 
