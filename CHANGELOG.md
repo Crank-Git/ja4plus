@@ -1086,7 +1086,7 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
-- **The mutation sweep builds no mutation inside a type annotation** (#431). Round TBD.
+- **The mutation sweep builds no mutation inside a type annotation** (#431). Round 168.
   `tests/mutation_sweep.py` built one mutation for each `BinOp` node whose operator sits in
   `BINOP_SWAP`, and `ast.BitOr` is one of them. A type annotation written `str | None` holds
   a `BitOr`, so the sweep changed it to `str & None`. **28 of the 31 modules of `ja4plus/`
