@@ -1,0 +1,352 @@
+"""Write the conformance baseline from a measurement of the suite.
+
+The baseline is two committed files:
+
+- `tests/foxio_vector_manifest.json` names every vector and the number of cases it
+  carries. It makes a vector that disappears fail the suite by name.
+- `tests/foxio_deviations.json` holds one entry for each conformance case that ja4plus
+  fails today. There are hundreds, so this program measures them instead of a person
+  writing them by hand.
+
+It runs the conformance suite with the deviation lookup disabled, reads the parameters
+of each collected case and each failed case, and writes both files. It reads the
+parameters from the pytest item, not from the report text, so a vector name that holds
+a hyphen never confuses it.
+
+Run it from the repository root, after a change that adds a vector, fixes a method, or
+breaks one:
+
+    python tests/generate_foxio_baseline.py
+
+It overwrites both files. Read the difference before you commit it. A method this
+program does not know an issue for stops the run, because an entry with no issue number
+is not allowed.
+
+The register run merges. A key the committed register already holds keeps its stored
+entry, with every field and in the field order the file holds. A cause this program
+reads from a failure message states the symptom, and a person states the mechanism. The
+`decided` field records that a person settled the deviation. This program writes a new
+entry only for a deviation the register does not hold. A key that stops failing still
+disappears.
+
+A run that measures the deviations the register already holds therefore changes no byte
+of `tests/foxio_deviations.json`.
+
+**Warning: this program runs `tests/test_spec_validation.py` alone, and two register
+entries belong to another module.** `tests/test_foxio_rust_parity.py` keys its JA4T cases
+into the same register, and this program collects none of them, so a run drops
+`chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` and `ssh2.pcapng/JA4T`. Read
+the difference and restore the two entries. The loss is loud rather than silent: each
+dropped entry makes its case fail the conformance suite by name.
+"""
+
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from tests.foxio_deviations import (  # noqa: E402 - the path insert must run first
+    IGNORE_VARIABLE,
+    REGISTER_PATH,
+    load_register,
+    occurrence_key,
+    value_key,
+)
+from tests.foxio_manifest import MANIFEST_PATH  # noqa: E402 - the path insert must run first
+
+# The issue that owns each method. #12 records the measurement that assigns them.
+#
+# #28 fixed the JA4SSH window, and it owns no case now. Every JA4SSH case that
+# remains sits on a capture that holds more than one window. A capture of one window
+# conforms, and a capture of several does not. #92 owns them.
+#
+# A raw method carries the issue of its hashed method, because the raw form and the hash
+# read the same fields. #121 measured it: every `JA4_r`, `JA4_ro` and `JA4S_r` failure
+# sits on a stream whose hashed value fails too.
+OWNING_ISSUES = {
+    "JA4": 13,
+    "JA4S": 13,
+    "JA4H": 35,
+    "JA4SSH": 92,
+    "JA4X": 78,
+    "JA4_r": 13,
+    "JA4_ro": 13,
+    "JA4_o": 13,
+    "JA4S_r": 13,
+    "JA4H_ro": 131,
+}
+
+# #131 owns every `JA4H_ro` case, because ja4plus computes no JA4H raw form. The generic
+# cause reads as a count defect, and the real cause is an absent value.
+JA4H_RAW_ISSUE = 131
+
+# #132 owns the four `JA4_o` values whose client hello carries SNI as its only extension.
+# The reference gives `000000000000` as the extension hash, and ja4plus hashes the
+# original-order extension list. The pattern matches the reference value, not the
+# produced value, so a later change of the produced value keeps the entry.
+JA4_O_EMPTY_EXTENSION_ISSUE = 132
+EMPTY_EXTENSION_HASH = re.compile(r"expected='[^']*_000000000000'")
+
+# JA4L holds defects of two kinds, so one issue does not own every JA4L case. #80 landed
+# the harness change that measures them, and #80 owns none of them. #30 changes
+# `calculate_distance`, which no JA4L fingerprint value reads, so #30 owns none of them
+# either.
+#
+# #34 owns the multiplicity defect on both sides: how many JA4L values one connection
+# emits. #88 halved every latency and moved the client measurement point. That fix also
+# removed the JA4L values ja4plus emitted on a UDP flow that carries no QUIC. The cases
+# that remain sit on a connection the reference holds no JA4L value for, and on one
+# repeated SYN-ACK.
+JA4L_MULTIPLICITY_ISSUE = 34
+
+# #101 owns the mirrored capture. `gre-erspan-vxlan.pcap` carries both directions of one
+# inner session between one outer address pair, so ja4plus groups the two directions as
+# two connections and reports no value.
+JA4L_MIRRORED_CAPTURE_ISSUE = 101
+
+# #102 owns the QUIC server measurement point. The reference reads the Initial packet
+# that completes the ServerHello. ja4plus cannot decrypt these server Initial packets,
+# so it reads the first one.
+JA4L_QUIC_SERVER_POINT_ISSUE = 102
+
+SUITE = "tests/test_spec_validation.py"
+
+# The counts the occurrence-key failure message reports.
+EXTRA_KEYS = re.compile(r": (\d+) extra occurrence key")
+MISSING_KEYS = re.compile(r"; (\d+) missing occurrence key")
+
+
+class _CaseCollector:
+    """Collect every conformance case and the message of every failed case."""
+
+    def __init__(self):
+        self.failures = []
+        self.params = {}
+
+    def pytest_collection_modifyitems(self, items):
+        self.params = {item.nodeid: getattr(item, "callspec", None) for item in items}
+
+    def pytest_runtest_logreport(self, report):
+        if report.when != "call" or report.outcome != "failed":
+            return
+        self.failures.append((report.nodeid, str(report.longrepr)))
+
+
+def _failure_line(message):
+    """Return the failure line of one case.
+
+    pytest prints the source of the test above the failure, and that source holds the
+    format string of the failure message. A search of the whole report therefore matches
+    text the case never produced. Read the failure line alone.
+
+    Args:
+        message: The report text of one failed case.
+
+    Returns:
+        The line that states the failure, or the whole report when it holds no such
+        line.
+    """
+    for line in message.splitlines():
+        if "Failed: " in line:
+            return line
+    return message
+
+
+def _count(pattern, message):
+    """Return the count the pattern reports, or 0 when the message holds none."""
+    match = pattern.search(message)
+    return int(match.group(1)) if match else 0
+
+
+def _ja4l_entry(method, message, occurrence_form):
+    """Return the register entry of one JA4L case, read from the failure message.
+
+    Args:
+        method: The method name, `JA4L-C` or `JA4L-S`.
+        message: The failure message of the case.
+        occurrence_form: True for an occurrence-key case, False for a value case.
+
+    Returns:
+        The entry, as a map of `issue` to the issue number and `cause` to one line.
+    """
+    mirrored_capture = {
+        "issue": JA4L_MIRRORED_CAPTURE_ISSUE,
+        "cause": "ja4plus groups the two directions of this mirrored capture as two "
+        "connections, so it emits no {} value.".format(method),
+    }
+
+    if occurrence_form:
+        extra = _count(EXTRA_KEYS, message)
+        missing = _count(MISSING_KEYS, message)
+        # A capture whose keys are only missing holds no defect of count. The mirrored
+        # capture is the one vector that reaches this branch.
+        if missing and not extra:
+            return mirrored_capture
+        if extra and missing:
+            return {
+                "issue": JA4L_MULTIPLICITY_ISSUE,
+                "cause": "ja4plus produces a different set of {} fingerprints.".format(method),
+            }
+        return {
+            "issue": JA4L_MULTIPLICITY_ISSUE,
+            "cause": "ja4plus emits more {} values than the reference holds.".format(method),
+        }
+    if "produced=<none>" in message:
+        return mirrored_capture
+    return {
+        "issue": JA4L_QUIC_SERVER_POINT_ISSUE,
+        "cause": "ja4plus reads the first server Initial packet, and the reference reads the "
+        "Initial packet that completes the ServerHello.",
+    }
+
+
+def _cause(method, message, occurrence_form):
+    """Return one line that states the cause, read from the failure message."""
+    if occurrence_form:
+        extra = "extra occurrence key" in message and "0 extra" not in message
+        missing = "missing occurrence key" in message and "0 missing" not in message
+        if extra and missing:
+            return "ja4plus produces a different set of {} fingerprints.".format(method)
+        if extra:
+            return "ja4plus produces a {} fingerprint the reference does not hold.".format(method)
+        return "ja4plus produces no {} fingerprint the reference holds.".format(method)
+    if "produced=<none>" in message:
+        return "ja4plus produces no {} value on this stream.".format(method)
+    return "The produced {} value differs from the reference.".format(method)
+
+
+def _entry(method, message, occurrence_form):
+    """Return one register entry, or raise KeyError when no issue owns the method."""
+    if method.startswith("JA4L"):
+        return _ja4l_entry(method, message, occurrence_form)
+    if method == "JA4H_ro":
+        return {
+            "issue": JA4H_RAW_ISSUE,
+            "cause": "ja4plus computes no JA4H raw form.",
+        }
+    if method == "JA4_o" and not occurrence_form and EMPTY_EXTENSION_HASH.search(message):
+        return {
+            "issue": JA4_O_EMPTY_EXTENSION_ISSUE,
+            "cause": "The client hello carries SNI as its only extension, and the reference "
+            "gives 000000000000 as the JA4_o extension hash.",
+        }
+    return {
+        "issue": OWNING_ISSUES[method],
+        "cause": _cause(method, message, occurrence_form),
+    }
+
+
+def _write(path, content):
+    """Write one JSON file with a trailing newline."""
+    with open(path, "w") as handle:
+        json.dump(content, handle, indent=2)
+        handle.write("\n")
+
+
+def _manifest(collector):
+    """Return the case count of each vector, read from the collected items."""
+    counts = {}
+    for callspec in collector.params.values():
+        if callspec is None or "pcap_path" not in callspec.params:
+            continue
+        if "method" not in callspec.params:
+            # `test_the_vector_is_readable` runs once for each vector, and it is not a
+            # conformance case. The manifest counts comparisons only.
+            continue
+        vector = callspec.params["pcap_path"].name
+        counts[vector] = counts.get(vector, 0) + 1
+    return {vector: counts[vector] for vector in sorted(counts)}
+
+
+def _committed(path=REGISTER_PATH):
+    """Return the committed register as the file writes it.
+
+    A key that still fails keeps its stored entry, so the entry must arrive with every
+    field and in the field order the file holds. A parsed entry carries neither: the
+    Deviation class names three fields, and it states no order.
+
+    Args:
+        path: The path of the register file. Defaults to the committed register.
+
+    Returns:
+        A map of key to the stored entry. An absent file gives an empty map.
+
+    Raises:
+        ValueError: An entry names no issue, or states no cause, or is not a table.
+    """
+    # The reader rejects a malformed entry, and this program refuses to write over one.
+    load_register(path)
+    if not Path(path).exists():
+        return {}
+    with open(path) as handle:
+        return json.load(handle)
+
+
+def _register(collector, committed):
+    """Return the register entries and the failures that are not conformance cases.
+
+    A structural test, such as the manifest check, carries no method parameter. It is
+    not a registrable case, so this program reports it instead of recording it.
+
+    A key the committed register already holds keeps its stored entry, byte for byte. A
+    cause this program reads from a failure message states the symptom, and a person
+    states the mechanism. #78, #96, #97 and #105 hold mechanisms no failure message
+    carries, and a mechanical rewrite would destroy them. The `decided` field records
+    that a person settled the deviation. This program measures no such field, so a
+    rewrite of a stored entry would delete it. A key that stops failing still disappears.
+
+    Args:
+        collector: The collector that ran the suite.
+        committed: The stored register, as `_committed` returns it.
+
+    Returns:
+        A (register, other) pair. The register maps each key to its entry, sorted by
+        key. `other` names each failure that is not a conformance case.
+    """
+    register = {}
+    other = []
+    for nodeid, message in collector.failures:
+        callspec = collector.params.get(nodeid)
+        params = callspec.params if callspec else {}
+        if "method" not in params or "pcap_path" not in params:
+            other.append(nodeid)
+            continue
+        method = params["method"]
+        vector = params["pcap_path"].name
+        message = _failure_line(message)
+        if "occurrence" in params:
+            stream = params["stream"]
+            key = value_key(vector, stream.index, stream.src_port, method, params["occurrence"])
+            occurrence_form = False
+        else:
+            key = occurrence_key(vector, method)
+            occurrence_form = True
+        held = committed.get(key)
+        register[key] = _entry(method, message, occurrence_form) if held is None else held
+    return {key: register[key] for key in sorted(register)}, other
+
+
+def main():
+    # Read the committed register before the run overwrites it.
+    committed = _committed()
+    os.environ[IGNORE_VARIABLE] = "1"
+    collector = _CaseCollector()
+    pytest.main([SUITE, "-m", "spec_validation", "-q", "-p", "no:randomly"], plugins=[collector])
+
+    manifest = _manifest(collector)
+    register, other = _register(collector, committed)
+    _write(MANIFEST_PATH, manifest)
+    _write(REGISTER_PATH, register)
+    print("wrote {} vectors to {}".format(len(manifest), MANIFEST_PATH))
+    print("wrote {} entries to {}".format(len(register), REGISTER_PATH))
+    for nodeid in other:
+        print("failed, and it is not a conformance case: {}".format(nodeid))
+
+
+if __name__ == "__main__":
+    main()

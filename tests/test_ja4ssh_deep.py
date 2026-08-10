@@ -8,43 +8,44 @@ connection tracking, and the fingerprinter class interface.
 
 import unittest
 import hashlib
-import time
 from scapy.all import IP, TCP, Raw, Ether
 
 from ja4plus.fingerprinters.ja4ssh import (
     JA4SSHFingerprinter,
     generate_ja4ssh,
 )
-from ja4plus.utils.ssh_utils import (
-    is_ssh_packet,
-    parse_ssh_packet,
-    extract_hassh,
-)
 
 
 def _ssh_banner(src, dst, sport, dport, banner):
     """Build an SSH banner packet."""
-    return (Ether() / IP(src=src, dst=dst)
-            / TCP(sport=sport, dport=dport)
-            / Raw(load=banner))
+    return Ether() / IP(src=src, dst=dst) / TCP(sport=sport, dport=dport) / Raw(load=banner)
 
 
 def _ssh_data(src, dst, sport, dport, size):
     """Build an SSH data packet with specified payload size."""
-    return (Ether() / IP(src=src, dst=dst)
-            / TCP(sport=sport, dport=dport)
-            / Raw(load=b"SSH-2.0-" + b"X" * (size - 8)))
+    return (
+        Ether()
+        / IP(src=src, dst=dst)
+        / TCP(sport=sport, dport=dport)
+        / Raw(load=b"SSH-2.0-" + b"X" * (size - 8))
+    )
 
 
-def _kexinit_packet(src, dst, sport, dport, kex="curve25519-sha256",
-                     enc="aes128-ctr", mac="hmac-sha2-256", comp="none"):
+def _kexinit_packet(
+    src,
+    dst,
+    sport,
+    dport,
+    kex="curve25519-sha256",
+    enc="aes128-ctr",
+    mac="hmac-sha2-256",
+    comp="none",
+):
     """Build a simplified KEXINIT packet."""
-    payload = (b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
-               b"SSH_MSG_KEXINIT" +
-               f"{kex};{enc};{mac};{comp}".encode())
-    return (Ether() / IP(src=src, dst=dst)
-            / TCP(sport=sport, dport=dport)
-            / Raw(load=payload))
+    payload = (
+        b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAASSH_MSG_KEXINIT" + f"{kex};{enc};{mac};{comp}".encode()
+    )
+    return Ether() / IP(src=src, dst=dst) / TCP(sport=sport, dport=dport) / Raw(load=payload)
 
 
 class TestJA4SSHInteractiveSession(unittest.TestCase):
@@ -55,10 +56,12 @@ class TestJA4SSHInteractiveSession(unittest.TestCase):
         fp = JA4SSHFingerprinter(packet_count=10)
 
         # Banners
-        fp.process_packet(_ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22,
-                                       b"SSH-2.0-OpenSSH_8.2p1\r\n"))
-        fp.process_packet(_ssh_banner("10.0.0.2", "10.0.0.1", 22, 52416,
-                                       b"SSH-2.0-OpenSSH_7.6p1\r\n"))
+        fp.process_packet(
+            _ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22, b"SSH-2.0-OpenSSH_8.2p1\r\n")
+        )
+        fp.process_packet(
+            _ssh_banner("10.0.0.2", "10.0.0.1", 22, 52416, b"SSH-2.0-OpenSSH_7.6p1\r\n")
+        )
 
         # Interactive data: 36-byte packets (SSH-2.0- + 28 bytes)
         result = None
@@ -85,10 +88,12 @@ class TestJA4SSHFileTransfer(unittest.TestCase):
         """File download: server sends large packets."""
         fp = JA4SSHFingerprinter(packet_count=10)
 
-        fp.process_packet(_ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22,
-                                       b"SSH-2.0-OpenSSH_8.2p1\r\n"))
-        fp.process_packet(_ssh_banner("10.0.0.2", "10.0.0.1", 22, 52416,
-                                       b"SSH-2.0-OpenSSH_7.6p1\r\n"))
+        fp.process_packet(
+            _ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22, b"SSH-2.0-OpenSSH_8.2p1\r\n")
+        )
+        fp.process_packet(
+            _ssh_banner("10.0.0.2", "10.0.0.1", 22, 52416, b"SSH-2.0-OpenSSH_7.6p1\r\n")
+        )
 
         result = None
         for i in range(20):
@@ -173,8 +178,9 @@ class TestJA4SSHHASSSExtraction(unittest.TestCase):
         enc = "aes128-ctr"
         mac = "hmac-sha2-256"
         comp = "none"
-        packet = _kexinit_packet("10.0.0.1", "10.0.0.2", 52416, 22,
-                                  kex=kex, enc=enc, mac=mac, comp=comp)
+        packet = _kexinit_packet(
+            "10.0.0.1", "10.0.0.2", 52416, 22, kex=kex, enc=enc, mac=mac, comp=comp
+        )
         result = generate_ja4ssh(packet)
         hassh_value = result.split("_")[1]
 
@@ -184,10 +190,12 @@ class TestJA4SSHHASSSExtraction(unittest.TestCase):
 
     def test_different_algorithms_different_hassh(self):
         """Different algorithm sets should produce different HASSH."""
-        pkt_a = _kexinit_packet("10.0.0.1", "10.0.0.2", 52416, 22,
-                                 kex="curve25519-sha256", enc="aes128-ctr")
-        pkt_b = _kexinit_packet("10.0.0.1", "10.0.0.2", 52416, 22,
-                                 kex="diffie-hellman-group14-sha256", enc="aes256-ctr")
+        pkt_a = _kexinit_packet(
+            "10.0.0.1", "10.0.0.2", 52416, 22, kex="curve25519-sha256", enc="aes128-ctr"
+        )
+        pkt_b = _kexinit_packet(
+            "10.0.0.1", "10.0.0.2", 52416, 22, kex="diffie-hellman-group14-sha256", enc="aes256-ctr"
+        )
         result_a = generate_ja4ssh(pkt_a)
         result_b = generate_ja4ssh(pkt_b)
         self.assertNotEqual(result_a, result_b)
@@ -228,11 +236,13 @@ class TestJA4SSHConnectionTracking(unittest.TestCase):
         fp = JA4SSHFingerprinter(packet_count=5)
 
         # Connection 1
-        fp.process_packet(_ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22,
-                                       b"SSH-2.0-OpenSSH_8.2p1\r\n"))
+        fp.process_packet(
+            _ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22, b"SSH-2.0-OpenSSH_8.2p1\r\n")
+        )
         # Connection 2
-        fp.process_packet(_ssh_banner("10.0.0.3", "10.0.0.4", 52417, 22,
-                                       b"SSH-2.0-OpenSSH_8.2p1\r\n"))
+        fp.process_packet(
+            _ssh_banner("10.0.0.3", "10.0.0.4", 52417, 22, b"SSH-2.0-OpenSSH_8.2p1\r\n")
+        )
 
         self.assertEqual(len(fp.connections), 2)
 
@@ -240,8 +250,9 @@ class TestJA4SSHConnectionTracking(unittest.TestCase):
         """HASSH should be collected in connection tracking."""
         fp = JA4SSHFingerprinter(packet_count=100)
 
-        fp.process_packet(_ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22,
-                                       b"SSH-2.0-OpenSSH_8.2p1\r\n"))
+        fp.process_packet(
+            _ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22, b"SSH-2.0-OpenSSH_8.2p1\r\n")
+        )
         fp.process_packet(_kexinit_packet("10.0.0.1", "10.0.0.2", 52416, 22))
 
         hassh_fps = fp.get_hassh_fingerprints()
@@ -259,8 +270,9 @@ class TestJA4SSHFingerprinterClass(unittest.TestCase):
 
     def test_reset(self):
         fp = JA4SSHFingerprinter(packet_count=10)
-        fp.process_packet(_ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22,
-                                       b"SSH-2.0-OpenSSH_8.2p1\r\n"))
+        fp.process_packet(
+            _ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22, b"SSH-2.0-OpenSSH_8.2p1\r\n")
+        )
         fp.reset()
         self.assertEqual(len(fp.fingerprints), 0)
         self.assertEqual(len(fp.connections), 0)
@@ -269,9 +281,12 @@ class TestJA4SSHFingerprinterClass(unittest.TestCase):
     def test_non_ssh_ignored(self):
         """Non-SSH packets should be ignored."""
         fp = JA4SSHFingerprinter(packet_count=10)
-        packet = (Ether() / IP(src="10.0.0.1", dst="10.0.0.2")
-                  / TCP(sport=12345, dport=22)
-                  / Raw(load=b"GET / HTTP/1.1\r\n\r\n"))
+        packet = (
+            Ether()
+            / IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=22)
+            / Raw(load=b"GET / HTTP/1.1\r\n\r\n")
+        )
         result = fp.process_packet(packet)
         self.assertIsNone(result)
 
@@ -286,9 +301,13 @@ class TestJA4SSHFingerprinterClass(unittest.TestCase):
         """Packet without TCP should return None."""
         fp = JA4SSHFingerprinter(packet_count=10)
         from scapy.all import UDP
-        packet = (Ether() / IP(src="10.0.0.1", dst="10.0.0.2")
-                  / UDP(sport=52416, dport=22)
-                  / Raw(load=b"SSH-2.0-test\r\n"))
+
+        packet = (
+            Ether()
+            / IP(src="10.0.0.1", dst="10.0.0.2")
+            / UDP(sport=52416, dport=22)
+            / Raw(load=b"SSH-2.0-test\r\n")
+        )
         result = fp.process_packet(packet)
         self.assertIsNone(result)
 
@@ -299,10 +318,12 @@ class TestJA4SSHFormat(unittest.TestCase):
     def test_format_three_parts(self):
         fp = JA4SSHFingerprinter(packet_count=5)
 
-        fp.process_packet(_ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22,
-                                       b"SSH-2.0-OpenSSH_8.2p1\r\n"))
-        fp.process_packet(_ssh_banner("10.0.0.2", "10.0.0.1", 22, 52416,
-                                       b"SSH-2.0-OpenSSH_7.6p1\r\n"))
+        fp.process_packet(
+            _ssh_banner("10.0.0.1", "10.0.0.2", 52416, 22, b"SSH-2.0-OpenSSH_8.2p1\r\n")
+        )
+        fp.process_packet(
+            _ssh_banner("10.0.0.2", "10.0.0.1", 22, 52416, b"SSH-2.0-OpenSSH_7.6p1\r\n")
+        )
 
         result = None
         for i in range(20):

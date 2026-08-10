@@ -2,14 +2,330 @@
 SSH utility functions for JA4+ fingerprinting.
 """
 
+# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
+# without this import.
+from __future__ import annotations
+
 import struct
 import hashlib
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# The SSH transport layer frames a message as a four-byte length field and that many
+# further bytes. RFC 4253 section 6 states it, and the length excludes the field.
+SSH_LENGTH_FIELD_BYTES = 4
 
-def parse_ssh_packet(data):
+# The smallest and the largest length field this project follows. `is_ssh_packet` reads
+# the same bounds, and a length outside them belongs to no SSH message.
+MIN_SSH_PACKET_LENGTH = 2
+MAX_SSH_PACKET_LENGTH = 65536
+
+# The message code of SSH_MSG_NEWKEYS. RFC 4253 section 7.3 states it. The direction
+# encrypts every later message, so no reader can follow the length after it.
+SSH_MSG_NEWKEYS = 21
+
+# The offset of the message code inside the message body. The padding length takes the
+# first byte, and RFC 4253 section 6 puts the code in the second.
+SSH_MESSAGE_CODE_OFFSET = 1
+
+# The longest version line this project reads. RFC 4253 section 4.2 limits the line to
+# 255 bytes, and a longer line belongs to no SSH connection.
+MAX_SSH_BANNER_BYTES = 255
+
+# The tracker states. `banner` waits for the version line, `messages` reads the length
+# field of each message, and `opaque` holds a direction whose lengths no reader can
+# follow.
+_BANNER = "banner"
+_MESSAGES = "messages"
+_OPAQUE = "opaque"
+
+# The largest number of segments the tracker holds while it waits for a gap to fill. A
+# direction that loses a segment never fills the gap, so the buffer needs a bound.
+MAX_PENDING_SEGMENTS = 32
+
+# The largest number of payload bytes the tracker holds while it waits for a gap to
+# fill. One TCP window of maximum-size segments stays below this bound.
+MAX_PENDING_BYTES = 65536
+
+# The size of the TCP sequence space. RFC 793 section 3.3 states that a sequence number
+# is 32 bits, and that it wraps.
+SEQ_SPACE = 1 << 32
+
+
+def _offset(seq: int, base: int) -> int:
+    """Return the signed distance from the base sequence number to the sequence number.
+
+    A sequence number wraps at 2**32, so a plain comparison reads a wrapped number as a
+    number far behind the base. This function reads the distance in the shorter
+    direction around the sequence space.
+
+    Args:
+        seq: The sequence number to measure.
+        base: The sequence number to measure from.
+
+    Returns:
+        A number in the range -2**31 to 2**31 - 1. The number is positive when the
+        sequence number follows the base.
+    """
+    return ((seq - base + (SEQ_SPACE // 2)) % SEQ_SPACE) - (SEQ_SPACE // 2)
+
+
+class SSHMessageTracker:
+    """Report whether one TCP segment completes an SSH message.
+
+    The FoxIO reference counts the packets `tshark` labels `ssh`. `tshark` reassembles
+    an SSH message that spans two TCP segments, and it labels only the segment that
+    completes the message. One tracker follows one direction of one connection, and it
+    reproduces that boundary.
+
+    The tracker reads the length field only while the direction sends plaintext. Before
+    the version banner, and after SSH_MSG_NEWKEYS, it reports every segment as one SSH
+    packet, because neither phase carries a length a reader can trust.
+
+    A caller passes every payload segment of the direction through `add_segment`, which
+    reads the segments in sequence order. A caller that holds no sequence number calls
+    `completes_message`, which reads the segments in the order they arrive.
+    """
+
+    def __init__(self) -> None:
+        """Build the tracker of one direction, positioned before the version banner."""
+        self._state = _BANNER
+        self._banner = b""
+        self._length_field = b""
+        self._remaining = 0
+        self._body_position = 0
+        self._message_code: int | None = None
+        self._next_seq: int | None = None
+        self._pending: dict[int, bytes] = {}
+        self._pending_bytes = 0
+
+    def add_segment(self, payload: bytes, seq: int) -> list[int]:
+        """Return the lengths of the segments that complete an SSH message.
+
+        The tracker reads the payload of the direction in sequence order. It drops a
+        segment the direction already sent, and it holds a segment that arrives before
+        its predecessor until the predecessor arrives.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+            seq: The TCP sequence number of the first payload byte.
+
+        Returns:
+            A list of segment lengths, in sequence order. The list holds one entry for
+            each segment the reference counts as one SSH packet. A duplicate segment
+            produces an empty list. A segment that arrives before its predecessor
+            produces an empty list until the predecessor arrives.
+        """
+        if not payload:
+            return []
+        if self._next_seq is None:
+            self._next_seq = seq
+        if self._state == _OPAQUE:
+            # An opaque direction follows no message boundary, so the order of the
+            # segments changes nothing. Every segment is one SSH packet.
+            return [len(payload)]
+        if _offset(seq, self._next_seq) > 0:
+            return self._hold(payload, seq)
+
+        counted = self._read_segment(payload, seq)
+        while self._state != _OPAQUE:
+            ready = self._take_ready()
+            if ready is None:
+                break
+            counted.extend(self._read_segment(*ready))
+        if self._state == _OPAQUE:
+            self._release()
+        return counted
+
+    def _read_segment(self, payload: bytes, seq: int) -> list[int]:
+        """Return the length of the segment when it completes an SSH message.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+            seq: The TCP sequence number of the first payload byte.
+
+        Returns:
+            A list that holds the segment length, or an empty list. The list is empty
+            when the direction already sent every byte of the segment, and when the
+            segment holds no message end.
+        """
+        # `add_segment` sets `_next_seq` before it calls this method, so this guard
+        # reaches no segment. It states the value for the type checker, and it returns
+        # the empty result rather than raise, because a parser that cannot read a
+        # segment returns nothing.
+        next_seq = self._next_seq
+        if next_seq is None:
+            return []
+
+        # A retransmission repeats the bytes the tracker already read, so the tracker
+        # reads only the part of the segment that follows them.
+        overlap = -_offset(seq, next_seq)
+        if overlap >= len(payload):
+            return []
+        completed = self.completes_message(payload[overlap:])
+        self._next_seq = (seq + len(payload)) % SEQ_SPACE
+        return [len(payload)] if completed else []
+
+    def _hold(self, payload: bytes, seq: int) -> list[int]:
+        """Hold a segment that arrives before its predecessor.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+            seq: The TCP sequence number of the first payload byte.
+
+        Returns:
+            An empty list, or the segment length when the buffer reaches its bound. A
+            gap that never fills turns the tracker opaque, and an opaque tracker counts
+            every segment.
+        """
+        held = self._pending.get(seq)
+        if held is not None:
+            if len(held) >= len(payload):
+                return []
+            self._pending_bytes -= len(held)
+        self._pending[seq] = payload
+        self._pending_bytes += len(payload)
+        if len(self._pending) > MAX_PENDING_SEGMENTS or self._pending_bytes > MAX_PENDING_BYTES:
+            self._state = _OPAQUE
+            self._release()
+            return [len(payload)]
+        return []
+
+    def _take_ready(self) -> tuple[bytes, int] | None:
+        """Return the held segment that starts at or before the next sequence number.
+
+        Returns:
+            The payload and the sequence number of that segment, or None when the
+            buffer holds no such segment.
+        """
+        # `add_segment` sets `_next_seq` before it calls this method, so this guard
+        # reaches no segment. It states the value for the type checker, and it returns
+        # nothing rather than raise, because a parser that cannot read a segment returns
+        # nothing.
+        next_seq = self._next_seq
+        if next_seq is None:
+            return None
+
+        for seq in sorted(self._pending, key=lambda held: _offset(held, next_seq)):
+            if _offset(seq, next_seq) <= 0:
+                payload = self._pending.pop(seq)
+                self._pending_bytes -= len(payload)
+                return payload, seq
+        return None
+
+    def _release(self) -> None:
+        """Drop every held segment."""
+        self._pending.clear()
+        self._pending_bytes = 0
+
+    def completes_message(self, payload: bytes) -> bool:
+        """Return True when at least one SSH message ends in this segment.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+
+        Returns:
+            True when the reference counts this segment as one SSH packet. Returns
+            False for an empty segment, and False for a segment that holds part of a
+            message and no message end.
+        """
+        if not payload:
+            return False
+        if self._state == _OPAQUE:
+            return True
+        if self._state == _BANNER:
+            return self._read_banner(payload)
+        return self._read_messages(payload)
+
+    def _read_banner(self, payload: bytes) -> bool:
+        """Return True when the version line ends in this segment.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+
+        Returns:
+            True when the segment holds the end of the version line. A capture that
+            starts after the banner holds no message boundary, so the tracker turns
+            opaque and returns True. A line above MAX_SSH_BANNER_BYTES does the same.
+        """
+        # The version line spans two segments on a small maximum transmission unit, so
+        # the tracker matches the prefix of the line it holds so far.
+        self._banner += payload
+        prefix = b"SSH-"[: len(self._banner)]
+        if not self._banner.startswith(prefix):
+            self._banner = b""
+            self._state = _OPAQUE
+            return True
+        end = self._banner.find(b"\n")
+        if end < 0:
+            if len(self._banner) > MAX_SSH_BANNER_BYTES:
+                self._banner = b""
+                self._state = _OPAQUE
+                return True
+            return False
+        rest = self._banner[end + 1 :]
+        self._banner = b""
+        self._state = _MESSAGES
+        if rest:
+            self._read_messages(rest)
+        return True
+
+    def _read_messages(self, payload: bytes) -> bool:
+        """Return True when at least one message ends in this segment.
+
+        Args:
+            payload: The TCP payload of one segment, as bytes.
+
+        Returns:
+            True when a message end falls inside the segment. A length field this
+            parser cannot trust turns the tracker opaque and returns True.
+        """
+        completed = False
+        position = 0
+        while position < len(payload):
+            if self._remaining > 0:
+                taken = min(self._remaining, len(payload) - position)
+                # A body that spans two segments delivers the message code late, so the
+                # tracker reads the code at the body offset and not at the segment
+                # offset.
+                code_index = SSH_MESSAGE_CODE_OFFSET - self._body_position
+                if self._message_code is None and 0 <= code_index < taken:
+                    self._message_code = payload[position + code_index]
+                self._body_position += taken
+                self._remaining -= taken
+                position += taken
+                if self._remaining == 0:
+                    completed = True
+                    if self._message_code == SSH_MSG_NEWKEYS:
+                        self._state = _OPAQUE
+                        return True
+                continue
+
+            needed = SSH_LENGTH_FIELD_BYTES - len(self._length_field)
+            if len(payload) - position < needed:
+                # The length field spans two segments. Keep the bytes that arrived.
+                self._length_field += payload[position:]
+                return completed
+            self._length_field += payload[position : position + needed]
+            position += needed
+            packet_length = struct.unpack(">I", self._length_field)[0]
+            self._length_field = b""
+
+            if not MIN_SSH_PACKET_LENGTH <= packet_length <= MAX_SSH_PACKET_LENGTH:
+                # Every packet is hostile input. A length this parser cannot trust ends
+                # the walk, and the tracker counts every later segment.
+                self._state = _OPAQUE
+                return True
+
+            self._remaining = packet_length
+            self._body_position = 0
+            self._message_code = None
+        return completed
+
+
+def parse_ssh_packet(data: bytes) -> dict[str, Any] | None:
     """
     Parse SSH packet and extract information.
 
@@ -25,11 +341,8 @@ def parse_ssh_packet(data):
     # Check for SSH banner
     if data.startswith(b"SSH-"):
         try:
-            version_string = data.split(b"\r\n")[0].decode('utf-8', errors='ignore')
-            return {
-                "type": "version",
-                "version_string": version_string
-            }
+            version_string = data.split(b"\r\n")[0].decode("utf-8", errors="ignore")
+            return {"type": "version", "version_string": version_string}
         except (UnicodeDecodeError, AttributeError) as e:
             logger.debug(f"Failed to parse SSH banner: {e}")
             return None
@@ -37,7 +350,7 @@ def parse_ssh_packet(data):
     # Try to parse as SSH binary packet
     # SSH binary packet format: uint32 packet_length, byte padding_length, byte[n] payload
     try:
-        packet_length = struct.unpack('>I', data[:4])[0]
+        packet_length = struct.unpack(">I", data[:4])[0]
 
         # Sanity check packet length
         if packet_length < 2 or packet_length > 65536:
@@ -49,7 +362,7 @@ def parse_ssh_packet(data):
         if len(data) < 5:
             return None
 
-        padding_length = data[4]
+        _padding_length = data[4]
 
         if len(data) < 6:
             return None
@@ -78,7 +391,7 @@ def parse_ssh_packet(data):
         return None
 
 
-def _parse_test_kexinit(data):
+def _parse_test_kexinit(data: bytes) -> dict[str, Any] | None:
     """Parse simplified KEXINIT format used in tests."""
     try:
         content = data.split(b"SSH_MSG_KEXINIT")[1]
@@ -87,17 +400,17 @@ def _parse_test_kexinit(data):
         if len(algorithm_parts) >= 4:
             return {
                 "type": "kexinit",
-                "kex_algorithms": algorithm_parts[0].decode('utf-8', errors='ignore'),
-                "encryption_algorithms": algorithm_parts[1].decode('utf-8', errors='ignore'),
-                "mac_algorithms": algorithm_parts[2].decode('utf-8', errors='ignore'),
-                "compression_algorithms": algorithm_parts[3].decode('utf-8', errors='ignore')
+                "kex_algorithms": algorithm_parts[0].decode("utf-8", errors="ignore"),
+                "encryption_algorithms": algorithm_parts[1].decode("utf-8", errors="ignore"),
+                "mac_algorithms": algorithm_parts[2].decode("utf-8", errors="ignore"),
+                "compression_algorithms": algorithm_parts[3].decode("utf-8", errors="ignore"),
             }
     except (IndexError, UnicodeDecodeError, AttributeError) as e:
         logger.debug(f"Failed to parse test KEXINIT: {e}")
     return None
 
 
-def _parse_kexinit(data):
+def _parse_kexinit(data: bytes) -> dict[str, Any] | None:
     """
     Parse a real SSH KEXINIT message.
 
@@ -124,12 +437,12 @@ def _parse_kexinit(data):
         for _ in range(10):
             if pos + 4 > len(data):
                 break
-            name_list_len = struct.unpack('>I', data[pos:pos + 4])[0]
+            name_list_len = struct.unpack(">I", data[pos : pos + 4])[0]
             pos += 4
 
             if pos + name_list_len > len(data):
                 break
-            name_list = data[pos:pos + name_list_len].decode('utf-8', errors='ignore')
+            name_list = data[pos : pos + name_list_len].decode("utf-8", errors="ignore")
             algorithm_lists.append(name_list)
             pos += name_list_len
 
@@ -143,7 +456,9 @@ def _parse_kexinit(data):
                 "mac_algorithms": algorithm_lists[4],
                 "mac_algorithms_s2c": algorithm_lists[5],
                 "compression_algorithms": algorithm_lists[6] if len(algorithm_lists) > 6 else "",
-                "compression_algorithms_s2c": algorithm_lists[7] if len(algorithm_lists) > 7 else "",
+                "compression_algorithms_s2c": algorithm_lists[7]
+                if len(algorithm_lists) > 7
+                else "",
             }
     except (struct.error, ValueError, IndexError, UnicodeDecodeError) as e:
         logger.debug(f"Failed to parse SSH KEXINIT: {e}")
@@ -151,7 +466,7 @@ def _parse_kexinit(data):
     return None
 
 
-def extract_hassh(data):
+def extract_hassh(data: bytes) -> str | None:
     """
     Extract HASSH from an SSH KEXINIT packet.
 
@@ -165,16 +480,19 @@ def extract_hassh(data):
     """
     ssh_info = parse_ssh_packet(data)
 
-    if ssh_info and ssh_info.get('type') == 'kexinit':
+    if ssh_info and ssh_info.get("type") == "kexinit":
         try:
             hassh_string = (
-                ssh_info.get('kex_algorithms', '') + ';' +
-                ssh_info.get('encryption_algorithms', '') + ';' +
-                ssh_info.get('mac_algorithms', '') + ';' +
-                ssh_info.get('compression_algorithms', '')
+                ssh_info.get("kex_algorithms", "")
+                + ";"
+                + ssh_info.get("encryption_algorithms", "")
+                + ";"
+                + ssh_info.get("mac_algorithms", "")
+                + ";"
+                + ssh_info.get("compression_algorithms", "")
             )
 
-            hassh = hashlib.md5(hassh_string.encode('utf-8')).hexdigest()
+            hassh = hashlib.md5(hassh_string.encode("utf-8")).hexdigest()
             return hassh
 
         except (ValueError, TypeError, UnicodeDecodeError) as e:
@@ -183,7 +501,7 @@ def extract_hassh(data):
     return None
 
 
-def is_ssh_packet(data):
+def is_ssh_packet(data: bytes) -> bool:
     """
     Check if a packet is an SSH packet.
 
@@ -208,7 +526,7 @@ def is_ssh_packet(data):
 
     # Check SSH binary packet format
     try:
-        packet_length = struct.unpack('>I', data[:4])[0]
+        packet_length = struct.unpack(">I", data[:4])[0]
 
         # SSH packets have reasonable lengths
         if 2 <= packet_length <= 65536 and len(data) >= 6:

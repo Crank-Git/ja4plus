@@ -14,11 +14,17 @@ from ja4plus.fingerprinters.ja4 import (
     generate_ja4,
     get_raw_fingerprint,
 )
-from ja4plus.utils.tls_utils import is_grease_value
 
 
-def _build_ch(version=0x0303, ciphers=None, sni=None, alpn=None,
-              supported_versions=None, sig_algs=None, extra_exts=None):
+def _build_ch(
+    version=0x0303,
+    ciphers=None,
+    sni=None,
+    alpn=None,
+    supported_versions=None,
+    sig_algs=None,
+    extra_exts=None,
+):
     """Helper to build a TLS ClientHello record."""
     if ciphers is None:
         ciphers = [0x1301]
@@ -90,7 +96,7 @@ def _tls_info(**kwargs):
         "supported_versions": [],
         "sni": None,
         "ciphers": [0x1301],
-        "extensions": [0x000a, 0x000b],
+        "extensions": [0x000A, 0x000B],
         "alpn_protocols": [],
         "signature_algorithms": [],
     }
@@ -122,7 +128,11 @@ class TestJA4VersionMapping(unittest.TestCase):
         self.assertEqual(self._fp_version(0x0300), "s3")
 
     def test_ssl20(self):
-        self.assertEqual(self._fp_version(0x0200), "s2")
+        # FoxIO commit `3e02a27` corrected the value, and #227 holds the reading.
+        self.assertEqual(self._fp_version(0x0002), "s2")
+
+    def test_the_retracted_ssl20_value_reaches_the_fallback(self):
+        self.assertEqual(self._fp_version(0x0200), "00")
 
     def test_dtls10(self):
         self.assertEqual(self._fp_version(0xFEFF), "d1")
@@ -243,10 +253,7 @@ class TestJA4GREASEFiltering(unittest.TestCase):
 
     def test_grease_in_supported_versions_filtered(self):
         """GREASE values in supported_versions should be filtered."""
-        info = _tls_info(
-            version=0x0303,
-            supported_versions=[0x0A0A, 0x0304, 0xFAFA]
-        )
+        info = _tls_info(version=0x0303, supported_versions=[0x0A0A, 0x0304, 0xFAFA])
         fp = generate_ja4(info)
         self.assertTrue(fp.split("_")[0].startswith("t13"))
 

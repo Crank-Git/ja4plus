@@ -242,6 +242,10 @@ def cmd_pipe(args):
         except subprocess.TimeoutExpired:
             proc.kill()
 
+    # The capture ends here. JA4SSH emits the window each connection holds open.
+    for fp in fingerprinters.values():
+        fp.close_open_windows()
+
     print(f"\nProcessed {packet_count} packets.")
     print_summary(fingerprinters)
 
@@ -291,6 +295,10 @@ def _analyze_pcap(path):
 
     for packet in packets:
         fingerprint_packet(packet, fingerprinters)
+
+    # The capture ends here. JA4SSH emits the window each connection holds open.
+    for fp in fingerprinters.values():
+        fp.close_open_windows()
 
     print_summary(fingerprinters)
 

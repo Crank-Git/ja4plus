@@ -1,28 +1,212 @@
 name: Tests
 
+# `dev` is the default branch and every pull request targets it. `master` stays in both
+# lists, so a promotion to the release branch still runs every check.
+#
+# `workflow_dispatch` starts a run by hand. GitHub sends a push event and a pull request
+# event through the webhook path. It starts a manual run through the interface instead.
+# Where a push and a pull request create no run, a manual run is the only way to get one.
+# See issue #85.
+#
+# **#459 measured the cause of an absent run, and it is not a throttled webhook path.** A
+# skip keyword anywhere in a commit message creates no run for that commit. GitHub reads
+# five keywords, `[skip ci]` among them, and it matches the subject and the body. It reads
+# no intent, so a sentence that states a commit carries no keyword carries one. The head
+# commit of pull request #444 and the head commit of pull request #458 each held such a
+# sentence, and neither created a run from the pull-request event.
+#
+# **An absent run is not a passed run.** `gh pr checks` writes "no checks reported", which
+# refuses no merge. `.claude/rules/batch-gate.md` states the procedure, and
+# `python -m tests.batch_gate --pr <number>` holds the condition.
+#
+# **The `pull_request` filter matches the base branch of a pull request, and #438 measured
+# what that cost.** A filter of `[master, dev]` accepts the batch pull request and the
+# promotion, and it accepts no member pull request, so a pull request into an integration
+# branch created no run at all. `tests/test_round_entry_existence.py` therefore reached the
+# `test` job on a batch pull request alone, where the change set spans the whole batch and
+# every member has already recorded a round. **The check passed by construction and it
+# never refused the member pull request it exists to refuse.** The user ruled on 2026-08-10
+# that the filter widens to the integration branches.
+#
+# **The widened filter costs no run that the batch model saved.** A member commit ends with
+# a skip keyword by design, and #459 measured that such a commit creates no run for any
+# event. A member pull request therefore still creates no run, and a keyword-free head is
+# the one head that now starts one.
 on:
   push:
-    branches: [master]
+    branches: [master, dev]
   pull_request:
-    branches: [master]
+    # `master` and `dev` accept the batch pull request and the promotion. `batch/**` and
+    # `epic/**` accept a member pull request, which the paragraph above explains.
+    branches: [master, dev, "batch/**", "epic/**"]
+  workflow_dispatch:
+
+env:
+  # The floor starts at the measured baseline of 70.4%, rounded down to a whole percent.
+  # It rises with each epic. It never falls.
+  COVERAGE_FLOOR: "70"
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Check lint rules
+        run: ruff check ja4plus/ tests/
+
+      - name: Check formatting
+        run: ruff format --check ja4plus/ tests/
+
+      - name: Check types
+        # FR-typed-api-8 states this command. #46 turned `--strict` on, and the test
+        # suite stays out of the type check.
+        run: mypy --strict ja4plus/
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         include:
           - os: macos-latest
             python-version: "3.12"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Fetch the base commit of the pull request
+        # `tests/test_round_entry_existence.py` reads the change set of the branch against
+        # a reference commit. The step above makes a clone of depth 1, which holds no
+        # `origin/dev` ref and no history behind the checked-out commit, so
+        # `git merge-base` fails and the case skipped on every job before #438.
+        #
+        # **`git diff` and `git show` read a commit that no history connects to `HEAD`.**
+        # A diff compares two trees, so one extra commit is the whole requirement. #438
+        # measured the pair on a clone of depth 1: both commands answered and
+        # `git merge-base` exited 1.
+        #
+        # **#438 declined `fetch-depth: 0` on cost.** A read of 2026-08-10 reports 14844 KB
+        # for the clone of depth 1, 15452 KB after this fetch, and 18728 KB for the whole
+        # history of every branch. This step therefore costs 608 KB against 3884 KB, and
+        # the `fetch-depth: 0` cost rises with every commit the project makes.
+        #
+        # A push event carries no base commit, and a push to the integration branch has no
+        # change set to read. The case skips there and the `if` condition states that.
+        #
+        # **The fetch writes a ref, because a commit that no ref reaches is unreachable.**
+        # A bare `git fetch origin <sha>` writes `FETCH_HEAD` and no ref. #438 measured the
+        # ref form on a clone of depth 1: the commit survived `git gc --prune=now` and both
+        # `git diff` and `git show` still read it.
+        #
+        # **#438 declined `continue-on-error` on this step.** A failed fetch leaves the
+        # variable empty and the case skips, and `.claude/rules/batch-gate.md` states that
+        # an absent result is not a passed result. A red step names the state, and a green
+        # job over a silent skip is the failure this issue exists to remove.
+        #
+        # `${{ }}` reaches the `env` block and never the `run` block, because an expression
+        # inside a shell command is a script-injection path.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"
+          echo "ROUND_ENTRY_REFERENCE=$BASE_SHA" >> "$GITHUB_ENV"
+
+      - name: Resolve the reference commit of a run that carries no pull request
+        # **A manual run carries no pull request, so the step above runs nowhere.** #541
+        # measured the result on a manual run: `ROUND_ENTRY_REFERENCE` stayed empty,
+        # `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
+        # skipped on all six jobs of the matrix, and the `skip-gate` job then failed the run
+        # on a case the suite ran nowhere. Run
+        # https://github.com/Crank-Git/ja4plus/actions/runs/31421263768 holds that
+        # measurement, where every other job concluded `success`.
+        #
+        # **`.claude/rules/batch-gate.md` names the manual run as the recovery path where a
+        # push event and a pull-request event created none.** A red run on every branch
+        # leaves a reader unable to tell a real failure from that state, so this step gives
+        # the case a reference commit rather than excuse its skip.
+        #
+        # **This step reads every event that carries no pull request, and a push is such an
+        # event.** `actions/checkout` writes one remote-tracking ref, which is the ref the
+        # event names. A push to `dev` therefore holds `origin/dev` and `git merge-base`
+        # answers, and a push to `master` holds `origin/master` alone and it answers
+        # nothing. **A promotion to `master` is a push of the second kind.** A condition
+        # that named the manual event alone would leave the release run red. The two `if`
+        # conditions now cover every event this file accepts.
+        #
+        # **The clone of depth 1 holds no history, so the provider reads the merge base.**
+        # The basehead form is `BASE...HEAD` and the response holds `merge_base_commit`.
+        # Verified against
+        # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28 (retrieved
+        # 2026-08-10).
+        #
+        # The read names `dev`, which is the branch `REFERENCE_BRANCHES` reads first. The
+        # runner and the local gate therefore read the change set against the same commit.
+        #
+        # **This step declines `continue-on-error` for the reason #438 states.** A failed
+        # read leaves the variable empty and the case skips, and the `skip-gate` job then
+        # fails the run on a case that ran nowhere. A red step names the state instead.
+        #
+        # `GITHUB_REPOSITORY` and `GITHUB_SHA` reach the shell as environment variables, so
+        # no `${{ }}` expression reaches a `run` block.
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MERGE_BASE=$(gh api "repos/$GITHUB_REPOSITORY/compare/dev...$GITHUB_SHA" --jq .merge_base_commit.sha)
+          git fetch --depth=1 origin "+$MERGE_BASE:refs/ja4plus/round-entry-base"
+          echo "ROUND_ENTRY_REFERENCE=$MERGE_BASE" >> "$GITHUB_ENV"
+
+      - name: Fetch the two recorded change sets
+        # `tests/test_round_entry_existence.py` reads two commits of this repository, each
+        # against its parent. `DEFECT_SHA` is the commit #412 shipped, which recorded no
+        # round, and `CONTROL_SHA` is the commit #429 shipped, which recorded one. **A
+        # green reading of one commit proves nothing on its own.** The case set therefore
+        # holds the two directions, and this step carries both commits to the runner.
+        #
+        # **The clone of depth 1 holds neither pair, so the two cases skipped on every job
+        # of the matrix.** #524 measured that state on 2026-08-10 and #528 repaired it. A
+        # fetch of depth 2 carries the commit and its parent, which is the pair a diff
+        # needs.
+        #
+        # **#528 measured the cost on 2026-08-10, after `git gc --prune=now` on each read.**
+        # The clone of depth 1 holds 14884 KB, the defect fetch raises it to 14912 KB, and
+        # the control fetch raises it to 14916 KB. The two commands cost 32 KB together.
+        #
+        # **The fetch names the whole identifier, because git resolves no abbreviation at
+        # the remote.** #528 measured `+46aa502:refs/ja4plus/abbrev` on a clone of depth 1,
+        # and git answered `fatal: couldn't find remote ref 46aa502`.
+        #
+        # **This step carries no `if` condition, because the two cases read no event.** The
+        # step above reads the base commit of a pull request, so it skips on a push. These
+        # two commits stand in the recorded history whatever event starts the run.
+        #
+        # **#528 declined `continue-on-error` for the reason #438 states.** A failed fetch
+        # leaves the two cases skipped, and the `skip-gate` job then fails the run on a
+        # case that ran nowhere.
+        env:
+          DEFECT_SHA: 46aa502ca47f3c29f3c5ece15e4e78500e2f59c5
+          CONTROL_SHA: f140a5c318dfbe443b38b8f1a6a7df7d6b098cf0
+        run: |
+          git fetch --depth=2 origin "+$DEFECT_SHA:refs/ja4plus/recorded-defect"
+          git fetch --depth=2 origin "+$CONTROL_SHA:refs/ja4plus/recorded-control"
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -31,13 +215,300 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      - name: Install the documentation extra on one job of the matrix
+        # `tests/test_documentation_site.py` holds `_slug` against
+        # `pymdownx.slugs.slugify`, which the `docs` extra installs and the `dev` extra does
+        # not. The census of #524 read that case as a class c site. It skipped on all six
+        # jobs and no limit of the runner explained it. #529 removed the finding.
+        #
+        # **The extra reaches one job and not six.** `griffe` 2.1.0 requires Python 3.10 and
+        # the matrix runs Python 3.9, so the Python 3.9 job can never install this extra.
+        # The skip gate reads the union of the six reports, so one run of the case is the
+        # whole requirement. Five more installs buy nothing. A read of 2026-08-10 measured
+        # 28 packages and 125476 KB for this step, against 197200 KB for the `dev` extra
+        # alone.
+        #
+        # **The step names one job, so the matrix keeps its six check names.** A matrix
+        # variable would reach the job name, and the branch protection rule of `dev` holds
+        # each name of the twelve required contexts.
+        #
+        # **`.github/workflows/docs-build.yml` runs no case of `tests/`, and it stays that
+        # way.** That job measures the committed pins in an empty environment, it filters
+        # four paths, and the skip gate downloads the artifacts of this workflow alone.
+        #
+        # `matrix` reaches the `if` key of a step. Verified against
+        # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts
+        # (retrieved 2026-08-10).
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        run: pip install -e ".[docs]"
+
       - name: Run tests
+        # The conformance suite runs in the `conformance` job, because a suite that
+        # holds registered deviations reports no useful line coverage.
         run: |
-          python -m pytest tests/ -v --tb=short --junitxml=test-results.xml
+          python -m pytest tests/ -m "not spec_validation" -v --tb=short \
+            --junitxml=test-results.xml \
+            --cov=ja4plus --cov-report=term
+
+      - name: Report line coverage
+        if: always()
+        run: |
+          total=$(python -m coverage report --format=total)
+          echo "Line coverage on ${{ matrix.os }} Python ${{ matrix.python-version }}: **${total}%** (floor ${COVERAGE_FLOOR}%)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$total" -lt "$COVERAGE_FLOOR" ]; then
+            echo "::error::Line coverage ${total}% is below the floor ${COVERAGE_FLOOR}%."
+            exit 1
+          fi
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
           path: test-results.xml
+
+  skip-gate:
+    # `FR-pre-release-validation-35`. **A skip is not a pass, and a case that runs nowhere
+    # is not a case.** #438 measured that shape. `tests/test_round_entry_existence.py`
+    # reported a skip on every job of the matrix from the day it was written, and every job
+    # stayed green while the case refused nothing.
+    #
+    # **One job reads no such case, because one job reads one environment.** A macOS case
+    # that skips on Linux is correct, and a Linux case that skips on macOS is correct. The
+    # union of the ten reports is the first reading that tells a correct skip from a case
+    # the suite runs nowhere.
+    #
+    # **`needs` holds this job behind every job that runs cases**, so the download finds ten
+    # reports. A job that fails leaves this job unrun, and the run then fails on that job
+    # instead.
+    #
+    # **#530 measured why the four jobs outside the matrix belong here.** The `test` job
+    # runs `pytest tests/ -m "not spec_validation"` and `tests/conftest.py` deselects the
+    # `installed_wheel` marker, so that job collects 4150 cases of the 6111 the suite holds.
+    # A read of 2026-08-10 reports 1918 cases of the `conformance` job and 43 of the
+    # `installed-wheel` job that no report of the `test` job holds. **A reader of the matrix
+    # alone therefore reports a clean corpus over 32 percent of the suite it cannot see.**
+    #
+    # The `fuzz` job and the `samples` job add no case to that corpus today, and this job
+    # reads them anyway. A gate bound to the jobs that add a case today goes stale on the
+    # day a job changes its selection, and
+    # `tests/test_skip_gate.py::test_the_skip_gate_job_depends_on_every_job_that_runs_cases`
+    # holds this list against the workflow.
+    #
+    # `tests/skip_gate.py` holds the condition and `tests/universal_skips.json` holds the
+    # allowlist. The gate reads the standard library alone, so this job installs no
+    # dependency and it runs in seconds.
+    needs: [test, conformance, fuzz, installed-wheel, samples]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Download the skip report of every job that runs cases
+        # `merge-multiple` stays at its default of false, so each artifact extracts into a
+        # directory named after it and the gate labels each report by that name. Verified
+        # against https://github.com/actions/download-artifact/tree/v7.0.0 (retrieved
+        # 2026-08-10).
+        #
+        # The pattern matches the six `test-results-*` artifacts and the four others:
+        # `conformance-results`, `fuzz-results`, `installed-wheel-results` and
+        # `sample-results`. `tests/test_skip_gate.py` reads every uploaded artifact name of
+        # this file against this pattern, so a new job that writes a report either matches
+        # it or fails a case.
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        with:
+          pattern: "*-results*"
+          path: skip-reports
+
+      - name: Fail a case that skipped on every job that selects it
+        # The step writes the census to the log and to the job summary, and it then exits
+        # with the status of the gate. A pipe into `tee` would rest on `pipefail`, which the
+        # default shell of a `run` block does not set, so the status reaches a variable
+        # instead.
+        run: |
+          set +e
+          python -m tests.skip_gate --reports skip-reports > skip-gate.txt
+          status=$?
+          set -e
+          cat skip-gate.txt
+          cat skip-gate.txt >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  fuzz:
+    # `FR-correctness-audit-13`. The malformed-input suite runs on each pull request
+    # the `on:` block above accepts. This job names the suite, so a red
+    # malformed-input case is visible without a log search.
+    #
+    # This job runs one Python version. The `test` job reads `tests/`, so it runs this
+    # suite on every version of the matrix and on macOS.
+    #
+    # The suite cuts each committed capture at test time. Never commit a generated
+    # capture: a committed copy stops following the capture it came from.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run the malformed-input suite
+        run: |
+          python -m pytest tests/fuzz/ -v --tb=short \
+            --junitxml=fuzz-results.xml
+
+      - name: Upload the malformed-input results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: fuzz-results
+          path: fuzz-results.xml
+
+  samples:
+    # `FR-documentation-4`, `FR-documentation-5` and `FR-documentation-6`. Every code
+    # sample of the README, every code sample of `docs/`, and every script of
+    # `examples/` runs here. This job names the harness, so a rotten sample is visible
+    # without a log search.
+    #
+    # This job runs one Python version. The `test` job reads `tests/`, so it runs the
+    # same harness on every version of the matrix and on macOS.
+    #
+    # No sample reaches a network and no sample opens a capture socket. A sample that
+    # cannot run carries a marker that names the reason, and
+    # `tests/test_documentation_samples.py` fails a marker that names none.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run every documentation sample and every example script
+        run: |
+          python -m pytest tests/test_documentation_samples.py tests/test_examples.py \
+            -v --tb=short --junitxml=sample-results.xml
+
+      - name: Report the sample census
+        if: always()
+        run: |
+          python -c "from tests.documentation_samples import census; \
+            print('Documentation sample census:', census())" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the sample results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: sample-results
+          path: sample-results.xml
+
+  installed-wheel:
+    # `FR-pre-release-validation-7`. This job builds the wheel and the source
+    # distribution, installs each one into a clean environment, and produces a
+    # fingerprint from that environment. The job name keeps the `installed-wheel` form
+    # that `FR-pre-release-validation-7` names.
+    #
+    # Every other job of this file installs with `pip install -e ".[dev]"`, which puts
+    # the source tree on the import path. A case that only imports `ja4plus` therefore
+    # measures the checkout. `tests/test_installed_wheel.py` reads `ja4plus.__file__` of
+    # the clean environment and fails when that path is not below the `site-packages`
+    # directory of that environment.
+    #
+    # This job runs one Python version. The `test` job reads `tests/`, so it runs this
+    # marker on every version of the matrix and on macOS. This job names the marker, so
+    # a failure is visible without a log search. The `fuzz` job and the `samples` job
+    # state the same reason.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Fingerprint a capture from the installed package
+        # The clean environment installs no development extra, so `pip` reads the
+        # dependency list the artifact ships.
+        #
+        # #409 added the source-distribution path to the same file. The step therefore
+        # builds both artifacts and installs each one, and the marker covers both.
+        #
+        # **The command reads `tests/` and never one file.** #68 added the marked cases of
+        # `tests/test_publish_workflow.py`, and a command that names one file runs none of
+        # them, and a case that no job runs measures nothing.
+        run: |
+          python -m pytest tests/ -m installed_wheel \
+            -v --tb=short --junitxml=installed-wheel-results.xml
+
+      - name: Upload the installed-wheel results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: installed-wheel-results
+          path: installed-wheel-results.xml
+
+  conformance:
+    # `FR-foundation-4`. The vectors are committed under `tests/foxio_vectors`, so this
+    # job reads no network. Never add a step that runs `tests/download_test_vectors.py`:
+    # a download makes the expected output change without a commit.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run the FoxIO conformance suite
+        # `tests/foxio_deviations.json` registers each known deviation, and the suite
+        # marks it `xfail(strict=True)`. An unregistered failure fails this job, and so
+        # does a registered case that starts passing.
+        run: |
+          python -m pytest tests/ -m spec_validation -v --tb=short \
+            --junitxml=conformance-results.xml
+
+      - name: Report the registered deviations
+        if: always()
+        run: |
+          count=$(python -c "from tests.foxio_deviations import load_register; print(len(load_register()))")
+          echo "Registered FoxIO deviations: **${count}** (see \`tests/foxio_deviations.json\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload conformance results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: conformance-results
+          path: conformance-results.xml

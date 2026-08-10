@@ -1,4 +1,5 @@
 """Tests for JA4D DHCP fingerprinting."""
+
 import struct
 import unittest
 
@@ -10,7 +11,6 @@ from ja4plus.fingerprinters.ja4d import (
     build_param_list,
     generate_ja4d,
     DHCP_MESSAGE_TYPES,
-    DHCP_SKIP_OPTIONS,
 )
 
 
@@ -18,11 +18,12 @@ from ja4plus.fingerprinters.ja4d import (
 # Helpers to build raw DHCPv4 packets
 # ---------------------------------------------------------------------------
 
-DHCP_MAGIC = b'\x63\x82\x53\x63'
+DHCP_MAGIC = b"\x63\x82\x53\x63"
 
 
-def _build_dhcp_payload(msg_type, options=None, max_msg_size=None,
-                        request_ip=None, fqdn=False, param_request=None):
+def _build_dhcp_payload(
+    msg_type, options=None, max_msg_size=None, request_ip=None, fqdn=False, param_request=None
+):
     """Build a minimal DHCPv4 UDP payload (BOOTP + DHCP options)."""
     # Minimal BOOTP fixed header (236 bytes)
     bootp = bytearray(236)
@@ -38,15 +39,17 @@ def _build_dhcp_payload(msg_type, options=None, max_msg_size=None,
 
     # Option 57: Maximum DHCP Message Size
     if max_msg_size is not None:
-        opts += bytes([57, 2]) + struct.pack('!H', max_msg_size)
+        opts += bytes([57, 2]) + struct.pack("!H", max_msg_size)
 
     # Option 50: Requested IP Address (flag only — 4 zero bytes)
     if request_ip:
         opts += bytes([50, 4, 0, 0, 0, 0])
 
-    # Option 81: Client FQDN (flag only — minimal 3-byte data)
+    # Option 81: Client FQDN. RFC 4702 puts the name after one flags byte and two rcode
+    # bytes, and D3 of docs/specs/foxio/JA4D.md reads the name rather than the option.
+    # tests/test_ja4d_decisions.py holds the option 81 that carries no name.
     if fqdn:
-        opts += bytes([81, 3, 0, 0, 0])
+        opts += bytes([81, 7, 0, 0, 0]) + b"host"
 
     # Option 55: Parameter Request List
     if param_request:
@@ -64,8 +67,9 @@ def _build_dhcp_payload(msg_type, options=None, max_msg_size=None,
     return payload + bytes(opts)
 
 
-def _make_dhcp_packet(msg_type, src_ip="192.168.1.100", dst_ip="255.255.255.255",
-                      sport=68, dport=67, **kwargs):
+def _make_dhcp_packet(
+    msg_type, src_ip="192.168.1.100", dst_ip="255.255.255.255", sport=68, dport=67, **kwargs
+):
     """Build a Scapy packet wrapping a DHCPv4 payload."""
     raw = _build_dhcp_payload(msg_type, **kwargs)
     return IP(src=src_ip, dst=dst_ip) / UDP(sport=sport, dport=dport) / Raw(load=raw)
@@ -74,6 +78,7 @@ def _make_dhcp_packet(msg_type, src_ip="192.168.1.100", dst_ip="255.255.255.255"
 # ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestDHCPMessageTypes(unittest.TestCase):
     """All 18 message type abbreviations must be exactly 5 characters."""
@@ -84,14 +89,21 @@ class TestDHCPMessageTypes(unittest.TestCase):
 
     def test_all_abbreviations_are_5_chars(self):
         for code, abbrev in DHCP_MESSAGE_TYPES.items():
-            self.assertEqual(len(abbrev), 5,
-                             f"Type {code} abbreviation '{abbrev}' is not 5 chars")
+            self.assertEqual(len(abbrev), 5, f"Type {code} abbreviation '{abbrev}' is not 5 chars")
 
     def test_known_mappings(self):
         expected = {
-            1: "disco", 2: "offer", 3: "reqst", 4: "decln",
-            5: "dpack", 6: "dpnak", 7: "relse", 8: "infor",
-            9: "frenw", 10: "lqery", 18: "dhtls",
+            1: "disco",
+            2: "offer",
+            3: "reqst",
+            4: "decln",
+            5: "dpack",
+            6: "dpnak",
+            7: "relse",
+            8: "infor",
+            9: "frenw",
+            10: "lqery",
+            18: "dhtls",
         }
         for code, abbrev in expected.items():
             self.assertEqual(DHCP_MESSAGE_TYPES[code], abbrev)
@@ -108,10 +120,7 @@ class TestBuildOptionList(unittest.TestCase):
         self.assertEqual(build_option_list([53, 61]), "61")
 
     def test_multiple_options(self):
-        self.assertEqual(
-            build_option_list([53, 61, 57, 60, 12, 55]),
-            "61-57-60-12-55"
-        )
+        self.assertEqual(build_option_list([53, 61, 57, 60, 12, 55]), "61-57-60-12-55")
 
     def test_with_skipped_mixed(self):
         self.assertEqual(build_option_list([53, 50, 61, 81, 57]), "61-57")
@@ -130,8 +139,7 @@ class TestBuildParamList(unittest.TestCase):
 
     def test_multiple(self):
         self.assertEqual(
-            build_param_list([1, 3, 6, 15, 26, 28, 51, 58, 59]),
-            "1-3-6-15-26-28-51-58-59"
+            build_param_list([1, 3, 6, 15, 26, 28, 51, 58, 59]), "1-3-6-15-26-28-51-58-59"
         )
 
 
@@ -144,32 +152,32 @@ class TestGenerateJA4D(unittest.TestCase):
         result = generate_ja4d(pkt)
         self.assertIsNotNone(result)
         # Section a: disco + 0000 (no max size) + n (no req IP) + n (no FQDN)
-        parts = result.split('_')
+        parts = result.split("_")
         self.assertEqual(len(parts), 3)
         self.assertTrue(parts[0].startswith("disco"))
         self.assertEqual(parts[0][5:9], "0000")  # no max msg size
-        self.assertEqual(parts[0][9], "n")        # no requested IP
-        self.assertEqual(parts[0][10], "n")       # no FQDN
+        self.assertEqual(parts[0][9], "n")  # no requested IP
+        self.assertEqual(parts[0][10], "n")  # no FQDN
 
     def test_discover_with_max_size(self):
         pkt = _make_dhcp_packet(msg_type=1, max_msg_size=1500)
         result = generate_ja4d(pkt)
         self.assertIsNotNone(result)
-        parts = result.split('_')
+        parts = result.split("_")
         self.assertEqual(parts[0][5:9], "1500")
 
     def test_discover_with_request_ip_flag(self):
         pkt = _make_dhcp_packet(msg_type=1, request_ip=True)
         result = generate_ja4d(pkt)
         self.assertIsNotNone(result)
-        parts = result.split('_')
+        parts = result.split("_")
         self.assertEqual(parts[0][9], "i")
 
     def test_discover_with_fqdn_flag(self):
         pkt = _make_dhcp_packet(msg_type=1, fqdn=True)
         result = generate_ja4d(pkt)
         self.assertIsNotNone(result)
-        parts = result.split('_')
+        parts = result.split("_")
         self.assertEqual(parts[0][10], "d")
 
     def test_offer_message_type(self):
@@ -189,37 +197,37 @@ class TestGenerateJA4D(unittest.TestCase):
         pkt = _make_dhcp_packet(msg_type=1, param_request=params)
         result = generate_ja4d(pkt)
         self.assertIsNotNone(result)
-        parts = result.split('_')
+        parts = result.split("_")
         self.assertEqual(parts[2], "1-3-6-15")
 
     def test_no_param_request_section_c_is_00(self):
         pkt = _make_dhcp_packet(msg_type=1)
         result = generate_ja4d(pkt)
         self.assertIsNotNone(result)
-        parts = result.split('_')
+        parts = result.split("_")
         self.assertEqual(parts[2], "00")
 
     def test_extra_options_appear_in_section_b(self):
         pkt = _make_dhcp_packet(msg_type=1, options=[61, 12])
         result = generate_ja4d(pkt)
         self.assertIsNotNone(result)
-        parts = result.split('_')
+        parts = result.split("_")
         self.assertIn("61", parts[1])
         self.assertIn("12", parts[1])
 
     def test_skip_options_absent_from_section_b(self):
         pkt = _make_dhcp_packet(msg_type=1, options=[61])
         result = generate_ja4d(pkt)
-        parts = result.split('_')
+        parts = result.split("_")
         # 53 (msg type) is added by the builder but must not appear in section b
-        self.assertNotIn("53", parts[1].split('-'))
+        self.assertNotIn("53", parts[1].split("-"))
         # 255 (end) terminates the parse loop and is never recorded
-        self.assertNotIn("255", parts[1].split('-'))
+        self.assertNotIn("255", parts[1].split("-"))
 
     def test_max_msg_size_capped_at_9999(self):
         pkt = _make_dhcp_packet(msg_type=1, max_msg_size=65535)
         result = generate_ja4d(pkt)
-        parts = result.split('_')
+        parts = result.split("_")
         self.assertEqual(parts[0][5:9], "9999")
 
     def test_non_dhcp_port_returns_none(self):
@@ -229,6 +237,7 @@ class TestGenerateJA4D(unittest.TestCase):
 
     def test_tcp_packet_returns_none(self):
         from scapy.all import TCP
+
         pkt = IP() / TCP(sport=68, dport=67)
         self.assertIsNone(generate_ja4d(pkt))
 
@@ -258,14 +267,28 @@ class TestJA4DFingerprinter(unittest.TestCase):
 
     def test_non_dhcp_returns_none(self):
         from scapy.all import TCP
+
         pkt = IP() / TCP(sport=12345, dport=443)
         result = self.fp.process_packet(pkt)
         self.assertIsNone(result)
 
-    def test_cleanup_connection_is_noop(self):
-        """JA4D is stateless — cleanup should not raise."""
+    def test_cleanup_holds_every_fingerprint_because_ja4d_holds_no_state_table(self):
+        """JA4D reads one packet and holds nothing per connection.
+
+        `BaseFingerprinter.state_tables` reports the tables of a fingerprinter, and it
+        reports none for this method. The base class no-op therefore has nothing to
+        remove. #339 records that this case asserted nothing.
+        """
+        self.fp.process_packet(_make_dhcp_packet(msg_type=1))
+        before = list(self.fp.get_fingerprints())
+        self.assertEqual(self.fp.state_tables(), {})
+        self.assertEqual(len(before), 1)
+
         self.fp.cleanup_connection("1.2.3.4", 68, "255.255.255.255", 67, "udp")
 
+        self.assertEqual(self.fp.state_tables(), {})
+        self.assertEqual(self.fp.get_fingerprints(), before)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -54,6 +54,10 @@ def main():
         for name, fp in fingerprinters.items():
             fp.process_packet(packet)
 
+    # The capture ends here. JA4SSH emits the window each connection holds open.
+    for name, fp in fingerprinters.items():
+        fp.close_open_windows()
+
     for name, fp in fingerprinters.items():
         results = fp.get_fingerprints()
         if results:

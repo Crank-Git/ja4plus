@@ -1,23 +1,37 @@
-# Downloaded FoxIO test vectors (not committed)
-tests/foxio_vectors/
-
 __pycache__/
 *.py[cod]
 *.egg-info/
+.coverage
+coverage.xml
 dist/
 build/
 *.egg
+.venv/
+venv/
 .omc/
-.claude/
 .gstack/
 .worktrees/
 
-# Claude Code / agent artifacts (local only)
-CLAUDE.md
+# Claude Code
+# CLAUDE.md and .claude/ are tracked in this repo: issue-flow workers run in git
+# worktrees, which contain tracked files only, so an ignored rule is invisible to them.
+.claude/settings.local.json
+.claude/worktrees/
+.claude/agent-memory-local/
+CLAUDE.local.md
+.claude.local.md
+.issue-flow.local.json
+
+# Agent artifacts (local only)
 AGENTS.md
 TODOS.md
 PYTHON_ISSUES.md
 docs/superpowers/
+
+# The mutation sweep writes a report and a checkpoint. Both describe one run on one
+# host, so neither belongs in the history.
+mutation_sweep*.json
+mutation_sweep*.jsonl
 
 # IDE / OS
 .idea/
@@ -30,3 +44,11 @@ Thumbs.db
 # Captures (not committed)
 *.pcap
 *.pcapng
+
+# The FoxIO conformance vectors are committed. The negation must follow the
+# capture patterns above, because a later rule wins.
+!tests/foxio_vectors/**
+
+# `mkdocs build` writes the site here. `mkdocs.yml` names the directory as `site_dir`.
+# The build output follows the sources, so a committed copy would stop following them.
+/site/

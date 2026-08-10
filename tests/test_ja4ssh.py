@@ -1,5 +1,4 @@
 import unittest
-import time
 from scapy.all import IP, TCP, Raw, Ether
 from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter, generate_ja4ssh
 
@@ -44,21 +43,23 @@ class TestJA4SSH(unittest.TestCase):
             )
         )
 
-        # Interactive session packets (36-byte payloads = SSH encrypted data)
+        # Interactive session packets (36-byte payloads = SSH encrypted data). The
+        # tracker reads the payload of a direction in sequence order, so each segment
+        # carries the sequence number that follows the segment before it.
         self.interactive_packets = []
         for i in range(20):
             # Client sends command (36 bytes) - use SSH banner prefix so is_ssh_packet detects them
             self.interactive_packets.append(
                 Ether()
                 / IP(src="192.168.1.100", dst="192.168.1.200")
-                / TCP(sport=52416, dport=22)
+                / TCP(sport=52416, dport=22, seq=1 + i * 36)
                 / Raw(load=b"SSH-2.0-" + b"A" * 28)
             )
             # Server responds (36 bytes)
             self.interactive_packets.append(
                 Ether()
                 / IP(src="192.168.1.200", dst="192.168.1.100")
-                / TCP(sport=22, dport=52416)
+                / TCP(sport=22, dport=52416, seq=1 + i * 36)
                 / Raw(load=b"SSH-2.0-" + b"B" * 28)
             )
 
@@ -68,7 +69,7 @@ class TestJA4SSH(unittest.TestCase):
             self.file_transfer_packets.append(
                 Ether()
                 / IP(src="192.168.1.200", dst="192.168.1.100")
-                / TCP(sport=22, dport=52416)
+                / TCP(sport=22, dport=52416, seq=1 + i * 1460)
                 / Raw(load=b"SSH-2.0-" + b"C" * 1452)
             )
 

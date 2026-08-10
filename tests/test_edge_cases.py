@@ -15,7 +15,7 @@ from ja4plus.fingerprinters.ja4h import JA4HFingerprinter, generate_ja4h
 from ja4plus.fingerprinters.ja4t import JA4TFingerprinter, generate_ja4t
 from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter, generate_ja4ts
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter, generate_ja4l
-from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter, generate_ja4ssh
+from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 from ja4plus.fingerprinters.ja4x import JA4XFingerprinter, generate_ja4x
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
@@ -57,11 +57,14 @@ class TestEmptyInputs(unittest.TestCase):
         self.assertIsNone(generate_ja4t(packet))
 
     def test_ja4t_no_ip(self):
-        """Packet without IP layer - still has TCP."""
+        """JA4T reads a packet that carries no IP layer.
+
+        JA4T reads the TCP header alone, so the missing IP layer removes no field it
+        needs. The case reads the value, because an assertion that no exception
+        happened accepts any value. #338 records the reading.
+        """
         packet = Ether() / TCP(sport=12345, dport=443, flags="S")
-        fp = generate_ja4t(packet)
-        # Should still work since it only checks TCP layer
-        # (or return None depending on implementation)
+        self.assertEqual(generate_ja4t(packet), "8192_00_00_00")
 
     def test_ja4ts_no_tcp(self):
         packet = IP() / UDP(sport=443, dport=54321)
@@ -122,20 +125,31 @@ class TestMalformedTLS(unittest.TestCase):
         self.assertIsNone(self.ja4.process_packet(packet))
 
     def test_random_bytes(self):
-        """Random non-TLS data should not crash."""
-        import os
-        data = os.urandom(256)
-        packet = IP() / TCP(sport=12345, dport=443) / Raw(load=data)
-        # Should not raise, just return None
-        result = self.ja4.process_packet(packet)
-        # Either None or a result, but should not crash
+        """Random bytes produce no fingerprint.
+
+        A JA4 value built from random bytes names a client that does not exist. The
+        case therefore reads the result, because an assertion that no exception
+        happened accepts a fabricated value. #338 records the reading.
+
+        The payload is random, so one draw measures one byte string. The case reads
+        many draws, and `tests/fuzz/test_synthetic_hostile_input.py` reads more.
+
+        The generator carries a fixed seed, so a failure repeats. `os.urandom` gives a
+        case that fails on one run in many and passes on the next.
+        """
+        import random
+
+        source = random.Random(338)
+        for _ in range(64):
+            data = bytes(source.getrandbits(8) for _ in range(256))
+            packet = IP() / TCP(sport=12345, dport=443) / Raw(load=data)
+            self.assertIsNone(self.ja4.process_packet(packet))
 
     def test_very_large_packet(self):
-        """Large payload should not hang or crash."""
+        """A long run of zero bytes behind a record header produces no fingerprint."""
         data = b"\x16\x03\x03" + b"\x00" * 5000
         packet = IP() / TCP(sport=12345, dport=443) / Raw(load=data)
-        result = self.ja4.process_packet(packet)
-        # Should not hang or crash
+        self.assertIsNone(self.ja4.process_packet(packet))
 
 
 # ===========================================================================
@@ -210,8 +224,9 @@ class TestMalformedTCP(unittest.TestCase):
 
     def test_ja4t_synack_rejected(self):
         """SYN-ACK should be rejected by JA4T (handled by JA4TS)."""
-        packet = IP() / TCP(sport=443, dport=54321, flags="SA", window=14600,
-                            options=[("MSS", 1460)])
+        packet = IP() / TCP(
+            sport=443, dport=54321, flags="SA", window=14600, options=[("MSS", 1460)]
+        )
         self.assertIsNone(generate_ja4t(packet))
 
 
@@ -226,25 +241,27 @@ class TestMalformedSSH(unittest.TestCase):
 
     def test_http_data_to_ssh(self):
         """HTTP data should not produce SSH fingerprints."""
-        packet = (IP(src="10.0.0.1", dst="10.0.0.2")
-                  / TCP(sport=12345, dport=22)
-                  / Raw(load=b"GET / HTTP/1.1\r\nHost: test.com\r\n\r\n"))
+        packet = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=22)
+            / Raw(load=b"GET / HTTP/1.1\r\nHost: test.com\r\n\r\n")
+        )
         result = self.ja4ssh.process_packet(packet)
         self.assertIsNone(result)
 
     def test_tls_data_to_ssh(self):
         """TLS data should not produce SSH fingerprints."""
-        packet = (IP(src="10.0.0.1", dst="10.0.0.2")
-                  / TCP(sport=12345, dport=22)
-                  / Raw(load=b"\x16\x03\x03\x00\x10" + b"\x00" * 16))
+        packet = (
+            IP(src="10.0.0.1", dst="10.0.0.2")
+            / TCP(sport=12345, dport=22)
+            / Raw(load=b"\x16\x03\x03\x00\x10" + b"\x00" * 16)
+        )
         result = self.ja4ssh.process_packet(packet)
         self.assertIsNone(result)
 
     def test_empty_payload(self):
         """Empty payload should not produce SSH fingerprints."""
-        packet = (IP(src="10.0.0.1", dst="10.0.0.2")
-                  / TCP(sport=12345, dport=22)
-                  / Raw(load=b""))
+        packet = IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=12345, dport=22) / Raw(load=b"")
         result = self.ja4ssh.process_packet(packet)
         self.assertIsNone(result)
 
@@ -274,13 +291,11 @@ class TestX509EdgeCases(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_generate_ja4x_empty_lists(self):
-        """Empty RDN/extension lists should produce hashes of empty strings."""
-        import hashlib
-        cert_info = {
-            "issuer_rdns": [],
-            "subject_rdns": [],
-            "extensions": []
-        }
+        """An empty list writes the zero sentinel, and never the hash of the empty
+        string. The user decided it on 2026-08-08 and R8 of
+        `docs/specs/foxio/JA4X.md` holds the reading."""
+
+        cert_info = {"issuer_rdns": [], "subject_rdns": [], "extensions": []}
         result = generate_ja4x(cert_info)
         self.assertIsNotNone(result)
         parts = result.split("_")
@@ -367,6 +382,7 @@ class TestAllFingerprinterGraceful(unittest.TestCase):
     def test_all_handle_random_payload(self):
         """All fingerprinters should handle random bytes without crashing."""
         import os
+
         data = os.urandom(128)
         packet = IP() / TCP(sport=12345, dport=443) / Raw(load=data)
         for fp in self._all_fingerprinters():
@@ -383,8 +399,7 @@ class TestAllFingerprinterGraceful(unittest.TestCase):
             name = fp.__class__.__name__
             with self.subTest(fingerprinter=name):
                 fp.reset()
-                self.assertEqual(len(fp.get_fingerprints()), 0,
-                                 f"{name} did not reset properly")
+                self.assertEqual(len(fp.get_fingerprints()), 0, f"{name} did not reset properly")
 
 
 # ===========================================================================
@@ -394,33 +409,38 @@ class TestJA4LEdgeCases(unittest.TestCase):
     """Test JA4L with edge case timing scenarios."""
 
     def test_synack_before_syn(self):
-        """SYN-ACK arriving before SYN should not crash."""
+        """A SYN-ACK without an earlier SYN produces no fingerprint.
+
+        JA4L measures the time between two packets, so one packet gives no latency.
+        The fingerprinter opens the connection entry and emits nothing. #338 records
+        the reading.
+        """
         fp = JA4LFingerprinter()
         synack = IP(src="10.0.0.2", dst="10.0.0.1", ttl=64) / TCP(
             sport=443, dport=54321, flags="SA"
         )
-        result = fp.process_packet(synack)
-        # SYN-ACK without prior SYN should produce a fingerprint
-        # since B timestamp is set but A may not be - depends on impl
-        # Main point: no crash
+        self.assertIsNone(fp.process_packet(synack))
+        self.assertEqual(fp.get_fingerprints(), [])
+        self.assertEqual(len(fp.connections), 1)
 
     def test_duplicate_syn(self):
-        """Processing two SYN packets should not crash."""
+        """Two identical SYN packets produce no fingerprint and one connection entry.
+
+        A repeated SYN names the same connection, so the state table holds one entry.
+        #338 records the reading.
+        """
         fp = JA4LFingerprinter()
-        syn = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(
-            sport=54321, dport=443, flags="S"
-        )
-        fp.process_packet(syn)
+        syn = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(sport=54321, dport=443, flags="S")
+        self.assertIsNone(fp.process_packet(syn))
         time.sleep(0.001)
-        fp.process_packet(syn)
-        # Should not crash
+        self.assertIsNone(fp.process_packet(syn))
+        self.assertEqual(fp.get_fingerprints(), [])
+        self.assertEqual(len(fp.connections), 1)
 
     def test_reset_clears_connections(self):
         """Reset should clear connection tracking."""
         fp = JA4LFingerprinter()
-        syn = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(
-            sport=54321, dport=443, flags="S"
-        )
+        syn = IP(src="10.0.0.1", dst="10.0.0.2", ttl=128) / TCP(sport=54321, dport=443, flags="S")
         fp.process_packet(syn)
         self.assertGreater(len(fp.connections), 0)
         fp.reset()

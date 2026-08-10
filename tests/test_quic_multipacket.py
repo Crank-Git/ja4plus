@@ -5,9 +5,14 @@ real for clients carrying many extensions, e.g. ECH grease + many ALPN
 options), the CRYPTO frame is fragmented across multiple Initial
 packets sharing the same Destination Connection ID.
 """
-import os
 
-import pytest
+from pathlib import Path
+
+VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
+CAPTURE_PATH = VECTORS_DIR / "quic-with-several-tls-frames.pcapng"
+EXPECTED_PATH = (
+    VECTORS_DIR / "rust_expected" / "ja4__insta@quic-with-several-tls-frames.pcapng.snap"
+)
 
 
 def test_reassemble_crypto_fragments_basic():
@@ -61,18 +66,23 @@ def test_ja4_fingerprinter_buffers_quic_fragments():
     """
     from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
     from ja4plus.utils import quic_utils
-    from ja4plus.utils import tls_utils as _tls_utils
 
     fp = JA4Fingerprinter()
 
     # Stub out decryption to produce predictable fragments per datagram.
-    fake_ch_bytes = bytes([
-        # TLS handshake header: type=01, length=0x000010 (16 bytes)
-        0x01, 0x00, 0x00, 0x10,
-        # 16 bytes of opaque body (parse_tls_handshake will reject as
-        # malformed, returning None — so the test stops short of asserting
-        # a real fingerprint, but it does assert that fragments accumulate).
-    ] + [0] * 16)
+    fake_ch_bytes = bytes(
+        [
+            # TLS handshake header: type=01, length=0x000010 (16 bytes)
+            0x01,
+            0x00,
+            0x00,
+            0x10,
+            # 16 bytes of opaque body (parse_tls_handshake will reject as
+            # malformed, returning None — so the test stops short of asserting
+            # a real fingerprint, but it does assert that fragments accumulate).
+        ]
+        + [0] * 16
+    )
     half = len(fake_ch_bytes) // 2
     frag1 = (0, fake_ch_bytes[:half])
     frag2 = (half, fake_ch_bytes[half:])
@@ -93,11 +103,20 @@ def test_ja4_fingerprinter_buffers_quic_fragments():
 
     # Drive process_packet with two synthetic UDP packets.
     from scapy.all import IP, UDP, Raw
-    pkt1 = IP(src="1.1.1.1", dst="2.2.2.2") / UDP(sport=50000, dport=443) / Raw(load=b"\x80" + b"\x00" * 30)
-    pkt2 = IP(src="1.1.1.1", dst="2.2.2.2") / UDP(sport=50000, dport=443) / Raw(load=b"\x80" + b"\x00" * 30)
+
+    pkt1 = (
+        IP(src="1.1.1.1", dst="2.2.2.2")
+        / UDP(sport=50000, dport=443)
+        / Raw(load=b"\x80" + b"\x00" * 30)
+    )
+    pkt2 = (
+        IP(src="1.1.1.1", dst="2.2.2.2")
+        / UDP(sport=50000, dport=443)
+        / Raw(load=b"\x80" + b"\x00" * 30)
+    )
 
     # First call: no full ClientHello yet
-    r1 = fp.process_packet(pkt1)
+    fp.process_packet(pkt1)
     # Second call: full ClientHello assembled (but malformed body may fail TLS parse)
     r2 = fp.process_packet(pkt2)
 
@@ -113,22 +132,45 @@ def test_ja4_fingerprinter_buffers_quic_fragments():
         assert len(fp._quic_fragments[dcid.hex()]) == 2
 
 
-@pytest.mark.skipif(
-    not os.path.exists("tests/foxio_vectors/pcap/quic-with-several-tls-frames.pcapng"),
-    reason="quic-with-several-tls-frames fixture missing",
-)
-def test_quic_with_several_tls_frames_real_pcap():
-    """Real-world sanity: feed every UDP packet to the JA4 fingerprinter."""
+def _reference_ja4():
+    """Return every JA4 value the FoxIO Rust snapshot holds for the capture.
+
+    The snapshot writes one `ja4:` line for each stream that carries a value.
+
+    Returns:
+        The list of JA4 values, in file order.
+
+    Raises:
+        FileNotFoundError: The snapshot is absent.
+        AssertionError: The snapshot holds no JA4 value.
+    """
+    values = []
+    for line in EXPECTED_PATH.read_text().splitlines():
+        stripped = line.strip()
+        if stripped.startswith("ja4: "):
+            values.append(stripped[len("ja4: ") :])
+    # Without this check, an empty list compares equal to an empty produced list, and the
+    # caller reports a pass on nothing. #115 exists to remove that defect.
+    assert values, "{} holds no JA4 value".format(EXPECTED_PATH)
+    return values
+
+
+def test_the_foxio_capture_produces_the_reference_ja4_value():
+    """`quic-with-several-tls-frames.pcapng` produces the JA4 value FoxIO holds.
+
+    The capture holds one QUIC Initial packet that carries the ClientHello in several
+    CRYPTO frames. A reader that joins no fragment produces nothing, so the match proves
+    that the reader joins them.
+    """
     from scapy.all import rdpcap
+
     from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
 
-    pkts = rdpcap("tests/foxio_vectors/pcap/quic-with-several-tls-frames.pcapng")
-    fp = JA4Fingerprinter()
-    fingerprints = []
-    for pkt in pkts:
-        r = fp.process_packet(pkt)
-        if r:
-            fingerprints.append(r)
-    # If the pcap contains a complete handshake we'll get one fingerprint;
-    # if not, we shouldn't crash, and the fragment buffer should be sane.
-    assert isinstance(fingerprints, list)
+    fingerprinter = JA4Fingerprinter()
+    produced = []
+    for packet in rdpcap(str(CAPTURE_PATH)):
+        fingerprint = fingerprinter.process_packet(packet)
+        if fingerprint:
+            produced.append(fingerprint)
+
+    assert produced == _reference_ja4()

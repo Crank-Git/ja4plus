@@ -6,7 +6,6 @@ import csv
 import io
 import json
 import os
-import sys
 import unittest
 from unittest.mock import patch
 
@@ -29,9 +28,11 @@ def run_cli(*argv):
     captured_err = io.StringIO()
 
     exit_code = 0
-    with patch("sys.argv", ["ja4plus"] + list(argv)), \
-         patch("sys.stdout", captured_out), \
-         patch("sys.stderr", captured_err):
+    with (
+        patch("sys.argv", ["ja4plus"] + list(argv)),
+        patch("sys.stdout", captured_out),
+        patch("sys.stderr", captured_err),
+    ):
         try:
             main()
         except SystemExit as e:
@@ -53,11 +54,17 @@ class TestAnalyzePcap(unittest.TestCase):
         """--format json produces valid JSONL output."""
         out, err, code = run_cli("--format", "json", "analyze", HTTP_CAP)
         self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
-        lines = [l for l in out.strip().splitlines() if l.strip()]
+        lines = [line for line in out.strip().splitlines() if line.strip()]
         self.assertGreater(len(lines), 0, "Expected at least one JSON line")
         for line in lines:
             obj = json.loads(line)
-            self.assertIn("source", obj)
+            # #49 replaced the composite `source` field with the four endpoint fields.
+            # `tests/test_output_schema.py` holds the whole field set.
+            self.assertNotIn("source", obj)
+            self.assertIn("src_ip", obj)
+            self.assertIn("src_port", obj)
+            self.assertIn("dst_ip", obj)
+            self.assertIn("dst_port", obj)
             self.assertIn("type", obj)
             self.assertIn("fingerprint", obj)
 
@@ -68,17 +75,22 @@ class TestAnalyzePcap(unittest.TestCase):
         reader = csv.reader(io.StringIO(out))
         rows = list(reader)
         self.assertGreater(len(rows), 1, "Expected header + at least one data row")
-        self.assertEqual(rows[0], ["source", "type", "fingerprint"])
-        # All data rows should have 3 columns
+        # #49 fixed the column order. `tests/test_output_schema.py` compares the header
+        # against the documented list.
+        from ja4plus.output import CSV_COLUMNS
+
+        self.assertEqual(rows[0], list(CSV_COLUMNS))
         for row in rows[1:]:
             if row:  # skip blank lines
-                self.assertEqual(len(row), 3, f"Expected 3 columns, got: {row}")
+                self.assertEqual(
+                    len(row), len(CSV_COLUMNS), f"Expected {len(CSV_COLUMNS)} columns, got: {row}"
+                )
 
     def test_analyze_types_filter(self):
         """--types ja4t restricts output to JA4T fingerprints only."""
         out, err, code = run_cli("--format", "json", "--types", "ja4t", "analyze", HTTP_CAP)
         self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
-        lines = [l for l in out.strip().splitlines() if l.strip()]
+        lines = [line for line in out.strip().splitlines() if line.strip()]
         # May be zero lines if no TCP packets match, but if there are lines they must be ja4t
         for line in lines:
             obj = json.loads(line)
@@ -110,7 +122,7 @@ class TestCertCommand(unittest.TestCase):
         """cert --format json includes type=ja4x in output."""
         out, err, code = run_cli("--format", "json", "cert", CERT_DER)
         self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
-        lines = [l for l in out.strip().splitlines() if l.strip()]
+        lines = [line for line in out.strip().splitlines() if line.strip()]
         self.assertGreater(len(lines), 0)
         obj = json.loads(lines[0])
         self.assertEqual(obj["type"], "ja4x")
@@ -132,10 +144,35 @@ class TestVersionFlag(unittest.TestCase):
         self.assertIn("ja4plus", combined.lower())
         # Should contain a version number (digits and dots)
         import re
+
         self.assertTrue(
-            re.search(r"\d+\.\d+", combined),
-            f"No version number found in: {combined!r}"
+            re.search(r"\d+\.\d+", combined), f"No version number found in: {combined!r}"
         )
+
+
+SSH2_VECTOR = os.path.join(os.path.dirname(__file__), "foxio_vectors", "ssh2.pcapng")
+
+
+class TestTheTrailingJA4SSHWindow(unittest.TestCase):
+    """The `analyze` command reads a file, so the capture ends at the last packet.
+
+    `ssh2.pcapng` carries no FIN+ACK packet on port 22, so the connection holds its last
+    window open. #214 decided that this project emits that window.
+    """
+
+    @unittest.skipUnless(os.path.exists(SSH2_VECTOR), "the FoxIO vector ssh2.pcapng is absent")
+    def test_analyze_writes_the_window_the_connection_holds_open(self):
+        out, err, code = run_cli("--format", "json", "--types", "ja4ssh", "analyze", SSH2_VECTOR)
+        self.assertEqual(code, 0, f"CLI exited with {code}. stderr: {err}")
+        objects = [json.loads(line) for line in out.strip().splitlines() if line.strip()]
+        values = [json_object["fingerprint"] for json_object in objects]
+        self.assertEqual(values, ["c36s36_c76s124_c74s5", "c36s52_c42s76_c51s2"])
+        # No packet closes this window, so #49 reads the four endpoint fields back from
+        # the connection key that the fingerprinter reported.
+        self.assertEqual(objects[1]["src_ip"], "172.16.225.48")
+        self.assertEqual(objects[1]["src_port"], 57377)
+        self.assertEqual(objects[1]["dst_ip"], "54.160.114.75")
+        self.assertEqual(objects[1]["dst_port"], 22)
 
 
 class TestInvalidTypes(unittest.TestCase):
@@ -150,6 +187,7 @@ class TestInvalidTypes(unittest.TestCase):
     def test_valid_types_accepted(self):
         """All valid type names are accepted without error."""
         from ja4plus.cli import VALID_TYPES, _parse_types
+
         for t in VALID_TYPES:
             result = _parse_types(t)
             self.assertEqual(result, [t])

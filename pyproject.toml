@@ -4,21 +4,38 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ja4plus"
-version = "0.6.0"
+# **`FR-release-1` puts the version number in one place, and that place is
+# `ja4plus/__init__.py`.** A build resolves this field from `ja4plus.__version__` through
+# the `[tool.setuptools.dynamic]` table below, so this file and the package cannot state
+# two versions. #67 records the decision, and `tests/version_gate.py` records why
+# `importlib.metadata` is the wrong reader for it.
+#
+# **`setuptools` reads the attribute from the syntax tree and imports no module.** The
+# declaration is a plain string assignment at the top level of `ja4plus/__init__.py`, so a
+# build needs neither `scapy` nor `cryptography` to resolve it.
+#
+# Verified against
+# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata,
+# retrieved 2026-08-10.
+dynamic = ["version"]
 description = "JA4+ network fingerprinting library for TLS, TCP, HTTP, SSH, X.509, and DHCP analysis"
 readme = "README.md"
 license = {text = "BSD-3-Clause AND LicenseRef-FoxIO-1.1"}
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["ja4", "ja4plus", "fingerprinting", "tls", "tcp", "http", "ssh", "x509", "network", "security", "scapy"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    # **`FR-release-12` states this line, and #69 ruled that `Development Status :: 3 -
+    # Alpha` holds until the release commit of version 1.0.0.** The classifier is a promise
+    # about the interface, so the commit that makes the promise true writes it. #543 is that
+    # commit. `tests/version_gate.py` reads this line against `ja4plus.__version__`, so a
+    # later version that returns to the alpha classifier fails a case.
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
     "Topic :: Security",
     "Topic :: System :: Networking :: Monitoring",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -33,11 +50,131 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    "pytest-cov>=3.0",
+    # **The version is exact, because a `pytest` release can change which cases run.** A
+    # collection rule or a fixture rule that changes moves the suite result, and this
+    # repository reads exact case counts as invariants. #446 records the decision, and
+    # #378 records the measurement it reads.
+    #
+    # **A version change is a deliberate commit, and this line is its whole diff.**
+    #
+    # **The pin names the newest release that installs on every interpreter of the test
+    # matrix, and not the newest release.** `pytest` 9.1.1 requires Python 3.10, and
+    # `.github/workflows/test.yml` runs Python 3.9. An exact pin of 9.1.1 turns every
+    # Python 3.9 job red. 8.4.2 is the newest release that carries a wheel for Python 3.9
+    # through 3.13. Verified against https://pypi.org/pypi/pytest/9.1.1/json, retrieved
+    # 2026-08-10.
+    "pytest==8.4.2",
+    # **The version is exact, and #446 records the decision.** A `pytest-cov` release that
+    # changes the report format moves the number the coverage gate reads. **A version
+    # change is a deliberate commit, and this line is its whole diff.**
+    #
+    # **The pin stays at 5.0 or above.** 5.0 is the first release that requires `coverage`
+    # 7.5, which carries `coverage report --format=total`. The continuous-integration
+    # floor reads that value.
+    #
+    # 7.1.0 is the newest release, and it carries a wheel for Python 3.9 through 3.13.
+    # Verified against https://pypi.org/pypi/pytest-cov/7.1.0/json, retrieved 2026-08-10.
+    "pytest-cov==7.1.0",
+    # **The version is exact, because a floating pin let the lint gate turn red without a
+    # commit.** #297 measured 58 `F401` findings, 28 files and 82 `I001` findings against
+    # `ruff` 0.14.5, and 54, 27 and 76 against 0.16.2, on an unchanged tree. A gate whose
+    # result depends on the day it runs measures something other than what it names. #378
+    # records the decision, and it declines both a compatible range and the drift.
+    #
+    # **A version change is a deliberate commit, and this line is its whole diff.** The
+    # cost is maintenance. A pinned tool falls behind, and nothing raises the number by
+    # itself. A bump re-measures four things before it lands.
+    #
+    #   1. `ruff check ja4plus/ tests/`.
+    #   2. `ruff format --check ja4plus/ tests/`.
+    #   3. The finding count of each rule the new release widened.
+    #   4. The `ignore` list of `[tool.ruff.lint]` below.
+    #
+    # `tests/test_lint_gate_pin.py` holds this pin. It reads the installed release, every
+    # file under `.github/workflows/` and every second dependency record this repository
+    # could carry. The `dev` extra therefore stays the one place a tool reads the version
+    # from.
+    "ruff==0.16.2",
+    # **The version floats, and #446 chose that shape against the four exact pins beside
+    # it.** A pinned type checker falls behind, and a frozen release hides a defect that a
+    # later release reports. A floating formatter turns a green tree red, which is noisy
+    # and safe. A frozen type checker keeps a red tree green, which is quiet and unsafe.
+    # The user ruled the trade on 2026-08-10.
+    #
+    # **A red `mypy --strict` on an unchanged tree is information this project wants.**
+    # This file already carries the evidence that a major release moved under this
+    # project. The comment on `[tool.mypy]` below states that `python_version` stays
+    # unset, because `mypy` 2.x rejects the value `3.9`.
+    "mypy>=1.11",
+    # `tests/test_installed_wheel.py` runs `python -m build`, and the `installed_wheel`
+    # marker is inside `pytest tests/ -m "not spec_validation"`. Every environment that
+    # runs that gate therefore needs this package. Without the entry the case skips or
+    # fails on the test matrix, and a case nobody runs is a check nobody has.
+    #
+    # **The version is exact, and #446 records the decision.** A `build` release that
+    # changes the wheel it produces moves the result of that gate. **A version change is a
+    # deliberate commit, and this line is its whole diff.**
+    #
+    # **1.5.0 is the newest release and this pin declines it.** It requires Python 3.10,
+    # and the test matrix runs Python 3.9. 1.4.4 is the newest release that carries a
+    # wheel for Python 3.9 through 3.13. Verified against
+    # https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
+    "build==1.4.4",
+    # `FR-release-9` states `twine check` on the built files, and
+    # `tests/release_verification.py` runs it. The publish workflow installs this extra, so
+    # the version lives here and no workflow states one of its own.
+    #
+    # **The version is exact, and #68 follows the decision #446 records.** A `twine` release
+    # that changes what `check` accepts moves the result of the release gate. **A version
+    # change is a deliberate commit, and this line is its whole diff.**
+    #
+    # **7.0.0 is the newest release and this pin declines it.** It requires Python 3.10, and
+    # the test matrix runs Python 3.9. 6.2.0 is the newest release that states
+    # `requires_python` `>=3.9`. Verified against https://pypi.org/pypi/twine/json, retrieved
+    # 2026-08-10.
+    "twine==6.2.0",
 ]
 lookup = [
     "requests>=2.20.0",
+]
+# The documentation site. `mkdocs build --strict` reads `mkdocs.yml` and this extra
+# installs everything that command needs. **No entry here reaches the runtime
+# dependencies above**, because every runtime dependency ships in the release and a user
+# who fingerprints a packet builds no site.
+#
+# **Every version is exact.** #378 records the defect a floating pin causes: a gate that
+# changes without a commit. A site generator that changes between two runs moves the
+# build result, and a broken link that failed yesterday can pass today.
+#
+# `mkdocstrings-python` stays on the 1.x line, and **`mkdocstrings` therefore stays below
+# 1.0.0**. `mkdocstrings_handlers/python/handler.py` of the 1.x line imports
+# `mkdocstrings.handlers.base`, and `mkdocstrings` 1.0.0 removed that public module. The
+# pair `mkdocstrings==1.0.6` with `mkdocstrings-python==1.15.0` therefore installs and
+# then fails the build with
+# `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. #391 records the
+# measurement. **An exact pin can still be an incompatible pin**, so
+# `.github/workflows/docs-build.yml` installs this list into an empty environment and
+# builds the site.
+#
+# The declared range does not carry the constraint: `mkdocstrings-python` 1.15.0 accepts
+# `mkdocstrings>=0.28` and `griffe>=0.49`, and 1.0.6 satisfies the first one. The upper
+# bound lives here.
+#
+# **The extra needs Python 3.10 or later, and the package floor of Python 3.9 stays.** No
+# user builds the site, `griffe` 2.1.0 requires Python 3.10, and `mkdocstrings` 1.0.0
+# requires it too. The documentation job names one version, and the test matrix keeps 3.9.
+#
+# Verified against https://pypi.org/project/mkdocs-material/9.7.7/,
+# https://pypi.org/project/mkdocstrings-python/1.15.0/,
+# https://pypi.org/project/mkdocstrings/0.30.1/,
+# https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md and
+# https://mkdocstrings.github.io/python/usage/, retrieved 2026-08-09.
+docs = [
+    "mkdocs==1.6.1",
+    "mkdocs-material==9.7.7",
+    "mkdocstrings==0.30.1",
+    "mkdocstrings-python==1.15.0",
+    "griffe==2.1.0",
 ]
 
 [project.urls]
@@ -50,13 +187,98 @@ Documentation = "https://github.com/Crank-Git/ja4plus/tree/main/docs"
 [project.scripts]
 ja4plus = "ja4plus.cli:main"
 
+[tool.setuptools.dynamic]
+# The `dynamic` list of the `[project]` table names `version`, and this line states where
+# a build reads it. `tests/test_version_gate.py` fails where the two part.
+version = {attr = "ja4plus.__version__"}
+
 [tool.setuptools.packages.find]
-exclude = ["tests", "tests.*", "examples"]
+# **This list is the one mechanism that keeps a tree out of the wheel, and `docs` and
+# `assets` each need an entry here.** #455 measured a wheel of 96 entries against the
+# requirement `FR-release-11b`. 56 of those entries lay under `docs/`, and one lay under
+# `assets/`. `assets/logo.png` holds 2423363 bytes, `README.md` is its one reader, and a
+# logo is no run-time dependency of a fingerprinting library. Two defaults produce that
+# state together.
+#
+#   1. A `pyproject.toml` project reads implicit namespaces by default, so `docs`,
+#      `docs.specs` and `assets` are discovered packages although they hold no
+#      `__init__.py`.
+#   2. `include-package-data` is true by default since setuptools 61, and `setuptools-scm`
+#      reports every file that git tracks, so each file below a discovered package ships.
+#
+# **The exclusion reaches the wheel and it leaves the source distribution whole.** A source
+# distribution is the project at one revision, and the file finder of `setuptools-scm` adds
+# every tracked file to it whatever this list holds. `tests/` and `examples/` prove that
+# split: both are excluded here and both ship in the source distribution.
+#
+# **A pattern matches one package and no subpackage, so a tree that must never ship carries
+# a wildcard entry beside its own name.** `docs` needs the wildcard today, because
+# `docs.specs` and `docs.specs.features` exist. `assets` holds no subdirectory today, so the
+# bare name alone would exclude every file it holds. The wildcard stands beside it because
+# the requirement is that no file of the tree ever ships, and a subdirectory added later
+# must not reopen the defect. `examples` keeps the bare name it already had.
+#
+# `tests/test_installed_wheel.py` holds every fact above against the built artifacts.
+# `test_the_wheel_carries_no_file_outside_the_package_and_its_metadata` covers the trees
+# this list does not name, so a new directory of the checkout fails a case rather than ship.
+#
+# Verified against https://setuptools.pypa.io/en/latest/userguide/package_discovery.html
+# and https://setuptools.pypa.io/en/latest/userguide/datafiles.html, retrieved 2026-08-09.
+exclude = ["tests", "tests.*", "examples", "docs", "docs.*", "assets", "assets.*"]
 
 [tool.setuptools.package-data]
-ja4plus = ["data/*.csv"]
+# PEP 561 asks for the `py.typed` marker, and setuptools ships no file this list omits.
+# Without the entry the wheel carries the annotations and no type checker reads them.
+ja4plus = ["data/*.csv", "py.typed"]
 
 [tool.pytest.ini_options]
 markers = [
     "spec_validation: FoxIO reference validation tests",
+    # `tests/conftest.py` deselects this marker from a run that does not name it. The
+    # `installed-wheel` job is the only runner of it. **A `-m` expression on the command
+    # line replaces the one in `addopts`, so `addopts` cannot hold that rule.**
+    "installed_wheel: cases that install the built package into a clean environment",
 ]
+
+[tool.ruff]
+target-version = "py39"
+# The formatter reaches its smallest diff on the existing code at 100 columns.
+# A wider limit changes one more line, and a narrower limit changes 32 more.
+line-length = 100
+
+[tool.ruff.lint]
+# The default rule set, plus import order.
+select = ["E4", "E7", "E9", "F", "I"]
+# I001 reports more than 50 findings on the existing code, so Epic 0 turns it off.
+# Epic 4, the typed public interface (#15), turns it back on.
+#
+# F401 is on. #47 declared `__all__` in `ja4plus/__init__.py`, which cleared the 21
+# re-export findings of that file. #297 removed the 54 unused imports that remained
+# across 27 other files, and turned the rule on.
+#
+# Never enable I001 by hand. `tests/test_ja4.py` and `tests/test_spec_validation.py`
+# call `sys.path.insert` before their imports. Read both files before you turn the rule
+# on, and confirm that the fix keeps every import below the path insertion.
+ignore = [
+    "I001",  # 76 findings. Every module orders its imports by hand.
+]
+
+[tool.mypy]
+# `python_version` stays unset. `mypy` 2.x rejects the value `3.9`, so the 3.9 gate is
+# the test job for Python 3.9, not the type check.
+#
+# FR-typed-api-8 states `mypy --strict ja4plus/`. This key holds the same setting, so an
+# editor that reads the configuration reports what the gate reports. `files` keeps the
+# test suite out, because FR-typed-api-7 covers `ja4plus/` alone.
+strict = true
+files = ["ja4plus"]
+
+[[tool.mypy.overrides]]
+# `scapy.all` builds its namespace at import time, so mypy reads no attribute on it.
+module = ["scapy.*"]
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+# `requests` belongs to the optional `lookup` extra, and the lint job does not install it.
+module = ["requests.*"]
+ignore_missing_imports = true

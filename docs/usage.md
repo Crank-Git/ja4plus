@@ -14,6 +14,7 @@ Detailed usage for each JA4+ fingerprinter.
 - [JA4SSH - SSH](#ja4ssh---ssh)
 - [PCAP Analysis](#pcap-analysis)
 - [Live Capture](#live-capture)
+- [Read a network interface](#read-a-network-interface)
 
 ---
 
@@ -115,7 +116,17 @@ result = fp.process_packet(packet)
 
 **TCP option codes:** 2=MSS, 3=Window Scale, 4=SACK Permitted, 8=Timestamps, 1=NOP, 0=EOL
 
-Options are listed in their **original packet order** (never sorted).
+Options are listed in their **original packet order** (never sorted). The reader takes the
+raw TCP option bytes, so each End of Option List byte adds one `0` to the list.
+
+**An absent field and a zero field each write two digits.** A SYN that carries no option
+writes `8192_00_00_00`. A window scale of zero writes `00`, and a maximum segment size of
+zero writes `00`. The FoxIO Wireshark dissector and the FoxIO Zeek package write the same
+form, and #215 records the ruling.
+
+**One connection produces one JA4T value.** The fingerprinter reads the first SYN of a
+connection and reads no later SYN of it. Call `cleanup_connection` when a connection ends,
+or `reset` to drop every entry.
 
 **Common OS patterns:**
 - Linux: `29200_2-4-8-1-3_1460_7`
@@ -130,17 +141,39 @@ Options are listed in their **original packet order** (never sorted).
 
 Fingerprints TCP servers from SYN-ACK responses. Response depends on the client SYN.
 
-**Format:** `{window_size}_{tcp_options}_{mss}_{window_scale}`
+**Format:** `{window_size}_{tcp_options}_{mss}_{window_scale}_{synack_delays}`
 
 ```python
 from ja4plus import JA4TSFingerprinter
 
 fp = JA4TSFingerprinter()
 result = fp.process_packet(packet)
-# Example: 14600_2-4-8-1-3_1460_0
+# Example: 14600_2-4-8-1-3_1460_00
 ```
 
-Same format as JA4T, but extracted from the server's SYN-ACK packet.
+Part a through part d match JA4T, and the fingerprinter reads the server's SYN-ACK
+packet.
+
+**Part e holds the delay between each SYN-ACK of the connection, in whole seconds.** A
+server retransmits a SYN-ACK when it receives no acknowledgement, and the delay pattern
+identifies the TCP stack. The fingerprinter emits one value for each SYN-ACK, so the
+value grows with each retransmission.
+
+```python
+# The server answered once. The fingerprint omits part e.
+# 62727_2_8961_00
+#
+# The server retransmitted five times, at 1, 2, 4, 8 and 16 seconds.
+# 62727_2_8961_00_1-2-4-8-16
+```
+
+**The fingerprint omits part e when the server answers once**, which is the normal case.
+Part e is absent, and it is not `00`.
+
+`JA4TSFingerprinter` holds one entry for each connection it tracks. Call
+`cleanup_connection` when a connection ends, or `reset` to drop every entry. The
+fingerprinter counts ten retransmissions for one connection, and it drops a connection
+two minutes after the last SYN-ACK.
 
 ---
 
@@ -148,7 +181,15 @@ Same format as JA4T, but extracted from the server's SYN-ACK packet.
 
 Measures network latency from TCP handshake timing. Estimates light distance between client and server.
 
-**Format:** `{latency_microseconds}_{ttl}`
+The latency is one way, so it is half the time the capture shows. `JA4L-S` measures
+the SYN to the SYN-ACK. `JA4L-C` measures the SYN-ACK to the last packet that starts
+the payload of its sender and acknowledges no payload. That packet is the first one
+of the application handshake, and it stays the bare ACK when the application sends a
+whole HTTP request. `docs/implementation_notes.md` states the rule and names the
+vectors that prove it.
+
+**Format:** `JA4L-S={latency_microseconds}_{ttl}` and
+`JA4L-C={latency_microseconds}_{ttl}`
 
 ```python
 from ja4plus import JA4LFingerprinter
@@ -159,7 +200,7 @@ fp = JA4LFingerprinter()
 for packet in handshake_packets:
     result = fp.process_packet(packet)
     if result:
-        print(result)  # e.g., "2500_56"
+        print(result)  # e.g., "JA4L-S=2500_56"
 ```
 
 **TTL-based OS hints:**
@@ -168,10 +209,34 @@ for packet in handshake_packets:
 - 64 = Linux / macOS / mobile
 
 **Distance estimation:**
+
+`calculate_distance` returns miles and `calculate_distance_km` returns kilometers. The
+formula is `latency_us * 0.128 / propagation_factor` for miles, and it uses `0.206` for
+kilometers.
+
+Pass the observed TTL, and the method reads the propagation factor from the FoxIO
+hop-count table:
+
+| Hop count | Propagation factor |
+|---|---|
+| 21 or fewer | 1.5 |
+| 22 | 1.6 |
+| 23 | 1.7 |
+| 24 | 1.8 |
+| 25 | 1.9 |
+| 26 or more | 2.0 |
+
+A TTL above the initial TTL implies a negative hop count, which clamps to zero hops.
+
 ```python
-# JA4L latency can estimate physical distance
-# distance = latency_us * 0.128 / propagation_factor
-# propagation_factor: 1.5 (good terrain) to 2.0 (poor terrain)
+# The TTL 44 implies 20 hops, so the factor is 1.5.
+fp.calculate_distance(5191, ttl=44)
+
+# An explicit factor overrides the table.
+fp.calculate_distance(5191, propagation_factor=1.6)
+
+# A call without a TTL gives no hop count, so the factor stays 1.6.
+fp.calculate_distance(5191)
 ```
 
 ---
@@ -310,6 +375,7 @@ python examples/pcap_analysis.py capture.pcap
 
 Fingerprint live traffic using scapy's `sniff`:
 
+<!-- sample: skip the sample opens a capture socket, and continuous integration holds no capture privilege -->
 ```python
 from scapy.all import sniff
 from ja4plus import JA4Fingerprinter, JA4TFingerprinter
@@ -330,3 +396,146 @@ sniff(filter="tcp port 443", prn=handle_packet)
 ```
 
 > Note: Live capture typically requires root privileges.
+
+The recipe above keeps the state of every connection it reads. Use the `watch` command
+below for a monitor that runs for a long time.
+
+---
+
+## Read a network interface
+
+The `ja4plus watch` command reads packets from an interface until the operator stops it.
+It owns a connection table, and that table holds two bounds. A monitor that held no
+bound would grow until the host stopped it.
+
+<!-- sample: skip the command opens a capture socket, and continuous integration holds no capture privilege -->
+```bash
+# Read an interface, and write one JSON object per fingerprint to a file
+sudo ja4plus watch eth0 --format json --output /var/log/ja4.jsonl
+
+# `live` is an alias of `watch`, so version 0.6.0 scripts keep working
+sudo ja4plus live eth0
+
+# Track more connections, and shed an idle connection sooner
+sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
+
+# Read the HTTPS traffic of one host alone
+sudo ja4plus watch eth0 --bpf "tcp port 443 and host 10.0.0.5"
+```
+
+| Option | Meaning | Default |
+|---|---|---|
+| `--max-connections COUNT` | The maximum count of tracked connections. | 10000 |
+| `--connection-timeout SECONDS` | The maximum age of a connection that sends no packet. | 300 |
+| `--stats-interval SECONDS` | The count of seconds between two statistics lines. | No schedule |
+| `--bpf FILTER` | The capture filter, in Berkeley Packet Filter syntax. | No filter |
+
+The command evicts a connection on either bound.
+
+- The count bound removes the least recently used connection as soon as the table is
+  full.
+- The age bound removes a connection that sends no packet for `--connection-timeout`
+  seconds of capture time.
+
+Each eviction drops the entry of the connection table and the per-connection state of
+all ten fingerprinters together. Eviction runs on packet arrival, and the command starts no
+thread for it.
+
+### How to write a capture filter
+
+`--bpf` passes the expression to the capture layer, which drops every packet the filter
+rejects. The capture layer applies the filter before it reports a packet, so the monitor
+never reads a rejected packet and the packet count of the statistics line never holds
+it.
+
+<!-- sample: skip the command opens a capture socket, and continuous integration holds no capture privilege -->
+```bash
+# Read the TLS and the QUIC traffic alone
+sudo ja4plus watch eth0 --bpf "tcp port 443 or udp port 443"
+
+# Read one subnet alone
+sudo ja4plus watch eth0 --bpf "net 10.0.0.0/8"
+```
+
+`tcpdump` and `ja4plus watch` read the same syntax. `man 7 pcap-filter` documents it.
+
+Warning: a filter that drops one direction of a connection produces an incomplete
+fingerprint. JA4S reads the ServerHello and JA4L reads both directions, so a filter such
+as `src host 10.0.0.5` removes the packets those methods need.
+
+### How to read a start-up error
+
+The command needs the privilege to read the interface. It attempts the capture and reads
+the failure, so a host that grants the privilege through a capability runs the monitor.
+Version 0.6.0 read `os.geteuid() != 0`, and that check refused a permitted operator on
+Linux and raised `AttributeError` on Windows.
+
+| Failure | What the command reports |
+|---|---|
+| The operator holds no capture privilege. | The command names `CAP_NET_RAW` for Linux and the `/dev/bpf*` devices for macOS, and ends the run with the status 1. |
+| The host holds no interface of that name. | The command lists every interface the host holds, and ends the run with the status 1. |
+| The capture layer refuses the `--bpf` expression. | The command names the expression and repeats the filter error, and ends the run with the status 1. |
+| The host runs Windows. | The command reports that it runs on Linux and on macOS, and ends the run with the status 1. |
+
+A Linux host grants `CAP_NET_RAW` to a process without granting it the user identity
+zero. The command runs under that operator, because it reads the failure of the capture
+and reads no user identity.
+
+### How to stop a monitor
+
+`SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
+`Ctrl-C` sends `SIGINT`, and `kill` sends `SIGTERM`.
+
+<!-- sample: skip the command names a process identity that no host holds -->
+```bash
+# Stop the monitor that runs under the process identity 4213
+kill 4213
+```
+
+The signal handler sets a flag, and it exits never. The monitor reads that flag after it
+reports a packet, so it finishes the line it writes. The command then flushes the output
+and exits, and the output file holds every fingerprint the monitor reported.
+
+The monitor reads the flag every 0.25 seconds too, so an interface that carries no
+traffic stops it within one second of the signal. The capture socket stays open across
+those reads, so the monitor loses no packet that arrives between two of them. Version
+0.6.0 and the first form of this command read the flag on packet arrival alone, and a
+monitor on a quiet interface there waited for the next packet.
+
+### How to read the statistics
+
+The monitor writes one statistics line when it exits. `--stats-interval` adds a line for
+each interval that passes.
+
+<!-- sample: skip the command opens a capture socket, and continuous integration holds no capture privilege -->
+```bash
+# Write a statistics line every 60 seconds, and one more on exit
+sudo ja4plus watch eth0 --format json --output /var/log/ja4.jsonl --stats-interval 60
+```
+
+Every statistics line goes to standard error, so a pipe that reads standard output reads
+fingerprints alone.
+
+```
+[ja4plus] packets=1284302 fingerprints=48211 connections=8134 evicted=112094 dropped=0 uptime=3600s
+```
+
+| Field | Meaning |
+|---|---|
+| `packets` | The count of packets the monitor read. |
+| `fingerprints` | The count of fingerprints the monitor wrote. |
+| `connections` | The count of connections the connection table holds now. |
+| `evicted` | The count of connections the monitor evicted, on either bound. |
+| `dropped` | The count of packets the capture layer dropped, or `null`. |
+| `uptime` | The count of whole seconds since the monitor started. |
+
+`--stats-interval` starts one thread, and it is the only thread the command starts. The
+thread ends with the capture, so a termination signal stops the monitor and the thread
+together.
+
+The `dropped` field reads a whole number on macOS and on Linux, and `null` where the
+capture layer reports no count. On macOS the monitor reads the count of the capture socket
+through the `BIOCGSTATS` ioctl. On Linux it reads the `PACKET_STATISTICS` socket option
+itself, because `scapy` 2.7.0 reads that option nowhere. **The Linux kernel resets its
+counters as the read returns them**, so the monitor adds each reading to a running total.
+#326 records the whole measurement.

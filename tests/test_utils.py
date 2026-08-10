@@ -6,8 +6,7 @@ Covers tls_utils, http_utils, ssh_utils, and x509_utils.
 
 import unittest
 import hashlib
-import struct
-from scapy.all import IP, TCP, UDP, Raw
+from scapy.all import IP, TCP, Raw
 
 from ja4plus.utils.tls_utils import (
     is_grease_value,
@@ -15,6 +14,7 @@ from ja4plus.utils.tls_utils import (
     parse_tls_handshake,
 )
 from ja4plus.utils.http_utils import (
+    can_become_http_request,
     parse_http_request,
     is_http_request,
     extract_http_info,
@@ -34,10 +34,22 @@ class TestGREASEDetection(unittest.TestCase):
     """Exhaustive GREASE value detection tests."""
 
     GREASE_VALUES = [
-        0x0A0A, 0x1A1A, 0x2A2A, 0x3A3A,
-        0x4A4A, 0x5A5A, 0x6A6A, 0x7A7A,
-        0x8A8A, 0x9A9A, 0xAAAA, 0xBABA,
-        0xCACA, 0xDADA, 0xEAEA, 0xFAFA,
+        0x0A0A,
+        0x1A1A,
+        0x2A2A,
+        0x3A3A,
+        0x4A4A,
+        0x5A5A,
+        0x6A6A,
+        0x7A7A,
+        0x8A8A,
+        0x9A9A,
+        0xAAAA,
+        0xBABA,
+        0xCACA,
+        0xDADA,
+        0xEAEA,
+        0xFAFA,
     ]
 
     def test_all_16_grease_values(self):
@@ -121,8 +133,15 @@ class TestGREASEDetection(unittest.TestCase):
 class TestTLSParsing(unittest.TestCase):
     """Tests for TLS handshake parsing."""
 
-    def _build_client_hello(self, version=0x0303, ciphers=None, sni=None,
-                            alpn=None, supported_versions=None, sig_algs=None):
+    def _build_client_hello(
+        self,
+        version=0x0303,
+        ciphers=None,
+        sni=None,
+        alpn=None,
+        supported_versions=None,
+        sig_algs=None,
+    ):
         """Build a raw TLS ClientHello record."""
         if ciphers is None:
             ciphers = [0x1301]
@@ -245,6 +264,82 @@ class TestTLSParsing(unittest.TestCase):
         self.assertEqual(result["handshake_type"], "server_hello")
         self.assertEqual(result["cipher"], 0xC02F)
 
+    def test_parse_server_hello_reads_a_record_the_segment_truncates(self):
+        """The reader returns the ServerHello of a record longer than the segment.
+
+        A TLS 1.2 server puts the ServerHello, the Certificate and the ServerHelloDone
+        in one handshake record. That record spans several TCP segments, and the first
+        segment holds the whole ServerHello. Issue #151 names the three FoxIO streams
+        the earlier record-length bound rejected.
+        """
+        sh = bytearray()
+        sh += (0x0303).to_bytes(2, "big")
+        sh += b"\x00" * 32
+        sh += b"\x00"  # Session ID len
+        sh += (0xC02F).to_bytes(2, "big")  # Cipher
+        sh += b"\x00"  # Compression
+
+        handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)
+        # The record declares the coalesced length, and the segment carries the
+        # ServerHello alone.
+        record = b"\x16\x03\x03" + (6291).to_bytes(2, "big") + handshake
+
+        result = parse_tls_handshake(record)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["handshake_type"], "server_hello")
+        self.assertEqual(result["cipher"], 0xC02F)
+
+    def test_parse_server_hello_rejects_a_truncated_hello_message(self):
+        """The reader returns None when the segment cuts the ServerHello itself.
+
+        The record here holds every byte it declares, so a bound on the record length
+        reads the message and reports the fields it found before the cut. The message
+        declares 38 bytes and the record carries 28, so the reader returns nothing.
+        """
+        sh = bytearray()
+        sh += (0x0303).to_bytes(2, "big")
+        sh += b"\x00" * 32
+        sh += b"\x00"  # Session ID len
+        sh += (0xC02F).to_bytes(2, "big")  # Cipher
+        sh += b"\x00"  # Compression
+
+        # The message names its full length, and the record carries 10 bytes fewer.
+        handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)[:-10]
+        record = b"\x16\x03\x03" + len(handshake).to_bytes(2, "big") + handshake
+
+        self.assertIsNone(parse_tls_handshake(record))
+
+    def test_parse_server_hello_reads_no_extension_after_the_hello_message(self):
+        """The reader bounds the extension list on the length of the hello.
+
+        The extension list declares 16 bytes and the ServerHello carries 8. The bytes
+        that follow belong to the next handshake message of the same record, and a
+        reader that walks into them reports an extension the server never sent.
+        """
+        sh = bytearray()
+        sh += (0x0303).to_bytes(2, "big")
+        sh += b"\x00" * 32
+        sh += b"\x00"  # Session ID len
+        sh += (0xC02F).to_bytes(2, "big")  # Cipher
+        sh += b"\x00"  # Compression
+        sh += (16).to_bytes(2, "big")  # The declared extension-list length.
+        sh += b"\x00\x2b\x00\x04\x03\x04\x03\x03"  # The one extension it carries.
+
+        handshake = b"\x02" + len(sh).to_bytes(3, "big") + bytes(sh)
+        # The next handshake message of the record reads as extension 0x0010 to a
+        # reader that passes the end of the hello.
+        trailer = b"\x00\x10\x00\x02\x68\x32\x00\x00"
+        record = (
+            b"\x16\x03\x03"
+            + (len(handshake) + len(trailer)).to_bytes(2, "big")
+            + handshake
+            + trailer
+        )
+
+        result = parse_tls_handshake(record)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["extensions"], [0x002B])
+
     def test_extract_tls_info_from_packet(self):
         """extract_tls_info should work with scapy packets."""
         raw = self._build_client_hello(sni="test.com", ciphers=[0x1301])
@@ -335,6 +430,23 @@ class TestHTTPParsing(unittest.TestCase):
         self.assertTrue(is_http_request("GET / HTTP/1.1"))
         self.assertFalse(is_http_request("not http"))
 
+    def test_a_partial_method_name_can_become_an_http_request(self):
+        self.assertTrue(can_become_http_request(b"GE"))
+        self.assertTrue(can_become_http_request(b"OPTION"))
+
+    def test_an_empty_buffer_can_become_an_http_request(self):
+        self.assertTrue(can_become_http_request(b""))
+
+    def test_a_complete_http_request_can_become_an_http_request(self):
+        self.assertTrue(can_become_http_request(b"GET / HTTP/1.1\r\n"))
+
+    def test_a_tls_record_cannot_become_an_http_request(self):
+        self.assertFalse(can_become_http_request(b"\x16\x03\x03"))
+
+    def test_a_string_buffer_can_become_an_http_request(self):
+        self.assertTrue(can_become_http_request("GET"))
+        self.assertFalse(can_become_http_request("not http"))
+
     def test_parse_empty_data(self):
         """Empty data should return None."""
         self.assertIsNone(parse_http_request(b""))
@@ -396,7 +508,9 @@ class TestSSHParsing(unittest.TestCase):
 
     def test_is_ssh_kexinit_test_format(self):
         """Test format KEXINIT should be detected."""
-        data = b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA" + b"SSH_MSG_KEXINIT" + b"algo1;algo2;algo3;algo4"
+        data = (
+            b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA" + b"SSH_MSG_KEXINIT" + b"algo1;algo2;algo3;algo4"
+        )
         self.assertTrue(is_ssh_packet(data))
 
     def test_is_not_ssh(self):
@@ -416,18 +530,22 @@ class TestSSHParsing(unittest.TestCase):
 
     def test_parse_test_kexinit(self):
         """Test format KEXINIT should parse algorithm lists."""
-        data = (b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
-                b"SSH_MSG_KEXINIT"
-                b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none")
+        data = (
+            b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
+            b"SSH_MSG_KEXINIT"
+            b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none"
+        )
         result = parse_ssh_packet(data)
         self.assertIsNotNone(result)
         self.assertEqual(result["type"], "kexinit")
 
     def test_extract_hassh_from_kexinit(self):
         """HASSH should be extracted as MD5 of algorithm string."""
-        data = (b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
-                b"SSH_MSG_KEXINIT"
-                b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none")
+        data = (
+            b"\x00\x00\x05\xdc\x06\x14AAAAAAAAAA"
+            b"SSH_MSG_KEXINIT"
+            b"curve25519-sha256;aes128-ctr;hmac-sha2-256;none"
+        )
         hassh = extract_hassh(data)
         self.assertIsNotNone(hassh)
         self.assertEqual(len(hassh), 32)  # MD5 hex length

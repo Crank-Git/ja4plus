@@ -10,7 +10,7 @@ import unittest
 import hashlib
 import datetime
 from cryptography import x509
-from cryptography.x509.oid import NameOID, ExtensionOID
+from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
@@ -63,16 +63,20 @@ class TestJA4XOIDHashing(unittest.TestCase):
 
     def test_same_structure_same_hash(self):
         """Two certs with same OID structure but different values should have same fingerprint."""
-        cert_a = _make_cert([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Org A"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "a.com"),
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-        ])
-        cert_b = _make_cert([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Org B"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "b.com"),
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "GB"),
-        ])
+        cert_a = _make_cert(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Org A"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "a.com"),
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            ]
+        )
+        cert_b = _make_cert(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Org B"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "b.com"),
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "GB"),
+            ]
+        )
         fp = JA4XFingerprinter()
         fp_a = fp.fingerprint_certificate(cert_a)
         fp_b = fp.fingerprint_certificate(cert_b)
@@ -85,15 +89,19 @@ class TestJA4XDifferentStructures(unittest.TestCase):
 
     def test_different_subject_oids(self):
         """Different number/types of subject OIDs should differ."""
-        cert_a = _make_cert([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "a.com"),
-        ])
-        cert_b = _make_cert([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "b.com"),
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-        ])
+        cert_a = _make_cert(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "a.com"),
+            ]
+        )
+        cert_b = _make_cert(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "b.com"),
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            ]
+        )
         fp = JA4XFingerprinter()
         fp_a = fp.fingerprint_certificate(cert_a)
         fp_b = fp.fingerprint_certificate(cert_b)
@@ -124,18 +132,32 @@ class TestJA4XDifferentStructures(unittest.TestCase):
             x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
             x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
         ]
-        cert_a = _make_cert(subject, extensions=[
-            (x509.BasicConstraints(ca=True, path_length=None), True),
-        ])
-        cert_b = _make_cert(subject, extensions=[
-            (x509.BasicConstraints(ca=True, path_length=None), True),
-            (x509.KeyUsage(
-                digital_signature=True, content_commitment=False,
-                key_encipherment=False, data_encipherment=False,
-                key_agreement=False, key_cert_sign=True,
-                crl_sign=True, encipher_only=False, decipher_only=False
-            ), True),
-        ])
+        cert_a = _make_cert(
+            subject,
+            extensions=[
+                (x509.BasicConstraints(ca=True, path_length=None), True),
+            ],
+        )
+        cert_b = _make_cert(
+            subject,
+            extensions=[
+                (x509.BasicConstraints(ca=True, path_length=None), True),
+                (
+                    x509.KeyUsage(
+                        digital_signature=True,
+                        content_commitment=False,
+                        key_encipherment=False,
+                        data_encipherment=False,
+                        key_agreement=False,
+                        key_cert_sign=True,
+                        crl_sign=True,
+                        encipher_only=False,
+                        decipher_only=False,
+                    ),
+                    True,
+                ),
+            ],
+        )
         fp = JA4XFingerprinter()
         fp_a = fp.fingerprint_certificate(cert_a)
         fp_b = fp.fingerprint_certificate(cert_b)
@@ -146,13 +168,16 @@ class TestJA4XDeterminism(unittest.TestCase):
     """Test that same certificate always produces same fingerprint."""
 
     def test_same_cert_same_result(self):
-        cert = _make_cert([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-        ], extensions=[
-            (x509.BasicConstraints(ca=True, path_length=None), True),
-        ])
+        cert = _make_cert(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            ],
+            extensions=[
+                (x509.BasicConstraints(ca=True, path_length=None), True),
+            ],
+        )
         fp = JA4XFingerprinter()
         r1 = fp.fingerprint_certificate(cert)
         r2 = fp.fingerprint_certificate(cert)
@@ -165,9 +190,11 @@ class TestJA4XFormat(unittest.TestCase):
     """Test JA4X fingerprint format: issuer_hash_subject_hash_ext_hash."""
 
     def test_three_parts(self):
-        cert = _make_cert([
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
-        ])
+        cert = _make_cert(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
+            ]
+        )
         fp = JA4XFingerprinter()
         result = fp.fingerprint_certificate(cert)
         self.assertIsNotNone(result)
@@ -175,11 +202,14 @@ class TestJA4XFormat(unittest.TestCase):
         self.assertEqual(len(parts), 3)
 
     def test_each_part_12_chars(self):
-        cert = _make_cert([
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
-        ], extensions=[
-            (x509.BasicConstraints(ca=True, path_length=None), True),
-        ])
+        cert = _make_cert(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
+            ],
+            extensions=[
+                (x509.BasicConstraints(ca=True, path_length=None), True),
+            ],
+        )
         fp = JA4XFingerprinter()
         result = fp.fingerprint_certificate(cert)
         parts = result.split("_")
@@ -187,9 +217,11 @@ class TestJA4XFormat(unittest.TestCase):
             self.assertEqual(len(part), 12, f"Part {i} should be 12 chars, got {len(part)}")
 
     def test_parts_are_hex(self):
-        cert = _make_cert([
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
-        ])
+        cert = _make_cert(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
+            ]
+        )
         fp = JA4XFingerprinter()
         result = fp.fingerprint_certificate(cert)
         parts = result.split("_")
@@ -201,18 +233,24 @@ class TestJA4XNoExtensions(unittest.TestCase):
     """Test certificate without extensions."""
 
     def test_no_extensions_still_fingerprints(self):
-        cert = _make_cert([
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
-        ], extensions=[])
+        cert = _make_cert(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
+            ],
+            extensions=[],
+        )
         fp = JA4XFingerprinter()
         result = fp.fingerprint_certificate(cert)
         self.assertIsNotNone(result)
 
     def test_no_extensions_hash_is_zero_sentinel(self):
         """Empty extensions should produce '000000000000' sentinel per spec."""
-        cert = _make_cert([
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
-        ], extensions=[])
+        cert = _make_cert(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
+            ],
+            extensions=[],
+        )
         fp = JA4XFingerprinter()
         result = fp.fingerprint_certificate(cert)
         parts = result.split("_")
@@ -281,9 +319,11 @@ class TestJA4XFingerprinterClass(unittest.TestCase):
     """Test JA4XFingerprinter class methods."""
 
     def test_fingerprint_certificate(self):
-        cert = _make_cert([
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
-        ])
+        cert = _make_cert(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
+            ]
+        )
         fp = JA4XFingerprinter()
         result = fp.fingerprint_certificate(cert)
         self.assertIsNotNone(result)
@@ -304,12 +344,15 @@ class TestJA4XFingerprinterClass(unittest.TestCase):
 
     def test_get_cert_details(self):
         """get_cert_details should extract OID hex lists."""
-        cert_data = _make_cert([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
-        ], extensions=[
-            (x509.BasicConstraints(ca=True, path_length=None), True),
-        ])
+        cert_data = _make_cert(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
+            ],
+            extensions=[
+                (x509.BasicConstraints(ca=True, path_length=None), True),
+            ],
+        )
         cert = x509.load_der_x509_certificate(cert_data, default_backend())
         fp = JA4XFingerprinter()
         details = fp.get_cert_details(cert)

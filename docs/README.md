@@ -3,7 +3,11 @@
 ## Contents
 
 - [Usage Guide](usage.md) - Detailed usage for each fingerprinter with examples
+- [The methods](methods/index.md) - One page per method, with its format and its FoxIO source
 - [API Reference](api_reference.md) - Classes, methods, and convenience functions
+- [Output Schema](output-schema.md) - The versioned schema of the `json` and `csv` formats
+- [The concurrency contract](concurrency.md) - Whether threads may share one processor, and the memory bounds
+- [How to move from version 0.6.0 to version 1.0.0](migration-0.6-to-1.0.md) - Every breaking change, with the old form and the new form
 - [Implementation Notes](implementation_notes.md) - Spec deviations and undocumented behaviors
 
 ## Quick Links

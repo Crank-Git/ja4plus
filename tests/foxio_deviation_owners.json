@@ -1,0 +1,91 @@
+{
+  "owners": {
+    "105": {
+      "epic": false,
+      "state": "closed",
+      "title": "Record the JA4SSH divergence on the connection the reference indexes as stream zero"
+    },
+    "129": {
+      "epic": false,
+      "state": "closed",
+      "title": "Decide whether ja4plus decrypts a capture that carries TLS secrets"
+    },
+    "13": {
+      "epic": true,
+      "state": "closed",
+      "title": "Epic 2: Correctness audit"
+    },
+    "131": {
+      "epic": false,
+      "state": "closed",
+      "title": "Compute the JA4H raw form and compare it against JA4H_ro"
+    },
+    "137": {
+      "epic": false,
+      "state": "closed",
+      "title": "Produce the JA4 values the reference holds on tls-handshake.pcapng and tls-sni.pcapng"
+    },
+    "138": {
+      "epic": false,
+      "state": "closed",
+      "title": "Settle whether ja4plus emits a fingerprint on a stream the FoxIO reference ignores"
+    },
+    "151": {
+      "epic": false,
+      "state": "closed",
+      "title": "Read the JA4S ServerHello on three streams the FoxIO Rust implementation holds a value for"
+    },
+    "162": {
+      "epic": false,
+      "state": "closed",
+      "title": "Record the settled JA4 ALPN readings and measure the divergence"
+    },
+    "214": {
+      "epic": false,
+      "state": "closed",
+      "title": "Decide whether JA4SSH emits the trailing window on ssh2.pcapng"
+    },
+    "215": {
+      "epic": false,
+      "state": "open",
+      "title": "Decide the JA4T and JA4TS form where this project disagrees with FoxIO"
+    },
+    "225": {
+      "epic": false,
+      "state": "closed",
+      "title": "Decide the JA4L form: the part count, the protocol part and the duplicate server value"
+    },
+    "246": {
+      "epic": false,
+      "state": "closed",
+      "title": "Write the JA4TS value that a RST produces"
+    },
+    "272": {
+      "epic": false,
+      "state": "open",
+      "title": "Rule on the six JA4L entries that #34 left open"
+    },
+    "34": {
+      "epic": false,
+      "state": "closed",
+      "title": "Emit one JA4L client fingerprint per connection"
+    },
+    "35": {
+      "epic": false,
+      "state": "closed",
+      "title": "Build both JA4H cookie hashes from one cookie list"
+    },
+    "96": {
+      "epic": false,
+      "state": "closed",
+      "title": "Decide how JA4SSH reads the FoxIO mode field"
+    },
+    "97": {
+      "epic": false,
+      "state": "closed",
+      "title": "Emit the JA4SSH occurrence a bare ACK produces after a window closes"
+    }
+  },
+  "retrieved": "2026-08-08",
+  "source": "gh issue list --state all --limit 500 --json number,state,labels,title"
+}

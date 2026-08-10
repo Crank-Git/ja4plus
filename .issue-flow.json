@@ -1,0 +1,73 @@
+{
+  "forge": {
+    "type": "github",
+    "host": "github.com",
+    "owner": "Crank-Git",
+    "repo": "ja4plus"
+  },
+  "remote": "origin",
+  "branchModel": "dev-and-live",
+  "dev": "dev",
+  "live": "master",
+  "concurrency": 2,
+  "batchSize": 4,
+  "runLength": "until-backlog-empty",
+  "prGranularity": "batch",
+  "prAuthority": "autonomous",
+  "deployTarget": null,
+  "review": {
+    "when": "never",
+    "reason": "The project is a library and a command-line program. It has no web interface for a browser-driving review to exercise."
+  },
+  "practices": {
+    "tdd": true,
+    "coverage": "must-not-fall",
+    "commitStyle": "conventional",
+    "docsWithChange": true,
+    "e2e": false,
+    "verificationDepth": {
+      "decidedBy": "the user, 2026-08-08",
+      "always": [
+        "the five gates: both pytest markers, ruff check, ruff format --check, mypy --strict",
+        "test-driven development, with the failing case stated in the verdict",
+        "coverage must not fall",
+        "no fingerprint moves",
+        "the register invariant: the key count of tests/foxio_deviations.json equals the xfailed count"
+      ],
+      "heavyProofOnlyWhen": [
+        "a change can move a fingerprint",
+        "a change alters a published output field or the output schema",
+        "a FoxIO reading or a divergence register entry is at stake"
+      ],
+      "heavyProofMeans": [
+        "mutation reversal proofs, with the mutation proven live and discriminating in both directions",
+        "fuzz campaigns over hostile input",
+        "byte-identical replay of every committed capture"
+      ],
+      "note": "Epics 7, 8 and 9 are database enrichment, documentation and packaging. No fingerprint moves in them, so the heavy proof is not mandatory. The project manager applies it where conformance is actually at stake, and a worker may always apply more than the floor."
+    }
+  },
+  "docsMcp": {
+    "connected": [],
+    "note": "No documentation MCP server is connected and no concrete marketplace source exists in this repository. Workers read vendor documentation with WebFetch, which .claude/rules/external-apis.md requires."
+  },
+  "notes": [
+    ".github/workflows/test.yml triggers on push and on pull_request for branches [master, dev]. A batch pull request into dev usually starts a run, and #459 measured two that started none. Never read an absent run as a passed run: gh pr checks writes \"no checks reported\" and that line refuses no merge. Read .claude/rules/batch-gate.md and run `python -m tests.batch_gate --pr <number>` before every batch merge. It exits non-zero on an absent run, on a run that has not finished, and on a run that concluded anything other than success.",
+    "A skip keyword anywhere in a commit message creates no run for that commit, subject or body, and GitHub reads no intent. That is the cause #459 measured on pull request #444 and pull request #458: each head commit message held the sentence that states the commit carries no [skip ci]. An assignment commit on an integration branch therefore names the keyword nowhere. .claude/rules/batch-gate.md states the three rules.",
+    "publish.yml triggers on a published release only, so a merge to dev deploys nothing. Stage D is skipped.",
+    "Worktree policy from session 6. The harness owns every worktree. The project manager launches a worker with isolation \"worktree\" and never calls EnterWorktree. A worker never calls EnterWorktree or ExitWorktree either, because that pin is session-scoped and every live agent shares it. The project manager stays in the repository root and names an absolute path on every git command.",
+    "The system Python holds no scapy and no cryptography. A worker builds a virtual environment before it runs any gate. .venv/ and venv/ are ignored from session 6, so the environment may live in the worktree.",
+    "Verification is tiered from 2026-08-08. The floor binds every issue; the heavy proof binds only conformance-affecting work. The heavy discipline found a real defect on nearly every issue of Epics 4 to 6, including two tautological assertions inside tests a worker had just written, so it is dialled back rather than dropped.",
+    "A member's pull request carries [skip ci], so its cases may never have run on Linux until the batch gate. #279 sub-merged with macOS-only proof and failed four ubuntu-latest jobs at the gate of batch #361. Expect a platform-only failure there, and confirm dev is green after a merge rather than trusting the pull request run alone."
+  ],
+  "linuxHost": {
+    "host": "bigboy",
+    "user": "e",
+    "ssh": "ssh e@bigboy",
+    "granted": "the user, 2026-08-09",
+    "os": "Ubuntu 24.10, kernel 6.11, 56 cores, 137 GiB memory",
+    "python": "python3.12 only",
+    "note": "The development laptop is macOS, so a Linux-only failure was unreproducible before this host. It is shared: it runs an Elasticsearch node and continuous integration runners. Read `uptime` before a heavy run and never run a load generator on it.",
+    "caveat": "It does not reproduce every ubuntu-latest failure. The memory ceiling controls of #279 failed on ubuntu-latest and passed here, because the failure needs an import transient that a constrained runner has and a 137 GiB host does not. Use it to verify a Linux code path, not to predict a Linux continuous integration result."
+  }
+}

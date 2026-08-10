@@ -1,83 +1,79 @@
 import unittest
-import time
-from scapy.all import IP, TCP, Raw
+from scapy.all import IP, TCP
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter, generate_ja4l
+
+# The handshake below states its own packet times, so the latency of each measurement
+# point is a value this file can name. A packet that carries no time takes the wall
+# clock, and every reading then differs, so no case can compare against a value.
+SYN_TIME = 1000.0
+SYNACK_TIME = 1000.020
+ACK_TIME = 1000.050
+
+# JA4L halves the time between two measurement points, so the SYN-ACK gives 10000 and
+# the ACK gives 15000. The second field is the TTL of the packet that closes the point.
+EXPECTED_SERVER = "JA4L-S=10000_64"
+EXPECTED_CLIENT = "JA4L-C=15000_128"
 
 
 class TestJA4L(unittest.TestCase):
     def setUp(self):
         self.ja4l_fp = JA4LFingerprinter()
 
-        # Create test packets for a TCP handshake
+        # Create test packets for a TCP handshake. The client measurement point needs
+        # the relative sequence number 1 and the relative acknowledgement number 1, so
+        # the packets carry the sequence numbers a real handshake carries.
         self.syn_packet = IP(src="192.168.1.100", dst="93.184.216.34", ttl=128) / TCP(
-            sport=54321, dport=443, flags="S"
+            sport=54321, dport=443, flags="S", seq=0
         )
         self.synack_packet = IP(src="93.184.216.34", dst="192.168.1.100", ttl=64) / TCP(
-            sport=443, dport=54321, flags="SA"
+            sport=443, dport=54321, flags="SA", seq=0, ack=1
         )
         self.ack_packet = IP(src="192.168.1.100", dst="93.184.216.34", ttl=128) / TCP(
-            sport=54321, dport=443, flags="A"
+            sport=54321, dport=443, flags="A", seq=1, ack=1
         )
+        self.syn_packet.time = SYN_TIME
+        self.synack_packet.time = SYNACK_TIME
+        self.ack_packet.time = ACK_TIME
 
     def test_ja4l_direct_generation(self):
-        """Test JA4L with direct conn dict providing timestamps."""
-        # Simulate timestamps from a real handshake
-        now = time.time()
+        """Test JA4L with a conn dict the caller supplies."""
         conn = {
-            'proto': 'tcp',
-            'timestamps': {
-                'A': now - 0.050,  # SYN 50ms ago
-                'B': now - 0.020,  # SYN-ACK 20ms ago
-            },
-            'ttls': {
-                'client': 128,
-                'server': 64,
-            },
+            "proto": "tcp",
+            "timestamps": {},
+            "ttls": {},
+            "isns": {},
         }
 
-        # SYN-ACK generates server fingerprint - but only if timestamps A exists
-        # and we're processing a SYN-ACK packet
+        # The SYN records the client point, and the SYN-ACK reports the server value.
+        self.assertIsNone(generate_ja4l(self.syn_packet, conn))
         ja4l_server = generate_ja4l(self.synack_packet, conn)
-        print(f"JA4L Server fingerprint: {ja4l_server}")
-
-        # ACK generates client fingerprint
         ja4l_client = generate_ja4l(self.ack_packet, conn)
-        print(f"JA4L Client fingerprint: {ja4l_client}")
 
-        # Server should have generated from the SYN-ACK
-        self.assertIsNotNone(ja4l_server, "JA4L server fingerprinting failed")
-        self.assertTrue(ja4l_server.startswith("JA4L-S="), "Server fingerprint should start with JA4L-S=")
-
-        # Client should have generated from the ACK
-        self.assertIsNotNone(ja4l_client, "JA4L client fingerprinting failed")
-        self.assertTrue(ja4l_client.startswith("JA4L-C="), "Client fingerprint should start with JA4L-C=")
-
-        # Both should contain TTL
-        self.assertRegex(ja4l_server, r'JA4L-S=\d+_\d+')
-        self.assertRegex(ja4l_client, r'JA4L-C=\d+_\d+')
+        # An earlier form of this case matched the pattern `JA4L-S=\d+_\d+`, which every
+        # latency meets. The handshake states its own times, so each case names a value.
+        self.assertEqual(ja4l_server, EXPECTED_SERVER)
+        self.assertEqual(ja4l_client, EXPECTED_CLIENT)
 
     def test_ja4l_fingerprinter_class(self):
         """Test the JA4LFingerprinter class processes handshake correctly."""
-        # Process the packets in order - these happen in real time
+        # The packets carry the times the module reads, so the latency of each point is
+        # the same on every run. An earlier form slept for a millisecond and compared
+        # the prefix alone, which every latency meets.
         result_syn = self.ja4l_fp.process_packet(self.syn_packet)
         self.assertIsNone(result_syn, "SYN should not generate fingerprint")
 
-        # Small delay to ensure non-zero latency
-        time.sleep(0.001)
         result_synack = self.ja4l_fp.process_packet(self.synack_packet)
-        self.assertIsNotNone(result_synack, "SYN-ACK should generate server fingerprint")
-        self.assertTrue(result_synack.startswith("JA4L-S="))
+        self.assertEqual(result_synack, EXPECTED_SERVER)
 
-        time.sleep(0.001)
         result_ack = self.ja4l_fp.process_packet(self.ack_packet)
-        self.assertIsNotNone(result_ack, "ACK should generate client fingerprint")
-        self.assertTrue(result_ack.startswith("JA4L-C="))
+        self.assertEqual(result_ack, EXPECTED_CLIENT)
 
         # Should have collected 2 fingerprints
         self.assertEqual(len(self.ja4l_fp.fingerprints), 2)
-        print(f"Collected fingerprints:")
-        for fp in self.ja4l_fp.fingerprints:
-            print(f"  - {fp['fingerprint']}")
+        self.assertEqual(
+            [entry["fingerprint"] for entry in self.ja4l_fp.fingerprints],
+            [EXPECTED_SERVER, EXPECTED_CLIENT],
+        )
 
     def test_ja4l_distance_calculation(self):
         """Test distance calculation from latency."""
@@ -92,15 +88,89 @@ class TestJA4L(unittest.TestCase):
 
     def test_ja4l_os_estimation(self):
         """Test OS estimation from TTL."""
-        self.assertIn("Windows", self.ja4l_fp.estimate_os(120))
-        self.assertIn("Linux", self.ja4l_fp.estimate_os(60))
-        self.assertIn("Cisco", self.ja4l_fp.estimate_os(250))
+        # An earlier form read one word of each answer at one TTL of each range, so a
+        # boundary that moved by one passed it. Each range names its own edge here.
+        self.assertEqual(
+            self.ja4l_fp.estimate_os(60), "Mac, Linux, Phone, or IoT device (initial TTL: 64)"
+        )
+        self.assertEqual(
+            self.ja4l_fp.estimate_os(64), "Mac, Linux, Phone, or IoT device (initial TTL: 64)"
+        )
+        self.assertEqual(self.ja4l_fp.estimate_os(65), "Windows (initial TTL: 128)")
+        self.assertEqual(self.ja4l_fp.estimate_os(120), "Windows (initial TTL: 128)")
+        self.assertEqual(self.ja4l_fp.estimate_os(128), "Windows (initial TTL: 128)")
+        self.assertEqual(
+            self.ja4l_fp.estimate_os(129), "Cisco, F5, or Networking Device (initial TTL: 255)"
+        )
+        self.assertEqual(
+            self.ja4l_fp.estimate_os(250), "Cisco, F5, or Networking Device (initial TTL: 255)"
+        )
 
     def test_ja4l_hop_count(self):
         """Test hop count estimation."""
         self.assertEqual(self.ja4l_fp.estimate_hop_count(120), 8)  # 128 - 120
-        self.assertEqual(self.ja4l_fp.estimate_hop_count(60), 4)   # 64 - 60
+        self.assertEqual(self.ja4l_fp.estimate_hop_count(60), 4)  # 64 - 60
         self.assertEqual(self.ja4l_fp.estimate_hop_count(250), 5)  # 255 - 250
+
+
+class TestJA4LPropagationFactor(unittest.TestCase):
+    """The propagation factor follows the FoxIO hop-count table.
+
+    `PROPAGATION_FACTOR_TABLE` in `ja4plus/fingerprinters/ja4l.py` holds the table. An
+    initial TTL of 64 gives the hop count `64 - ttl`, so each case below names the TTL
+    that implies the hop count it tests.
+
+    Verified against https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4L.png
+    (retrieved 2026-08-06).
+    """
+
+    def setUp(self):
+        self.fingerprinter = JA4LFingerprinter()
+
+    def test_reads_a_different_distance_for_20_hops_and_for_30_hops(self):
+        """The table gives 1.5 for 20 hops and 2.0 for 30 hops."""
+        twenty_hops = self.fingerprinter.calculate_distance(1000, ttl=44)
+        thirty_hops = self.fingerprinter.calculate_distance(1000, ttl=34)
+
+        self.assertNotEqual(twenty_hops, thirty_hops)
+        self.assertAlmostEqual(twenty_hops, 1000 * 0.128 / 1.5, places=6)
+        self.assertAlmostEqual(thirty_hops, 1000 * 0.128 / 2.0, places=6)
+
+    def test_reads_each_row_of_the_foxio_table(self):
+        """Every hop count reads the factor of its row."""
+        rows = ((0, 1.5), (21, 1.5), (22, 1.6), (23, 1.7), (24, 1.8), (25, 1.9), (26, 2.0))
+        for hop_count, factor in rows:
+            with self.subTest(hop_count=hop_count):
+                distance = self.fingerprinter.calculate_distance(1000, ttl=64 - hop_count)
+                self.assertAlmostEqual(distance, 1000 * 0.128 / factor, places=6)
+
+    def test_reads_the_factor_2_0_for_a_hop_count_above_26(self):
+        """A TTL that implies 40 hops reads the last row of the table."""
+        distance = self.fingerprinter.calculate_distance(1000, ttl=24)
+
+        self.assertAlmostEqual(distance, 1000 * 0.128 / 2.0, places=6)
+
+    def test_clamps_a_negative_hop_count_to_zero_hops(self):
+        """A TTL above 255 implies a negative hop count, and the factor stays 1.5."""
+        distance = self.fingerprinter.calculate_distance(1000, ttl=300)
+
+        self.assertAlmostEqual(distance, 1000 * 0.128 / 1.5, places=6)
+
+    def test_an_explicit_propagation_factor_overrides_the_table(self):
+        """The caller's factor replaces the factor the TTL selects."""
+        distance = self.fingerprinter.calculate_distance(1000, ttl=34, propagation_factor=1.6)
+
+        self.assertAlmostEqual(distance, 80.0, places=6)
+
+    def test_keeps_the_factor_1_6_when_the_caller_passes_no_ttl(self):
+        """A call without a TTL gives no hop count, so the table cannot answer."""
+        self.assertAlmostEqual(self.fingerprinter.calculate_distance(1000), 80.0, places=6)
+
+    def test_reads_the_foxio_table_for_a_distance_in_kilometers(self):
+        """The kilometer form reads the same table as the mile form."""
+        distance = self.fingerprinter.calculate_distance_km(1000, ttl=34)
+
+        self.assertAlmostEqual(distance, 1000 * 0.206 / 2.0, places=6)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ja4plus 1.0 — spec</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#f6f7f9; --panel:#fff; --ink:#15181e; --muted:#5b6270; --line:#dde0e7;
+    --accent:#2f6fdd; --ok:#1f8a4c; --warn:#a8620a; --stop:#b3261e;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0c0e12; --panel:#14171d; --ink:#e5e8ef; --muted:#969eae; --line:#252a33;
+            --accent:#6ea2ff; --ok:#4cc47f; --warn:#e0a340; --stop:#ff8a80; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:64rem; margin:0 auto; padding:2.5rem 1.25rem 6rem; }
+  header { border-bottom:1px solid var(--line); padding-bottom:1.5rem; margin-bottom:2rem; }
+  h1 { font-size:2rem; margin:0 0 .4rem; letter-spacing:-.02em; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.75rem; }
+  .pill { font:600 .72rem/1 var(--mono); text-transform:uppercase; letter-spacing:.06em;
+          padding:.35rem .5rem; border-radius:.25rem; border:1px solid var(--line); color:var(--muted); }
+  .pill.approved { color:var(--ok); border-color:currentColor; }
+  h2 { font-size:1.35rem; margin:3rem 0 .75rem; letter-spacing:-.01em;
+       padding-top:1.25rem; border-top:1px solid var(--line); }
+  h3 { font-size:1.05rem; margin:1.75rem 0 .5rem; }
+  h4 { font-size:.95rem; margin:1.25rem 0 .35rem; color:var(--muted); }
+  p, li { font-size:.95rem; }
+  code { font:.85em var(--mono); background:color-mix(in srgb, var(--ink) 8%, transparent);
+         padding:.1em .35em; border-radius:.2rem; }
+  pre { background:var(--panel); border:1px solid var(--line); border-radius:.5rem;
+        padding:.9rem 1rem; overflow-x:auto; font:12.5px/1.55 var(--mono); }
+  pre code { background:none; padding:0; }
+  .tablewrap { overflow-x:auto; margin:.75rem 0; }
+  table { border-collapse:collapse; width:100%; font-size:.88rem; min-width:34rem; }
+  th, td { text-align:left; padding:.5rem .65rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:.6rem;
+          padding:1.15rem 1.35rem; margin:1rem 0; }
+  .card h3 { margin-top:0; }
+  .card.q { border-left:4px solid var(--warn); }
+  .card.block { border-left:4px solid var(--stop); }
+  .card.a { border-left:4px solid var(--accent); }
+  .lede { font-size:1.05rem; color:var(--muted); }
+  ol.epics { list-style:none; counter-reset:e -1; padding:0; }
+  ol.epics li { counter-increment:e; background:var(--panel); border:1px solid var(--line);
+                border-radius:.5rem; padding:.85rem 1rem .85rem 3.4rem; margin:.6rem 0; position:relative; }
+  ol.epics li::before { content:"E" counter(e); position:absolute; left:1rem; top:.85rem;
+                        font:700 .8rem/1.4 var(--mono); color:var(--accent); }
+  ol.epics .goal { color:var(--muted); font-size:.9rem; }
+  iframe { width:100%; height:34rem; border:1px solid var(--line); border-radius:.5rem;
+           background:var(--panel); }
+  .mockbar { display:flex; justify-content:space-between; align-items:baseline;
+             gap:1rem; margin:1.25rem 0 .5rem; flex-wrap:wrap; }
+  a { color:var(--accent); }
+  .foot { margin-top:4rem; padding-top:1.25rem; border-top:1px solid var(--line);
+          color:var(--muted); font-size:.85rem; }
+  .ev { font-size:.82rem; color:var(--muted); font-style:italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ja4plus 1.0</h1>
+  <p class="lede">Make the JA4+ fingerprints provably correct, make the library safe to run
+  for a week, then publish version 1.0.0 with documentation that is true.</p>
+  <div class="meta">
+    <span class="pill approved">status: approved</span>
+    <span class="pill">approved 2026-08-06</span>
+    <span class="pill">branch model: dev-and-live</span>
+    <span class="pill">repo: Crank-Git/ja4plus</span>
+    <span class="pill">10 epics</span>
+  </div>
+</header>
+
+<div class="card q">
+  <h3>How this page is maintained</h3>
+  <p><strong>A person maintains this page by hand, and no command generates it.</strong>
+  <code>docs/specs/spec.md</code> is the specification. This page is a summary of it, and
+  the page lags it. Two commits wrote this page, and the later one is <code>f6d808b</code>
+  of #175. The page holds no Changelog section, and <code>docs/specs/spec.md</code>
+  records 68 Changelog rounds before #211.</p>
+  <p><strong>Read <code>docs/specs/spec.md</code> wherever the two disagree.</strong> #211
+  records this note and corrects the two statements that contradicted the measurement.
+  Whether this page survives is a question for the user.</p>
+  <p><strong>#477 corrects the vector-fallback rule of the <code>Open, but not blocking</code>
+  card.</strong> That card gave precedence to the expected-output files and named no
+  reader, and this page states the corrected rule 118 lines above it.
+  <code>tests/test_documentation_fallback_rule.py</code> now holds every statement of the
+  rule against a shape, so a rewording that drops the reader fails a case.</p>
+  <p><strong>#211 left a third statement, and #449 corrects it.</strong> The image count of
+  the <code>Open, but not blocking</code> card read seven, and this page states eleven
+  120 lines above it. <code>tests/test_documentation_image_count.py</code> now reads a
+  count out of the inventory rather than one forbidden phrase. A rewording of the same
+  wrong number therefore fails a case.</p>
+</div>
+
+<h2>Executive summary</h2>
+
+<p><code>ja4plus</code> is a Python library and command-line program that reads network
+packets and produces JA4+ fingerprints. Version 0.6.0 is on PyPI. The codebase is
+5,413 lines with 7,382 lines of tests, and 582 of its 584 tests pass today.</p>
+
+<p>The problem is not that the project is unfinished. The problem is that its central
+claim — that a fingerprint matches the FoxIO reference — is not checked anywhere that
+can fail. The conformance suite exists, reads vectors that are downloaded on demand and
+excluded from version control, and never runs in continuous integration. Reading the code
+against the published FoxIO material found one method that is knowingly wrong, and a set
+of defects that only appear on traffic the vectors do not cover.</p>
+
+<div class="card">
+  <h3>The four findings that shaped this plan</h3>
+  <ol>
+    <li><strong>JA4SSH emits at the wrong interval.</strong> FoxIO states
+      <code>(runs every 200 SSH packets by default)</code>. <code>ja4ssh.py:170</code> uses
+      <code>min(self.packet_count, 10)</code>, above a comment reading
+      <em>"For testing purposes"</em>. FoxIO's expected output for <code>ssh.pcapng</code>
+      is one fingerprint, <code>c36s36_c76s124_c0s0</code> — the two counts sum to 200.
+      The Go port carries the same defect, which is why a parity test never caught it.</li>
+    <li><strong>The conformance gate does not exist.</strong> <code>test.yml</code> neither
+      downloads the vectors nor selects the <code>spec_validation</code> marker, so those
+      12 tests skip in every run. The downloader fetches 6 of the 37 vectors FoxIO
+      publishes, and the 31 it skips include every QUIC, DHCP, X.509, IPv6, tunnelled and
+      malformed case.</li>
+    <li><strong>Nothing bounds memory and nothing states a thread-safety contract.</strong>
+      There is no lock in the package. Every state table grows without limit unless the
+      caller knows to call <code>cleanup_connection</code>, and
+      <code>ja4plus live</code> never calls it. <code>base.py:38</code> stores the packet
+      object itself on every fingerprint.</li>
+    <li><strong>Two published statements are false.</strong> The README claims the project
+      implements all JA4+ methods; FoxIO documents twelve and this project implements
+      eleven. <code>JA4LFingerprinter</code> writes both JA4L and JA4LS, so ten
+      fingerprinter classes carry eleven methods. #387 corrected the count of ten that this
+      finding first stated. No code sample in the README, in <code>docs/</code>, or in
+      <code>examples/</code> is executed by anything.</li>
+  </ol>
+</div>
+
+<p>The plan sequences the work so each epic can fail loudly. Epic 0 builds the gates.
+Epic 1 makes the vectors pass. Epic 2 fixes what the vectors cannot see. Epic 3 bounds
+memory and states the concurrency contract. Epics 4 to 7 settle the interface. Epics 8
+and 9 make the documentation true and publish version 1.0.0.</p>
+
+<h2>Goals</h2>
+<ol>
+  <li>Every method matches the FoxIO reference on all 37 FoxIO vectors.</li>
+  <li>The conformance suite runs on every pull request and blocks a merge on failure.</li>
+  <li>The library holds bounded memory under a continuous packet stream.</li>
+  <li>The library states one thread-safety contract, and tests prove that contract.</li>
+  <li>No packet input crashes the library, including truncated and corrupt packets.</li>
+  <li>Test coverage is 90 percent or higher, measured by line.</li>
+  <li>The public interface carries type annotations, and <code>mypy --strict</code> passes.</li>
+  <li>Version 1.0.0 is on PyPI, with documentation published on GitHub Pages.</li>
+  <li>This project and the Go port emit the same fingerprint for every vector.</li>
+</ol>
+
+<h3>Non-goals</h3>
+<ul>
+  <li><strong>JA4TScan.</strong> It is an active scanner and this project reads traffic only.</li>
+  <li><strong>Windows live capture.</strong> The monitor targets Linux and macOS.</li>
+  <li><strong>A fingerprint database service.</strong> The project reads FoxIO's mapping file.</li>
+  <li><strong>A throughput target.</strong> The project measures and reports; it sets no number.</li>
+  <li><strong>An asynchronous interface.</strong> The library stays synchronous.</li>
+</ul>
+
+<h2>Users</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Persona</th><th>What they need</th></tr></thead>
+<tbody>
+<tr><td>Capture analyst</td><td>Fingerprints from a saved capture, in a format another tool can read.</td></tr>
+<tr><td>Monitor operator</td><td>A long-running process that reads a live interface and never exhausts memory.</td></tr>
+<tr><td>Library integrator</td><td>A typed, documented interface with a stated concurrency contract.</td></tr>
+<tr><td>Maintainer</td><td>Evidence that a change did not break conformance.</td></tr>
+</tbody></table></div>
+
+<h2>Architecture</h2>
+
+<p>A pure Python package with two runtime dependencies. A packet enters
+<code>Processor.process_packet</code>. The processor calls ten fingerprinters in a fixed
+order. Each reads the packet, updates its state table, and emits a fingerprint or nothing.
+The processor returns the collected results.</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Component</th><th>Choice</th><th>Why it beat the alternative</th></tr></thead>
+<tbody>
+<tr><td>Language</td><td>Python 3.9+</td><td>3.8 reached end of life in October 2024. 3.9 is the oldest line still receiving security fixes.</td></tr>
+<tr><td>Packet parsing</td><td><code>scapy&gt;=2.4.0</code></td><td>Reads every capture format needed, with no C toolchain. <code>dpkt</code> is faster but parses fewer link types.</td></tr>
+<tr><td>Certificates</td><td><code>cryptography&gt;=42</code></td><td>Maintained, and already a dependency for JA4X.</td></tr>
+<tr><td>Lint and format</td><td><code>ruff</code></td><td>One tool replaces flake8, isort and black. Sub-second on this codebase.</td></tr>
+<tr><td>Type check</td><td><code>mypy --strict</code></td><td>Supports the <code>py.typed</code> marker the typed interface needs. <code>pyright</code> needs Node.js in CI.</td></tr>
+<tr><td>Docs</td><td><code>mkdocs-material</code></td><td>The existing docs are Markdown. Sphinx would need a rewrite into reStructuredText.</td></tr>
+<tr><td>Docs host</td><td>GitHub Pages</td><td>Already on GitHub. Read the Docs adds an account and a webhook.</td></tr>
+<tr><td>Package host</td><td>PyPI, trusted publishing</td><td>Already configured. No token stored.</td></tr>
+</tbody></table></div>
+
+<p class="ev">Verified against https://github.com/FoxIO-LLC/ja4 (retrieved 2026-08-06,
+upstream default branch at a commit dated 2026-07-21). Upstream PRs #297 and #299 since
+May 2026 change the Wireshark plugin and the README, not the fingerprint semantics — so
+the May 2026 baseline this project targets is still current.</p>
+
+<h2>Parity with ja4plus-go</h2>
+
+<p>A Go port exists at <code>Crank-Git/ja4plus-go</code>, worked in a separate session.
+<code>processor.py:3</code> already states that this project mirrors it. Three rules
+govern the relationship.</p>
+
+<ol>
+  <li><strong>FoxIO decides behaviour.</strong> Where FoxIO specifies the output, the
+    vectors decide, and this rule outranks the port.</li>
+  <li><strong>The port decides interface.</strong> Where FoxIO specifies nothing — a field
+    name, a subcommand, a default — the port has shipped a choice and this project adopts
+    it rather than inventing a second one.</li>
+  <li><strong>The gate is the shared vector set.</strong> Both repositories read the same
+    37 vectors at the same pinned commit. No test here builds, runs or imports the port;
+    that would couple two repositories moving at different speeds and fail for reasons
+    unrelated to the change under test.</li>
+</ol>
+
+<p>This spec plans changes to this repository only. It records what the port should change
+and files nothing there.</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Item</th><th>Here today</th><th>Port today</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td>Result type</td><td><code>dict</code>, 8 keys</td><td><code>FingerprintResult</code>, 9 fields</td><td>Adopt the port's field set, including <code>Timestamp</code>. E4</td></tr>
+<tr><td>Results per packet</td><td>One string</td><td>A slice</td><td>Return a list. E4</td></tr>
+<tr><td>Parse failures</td><td>Swallowed at <code>DEBUG</code></td><td>Returned</td><td>Expose them. E4</td></tr>
+<tr><td>Remote lookup</td><td><code>--lookup</code> is opt-in, but the client then calls <code>ja4db.com</code> with no second opt-in</td><td>The remote fallback is separately opt-in</td><td>Separate local from remote. E7</td></tr>
+<tr><td>Shard key</td><td><code>tcp:ip:port-&gt;ip:port</code></td><td>Identical</td><td>Already at parity. Add a test. </td></tr>
+<tr><td><code>db update</code> / <code>db info</code></td><td>Both exist</td><td>Both exist</td><td>Already at parity. Add a test.</td></tr>
+<tr><td>JA4SSH window</td><td><code>min(packet_count, 10)</code></td><td><code>min(packetCount, 10)</code></td><td>Both wrong. FoxIO says 200. Fix here. E1</td></tr>
+<tr><td>Parity test</td><td>6 tests asserting names exist</td><td>—</td><td>Replace with the vector suite. E1</td></tr>
+</tbody></table></div>
+
+<p class="ev">Verified against https://github.com/Crank-Git/ja4plus-go
+(<code>types.go</code>, <code>processor.go</code>, <code>lookup.go</code>,
+<code>ja4ssh.go</code>, retrieved 2026-08-06, <code>master</code> at 2026-05-09).</p>
+
+<h2>Cross-cutting concerns</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Concern</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td>Thread safety</td><td>Locked by default. <code>Processor(thread_safe=False)</code> opts out for a caller who shards.</td></tr>
+<tr><td>Bounded memory</td><td>Every state table has a maximum entry count and a maximum age. No packet object is retained after <code>process_packet</code> returns.</td></tr>
+<tr><td>The boundary of the state rule</td><td>A state table survives across packets. A structure that one packet or one request builds and releases is not a state table, and it holds neither bound. The cookie list of one HTTP request is such a structure, and #175 records the ruling. The boundary removes no bound from a state table. The six unbounded state tables that #179 records keep their bound.</td></tr>
+<tr><td>Error handling</td><td>A parser that cannot read a packet returns nothing; it does not raise. A caller error raises <code>ValueError</code>.</td></tr>
+<tr><td>Validation</td><td>Every packet is hostile input. No parser trusts a length field it read from the packet.</td></tr>
+<tr><td>Security posture</td><td>No network request unless the caller opts in. A fingerprint sent to a third party discloses observed traffic.</td></tr>
+<tr><td>Performance</td><td>Measured and reported per pull request. No target. A change that halves throughput needs a stated reason.</td></tr>
+</tbody></table></div>
+
+<h2>Epics</h2>
+<ol class="epics">
+  <li><strong>Foundation</strong> —
+    <span class="goal">Build the gates before any behaviour changes, so every later epic
+    has something that can fail. Vendor the 37 vectors, run conformance in CI, add
+    ruff/mypy/coverage, raise the Python floor to 3.9, create <code>dev</code>.</span></li>
+  <li><strong>Spec conformance</strong> —
+    <span class="goal">Make all 37 vectors pass. Fix the JA4SSH 200-packet window, expose
+    <code>JA4_o</code>, use FoxIO's propagation-factor table, replace the surface-area
+    parity tests.</span></li>
+  <li><strong>Correctness audit</strong> —
+    <span class="goal">Fix the 14 registered defects the vectors cannot see: TCP sequence
+    wraparound, quadratic reassembly, repeated JA4L client emission, duplicate cookie
+    names, retained packet objects. Add the malformed-input suite.</span></li>
+  <li><strong>Concurrency and resource safety</strong> —
+    <span class="goal">State the contract and prove it. Per-fingerprinter locks, bounded
+    state tables with age and count limits, eviction on packet arrival, processor
+    statistics.</span></li>
+  <li><strong>Typed public interface</strong> —
+    <span class="goal">Frozen <code>FingerprintResult</code> matching the port's fields,
+    <code>mypy --strict</code>, <code>py.typed</code> in the wheel, remove the
+    <code>collector.py</code> module deprecated since 0.3.0.</span></li>
+  <li><strong>Structured output</strong> —
+    <span class="goal">Separate address and port fields, a versioned JSON Lines and CSV
+    schema, a fixed CSV header, results on stdout and diagnostics on stderr.</span></li>
+  <li><strong>Live capture</strong> —
+    <span class="goal">Make the monitor a supported mode: <code>ja4plus watch</code> with
+    connection eviction, signal handling, a clean flush on exit, and statistics.</span></li>
+  <li><strong>Database enrichment</strong> —
+    <span class="goal">No network request without opt-in. Bulk lookup, a bounded cache, a
+    recorded source per result.</span></li>
+  <li><strong>Documentation</strong> —
+    <span class="goal">Correct the method-coverage claim, state the concurrency contract,
+    run every code sample in CI, publish the mkdocs site.</span></li>
+  <li><strong>Release</strong> —
+    <span class="goal">Verify the built wheel in a clean environment before publishing.
+    Ship 1.0.0.</span></li>
+</ol>
+
+<h3>Milestones</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Milestone</th><th>Epics</th><th>What shippable means</th></tr></thead>
+<tbody>
+<tr><td>M1 — Gates</td><td>0</td><td>The repository can prove a regression. Nothing user-facing changed.</td></tr>
+<tr><td>M2 — Correct</td><td>1, 2</td><td>Every fingerprint matches the reference. This alone justifies a 0.7.0 release if 1.0.0 slips.</td></tr>
+<tr><td>M3 — Safe</td><td>3</td><td>A monitor runs for a day without memory growth.</td></tr>
+<tr><td>M4 — Stable</td><td>4, 5, 6, 7</td><td>The interface is typed and will not change again before 2.0.0.</td></tr>
+<tr><td>M5 — Released</td><td>8, 9</td><td>Version 1.0.0 on PyPI with published documentation.</td></tr>
+</tbody></table></div>
+
+<h2>Feature sets</h2>
+
+<h3><a href="features/00-foundation.md">00 — Foundation</a></h3>
+<p>17 requirements. Vendor the vectors with a <code>NOTICE</code> recording the upstream
+commit and FoxIO License 1.1 attribution; un-ignore them; run conformance, ruff, ruff
+format, mypy and coverage on every pull request; raise the floor to Python 3.9; pin every
+action to a commit; add Dependabot; fix the two tests that shell out to a bare
+<code>python</code> instead of <code>sys.executable</code>.</p>
+<p><strong>Key criteria:</strong> the conformance suite passes with no network access, and
+<em>fails when it collects zero vectors</em> — a silent skip is indistinguishable from a
+pass, which is how this gap survived.</p>
+
+<h3><a href="features/01-spec-conformance.md">01 — Spec conformance</a></h3>
+<p>12 requirements. All 37 vectors pass. JA4SSH emits every 200 SSH packets. JA4 and JA4S
+expose <code>JA4_o</code>. <code>calculate_distance</code> reads the propagation factor
+from FoxIO's hop-count table instead of hardcoding 1.6.</p>
+<p><strong>Key criteria:</strong> <code>ssh.pcapng</code> produces exactly one JA4SSH
+fingerprint equal to <code>c36s36_c76s124_c0s0</code>; <code>tls12.pcap</code> produces
+<code>JA4_o = t13d1715h2_5b234860e130_014157ec0da2</code>.</p>
+<p class="ev">Eleven of the twelve FoxIO methods carry no complete text specification, and
+JA4 is the one method that holds one. Where a reader reads the image and finds it
+ambiguous, the expected-output files decide and the reading goes in
+<code>docs/implementation_notes.md</code>. An image nobody read reaches no fallback.
+<code>docs/specs/foxio/README.md</code> holds the inventory.</p>
+
+<h3><a href="features/02-correctness-audit.md">02 — Correctness audit</a></h3>
+<p>13 requirements over a 14-row audit register, each row citing a file and line. The
+register covers: 32-bit sequence wraparound in <code>tcp_stream.py:53</code>; the
+quadratic duplicate scan at <code>:37</code>; unbounded per-stream segment storage at
+<code>:41</code>; JA4L re-emitting a client fingerprint on every later ACK
+(<code>ja4l.py:223</code>); JA4H building its two cookie hashes from different cookie sets
+(<code>ja4h.py:163</code>); the dead identical branch at <code>ja4.py:268</code>; packet
+retention at <code>base.py:38</code>.</p>
+<p><strong>Key criteria:</strong> 10,000 segments on one stream complete in under a second;
+100 post-handshake ACKs produce exactly one <code>JA4L-C</code>; every FoxIO malformed and
+crash capture, and a truncated copy of every capture, raise nothing.</p>
+
+<h3><a href="features/03-concurrency-safety.md">03 — Concurrency and resource safety</a></h3>
+<p>15 requirements. One <code>RLock</code> per fingerprinter rather than one global lock,
+so ten threads can work on different methods at once. Eviction runs on packet arrival
+using the <em>packet</em> timestamp, not the wall clock — a capture replaying an hour in
+ten seconds would otherwise evict state it still needs. The library starts no thread.</p>
+<p><strong>Key criteria:</strong> eight threads on one processor for 60 seconds produce the
+same fingerprint set as one thread; a test that replaces the lock with an object which
+fails when acquired proves <code>thread_safe=False</code> acquires nothing.</p>
+
+<h3><a href="features/04-typed-api.md">04 — Typed public interface</a></h3>
+<p>13 requirements. A frozen <code>FingerprintResult</code> whose field names are the
+snake-case form of the port's struct — including <code>type</code> rather than
+<code>method</code>, because the port calls it <code>Type</code>. Item access survives one
+major version behind a <code>DeprecationWarning</code>.</p>
+<p><strong>Key criteria:</strong> <code>mypy --strict</code> clean;
+<code>py.typed</code> present in the wheel; <code>import ja4plus.collector</code> fails.</p>
+
+<h3><a href="features/05-structured-output.md">05 — Structured output</a></h3>
+<p>13 requirements. Addresses and ports as separate fields instead of one packed
+<code>source</code> string; a <code>schema_version</code> on every output line; a CSV header
+that is identical whatever flags were passed. The table format explicitly carries no
+stability promise; JSON Lines and CSV do.</p>
+<p><strong>Key criteria:</strong> the CSV header is byte-identical with and without
+<code>--lookup</code>; piping into <code>head -1</code> produces no traceback.</p>
+
+<h3><a href="features/06-live-capture.md">06 — Live capture</a></h3>
+<p>14 requirements. <code>ja4plus watch</code> owns a connection table and calls
+<code>cleanup_connection</code> on eviction — today's <code>ja4plus live</code> never does.
+The privilege check attempts a capture rather than reading <code>os.geteuid</code>, because
+Linux can grant <code>CAP_NET_RAW</code> without granting user zero.</p>
+<p><strong>Key criteria:</strong> 100,000 packets across 50,000 connections hold the tracked
+count at or below the limit; <code>SIGTERM</code> exits zero with a complete output file.</p>
+
+<h3><a href="features/07-db-enrichment.md">07 — Database enrichment</a></h3>
+<p>15 requirements. <code>--lookup</code> becomes local-only; <code>--lookup-remote</code>
+opts into <code>ja4db.com</code> and prints a one-time notice naming the service.
+<code>db update</code> writes to the platform cache directory, never inside the installed
+package.</p>
+<p><strong>Key criteria:</strong> a test that fails on any outbound socket passes while the
+default client looks up 1,000 fingerprints.</p>
+
+<h3><a href="features/08-documentation.md">08 — Documentation</a></h3>
+<p>15 requirements. The README states which of FoxIO's twelve methods are implemented and
+which are not, states the concurrency contract and the memory defaults, and every code
+sample in the README, <code>docs/</code> and <code>examples/</code> runs in CI.
+<code>mkdocs build --strict</code> fails on a broken link.</p>
+
+<h3><a href="features/09-release.md">09 — Release</a></h3>
+<p>14 requirements. The version lives in one place. The publish workflow installs the built
+wheel into a clean environment, runs the CLI and the conformance suite against it, and
+publishes only if both pass — a partial publish to PyPI cannot be undone.</p>
+
+<h2>Mockups</h2>
+<div class="mockbar">
+  <h3 style="margin:0">01 — Command-line output formats</h3>
+  <a href="mockups/01-cli-output.html" target="_blank" rel="noopener">Open in a new tab ↗</a>
+</div>
+<p class="ev">Referenced by <code>features/05-structured-output.md</code>. Mockups are
+guidance, not a contract: they convey intent and roughly what a user sees. An implementer
+may diverge where the requirements and acceptance criteria are still met. The parts that
+<em>are</em> a contract — the CSV column order and the JSON field set — live in the feature
+file. If the frame below is blank, use the link above; a local file is an opaque origin and
+may not render in an iframe.</p>
+<iframe src="mockups/01-cli-output.html" title="Command-line output formats mockup"></iframe>
+
+<h2>Assumptions</h2>
+<div class="card a">
+<ol>
+  <li>You accept a break in the <code>Processor.process_packet</code> return type at 1.0.0.</li>
+  <li>FoxIO License 1.1 permits redistribution of the vectors with attribution.
+    <code>pyproject.toml</code> already declares <code>LicenseRef-FoxIO-1.1</code>.</li>
+  <li>The files under <code>python/test/testdata/</code> are the reference — not those under
+    <code>wireshark/test/testdata/</code>, where <code>tls12.pcap.json</code> is an empty
+    array while the Python one holds four fingerprints.</li>
+  <li><code>Development Status</code> moves to <code>5 - Production/Stable</code> at 1.0.0.</li>
+  <li>Default limits are 10,000 entries and 300 seconds, tuned in Epic 3 against a measurement.</li>
+  <li>The remote lookup becomes opt-in, which changes behaviour for anyone relying on it today.</li>
+  <li>The port stays at its 2026-05-09 state while this work proceeds. This spec reads it and never writes to it.</li>
+  <li>The port eventually adopts the 200-packet JA4SSH window. Until it does, the two disagree on that one method.</li>
+</ol>
+</div>
+
+<h2>Open questions</h2>
+
+<div class="card a">
+  <h3>Decided at approval</h3>
+  <p><strong>JA4TScan is declined.</strong> It sends crafted packets rather than reading
+  traffic, so it needs raw-socket transmission, a target-host argument, and privileges the
+  read path never needs. A program that sends packets to a host reaches a network the
+  operator did not capture, and that capability is larger than fingerprint production.
+  Epic 8 corrects the README's coverage claim instead. Round 3 recorded this as a
+  permanent non-goal on 2026-08-06. <strong>The user restated it on 2026-08-08 as a
+  decline that is reversible</strong>, and <code>Non-goals</code> in
+  <code>docs/specs/spec.md</code> holds the later form. #197 holds the reading.</p>
+  <p><strong><code>dev</code> becomes the GitHub default branch.</strong> A pull request
+  then opens against <code>dev</code> with no manual step. <code>master</code> stays the
+  release branch and is protected. Epic 0 makes both changes.</p>
+</div>
+
+<div class="card q">
+  <h3>Open, but not blocking</h3>
+  <ul>
+    <li><strong>Eleven of the twelve FoxIO methods are specified only as images.</strong> JA4
+      is the one method that holds a complete text specification, and
+      <code>docs/specs/foxio/README.md</code> holds the inventory. Where a reader reads the
+      image and finds it ambiguous, the expected-output files decide and the reading goes in
+      <code>docs/implementation_notes.md</code>. An image nobody read reaches no
+      fallback.</li>
+    <li><strong>A vector may not exercise a method.</strong> The suite must record that as
+      not-applicable and must fail if <em>everything</em> is not-applicable.</li>
+    <li><strong>90 percent coverage may not be reachable</strong> on the scapy interface
+      layer without brittle mocks. An unreachable gate gets lowered under pressure.</li>
+    <li><strong>Fixing the JA4SSH window changes output for every current user</strong> of
+      that method. Correct, but disruptive; 1.0.0 is the right place and the changelog must
+      say so plainly.</li>
+    <li><strong>Parity on JA4SSH breaks temporarily</strong> when this project fixes the
+      window before the port does.</li>
+    <li><strong>The <code>ja4db.com</code> API publishes no versioned document</strong> that
+      I could find. The client treats any unexpected response shape as a miss.</li>
+  </ul>
+</div>
+
+<div class="foot">
+  <p>Spec package: <code>docs/specs/spec.md</code> · 10 feature files under
+  <code>features/</code> · 1 mockup under <code>mockups/</code>. Regenerated 2026-08-06.</p>
+  <p>JA4+ is a set of standards created by FoxIO. This project is an independent
+  implementation of the published specification.</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -8,17 +8,19 @@ from ja4plus.utils.tls_utils import extract_tls_info
 
 
 class TestExtractTlsInfoQuicPath(unittest.TestCase):
-
     def _make_udp_packet(self, payload):
         return IP(src="10.0.0.1", dst="10.0.0.2") / UDP(sport=12345, dport=443) / Raw(load=payload)
 
     @patch("ja4plus.utils.tls_utils.parse_quic_initial")
     def test_udp_triggers_quic(self, mock_quic):
         mock_quic.return_value = {
-            "type": "client_hello", "is_quic": True,
-            "version": 0x0303, "ciphers": [0x1301], "extensions": [],
+            "type": "client_hello",
+            "is_quic": True,
+            "version": 0x0303,
+            "ciphers": [0x1301],
+            "extensions": [],
         }
-        result = extract_tls_info(self._make_udp_packet(b"\xC0" + b"\x00" * 50))
+        result = extract_tls_info(self._make_udp_packet(b"\xc0" + b"\x00" * 50))
         mock_quic.assert_called_once()
         self.assertTrue(result["is_quic"])
 
@@ -36,15 +38,20 @@ class TestExtractTlsInfoQuicPath(unittest.TestCase):
 
 
 class TestQuicJA4Integration(unittest.TestCase):
-
     def test_quic_ja4_starts_with_q(self):
         from ja4plus.fingerprinters.ja4 import generate_ja4
+
         tls_info = {
-            "type": "client_hello", "is_quic": True, "is_dtls": False,
-            "version": 0x0303, "supported_versions": [0x0304],
-            "sni": "example.com", "ciphers": [0x1301, 0x1302, 0x1303],
+            "type": "client_hello",
+            "is_quic": True,
+            "is_dtls": False,
+            "version": 0x0303,
+            "supported_versions": [0x0304],
+            "sni": "example.com",
+            "ciphers": [0x1301, 0x1302, 0x1303],
             "extensions": [0x0000, 0x000A, 0x000B, 0x002B, 0x0010],
-            "alpn_protocols": ["h2"], "signature_algorithms": [0x0804],
+            "alpn_protocols": ["h2"],
+            "signature_algorithms": [0x0804],
         }
         result = generate_ja4(tls_info)
         self.assertIsNotNone(result)

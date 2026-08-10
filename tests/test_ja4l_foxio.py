@@ -1,0 +1,164 @@
+"""JA4L value tests derived from the FoxIO vectors.
+
+Each test names one vector, one stream and the value the FoxIO expected-output file
+holds. The vectors live under `tests/foxio_vectors`, and `tests/foxio_vectors/NOTICE`
+names the upstream commit.
+
+The reference computes a TCP JA4L value from three measurement points:
+
+- `A` is the first TCP SYN, and it carries the client TTL.
+- `B` is the first TCP SYN-ACK, and it carries the server TTL.
+- `C` is the last TCP packet that carries the relative sequence number 1 and the
+  relative acknowledgement number 1, and that holds no complete HTTP request.
+
+The QUIC form reads the Initial packets and the Handshake packets instead.
+
+`JA4L-S` is half the time from `A` to `B`. `JA4L-C` is half the time from `B` to `C`.
+"""
+
+from pathlib import Path
+
+import pytest
+from scapy.all import rdpcap
+
+from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
+
+VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
+
+
+def values_of(capture_name):
+    """Return the JA4L values one capture produces, grouped by connection key.
+
+    Args:
+        capture_name: The file name of a capture under `tests/foxio_vectors`.
+
+    Returns:
+        A map of connection key to the list of values, in the order the fingerprinter
+        emitted them.
+    """
+    fingerprinter = JA4LFingerprinter()
+    for packet in rdpcap(str(VECTORS_DIR / capture_name)):
+        fingerprinter.process_packet(packet)
+    produced = {}
+    for entry in fingerprinter.get_fingerprints():
+        produced.setdefault(entry["connection"], []).append(entry["fingerprint"])
+    return produced
+
+
+def values_on(capture_name, connection_key):
+    """Return the values one capture produces on one connection."""
+    return values_of(capture_name).get(connection_key, [])
+
+
+BADCURVEBALL = "tcp_172.130.128.76:55318_54.226.182.138:443"
+BROWSERS_X509 = "tcp_13.107.21.239:443_172.27.7.31:54524"
+LATEST_HTTP = "tcp_172.16.225.48:52939_23.43.242.57:80"
+EMPTY_USERAGENT = "tcp_::1:9200_::1:57722"
+GRE_SAMPLE = "tcp_172.27.1.66:40264_66.59.109.137:22"
+GRE_ERSPAN_VXLAN = "tcp_100.20.9.1:80_100.20.9.2:65174"
+SSH2_QUIC = "udp_142.251.41.46:443_172.16.225.48:61861"
+CLOUDFLARE_QUIC = "udp_2001:db8:1::1:50280_2606:4700:10::6816:826:443"
+TLS3_QUIC = "udp_104.21.234.234:443_192.168.1.169:61884"
+SSH2_QUIC_SERVER_ONLY = "udp_142.251.32.74:443_172.16.225.48:51810"
+
+# Every connection of `ssh2.pcapng` that produces a JA4L value. The capture also holds
+# 11 connections that carry a SYN and no SYN-ACK, and this list names none of them.
+SSH2_CONNECTIONS = [
+    "tcp_146.112.255.155:443_172.16.225.48:57368",
+    "tcp_172.16.225.48:57371_34.248.242.11:443",
+    "tcp_172.16.225.48:57374_52.178.17.3:443",
+    "tcp_172.16.225.48:57375_204.79.197.220:443",
+    "tcp_172.16.225.48:57376_52.86.25.233:443",
+    "tcp_172.16.225.48:57377_54.160.114.75:22",
+    "tcp_172.16.225.48:57380_184.150.157.177:80",
+    "tcp_172.16.225.48:57396_184.150.157.177:80",
+    "udp_142.251.32.74:443_172.16.225.48:51810",
+    "udp_142.251.41.46:443_172.16.225.48:61861",
+]
+
+
+@pytest.mark.skipif(
+    not (VECTORS_DIR / "badcurveball.pcap").exists(), reason="FoxIO vectors are absent"
+)
+class TestJA4LAgainstTheFoxIOVectors:
+    """Compare the JA4L values of one vector against the FoxIO expected output."""
+
+    def test_the_server_value_holds_half_the_time_from_the_syn_to_the_syn_ack(self):
+        # badcurveball.pcap: SYN at +0 us, SYN-ACK at +1563 us, server TTL 238.
+        assert "JA4L-S=781_238" in values_on("badcurveball.pcap", BADCURVEBALL)
+
+    def test_the_client_value_measures_to_the_first_client_data_packet(self):
+        # browsers-x509.pcapng stream 0: SYN-ACK at +3815 us, Client Hello at +4371 us.
+        # The bare ACK at +3927 us gives 56, and the reference holds 278.
+        assert "JA4L-C=278_128" in values_on("browsers-x509.pcapng", BROWSERS_X509)
+
+    def test_a_complete_http_request_does_not_move_the_client_point(self):
+        # latest.pcapng stream 6 carries one complete GET request. The reference keeps
+        # the measurement point at the bare ACK.
+        assert "JA4L-C=32_128" in values_on("latest.pcapng", LATEST_HTTP)
+
+    def test_a_partial_http_request_moves_the_client_point(self):
+        # http-empty-useragent.pcap sends the request line, the header and the blank
+        # line in three packets. The reference measures to the request line.
+        assert "JA4L-C=177863_64" in values_on("http-empty-useragent.pcap", EMPTY_USERAGENT)
+
+    def test_the_fingerprinter_reads_the_outer_address_layer_of_a_gre_capture(self):
+        # gre-sample.pcap holds a TCP session inside GRE. The reference reads the
+        # address and the TTL of the outer layer, and the port of the inner layer.
+        produced = values_on("gre-sample.pcap", GRE_SAMPLE)
+        assert "JA4L-S=22952_236" in produced
+        assert "JA4L-C=26150_255" in produced
+
+    def test_the_fingerprinter_groups_a_mirrored_capture_by_its_inner_connection(self):
+        # gre-erspan-vxlan.pcap is an ERSPAN mirror. Every packet travels from
+        # 100.20.9.2 to 100.20.9.1, so the outer address pair names no direction. The
+        # inner session 10.16.27.12:65174 to 10.16.27.131:80 names both directions.
+        produced = values_on("gre-erspan-vxlan.pcap", GRE_ERSPAN_VXLAN)
+        assert "JA4L-S=997_64" in produced
+        assert "JA4L-C=953_64" in produced
+
+    def test_the_mirrored_capture_holds_one_connection(self):
+        # The reference holds one stream for this capture. Two connection keys mean the
+        # fingerprinter split the two directions of one session.
+        assert list(values_of("gre-erspan-vxlan.pcap")) == [GRE_ERSPAN_VXLAN]
+
+    def test_the_quic_form_reads_the_initial_and_the_handshake_packets(self):
+        # ssh2.pcapng stream 36 is QUIC. JA4L-S measures the two Initial packets, and
+        # JA4L-C measures the last server Handshake packet to the first client one.
+        produced = values_on("ssh2.pcapng", SSH2_QUIC)
+        assert "JA4L-S=5389_57_quic" in produced
+        assert "JA4L-C=169_128_quic" in produced
+
+    def test_the_quic_server_point_skips_an_initial_packet_that_carries_no_server_hello(self):
+        # chrome-cloudflare-quic-with-secrets.pcapng stream 0, port 50280. The server
+        # sends an Initial packet at +18569 us that holds an ACK frame, and a second
+        # one at +21981 us that holds the whole ServerHello. The reference reads the
+        # second one.
+        assert "JA4L-S=10990_56_quic" in values_on(
+            "chrome-cloudflare-quic-with-secrets.pcapng", CLOUDFLARE_QUIC
+        )
+
+    def test_the_quic_server_point_reads_the_second_initial_packet_of_a_short_handshake(self):
+        # tls3.pcapng stream 25, port 61884. The server sends an Initial packet at
+        # +6102 us that holds an ACK frame, and a second one at +7166 us that holds
+        # the whole ServerHello.
+        assert "JA4L-S=3583_57_quic" in values_on("tls3.pcapng", TLS3_QUIC)
+
+    def test_a_cut_short_connection_of_ssh2_produces_no_value(self):
+        # ssh2.pcapng holds 11 TCP connections that carry a SYN and no SYN-ACK, such as
+        # 172.16.225.48:57360 to 192.168.1.13:80 and 10.244.39.47:5000 to
+        # 172.16.225.48:57361. The expected-output file names none of them. This case
+        # states the whole key set, because an absence test that names one key passes
+        # when the key format changes. Read #156 for the measurement.
+        assert sorted(values_of("ssh2.pcapng")) == SSH2_CONNECTIONS
+
+    def test_a_quic_connection_with_no_client_point_reports_the_server_value_alone(self):
+        # ssh2.pcapng stream 33 carries a client Initial packet and a server Initial
+        # packet, and the server sends no Handshake packet the capture holds alone. The
+        # reference reports JA4L-S 16192_57 and no JA4L-C.
+        assert values_on("ssh2.pcapng", SSH2_QUIC_SERVER_ONLY) == ["JA4L-S=16192_57_quic"]
+
+    def test_the_fingerprinter_emits_one_client_value_for_one_connection(self):
+        produced = values_on("badcurveball.pcap", BADCURVEBALL)
+        client_values = [value for value in produced if value.startswith("JA4L-C=")]
+        assert client_values == ["JA4L-C=2181_64"]
