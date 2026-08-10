@@ -1006,7 +1006,13 @@ holds every breaking change of this record against a row of that page.
   case which every report records as skipped, and it names Round 201 as the round that
   built the job. New case
   `test_the_rule_file_states_what_the_twelfth_required_context_refuses` holds that
-  statement, and it failed before the repair. `.github/workflows/test.yml` and
+  statement, and it failed before the repair. **A self-review read the first form of that
+  case as satisfiable by prose that names the check and states no condition.** The case now
+  cuts every fenced block before it reads a sentence, because the check-name list holds no
+  full stop and joins the sentence beside it. It also requires the word `skipped`, which
+  names the input that turns the check red. **Two mutations prove that it bites**: prose
+  that drops `skipped` and prose that names no check each fail it.
+  `.github/workflows/test.yml` and
   `docs/specs/features/09-release.md` each stated the eleven in live prose, and both now
   state the twelve. **The dated records keep the eleven**: the entry of Round 197 in this
   file, the row of Round 174 in `docs/specs/spec.md` and the quoted reading of the rule

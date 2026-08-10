@@ -131,6 +131,13 @@ NEW_CONTEXT_ROUND = "Round 201"
 # and none of these gives a reader the name and no condition.
 REFUSAL_TERM = re.compile(r"\bfails\b|\brefuses\b", re.IGNORECASE)
 
+# The input the `skip-gate` job reads. A section that names the refusal and never this
+# word states that the check can go red and never what turns it red. A self-review of #546
+# read the first form of this case and wrote
+# `skip-gate exists, and this file refuses to explain more.`, which satisfied the refusal
+# term alone.
+REFUSED_INPUT = re.compile(r"\bskipped\b", re.IGNORECASE)
+
 # The two limits the same call returned. A live case reads each one against the provider.
 STATED_LIMITS = ("enforce_admins", "strict")
 
@@ -381,6 +388,31 @@ def fenced_block(text: str) -> List[str]:
     opens = [number for number, line in enumerate(lines) if line.strip() == "```"]
     assert len(opens) >= 2, "the section holds no closed fenced block"
     return [line.strip() for line in lines[opens[0] + 1 : opens[1]] if line.strip()]
+
+
+def prose_lines(text: str) -> str:
+    """Return one section body with every fenced block removed.
+
+    `sentences` splits on a full stop and a space, and the check-name list holds neither.
+    That list therefore joins the sentence beside it into one entry, and a reader of that
+    entry finds a check name that no sentence states. A case that reads prose cuts the
+    blocks first.
+
+    Args:
+        text: The body of one section.
+
+    Returns:
+        The lines that stand outside a fenced block, joined by a line break.
+    """
+    kept: List[str] = []
+    inside = False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            inside = not inside
+            continue
+        if not inside:
+            kept.append(line)
+    return "\n".join(kept)
 
 
 def stated_limit(text: str, field: str) -> Optional[bool]:
@@ -789,14 +821,19 @@ def test_the_rule_file_keeps_the_warning_that_bars_the_unrequired_check() -> Non
 def test_the_rule_file_states_what_the_twelfth_required_context_refuses() -> None:
     """The protection section states the condition that turns `skip-gate` red."""
     body = section(RULE_FILE.read_text(), PROTECTION_HEADING)
+    prose = prose_lines(body)
     stated = [
         sentence
-        for sentence in sentences(body)
+        for sentence in sentences(prose)
         if NEW_CONTEXT in sentence and REFUSAL_TERM.search(sentence)
     ]
     assert stated, (
         f"{RULE_FILE} lists {NEW_CONTEXT!r} among the required contexts and states what it "
         "refuses nowhere, so a reader who meets that check red reads no condition for it"
+    )
+    assert REFUSED_INPUT.search(prose), (
+        f"{RULE_FILE} states that {NEW_CONTEXT!r} refuses a merge and names the input that "
+        "turns it red nowhere, so a reader reads the consequence and not the condition"
     )
     assert NEW_CONTEXT_ROUND in body, (
         f"{RULE_FILE} names no {NEW_CONTEXT_ROUND} in its protection section, and that "
@@ -1082,6 +1119,13 @@ def test_the_check_reader_reports_a_reading_that_holds_no_check_list() -> None:
     """The check reader fails a reading that holds `contexts` and no `checks`."""
     with pytest.raises(AssertionError):
         provider_checks({"required_status_checks": {"contexts": ["lint"]}})
+
+
+def test_the_prose_reader_cuts_a_check_name_of_the_fenced_list() -> None:
+    """The prose reader drops the check-name list, which no sentence of the section holds."""
+    body = "text\n\n```\nlint\nskip-gate\n```\n\nA red check refuses the merge.\n"
+    assert NEW_CONTEXT not in prose_lines(body)
+    assert "A red check refuses the merge." in prose_lines(body)
 
 
 def test_the_fenced_block_reader_reads_the_first_block_alone() -> None:

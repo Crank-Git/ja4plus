@@ -289,7 +289,7 @@ and not the merge result**, so it proves the branch and it does not prove the me
 no successful run of every required context covers.** `enforce_admins` reads `false`, so
 the rule binds no repository administrator and an administrator merge reaches `dev` with no
 run. The subsection below holds that reading. The read of 2026-08-10 that #546 took reports
-the state. #468 turned the rule on, #480 took the first measurement and #546 re-took it.
+the state. #468 turned the rule on. #480 took the first measurement and #546 re-took it.
 
 | Read | Result |
 |---|---|
@@ -361,8 +361,8 @@ read the rule at the provider, and they change nothing.
 **Warning: a check name is not a job name.** The `test` job of
 `.github/workflows/test.yml` runs a matrix, so the provider publishes one check for each
 combination. A required check named `test` matches nothing. These are the twelve names the
-read of 2026-08-10 that #546 took reports, and the record above holds the eleven names of
-the #480 read.
+read of 2026-08-10 that #546 took reports. The record above holds the eleven names of the
+#480 read.
 
 ```
 lint
@@ -379,7 +379,7 @@ conformance
 skip-gate
 ```
 
-**`skip-gate` is the twelfth name, and Round 201 built the job that publishes it.** The job
+**`skip-gate` is the twelfth name.** Round 201 built the job that publishes it. The job
 downloads the report of every job that runs cases. It fails a case that every one of those
 reports records as skipped. `## A case that skips on every job fails the run` above holds
 the whole condition. **A red `skip-gate` refuses the merge on the same rule as a red
