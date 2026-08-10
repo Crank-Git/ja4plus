@@ -154,7 +154,9 @@ TestPyPI site.
 ## Acceptance criteria
 
 - [ ] `grep -rn "0\.6\.0" pyproject.toml ja4plus/` finds the version in one file
-      only.
+      only. **This criterion states an end state that this repository does not hold
+      yet, and #67 builds it.** `tests/test_criterion_counts.py` reads this number and
+      measures it, so the case fails on the day the two agree.
 - [ ] A pull request that changes the version without changing the changelog fails
       continuous integration.
 - [ ] The publish workflow builds a source distribution and a wheel.
@@ -176,6 +178,28 @@ TestPyPI site.
 - [ ] `pip install ja4plus==1.0.0` in a clean environment runs
       `ja4plus analyze` on a committed capture.
 - [ ] The GitHub release body holds the `1.0.0` changelog section.
+
+### The version count, measured on 2026-08-09
+
+**The first criterion above counts files and not declarations, and the two differ.** A
+read of `git ls-files pyproject.toml ja4plus/` on 2026-08-09 reports seven files that
+hold the text `0.6.0`.
+
+| File | What it holds |
+|---|---|
+| `pyproject.toml` | The version declaration at line 7. |
+| `ja4plus/__init__.py` | The version declaration at line 94. |
+| `ja4plus/cli.py` | Five lines of prose that state what version 0.6.0 did. |
+| `ja4plus/ja4db.py` | Three lines of prose that state what version 0.6.0 returned. |
+| `ja4plus/output.py` | Two lines of prose that state what version 0.6.0 wrote. |
+| `ja4plus/types.py` | Two lines of prose that state what version 0.6.0 used. |
+| `ja4plus/watch.py` | Two lines of prose that state what version 0.6.0 called. |
+
+**Two files declare the version and five name it in prose.** #67 removes one
+declaration, so the command still reads six files after #67 lands. The prose records the
+released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it, so #67
+narrows the command rather than deleting the prose. #456 measured this and #67 owns the
+decision.
 
 ## Out of scope
 
