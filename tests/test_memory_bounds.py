@@ -531,7 +531,7 @@ class TestTheProcessorHoldsNoUnboundedStateTable:
         assert walked == STATE_TABLE_COUNT, f"the walk of this file reads {walked} tables"
 
     def test_the_processor_reports_one_entry_for_each_method(self):
-        """`stats()` returns one `ProcessorStats` for each of the ten methods."""
+        """`stats()` returns one `ProcessorStats` for each of the ten fingerprinters."""
         processor = Processor()
         stats = processor.stats()
         assert sorted(stats) == sorted(processor.fingerprinters)

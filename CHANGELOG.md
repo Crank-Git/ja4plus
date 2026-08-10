@@ -691,6 +691,133 @@ holds every breaking change of this record against a row of that page.
   `docs/mutation_settlements/414-interface.json` keeps the numbers #414 measured, because
   that record states the sweeps that ran. No file under `ja4plus/` changes, no file under
   `tests/foxio_vectors/` changes, and no fingerprint moves.
+- **The image count of `docs/specs/spec.html` states the count the FoxIO inventory measures**
+  (#449). Round 176. The page held two image counts. Line 316 read `Eleven of the twelve
+  FoxIO methods carry no complete text specification`. Line 436 read `Seven of twelve FoxIO
+  methods are specified only as images`, 120 lines below it. **A case existed to forbid the
+  second sentence, and a missing article defeated it.**
+  `tests/test_documentation_image_count.py` held the fixed phrase `seven of the twelve` and
+  searched each line for it. The page writes `Seven of twelve`, so it carried the superseded
+  count for 97 rounds while the case passed. **This round re-measured `technical_details/` at
+  the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` rather than quoting round
+  70.** The directory holds twelve files: three text files of 1567, 9153 and 278 bytes, and
+  nine images. The upstream `README.md` lists twelve methods and embeds nine image links.
+  Every byte count reproduces `docs/specs/foxio/README.md`, so eleven is the measured count.
+  **The case now reads a shape and no phrase.** `image_count_claims` matches a count that
+  binds to the word `method`, followed by a claim about an image or about a complete text
+  specification. It reads the whole page with the line breaks removed, so a claim that a
+  line break splits reaches it. **The number comes out of the inventory.**
+  `measured_image_count` is the method count less the count of complete text
+  specifications, and it reads both halves out of `docs/specs/foxio/README.md`. A case that
+  restated eleven would pass on the day the inventory moves. **Sixteen spellings of the
+  superseded count reach the reader, and each one is a case.** They include `Seven of
+  twelve`, `seven of the twelve`, `7 of 12`, `Seven FoxIO methods`, `publishes seven methods
+  as images`, `the count of FoxIO methods specified only as images is seven` and
+  `image-only`. **Eight control sentences reach no wrong count.** They include the `7 of the
+  12 moved values` of `docs/specs/foxio/JA4T.md`, the seven deleted text files of
+  `docs/specs/foxio/README.md` and `All but one FoxIO method is specified only as an image`.
+  The reader therefore matches a claim and not a page. **A self-review drove the first form
+  of the reader with more than 40 candidate sentences.** It found fourteen evasions and one
+  false positive. Six evasions became spellings of the case set, and the false positive
+  became the two complement controls. **The module docstring records the six holes that
+  stay**, among them a synonym of `method` and a claim further than 40 characters from the
+  noun. **A dated record of a past measurement is quoted and not rewritten.** Round
+  162 of the Changelog table of `docs/specs/spec.md` quotes the defective sentence word for
+  word. `readable_text` cuts that section, and
+  `test_the_reader_reads_the_quoted_count_of_a_changelog_round_and_a_case_does_not` reads
+  the cut in both directions. **The cases were written first and they bite**: against the
+  unrepaired page they failed 2 of 47. Five more cases hold the inventory against itself, so
+  a table that loses a row fails before any page does. **One premise of the issue body is
+  false and the measurement disproves it.** The body states that the two counts sit 60 lines
+  apart, and its own table names lines 314 and 434. No file under `ja4plus/` changes and no
+  fingerprint moves.
+
+- **A case measures the count an acceptance criterion states** (#456). Round 177. Two criteria
+  of `docs/specs/features/*.md` stated a count this repository contradicts. #393 measured both
+  on 2026-08-09. **Both premises of the issue were stale, and this round measured each one
+  again.** `git ls-files tests/foxio_vectors | wc -l` reports 90, and
+  `docs/specs/features/00-foundation.md` stated 75. The issue reported eight files that hold
+  the text `0.6.0`. `git ls-files pyproject.toml ja4plus/` reports seven, and a read of the
+  whole repository reports 35. **The criterion of `docs/specs/features/09-release.md` states an
+  end state, and it is not a stale count.** Four facts settle it. #67 is open. Its own
+  acceptance criterion is the same sentence. `FR-release-1` states that the version appears in
+  one place. The page carries criteria that name version 1.0.0, which is unreleased. A page of
+  an unbuilt feature states what that feature will hold, so that criterion keeps its count. It
+  now states plainly that #67 builds it. **The command of that criterion counts files and not
+  declarations, and #67 needs that reading.** Two of the seven files declare the version. Five
+  name it in prose that records the released behaviour. The command therefore reads six files
+  after #67 removes one declaration. `docs/specs/features/09-release.md` now holds the table of
+  all seven, and #67 owns the decision. **New file `tests/test_criterion_counts.py`.** It reads
+  each measured criterion from its feature page, takes the count out of that sentence, and
+  compares it against a measurement. A built criterion states the measured count. A pending
+  criterion states a count this repository does not hold, so a case fails on the day #67 lands.
+  **The count comes from the page and never from a copy inside the case.** A reader that held a
+  copy passed against the stale 75, and the shipped reader fails against it. **Eight mutations
+  prove the six cases discriminate, and each file was restored.**
+    - The stale 75 fails the built case alone.
+    - A criterion that loses its command fails the locator case and the built case.
+    - The end-state marker without `#67` fails the naming case alone.
+    - That marker deleted fails the naming case alone.
+    - A pending criterion raised to seven fails the end-state case alone.
+    - A parser that reads no criterion fails five cases.
+    - A measurement that reads no file fails the floor case and the built case.
+    - A reader that holds a copy of the sentence fails nothing, which is the counterfactual.
+
+  **A comparison over an empty set passes, so both floors are present.** `MINIMUM_CRITERIA`
+  reads 151, and `test_every_measurement_reads_at_least_one_file` requires one file from each
+  measurement. The `Terms` table of `docs/specs/spec.md` gains `end state`, `built criterion`
+  and `pending criterion`. No file under `ja4plus/` changes and no fingerprint moves.
+
+- **The prose under `tests/` counts fingerprinters where it counted methods** (#450). Round
+  178. The word `method` carried two meanings and the two counts differ. FoxIO publishes
+  twelve methods and this project implements eleven. The processor drives ten
+  fingerprinters, because `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`.
+  **The user chose the prose repair and declined the rename.** `ProcessorStats.method`
+  keeps its name, its docstring and every value it holds. It is a published output field,
+  so a rename of it is a breaking change and the user owns that decision. **The ten places
+  the issue body names are all present, and one line number moved.**
+  `tests/test_thread_safety.py:372` reads 373 today. Ten docstrings and comments across six
+  files under `tests/` now count fingerprinters. The four docstrings and comments of
+  `ja4plus/watch.py` take the same repair, under the ruling the issue thread records.
+  **`tests/test_documented_method_count.py` now reads Python source, and it found three
+  more places.** `python_prose` extracts every comment with `tokenize` and every docstring
+  with `ast`. **A docstring of one line sits inside quotation marks.** `_unquoted` drops the
+  whole of it, so a search of the raw source read nothing in it. Three of the ten places
+  hold that shape. A case fixture reaches no case, because it is a string literal and no
+  docstring. A
+  case runs over each of the 166 Python files under `tests/`, and it failed on seven of
+  them before the repair. `PYTHON_SOURCE_FLOOR` refuses a corpus that shrank, because an
+  aggregate over an empty set passes. The `Terms` table of `docs/specs/spec.md` gains
+  `method name`, and the `method` row and the `fingerprinter` row now state the two counts.
+  The eight places that remain under `ja4plus/` are #484. **No fingerprint moves and the
+  conformance counts do not change.**
+- **A case reads every stated state-table count against a live `Processor`** (#453). Round
+  179. `docs/specs/features/03-concurrency-safety.md` stated sixteen state tables, 47400
+  remembered keys and 8.5 MiB, and `docs/api_reference.md` stated seventeen, 57400 and
+  10.2 MiB. **The code holds seventeen**, and this round re-measured it rather than quoting
+  either page: `sum(len(report.tables) for report in Processor().stats().values())` reads
+  17. **The two other numbers rest on the table count**, so a repair of the count alone
+  leaves both wrong. The remembered-key count is the sum of `max_entries` over the same
+  tables, which reads 57400. 57400 keys at the 187 bytes #41 measured cost 10.2 MiB.
+  **The state-bound table of the feature file lost a row, and that row is the whole
+  difference.** #215 added `JA4TFingerprinter.connections` at 10000 entries and 600
+  seconds. The table never gained the row. 47400 plus 10000 is 57400. **A count in
+  prose that nothing measures goes stale on the day the code moves.** New file
+  `tests/test_documented_state_table_count.py` reads the three numbers out of a live
+  `Processor`. It compares every Markdown page of the corpus against them, and it reads the
+  state-bound table row by row. **Four reversals prove the cases fail.**
+  The removed `JA4TFingerprinter.connections` row fails the two table cases with
+  `states the bound of 16 state tables, and one processor holds 17`. The superseded
+  sentence restored fails three cases, one for each number. The same mutation on
+  `docs/api_reference.md` fails two. **Floors refuse a reader that matched nothing**,
+  because an aggregate over an empty set passes. Eleven more cases prove the readers take
+  each wording and take no count of another thing. **A dated record keeps its
+  numbers.** `readable_text` cuts `CHANGELOG.md` and the two recording sections of
+  `docs/specs/spec.md`, so round 85 keeps fifteen tables, 46400 keys and 8.3 MiB. The
+  #279 reading of 40200 entries across the seventeen state tables stands unchanged. The
+  `Terms` table gains `remembered key`, because this repair counts them in three places. No
+  file under `ja4plus/` changes, no fingerprint moves, and the conformance counts do not
+  change.
 - **The fingerprint move count of the migration page states the row count of its own table**
   (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
   rows. #395 measured the difference and filed the issue rather than repair it. **The count

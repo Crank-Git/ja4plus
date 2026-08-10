@@ -26,7 +26,7 @@ VECTORS = Path(__file__).parent / "foxio_vectors"
 # pass costs well under a second.
 CAPTURE = "latest.pcapng"
 
-# The count of state tables the ten methods hold. #39 moved thirteen tables to
+# The count of state tables the ten fingerprinters hold. #39 moved thirteen tables to
 # `BoundedStateTable`, #285 made `SynAckTracker.prefixes` the fourteenth, #215 made the
 # JA4T connection table the fifteenth, and the two reassemblers of JA4H and JA4X carry
 # their own bounds, so the report covers seventeen. The case below re-measures the count

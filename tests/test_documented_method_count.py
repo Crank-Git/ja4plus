@@ -34,10 +34,16 @@ and `docs/api_reference.md` counts them. The prose of this repair therefore coun
 and fingerprinters where it counted methods, matching the `FingerprintResult.type`
 docstring that round 139 wrote.
 
-**No case here reads a Python file.** #450 owns the ten files under `tests/` and the four
-docstrings of `ja4plus/watch.py` that call the ten fingerprinters ten methods, because that
-repair reads the public field name `ProcessorStats.method`. The Markdown pages under
-`tests/` do reach the corpus.
+**A case here reads the comments and the docstrings of every Python file under `tests/`,
+and #450 widened the corpus to them.** `python_prose` extracts that prose before `_unquoted`
+runs. **A docstring of one line sits inside quotation marks.** `_unquoted` therefore drops
+the whole of it, and a search of the raw source reads nothing in it. Three of the ten places
+#450 repaired hold that shape. A case fixture stays out of reach, because it is a string
+literal and no docstring.
+
+**The Python files under `ja4plus/` reach no case here.** They hold eight more places, and
+#484 owns them. `ja4plus/watch.py` holds four that #450 repaired under the ruling on its
+own issue thread.
 
 ## Where the document set comes from
 
@@ -51,11 +57,14 @@ These cases read prose and the public interface of `ja4plus`. They produce no fi
 and they open no capture socket.
 """
 
+import ast
 import inspect
+import io
 import re
 import shutil
 import subprocess
 import tempfile
+import tokenize
 from pathlib import Path
 from typing import Dict, FrozenSet, List, Tuple
 
@@ -154,9 +163,13 @@ CLAIM_VERB = (
 )
 
 # The noun a count of methods qualifies, with the words a document writes before it. **Two
-# words of room reach an adjective that a rewording inserts**, because "ten distinct
-# methods" states the same wrong count as "ten methods". Three words of room would reach
-# the sentence "ten values carry eleven methods", which states the right count.
+# words of room reach an adjective that a rewording inserts**, because the phrase
+# "ten distinct methods" states the same wrong count as "ten methods". Three words of room
+# would reach "ten values carry eleven methods", which states the right count.
+#
+# **Warning: keep each quotation of this comment on one line.** `_unquoted` pairs the
+# quotation marks of one line, so a quotation that spans two lines leaves one mark on each
+# line and the words between them reach the reader.
 METHOD_NOUN = r"(?:[\w'’]+\s+){0,2}(?:JA4\+?\s+|FoxIO\s+)?methods?"
 
 # What follows a count of methods. **A count of another thing follows the same verb**, so
@@ -237,6 +250,10 @@ HTML_TAG = re.compile(r"<[^>]+>")
 # The end of a sentence. The reader binds a count to the claim of its own sentence, because
 # a document states the published count in the sentence next to the implemented count.
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+
+# The node kinds that carry a docstring. `ast.get_docstring` accepts these four alone, and
+# it raises a `TypeError` on any other node.
+DOCUMENTED_NODES = (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
 
 
 def emitter_lines(name: str) -> List[str]:
@@ -436,8 +453,8 @@ def documents() -> List[Path]:
 
     The corpus holds the Markdown pages under `tests/` as well, because `tests/fuzz/README.md`
     is prose and a count there goes as stale as a count under `docs/`. **It holds no Python
-    file.** #450 owns the ten files under `tests/` that call the ten fingerprinters ten
-    methods, because that repair reads the public field name `ProcessorStats.method`.
+    file.** `python_sources` holds the Python corpus, because a Python file needs a reader
+    that extracts its comments and its docstrings first.
 
     Returns:
         Every tracked Markdown page, the rendered `docs/specs/spec.html`, and `mkdocs.yml`,
@@ -447,6 +464,45 @@ def documents() -> List[Path]:
     found.append(REPO_ROOT / "docs" / "specs" / "spec.html")
     found.append(REPO_ROOT / "mkdocs.yml")
     return [path for path in found if path.is_file()]
+
+
+def python_prose(text: str) -> str:
+    """Return the comments and the docstrings of one Python source, as one text.
+
+    A string literal that is no docstring stays out. A case fixture holds the sentence it
+    measures, and a fixture states no claim of this project. **A bare string below a class
+    attribute stays out too**, because `ast.get_docstring` reads the first statement of a
+    node alone. No file under `tests/` holds such a string today.
+
+    Args:
+        text: The whole source of one Python file.
+
+    Returns:
+        The text of every comment and of every docstring, joined by one line break.
+
+    Raises:
+        SyntaxError: The text parses as no Python module.
+    """
+    passages = [
+        token.string
+        for token in tokenize.generate_tokens(io.StringIO(text).readline)
+        if token.type == tokenize.COMMENT
+    ]
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, DOCUMENTED_NODES):
+            document = ast.get_docstring(node)
+            if document is not None:
+                passages.append(document)
+    return "\n".join(passages)
+
+
+def python_sources() -> List[Path]:
+    """Return every Python source a case reads for the class count.
+
+    Returns:
+        The Python files under `tests/`, sorted by path.
+    """
+    return sorted((REPO_ROOT / "tests").rglob("*.py"))
 
 
 def _read(path: Path) -> str:
@@ -475,6 +531,13 @@ def _name(path: Path) -> str:
 
 DOCUMENTS = documents()
 DOCUMENT_IDS = [_name(path) for path in DOCUMENTS]
+
+PYTHON_SOURCES = python_sources()
+PYTHON_IDS = [_name(path) for path in PYTHON_SOURCES]
+
+# The count of Python files the corpus holds at the least. **An aggregate over an empty set
+# passes**, so a corpus that read nothing would report a green run over no file at all.
+PYTHON_SOURCE_FLOOR = 120
 
 # The documents that state a count of implemented methods today. The reader finds them, so
 # a document that gains a count reaches the reason case without an edit here.
@@ -549,6 +612,51 @@ def test_no_document_states_the_count_of_classes_as_a_count_of_methods(path: Pat
     """No document applies the count of fingerprinter classes to the word `method`."""
     word = COUNT_WORDS[len(fingerprinter_classes())]
     offenders = sorted(set(class_counts_of_methods(_read(path), word)))
+    assert offenders == [], (
+        f"{_name(path)} holds {offenders}, and {word} counts the fingerprinter classes "
+        f"rather than the methods they carry"
+    )
+
+
+def test_the_python_corpus_holds_the_test_suite() -> None:
+    """The Python corpus holds more files than the floor, and it holds this file."""
+    assert len(PYTHON_SOURCES) >= PYTHON_SOURCE_FLOOR, (
+        f"the corpus holds {len(PYTHON_SOURCES)} Python files, below the floor of "
+        f"{PYTHON_SOURCE_FLOOR}, so a case over it proves little"
+    )
+    assert Path(__file__).resolve() in PYTHON_SOURCES, "the corpus misses this file"
+
+
+def test_the_python_reader_reads_a_docstring_of_one_line() -> None:
+    """The Python reader reads a docstring that sits on one line.
+
+    **A docstring of one line sits inside quotation marks**, so `_unquoted` drops the whole
+    of it. A search of the raw source therefore reads nothing in such a docstring. Three of
+    the ten places #450 measured hold exactly that shape.
+    """
+    source = 'def f():\n    """It drops the state of all ten methods."""\n'
+    assert class_counts_of_methods(source, "ten") == []
+    assert class_counts_of_methods(python_prose(source), "ten") == ["ten methods"]
+
+
+def test_the_python_reader_reads_a_comment() -> None:
+    """The Python reader reads the text of a comment."""
+    source = "# The loop reaches ten methods.\nvalue = 1\n"
+    assert class_counts_of_methods(python_prose(source), "ten") == ["ten methods"]
+
+
+def test_the_python_reader_reads_no_string_literal_that_is_no_docstring() -> None:
+    """The Python reader reads no case fixture, because a fixture quotes another sentence."""
+    source = 'SENTENCES = ("The package provides ten methods.",)\n'
+    assert python_prose(source) == ""
+
+
+@pytest.mark.parametrize("path", PYTHON_SOURCES, ids=PYTHON_IDS)
+def test_no_python_file_states_the_count_of_classes_as_a_count_of_methods(path: Path) -> None:
+    """No comment and no docstring applies the class count to the word `method`."""
+    word = COUNT_WORDS[len(fingerprinter_classes())]
+    prose = python_prose(path.read_text(encoding="utf-8"))
+    offenders = sorted(set(class_counts_of_methods(prose, word)))
     assert offenders == [], (
         f"{_name(path)} holds {offenders}, and {word} counts the fingerprinter classes "
         f"rather than the methods they carry"

@@ -40,8 +40,8 @@ def dhcp_discover():
 def make_every_method_answer(processor):
     """Make every fingerprinter of the processor return one fixed value.
 
-    A real packet reaches two methods at most, so it proves no order across the ten. A
-    processor whose ten methods all answer proves the whole order.
+    A real packet reaches two fingerprinters at most, so it proves no order across the
+    ten. A processor whose ten fingerprinters all answer proves the whole order.
 
     Args:
         processor: The processor to change.

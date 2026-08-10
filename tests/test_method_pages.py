@@ -52,7 +52,7 @@ DECLINED_METHOD = "JA4TScan"
 
 # The eleven methods a page describes. Ten fingerprinter classes carry them, because
 # `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`. #387 records the counting
-# error that reads the ten classes as ten methods.
+# error that reads a count of classes as a count of methods.
 IMPLEMENTED_METHODS = tuple(name for name in FOXIO_METHODS if name != DECLINED_METHOD)
 
 # Nine cases parametrize over the tuple above, and pytest reads it at collection time. A
