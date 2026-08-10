@@ -35,11 +35,11 @@ and fingerprinters where it counted methods, matching the `FingerprintResult.typ
 docstring that round 139 wrote.
 
 **A case here reads the comments and the docstrings of every Python file under `tests/`,
-and #450 widened the corpus to them.** `python_prose` extracts that prose before the
-quotation reader runs. **A docstring of one line sits inside quotation marks**, so a reader
-that dropped every quoted passage of the raw source read nothing at all in it. Three of the
-ten places #450 repaired hold that shape. A case fixture stays out of reach, because it is
-a string literal and no docstring.
+and #450 widened the corpus to them.** `python_prose` extracts that prose before `_unquoted`
+runs. **A docstring of one line sits inside quotation marks.** `_unquoted` therefore drops
+the whole of it, and a search of the raw source reads nothing in it. Three of the ten places
+#450 repaired hold that shape. A case fixture stays out of reach, because it is a string
+literal and no docstring.
 
 **The Python files under `ja4plus/` reach no case here.** They hold eight more places, and
 #484 owns them. `ja4plus/watch.py` holds four that #450 repaired under the ruling on its
@@ -367,7 +367,9 @@ def python_prose(text: str) -> str:
     """Return the comments and the docstrings of one Python source, as one text.
 
     A string literal that is no docstring stays out. A case fixture holds the sentence it
-    measures, and a fixture states no claim of this project.
+    measures, and a fixture states no claim of this project. **A bare string below a class
+    attribute stays out too**, because `ast.get_docstring` reads the first statement of a
+    node alone. No file under `tests/` holds such a string today.
 
     Args:
         text: The whole source of one Python file.
@@ -526,8 +528,8 @@ def test_the_python_reader_reads_a_docstring_of_one_line() -> None:
     """The Python reader reads a docstring that sits on one line.
 
     **A docstring of one line sits inside quotation marks**, so `_unquoted` drops the whole
-    of it. A search over the raw source therefore reads nothing in such a docstring, and
-    three of the ten places #450 measured hold exactly that shape.
+    of it. A search of the raw source therefore reads nothing in such a docstring. Three of
+    the ten places #450 measured hold exactly that shape.
     """
     source = 'def f():\n    """It drops the state of all ten methods."""\n'
     assert class_counts_of_methods(source, "ten") == []

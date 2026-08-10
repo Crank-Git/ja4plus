@@ -622,9 +622,10 @@ holds every breaking change of this record against a row of that page.
   `ja4plus/watch.py` take the same repair, under the ruling the issue thread records.
   **`tests/test_documented_method_count.py` now reads Python source, and it found three
   more places.** `python_prose` extracts every comment with `tokenize` and every docstring
-  with `ast`. **A docstring of one line sits inside quotation marks**, so the reader that
-  drops a quoted passage read nothing at all in it, and three of the ten places hold that
-  shape. A case fixture reaches no case, because it is a string literal and no docstring. A
+  with `ast`. **A docstring of one line sits inside quotation marks.** `_unquoted` drops the
+  whole of it, so a search of the raw source read nothing in it. Three of the ten places
+  hold that shape. A case fixture reaches no case, because it is a string literal and no
+  docstring. A
   case runs over each of the 166 Python files under `tests/`, and it failed on seven of
   them before the repair. `PYTHON_SOURCE_FLOOR` refuses a corpus that shrank, because an
   aggregate over an empty set passes. The `Terms` table of `docs/specs/spec.md` gains
