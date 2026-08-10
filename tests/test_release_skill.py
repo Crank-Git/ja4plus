@@ -62,7 +62,7 @@ SYNTAX_TREE_RULE = re.compile(
 
 # The rule that puts the changelog section in the bump. `tests/release_body.py` reads that
 # section, so a bump without one fails the release rather than the commit.
-CHANGELOG_RULE = re.compile(r"matching\s+`## \[<version>\]`\s+section\s+of\s+`CHANGELOG\.md`")
+CHANGELOG_RULE = re.compile(r"matching\s+`##\s+\[<version>\]`\s+section\s+of\s+`CHANGELOG\.md`")
 
 # The fenced `bash` block of step 2, which holds the version check a maintainer runs. The
 # reader takes the whole block, so the case runs the text the page shows.
