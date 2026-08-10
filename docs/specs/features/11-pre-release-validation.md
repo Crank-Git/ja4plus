@@ -318,8 +318,10 @@ before the reader and it reports 1474 after it.
 - New directory `docs/mutation_settlements/`, with one record for each module group.
 - New directory `docs/mutation_reports/`, with one JSON report for each sweep.
 - New file `docs/performance.md`.
+- New file `tests/mutation_cover.py`.
+- New file `tests/test_mutation_cover.py`.
 - Changed file `.claude/rules/conformance.md`, which carries the measured cost of one
-  sweep and the census schema.
+  sweep, the census schema and the reader of a module body.
 - Changed file `pyproject.toml`, which gains the `installed_wheel` marker.
 - Changed file `.github/workflows/test.yml`, which gains the `installed-wheel` job.
 - Changed file `docs/specs/spec.md`.

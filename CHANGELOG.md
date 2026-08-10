@@ -505,6 +505,33 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **A mutation of a module body keeps a reader in the cover rule** (#433). Round 169. Step 2
+  of the cover procedure in `.claude/rules/conformance.md` subtracts the lines the import
+  runs. Every mutation of a module body then lost the case that reads it, and the cost rule
+  held the cheapest test file. #414 measured the outcome on `ja4plus/__init__.py`: the cover the cost
+  rule builds is `tests/test_parity.py`, that sweep reads 1 killed and 31 survived, and all
+  25 entries of `__all__` survive it.
+  **The defect follows from the subtraction of step 2 and not from the cost measurement**,
+  because that subtraction removes the whole line class at once. New step 4 names a reader by the value
+  rather than by the cost. New file `tests/mutation_cover.py` reads the names a module body
+  binds and the identifier strings those statements build, and it names the test file whose
+  own source holds the most of those tokens. The module body of `ja4plus/__init__.py` holds
+  28 tokens, and the tool names `tests/test_public_interface.py` at 26 of them against 15 for
+  the next file. **The cost is a run and not an estimate.** At commit `00a0c42`, over all 32
+  mutations of that module, the repaired cover reads 26 killed and 6 survived in 48.0
+  seconds, against 1 killed and 31 survived, and it leaves no survivor on the 25 entries of
+  `__all__`. One sweep of the reader alone costs 39.9 seconds. **The rule states a fourth
+  limit.** The reader kills a mutation of the value it reads and no other mutation of the
+  module body, so `__version__`, `__author__` and `__license__` survive it and the record
+  says so. **Two cases prove the prose prover in the failing direction.** The rule text with
+  every line naming `tests/mutation_cover.py` removed fails the reader case. The rule text
+  with every line naming a second count removed fails the cost case. A reworded step
+  passes both, so a rewording defeats neither. **A floor case reads the ranked list**, because
+  an aggregate over an empty set passes, and two more cases read a module body that binds
+  nothing and a module body that no test file reads.
+  `docs/mutation_settlements/414-interface.json` keeps the numbers #414 measured, because
+  that record states the sweeps that ran. No file under `ja4plus/` changes, no file under
+  `tests/foxio_vectors/` changes, and no fingerprint moves.
 - **The fingerprint move count of the migration page states the row count of its own table**
   (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
   rows. #395 measured the difference and filed the issue rather than repair it. **The count
