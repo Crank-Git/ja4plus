@@ -87,6 +87,29 @@ def _round_numbers() -> list[int]:
     return numbers
 
 
+def _contiguity_failures(numbers: list[int]) -> list[str]:
+    """Return one sentence for each departure from the rounds 1 to the count of rows.
+
+    Args:
+        numbers: The round number of every numbered Changelog row.
+
+    Returns:
+        One sentence for each departure, and an empty list where the rows assign each
+        round from 1 to the count of rows exactly once. An empty input returns one
+        sentence, because every aggregate below passes on an empty list.
+    """
+    if not numbers:
+        return ["the reader read no numbered Changelog row"]
+    failures = []
+    repeated = sorted(number for number, count in Counter(numbers).items() if count > 1)
+    if repeated:
+        failures.append(f"these round numbers open more than one row: {repeated}")
+    absent = sorted(set(range(1, len(numbers) + 1)) - set(numbers))
+    if absent:
+        failures.append(f"these rounds from 1 to {len(numbers)} open no row: {absent}")
+    return failures
+
+
 def test_every_changelog_round_number_names_one_row() -> None:
     """`docs/specs/spec.md` holds one row for each Changelog round number."""
     repeated = sorted(number for number, count in Counter(_round_numbers()).items() if count > 1)
