@@ -987,6 +987,60 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The release body names every link absolutely, against the tag of the version** (#566).
+  Round
+  TBD. `FR-release-14a` and `FR-release-14b` state the two requirements. **The published
+  body of version 1.0.0 held one relative target at line 9**, and the same body ends with an
+  absolute link, so `changelog_link` already wrote the form this round adopts. The target
+  reads `docs/migration-0.6-to-1.0.md`. **The relative link is
+  correct in `CHANGELOG.md` and wrong in the stored release body**, because a reader of the
+  repository follows it and a reader of the stored body has no base to follow it against.
+  The repair therefore lands in `tests/release_body.py` alone, and this file keeps every
+  relative link it holds. New reader `absolute_links` writes the copy the release carries,
+  and `test_the_record_keeps_the_relative_link_that_the_release_body_rewrites` holds that
+  separation. **The reader holds three forms.** A path of the repository takes the
+  repository, `blob`, the tag and the path. An anchor of the same body stays an anchor,
+  because the body holds the heading it names and the version 1.0.0 body links
+  `#the-fingerprints-that-move`. A target that already names an address reaches the reader
+  unchanged, which `changelog_link` needs. A target that opens with one slash reads from the
+  repository root, so the reader joins the tag and never a second slash. **The reader writes
+  into no code block**, because a rewrite there changes an example a reader copies, and
+  `breaking_heading_end` reads the same fence for the same reason. **The reader passes over
+  an image**, because every URL it writes names `blob` and an image needs the raw host; the
+  named part holds no image today. **The case came first and it failed on the defect**:
+  `AssertionError: the release body holds the relative targets ['docs/migration-0.6-to-1.0.md']`.
+  **The value of a case here is the direction it fails in**, so eight mutations of the
+  reader prove both directions, each written to disk, measured and restored, and the file
+  compared equal by digest `81b9767601db08411c67949f9dad01f5e9257850b137891a78c1e65368a60469`. A reader that
+  loses the wiring fails `test_the_release_body_of_this_repository_holds_no_relative_link`,
+  a reader that loses the anchor rule fails
+  `test_the_reader_keeps_an_anchor_of_the_same_body`, a reader that loses the scheme rule
+  fails `test_the_reader_keeps_a_link_that_is_already_absolute`, a reader that loses the
+  code-fence rule fails `test_the_reader_rewrites_no_link_inside_a_code_block`, a reader
+  that loses the repository-root rule fails
+  `test_the_reader_writes_an_absolute_url_for_a_link_from_the_repository_root`, a reader
+  that reads a flat link text fails `test_the_reader_reads_a_link_whose_text_holds_brackets`,
+  a reader that reads a flat target fails
+  `test_the_reader_reads_a_target_that_holds_parentheses`, and a fault reader that reports
+  nothing fails
+  `test_the_relative_link_reader_names_the_target_of_a_text_that_holds_one`. **The
+  self-review found the two nested forms, and a run found neither.** A flat reader matched
+  `[a [b] c](x)` not at all, so that link stayed relative and no case reported it. A flat
+  reader took the target `docs/note(1` out of `docs/note(1).md` and left `.md)` outside the
+  link, so **it wrote a URL that reads as complete and is not**. `LINK` now reads one
+  bracket level in the text and one parenthesis level in the target. **An aggregate
+  over an empty set passes**, so the body case requires two links before it reads a clean
+  report, and that floor is the sixth mutation. **The provider documentation settles the
+  rule for a file of a repository, and it names no release page**, so a read of the
+  published page took the measurement on 2026-08-10. **The rendered release page resolves
+  the relative target against the tag and answers `200`, and #566 states that it resolves
+  none**, so this round corrects that sentence rather than repeats it. The stored body the
+  REST API returns holds the relative target alone, and `gh release view`, an RSS feed and a
+  mirror each read that same text, so the repair stands for every reader outside the
+  rendered page. The body of version 1.0.0 grows from 4706 to 4755 characters against a
+  limit of 125000. `docs/specs/features/09-release.md` gains `FR-release-14a`, one section
+  and one subsection that records the measurement. No file under `ja4plus/` changes and no
+  fingerprint moves.
 - **The interface table of the API reference names every published name** (#562). Round
   TBD. `docs/api_reference.md:5` frames the page as the interface this project promises, and
   version 1.0.0 published that interface. **A review of round 206 named three names of

@@ -38,11 +38,14 @@ from tests.release_body import (
     BODY_LIMIT,
     DESCRIPTION,
     REPOSITORY_URL,
+    absolute_links,
     body_fault,
     changelog_link,
     changelog_section,
+    link_targets,
     named_part,
     release_body,
+    relative_link_targets,
 )
 from tests.test_installed_wheel import REPOSITORY_ROOT
 
@@ -244,6 +247,141 @@ def test_the_link_names_the_changelog_at_the_tag_of_the_release() -> None:
     link = changelog_link("1.0.0")
     assert "/blob/v1.0.0/CHANGELOG.md" in link, f"the link reads {link!r}"
     assert REPOSITORY_URL in link, f"the link names no repository: {link!r}"
+
+
+def test_the_reader_writes_an_absolute_url_for_a_link_to_a_path_of_the_repository() -> None:
+    """A link to a path of the repository names the repository and the tag.
+
+    The stored body carries no base, so a reader outside the release page resolves a
+    relative path against nothing.
+    """
+    text = "[`docs/migration-0.6-to-1.0.md`](docs/migration-0.6-to-1.0.md) states the form.\n"
+    written = absolute_links(text, "v1.0.0")
+    assert f"({REPOSITORY_URL}/blob/v1.0.0/docs/migration-0.6-to-1.0.md)" in written, (
+        f"the reader wrote {written!r}"
+    )
+
+
+def test_the_reader_writes_an_absolute_url_for_a_link_from_the_repository_root() -> None:
+    """A target that opens with one slash reads from the repository root.
+
+    GitHub states that a link which opens with a slash is relative to the repository root,
+    so the reader joins the tag and never a second slash.
+    """
+    written = absolute_links("[the file](/docs/index.md) is there.\n", "v1.0.0")
+    assert f"({REPOSITORY_URL}/blob/v1.0.0/docs/index.md)" in written, (
+        f"the reader wrote {written!r}"
+    )
+
+
+def test_the_reader_keeps_an_anchor_of_the_same_body() -> None:
+    """An anchor stays an anchor, because the body holds the heading it names.
+
+    The body of version 1.0.0 names `#the-fingerprints-that-move`, and the release page
+    holds that heading. An absolute URL there would carry a reader out of the page.
+    """
+    text = "Read [The fingerprints that move](#the-fingerprints-that-move) first.\n"
+    assert absolute_links(text, "v1.0.0") == text, (
+        f"the reader moved an anchor: {absolute_links(text, 'v1.0.0')!r}"
+    )
+
+
+def test_the_reader_keeps_a_link_that_is_already_absolute() -> None:
+    """A target that names a scheme reaches the reader unchanged.
+
+    `changelog_link` writes such a target, so a reader that joined the tag to it would
+    write the repository address twice.
+    """
+    text = f"Read [`CHANGELOG.md`]({REPOSITORY_URL}/blob/v1.0.0/CHANGELOG.md) for the rest.\n"
+    assert absolute_links(text, "v1.0.0") == text, (
+        f"the reader moved an absolute link: {absolute_links(text, 'v1.0.0')!r}"
+    )
+
+
+def test_the_reader_rewrites_no_link_inside_a_code_block() -> None:
+    """A code block quotes text, so the reader writes no URL into one.
+
+    A rewrite inside a code block changes an example a reader copies. `breaking_heading_end`
+    reads the same fence for the same reason.
+    """
+    text = "```markdown\n[the file](docs/index.md)\n```\n"
+    assert absolute_links(text, "v1.0.0") == text, (
+        f"the reader wrote into a code block: {absolute_links(text, 'v1.0.0')!r}"
+    )
+
+
+def test_the_reader_reads_a_link_whose_text_holds_brackets() -> None:
+    """A link text of one bracket level reaches the reader.
+
+    The self-review of #566 measured a flat reader against `[a [b] c](x)`, and that reader
+    matched nothing, so the link stayed relative and no case reported it.
+    """
+    written = absolute_links("[a [b] c](docs/index.md) states the form.\n", "v1.0.0")
+    assert f"[a [b] c]({REPOSITORY_URL}/blob/v1.0.0/docs/index.md)" in written, (
+        f"the reader wrote {written!r}"
+    )
+
+
+def test_the_reader_reads_a_target_that_holds_parentheses() -> None:
+    """A target of one parenthesis level reaches the reader whole.
+
+    The self-review of #566 measured a flat reader against `docs/note(1).md`. That reader
+    took the target `docs/note(1` and left `.md)` outside the link, so it wrote a URL that
+    reads as complete and is not.
+
+    **The rendered text does not measure this gap.** The truncated target and the leftover
+    `.md)` join back into the same characters, so a case that reads the written text passes
+    against both readers. The self-review of #566 measured that vacuous case with the
+    seventh mutation, and this case reads the parsed target instead.
+    """
+    text = "[the note](docs/note(1).md) states the form.\n"
+    assert link_targets(text) == ["docs/note(1).md"], (
+        f"the reader read the target {link_targets(text)}"
+    )
+    written = absolute_links(text, "v1.0.0")
+    assert link_targets(written) == [f"{REPOSITORY_URL}/blob/v1.0.0/docs/note(1).md"], (
+        f"the reader wrote the target {link_targets(written)}"
+    )
+
+
+def test_the_relative_link_reader_names_the_target_of_a_text_that_holds_one() -> None:
+    """The fault reader finds a relative target, so a clean report states a clean body.
+
+    **An aggregate over an empty set passes.** This case is the floor under
+    `test_the_release_body_of_this_repository_holds_no_relative_link`.
+    """
+    targets = relative_link_targets("[the file](docs/index.md) and [a heading](#one).\n")
+    assert targets == ["docs/index.md"], f"the fault reader returned {targets}"
+
+
+def test_the_release_body_of_this_repository_holds_no_relative_link() -> None:
+    """**The body a release of this repository carries names every link absolutely.**
+
+    The published body of version 1.0.0 held one relative target at line 9, and #566
+    measured it. The stored body carries no base, so `gh release view` and the REST API
+    each return a target that resolves against nothing.
+
+    Warning: read the floor below before you read a clean report. A body that holds no
+    link at all reports no relative target either.
+    """
+    body = release_body(CHANGELOG.read_text(encoding="utf-8"), '__version__ = "1.0.0"\n')
+    links = link_targets(body)
+    assert len(links) >= 2, f"the release body holds {len(links)} links, so this case reads none"
+    targets = relative_link_targets(body)
+    assert targets == [], f"the release body holds the relative targets {targets}"
+
+
+def test_the_record_keeps_the_relative_link_that_the_release_body_rewrites() -> None:
+    """`CHANGELOG.md` keeps its relative links, because a reader of the repository follows
+    one.
+
+    The release page is a different page. The reader rewrites the copy it builds, and it
+    edits no line of the record.
+    """
+    record = CHANGELOG.read_text(encoding="utf-8")
+    assert "](docs/migration-0.6-to-1.0.md)" in record, (
+        "`CHANGELOG.md` lost the relative link that #566 keeps there"
+    )
 
 
 def test_the_release_body_reader_returns_the_named_part_and_the_link() -> None:

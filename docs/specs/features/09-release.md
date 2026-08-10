@@ -74,6 +74,11 @@ FR-release-14 — The GitHub release body holds the summary and the breaking-cha
 of the changelog section for that version, and it links `CHANGELOG.md` at the tag for the
 rest.
 
+FR-release-14a — The GitHub release body names every link absolutely, against the tag of
+the version.
+
+FR-release-14b — The GitHub release body keeps an anchor of the same body as an anchor.
+
 **The user restated `FR-release-14` on 2026-08-10.** The earlier form asked the body to
 hold the whole changelog section. That form cannot hold, because the `## [1.0.0]` section
 of `CHANGELOG.md` is 242778 characters and the provider accepts 125000.
@@ -332,6 +337,84 @@ Three cases hold the three readings.
 **The link names the tag and never the default branch.** A link to the default branch
 moves under the reader after the next merge, so a reader of an old release would reach a
 file that release never shipped.
+
+### Every link of the release body names an address
+
+`FR-release-14a` and `FR-release-14b` state the two requirements, and #566 raised them. The
+body of version 1.0.0 held one relative target at line 9, and the record holds the same
+target.
+
+```
+[`docs/migration-0.6-to-1.0.md`](docs/migration-0.6-to-1.0.md) states the old form, the new
+```
+
+**The relative link is correct in `CHANGELOG.md` and this project keeps it there.** A
+reader of the repository follows it. `absolute_links` of `tests/release_body.py` writes the
+copy the release carries, and it edits no line of the record.
+`test_the_record_keeps_the_relative_link_that_the_release_body_rewrites` holds that
+separation.
+
+The reader holds three forms, and one case reads each one.
+
+| Target | Result | The case that holds it |
+|---|---|---|
+| A path of the repository, as `docs/index.md` or `/docs/index.md`. | The repository, `blob`, the tag and the path. | `test_the_reader_writes_an_absolute_url_for_a_link_to_a_path_of_the_repository` and the case below it |
+| An anchor of the same body, as `#the-fingerprints-that-move`. | The target unchanged. | `test_the_reader_keeps_an_anchor_of_the_same_body` |
+| An address, as `https://github.com/...`. | The target unchanged. | `test_the_reader_keeps_a_link_that_is_already_absolute` |
+
+**An anchor stays an anchor, because the release body holds the heading it names.** The
+body of version 1.0.0 names `#the-fingerprints-that-move`, and the breaking-change table
+below it carries that heading. `FR-release-14b` states the rule. An absolute URL there
+opens the repository file instead of the heading the release page already holds.
+
+**The reader writes into no code block.** A rewrite there changes an example a reader
+copies, and `breaking_heading_end` reads the same fence for the same reason.
+
+**The reader passes over an image, which the leading mark names.** An image needs the raw
+host, and every URL the reader writes names `blob`. The named part holds no image today.
+
+#### The reader reads one nested level in each half of a link
+
+**The self-review of #566 measured two gaps of a flat reader, and a run found neither.**
+Each gap is a form that `CHANGELOG.md` may hold on any later round.
+
+| Form | What the flat reader did | The case that holds the repair |
+|---|---|---|
+| `[a [b] c](x)`, a link text of one bracket level. | It matched nothing, so the link stayed relative and no case reported it. | `test_the_reader_reads_a_link_whose_text_holds_brackets` |
+| `[a](docs/note(1).md)`, a target of one parenthesis level. | It took the target `docs/note(1` and left `.md)` outside the link. | `test_the_reader_reads_a_target_that_holds_parentheses` |
+
+**The second reader writes a URL that reads as complete and is not**, which is the failure
+this project records many times. `LINK` therefore reads one bracket level in the text and
+one parenthesis level in the target.
+
+**A target that carries a title reaches the reader unchanged**, because the target holds no
+space. Such a link stays relative, and `relative_link_targets` reports it rather than passes
+it, so the body case names it.
+
+#### What the provider documentation settles, and what it does not
+
+**The GitHub documentation states the rule for a file of a repository, and it names no
+release page.** It reads "A relative link is a link that is relative to the current file"
+and "Links starting with `/` will be relative to the repository root". Verified against
+https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax
+(retrieved 2026-08-10).
+
+**A release page is no file of the repository, so the documentation settles nothing here.**
+A read of the published page took the measurement instead, on 2026-08-10.
+
+| Read of `v1.0.0` | The target of line 9 |
+|---|---|
+| The rendered page at `https://github.com/Crank-Git/ja4plus/releases/tag/v1.0.0` | `/Crank-Git/ja4plus/blob/v1.0.0/docs/migration-0.6-to-1.0.md`, which answers `200` |
+| The stored body, from `gh api repos/Crank-Git/ja4plus/releases/tags/v1.0.0` | `docs/migration-0.6-to-1.0.md` |
+
+**The rendered page resolves the target against the tag, and the stored body carries no
+base.** #566 states that the release page resolves no relative path, and this measurement
+corrects that sentence. The rendered page is the one reader that answers the relative
+target.
+
+**Every other reader of the body holds the relative target alone.** `gh release view`, the
+REST API, an RSS feed of the releases and a mirror each read the stored text. The repair
+therefore stands, and `FR-release-14a` states it for the stored body.
 
 ### How `tests/test_packaging.py` reads the wheel
 
