@@ -1,6 +1,11 @@
 {
-  "note": "Each entry names one case that skips on every job of the test matrix, and the reason that stops it. tests/skip_gate.py reads this file and it fails an entry that names no reason. Repair a case rather than add an entry, unless a runner can never hold the condition the case needs. An entry that records an open finding names the issue that removes it. The census of #524 measured every entry below on 2026-08-10, in run https://github.com/Crank-Git/ja4plus/actions/runs/31408763259.",
+  "note": "Each entry names one case that skips on every job that selects it, and the reason that stops it. An entry names the case under `case`, or it names one class of skip under `skip_message_prefix`. tests/skip_gate.py reads this file and it fails an entry that names no reason. Repair a case rather than add an entry, unless a runner can never hold the condition the case needs. An entry that records an open finding names the issue that removes it. #530 added the one prefix entry, and it widened the gate to the ten reports of the five jobs that run cases.",
+  "measurement": "The census of #524 measured every case entry below on 2026-08-10, in run https://github.com/Crank-Git/ja4plus/actions/runs/31408763259.",
   "entries": [
+    {
+      "skip_message_prefix": "not applicable:",
+      "reason": "A cell of the conformance cross product reports this message where the vector holds no value for the method and ja4plus produces none. #530 measured 143 such cases on 2026-08-10. All 143 belong to `tests.test_spec_validation::test_the_produced_occurrence_keys_equal_the_reference`, which ran 199 other parameter sets in the same job. The function therefore asserts, and no case runs nowhere. A pass in place of the skip would assert an equality over two empty sets, which #524 put out of scope. The gate covers a case under this entry only where every report that skips it states this same prefix."
+    },
     {
       "case": "tests.test_batch_gate_protection_rule::test_the_provider_holds_each_limit_the_rule_file_states[enforce_admins]",
       "reason": "The case reads `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, and the provider grants that read to a repository administrator alone. A runner holds no such token, so the call returns nothing and the case skips. tests/test_batch_gate_protection_rule.py records the decision that the case skips there and passes never."
@@ -36,14 +41,6 @@
     {
       "case": "tests.test_watch_drop_count.TheMonitorReadsARealPacketSocket::test_a_monitor_reports_a_whole_number_in_the_dropped_field",
       "reason": "The case opens a real capture socket. Linux needs CAP_NET_RAW and macOS needs a /dev/bpf device, and no runner of the matrix grants either one. #326 records the grant the live cases need."
-    },
-    {
-      "case": "tests.test_round_entry_existence::test_the_reading_fails_the_change_set_of_the_defect",
-      "reason": "An open finding of class c, which #528 removes. The clone of depth 1 holds neither the recorded defect commit nor its parent, so the case skips on every job. No limit of the runner explains it, and this entry goes out with the repair."
-    },
-    {
-      "case": "tests.test_documentation_site::test_the_slug_of_a_case_matches_the_slug_of_the_build",
-      "reason": "An open finding of class c, which #529 removes. Every job installs the `dev` extra and the case needs the `docs` extra, so the case skips on every job. No limit of the runner explains it, and this entry goes out with the repair."
     }
   ]
 }

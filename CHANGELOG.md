@@ -918,7 +918,205 @@ holds every breaking change of this record against a row of that page.
   that rule holds, and the batch gate reads the run conclusion. **No file under `ja4plus/`
   changes and no fingerprint moves.**
 
+- **The skip gate reads the report of every job that runs cases** (#530). Round 201.
+  **A reader that covers part of the suite reports a clean corpus over the part it cannot
+  see**, and #524 bound the gate to the six reports of the `test` job. That job runs
+  `pytest tests/ -m "not spec_validation"` and `tests/conftest.py` deselects the
+  `installed_wheel` marker, so it collects 4150 cases of the 6111 the suite holds. **A read
+  of 2026-08-10 reports 1918 cases of the `conformance` job and 43 of the `installed-wheel`
+  job that no report of the `test` job holds**, which is 32 percent of the suite. The `fuzz`
+  job holds 127 cases and the `samples` job holds 31, and the `test` job holds every one of
+  those 158. **The `skip-gate` job now waits for all five jobs and downloads ten reports**,
+  under the pattern `*-results*`. **The gate binds every job that runs cases, and not the
+  jobs that add a case today**, because a list of the second kind goes stale on the day a
+  job changes its selection. `tests/test_skip_gate.py` reads `.github/workflows/test.yml`
+  instead: every job that runs `pytest` writes a report, the download pattern matches the
+  artifact name of each one, and the `needs` list of `skip-gate` names all of them. **The
+  verdict reads over the jobs that select the case and over no other job**, so a conformance
+  case rests on one environment where a matrix case rests on six. The census names the
+  report that holds each case it lists, and **#530 declined a job field on an allowlist
+  entry on that reading**, because a derived scope needs no hand maintenance. **A case that
+  no job selects reaches no report**, and the gate holds no such case; the rule file records
+  that limit rather than a reader taking a green gate for a statement about it. **The
+  conformance suite reports 143 skips and all 143 read `not applicable:`**, which one cross
+  product produces where the vector holds no value for the method and this project produces
+  none. **All 143 belong to one function that ran 199 other parameter sets**, so the
+  function asserts and no case runs nowhere, and a pass in place of the skip would assert an
+  equality over two empty sets, which #524 put out of scope. An entry of
+  `tests/universal_skips.json` therefore names one case under `case`, or one class of skip
+  under `skip_message_prefix`, and one prefix entry stands in place of 143 case entries.
+  **A prefix entry covers a case only where every report that skips it states that same
+  prefix**, so a second reason on one job takes the case back out of the class. The census
+  reports the count each prefix entry covers and names none of those cases one by one,
+  because 143 near-identical lines would bury every case-level line. **The gate is proven on
+  the runner in both directions, on the branch `issue/530-skip-gate-beyond-the-matrix`.**
+  The red direction ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31419291939 with the widened reader and
+  no prefix entry. Every other job of that run concluded `success` and `skip-gate` concluded
+  `failure`. Its census reads `The skip gate read 10 reports that hold 6129 cases between
+  them, and found 155 cases that ran on no job.`, and 143 of the 155 are parameter sets of
+  `tests.test_spec_validation::test_the_produced_occurrence_keys_equal_the_reference` that
+  the six-report reader accepted. **A manual run carries no base commit**, so
+  `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
+  skipped on all six matrix jobs of that run and stands among the 155. That case runs on a
+  pull-request run, so the green direction ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31420269200, which the pull-request
+  event of #540 started with the prefix entry in place. All twelve jobs of that run
+  concluded `success`, and its census reads `The skip gate read 10 reports that hold 6132
+  cases between them, and found 153 cases that ran on no job.` beside the line
+  `- 143 cases: allowed by the skip message prefix 'not applicable:'`. **The sub-merge gate
+  of batch #535 then found a case that passes on each branch and fails on the merge
+  result**, which is the shape that gate exists to catch. #529 added
+  `test_the_skip_allowlist_holds_no_entry_for_the_slug_case`, which read every entry as
+  `entry["case"]`, and the prefix entry of this round holds no `case` key, so that reader
+  raised `KeyError` on the merged tree. **The reader is what accepts both intents**, so
+  `tests/test_documentation_site.py:349` reads `entry.get("case")` and the assertion of #529
+  stays exactly as strong: None equals no case identifier.
+  `test_the_slug_reader_accepts_an_entry_that_names_a_class_of_skip` holds the repair and
+  `test_the_slug_reader_still_finds_the_slug_case_in_an_entry` states the floor, so a reader
+  that found nothing fails rather than passes. **The merge result runs green on the runner
+  at https://github.com/Crank-Git/ja4plus/actions/runs/31423103064**, where all twelve jobs
+  concluded `success` and the census reads `The skip gate read 10 reports that hold 6137
+  cases between them, and found 152 cases that ran on no job.`
+  `docs/specs/features/11-pre-release-validation.md` gains
+  `FR-pre-release-validation-35a`, `FR-pre-release-validation-36a`,
+  `FR-pre-release-validation-38b` and `FR-pre-release-validation-38c`, plus three acceptance
+  criteria. **#529 landed first and keeps `FR-pre-release-validation-38a`**, which both
+  rounds had allocated. `.claude/rules/batch-gate.md` gains two subsections. **No file under
+  `ja4plus/` changes and no fingerprint moves.**
+
 ### Fixed
+
+- **The documentation slug case runs on one job of the matrix** (#529). Round 200. **The
+  census of #524 read `tests/test_documentation_site.py:222` as a class c site**: the case
+  skipped on all six jobs of `.github/workflows/test.yml`, and no limit of the runner
+  explained it. Run https://github.com/Crank-Git/ja4plus/actions/runs/31408763259 holds the
+  measurement, and the report named the reason: the `docs` extra installs pymdownx, and
+  `dev` does not. **The case holds `_slug` against `pymdownx.slugs.slugify` on every published heading**, and
+  a slug that moves breaks every link into that anchor. The `test` job gains the step
+  `Install the documentation extra on one job of the matrix`, which runs
+  `pip install -e ".[docs]"` under
+  `if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'`. **The extra reaches
+  one job and not six.** `griffe` 2.1.0 requires Python 3.10 and the matrix runs Python 3.9,
+  so the Python 3.9 job can never install this extra, and an install on all six jobs is no
+  reading at all. The skip gate reads the union of the six reports, so one run of the case
+  is the whole requirement. A read of 2026-08-10 measured the step at 28 packages and
+  125476 KB, against 197200 KB for the `dev` extra alone, so five more installs would buy
+  627380 KB and nothing else. **The two extras resolve together**, which the same read
+  measured: `pip install -e ".[dev]"` and then `pip install -e ".[docs]"` reported no
+  conflict, and the unit suite passed in that environment. **The step names one job rather
+  than a matrix variable, because a matrix variable reaches the job name.** The branch
+  protection rule of `dev` holds each of eleven required check names, and a renamed job would
+  meet no required check. **The third reading runs the case in
+  `.github/workflows/docs-build.yml`, and this round declines it.** That workflow filters
+  four paths, so a batch that touches no documentation path creates no run of it, and the
+  case would then run sometimes rather than always. The skip gate downloads the
+  `test-results-*` artifacts of its own run, so a case that runs in another workflow leaves
+  the gate naming it. `tests/universal_skips.json` loses its entry for the case, and two new
+  cases of `tests/test_documentation_site.py` hold the repair:
+  `test_one_job_of_the_test_matrix_installs_the_documentation_extra` reads the step and its
+  condition, and `test_the_skip_allowlist_holds_no_entry_for_the_slug_case` reads the
+  allowlist. `FR-pre-release-validation-38a` states the requirement. **The repair is proven
+  on the runner at https://github.com/Crank-Git/ja4plus/actions/runs/31418704343**, a manual
+  run of the branch head. The report of `test (ubuntu-latest, 3.13)` records the case as run
+  in 0.048 s, and the five other reports carry the skip. **The census of `skip-gate` reads 11
+  cases that ran on no job of the matrix, and this case is none of them.** **A manual run
+  carries no pull request**, so the step `Fetch the base commit of the pull request` runs
+  nowhere and
+  `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
+  skips on all six jobs. That case reads a pull-request event, so the batch pull request runs
+  it. No file under `ja4plus/` changes and no fingerprint moves.
+
+- **Every argument parser of the repository states a description that `python -OO` does not
+  remove** (#513). Round 198. **`python -OO` sets `__doc__` to None on every module**, so a
+  parser that reads `__doc__.splitlines()[0]` for its description raises
+  `AttributeError: 'NoneType' object has no attribute 'splitlines'` before it reads one
+  argument. **#70 repaired that line at `tests/release_body.py:139` at round 191, and the
+  same line reached `tests/skip_gate.py:333` at round 197.** A repair of the known sites
+  stops no new one, so the deliverable of this round is the case and not the repair. New
+  file `tests/test_parser_description.py` parses every tracked Python file and fails a
+  parser whose description reads `__doc__`. A read of `dev` at `31cca24` named four sites,
+  and the case reported all four:
+  `['tests/memory_ceiling_run.py:109', 'tests/mutation_cover.py:211', 'tests/mutation_sweep.py:520', 'tests/skip_gate.py:333']`.
+  The first three raise and the fourth passes `__doc__` itself, which argparse accepts as
+  None, so it reports no description at all. Each of the four now names a `DESCRIPTION`
+  constant, which is the repair `tests/release_body.py` already carries. A second case runs
+  every tool module of `tests/` twice, once plain and once under `-OO`, and it requires the
+  same `--help` from both runs. **That comparison covers both failure modes at once**,
+  because the first raises and the second drops the description.
+  `test_the_help_comparison_fails_a_module_that_reads_the_module_docstring` writes a module
+  that reads `__doc__` and measures the two outputs apart, so the comparison bites. **The
+  reader takes its file list from `git ls-files` and it walks the checkout nowhere.** #473
+  measured a reader that walked the repository root and picked up a worker worktree under
+  `.claude/`, so its corpus grew with the number of live workers.
+  `test_the_tracked_corpus_holds_an_argument_parser` and
+  `test_the_tracked_corpus_holds_a_tool_module` state the floor, so a pathspec that lists
+  nothing fails rather than reports a clean corpus. `FR-pre-release-validation-39`,
+  `FR-pre-release-validation-39a` and `FR-pre-release-validation-39b` state the three
+  requirements. **The self-review found two latent gaps in the reader itself, and
+  `FR-pre-release-validation-39c` states the repair.** `ArgumentParser` takes `description`
+  third, so `ArgumentParser(prog, usage, __doc__)` reached no report while the reader read
+  the keyword alone. The tool reader matched the text `__name__ == "__main__"`, so a guard
+  of another quote style or another operand order reached no run case. Both gaps were
+  latent, because every call site of the repository writes the form each reader expected.
+  **A latent gap in this reader is the defect this round exists to remove**, so both reach
+  a repair and a case. The reader reports `description=__doc__ or "Read the run."`, which
+  raises nothing, and that stricter reading is a decision rather than a defect: a module
+  states one description, and a fallback beside `__doc__` states it twice. `pyright`
+  reports no `reportOptionalMemberAccess` against the four files. No file under `ja4plus/`
+  changes and no fingerprint moves.
+
+- **The change-set defect case runs on the runner** (#528). Round
+  199. **A skip is not a pass, and this case had never run on any job.**
+  `tests/test_round_entry_existence.py::test_the_reading_fails_the_change_set_of_the_defect`
+  reads commit `46aa502` against its parent, which is the change set #412 shipped: eleven
+  sweeps, two repairs, a new test file, no `CHANGELOG.md` entry and a green gate. It is the
+  one case that proves the reading finds a real change set which records no round. **The
+  `actions/checkout` step makes a clone of depth 1, and that clone holds neither the commit
+  nor its parent**, so the case reported `this clone holds no parent of commit 46aa502` on
+  all six jobs. The census of #524 measured it in run
+  https://github.com/Crank-Git/ja4plus/actions/runs/31408763259 and classed it c, which
+  names a site that no limit of the runner explains. **The `test` job now fetches the two
+  recorded commits, each at depth 2**, into `refs/ja4plus/recorded-defect` and
+  `refs/ja4plus/recorded-control`. A fetch of depth 2 carries the commit and its parent,
+  which is the pair a diff needs. **A green reading of one commit proves nothing on its
+  own**, so the case set holds two directions and the runner reads both. `CONTROL_COMMIT`
+  is commit `f140a5c`, which #429 shipped to add this very file, and it recorded one round,
+  so `test_the_reading_passes_the_change_set_that_records_a_round` reads it and expects no
+  failure. **The measured cost decided the reading**, taken on 2026-08-10 after
+  `git gc --prune=now` on each read: the clone of depth 1 holds 14884 KB, the defect fetch
+  raises it to 14912 KB and the control fetch raises it to 14916 KB, so the two commands
+  cost 32 KB together against the 3884 KB of `fetch-depth: 0`. **The fetch names the whole
+  identifier, because git resolves no abbreviation at the remote**, and
+  `+46aa502:refs/ja4plus/abbrev` answered `fatal: couldn't find remote ref 46aa502` on a
+  clone of depth 1. **The step carries no `if` condition**, because the two commits stand
+  in the recorded history whatever event starts the run. **#528 declined
+  `continue-on-error` for the reason #438 states**: a failed fetch leaves the two cases
+  skipped, and the `skip-gate` job then fails the run. **The cases came first**, and
+  `test_the_test_job_fetches_the_two_recorded_change_sets` failed against the workflow of
+  the base commit on
+  `AssertionError: assert 'DEFECT_SHA: 46aa502ca47f3c29f3c5ece15e4e78500e2f59c5' in ...`.
+  **The runner read the check in both directions, on one pull request that landed in no
+  branch.** The user approved that deliberately red pull request under the standing rules,
+  and #538 targeted `batch/535-skip-gate-repairs`, it targeted neither `dev` nor `master`,
+  and each of its two heads carried no skip keyword. **The red head `4da756b` raised in
+  place of each assertion, so the run states the reading the runner made.** It ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31416675503, where every one of the six
+  matrix jobs reported both cases as `FAILED` rather than `SKIPPED`, on
+  `AssertionError: the runner read the defect commit: the change set holds these paths outside the two records: .claude/rules/conformance.md, docs/mutation_reports/412-utils.json, docs/mutation_settlements/412-utils.json and 3 more. CHANGELOG.md holds 64 round entries against 64 at the reference commit`
+  and on `AssertionError: the runner read the control commit: None`. **The two readings on
+  the runner match the two readings of the local gate word for word.** The green head
+  `837f88e` carried the cases as this branch ships them, and it ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31417379359, where all twelve jobs
+  concluded `success`, both cases reported `PASSED`, and the `skip-gate` job read 6 reports
+  and found 10 cases that ran on no job of the matrix, all 10 allowed and neither of these
+  two among them. #538 is closed and its branch is deleted.
+  `tests/universal_skips.json` loses the
+  entry that named this case, so the allowlist holds one open finding and #529 names it.
+  `docs/specs/features/11-pre-release-validation.md` gains
+  `FR-pre-release-validation-40` and one acceptance criterion, and
+  `.claude/rules/batch-gate.md` records the removal beside the entry rule. **No file under
+  `ja4plus/` changes and no fingerprint moves.**
 
 - **The branch-protection claims of the batch-gate rule reach a case** (#511). Round
   194. `.claude/rules/batch-gate.md` states that each of the eleven required contexts

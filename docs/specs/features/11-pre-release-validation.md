@@ -199,19 +199,69 @@ constant `Literal[False]` beside the 94 `BitOr` nodes.
 before the reader and it reports 1474 after it.
 
 FR-pre-release-validation-35 — `.github/workflows/test.yml` holds one job named
-`skip-gate`. That job depends on the `test` job, it downloads the six `test-results-*`
-artifacts, and it fails where one case carries a skip in every one of them.
+`skip-gate`. That job depends on every job of the file that runs cases, it downloads the
+report of each one, and it fails where one case carries a skip in every one of them.
+
+FR-pre-release-validation-35a — Every job of `.github/workflows/test.yml` that runs
+`pytest` writes one JUnit report and uploads it. The download pattern of the `skip-gate`
+job matches the artifact name of every one of those jobs.
+`tests/test_skip_gate.py` reads the workflow file against both rules.
 
 FR-pre-release-validation-36 — `tests/skip_gate.py` reads a case as a universal skip where
 no report of the download records a run of it. A report that omits the case records no run
 of it.
 
+FR-pre-release-validation-36a — The verdict of `tests/skip_gate.py` reads over the jobs
+that select the case, and it reads over no other job. A case that one job alone selects
+therefore rests on one environment, and the census of the gate names the report that holds
+it. A case that no job selects reaches no report, and this gate holds no such case.
+
 FR-pre-release-validation-37 — `tests/skip_gate.py` fails where the download holds fewer
-reports than the matrix runs. `tests/test_skip_gate.py` holds that reading.
+reports than the workflow runs. `tests/test_skip_gate.py` holds that reading.
 
 FR-pre-release-validation-38 — `tests/universal_skips.json` allows a universal skip that an
 environment limit explains, and each entry names that limit.
 `tests/skip_gate.py` fails an entry that names no limit, whatever the reports hold.
+
+FR-pre-release-validation-38a — One job of the matrix of `.github/workflows/test.yml`
+installs the `docs` extra beside the `dev` extra. That job runs
+`test_the_slug_of_a_case_matches_the_slug_of_the_build` of
+`tests/test_documentation_site.py`, and the skip gate therefore reads one run of that case.
+The `docs` extra needs Python 3.10 or later, so the Python 3.9 job of the matrix holds no
+such install.
+
+FR-pre-release-validation-38b — An entry of `tests/universal_skips.json` names one case
+under `case`, or it names one class of skip under `skip_message_prefix`. A prefix entry
+covers a case only where every report that skips that case states a message which starts
+with the prefix. `tests/skip_gate.py` reports the count of the cases each prefix entry
+covers, and it names none of them one by one.
+
+FR-pre-release-validation-38c — Every reader of `tests/universal_skips.json` accepts an
+entry that names no `case` key. `tests/test_documentation_site.py` holds one such reader,
+and a reader that indexes `case` raises `KeyError` on a prefix entry.
+
+FR-pre-release-validation-39 — No tracked module reads the module docstring for the
+description of an argument parser. `tests/test_parser_description.py` reads the tracked
+file list of `git ls-files` and it fails a module that reads `__doc__` there.
+
+FR-pre-release-validation-39a — Every tool module of `tests/` reports the same `--help`
+under `python -OO` as it reports under a plain run. That comparison covers both failure
+modes, because a description that splits `__doc__` raises and a description that passes
+`__doc__` reports nothing.
+
+FR-pre-release-validation-39b — A case fails where the reader finds no parser in the
+tracked corpus, and a second case fails where it finds no tool module. A reader that lists
+nothing otherwise reports a clean corpus that it never read.
+
+FR-pre-release-validation-39c — The reader reads the description of a parser at the third
+position as well as at the keyword, because `ArgumentParser` takes it third. It reads the
+main guard of a tool module from the syntax tree, so a guard of another quote style or
+another operand order still reaches the run case.
+
+FR-pre-release-validation-40 — The `test` job of `.github/workflows/test.yml` fetches the
+two recorded commits of `tests/test_round_entry_existence.py`, each at depth 2. One commit
+records no round and the other records one, so the runner reads the check in both
+directions.
 
 ## User flows
 
@@ -413,12 +463,23 @@ the checkout is.
 - [ ] `pytest tests/ -m spec_validation` reports 1532 passed, 143 skipped and 134 xfailed
       against 134 keys of `tests/foxio_deviations.json`.
 - [ ] `git diff --name-only` lists no file under `tests/foxio_vectors/`.
-- [ ] The `skip-gate` job fails a run where one case carries a skip in all six reports of
-      the `test` job, and it passes the suite as it stands.
+- [ ] The `skip-gate` job fails a run where one case carries a skip in every report that
+      holds it, and it passes the suite as it stands.
 - [ ] `python -m tests.skip_gate` exits 1 where the download holds fewer reports than the
-      matrix runs.
+      workflow runs.
 - [ ] `python -m tests.skip_gate` exits 1 where one entry of `tests/universal_skips.json`
       names no reason.
+- [ ] `tests/universal_skips.json` holds no entry for
+      `test_the_reading_fails_the_change_set_of_the_defect`, and the `skip-gate` job names
+      that case in no report of the matrix.
+- [ ] The `needs` list of the `skip-gate` job names every job of
+      `.github/workflows/test.yml` that runs `pytest`.
+- [ ] `python -m tests.skip_gate` names a case that the `conformance` job alone holds and
+      skips, and it exits 1 on it.
+- [ ] `python -m tests.skip_gate` exits 0 over the suite as it stands, and its census
+      reports the count of the cases the `not applicable:` entry covers.
+- [ ] `pytest tests/test_documentation_site.py` passes against an allowlist that holds one
+      entry with no `case` key.
 - [ ] `pytest tests/test_requirement_scope.py` passes, so every requirement that binds a
       feature set names one path under `tests/`.
 - [ ] `pytest tests/test_settlement_procedure.py` passes, so every `repaired` verdict names
