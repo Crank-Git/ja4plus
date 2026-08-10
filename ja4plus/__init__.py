@@ -93,7 +93,7 @@ def compute_ja4x_from_pem(cert_pem_bytes: bytes | str) -> str | None:
 
 # **`FR-release-1` puts the version number in one place, and this line is that place.**
 # `pyproject.toml` reads this attribute through its `[tool.setuptools.dynamic]` table, so
-# a release states the version this line states. A bump edits this line alone, and it
+# a release carries the version this line declares. A bump edits this line alone, and it
 # needs a matching `## [<version>]` section in `CHANGELOG.md`.
 #
 # **Keep the plain string assignment.** `setuptools` reads the value from the syntax tree,

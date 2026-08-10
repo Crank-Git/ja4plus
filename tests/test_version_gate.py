@@ -106,8 +106,23 @@ def test_the_gate_reports_project_metadata_that_reads_another_attribute() -> Non
     assert VERSION_ATTRIBUTE in found, found
 
 
+def test_the_gate_reads_the_version_of_the_project_table_alone() -> None:
+    """The gate reads no `version` key of a table other than `[project]`.
+
+    A self-review of #67 found this silent pass. The `[tool.other]` table below carries a
+    `version` key that equals the package version, and the `dynamic` list names the wrong
+    attribute. A reader of the whole file took that key for the project version and
+    returned agreement, so the wrong attribute reached no report.
+    """
+    pyproject = DERIVED_PROJECT.replace(VERSION_ATTRIBUTE, "ja4plus.cli.__version__")
+    pyproject += '\n[tool.other]\nversion = "0.6.0"\n'
+    found = version_disagreement(pyproject, PACKAGE_TEXT)
+    assert found is not None, "the gate read a `version` key of another table"
+    assert VERSION_ATTRIBUTE in found, found
+
+
 def test_the_gate_reports_project_metadata_that_declares_no_version() -> None:
-    """The gate reports project metadata that declares no version and derives none."""
+    """The gate reports project metadata that declares no version and reads none."""
     pyproject = '[project]\nname = "ja4plus"\n'
     found = version_disagreement(pyproject, PACKAGE_TEXT)
     assert found is not None, "the gate accepted project metadata that states no version"

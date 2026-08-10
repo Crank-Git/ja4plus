@@ -243,7 +243,7 @@ this and #67 took the decision: the criterion counts the declaration, and the pr
 **The criterion therefore names a command that matches a declaration line.** A read of
 2026-08-10 reports one file, `ja4plus/__init__.py`. `declaration_files` of
 `tests/version_gate.py` is the reader, and it takes the file list from `git ls-files`
-rather than from `grep -r`, because `grep -r` also reads an untracked build artifact.
+rather than from `grep -r`. `grep -r` also reads an untracked build artifact.
 
 ## Out of scope
 

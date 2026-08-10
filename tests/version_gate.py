@@ -2,8 +2,8 @@
 
 `docs/specs/features/09-release.md` puts the version number in one place, and
 `ja4plus/__init__.py` is that place. `pyproject.toml` reads the value from
-`ja4plus.__version__` through the `dynamic` mechanism of `setuptools`, so a build states
-the version the package states and the two cannot disagree.
+`ja4plus.__version__` through the `dynamic` mechanism of `setuptools`. A build therefore
+resolves the version the package declares, and the two records cannot disagree.
 
 **#67 declines `importlib.metadata` for this, and it measured three reasons.** The
 feature page proposed that `__init__.py` read the version with
@@ -36,19 +36,29 @@ from typing import List, Optional
 import re
 import subprocess
 
-# The one declaration. `ja4plus/__init__.py` states it at the top level of the module, so
-# `setuptools` reads it from the syntax tree and imports no dependency at build time.
+# The one declaration. `ja4plus/__init__.py` declares it at the top level of the module.
+# `setuptools` therefore reads it from the syntax tree and imports no dependency.
 PACKAGE_DECLARATION = re.compile(r'^__version__ = "([^"]+)"$', re.MULTILINE)
 
-# A static version of the `[project]` table, as `version = "0.6.0"`. The derived form
-# writes `version = {attr = ...}` instead, and this pattern reads no such line.
+# A static version, as `version = "0.6.0"`. The derived form writes
+# `version = {attr = ...}` instead, and this pattern reads no such line.
 PROJECT_DECLARATION = re.compile(r'^version = "([^"]+)"$', re.MULTILINE)
 
-# The `dynamic` list of the `[project]` table, which names each field a build resolves.
+# The `dynamic` list, which names each field a build resolves.
 PROJECT_DYNAMIC = re.compile(r"^dynamic = \[([^\]]*)\]$", re.MULTILINE)
 
-# The attribute that `[tool.setuptools.dynamic]` reads the version from.
+# The attribute a `[tool.setuptools.dynamic]` table reads the version from.
 PROJECT_VERSION_ATTRIBUTE = re.compile(r'^version = \{\s*attr = "([^"]+)"\s*\}$', re.MULTILINE)
+
+# One table of `pyproject.toml`, from its own header to the next header. **A reader that
+# searched the whole file would take a `version` key of another table for the project
+# version.** A `[tool]` table that carried `version = "0.6.0"` beside a `dynamic` list
+# that named the wrong attribute would then read as agreement, and the gate would report
+# nothing. #67 records the finding, and a case holds the reader against it.
+PROJECT_TABLE = re.compile(r"^\[project\]\s*$(.*?)(?=^\[|\Z)", re.MULTILINE | re.DOTALL)
+DYNAMIC_TABLE = re.compile(
+    r"^\[tool\.setuptools\.dynamic\]\s*$(.*?)(?=^\[|\Z)", re.MULTILINE | re.DOTALL
+)
 
 # A version section of `CHANGELOG.md`, as `## [0.6.0] - 2026-05`.
 CHANGELOG_SECTION = re.compile(r"^## \[([^\]]+)\]", re.MULTILINE)
@@ -73,8 +83,25 @@ def package_version(package_text: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
+def _table_body(table: "re.Pattern[str]", pyproject_text: str) -> Optional[str]:
+    """Return the lines of one table of `pyproject.toml`.
+
+    Args:
+        table: The pattern that matches the table header and its lines.
+        pyproject_text: The text of `pyproject.toml`.
+
+    Returns:
+        The lines below the header, or None where the file holds no such table.
+    """
+    match = table.search(pyproject_text)
+    return match.group(1) if match else None
+
+
 def project_version(pyproject_text: str) -> Optional[str]:
     """Return the static version that the `[project]` table declares.
+
+    **The reader searches that table alone.** A `version` key of another table declares no
+    project version, and a reader of the whole file would take one for the project version.
 
     Args:
         pyproject_text: The text of `pyproject.toml`.
@@ -82,12 +109,18 @@ def project_version(pyproject_text: str) -> Optional[str]:
     Returns:
         The version string, or None where the table declares no static version.
     """
-    match = PROJECT_DECLARATION.search(pyproject_text)
+    body = _table_body(PROJECT_TABLE, pyproject_text)
+    if body is None:
+        return None
+    match = PROJECT_DECLARATION.search(body)
     return match.group(1) if match else None
 
 
 def project_version_attribute(pyproject_text: str) -> Optional[str]:
     """Return the attribute that `[tool.setuptools.dynamic]` reads the version from.
+
+    The `dynamic` list comes from the `[project]` table, and the attribute comes from the
+    `[tool.setuptools.dynamic]` table. Each reader searches its own table alone.
 
     Args:
         pyproject_text: The text of `pyproject.toml`.
@@ -96,10 +129,16 @@ def project_version_attribute(pyproject_text: str) -> Optional[str]:
         The attribute path, or None where the file names `version` in no `dynamic` list
         or reads it from no attribute.
     """
-    dynamic = PROJECT_DYNAMIC.search(pyproject_text)
+    project = _table_body(PROJECT_TABLE, pyproject_text)
+    if project is None:
+        return None
+    dynamic = PROJECT_DYNAMIC.search(project)
     if dynamic is None or "version" not in dynamic.group(1):
         return None
-    match = PROJECT_VERSION_ATTRIBUTE.search(pyproject_text)
+    body = _table_body(DYNAMIC_TABLE, pyproject_text)
+    if body is None:
+        return None
+    match = PROJECT_VERSION_ATTRIBUTE.search(body)
     return match.group(1) if match else None
 
 
@@ -109,8 +148,8 @@ def version_disagreement(pyproject_text: str, package_text: str) -> Optional[str
     FR-release-2 fails continuous integration on such a disagreement. The reader accepts
     two shapes. `pyproject.toml` reads the version from `ja4plus.__version__`, which is
     the shape this repository holds. `pyproject.toml` also passes where it declares a
-    static version equal to the package version, so a repository that reverts the derived
-    form still gets the comparison FR-release-2 names.
+    static version equal to the package version. A repository that reverts the derived
+    form therefore still gets the comparison FR-release-2 names.
 
     Args:
         pyproject_text: The text of `pyproject.toml`.
@@ -161,9 +200,12 @@ def changelog_disagreement(changelog_text: str, version: str) -> Optional[str]:
 def declaration_files(repository_root: Path) -> List[str]:
     """Return every tracked file of `pyproject.toml` and `ja4plus/` that declares a version.
 
-    FR-release-1 allows one such file. The reader takes the file list from
-    `git ls-files` rather than from `grep -r`, because `grep -r` also reads an untracked
-    build artifact and a compiled module.
+    FR-release-1 allows one such file. The reader takes the file list from `git ls-files`
+    rather than from `grep -r`. `grep -r` also reads an untracked build artifact and a
+    compiled module.
+
+    **This reader searches no single table**, and `project_version` does. A `version` key
+    of any table counts here, so a second key fails the one-file case rather than pass it.
 
     Args:
         repository_root: The root of the checkout to read.
