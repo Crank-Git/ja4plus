@@ -403,8 +403,16 @@ reproduction writes `64240_2-1-1-4-1-3_1460_7` before it and
 |---|---|
 | `TestTheConcurrencyContract`, 50 consecutive runs on macOS | 50 passed, 0 failed |
 | A replay of all 38 committed captures, 783 values | The same SHA-256 before and after |
-| The shard filter of `evict_aged` removed | 2 of 2 new cases fail |
-| The thread clock of `on_packet` removed | 1 of 1 new case fails |
+| The shard filter of `evict_aged` removed | 2 new cases fail |
+| The thread clock of `on_packet` removed | 1 new case fails |
+| The owner write of `__contains__` removed | 1 new case fails |
+| The owner write of `__getitem__` removed | 1 new case fails |
+| The wall-clock exemption of the pass removed | 1 new case fails |
+
+Every run cleared every `__pycache__` outside `.venv/` and set
+`PYTHONDONTWRITEBYTECODE=1`. `inspect.getsource` read the loaded source in both
+directions, and it reported 1 occurrence clean and 0 under each mutation. Every case
+passes clean and after the restore.
 
 **The first sweep found one case shape that could not fail.** The memory file held no
 case that measured the age bound, so removing the age pass failed 0 of 3 runs. The file
