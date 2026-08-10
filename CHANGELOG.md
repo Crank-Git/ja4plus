@@ -1086,6 +1086,34 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **The mutation sweep builds no mutation inside a type annotation** (#431). Round TBD.
+  `tests/mutation_sweep.py` built one mutation for each `BinOp` node whose operator sits in
+  `BINOP_SWAP`, and `ast.BitOr` is one of them. A type annotation written `str | None` holds
+  a `BitOr`, so the sweep changed it to `str & None`. **28 of the 31 modules of `ja4plus/`
+  carry `from __future__ import annotations`**, so Python holds each annotation as a string
+  and evaluates none of them. A changed annotation reaches no run-time value, and no case can
+  fail for it. The three modules that carry no such import hold one annotation node between
+  them, the `-> None` of `ja4plus/utils/loopback.py`, and no operator sits in it.
+  **#413 measured the cost.** 94 of the 675 surviving mutations of
+  `ja4plus/fingerprinters/` sat inside an annotation, and all 94 survived. That is 14
+  percent of the survivors of the module group. A reader reads each one and finds no case
+  that it can ever fail. **New reader `_annotation_nodes` names the nodes of an argument
+  annotation, of a return annotation and of an `AnnAssign` annotation**, in the shape
+  `_docstring_nodes` and `_logging_argument_nodes` already set. `generate_mutations` reads
+  it for every node kind, because the earlier `skip` set reaches the constant branch alone
+  and an annotation holds a `BitOr` that the binop branch reads. **The reader removes 95
+  mutations and not 94.** `ja4plus/fingerprinters/base.py:43` holds `-> Literal[False]:`,
+  and that constant reaches no run-time value either. `--dry-run --max-per-module 0` over
+  `ja4plus/fingerprinters/*.py` reported 1569 mutations before the reader and it reports
+  1474 after it. **New file `tests/test_mutation_sweep_annotation_skip.py` holds nine cases
+  and every one was proved in both directions.** The five reader cases failed with
+  `AttributeError: module 'tests.mutation_sweep' has no attribute '_annotation_nodes'`
+  before the reader existed. The three sweep cases failed against a control that reads an
+  empty set in place of the reader, one with `assert 4 not in {4, 6, 7}` and one with
+  `assert 4 == 1`. A `BitOr` outside every annotation still builds its mutation, so the
+  change removes no real mutation. The floor case reads the four `BitOr` nodes of the
+  fixture, so a reader that names nothing fails rather than passes an aggregate over an
+  empty set. No file under `ja4plus/` changes and no fingerprint moves.
 - **The `ruff` pin is exact, so the lint gate cannot change without a commit** (#378).
   Round 161. `pyproject.toml` declared `ruff>=0.6`. `pip` therefore resolved the newest
   release at the moment of each install, and the gate read a different tool on two days.

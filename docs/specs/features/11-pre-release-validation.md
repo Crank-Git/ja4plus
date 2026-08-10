@@ -172,6 +172,21 @@ FR-pre-release-validation-33 — Every issue of this feature set holds the confo
 suite at 1532 passed, 143 skipped and 134 xfailed, against 134 keys of
 `tests/foxio_deviations.json`.
 
+FR-pre-release-validation-34 — `tests/mutation_sweep.py` builds no mutation of a node
+inside a type annotation. `_annotation_nodes` names the nodes of an argument annotation,
+of a return annotation and of an `AnnAssign` annotation.
+`tests/test_mutation_sweep_annotation_skip.py` holds the reader in both directions.
+
+FR-pre-release-validation-34a — A node the reader names builds no mutation. A `BitOr`
+outside every annotation still builds one. 28 of the 31 modules of `ja4plus/` carry
+`from __future__ import annotations`, so Python holds each annotation as a string and a
+changed annotation reaches no run-time value. #431 records the measurement: 94 of the 675
+surviving mutations of `ja4plus/fingerprinters/` sat inside an annotation, and all 94
+survived. The reader removes 95, because `ja4plus/fingerprinters/base.py:43` holds the
+constant `Literal[False]` beside the 94 `BitOr` nodes.
+`--dry-run --max-per-module 0` over `ja4plus/fingerprinters/*.py` reported 1569 mutations
+before the reader and it reports 1474 after it.
+
 ## User flows
 
 **A maintainer proves the shipped package runs.**
