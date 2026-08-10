@@ -9,19 +9,71 @@ specification, and that method is JA4.
 the three and adds these cases, so that a later reader finds the contradiction here
 rather than in a review.
 
+## Why the first form of this file caught nothing
+
+**A check that a rewording defeats is not a check.** #211 wrote the constant
+`SUPERSEDED_COUNT = "seven of the twelve"` and searched each line for it.
+`docs/specs/spec.html` writes `Seven of twelve FoxIO methods are specified only as
+images.`, which carries no `the`, so the page held the superseded count for 92 rounds
+while the case passed. #449 measured that and this file now reads a shape.
+
+Two properties follow, and each closes one half of the hole.
+
+1. **The reader reads a count, and it forbids no phrase.** `image_count_claims` matches a
+   count that binds to the word `method`, followed by a claim about an image or about a
+   complete text specification. A document passes when its count equals the count the
+   inventory measures, so a rewording that keeps the wrong number still fails.
+2. **The count comes out of the inventory.** `measured_image_count` reads the file table
+   and the numbered statements of `docs/specs/foxio/README.md`. A case that restated
+   eleven would pass on the day FoxIO publishes a thirteenth method.
+
+## What a case here does not read
+
+**A dated record of a past measurement is quoted, not rewritten.** The `## Changelog`
+section of `docs/specs/spec.md` records the state of the project at the time of writing,
+and round 162 quotes the defective sentence of `docs/specs/spec.html` word for word.
+`readable_text` cuts that section, so a correction here destroys no record. `CHANGELOG.md`
+reaches no case here at all, because `_documentation_files` never held it.
+
+**A count of another thing stands.** `docs/specs/foxio/JA4T.md` states `7 of the 12 moved
+values are of that shape`, and `docs/specs/foxio/README.md` states that FoxIO published a
+text specification for seven methods. Neither sentence claims an image count, and
+`test_the_reader_reads_no_claim_where_a_sentence_counts_another_thing` holds both against
+the reader.
+
 These cases read prose. They import nothing from `ja4plus` and they produce no
 fingerprint.
 """
 
+import re
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# The count the inventory supersedes. `docs/specs/spec.md` records the superseded premise
-# in Changelog round 49 with different words, so that history survives this case.
-SUPERSEDED_COUNT = "seven of the twelve"
+# The page that measures `technical_details/` at the pinned commit. Every count a case
+# here compares against comes out of this page.
+INVENTORY = REPO_ROOT / "docs" / "specs" / "foxio" / "README.md"
+
+# The count word this project writes for each number. A claim states its count as a word
+# or as a digit, and the reader accepts both forms.
+NUMBER_WORDS: Dict[str, int] = {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+}
 
 # `technical_details/README.md` lists these twelve methods at the pinned commit.
 FOXIO_METHODS = (
@@ -40,6 +92,165 @@ FOXIO_METHODS = (
 )
 
 CONFORMANCE_FEATURE = REPO_ROOT / "docs" / "specs" / "features" / "01-spec-conformance.md"
+
+# An HTML tag, which the reader drops before it splits `docs/specs/spec.html` into
+# sentences. A tag inside a sentence otherwise hides the words on each side of it.
+HTML_TAG = re.compile(r"<[^>]+>")
+
+# The end of a sentence. The reader binds a count to the claim of its own sentence,
+# because one paragraph states the image count beside a count of another thing.
+SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+
+# A count that binds to the word `method`. The optional `of the twelve` carries the whole
+# set, and up to two words stand between the count and the noun, as in `Seven of twelve
+# FoxIO methods`.
+COUNT_PHRASE = (
+    r"\b(?P<count>" + "|".join(NUMBER_WORDS) + r"|\d+)\b"
+    r"(?:\s+(?:of|out\s+of)\s+(?:the\s+|its\s+)?(?:twelve|12))?"
+    r"(?:\s+[\w+/-]+){0,2}\s+methods?\b"
+)
+
+# The claim that makes a count an image count. FoxIO publishes a method as an image, or
+# the method carries no complete text specification. A sentence that states neither counts
+# another thing.
+IMAGE_CLAIM = (
+    r"(?:"
+    r"as\s+(?:an?\s+)?images?"
+    r"|only\s+in\s+(?:an?\s+)?images?"
+    r"|(?:carry|carries|hold|holds|have|has)\s+no\s+complete\s+text\s+specification"
+    r")"
+)
+
+# **Warning: the window between the noun and the claim is 40 characters.** A longer window
+# reaches the claim of a neighbouring clause and reports a count that sentence never made.
+CLAIM_WINDOW = r"[^.]{0,40}?"
+
+IMAGE_COUNT_CLAIM = re.compile(COUNT_PHRASE + CLAIM_WINDOW + IMAGE_CLAIM, re.IGNORECASE)
+
+# The fixed phrase #211 forbade. It stands here as the record of the defect #449 measured,
+# and no case searches a document for it.
+SUPERSEDED_PHRASE = "seven of the twelve"
+
+# The heading of the section that records a state of the project at the time of writing.
+# `readable_text` cuts it out of `docs/specs/spec.md`.
+RECORD_SECTION = "## Changelog"
+
+# The row of the inventory table that names one file of `technical_details/`.
+INVENTORY_ROW = re.compile(r"^\|\s*`(?P<name>[\w.]+)`\s*\|\s*(?P<bytes>\d+)\s*\|")
+
+# The statement of `## What the inventory states` that counts the files of the directory.
+FILE_COUNT_STATEMENT = re.compile(
+    r"directory\s+holds\s+(?P<files>\w+)\s+files:\s*"
+    r"(?P<text>\w+)\s+text\s+files\s+and\s+(?P<images>\w+)\s+images",
+    re.IGNORECASE,
+)
+
+# The statement of `## What the inventory states` that counts the complete text
+# specifications. The measured image count is the method count less this number.
+TEXT_SPECIFICATION_STATEMENT = re.compile(
+    r"\b(?P<count>\w+)\s+methods?\s+of\s+twelve\s+(?:holds?|carries|carry)\s+"
+    r"a\s+complete\s+text\s+specification",
+    re.IGNORECASE,
+)
+
+# The extension of an image of `technical_details/`.
+IMAGE_SUFFIX = ".png"
+
+
+def _plain(text: str) -> str:
+    """Return the text with no HTML tag and one space between words.
+
+    A line break splits a sentence of `docs/specs/spec.html`, so a reader that reads one
+    line at a time misses a claim the page wraps.
+
+    Args:
+        text: The text of one document.
+
+    Returns:
+        The text as one line.
+    """
+    return " ".join(HTML_TAG.sub(" ", text).split())
+
+
+def image_count_claims(text: str) -> List[Tuple[int, str]]:
+    """Return every claim about the count of methods FoxIO publishes as an image.
+
+    Args:
+        text: The text of one document, or one passage of it.
+
+    Returns:
+        The count and the matching phrase of each claim, in the order the text holds them.
+    """
+    found: List[Tuple[int, str]] = []
+    for sentence in SENTENCE_END.split(_plain(text)):
+        for match in IMAGE_COUNT_CLAIM.finditer(sentence):
+            word = match.group("count").lower()
+            count = NUMBER_WORDS[word] if word in NUMBER_WORDS else int(word)
+            found.append((count, match.group(0)))
+    return found
+
+
+def readable_text(path: Path, text: str) -> str:
+    """Return the text of one document with the section that records a past state removed.
+
+    Args:
+        path: The path of the document.
+        text: The whole text of the document.
+
+    Returns:
+        The text a case reads. `docs/specs/spec.md` loses its `## Changelog` section.
+    """
+    if path.name != "spec.md":
+        return text
+    start = text.find(f"\n{RECORD_SECTION}")
+    if start == -1:
+        return text
+    end = text.find("\n## ", start + 1)
+    return text[:start] + (text[end:] if end != -1 else "")
+
+
+def inventory_files() -> Dict[str, int]:
+    """Return the files of `technical_details/` the inventory table records.
+
+    Returns:
+        The byte count of each file, keyed by file name.
+
+    Raises:
+        AssertionError: The table holds no row.
+    """
+    files = {}
+    for line in INVENTORY.read_text(encoding="utf-8").splitlines():
+        match = INVENTORY_ROW.match(line)
+        if match:
+            files[match.group("name")] = int(match.group("bytes"))
+    assert files, "the inventory table holds no row"
+    return files
+
+
+def complete_text_specification_count() -> int:
+    """Return the count of methods that hold a complete text specification.
+
+    Returns:
+        The number the numbered statements of the inventory state.
+
+    Raises:
+        AssertionError: The inventory states no such count.
+    """
+    match = TEXT_SPECIFICATION_STATEMENT.search(_plain(INVENTORY.read_text(encoding="utf-8")))
+    assert match, "the inventory counts no complete text specification"
+    return NUMBER_WORDS[match.group("count").lower()]
+
+
+def measured_image_count() -> int:
+    """Return the count of methods that carry no complete text specification.
+
+    A restated number goes stale on the day FoxIO publishes another method, so the count
+    comes out of the inventory and out of the method list.
+
+    Returns:
+        The method count less the count of complete text specifications.
+    """
+    return len(FOXIO_METHODS) - complete_text_specification_count()
 
 
 def _documentation_files() -> list[Path]:
@@ -134,17 +345,140 @@ def _bullet(section: str, subject: str) -> list[str]:
     return lines
 
 
-def test_no_documentation_file_states_the_superseded_image_count() -> None:
-    """No page states that FoxIO publishes seven of the twelve methods as an image."""
+def test_the_inventory_table_records_twelve_files() -> None:
+    """The inventory table of `technical_details/` holds one row for each of twelve files."""
+    assert len(inventory_files()) == 12, f"the table records {len(inventory_files())} files"
+
+
+def test_the_inventory_table_records_nine_images_and_three_text_files() -> None:
+    """The inventory table records nine images and three text files."""
+    files = inventory_files()
+    images = [name for name in files if name.endswith(IMAGE_SUFFIX)]
+    assert len(images) == 9, f"the table records {len(images)} images"
+    assert len(files) - len(images) == 3, f"the table records {len(files) - len(images)} text files"
+
+
+def test_the_inventory_statement_states_the_count_its_own_table_records() -> None:
+    """The numbered statement of the inventory counts the files its own table records."""
+    match = FILE_COUNT_STATEMENT.search(_plain(INVENTORY.read_text(encoding="utf-8")))
+    assert match, "the inventory states no file count"
+    files = inventory_files()
+    images = [name for name in files if name.endswith(IMAGE_SUFFIX)]
+    stated = (
+        NUMBER_WORDS[match.group("files").lower()],
+        NUMBER_WORDS[match.group("text").lower()],
+        NUMBER_WORDS[match.group("images").lower()],
+    )
+    assert stated == (len(files), len(files) - len(images), len(images)), (
+        f"the statement counts {stated} and the table records "
+        f"{(len(files), len(files) - len(images), len(images))}"
+    )
+
+
+def test_the_inventory_counts_one_complete_text_specification() -> None:
+    """The inventory states that one method of twelve holds a complete text specification."""
+    assert complete_text_specification_count() == 1, (
+        f"the inventory counts {complete_text_specification_count()} complete text "
+        "specifications, and `JA4.md` is the one file the table records as complete"
+    )
+
+
+def test_the_measured_image_count_is_the_method_count_less_the_text_specifications() -> None:
+    """The measured image count is eleven, and each half of it comes out of a document."""
+    assert measured_image_count() == len(FOXIO_METHODS) - complete_text_specification_count()
+    assert measured_image_count() == 11, f"the inventory measures {measured_image_count()}"
+
+
+def test_every_document_states_the_image_count_the_inventory_measures() -> None:
+    """Every image count of the corpus equals the count the inventory measures."""
+    measured = measured_image_count()
     offenders = []
     for path in _documentation_files():
-        text = path.read_text(encoding="utf-8")
-        for number, line in enumerate(text.splitlines(), start=1):
-            if SUPERSEDED_COUNT in line.lower():
-                offenders.append(f"{path.relative_to(REPO_ROOT)}:{number}")
-    assert offenders == [], (
-        f"these lines state the superseded count {SUPERSEDED_COUNT!r}: {offenders}"
+        text = readable_text(path, path.read_text(encoding="utf-8"))
+        for count, phrase in image_count_claims(text):
+            if count != measured:
+                offenders.append(f"{path.relative_to(REPO_ROOT)}: {phrase!r}")
+    assert offenders == [], f"these claims state an image count that is not {measured}: {offenders}"
+
+
+def test_the_rendered_specification_page_states_one_image_count() -> None:
+    """`docs/specs/spec.html` states one image count and it contradicts itself nowhere."""
+    page = REPO_ROOT / "docs" / "specs" / "spec.html"
+    claims = image_count_claims(page.read_text(encoding="utf-8"))
+    assert claims, "the page states no image count"
+    counts = {count for count, _ in claims}
+    assert len(counts) == 1, f"the page states the counts {sorted(counts)} in {claims}"
+
+
+# The spellings the page could plausibly carry for the superseded count. #211 forbade one
+# of them and the page carried another, so the reader is proved against the set.
+SUPERSEDED_PHRASINGS = (
+    "Seven of twelve FoxIO methods are specified only as images.",
+    "Seven of the twelve FoxIO methods are specified only as images.",
+    "seven of the twelve methods are published as an image.",
+    "Seven of the 12 FoxIO methods are published as an image.",
+    "7 of 12 FoxIO methods carry no complete text specification.",
+    "Seven FoxIO methods are specified only as images.",
+    "FoxIO publishes seven of its twelve methods only as images.",
+    "Seven methods of the twelve are specified only as images.",
+    "Seven of the twelve JA4+ methods hold no complete text specification.",
+    "FoxIO publishes seven methods as images at the pinned commit.",
+)
+
+
+@pytest.mark.parametrize("sentence", SUPERSEDED_PHRASINGS)
+def test_the_reader_reads_the_superseded_count_in_each_plausible_phrasing(sentence: str) -> None:
+    """The reader reports seven for each spelling of the superseded count."""
+    counts = [count for count, _ in image_count_claims(sentence)]
+    assert counts == [7], f"the reader reads {counts} in {sentence!r}"
+
+
+# The sentences of the corpus that pair a count with an image or with a method and claim
+# no image count. A reader that reports one of these fires on every page and proves
+# nothing.
+CONTROL_SENTENCES = (
+    "7 of the 12 moved values are of that shape, and the prose alone covers them.",
+    "FoxIO published a text specification for seven methods, and commit `b6f3ff4` deleted"
+    " all seven.",
+    "Three methods hold no image at all: JA4LS, JA4TS and JA4TScan.",
+    "The table of twelve methods, the nine image links, and the license note.",
+    "The deleted `JA4H.md` states the nine request methods it counts.",
+    "Eleven of the twelve FoxIO methods carry no complete text specification, and JA4 is"
+    " the one method that holds one.",
+)
+
+
+@pytest.mark.parametrize("sentence", CONTROL_SENTENCES)
+def test_the_reader_reads_no_claim_where_a_sentence_counts_another_thing(sentence: str) -> None:
+    """The reader reports no superseded count for a sentence that counts another thing."""
+    counts = [count for count, _ in image_count_claims(sentence)]
+    assert 7 not in counts, f"the reader reads {counts} in {sentence!r}"
+
+
+def test_the_reader_reads_a_claim_that_a_line_break_splits() -> None:
+    """The reader reads one claim that a line break splits across three lines."""
+    wrapped = "<li><strong>Seven of\ntwelve FoxIO methods are\nspecified only as images.</strong>"
+    assert [count for count, _ in image_count_claims(wrapped)] == [7]
+
+
+def test_a_fixed_phrase_reads_over_the_phrasing_the_rendered_page_carried() -> None:
+    """The phrase #211 forbade reads nothing in the phrasing `docs/specs/spec.html` carried."""
+    carried = "Seven of twelve FoxIO methods are specified only as images."
+    assert SUPERSEDED_PHRASE not in carried.lower(), (
+        "the fixed phrase now matches, and this case records why a fixed phrase is not a check"
     )
+    assert [count for count, _ in image_count_claims(carried)] == [7]
+
+
+def test_the_reader_reads_the_quoted_count_of_a_changelog_round_and_a_case_does_not() -> None:
+    """The reader reads the count round 162 quotes, and `readable_text` cuts that round."""
+    specification = REPO_ROOT / "docs" / "specs" / "spec.md"
+    whole = specification.read_text(encoding="utf-8")
+    assert 7 in [count for count, _ in image_count_claims(whole)], (
+        "the `## Changelog` section quotes no superseded count, so this case proves nothing"
+    )
+    counts = [count for count, _ in image_count_claims(readable_text(specification, whole))]
+    assert 7 not in counts, f"`readable_text` cut no record, and the counts read {counts}"
 
 
 @pytest.mark.parametrize("method", FOXIO_METHODS)
