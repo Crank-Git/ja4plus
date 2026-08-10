@@ -270,19 +270,28 @@ holds every breaking change of this record against a row of that page.
   disputed inputs and #162 records the readings of 2026-08-07, and the two rows those
   issues wrote stay as they are. **This round moves no fingerprint and it repairs no
   defect.** New file `tests/test_alpn_ruling_register.py` holds eight cases, and seven of
-  them failed before the row landed. **Three mutations prove that the cases bite.** A row
+  them failed before the row landed. **Four mutations prove that the cases bite.** A row
   that drops the ruling reports ``AssertionError: the ruling row holds no 'the form of
   `ja4plus` stands'``. A row that gives FoxIO Rust the value `hh` reports
   ``AssertionError: the sentence that names FoxIO Rust states no value `h9` ``. A row that
   renames the item reports `AssertionError: the divergence register holds no row named
-  'The JA4 ALPN form that matches no FoxIO implementation'`. Each mutation was restored,
-  and `git diff --stat` reported one insertion after the run. **A floor refuses a reader
-  that found no row**, because an aggregate over an empty set passes. **The sixteen entries
+  'The JA4 ALPN form that matches no FoxIO implementation'`. A row that moves the date out
+  of the ruling sentence into the sentence after it reports `AssertionError: the sentence
+  that states the ruling names no date 2026-08-10`. **The self-review found that fourth
+  reading, because the ruling sentence closed its bold mark after the period and the reader
+  therefore read it together with the sentence after it.** The row now closes the bold mark
+  before the period, so the reader holds the date against the ruling alone. The run
+  restored each mutation, and `git diff --stat` then reported one insertion. **A floor
+  refuses a reader that found no row**, because an aggregate over an empty set passes.
+  `MINIMUM_REGISTER_ROWS` reads 30, which is the row count before this round. **The sixteen entries
   of `tests/foxio_deviations.json` that name #162 stand**, and one case reads that count.
   The deviation register holds 134 keys before and after, and the conformance suite reports
   1532 passed, 143 skipped and 134 xfailed before and after. **No file under `ja4plus/`
-  changes.** The unit suite rises from 4066 passed to 4074 passed, with 7 skipped and 8
-  xfailed, and coverage holds at 94% with 4316 statements and 273 misses.
+  changes.** The unit suite reports 4076 passed, 6 skipped and 8 xfailed, and the eight new
+  cases stand among them. **All six skips read the platform or the host**: two name the
+  Linux cache convention, three name the `AF_PACKET` sockets of Linux, and one names the
+  capture privilege of this account. Coverage holds at 94% with 4316 statements and 273
+  misses.
 
 - **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round 182.
   **Three FoxIO records at the pinned commit

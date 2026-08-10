@@ -49,9 +49,9 @@ REGISTER_END = "Verified against: https://github.com/Crank-Git/ja4plus-go"
 REGISTER_HEADER = "| Item |"
 REGISTER_SEPARATOR = re.compile(r"^\|[\s\-|]+\|$")
 
-# The register held this many rows when #522 added one. **An aggregate over an empty set
+# The register held this many rows before #522 added one. **An aggregate over an empty set
 # passes**, so a reader that found no row would satisfy every case below.
-MINIMUM_REGISTER_ROWS = 29
+MINIMUM_REGISTER_ROWS = 30
 
 # The first cell of the row that records the ruling.
 RULING_ITEM = "The JA4 ALPN form that matches no FoxIO implementation"
