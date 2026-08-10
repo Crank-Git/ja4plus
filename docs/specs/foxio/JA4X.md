@@ -92,7 +92,7 @@ could occupy.
 | The closing sentence | It names JA4, JARM and Issuer Org as separate metadata. It states no rule about the packet that carries the certificate. |
 
 The image therefore names no TLS version, no TCP port, no proxy, no tunnel protocol and no
-direction. **The negative confirms the existing decision, and it reopens nothing.** The
+direction. **The negative confirms the existing ruling, and it reopens nothing.** The
 specification states no transport rule, so the specification neither supports nor refutes
 the three values on `socks4-https.pcap`. "The register" below states the same result for
 each register entry.
@@ -124,7 +124,7 @@ contradicts.**
 |---|---|
 | Two corroborations, and the image agrees | R1, R2, R3, R4, R5, R6, R7, R10 |
 | Two corroborations, and the image states nothing | R9, R11 |
-| Two corroborations, and the image contradicts them | **R8. The user decided it on 2026-08-08, and the decision is reversible.** |
+| Two corroborations, and the image contradicts them | **R8. The user decided it on 2026-08-08, and the ruling is reversible.** |
 
 **No rule on this page holds fewer than two corroborations.** R8 was uncertain for the
 opposite reason: the image draws both forms, so the image contradicts its own example.
@@ -208,7 +208,7 @@ The image's caption states this rule in words: `(does not include values)`.
 
 ### R8 — An empty list writes the zero sentinel, and the image contradicts itself
 
-**The user decided this rule on 2026-08-08, and the decision is reversible.** An empty
+**The user decided this rule on 2026-08-08, and the ruling is reversible.** An empty
 list writes `000000000000`. The section below records the contradiction the image
 carries, so that a later reader does not derive it again.
 
@@ -251,10 +251,10 @@ records the FoxIO Rust output and the Wireshark output.**
 sentinel. Measured on 2026-08-08 with `grep -rl "e3b0c44298fc" tests/foxio_vectors/`, which
 matched no file.
 
-#### The decision of 2026-08-08, and the contradiction it records
+#### The ruling of 2026-08-08, and the contradiction it records
 
-**The user decided the zero sentinel.** #228 holds the decision comment, and Changelog
-round 77 of `docs/specs/spec.md` records it. The decision is reversible.
+**The user decided the zero sentinel.** #228 holds the ruling comment, and Changelog
+round 77 of `docs/specs/spec.md` records it. The ruling is reversible.
 
 | Form | Value | Sources at the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` |
 |---|---|---|
@@ -326,14 +326,14 @@ corroboration.
 file under `tests/foxio_vectors/` holds a `JA4X_r` key. Measured on 2026-08-08 with
 `grep -l "JA4X_r" tests/foxio_vectors/*.json`, which matched no file.
 
-#### The decision of 2026-08-08, and the form it names
+#### The ruling of 2026-08-08, and the form it names
 
-**The user decided that this project publishes the raw form, and the decision is
-reversible.** #267 holds the decision comment. `ja4plus` writes `JA4X_r`, which holds the
+**The user decided that this project publishes the raw form, and the ruling is
+reversible.** #267 holds the ruling comment. `ja4plus` writes `JA4X_r`, which holds the
 three unhashed lists joined with `_`. The name follows the `JA4S_r` form this package
 already publishes.
 
-**Two of the three FoxIO implementations publish the value.** The decision comment of
+**Two of the three FoxIO implementations publish the value.** The ruling comment of
 #267 states the reading in the user's words:
 `Two of the three FoxIO implementations publish it, and FoxIO specifies the value, so
 parity rule 1 decides it and the port does not outrank it.` Read "FoxIO specifies the
@@ -437,7 +437,7 @@ holds the key, so no vector measured D1 and the reading was a code reading.
 
 **#267 built the value, and the disagreement is gone.** `generate_ja4x_raw` in `ja4x.py`
 writes `JA4X_r`, and `TestTheJa4xRawFormTheRustSnapshotImplies` compares all 43 values
-against the FoxIO Rust snapshots through the hash. "The decision of 2026-08-08, and the
+against the FoxIO Rust snapshots through the hash. "The ruling of 2026-08-08, and the
 form it names" above holds the whole reading.
 
 **D2 — `cryptography` rejects a certificate that holds a duplicate attribute inside one
@@ -496,7 +496,7 @@ no rule for any of these three subjects.
 `docs/specs/foxio/deleted-text-specifications.md` holds the provenance. Nothing at the
 pinned commit corrects that sentence, so it stands as FoxIO-authored evidence under the
 rule that #221 set. **It names the mechanism the seven entries record**, and it supports the
-#129 decision that decryption is out of scope. It changes no fingerprint.
+#129 ruling that decryption is out of scope. It changes no fingerprint.
 
 ### The measurement that supports the two #138 entries
 
@@ -620,26 +620,26 @@ result.
 block with two values, and no other local snapshot holds the field. #199 reports the gap
 and it owns the reading. #229 changes nothing there.
 
-## The decisions this page raises
+## The rulings this page raises
 
 **No fingerprint moves.** #267 adds the `JA4X_r` value, and it changes no JA4X value. The
 conformance suite reports 1477 passed, 143 skipped and 137 xfailed before #267, and 1529
 passed, 143 skipped and 137 xfailed after it. The 52 new cases are the raw-form
 comparison.
 
-1. **R8. Decided on 2026-08-08, and the decision is reversible.** An empty list writes
+1. **R8. Decided on 2026-08-08, and the ruling is reversible.** An empty list writes
    `000000000000`. The FoxIO Rust implementation, the Wireshark dissector and the
    `README.md` write it. The project already uses the same sentinel where JA4H signals a
    request that carries no cookie. The FoxIO Python implementation and the
-   image's Qakbot row write `e3b0c44298fc`, which the decision rejects. **No local vector
-   reaches the case, so no fingerprint moved.** "The decision of 2026-08-08, and the
+   image's Qakbot row write `e3b0c44298fc`, which the ruling rejects. **No local vector
+   reaches the case, so no fingerprint moved.** "The ruling of 2026-08-08, and the
    contradiction it records" above holds the whole reading. #228 built it under Changelog
    round 77.
-2. **D1. Decided on 2026-08-08, and the decision is reversible.** This project publishes
+2. **D1. Decided on 2026-08-08, and the ruling is reversible.** This project publishes
    a `JA4X_r` raw form, which holds the three unhashed lists joined with `_`. Two FoxIO
    implementations write it, the FoxIO Python implementation writes none, and the image
-   states nothing. **#267 holds the decision and built the value**, under Changelog round
+   states nothing. **#267 holds the ruling and built the value**, under Changelog round
    TBD. #228 raised it and ruled nothing on it.
 
-**The named question needs no decision.** The image states nothing about the transport, so
-the specification confirms the user's decision of 2026-08-07 rather than reopening it.
+**The named question needs no ruling.** The image states nothing about the transport, so
+the specification confirms the user's ruling of 2026-08-07 rather than reopening it.

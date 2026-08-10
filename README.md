@@ -39,12 +39,12 @@ The `Implemented` column states whether this project builds the method.
 | JA4D | DHCPv4 | DHCP client/server fingerprint (FoxIO PR #267/#270) | Yes |
 | JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint (FoxIO PR #267/#270) | Yes |
 
-**JA4TScan is declined by decision, and it is not an omission.** It sends crafted packets
+**JA4TScan is declined by ruling, and it is not an omission.** It sends crafted packets
 to a host the operator names and reads the responses. Every other method reads traffic
 that already exists, so JA4TScan reaches a network the operator did not capture. That
 capability is larger than fingerprint production.
-[`docs/specs/spec.md`](docs/specs/spec.md) holds the decision under `Non-goals`, and the
-decision is reversible.
+[`docs/specs/spec.md`](docs/specs/spec.md) holds the ruling under `Non-goals`, and the
+ruling is reversible.
 
 `JA4LFingerprinter` builds both JA4L and JA4LS, so ten fingerprinters carry eleven
 methods. The `--types` option names the two together as `ja4l`.

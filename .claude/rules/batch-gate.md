@@ -283,6 +283,57 @@ gh run list --repo Crank-Git/ja4plus --branch <branch> --json event,status,concl
 Read the gate again after the run finishes. **Warning: a manual run reads the branch head
 and not the merge result**, so it proves the branch and it does not prove the merge.
 
+### A manual run names its own reference commit
+
+**Warning: a manual run carries no pull request, so a case that reads the base commit of
+one runs nowhere.** #541 measured that state on 2026-08-10. Run
+https://github.com/Crank-Git/ja4plus/actions/runs/31421263768 reads `event=workflow_dispatch`
+and `conclusion=failure`, its `skip-gate` job reads `failure`, and every other job of that
+run reads `success`.
+`tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
+skipped on all six jobs of the matrix. `ROUND_ENTRY_REFERENCE` stayed empty, and the clone
+of depth 1 holds no `origin/dev` ref for `git merge-base` to read. **The recovery path of
+the section above therefore produced a red run on every branch.** A reader could not tell a
+real failure from that one.
+
+**The gate is right about what it measures and wrong about what it concludes.** A case that
+a given event does not select is no finding of that event. #541 took the reading that makes
+the case run on every event, and it declined the two readings that excuse the skip on one.
+
+- The first reading runs the `skip-gate` job nowhere on a manual event. It leaves the
+  manual run with no skip gate at all, which is the reading a recovery path can least
+  afford.
+- The second reading accepts the skip where the run carries no pull request. It leaves the
+  case unrun on the one path a reader reaches for where every other path failed.
+- The third reading names a reference commit the manual run holds. It costs one read of the
+  provider and one fetch of one commit, and #541 took it.
+
+The `test` job holds the step `Resolve the reference commit of a run that carries no pull
+request`. It reads the merge base of `GITHUB_SHA` and `dev` from the provider, fetches that
+one commit at depth 1, and writes it into `ROUND_ENTRY_REFERENCE`.
+
+```bash
+MERGE_BASE=$(gh api "repos/$GITHUB_REPOSITORY/compare/dev...$GITHUB_SHA" --jq .merge_base_commit.sha)
+```
+
+**The provider reads the merge base, because the clone of depth 1 holds no history.** The
+basehead form is `BASE...HEAD` and the response holds `merge_base_commit`. Verified against
+https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28 (retrieved
+2026-08-10). The read names `dev`, which is the first ref the local gate reads. The runner
+and a checkout therefore read the change set against the same commit.
+
+**Warning: a push to `master` carries the same defect, so the condition names the pull
+request and never the manual event.** `actions/checkout` writes the one remote-tracking ref
+the event names. A push to `dev` therefore holds `origin/dev`, `git merge-base` answers,
+and the push run of `dev` at `31cca24` concluded `success` on `skip-gate`. **A push to
+`master` holds `origin/master` alone**, so `git merge-base` answers nothing and the case
+would skip on every job. **A promotion of `dev` to `master` is a push of that second
+kind**, and a condition of `github.event_name == 'workflow_dispatch'` would leave the
+release run red. The step therefore reads `github.event_name != 'pull_request'`, and the
+two `if` conditions of the `test` job cover every event the workflow accepts. The
+self-review of #541 raised this reading, and no push run of `master` has measured it since
+round 197 added the `skip-gate` job.
+
 ## The provider refuses an ungated merge
 
 **`dev` carries a required status check, and the provider refuses a contributor merge that

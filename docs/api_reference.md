@@ -65,7 +65,7 @@ fingerprinter returns an empty list.
 
 A connection that sends no FIN+ACK packet holds its last window open, and no other rule
 emits it. `ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK packet, so this
-method produces its second value, `c36s52_c42s76_c51s2`. #214 holds the decision.
+method produces its second value, `c36s52_c42s76_c51s2`. #214 holds the ruling.
 
 A window that holds no SSH packet emits nothing. A fingerprint of an empty window
 describes no traffic, and #97 declines the same value in the FoxIO Python reference.
@@ -168,7 +168,7 @@ TCP client fingerprinting from SYN packets.
 One connection produces one value, from its first SYN. The fingerprinter holds a
 connection table that carries 10000 entries at most and evicts an entry after 600
 seconds. Call `cleanup_connection` when a connection ends, or `reset` to drop every
-entry. #215 records the decision.
+entry. #215 records the ruling.
 
 ```python
 from ja4plus import JA4TFingerprinter

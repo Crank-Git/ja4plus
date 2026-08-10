@@ -111,7 +111,7 @@ nothing, and it permits no fallback.
   across packets.
 - A structure that one packet or one request builds and releases is not a state table,
   and it holds neither bound. The cookie list of one HTTP request is such a structure,
-  and #175 records the decision.
+  and #175 records the ruling.
 - The boundary removes no bound from a state table. The six unbounded state tables that
   #179 records keep their bound.
 - Eviction uses the packet timestamp when the packet carries one. A capture file replays

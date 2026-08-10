@@ -589,18 +589,18 @@ it contradicts none of them. It carries two further findings.
 
 1. **It names exactly nine request methods**, and the image's caption ends with `etc`.
    `rust/ja4/src/http.rs:364` writes the same nine and `python/ja4h.py:9` reads any method.
-   **D1 and #219 item 5 own the decision**, and this is a FoxIO-authored source for the
+   **D1 and #219 item 5 own the ruling**, and this is a FoxIO-authored source for the
    closed list.
 2. **The FoxIO worked example computes 11 headers and publishes 13.** The deleted file
    carries the request that produces the image's example value, and that request holds 13
    header fields, two of which are `Cookie` and `Referer`. The file lists the 11 names it
    hashes and then writes `ge20cr13enus`. **The example disagrees with the rule R7 states,
    and the image repeats the value.** No implementation reads the example and no vector
-   carries it, so **this changes no fingerprint and it raises no decision.**
+   carries it, so **this changes no fingerprint and it raises no ruling.**
 
-## The decisions this page raises
+## The rulings this page raises
 
-**#219 holds these decisions.** Each item needs the user, because each changes a
+**#219 holds these rulings.** Each item needs the user, because each changes a
 fingerprint that this project publishes, or it changes a recorded cause. **This page
 changes no fingerprinter and no register entry.**
 

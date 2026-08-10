@@ -49,9 +49,22 @@ The extra fetch of one commit raises it to 15452 KB, which is 608 KB. `fetch-dep
 raises it to 18728 KB, which is 3884 KB, and that cost rises with every commit the project
 makes.
 
+**A manual run carries no pull request, and #541 measured what that cost.** The variable
+stayed empty, and `git merge-base` found no `origin/dev` ref in the clone of depth 1. This
+case then skipped on all six jobs of the matrix. The `skip-gate` job failed every manual
+run, which is the recovery path `.claude/rules/batch-gate.md` names.
+
+**A case that a given event does not select is no finding of that event.** The `test` job
+now names a reference commit wherever the event carries no pull request. It reads the merge
+base of `GITHUB_SHA` and `dev` from the provider, because the clone holds no history for
+`git merge-base` to read.
+
+**A push reaches that step too, and a push to `master` needs it.** `actions/checkout`
+writes the one remote-tracking ref the event names. A push to `dev` therefore holds
+`origin/dev` and `git merge-base` answers, and a push to `master` holds `origin/master`
+alone and it answers nothing. A promotion to `master` is a push of the second kind.
+
 **Where the change set cannot be read, a case here skips and the reason names the state.**
-A push event carries no base commit, so the variable stays empty and the case skips. A push
-to the integration branch has no change set to read, so that skip loses nothing.
 `evaluate` returns the skip
 reason and the failure as two separate fields, so a case reports which one it met.
 
@@ -141,6 +154,29 @@ WORKFLOW_BASE_FILTER = 'branches: [master, dev, "batch/**", "epic/**"]'
 
 # The rule file that states which pull request creates a run.
 BATCH_GATE_RULE_PATH = ".claude/rules/batch-gate.md"
+
+# The step that names the reference commit where the event carries no pull request.
+NO_PULL_REQUEST_STEP = "Resolve the reference commit of a run that carries no pull request"
+
+# The `if` condition of that step. The step above it reads the base commit of a pull
+# request, so the two conditions together cover every event the workflow accepts.
+#
+# **A manual run and a push to `master` each reach this condition.** `actions/checkout`
+# writes the one remote-tracking ref the event names, so neither one holds `origin/dev` for
+# `git merge-base` to read. A promotion to `master` is a push of that kind.
+NO_PULL_REQUEST_CONDITION = "if: github.event_name != 'pull_request'"
+
+# The read that names the merge base of the checked-out commit and the integration branch.
+# A clone of depth 1 holds no history behind that commit, so `git merge-base` answers
+# nothing and the provider answers in its place.
+#
+# **The basehead form is `BASE...HEAD` and the response holds `merge_base_commit`.**
+# Verified against
+# https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28 (retrieved
+# 2026-08-10).
+MERGE_BASE_READ = (
+    'gh api "repos/$GITHUB_REPOSITORY/compare/dev...$GITHUB_SHA" --jq .merge_base_commit.sha'
+)
 
 # A git command that reads one ref or one index answers in well under a second. The limit
 # bars a hung command from stopping the whole gate.
@@ -852,6 +888,23 @@ def test_the_test_job_writes_the_reference_variable() -> None:
     """The fetch step writes the base commit into `ROUND_ENTRY_REFERENCE`."""
     workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
     assert f'{REFERENCE_ENVIRONMENT_VARIABLE}=$BASE_SHA" >> "$GITHUB_ENV"' in workflow
+
+
+def test_the_test_job_resolves_the_reference_commit_of_a_manual_run() -> None:
+    """The `test` job reads the merge base from the provider where no pull request runs."""
+    workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
+    assert NO_PULL_REQUEST_STEP in workflow
+    assert NO_PULL_REQUEST_CONDITION in workflow
+    assert MERGE_BASE_READ in workflow
+    assert 'git fetch --depth=1 origin "+$MERGE_BASE:refs/ja4plus/round-entry-base"' in workflow
+    assert f'{REFERENCE_ENVIRONMENT_VARIABLE}=$MERGE_BASE" >> "$GITHUB_ENV"' in workflow
+
+
+def test_the_batch_gate_rule_states_the_reference_commit_of_a_manual_run() -> None:
+    """The batch-gate rule states which commit a manual run reads the change set against."""
+    rule = (REPO_ROOT / BATCH_GATE_RULE_PATH).read_text(encoding="utf-8")
+    assert "merge_base_commit" in rule
+    assert "#541" in rule
 
 
 def test_the_reader_counts_no_round_a_quotation_holds() -> None:

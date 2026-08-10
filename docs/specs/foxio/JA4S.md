@@ -107,7 +107,7 @@ sets the character to `t` or `q`. `packet-ja4.c:732` overwrites it with `d` for 
 value. `technical_details/JA4.md:24` and `JA4.md:46` state the same three values for JA4.
 The other three implementations write `t` or `q` alone. `rust/ja4/src/tls.rs:434` reads
 `is_quic` as `pkt.find_proto("udp").is_some()`, so the Rust reference writes `q` for a
-ServerHello that DTLS carries over UDP. See "The decisions this page raises".
+ServerHello that DTLS carries over UDP. See "The rulings this page raises".
 
 ### R4 — The two version characters name the TLS version of the ServerHello
 
@@ -452,7 +452,7 @@ The deleted text carries three findings for this page.
 
 The deleted text states nothing that contradicts the image.
 
-## The decisions this page raises
+## The rulings this page raises
 
 Each item needs the user, because each changes a fingerprint that this project publishes,
 or it records that a rule no vector measures. **This page changes no fingerprinter.**

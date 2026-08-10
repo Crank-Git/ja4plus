@@ -33,7 +33,7 @@ Confirm all of the following. Stop and report if any is false.
    section in the same commit. `tests/release_body.py` reads it for the release body, so
    an absent section fails step 5.
 
-   `docs/specs/features/09-release.md` records the decision under `### Why the version
+   `docs/specs/features/09-release.md` records the ruling under `### Why the version
    lives in the package`, and #512 corrected this step.
 
 2. Confirm the version and the changelog agree.

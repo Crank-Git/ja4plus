@@ -173,7 +173,7 @@ or the URL and the retrieval date.
 transcription page. Keep the vector fallback for it. An uncertain rule never changes a
 fingerprinter on its own.
 
-### A decision settles a reading, and it clears no uncertain mark
+### A ruling settles a reading, and it clears no uncertain mark
 
 **No second FoxIO implementation corroborates JA4D6.** The Wireshark dissector is the only
 one that writes a JA4D6 value. `zeek/README.md:15` states
@@ -183,8 +183,8 @@ for the method. No deleted text file covers the method. R16, R19 and R20 of
 
 **#271 asked the user to settle what those three rules measure, and the user settled it.**
 Each rule now reads its field at any nesting depth. **The three marks stay.** The mark
-counts FoxIO-authored corroborations, and a decision adds none. Read the two things apart.
-A decision settles what this project builds. A corroboration settles what the reference
+counts FoxIO-authored corroborations, and a ruling adds none. Read the two things apart.
+A ruling settles what this project builds. A corroboration settles what the reference
 states.
 
 ## The authority rule

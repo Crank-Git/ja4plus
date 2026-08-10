@@ -46,7 +46,7 @@ corrupted byte. Its ClientHello comes from the `client_hello_packet` fixture.
 A structurally valid ClientHello produces a fingerprint, whatever its body holds, because
 `ja4plus` adds no plausibility guard. The two files agree, because the TLS record header,
 the handshake header and the two length fields separate the two input sets. #343 holds
-the decision, and `tests/measure_random_client_hello.py` reproduces the measurement.
+the ruling, and `tests/measure_random_client_hello.py` reproduces the measurement.
 
 ## The rule that governs every case
 
