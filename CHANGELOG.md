@@ -516,7 +516,7 @@ holds every breaking change of this record against a row of that page.
   entries of `CHANGELOG.md` and the `## Changelog` table of `docs/specs/spec.md`. **The
   exemption names a path and never a class of files.** A blanket exemption for any file
   whose name holds the word `changelog` reaches `docs/CHANGELOG.md`, which this ruling never
-  read. New file `tests/test_changelog_sentence_exemption.py` holds 25 cases.
+  read. New file `tests/test_changelog_sentence_exemption.py` holds 27 cases.
   `exempt_records` reads the list of that section alone, `reaches` matches one document
   against one record, and `evaluate` reports three states: a record the ruling names
   nowhere, a document the exemption reaches outside the two records, and a document set
@@ -529,14 +529,19 @@ holds every breaking change of this record against a row of that page.
   marks first.** This project opens a paragraph with a bold sentence, the mark stands
   between the period and the space, and a reader that keeps the mark joins two sentences
   into one. **The cases came first and they bite**: against the unrepaired rule they failed
-  5 of 25. **Two live mutations prove the failing direction.** A third record, the entries
+  5 of 27. **Two live mutations prove the failing direction.** A third record, the entries
   of `docs/CHANGELOG.md`, added to the shipped rule kills 2 cases, and one failure reads
   `the exemption reaches these documents outside the two records: ['docs/CHANGELOG.md']`. A
   blanket item that exempts any file whose name holds the word `changelog` kills 4 cases.
-  Each mutation was restored and the 25 cases are green after each restore. **A case
-  measures the two records, and it measures no other document of this repository.** The
-  entries of `CHANGELOG.md` hold 190 sentences past the limit and the `## Changelog` table
-  of the specification holds 786, so the exemption does work. `.claude/rules/ste.md` holds
+  Each mutation was restored and the 27 cases are green after each restore. **A self-review
+  found a third widening and two cases now close it.** The first form of the reader kept the
+  first path of an item alone, so the item
+  that names the entries of `CHANGELOG.md` and `docs/CHANGELOG.md` reported nothing, and the
+  exemption reached a third document. `exempt_records` now returns one record for each path of an
+  item. **A case measures the two records, and it measures no other document of this
+  repository.** The entries of `CHANGELOG.md` hold 191 sentences past the limit and the
+  `## Changelog` table of the specification holds 787, so the exemption does work. Both
+  counts include the entry and the row of this round. `.claude/rules/ste.md` holds
   no such sentence, and a case reads that file against the limit it states. **A sweep that
   measured every sentence of every page is separate work, and this ruling orders none.**
   Every other measurement here runs on a document the case writes. **A worker's self-review

@@ -70,7 +70,7 @@ DOCUMENT_FLOOR = 40
 
 # The least count of sentences past the limit that each record holds. The two counts prove
 # that the exemption does work, and a rewrite of the record is the one change that lowers
-# them. #457 measured 190 in `CHANGELOG.md` and 786 in the specification table.
+# them. #457 measured 191 in `CHANGELOG.md` and 787 in the specification table.
 CHANGELOG_SENTENCE_FLOOR = 50
 SPECIFICATION_SENTENCE_FLOOR = 50
 
@@ -169,31 +169,38 @@ def exemption_body(rule_text: str) -> str:
     return body if end == -1 else body[:end]
 
 
-def _record_of(item: str) -> Record:
-    """Return the record one list item of the exemption names.
+def _records_of(item: str) -> List[Record]:
+    """Return every record one list item of the exemption names.
+
+    **One item names as many records as it names paths.** A self-review of #457 drove the
+    first form of this reader with the item
+    "The entries of `CHANGELOG.md` and `docs/CHANGELOG.md`", which widens the exemption to
+    a third document. That form returned the first path alone, so `evaluate` reported
+    nothing and the widening passed.
 
     Args:
         item: The text of one item, on one line.
 
     Returns:
-        The record. A blanket item yields the pattern it claims, and an item that names no
-        path yields an empty path.
+        One record for each path the item names. A blanket item yields one record that
+        carries the pattern it claims, and an item that names neither yields one record
+        with an empty path.
     """
     spans = CODE_SPAN.findall(item)
     headings = [span for span in spans if span.startswith("#")]
     region = headings[0] if headings else (ENTRY_REGION if ENTRY_REGION in item else "")
-    # **Read the path before the blanket word.** An item that names a path names one
-    # record, whatever else it says, and the item of `CHANGELOG.md` holds the word `each`
-    # in the clause "which each record one round".
+    # **Read the path before the blanket word.** An item that names a path names a record
+    # of its own, whatever else it says, and the item of `CHANGELOG.md` holds the word
+    # `each` in the clause "which each record one round".
     paths = [span for span in spans if PATH_SPAN.match(span)]
     if paths:
-        return Record(paths[0], region)
+        return [Record(path, region) for path in paths]
     if BLANKET_WORD.search(item):
         # A blanket item names a word rather than a path, so the record carries the
         # pattern that word matches. `evaluate` then reports every file it reaches.
         pattern = spans[0] if spans else item.strip()
-        return Record(f"*{pattern}*", region)
-    return Record("", region)
+        return [Record(f"*{pattern}*", region)]
+    return [Record("", region)]
 
 
 def exempt_records(rule_text: str) -> Tuple[Record, ...]:
@@ -203,9 +210,12 @@ def exempt_records(rule_text: str) -> Tuple[Record, ...]:
         rule_text: The whole text of `.claude/rules/ste.md`.
 
     Returns:
-        One record for each item of the exemption list, in file order.
+        One record for each path the exemption list names, in file order.
     """
-    return tuple(_record_of(item) for item in _joined_items(exemption_body(rule_text)))
+    records: List[Record] = []
+    for item in _joined_items(exemption_body(rule_text)):
+        records.extend(_records_of(item))
+    return tuple(records)
 
 
 def reaches(record: Record, path: str) -> bool:
@@ -493,6 +503,30 @@ def test_the_reader_reports_a_third_record_the_exemption_names() -> None:
         SPECIFICATION_PATH,
         "docs/CHANGELOG.md",
     ]
+
+
+def test_the_reader_reports_both_paths_of_one_item() -> None:
+    """An item that names two paths yields two records."""
+    rule = TWO_RECORD_RULE.replace(
+        f"- The entries of `{CHANGELOG_PATH}`, which each record one round.",
+        f"- The entries of `{CHANGELOG_PATH}` and `docs/CHANGELOG.md`, which each record one round.",
+    )
+    assert [record.path for record in exempt_records(rule)] == [
+        CHANGELOG_PATH,
+        "docs/CHANGELOG.md",
+        SPECIFICATION_PATH,
+    ]
+
+
+def test_a_second_path_of_one_item_that_claims_the_exemption_fails() -> None:
+    """A record that shares an item with a named record fails, and the failure names it."""
+    rule = TWO_RECORD_RULE.replace(
+        f"- The entries of `{CHANGELOG_PATH}`, which each record one round.",
+        f"- The entries of `{CHANGELOG_PATH}` and `docs/CHANGELOG.md`, which each record one round.",
+    )
+    documents = sorted(tracked_documents() + ["docs/CHANGELOG.md"])
+    failures = evaluate(rule, documents)
+    assert any("docs/CHANGELOG.md" in failure for failure in failures)
 
 
 def test_the_reader_reads_a_blanket_exemption_as_the_pattern_it_claims() -> None:
