@@ -67,16 +67,26 @@ Confirm all of the following. Stop and report if any is false.
 5. Create the GitHub release. The publish workflow triggers on a published release and
    uses trusted publishing, so no token is needed.
 
+   `FR-release-14` puts the summary and the breaking-change tables of the version in the
+   release body, and it links `CHANGELOG.md` at the tag for the rest.
+   `tests/release_body.py` builds that body, and the publish workflow runs the same
+   module, so the manual step and the workflow cannot disagree. **The reader edits
+   `CHANGELOG.md` in no way**, and it truncates nothing.
+
+   **Warning: the provider refuses a body of more than 125000 characters.** The command
+   below reports a fault and it writes no file where the named part is longer. Read
+   `### The release body of version 1.0.0` of `docs/specs/features/09-release.md` before
+   you release such a version.
+
    ```bash
-   gh release create "v<version>" --title "v<version>" --notes-file <(python - <<'PY'
-   import re, pathlib, tomllib
-   v = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
-   text = pathlib.Path("CHANGELOG.md").read_text()
-   m = re.search(rf"^## \[{re.escape(v)}\].*?(?=^## \[|\Z)", text, re.M | re.S)
-   print(m.group(0).strip())
-   PY
-   )
+   python -m tests.release_body --output /tmp/ja4plus-release-body.md
+   gh release create "v<version>" --title "v<version>" \
+     --notes-file /tmp/ja4plus-release-body.md
    ```
+
+   The workflow writes the release body from the same reader after it verifies the
+   artifacts, so a release that a maintainer creates in the provider interface carries
+   the same body.
 
 6. Confirm the publish.
 
@@ -84,6 +94,25 @@ Confirm all of the following. Stop and report if any is false.
    gh run list --workflow=publish.yml --limit 1
    pip download --no-deps --dest /tmp/ja4check "ja4plus==<version>"
    ```
+
+## How to run the dry run
+
+`FR-release-13` publishes to TestPyPI first when the maintainer asks for a dry run. The
+manual event of `.github/workflows/publish.yml` is that request, and it reaches TestPyPI
+alone.
+
+```bash
+gh workflow run publish.yml --repo Crank-Git/ja4plus --ref <branch>
+gh run list --workflow=publish.yml --limit 1
+```
+
+**The manual event takes no input.** The event selects the `dry-run` job, that job names
+the `testpypi` environment, and its publish step names the TestPyPI repository URL. Each
+value is a literal of the file, so a caller selects no index.
+
+**Warning: a dry run needs a trusted publisher on TestPyPI**, configured against this
+repository, `publish.yml` and the environment `testpypi`. The publish step fails and names
+the missing configuration where no such publisher exists. It reaches PyPI in no case.
 
 ## Rules
 

@@ -128,6 +128,97 @@ holds every breaking change of this record against a row of that page.
   commit and the same three counts after. Coverage holds at 94% with 4292 statements and 273
   misses.
 
+- **The publish workflow reaches TestPyPI on a manual event, and the release body holds the
+  summary and the breaking-change tables of the version** (#70).
+  Round 191. `FR-release-13` and `FR-release-14` state the two requirements, and
+  `.github/workflows/publish.yml` held one event and one job before this round. **A manual
+  trigger on a publish workflow creates a path to PyPI**, so the project manager ruled that
+  the dry run must be structurally incapable of reaching the real index. The file now holds
+  two events and two jobs, and each job accepts one event. The published-release event runs
+  the `publish` job, which names the `pypi` environment and states no repository URL. The
+  manual event runs the `dry-run` job, which names the `testpypi` environment and states
+  `https://test.pypi.org/legacy/`. **The manual trigger declares no input**, because an
+  input that selected the index is the hazard the separation removes. Each environment name
+  and the repository URL are literals of the file, so no value a caller chooses reaches
+  either one. **The dry run runs the same verification as the release**, because a dry run
+  that skipped the check would prove the publisher and not the artifact. `FR-release-14`
+  puts the changelog record of the version in the release body, and new file
+  `tests/release_body.py` builds it. **The whole `## [1.0.0]` section is 242778 characters
+  and the provider accepts 125000**, so the requirement as first written cannot hold. The
+  user ruled on 2026-08-10 that the body holds a named part and links `CHANGELOG.md` at the
+  tag for the rest, and the named part is the summary and the two breaking-change tables.
+  `CHANGELOG.md` keeps every row it holds, no round entry moves, and this round rewrites
+  nothing. The body a release of version 1.0.0 carries measures 4727 characters.
+  **The reader truncates nothing**, because a truncated section reads as complete and is
+  not, and the choice of what to drop belongs to the maintainer. A named part above the
+  limit fails the reader, the step fails, and the release publishes nothing. **A `####`
+  heading of a breaking-change table carries one more mark than a part heading**, so the
+  reader keeps both tables and stops at the entry list. A section that names no breaking
+  change reaches the body in whole, and the `## [0.6.0]` section is such a section. **The
+  reader matches a whole heading line, and it reads no line of a code block.** The
+  self-review raised both cases and a run raised neither. A summary paragraph that names
+  `### The breaking changes` in prose, and a code block that quotes the heading, would each
+  end the named part above the tables it exists to carry, and **such a reader reports no
+  fault**, because it returns a part that reads as complete and is not. A line anchor alone
+  does not close the second case, because a line inside a code block opens a line of the
+  file like any other, so `breaking_heading_end` tracks the code fence. The
+  link names the tag and never the default branch, because a link to the default branch
+  moves under the reader after the next merge. **The release-body step stands in front of
+  the publish step**, so a changelog that holds no section for the version fails the release
+  and publishes nothing. **The value of a case here is the direction it fails in**, so six
+  mutations of the workflow and seven of the reader prove both directions, and each one was
+  written to disk, measured and restored. The workflow compared equal by digest
+  `36941ecb201aed94a19d8c63ee920144beafbda00e205e6c55059f7f5d0916d1` after the restore. A
+  `dry-run` job that takes the environment `pypi` fails
+  `test_each_job_of_the_publish_workflow_names_its_environment_as_a_literal`. A `dry-run`
+  job that reads its repository URL from an input fails
+  `test_the_manual_path_of_the_publish_workflow_reaches_no_real_index`. A `publish` job that
+  takes the TestPyPI repository URL fails
+  `test_the_release_path_of_the_publish_workflow_reaches_no_test_index`. Two jobs that lose
+  their condition fail `test_each_job_of_the_publish_workflow_accepts_one_event`. A manual
+  trigger that declares an input fails
+  `test_the_manual_trigger_of_the_publish_workflow_declares_no_input`. A `publish` job that
+  loses the release-body step fails
+  `test_the_publish_job_writes_the_release_body_before_it_publishes`. A reader that returns
+  the whole section fails `test_the_release_body_of_this_repository_stands_below_the_provider_limit`,
+  a `named_part` that keeps the entry list fails
+  `test_the_named_part_holds_no_entry_of_the_entry_list`, a link that names the default
+  branch fails `test_the_link_names_the_changelog_at_the_tag_of_the_release`, a
+  `body_fault` that reads no limit fails three cases, a substring match of the
+  breaking-change heading fails
+  `test_the_named_part_reader_passes_over_the_heading_named_inside_a_paragraph` and the case
+  below it, and a whole-line match that reads the code fence not at all fails
+  `test_the_named_part_reader_passes_over_the_heading_quoted_in_a_code_block` alone. **One defect of the recovered work
+  reached the repair, and `pyright` found it before a run did.** `main` read the module
+  docstring for the description of its argument parser, and **`python -OO` sets `__doc__` to
+  None on every module**, so the command raised `AttributeError: 'NoneType' object has no
+  attribute 'splitlines'` before it read one argument. The case came first and it failed on
+  that message. `DESCRIPTION` is now a literal of the module, and
+  `test_the_module_runs_where_the_interpreter_strips_every_docstring` holds the reader
+  against `python -OO`. #513 records the same pattern at `tests/mutation_cover.py:211` and
+  `tests/mutation_sweep.py:520`, which this round leaves alone. **The second reported
+  `pyright` diagnostic does not reproduce.** `tests/release_body.py:38` imports
+  `tests.version_gate`, which `tests/release_verification.py:47` imports in the same form,
+  and `pyright` reports no diagnostic against either file from the repository root or from
+  `tests/`. **A workflow step that never runs cannot fail**, and no case here starts the
+  publish workflow, because a run of it would publish. **No dry run has run.** The
+  `testpypi` environment exists at the provider, it holds no protection rule and it carries
+  zero deployments, and no agent reads the TestPyPI publisher page. An absent publisher
+  fails the index at `invalid-publisher`, the upload sends no artifact, and the literal
+  repository URL keeps the job away from PyPI whatever the publisher state is. The first dry
+  run is the measurement, and this round started none. `python -m tests.release_verification
+  --dist dist` ran on this host against a real build and reported
+  `release check: PASSED. The release is ready to publish.`, with 1809 cases collected and
+  `1532 passed, 143 skipped, 134 xfailed`. #512 records the stale step 1 of
+  `.claude/skills/release/SKILL.md`, which still names `pyproject.toml` as the version
+  declaration that #67 removed, and this round leaves it alone. No file under `ja4plus/`
+  changes and no fingerprint moves. The whole gate ran on this host. The conformance suite
+  reports 1532 passed, 143 skipped and 134 xfailed, which are the three counts round 189
+  reports. The unit suite reports 3990 passed, 4 skipped and 8 xfailed, and
+  `pytest tests/ -m installed_wheel` reports 43 passed. **Coverage holds at 94%**, with 273
+  misses of 4292 statements, which is the reading round 143 records. `mypy --strict` finds
+  no issue in 31 source files, and `ruff check` and `ruff format --check` pass on 214 files.
+
 - **The built wheel carries the mapping file and the `py.typed` marker, and it carries no test,
   example or documentation file** (#69). Round 189. `FR-release-10` and `FR-release-11` state
   the two requirements, and new file `tests/test_packaging.py` holds nine cases against the
@@ -682,6 +773,53 @@ holds every breaking change of this record against a row of that page.
   The branch then took the integration branch of batch #499, and the merged tree reports
   3901 passed and the same conformance counts.
 
+- **The `dropped` field of the statistics line reports the drop count of the capture
+  socket on Linux** (#326). Round 192. #423 closed the macOS half and it left the Linux
+  half open, because no Linux host had run the reading. **`scapy` 2.7.0 calls `getsockopt`
+  in no file**, which a `grep` over the installed package of the granted host confirms.
+  The kernel reports a drop count, `scapy` reads it nowhere, and `ja4plus` now reads the
+  socket option itself in `packet_statistics_drops`. That reader reaches the packet socket
+  through `SuperSocket.ins`, which holds the `socket.socket` the Linux capture opened.
+  **The Python `socket` module publishes neither constant**, and both names read `None`
+  there, so `ja4plus/watch.py` defines them from the kernel headers of that host.
+  `/usr/include/x86_64-linux-gnu/bits/socket.h:151` reads `SOL_PACKET 263` and
+  `/usr/include/linux/if_packet.h:44` reads `PACKET_STATISTICS 6`. `struct tpacket_stats`
+  at `/usr/include/linux/if_packet.h:77` holds `tp_packets` and then `tp_drops`, each one
+  an `unsigned int` of the host byte order, so the reader unpacks eight bytes and takes
+  the second field. A reader of the first field would report the received count as the
+  drop count. **Warning: the kernel resets both counters as the read returns them.**
+  `man 7 packet` of that host states the rule: `Receiving statistics resets the internal
+  counters.` `CaptureDropCount` therefore adds each Linux reading to a running total,
+  where the macOS reader reports the count of the socket and accumulates nothing.
+  **The reset is a measurement here and not a premise.** One packet socket on `lo`, with a
+  2304-byte receive buffer, answered `first=(100, 99)` and then answered `second=(0, 0)`,
+  with no packet between the two reads. **Each live case captures on the loopback
+  interface and it generates every packet it reads.** A monitor on `lo` read 4 packets of
+  one TCP connection this run opened, over an `L2ListenSocket`, and reported `dropped=0`.
+  **A count of 0 on a clean capture proves nothing**, because a field no code writes reads
+  the same way. A second case therefore sends 50 UDP packets of 1400 bytes to the loopback
+  address and reads a total of 99 drops, then sends 8 more packets and reads a total of
+  115. **The second burst is far smaller than the first one**, so a monitor that reported
+  the last reading would report a smaller count after it. **A mutation proves that the
+  case bites**: `self._dropped = increment` in place of the sum fails 5 cases, among them
+  the live one, which reports `AssertionError: 0 not greater than 0`. The mutation was
+  restored. **The cases came first**, and the whole file failed to collect against the
+  base implementation with `ImportError: cannot import name 'PACKET_STATISTICS' from
+  'ja4plus.watch'`. **Where the host grants no `CAP_NET_RAW`, each live case skips and
+  none of them passes.** `docs/specs/features/06-live-capture.md` gains
+  FR-live-capture-17, one behaviour rule, two acceptance criteria and the section
+  `## The Linux drop count`, and it now records no open question.
+  `tests/test_watch_drop_count.py` rises from 22 cases to 38. **The live measurements ran
+  on Linux 6.11.0-29-generic, against `scapy` 2.7.0 and Python 3.12.7, on 2026-08-10.**
+  The host is shared, so the run read `uptime` before and after: `load average: 6.08` and
+  then `load average: 5.91`, on 56 cores. The five gates ran on macOS 26.6.1, build 25G76,
+  against `scapy` 2.7.0 and Python 3.14.3. **No file under `ja4plus/fingerprinters/`
+  changes and no fingerprint moves.** The conformance suite reports 1532 passed, 143
+  skipped and 134 xfailed before and after. The unit suite rises from 3950 passed and 4
+  skipped to 3963 passed and 7 skipped, and the three new skips are the Linux cases on a
+  macOS host. **Coverage holds at 94%**, the total misses hold at 273 while the statement
+  count rises from 4292 to 4316, and `ja4plus/watch.py` holds 99%.
+
 ### Fixed
 
 - **The sentence-length rule exempts the two records and no other document** (#457).
@@ -728,6 +866,133 @@ holds every breaking change of this record against a row of that page.
   sentence length now reads the exemption and records nothing.** #393 raised the second such
   finding and this round ends them. No file under `ja4plus/` changes and no fingerprint
   moves.
+
+- **The exemption of the writing standard covers rule 3 as well as rule 1** (#502).
+  Round 190. Rule 3 of `.claude/rules/ste.md` reads `One topic per paragraph, six
+  sentences at most.` The self-review of #484 found its own Changelog row past that limit,
+  and that finding is correct against the letter of the rule. **One row records one round,
+  which is one topic**, so the sentence count of a row follows from how much that round
+  measured. **The user ruled on 2026-08-10 that the exemption widens to rule 3 for the same
+  two records**, the entries of this file and the `## Changelog` table of
+  `docs/specs/spec.md`. #457 exempted rule 1 on that same reason and this round repeats it
+  for rule 3. **The exemption covers rule 1 and rule 3, and it covers no other rule of the
+  standard.** A read of 2026-08-10 reports 178 of the 190 rows of the specification table
+  past six sentences, and 113 of the 136 entries of this file past six, so the exemption
+  does work. Both counts include the entry and the row of this round. The section of the
+  standard is now `## The exemption` rather than `## The one exemption`, and it names the
+  rules it covers, the fourteen rules that reach both records, and the two rulings by
+  issue. The checklist of the standard gains one item for the paragraph limit.
+  **The reader holds the section against the numbered rule list rather than against a
+  transcribed count.** `standard_rules` reads the 16 rules of `## The rules`, `exempt_rules`
+  and `rules_that_reach_the_records` read the two placement sentences, and `rule_failures`
+  reports five states: a rule set below the floor of 16, a covered set that is not rule 1
+  and rule 3, a rule the section places on both sides, a rule the section places nowhere,
+  and a rule the section names that the standard states nowhere. **A rule this project adds
+  later therefore needs a reading before it ships.** `uncovered_failures` measures the
+  exempt region of each record under every rule the exemption drops, so a record that
+  breaks an uncovered rule fails a case. `paragraphs` and `record_units` read one entry and
+  one table row as one paragraph. **A list is not a paragraph**, so the paragraph reader
+  parts one item from the next, and a reader that joined them would report the 16 rules of
+  the standard as one paragraph of 16 sentences. **The cases came first.** The 51 cases of
+  `tests/test_changelog_sentence_exemption.py` failed 17 against the writing standard of
+  the base commit, among them
+  `test_the_exemption_covers_rule_one_and_rule_three`, which read
+  `the ruling exempts the rules [1, 3], and the exemption covers []`. **Five mutations of
+  the shipped standard prove that the cases bite in the failing direction**, and each one
+  runs inside a case rather than against the working tree: an exemption that drops rule 3
+  reports every long entry and every long row, an exemption that drops rule 1 reports every
+  long sentence, an exemption that names rule 2 on both sides fails the placement, and an
+  exemption that places rule 2 on neither side fails it too. `mutated_rule` refuses a mutation that matches no
+  span, because a mutation that matches nothing proves nothing. **An aggregate over an empty
+  set passes**, so the rule floor of 16 and the document floor of 40 each carry a case that
+  feeds the reader nothing. **No other prose loses rule 3**: the standard itself, and a page
+  outside the two records, each hold the paragraph limit under a case. **No file under
+  `ja4plus/` changes and no fingerprint moves.** The unit suite reports 3974 passed, 4
+  skipped and 8 xfailed, and the conformance suite reports 1532 passed, 143 skipped and 134
+  xfailed, which are the three counts the base commit reports. **Coverage holds at 94%**
+  with 4292 statements and 273 misses, which are the counts the base commit reports.
+  `ruff check`, `ruff format --check` and `mypy --strict ja4plus/` each report no issue.
+
+- **A member pull request reaches the round-entry check, and the runner reads its change
+  set** (#438). Round 193. **The finding that outranks the rest of this round is that the
+  check passed by construction.** The base-branch filter of `.github/workflows/test.yml`
+  read `branches: [master, dev]`, and that filter matches the base branch of a pull request,
+  so the only pull requests that reached the `test` job were the batch pull request and the
+  promotion. A batch pull request reads its change set against the tip of `dev`, and every
+  member of a batch has already recorded a round, so the check found an entry whatever one
+  member did. **The member pull request is the change set the check exists to refuse, and
+  the filter kept it away from the job.** The user ruled on 2026-08-10 that the filter
+  widens, and it now reads `branches: [master, dev, "batch/**", "epic/**"]`. **The widened
+  filter costs no run that the batch model saved**, because a member commit ends with a skip
+  keyword and #459 measured that such a commit creates no run for any event. A keyword-free
+  head is the one head that now starts one. `.claude/rules/batch-gate.md` gains the section
+  `## Which pull request creates a run`, which states the two conditions that each stop a
+  run, and it states this shape so that a reader holds the next check against it. #429 built
+  `tests/test_round_entry_existence.py`, which fails a change set that edits a tracked file
+  and records no round. **That case also skipped on every job of
+  `.github/workflows/test.yml`, so it guarded the local gate of a worker and it guarded no
+  pull request.** The
+  `actions/checkout` step of that workflow names no `fetch-depth`, so it makes a clone of
+  depth 1. That clone carries no `origin/dev` ref and no history behind the checked-out
+  commit, and `git merge-base` fails on it. **The `test` job now fetches the base commit of
+  the pull request at depth 1 and writes it into the `ROUND_ENTRY_REFERENCE` environment
+  variable.** `environment_reference` reads that variable, `named_commit` resolves it
+  against the repository, and `reference_commit` prefers it over the merge base. A name the
+  repository cannot read reads as no name, so a stale value leaves the local gate of a
+  worker exactly as it is. **`git diff` and `git show` read a commit that no history
+  connects to `HEAD`, and `git merge-base` does not.** A diff compares two trees, so one
+  extra commit is the whole requirement. A read of 2026-08-10 against a clone of depth 1
+  reports that the diff and the show each answered and that `git merge-base` exited 1.
+  **The measured cost decided the reading.** A clone of depth 1 holds 14844 KB, the extra
+  fetch of one commit raises it to 15452 KB, and `fetch-depth: 0` raises it to 18728 KB, so
+  this step costs 608 KB against 3884 KB on each of the six jobs of the matrix. The
+  `fetch-depth: 0` cost also rises with every commit the project makes, and the cost of one
+  commit does not. **#438 declined a second fetch of `dev` at depth 1 on a measurement**,
+  because two shallow histories share no commit and `git merge-base` fails between them, so
+  the case would skip exactly as before. **The base commit is a stricter reference than the
+  merge base with `dev`**, because it reads the change set of one pull request rather than
+  the change set of a whole integration branch. A push event carries no base commit, so the
+  case skips there, and a push to the integration branch has no change set to read. **The
+  fetch writes the ref `refs/ja4plus/round-entry-base`, because a commit that no ref reaches
+  is unreachable.** A bare `git fetch origin <sha>` writes `FETCH_HEAD` and no ref, and a
+  read of 2026-08-10 on a clone of depth 1 reports that the ref form survives
+  `git gc --prune=now` and that `git diff` and `git show` still read the commit after it.
+  **The self-review raised `continue-on-error` on the fetch step and #438 declined it**,
+  because a failed fetch leaves the variable empty, the case skips, and a green job over a
+  silent skip is the failure this round exists to remove. **The expression reaches the
+  `env` block and never the `run` block**, because an expression inside a shell command is
+  a script-injection path. **Twelve
+  new cases hold the reading, and two of them hold the widened filter and the section of
+  the rule file.** The self-review also found that `named_commit` rested on
+  its one caller to drop the space around a name, and the reader now drops it itself. Two
+  of the ten build an orphan branch, which reproduces the
+  runner state where `git merge-base` reports nothing and the diff still answers, and two
+  read `.github/workflows/test.yml` for the fetch step. **The cases came first**, and
+  `test_the_test_job_fetches_the_base_commit_of_a_pull_request` failed against the workflow
+  of the base commit with
+  `AssertionError: assert 'BASE_SHA: ${{ github.event.pull_request.base.sha }}' in 'name: Tests\n\n# ...'`.
+  **The runner read the check in both directions, on one pull request that landed in no
+  branch.** The user approved one deliberately red pull request for this proof and no other
+  issue of this project may open one. #520 targeted `batch/510-dry-run-and-gates`, it
+  targeted neither `dev` nor `master`, and each of its two heads carried no skip keyword.
+  **A green run alone proves nothing here**, because the case skipped before this round and
+  a skip is not a pass. Head `8702322` edited three tracked files and recorded no round, and
+  run https://github.com/Crank-Git/ja4plus/actions/runs/31402557575 concluded `failure` with
+  `tests/test_round_entry_existence.py::test_the_change_set_of_this_branch_records_a_round`
+  reported as `FAILED` rather than `SKIPPED`. The assertion read
+  `the change set holds these paths outside the two records: .claude/rules/batch-gate.md, .github/workflows/test.yml, tests/test_round_entry_existence.py. CHANGELOG.md holds 105 round entries against 105 at the reference commit`.
+  Head `ecd1677` added the entry and the row and changed nothing else, and run
+  https://github.com/Crank-Git/ja4plus/actions/runs/31403217183 concluded `success` with the
+  same case reported as `PASSED` on all six jobs of the matrix. #520 is closed and its
+  branch is deleted. **GitHub read the widened filter from the merge commit of that pull
+  request and not from the base branch, and the run itself is that measurement.**
+  `batch/510-dry-run-and-gates` carries the old filter, and the run started anyway, so a
+  filter change takes effect inside the pull request that carries it. The documentation
+  states the same thing of `pull_request_target`: `This event runs in the context of the
+  default branch of the base repository, rather than in the context of the merge commit, as
+  the pull_request event does.` **#519 measured the older filter before the ruling**, with a
+  keyword-free head into the same integration branch, and the provider held no run for it
+  after 150 seconds. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The prose names the statistics thread by its controlled term** (#441). Round 183. The
   `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
