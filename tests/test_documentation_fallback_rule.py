@@ -15,19 +15,19 @@ states why the file exists.
 ## Why this file reads a shape and no phrase
 
 The user states the rule. **"A check that a rewording defeats is not a check."** #449
-measured that cost on the neighbouring bullet of the same page: a case held the fixed
-phrase `seven of the twelve`, the page wrote `Seven of twelve`, and one missing article
-carried a superseded count through 97 rounds of a passing case.
+measured that cost on the neighbouring bullet of the same page. A case held the fixed
+phrase `seven of the twelve` and the page wrote `Seven of twelve`. One missing article
+therefore carried a superseded count through 97 rounds of a passing case.
 
 Two properties follow, and each closes one half of the hole.
 
 1. **The reader finds a statement of the rule, and it forbids no phrase.**
    `fallback_statements` matches a condition about an image that does not settle a
    question, bound to a sentence that gives the decision to the expected-output files.
-   Four word orders reach it.
+   Four word orders reach it, and the pattern needs no conjunction.
 2. **The reader reports the premise and not the words.** A statement passes when a
    reader premise stands inside `CONTEXT_WINDOW` characters before it, or inside
-   `TRAILING_WINDOW` characters after it. A rewording that drops the reader still fails,
+   `TRAILING_WINDOW` characters after it. A page that drops the reader still fails,
    whatever words it chooses.
 
 ## What a case here does not read
@@ -62,6 +62,11 @@ hole below is recorded and none is closed.
 - **A neighbouring premise.** A superseded statement passes where a corrected statement of
   another rule stands inside the same window. The two windows are narrow for that reason,
   and no page of the corpus reaches the case today.
+- **A sentence of another subject that borrows this vocabulary.** `The expected-output
+  files decide almost everything, except where the image format the logo uses is
+  ambiguous.` fails a case here, and it states no rule of this project. The reader reports
+  such a sentence rather than pass it, because a false report fails loudly and a missed
+  statement passes in silence.
 - **A false reader premise.** The window reads that a page names a reader. It reads no
   proof that a person read an image.
 
@@ -134,13 +139,26 @@ AMBIGUITY = (
     r")"
 )
 
-# The decision the fallback gives away. The expected-output files decide, or they are the
-# authority.
+# The source the fallback gives the decision to.
+AUTHORITY_SOURCE = r"(?:expected[-\s]output\s+files?|vectors?)"
+
+# The decision the fallback gives away. The expected-output files decide, they are the
+# authority, or a passive sentence gives the decision to them.
 AUTHORITY = (
-    r"(?:expected[-\s]output\s+files?|vectors?)"
+    r"(?:"
+    + AUTHORITY_SOURCE
     + _gap(60)
     + r"(?:decides?|decide\b|(?:as|is|are)\s+the\s+authority)"
+    + r"|(?:decided|settled)\s+by"
+    + _gap(20)
+    + AUTHORITY_SOURCE
+    + r")"
 )
+
+# The word that binds a condition to its decision. **The reader accepts no conjunction as
+# well**, because a semicolon and the word `means` each state the same rule. A pattern
+# that named one conjunction would fall to the next writer who chose another.
+CONJUNCTION = r"(?:\b(?:where|when|if|whenever|because|since|unless|given\s+that)\b\s*)?"
 
 # A reader premise. The rule needs an image that a person read, so a page states who read
 # it. `the reading` names a record and no reader, and `\bread\b` therefore skips it.
@@ -155,38 +173,36 @@ READER_PREMISE = re.compile(
 )
 
 # The word order that opens with the condition, as in `Where an image is ambiguous, the
-# expected-output files decide`.
-CONDITION_FIRST = (
-    r"\b(?:where|when|if|whenever)\b"
-    + _gap()
-    + r"\bimages?\b"
-    + _gap()
-    + AMBIGUITY
-    + _gap()
-    + AUTHORITY
-)
+# expected-output files decide` and `An image is ambiguous; the expected-output files
+# decide`.
+CONDITION_FIRST = CONJUNCTION + r"\bimages?\b" + _gap() + AMBIGUITY + _gap() + AUTHORITY
 
 # The word order that opens with the decision, as in `The expected-output file decides
 # where the image is ambiguous`.
 AUTHORITY_FIRST = (
     AUTHORITY
     + _gap(60)
-    + r"\b(?:where|when|if|whenever)\b"
+    + r"\b(?:where|when|if|whenever|because|since|unless|given\s+that)\b"
     + _gap(120)
     + (r"\bimages?\b" + _gap(120) + AMBIGUITY)
 )
 
 # The word order that states what the fallback needs, as in `The vector fallback needs an
-# image that a person read and found ambiguous`.
+# image that a person read and found ambiguous`. **The pattern names the vector fallback
+# and not any fallback**, because a page that describes a rendering fallback of an image
+# states no rule of this project.
 REQUIREMENT_FORM = (
-    r"\bfallbacks?\b" + _gap(80) + r"\b(?:needs?|requires?)\b" + _gap(80) + r"\bimages?\b"
+    r"\bvector\s+fallbacks?\b" + _gap(80) + r"\b(?:needs?|requires?)\b" + _gap(80) + r"\bimages?\b"
 )
 
 # The word order that opens with the ambiguous image, as in `An ambiguous image gives the
 # decision to the expected-output file`. The noun pair `ambiguous image` already states
-# the condition, so this pattern needs no verb of decision after the authority.
+# the condition, so this pattern needs no verb of decision after the expected-output
+# files. A bare `vector` needs that verb, because `the vectors team` names no authority.
 AMBIGUOUS_IMAGE_FIRST = (
-    r"\bambiguous\s+images?\b" + _gap(120) + r"(?:expected[-\s]output\s+files?|vectors?)"
+    r"\bambiguous\s+images?\b"
+    + _gap(120)
+    + r"(?:expected[-\s]output\s+files?|vectors?\s+(?:decides?|decide\b))"
 )
 
 FALLBACK_STATEMENTS = (
@@ -363,6 +379,12 @@ SUPERSEDED_PHRASINGS = (
     "Whenever an image is ambiguous, the expected-output file decides the bytes.",
     "Where an image carries an ambiguity, the expected-output files decide.",
     "If an image is ambiguous, the vector decides and the reading is recorded.",
+    "Because an image is ambiguous, the expected-output file decides.",
+    "The expected-output files decide, since the image is ambiguous.",
+    "Given that an image is ambiguous, the vectors decide.",
+    "An image is ambiguous; the expected-output files decide.",
+    "An image that is ambiguous means the expected-output files decide.",
+    "The reading is decided by the expected-output files where an image is ambiguous.",
 )
 
 
@@ -374,7 +396,7 @@ def test_the_reader_reads_the_superseded_rule_in_each_plausible_phrasing(sentenc
     assert statements[0][1] is False, f"the reader finds a reader premise in {sentence!r}"
 
 
-# The corrected rule, in the spellings the corpus writes today plus four rewordings. Each
+# The corrected rule, in the spellings the corpus writes today plus three more. Each
 # one names the reader the rule needs.
 CORRECTED_PHRASINGS = (
     "Where a reader reads the image and finds it ambiguous, the expected-output files"
@@ -412,6 +434,8 @@ CONTROL_SENTENCES = (
     "The expected-output file is a JSON array. Each element describes one stream.",
     "Keep the vector fallback for an uncertain rule.",
     "A reader records the reading in `docs/implementation_notes.md`.",
+    "The rendering fallback needs an image with alternative text.",
+    "An ambiguous image of the slide deck reached the vectors team.",
 )
 
 
@@ -422,7 +446,7 @@ def test_the_reader_reads_no_statement_where_a_sentence_states_another_rule(sent
     assert statements == [], f"the reader reads {statements} in {sentence!r}"
 
 
-def test_the_reader_reads_a_quoted_rule_of_the_record_and_the_cut_removes_it() -> None:
+def test_the_changelog_cut_removes_a_rule_the_record_quotes() -> None:
     """`readable_text` cuts the `## Changelog` section, which quotes the superseded rule."""
     quotation = (
         "| TBD | 2026-08-09 | A round quotes the superseded sentence: `Where an image is"

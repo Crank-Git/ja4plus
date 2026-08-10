@@ -520,20 +520,27 @@ holds every breaking change of this record against a row of that page.
   re-measurement disproved.** It named `docs/specs/spec.html:444` and `:316`, and the base
   commit `17858bf` carries the two statements at `:436` and `:317`. **The case reads a shape
   and no phrase**, because #211 and #449 each proved that one forbidden phrase guards one
-  spelling. New file `tests/test_documentation_fallback_rule.py` holds 40 cases.
+  spelling. New file `tests/test_documentation_fallback_rule.py` holds 48 cases.
   `fallback_statements` matches a condition about an image that settles no question, bound
   to a sentence that gives the decision to the expected-output files, in four word orders.
   It then reports whether a reader premise stands inside a window of 600 characters before
   the statement and 200 after it. **A rewording that drops the reader therefore fails, and
-  the words it chooses do not matter.** Sixteen spellings of the superseded rule reach the
-  reader, six spellings of the corrected rule pass it, and eight control sentences that name
-  the fallback for one transcription rule reach no case. **An aggregate over an empty set
+  the words it chooses do not matter.** Twenty-two spellings of the superseded rule reach
+  the reader, six spellings of the corrected rule pass it, and ten control sentences that
+  name the fallback for one transcription rule reach no case. **An aggregate over an empty set
   passes**, so six pages are named and each one holds a statement the reader finds. **A
   dated record of a past measurement is quoted and not rewritten.** Round 49 of the
   Changelog table of `docs/specs/spec.md` records the superseded wording word for word, and
   the row of this round quotes the sentence this round corrects. `readable_text` cuts that
-  section, and one case reads the cut in both directions. **The cases were written first and
-  they bite**: against the unrepaired corpus they failed 2 of 40, and the failure named all
+  section, and one case reads the cut in both directions. **A self-review drove the reader with
+  sentences it had not seen.** It found seven evasions and two false reports. The evasions
+  were the conjunctions `because`, `since`, `given that` and `unless`, a semicolon, the
+  word `means`, and a passive sentence, so the pattern now needs no conjunction at all and
+  it reads `decided by the expected-output files`. The false reports were a rendering
+  fallback of an image and a sentence about a slide deck, so `REQUIREMENT_FORM` names the
+  vector fallback and `AMBIGUOUS_IMAGE_FIRST` needs a verb of decision after a bare
+  `vector`. Six evasions and two controls became cases. **The cases were written first and
+  they bite**: against the unrepaired corpus they failed 2 of 48, and the failure named all
   three pages. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **A mutation of a module body keeps a reader in the cover rule** (#433). Round 169. Step 2
