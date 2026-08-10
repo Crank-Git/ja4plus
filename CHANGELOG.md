@@ -1041,6 +1041,58 @@ holds every breaking change of this record against a row of that page.
   limit of 125000. `docs/specs/features/09-release.md` gains `FR-release-14a`, one section
   and one subsection that records the measurement. No file under `ja4plus/` changes and no
   fingerprint moves.
+- **The interface table of the API reference names every published name** (#562). Round
+  TBD. `docs/api_reference.md:5` frames the page as the interface this project promises, and
+  version 1.0.0 published that interface. **A review of round 206 named three names of
+  `ja4plus/watch.py` outside the table**: `packet_statistics_drops`, `PACKET_STATISTICS` and
+  `SOL_PACKET`. **The repair is the case rather than the three rows**, because #70 measured
+  what a repair of the known sites buys: round 191 repaired one site and round 197 wrote the
+  same defect into a new file. New file `tests/test_api_reference_interface_table.py` holds
+  23 cases. **It reads the `__all__` of every published module against the table rows of the
+  page, and the reader found 13 names rather than 3.** A published module is a tracked module
+  under `ja4plus/` that states `__all__`, which is 6 modules and 69 names; the file list comes
+  from `git ls-files`, because #473 measured that a walk of the checkout reads the pages of
+  every live worker worktree. **The reader takes no module set from the headings of the
+  page.** The page holds a `### ja4plus.<module>` heading for five of the six, so a reader
+  keyed on those headings would read none of the seven names of `ja4plus.output`, and #530,
+  #524, #438 and #70 each recorded that shape. **The page holds two table shapes and the
+  reader reads both**: `| Class/Function | Description |` states the name first, and
+  `| Group | Names |` states the 25 top-level names second. It therefore reads the name cells
+  of a body row and it reads no code span outside a table, so the paragraph that names
+  `packet_statistics_drops` documents nothing. **The cases came first**, and
+  `test_the_interface_table_names_every_published_name` failed with the 13 names: the 7 of
+  `ja4plus.output`, and `DEFAULT_CONNECTION_TIMEOUT`, `DEFAULT_MAX_CONNECTIONS`,
+  `PACKET_STATISTICS`, `SOL_PACKET`, `STATISTICS_THREAD_NAME` and `packet_statistics_drops`
+  of `ja4plus.watch`. **A restored mutation proves that the corpus case bites**:
+  `test_the_corpus_case_fails_a_table_that_drops_one_row` removes the row that names
+  `SOL_PACKET`, reads `['ja4plus.watch.SOL_PACKET']` back, then reads the whole text again
+  and reads no missing name. That mutation runs over the text in memory and it writes no
+  file, so `docs/api_reference.md` holds the row throughout. **Four cases state the floor**,
+  because a reader that finds nothing reports a clean table it never read: the module set
+  holds at least 6 modules and names `ja4plus`, `ja4plus.watch` and `ja4plus.output`, the
+  published names reach 60, the table names reach 100, and `ja4plus.__all__` holds the 25
+  names the page promises. Six rows join the `### ja4plus.watch` table and the new
+  `### ja4plus.output` section states the three writers, the two module constants and the
+  `build_writer` call. **A self-review found that the first reader read the whole row, and
+  it reported one name the page states in no cell of its own.** `ProcessorStats` reached the reader through
+  the description of the `.stats()` row at `docs/api_reference.md:310` and through the table
+  header `| Field of `ProcessorStats` | Description |`, and the page gave the class no row.
+  **The reader now reads a name cell alone**, which holds code spans, commas and spaces and
+  no other text, and it drops every header row. That rule reports one miss over the 69
+  published names and it costs no other name, so `ProcessorStats` joins the
+  `### ja4plus.processor` table. **A second self-review read the new prose against the
+  `## Terms` table and found one barred word.** The `packet_statistics_drops` row read
+  `Return the drops one Linux packet socket counted since the last read, or None`, and row 86
+  of that table bars `drops` in favour of `drop count`. The identifier keeps its name and the
+  description now names the term. **Round 205 built a case that bars one noun, and no case
+  bars the other 258 rejected words**, so a sweep of this class stays a reading for a later
+  round.
+  **`docs/migration-0.6-to-1.0.md:3` read
+  `Version 1.0.0 follows version 0.6.0, and no version stands between them.`, which restates
+  the page title.** It now tells a reader how to read the version the environment holds, and
+  it names no release that a later version makes false; #545 removed the sentence that named
+  what the package index carried, and this round restores no such claim. `mkdocs build --strict` passes.
+  **No file under `ja4plus/` changes and no fingerprint moves.**
 
 - **The documentation states no version claim and no conformance claim that version 1.0.0
   makes false** (#545). Round 206. **`docs/migration-0.6-to-1.0.md:3` read
