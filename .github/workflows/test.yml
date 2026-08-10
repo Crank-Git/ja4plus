@@ -126,6 +126,51 @@ jobs:
           git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"
           echo "ROUND_ENTRY_REFERENCE=$BASE_SHA" >> "$GITHUB_ENV"
 
+      - name: Resolve the reference commit of a run that carries no pull request
+        # **A manual run carries no pull request, so the step above runs nowhere.** #541
+        # measured the result on a manual run: `ROUND_ENTRY_REFERENCE` stayed empty,
+        # `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
+        # skipped on all six jobs of the matrix, and the `skip-gate` job then failed the run
+        # on a case the suite ran nowhere. Run
+        # https://github.com/Crank-Git/ja4plus/actions/runs/31421263768 holds that
+        # measurement, where every other job concluded `success`.
+        #
+        # **`.claude/rules/batch-gate.md` names the manual run as the recovery path where a
+        # push event and a pull-request event created none.** A red run on every branch
+        # leaves a reader unable to tell a real failure from that state, so this step gives
+        # the case a reference commit rather than excuse its skip.
+        #
+        # **This step reads every event that carries no pull request, and a push is such an
+        # event.** `actions/checkout` writes one remote-tracking ref, which is the ref the
+        # event names. A push to `dev` therefore holds `origin/dev` and `git merge-base`
+        # answers, and a push to `master` holds `origin/master` alone and it answers
+        # nothing. **A promotion to `master` is a push of the second kind.** A condition
+        # that named the manual event alone would leave the release run red. The two `if`
+        # conditions now cover every event this file accepts.
+        #
+        # **The clone of depth 1 holds no history, so the provider reads the merge base.**
+        # The basehead form is `BASE...HEAD` and the response holds `merge_base_commit`.
+        # Verified against
+        # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28 (retrieved
+        # 2026-08-10).
+        #
+        # The read names `dev`, which is the branch `REFERENCE_BRANCHES` reads first. The
+        # runner and the local gate therefore read the change set against the same commit.
+        #
+        # **This step declines `continue-on-error` for the reason #438 states.** A failed
+        # read leaves the variable empty and the case skips, and the `skip-gate` job then
+        # fails the run on a case that ran nowhere. A red step names the state instead.
+        #
+        # `GITHUB_REPOSITORY` and `GITHUB_SHA` reach the shell as environment variables, so
+        # no `${{ }}` expression reaches a `run` block.
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MERGE_BASE=$(gh api "repos/$GITHUB_REPOSITORY/compare/dev...$GITHUB_SHA" --jq .merge_base_commit.sha)
+          git fetch --depth=1 origin "+$MERGE_BASE:refs/ja4plus/round-entry-base"
+          echo "ROUND_ENTRY_REFERENCE=$MERGE_BASE" >> "$GITHUB_ENV"
+
       - name: Fetch the two recorded change sets
         # `tests/test_round_entry_existence.py` reads two commits of this repository, each
         # against its parent. `DEFECT_SHA` is the commit #412 shipped, which recorded no
