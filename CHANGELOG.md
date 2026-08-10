@@ -988,7 +988,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **The documentation states no version claim and no conformance claim that version 1.0.0
-  makes false** (#545). Round TBD. **`docs/migration-0.6-to-1.0.md:3` read
+  makes false** (#545). Round 206. **`docs/migration-0.6-to-1.0.md:3` read
   `Version 0.6.0 is the released version on PyPI. Version 1.0.0 is not released yet.`, and
   the preamble of this section held the same two sentences.** Both become false at the
   release. The sweep read the four classes #545 names over `README.md`, every tracked page
@@ -1022,7 +1022,7 @@ holds every breaking change of this record against a row of that page.
   it. **A claim no case holds is a finding rather than a repair**, and the pull-request body
   carries the two this sweep found. `mkdocs build --strict` passes. **No file under
   `ja4plus/` changes and no fingerprint moves.**
-- **The release skill reads the version from `ja4plus/__init__.py`** (#512). Round TBD.
+- **The release skill reads the version from `ja4plus/__init__.py`** (#512). Round 202.
   **Step 1 of `.claude/skills/release/SKILL.md` named `pyproject.toml` as the one version
   declaration, and it said that `ja4plus/__init__.py` reads the value with
   `importlib.metadata`.** #67 reversed both directions two rounds earlier: the declaration
@@ -1069,7 +1069,7 @@ holds every breaking change of this record against a row of that page.
   `docs/specs/features/09-release.md` records a past read and this round rewrites none of
   it.** No file under `ja4plus/` changes and no fingerprint moves.
 - **The batch-gate rule records the twelfth required context of `dev`** (#546). Round
-  TBD. **The user added `skip-gate` to the branch protection rule of `dev` on 2026-08-10**,
+  203. **The user added `skip-gate` to the branch protection rule of `dev` on 2026-08-10**,
   and `.claude/rules/batch-gate.md` stated eleven required contexts. Two cases of
   `tests/test_batch_gate_protection_rule.py` failed on `dev` at `61e04f1`:
   `test_the_provider_requires_the_contexts_the_rule_file_lists` and
@@ -1100,7 +1100,7 @@ holds every breaking change of this record against a row of that page.
   file each record a past measurement, and this round supersedes such a record rather than
   rewrites it. **No file under `ja4plus/` changes and no fingerprint moves.**
 - **A manual run of `Tests` names its own reference commit** (#541). Round
-  TBD. **A manual run carried no pull request, so the step `Fetch the base commit of the
+  204. **A manual run carried no pull request, so the step `Fetch the base commit of the
   pull request` ran nowhere and the `skip-gate` job failed every manual run.** Run
   https://github.com/Crank-Git/ja4plus/actions/runs/31421263768 holds the measurement. It
   reads `event=workflow_dispatch` and `conclusion=failure`, its `skip-gate` job reads
@@ -2592,7 +2592,7 @@ holds every breaking change of this record against a row of that page.
 ### Changed
 
 - **Version 1.0.0 reaches the repository, and the development status moves to
-  `5 - Production/Stable`** (#543). Round TBD. Three lines change. `ja4plus/__init__.py:101`
+  `5 - Production/Stable`** (#543). Round 207. Three lines change. `ja4plus/__init__.py:101`
   reads `__version__ = "1.0.0"`, the release heading of this file reads
   `## [1.0.0] - 2026-08-10`, and the `classifiers` list of `pyproject.toml` reads
   `Development Status :: 5 - Production/Stable`. **The declaration stays a plain string
@@ -2651,7 +2651,7 @@ holds every breaking change of this record against a row of that page.
   conformance suite reports 1635 passed, 143 skipped and 140 xfailed before this round and
   the same three counts after it.
 - **The vocabulary keeps `ruling`, and `decision` gives way to it** (#533). Round
-  TBD. The `## Terms` table of `docs/specs/spec.md` held neither word, and the prose rotated
+  205. The `## Terms` table of `docs/specs/spec.md` held neither word, and the prose rotated
   the two against each other across the whole specification. Rule 7 of
   `.claude/rules/ste.md` bars that: "One concept, one word. Never rotate synonyms for
   variety." **The user ruled on 2026-08-10 that the vocabulary keeps `ruling`**, and #533
