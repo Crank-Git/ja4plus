@@ -610,7 +610,7 @@ holds every breaking change of this record against a row of that page.
   and `pending criterion`. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The prose under `tests/` counts fingerprinters where it counted methods** (#450). Round
-  TBD. The word `method` carried two meanings and the two counts differ. FoxIO publishes
+  174. The word `method` carried two meanings and the two counts differ. FoxIO publishes
   twelve methods and this project implements eleven. The processor drives ten
   fingerprinters, because `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`.
   **The user chose the prose repair and declined the rename.** `ProcessorStats.method`
@@ -633,7 +633,7 @@ holds every breaking change of this record against a row of that page.
   The eight places that remain under `ja4plus/` are #484. **No fingerprint moves and the
   conformance counts do not change.**
 - **A case reads every stated state-table count against a live `Processor`** (#453). Round
-  TBD. `docs/specs/features/03-concurrency-safety.md` stated sixteen state tables, 47400
+  175. `docs/specs/features/03-concurrency-safety.md` stated sixteen state tables, 47400
   remembered keys and 8.5 MiB, and `docs/api_reference.md` stated seventeen, 57400 and
   10.2 MiB. **The code holds seventeen**, and this round re-measured it rather than quoting
   either page: `sum(len(report.tables) for report in Processor().stats().values())` reads
