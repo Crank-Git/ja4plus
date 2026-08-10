@@ -680,6 +680,42 @@ holds every breaking change of this record against a row of that page.
   rather than the statistics thread, and the ruling names `reporter` alone. No file under
   `ja4plus/fingerprinters/` changes and no fingerprint moves.
 
+- **The package prose counts fingerprinters where it counted methods** (#484).
+  Round TBD. Eight comments and docstrings under `ja4plus/` stated the count of
+  fingerprinter classes as a count of methods. **FoxIO publishes twelve methods and this
+  project implements eleven.** `JA4LFingerprinter` writes `JA4L-C=` and `JA4L-S=`, so ten
+  fingerprinter classes carry eleven methods, and a count of classes read as a count of
+  methods reads one short. #387 records the measurement and #450 built the reader.
+  **This round re-measured the eight places rather than trusting the list.**
+  `python_prose` and `class_counts_of_methods` of
+  `tests/test_documented_method_count.py` report `ja4plus/__init__.py:113`,
+  `ja4plus/cli.py:160`, `ja4plus/fingerprinters/base.py:76` and
+  `ja4plus/processor.py:124`, `:264`, `:283`, `:295` and `:332`. Every line number of
+  the issue holds. **The corpus came first, and it made the failure real.**
+  `python_sources` read `tests/` alone, so no case reached the package. It now reads
+  `ja4plus/` beside `tests/`, and
+  `test_no_python_file_states_the_count_of_classes_as_a_count_of_methods` then failed
+  4 of 4 new cases, one for each file, with
+  `AssertionError: ja4plus/processor.py holds ['ten methods'], and ten counts the fingerprinter classes rather than the methods they carry`.
+  **The suite alone meets `PYTHON_SOURCE_FLOOR`, so the package carries its own floor.**
+  A read of 2026-08-10 counts 203 files in the corpus, 31 under `ja4plus/` and 172 under
+  `tests/`, against a floor of 120. A corpus that dropped the package would meet that
+  floor and read no package file. `PACKAGE_SOURCE_FLOOR` reads 25 and
+  `test_the_python_corpus_holds_the_package` holds it. That case fails on the
+  un-widened reader with
+  `AssertionError: the corpus holds 0 package files, below the floor of 25, so a case over it proves little`.
+  **`ProcessorStats.method` keeps its name, its docstring and every value it holds.** It
+  is a published output field, a rename of one is a breaking change, and #450 records
+  that the decision is the user's. **The Terms table decides each word.** `method name`
+  names the lowercase token, `fingerprinter` names the class, and the report of
+  `Processor.stats` holds one entry for each of the ten fingerprinters. **This round read
+  each paragraph whole after the change, and not line by line**, which is the defect rule
+  7 of `.claude/rules/ste.md` names and which raised #441. The `Processor.stats`
+  docstring therefore reads `fingerprinter` in all four of its paragraphs, where two of
+  them had rotated between `fingerprinter` and `method` for one thing. **The diff under
+  `ja4plus/` touches comment and docstring lines alone.** No statement changes, no
+  fingerprint moves, and the conformance counts hold.
+
 - **One pass at the batch gate assigns every round number of a batch** (#482). Round 175.
   The project manager assigned a round number at each sub-merge. A sub-merge is an event of
   one batch, and the round sequence is global to the repository. One live integration branch
@@ -1571,6 +1607,53 @@ holds every breaking change of this record against a row of that page.
   seventeen. The body of #62 still states ten of the twelve, and it is a tracker record
   rather than a document of this repository. **No file under `ja4plus/` changes and no
   fingerprint moves.**
+
+- **One reader reads the entries of a dependency block, and it reads no quoted substring**
+  (#452). Round TBD. `_dependency_block` of `tests/test_documentation_site.py` collected
+  every double-quoted substring of a dependency block, so a comment inside the block read
+  as an entry. **A reader that is correct only because of what its callers happen to read
+  is the defect**, and #378 found it while it stopped importing the helper rather than
+  change it. **The premise was re-measured against the current tree and it holds.** The
+  unrepaired reader returns `['pytest==8.4.2', 'pytest-cov==7.1.0', 'ruff==0.16.2',
+  'mypy>=1.11', 'not spec_validation', 'build==1.4.4']` for the `dev` extra, and
+  `not spec_validation` is a fragment of the command inside the comment beside
+  `build==1.4.4`. New file `tests/dependency_entries.py` holds `dependency_lines` and
+  `dependency_entries`, and every caller now reads it. `_dependency_block` and the
+  `_dev_lines` and `_dev_entries` of `tests/test_lint_gate_pin.py` parse nothing of their
+  own. **#446 widened the hazard and answered it with a second reader inside that file**,
+  because every entry of the extra now carries a comment above it, and two readers of one
+  block can disagree. **The module reads lines and no TOML.** `tomllib` reaches the
+  standard library at Python 3.11, `pyproject.toml` states `requires-python = ">=3.9"`, and
+  `FR-foundation-13` runs the matrix from Python 3.9, so an import of `tomllib` would fail
+  two jobs. The `dev` extra names no `tomli`. **A comment starts at a `#` that stands
+  outside a string**, so one scan drops a comment line and a comment after an entry, and an
+  entry that carries a fragment marker in a URL survives. **The tests came first**, and the
+  unrepaired tree failed
+  `tests/test_documentation_site.py::test_the_reader_returns_the_entries_of_the_dev_extra_and_no_comment_fragment`
+  with `AssertionError: At index 4 diff: 'not spec_validation' != 'build==1.4.4'`. **Each
+  case names the entries it expects**, because a repair that returns an empty list passes a
+  case that reads the absence of the fragment alone. Three cases hold the `dev` extra, the
+  runtime block and the `docs` extra by name, and new file
+  `tests/test_dependency_entries.py` holds eleven cases against the shapes no block of
+  `pyproject.toml` carries today. **The reader refuses a block that holds no entry**,
+  because an aggregate over an empty set passes and a caller would read a clean block.
+  **The self-review found one hole and the reader now closes it.** TOML holds a literal
+  string in single quotes, the first form of the reader read the double-quoted form alone,
+  and an entry of the other form would have disappeared with no offender reported. The
+  reader now holds both forms, and it holds the quote that opened a string, so the
+  apostrophe of an environment marker closes no basic string. **The reader reads no escape
+  sequence, and a line that holds one raises.** A silent half of an entry is the worse
+  result, so `"foo\"bar"` fails rather than returns `foo\`. **Five mutations prove the
+  cases discriminate.** A reader that keeps every comment fails 4 cases, among them the
+  `dev` extra case and `test_the_decision_covers_every_entry_of_the_dev_extra`. A reader
+  that cuts a line at the first `#` fails the fragment-marker case alone. A reader without
+  the floor fails the empty-block case alone. A reader of the double-quoted form alone
+  fails the literal-string case alone. A reader without the open-string guard fails the
+  escape case alone. Each mutation restored from a snapshot of the implemented tree, and
+  the restored form passes 58 of 58 every time. The `Terms` table of `docs/specs/spec.md`
+  gains `dependency block`, because that table already rejects `dependency list` as a
+  synonym of `dependency record`. **No file under `ja4plus/` changes and no fingerprint
+  moves.**
 
 ### Changed
 

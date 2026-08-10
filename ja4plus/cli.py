@@ -159,9 +159,9 @@ def _split_endpoint(endpoint: str) -> tuple[str, int]:
 def _reporting_order(types: list[str]) -> dict[str, int]:
     """Return the position each method holds in the output, keyed by the method name.
 
-    The processor runs the ten methods in one fixed order, and FR-typed-api-3 states
-    that the order is part of the library interface. The command reports the order the
-    user asked for instead, so `--types ja4t,ja4` writes the JA4T value first.
+    The processor runs the ten fingerprinters in one fixed order, and FR-typed-api-3
+    states that the order is part of the library interface. The command reports the
+    order the user asked for instead, so `--types ja4t,ja4` writes the JA4T value first.
 
     A name the user wrote twice keeps its first position, because version 0.6.0 built a
     dict of fingerprinters and a repeated key kept the position of its first write.

@@ -121,8 +121,8 @@ class Processor:
                 caller that breaks the promise gets undefined results.
         """
         self.thread_safe = bool(thread_safe)
-        # One fingerprinter holds one lock, so ten threads work at once on ten methods.
-        # A single lock over the processor would serialize all ten.
+        # One fingerprinter holds one lock, so ten threads work at once on ten
+        # fingerprinters. A single lock over the processor would serialize all ten.
         self.fingerprinters: dict[str, BaseFingerprinter] = {
             name: cls(thread_safe=thread_safe) for name, cls in self._SPEC
         }
@@ -261,9 +261,9 @@ class Processor:
         for fp_type, fp in self.fingerprinters.items():
             try:
                 entries = fp.close_open_windows()
-            # The wide catch is the design. The loop reaches ten methods, and one method
-            # that fails at the end of a capture costs the caller no window of the other
-            # nine. #319 read the site and narrowed nothing.
+            # The wide catch is the design. The loop reaches ten fingerprinters, and one
+            # fingerprinter that fails at the end of a capture costs the caller no window
+            # of the other nine. #319 read the site and narrowed nothing.
             except Exception as e:
                 logger.debug(f"{fp_type} close_open_windows failed: {e}")
                 continue
@@ -278,21 +278,21 @@ class Processor:
         return results
 
     def stats(self) -> dict[str, ProcessorStats]:
-        """Return the counts each method reports, keyed by the method name.
+        """Return the counts each fingerprinter reports, keyed by the method name.
 
-        The report holds one entry for each of the ten methods. Each entry states the
-        packet count of that method and the counts of every state table it holds.
-        FR-concurrency-safety-11 and FR-concurrency-safety-12 state the requirement.
+        The report holds one entry for each of the ten fingerprinters. Each entry states
+        the packet count of that fingerprinter and the counts of every state table it
+        holds. FR-concurrency-safety-11 and FR-concurrency-safety-12 state the requirement.
 
         The call holds the lock of one fingerprinter across the read of that
-        fingerprinter, because the counts of one method describe one instant. A read
-        that acquires nothing catches a table between the store of a new entry and the
-        count of it, and the report then breaks the invariant
+        fingerprinter, because the counts of one fingerprinter describe one instant. A
+        read that acquires nothing catches a table between the store of a new entry and
+        the count of it, and the report then breaks the invariant
         `inserts == entries + evictions + removals`. The call acquires one lock at a
-        time, so it stops no other method and it holds two locks never.
+        time, so it stops no other fingerprinter and it holds two locks never.
 
         The report describes ten instants and not one. A caller that needs one instant
-        across the ten methods stops the packet source first.
+        across the ten fingerprinters stops the packet source first.
 
         Returns:
             A dict that maps the method name to a `ProcessorStats`.
@@ -329,8 +329,8 @@ class Processor:
             try:
                 fp.cleanup_connection(src_ip, src_port, dst_ip, dst_port, proto)
             # The wide catch is the design. A long-running monitor drops a connection
-            # from all ten methods or it leaks state, so one method that fails must not
-            # stop the loop. #319 read the site and narrowed nothing.
+            # from all ten fingerprinters or it leaks state, so one fingerprinter that
+            # fails must not stop the loop. #319 read the site and narrowed nothing.
             except Exception as e:
                 logger.debug(f"cleanup_connection error in {fp.__class__.__name__}: {e}")
 
