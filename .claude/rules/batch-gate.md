@@ -30,6 +30,50 @@ every pull request into `dev` and it filters no path. `.github/workflows/docs-bu
 filters four paths, so the gate requires no run of it and a red run of it still refuses
 the merge.
 
+## Assign every round number at the batch gate
+
+**Warning: assign a round number at the batch gate, and never at a sub-merge.** A
+sub-merge is the merge of one member branch into the integration branch. The project
+manager assigns the numbers of a whole batch in one pass, immediately before the batch
+pull request. `dev` holds a fixed row count at that moment, so the pass reads one
+sequence that no other writer moves.
+
+A member writes the literal `TBD` in place of its round number. The `TBD` reaches two
+records, and it stays in both through every sub-merge.
+
+1. The entry of `CHANGELOG.md`, as `Round TBD.`.
+2. The Changelog row of `docs/specs/spec.md`, as `| TBD | 2026-08-10 | ... |`.
+
+`tests/test_changelog_round_agreement.py` holds the two records against each other, so an
+assignment that covers one file alone fails a case. An integration branch carries one
+`TBD` for each member that has not reached the gate, and every one of them is correct.
+
+**The round sequence is global to the repository, and a sub-merge is an event of one
+batch.** Two live integration branches therefore assign from one sequence at once, and
+neither branch reads the rows of the other until that other branch merges. #482 measured
+the result on 2026-08-10, at the sub-merge gate of #456.
+
+```
+AssertionError: the Changelog holds 169 rows and its highest round is 173
+assert 169 == 173
+```
+
+**A project manager who assigned 168 and 169 on the second branch would have written two
+rows numbered 168 and two numbered 169.** That state merges cleanly, and the rule above
+removes it rather than reports it.
+
+**Warning: a wrong pairing survives the row-count rule, so read the contiguity case
+instead.** `row count == highest round` reads a table that carries 168 twice and 170
+nowhere as correct, because the count and the maximum both still read right.
+`tests/test_specification_changelog.py::test_the_changelog_assigns_every_round_from_one_to_the_row_count`
+requires the rounds 1 to the row count, each on one row, and
+`test_the_row_count_rule_passes_on_a_table_that_repeats_a_round` holds the measurement of
+the older rule.
+
+**This project declines one integration branch at a time.** That order also removes the
+race, and it costs the concurrency the batch model exists to provide. #482 records the
+decline.
+
 ## Never write a skip keyword in a head commit message
 
 **Warning: a skip keyword anywhere in a commit message creates no run for that commit.**
