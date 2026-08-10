@@ -21,6 +21,7 @@ from scapy.all import IP, TCP, Ether, rdpcap
 from ja4plus.fingerprinters import base
 from ja4plus.fingerprinters.base import NULL_LOCK, BaseFingerprinter, NullLock
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
+from ja4plus.fingerprinters.ja4ts import JA4TSFingerprinter
 from ja4plus.processor import Processor
 
 VECTORS = Path(__file__).parent / "foxio_vectors"
@@ -780,6 +781,112 @@ class TestTheConcurrencyContract:
             f"the jump produced {len(jumping)} values and one timeline produced "
             f"{len(continuous)}, so the jump lost no value"
         )
+
+
+class TestTheAgeClockOfOneShard:
+    """A packet of one shard ages out no state of another shard, FR-concurrency-safety-15.
+
+    #461 measured the failure on `SynAckTracker.times`. That table holds a maximum age of
+    120 seconds and it runs one age pass on every packet. The pass read one clock for
+    every thread, so a thread that stood 132 seconds further along the one timeline
+    evicted the connection of a slower thread. The retransmission of that connection then
+    found no entry, and it wrote four parts where one thread wrote five.
+
+    The reading that #461 records is
+    `'64240_2-1-1-4-1-3_1460_7' != '64240_2-1-1-4-1-3_1460_7_0'` on
+    `('184.150.157.177', 80, '172.16.225.48', 57380)` of `latest.pcapng`. The two SYN-ACK
+    packets of that connection sit 5.8 milliseconds apart, and the packet that evicted
+    the entry sits at 151.678 seconds of the concatenated timeline.
+
+    Each case below builds its own packets, so it states every timestamp it reads. Each
+    one forces the interleaving rather than hoping for it.
+    """
+
+    def test_a_packet_of_another_shard_holds_the_retransmission_field(self):
+        """The second SYN-ACK writes part e after another thread reads a later packet."""
+        fingerprinter = JA4TSFingerprinter()
+
+        assert fingerprinter.process_packet(syn_ack(1000.0)) == "64240_2-1-3_1460_7"
+
+        # 1132.0 stands 132 seconds after the first SYN-ACK, and the maximum age of
+        # `SynAckTracker.times` is 120 seconds. The packet names another connection, so
+        # `get_shard_key` sends it to another thread.
+        on_another_thread(
+            fingerprinter.process_packet, syn_ack(1132.0, client_port=40001, window=65535)
+        )
+
+        assert fingerprinter.process_packet(syn_ack(1000.4)) == "64240_2-1-3_1460_7_0"
+
+    def test_one_shard_that_reads_past_the_maximum_age_writes_no_retransmission_field(self):
+        """The same thread ages the connection out, so the case above can fail.
+
+        Clause 3 of `TestTheConcurrencyContract` states the behaviour this case pins: an
+        entry that receives no packet for its maximum age leaves the table. The case
+        above holds that behaviour for one shard, and this case proves it still runs.
+        """
+        fingerprinter = JA4TSFingerprinter()
+
+        assert fingerprinter.process_packet(syn_ack(1000.0)) == "64240_2-1-3_1460_7"
+        assert (
+            fingerprinter.process_packet(syn_ack(1132.0, client_port=40001, window=65535))
+            == "65535_2-1-3_1460_7"
+        )
+
+        assert fingerprinter.process_packet(syn_ack(1000.4)) == "64240_2-1-3_1460_7"
+
+
+def syn_ack(when, server_ip="10.0.0.1", server_port=80, client_port=40000, window=64240):
+    """Return one SYN-ACK packet with a capture timestamp.
+
+    The option list writes part b as `2-1-3`, the maximum segment size writes part c as
+    `1460`, and the window scale writes part d as `7`.
+
+    Args:
+        when: The capture timestamp, in seconds.
+        server_ip: The server address.
+        server_port: The server port.
+        client_port: The client port, which names the connection.
+        window: The TCP window size, which part a writes.
+
+    Returns:
+        One SYN-ACK packet.
+    """
+    packet = (
+        Ether()
+        / IP(src=server_ip, dst="10.0.0.2", ttl=64)
+        / TCP(
+            sport=server_port,
+            dport=client_port,
+            flags="SA",
+            seq=5000,
+            ack=1001,
+            window=window,
+            options=[("MSS", 1460), ("NOP", None), ("WScale", 7)],
+        )
+    )
+    packet.time = when
+    return packet
+
+
+def on_another_thread(call, *args):
+    """Run one call on a second thread, and return what it returned.
+
+    A state table reads the clock of the thread that announces a packet, so a case that
+    measures two shards needs two threads.
+
+    Args:
+        call: The callable to run.
+        args: The arguments to pass to it.
+
+    Returns:
+        The value the callable returned.
+    """
+    returned = []
+    thread = threading.Thread(target=lambda: returned.append(call(*args)))
+    thread.start()
+    thread.join(JOIN_TIMEOUT)
+    assert not thread.is_alive(), "the second thread did not finish"
+    return returned[0]
 
 
 def ja4l_packet_endpoints():
