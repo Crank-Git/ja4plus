@@ -226,8 +226,12 @@ jobs:
         #
         # #409 added the source-distribution path to the same file. The step therefore
         # builds both artifacts and installs each one, and the marker covers both.
+        #
+        # **The command reads `tests/` and never one file.** #68 added the marked cases of
+        # `tests/test_publish_workflow.py`, and a command that names one file runs none of
+        # them, and a case that no job runs measures nothing.
         run: |
-          python -m pytest tests/test_installed_wheel.py -m installed_wheel \
+          python -m pytest tests/ -m installed_wheel \
             -v --tb=short --junitxml=installed-wheel-results.xml
 
       - name: Upload the installed-wheel results

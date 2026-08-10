@@ -99,13 +99,32 @@ version.
 
 ## Behaviour rules
 
-- The version lives in `pyproject.toml`. `ja4plus/__init__.py` reads it with
-  `importlib.metadata.version`, so the two cannot disagree.
+- The version lives in `ja4plus/__init__.py`. `pyproject.toml` names `version` in its
+  `dynamic` list and reads it from `ja4plus.__version__`, so the two cannot disagree.
+  **#67 measured this shape against the `importlib.metadata` form this page proposed
+  first, and `### Why the version lives in the package` records the three readings.**
 - The publish workflow triggers on a published GitHub release, as it does now.
 - The verification step installs the wheel in a fresh virtual environment that has
   no source tree on its path, so an import cannot resolve to the working copy.
 - The conformance suite runs against the installed package by pointing `pytest` at
   the test directory while the package resolves from site-packages.
+- `tests/release_verification.py` holds every command of the verification step, and
+  `.github/workflows/publish.yml` runs that module in one step.
+  `tests/test_publish_workflow.py` holds the cases against both.
+- **The test directory the verification step reads is a copy outside the checkout.**
+  `python -m` puts the working directory on `sys.path`, and `pytest` inserts the parent
+  of the `tests` package there as well. Both paths name the checkout, and the checkout
+  holds `ja4plus/`, so a run that starts there reads the source tree.
+  `tests/test_publish_workflow.py::test_the_repository_root_resolves_the_source_tree`
+  measures that state.
+- The verification step reads the case list of the checkout and the case list of the
+  clean environment. It refuses a run that collected fewer cases.
+- The verification step refuses a conformance run that passed no case. A status of zero is
+  not a passing run, because `pytest` reports a run of nothing but skips as a success.
+  `tests/test_publish_workflow.py` holds both floors.
+- The clean environment installs the shipped dependency list first, and it gains the
+  test runner after that. The runner is the `pytest` entry of the `dev` extra, so one
+  record states the version.
 - The release is not published when any verification step fails. A partial publish
   cannot be undone on PyPI.
 - Version 1.0.0 states that the interface is stable. A breaking change after this
@@ -117,8 +136,88 @@ version.
 - Changed file `ja4plus/__init__.py`.
 - Changed file `CHANGELOG.md`.
 - Changed file `.github/workflows/publish.yml`.
+- New file `tests/release_verification.py`.
+- New file `tests/test_publish_workflow.py`.
 - New file `tests/test_packaging.py`.
-- New file `.github/workflows/version-check.yml`, or a job inside `test.yml`.
+- New file `tests/version_gate.py` and new file `tests/test_version_gate.py`.
+
+**#67 added no workflow file and no job.** The cases of `tests/test_version_gate.py` run
+inside `pytest tests/ -m "not spec_validation"`, which the `test` job of
+`.github/workflows/test.yml` runs on every entry of the matrix. Each of those six entries
+is a required status check of `dev`, so a disagreement fails continuous integration.
+`.claude/rules/batch-gate.md` lists the eleven required contexts, and a new job would add
+a twelfth context that the rule does not require.
+
+### Why the version lives in the package
+
+**This page proposed that `ja4plus/__init__.py` read the version with
+`importlib.metadata.version`, and #67 declines that reader.** The call reads the metadata
+of an installed distribution, and it does not read the source tree. Three readings of
+2026-08-10 state the reason.
+
+1. A source checkout that carries no install raises `PackageNotFoundError`. A reader
+   therefore needs a literal fallback, and a fallback is the second declaration that
+   FR-release-1 bars.
+2. An editable install freezes its metadata at install time. With `pyproject.toml`
+   changed to `0.7.0` and no reinstall, `importlib.metadata.version("ja4plus")` returned
+   `0.6.0`.
+3. The metadata of an editable install resolves through `ja4plus.egg-info` of the working
+   directory, so the answer follows the directory a command runs in.
+
+**A gate that reads the version out of an install compares a value against itself.**
+Continuous integration installs the project from `pyproject.toml`, so the metadata always
+equals the file the gate reads. FR-release-2 then names a comparison that reports nothing.
+The `dynamic` shape holds two independent texts against each other instead:
+`ja4plus/__init__.py` declares the version and `pyproject.toml` states where a build reads
+it.
+
+**`setuptools` resolves the attribute from the syntax tree and imports no module.** The
+declaration is a plain string assignment at the top level of `ja4plus/__init__.py`, so a
+build needs neither `scapy` nor `cryptography`. A read of 2026-08-10 built
+`ja4plus-0.6.0-py3-none-any.whl` in an isolated build environment that holds neither
+dependency. Verified against
+https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata,
+retrieved 2026-08-10.
+
+### The commit that writes the stable classifier
+
+**The user ruled on 2026-08-10, on #69. The project holds
+`Development Status :: 3 - Alpha` until the maintainer tags version 1.0.0.** These are the
+words of the ruling.
+
+> **The classifier is a promise about the interface, so it is written by the commit that makes
+> the promise true.**
+
+The interface may still move before 1.0.0. A classifier that runs ahead of the version
+states a promise the project cannot yet hold. `FR-release-12` therefore stays open, and the
+release commit of 1.0.0 writes the line. **#69 built `FR-release-10` and `FR-release-11`,
+and it changed no classifier.**
+
+### How `tests/test_packaging.py` reads the wheel
+
+`tests/test_packaging.py` holds `FR-release-10` and `FR-release-11` against the built
+wheel. It reads three states. A reader of a new packaging rule starts there.
+
+1. The wheel lists `ja4plus/data/ja4plus-mapping.csv` and `ja4plus/py.typed`.
+2. The wheel lists no entry under `tests/`, `examples/` or `docs/`.
+3. The wheel lists at least 30 entries. **An aggregate over an empty set passes**, so this
+   floor stands in front of the exclusion rule.
+
+**A mutation proves each direction.** The file takes four steps.
+
+1. It copies the built wheel.
+2. It removes one required entry from the copy.
+3. It adds one entry under `tests/` to the copy.
+4. It reads the copy again.
+
+The copy carries the mutation, and the built wheel keeps its bytes. A digest measures that
+second fact.
+
+`tests/test_installed_wheel.py` reads the assets tree, the top-level name and the whole
+payload. #69 repeats none of those readings, and it imports `build_artifacts` and
+`wheel_entry_names` from that file. **The mapping file and the documentation tree stand in
+both files**, because each of the two requirements names them beside another entry and a
+case reads a whole requirement.
 
 ## Interfaces
 
@@ -141,23 +240,31 @@ TestPyPI site.
 |---|---|
 | The version already exists on PyPI. | The publish step fails. PyPI refuses to replace a file. |
 | The wheel omits the mapping file. | The verification step fails, because a lookup returns an empty database. |
-| The wheel omits `py.typed`. | The packaging test fails. |
+| The wheel omits `py.typed`. | `test_the_wheel_lists_the_two_entries_the_release_requires` of `tests/test_packaging.py` fails. A caller who runs `mypy` reads no annotation of such an install. |
+| The wheel carries a file under `tests/` or under `examples/`. | `test_the_wheel_lists_no_file_under_an_excluded_tree` fails. |
+| The wheel lists no entry at all. | `test_the_wheel_lists_at_least_the_minimum_entry_count` fails. **An aggregate over an empty set passes**, so every exclusion rule reads an empty archive as correct. |
 | The wheel carries a file under `docs/`. | `test_the_wheel_carries_no_file_under_the_documentation_tree` fails. #455 records the defect and the exclusion rule that repairs it. |
 | The wheel carries a file under `assets/`. | `test_the_wheel_carries_no_file_under_the_assets_tree` fails. `assets/logo.png` holds 2423363 bytes, and `README.md` is its one reader. |
 | The wheel carries a tree that the exclusion list does not name. | `test_the_wheel_carries_no_file_outside_the_package_and_its_metadata` fails, and `test_the_wheel_declares_one_top_level_name` fails where the tree is a discovered package. |
 | The exclusion rule reaches the source distribution as well. | `test_the_source_distribution_carries_the_documentation_tree` and `test_the_source_distribution_carries_the_assets_tree` fail. A source distribution is the project at one revision. |
 | The changelog has no section for the version. | The version-check job fails before a release is created. |
 | The conformance suite fails against the installed wheel. | The workflow stops and does not publish. |
+| The conformance run starts in the checkout. | The run imports the source tree, so it measures the working copy. `verification_root` of `tests/release_verification.py` removes that state, and `test_the_repository_root_resolves_the_source_tree` measures it. |
+| The conformance run collects no case. | `compare_collections` raises, because a run of zero cases reports zero failures. |
+| Every case of the conformance run skips. | `passing_summary` raises. `pytest` reports that run as a success, and a vector tree the copy missed produces it. |
+| `twine check` reads no file. | `twine_check` raises. A check over no file reports no failure. |
+| A built file holds no archive. | `twine check` reports a non-zero status and the check raises. `test_the_release_check_refuses_a_built_file_that_twine_rejects` proves it. |
+| The clean environment holds no test runner. | `install_test_runner` adds the `pytest` entry of the `dev` extra, after the wheel install measured the shipped dependency list. |
 | The maintainer creates a release from a branch other than the live branch. | The workflow runs against that reference. The version-check job is the guard. |
 | TestPyPI is not configured. | The dry run fails and names the missing configuration. It does not fall back to PyPI. |
 
 ## Acceptance criteria
 
-- [ ] `grep -rn "0\.6\.0" pyproject.toml ja4plus/` finds the version in one file
-      only. **This criterion states an end state that this repository does not hold
-      yet, and #67 builds it.** `tests/test_criterion_counts.py` reads this number and
-      measures it, so the case fails on the day the two agree.
-- [ ] A pull request that changes the version without changing the changelog fails
+- [x] `grep -rnE '^(__version__|version) = "' pyproject.toml ja4plus/` finds the version
+      declaration in one file only. **The closing quote is part of the command**, because
+      `[tool.setuptools.dynamic]` writes `version = {attr = ...}` and that line declares no
+      version. `tests/test_criterion_counts.py` reads this number and measures it.
+- [x] A pull request that changes the version without changing the changelog fails
       continuous integration.
 - [ ] The publish workflow builds a source distribution and a wheel.
 - [ ] `twine check dist/*` reports `PASSED` for both files.
@@ -165,9 +272,9 @@ TestPyPI site.
       `ja4plus --version`.
 - [ ] The workflow runs the conformance suite against the installed wheel and it
       passes.
-- [ ] `unzip -l dist/*.whl` lists `ja4plus/data/ja4plus-mapping.csv` and
+- [x] `unzip -l dist/*.whl` lists `ja4plus/data/ja4plus-mapping.csv` and
       `ja4plus/py.typed`.
-- [ ] `unzip -l dist/*.whl` lists no file under `tests/`, `examples/`, `docs/` or
+- [x] `unzip -l dist/*.whl` lists no file under `tests/`, `examples/`, `docs/` or
       `assets/`.
 - [ ] `unzip -l dist/*.whl` lists every file below `ja4plus/` or below the
       `.dist-info` directory, and no other file.
@@ -179,10 +286,10 @@ TestPyPI site.
       `ja4plus analyze` on a committed capture.
 - [ ] The GitHub release body holds the `1.0.0` changelog section.
 
-### The version count, measured on 2026-08-09
+### The version count, measured on 2026-08-09 and settled on 2026-08-10
 
-**The first criterion above counts files and not declarations, and the two differ.** A
-read of `git ls-files pyproject.toml ja4plus/` on 2026-08-09 reports seven files that
+**The first criterion counted files and not declarations until #67, and the two differ.**
+A read of `git ls-files pyproject.toml ja4plus/` on 2026-08-09 reported seven files that
 hold the text `0.6.0`.
 
 | File | What it holds |
@@ -195,11 +302,15 @@ hold the text `0.6.0`.
 | `ja4plus/types.py` | Two lines of prose that state what version 0.6.0 used. |
 | `ja4plus/watch.py` | Two lines of prose that state what version 0.6.0 called. |
 
-**Two files declare the version and five name it in prose.** #67 removes one
-declaration, so the command still reads six files after #67 lands. The prose records the
-released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it. #67
-therefore narrows the command and keeps the prose. #456 measured this, and #67 owns the
-decision.
+**Two files declared the version and five name it in prose.** #67 removed one
+declaration, so a count of the text `0.6.0` reads six files today. The prose records the
+released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it. #456 measured
+this and #67 took the decision: the criterion counts the declaration, and the prose stays.
+
+**The criterion therefore names a command that matches a declaration line.** A read of
+2026-08-10 reports one file, `ja4plus/__init__.py`. `declaration_files` of
+`tests/version_gate.py` is the reader, and it takes the file list from `git ls-files`
+rather than from `grep -r`. `grep -r` also reads an untracked build artifact.
 
 ## Out of scope
 

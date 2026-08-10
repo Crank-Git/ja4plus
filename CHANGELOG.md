@@ -73,6 +73,98 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **The publish workflow builds the release and verifies it in a clean environment before it
+  publishes** (#68). Round 188. `FR-release-4` to `FR-release-9` state the checks, and
+  `.github/workflows/publish.yml` held two steps before this round: `python -m build` and the
+  upload. **Nothing stood between the build and PyPI, and a publish to PyPI cannot be
+  undone.** New file `tests/release_verification.py` holds the whole check, and the workflow
+  runs it in one step in front of the upload step. It builds both artifacts, reads them with
+  `twine check`, installs the wheel into a clean environment, runs the console script of that
+  environment, and runs the conformance suite against the installed package. **The
+  conformance suite lives under `tests/`, and #455 removed `tests/` from the wheel**, so the
+  suite comes from the checkout and the package comes from the environment. **A run that
+  starts in the repository root reads the source tree and proves nothing about the wheel.**
+  `python -m` puts the working directory on `sys.path`, and `pytest` inserts the parent of the
+  `tests` package there as well, and both paths hold `ja4plus/`. `verification_root` copies
+  the suite and `pyproject.toml` to a directory that holds no package source, and the check
+  reads `ja4plus.__file__` from that directory before it runs one case. A measurement of
+  2026-08-10 reports both directions from one clean environment: the copied root resolves
+  `<site-packages>/ja4plus/__init__.py` and the repository root resolves the checkout.
+  **This round rewrites no part of the repair #408 built.** It imports `build_artifacts`,
+  `create_clean_environment`, `package_file_of` and `run_probe` of
+  `tests/test_installed_wheel.py`, which scrub `PYTHONPATH`, set `PYTHONNOUSERSITE` and assert
+  that `pip` wrote the package into `site-packages`. **An aggregate over an empty set passes**,
+  so three floors stand in the check: `twine check` refuses an empty file list, the `PASSED`
+  count reads 2 against two files, and `compare_collections` refuses a clean environment whose
+  case list differs from the checkout. The clean environment collected 1809 cases against 1809
+  in the checkout, and the run reported 1532 passed, 143 skipped and 134 xfailed, which are the
+  three counts the checkout reports. **A fourth floor came from the self-review, and it is the
+  one that mattered.** The first form of the check read the exit status of the conformance run
+  alone, and `pytest` reports a run whose every case skipped as a success. A vector tree the
+  copy missed would then have printed `release check: PASSED`. `passing_summary` now reads the
+  summary line, refuses a passed count of zero and refuses a summary that names a failure, and
+  `verify` keeps the line it read. A run reduced to a collection refuses the release with
+  `RuntimeError: the conformance run wrote no passed count: '1809 tests collected in 0.23s'`.
+  New file `tests/test_publish_workflow.py` holds 28 cases, 10 of them under the
+  `installed_wheel` marker. **The cases came first**, and the whole file
+  failed to collect against the base commit `589c5ee` with
+  `ModuleNotFoundError: No module named 'tests.release_verification'`. **Three mutations prove
+  the cases bite, and each one was restored.** The workflow of the base commit fails 2 cases,
+  one reading `publish.yml runs 'python -m tests.release_verification' in 0 steps`. A check
+  that reads `ja4plus.__file__` from the repository root fails 1 case, which reports the
+  checkout path against the `site-packages` path. A file list cut to its first entry refuses
+  the release with `the clean environment collected 202 cases against 1809 in the checkout`.
+  **A workflow step that never runs cannot fail**, and no case here starts the publish
+  workflow, because a run of it would publish. The cases read the step order as text and run
+  the check itself. The `installed-wheel` job of `.github/workflows/test.yml` now runs the
+  marker over `tests/` rather than over one file, because a command that names one file runs
+  none of the cases this round adds. The `dev` extra of `pyproject.toml` gains
+  `twine==6.2.0`. **7.0.0 is the newest release and this pin declines it**, because it
+  requires Python 3.10 and the matrix runs Python 3.9, which is the reading #446 records for
+  `pytest` and `build`. `.claude/skills/release/SKILL.md` held the same trap in step 5 and it
+  now runs the same command. `docs/specs/features/09-release.md` gains six behaviour rules,
+  six edge cases and two file entries. No file under `ja4plus/` changes and no fingerprint
+  moves. The conformance suite reports 1532 passed, 143 skipped and 134 xfailed on the base
+  commit and the same three counts after. Coverage holds at 94% with 4292 statements and 273
+  misses.
+
+- **The built wheel carries the mapping file and the `py.typed` marker, and it carries no test,
+  example or documentation file** (#69). Round 189. `FR-release-10` and `FR-release-11` state
+  the two requirements, and new file `tests/test_packaging.py` holds nine cases against the
+  built wheel. **#455 already repaired the wheel these cases read**, so this round measures a
+  state that holds and it changes no packaging rule. A read of 2026-08-10 reports 39 entries
+  and 155900 bytes, and #455 reports the same entry count. **The value of a case here is the
+  direction it fails in**, so four mutation cases prove both directions on a copy of the
+  wheel: a copy without `ja4plus/py.typed`, a copy without `ja4plus/data/ja4plus-mapping.csv`,
+  a copy that gains one entry under `tests/`, and an archive that lists no entry at all.
+  **An aggregate over an empty set passes**, so `packaging_faults` reads the entry count
+  before it reads the exclusion rule, and the floor stands at 30 entries. **A mutation writes
+  a copy and it edits no byte of the built wheel**, which `test_the_mutation_leaves_the_built_wheel_unchanged`
+  measures by digest. **A second read of 2026-08-10 states which mechanism ships each required
+  entry, and it corrects a plausible reading.** With `[tool.setuptools.package-data]` cut to
+  `ja4plus = ["data/*.csv"]` and the exclusion list cut to `["examples", "assets", "assets.*"]`,
+  the build still listed `ja4plus/py.typed`. `include-package-data` is true by default and the
+  file finder of `setuptools-scm` reports every tracked file, so a tracked file below the
+  package ships whatever the package-data list holds. That weakened build listed 376 entries
+  and 337 of them lay under `tests/`, `examples/` and `docs/`, and the excluded-tree case
+  failed with `the wheel carries 337 of its 376 entries under ['tests/', 'examples/',
+  'docs/']`. The measurement restored `pyproject.toml`, and `git status` reported the file
+  unchanged after the restore. **This round repeats one reading of that file for the mapping
+  file and one for the documentation tree**, because `FR-release-10` and `FR-release-11` each
+  name them beside another entry and a case reads a whole requirement. **It repeats no other
+  reading of `tests/test_installed_wheel.py`**, which holds the assets tree, the top-level
+  name and the whole payload; the new file imports `build_artifacts` and `wheel_entry_names`
+  from it. **The user ruled on 2026-08-10 that the project holds
+  `Development Status :: 3 - Alpha` until the maintainer tags version 1.0.0.** The classifier
+  is a promise about the interface, and the release commit of 1.0.0 makes that promise true.
+  `FR-release-12` therefore stays open, and this round changes no line of `pyproject.toml`.
+  **The ruling declines the third acceptance criterion of #69**, so this round builds no part
+  of it. `docs/specs/features/09-release.md` gains two sections, three edge cases and two
+  ticked criteria. No file under `ja4plus/` changes and no fingerprint moves. The unit suite
+  reports 3950 passed, 4 skipped and 8 xfailed, the conformance suite reports 1532 passed,
+  143 skipped and 134 xfailed, and the `installed_wheel` marker reports 43 passed. Coverage
+  holds at 94% with 4292 statements and 273 misses.
+
 - **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round 182.
   **Three FoxIO records at the pinned commit
   `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` name a different set of methods.**
@@ -1658,6 +1750,55 @@ holds every breaking change of this record against a row of that page.
   moves.**
 
 ### Changed
+
+- **One file declares the version, and two gates hold it against the project metadata and
+  the changelog** (#67). Round 187. `pyproject.toml` declared `version = "0.6.0"` at line 7
+  and `ja4plus/__init__.py` declared it again at line 94, so the two records could
+  disagree. `ja4plus/__init__.py` is now the one declaration. `pyproject.toml` names
+  `version` in its `dynamic` list and reads the value from `ja4plus.__version__`, so a
+  build resolves the version the package declares. **This round declines the
+  `importlib.metadata` reader that `docs/specs/features/09-release.md` proposed, and it
+  measured three reasons on 2026-08-10.** That call reads the metadata of an installed
+  distribution and it does not read the source tree. A checkout that carries no install
+  raises `PackageNotFoundError`, so the reader needs a literal fallback, and a fallback is
+  the second declaration `FR-release-1` bars. An editable install freezes its metadata at
+  install time: with `pyproject.toml` changed to `0.7.0` and no reinstall,
+  `importlib.metadata.version("ja4plus")` returned `0.6.0`. That metadata resolves through
+  `ja4plus.egg-info` of the working directory, so the answer follows the directory a
+  command runs in. **A gate that reads the version out of an install compares a value
+  against itself**, because continuous integration installs the project from
+  `pyproject.toml`. The two gates read tracked text instead, and the two texts are
+  independent inputs. `version_disagreement` of `tests/version_gate.py` holds
+  `pyproject.toml` against `ja4plus/__init__.py` for `FR-release-2`, and
+  `changelog_disagreement` requires a `## [<version>]` section of `CHANGELOG.md` for
+  `FR-release-3`. **Each gate carries a control case that feeds it a contradicting pair and
+  reads the message it returns**, because a comparison that is never made reads as a
+  comparison that passes. **`setuptools` resolves the attribute from the syntax tree and
+  imports no module**, so a build needs neither `scapy` nor `cryptography`; a read of
+  2026-08-10 built `ja4plus-0.6.0-py3-none-any.whl` in an isolated build environment that
+  holds neither. **The acceptance criterion of `docs/specs/features/09-release.md` now
+  counts the declaration and no longer the text `0.6.0`.** #456 measured seven files that
+  hold that text and it handed the decision here: five of the seven state in prose what
+  version 0.6.0 did, a reader of `docs/migration-0.6-to-1.0.md` needs that prose, and a
+  count of the text can therefore never reach one. A read of 2026-08-10 reports one
+  declaration file and six files that hold the text. **The closing quote is part of the
+  command the criterion names.** `[tool.setuptools.dynamic]` writes
+  `version = {attr = "ja4plus.__version__"}`, which states where a build reads the version
+  and declares none, so a pattern without the quote reads two files where one declaration
+  exists. This round wrote that pattern first and the re-measurement caught it. **A
+  self-review of this round found one silent pass, and a case now holds the reader against
+  it.** `project_version` searched the whole file for a `version = "..."` line, so a
+  `[tool]` table that carried the package version beside a `dynamic` list naming the wrong
+  attribute read as agreement and the gate reported nothing. `project_version` and
+  `project_version_attribute` each search one table now.
+  `test_the_gate_reads_the_version_of_the_project_table_alone` reproduces the state.
+  `declaration_files` still searches no single table, on purpose: a second `version` key
+  fails the one-file case of `FR-release-1` rather than pass it. **`MEASURED_CRITERIA` of
+  `tests/test_criterion_counts.py` now holds no pending criterion**, so the two pending
+  cases aggregate over an empty set; `PENDING_CONTROL` feeds the pending reader a criterion
+  whose end state this tree holds. `tests/test_installed_wheel.py` reads the version from
+  the package rather than from `pyproject.toml`, and a new case reads the version the build
+  resolved into the wheel metadata.
 
 - **The `dev` extra states one recorded shape for every entry, and one record holds every
   version** (#446). Round 181. #378 pinned `ruff` alone, so four entries of the `dev` extra

@@ -381,6 +381,7 @@ DEV_ENTRIES = [
     "ruff==0.16.2",
     "mypy>=1.11",
     "build==1.4.4",
+    "twine==6.2.0",
 ]
 
 # The entries of the runtime block, in file order. A user who installs `ja4plus` installs
