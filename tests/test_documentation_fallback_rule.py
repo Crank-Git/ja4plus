@@ -23,7 +23,7 @@ Two properties follow, and each closes one half of the hole.
 
 1. **The reader finds a statement of the rule, and it forbids no phrase.**
    `fallback_statements` matches a condition about an image that does not settle a
-   question, bound to a sentence that gives the decision to the expected-output files.
+   question, bound to a sentence that gives the ruling to the expected-output files.
    Four word orders reach it, and the pattern needs no conjunction.
 2. **The reader reports the premise and not the words.** A statement passes when a
    reader premise stands inside `CONTEXT_WINDOW` characters before it, or inside
@@ -50,7 +50,7 @@ A shape reads more spellings than a phrase reads, and it reads no sentence at al
 hole below is recorded and none is closed.
 
 - **A wide clause.** `GAP_WIDTH` is 160 characters, so a condition further than that from
-  its decision reaches no pattern.
+  its ruling reaches no pattern.
 - **A synonym of `image`.** `diagram` and `figure` reach nothing. `.claude/rules/ste.md`
   forbids a synonym of a term, so a compliant page writes `image`.
 - **A statement that spans two sentences.** `The image may be ambiguous. The
@@ -102,12 +102,12 @@ HTML_TAG = re.compile(r"<[^>]+>")
 INSIDE_SENTENCE = r"(?:[^.]|\.(?!\s))"
 
 # **Warning: the gap between two parts of one statement is 160 characters.** A wider gap
-# reads a condition of one clause against the decision of another and reports a rule the
+# reads a condition of one clause against the ruling of another and reports a rule the
 # page never stated.
 GAP_WIDTH = 160
 
 # **Warning: the window before a statement is 600 characters.** `.claude/rules/conformance.md`
-# states the reader premise in one paragraph and the decision in the numbered list below
+# states the reader premise in one paragraph and the ruling in the numbered list below
 # it, and the two sit 250 characters apart.
 CONTEXT_WINDOW = 600
 
@@ -139,11 +139,11 @@ AMBIGUITY = (
     r")"
 )
 
-# The source the fallback gives the decision to.
+# The source the fallback gives the ruling to.
 AUTHORITY_SOURCE = r"(?:expected[-\s]output\s+files?|vectors?)"
 
-# The decision the fallback gives away. The expected-output files decide, they are the
-# authority, or a passive sentence gives the decision to them.
+# The ruling the fallback gives away. The expected-output files decide, they are the
+# authority, or a passive sentence gives the ruling to them.
 AUTHORITY = (
     r"(?:"
     + AUTHORITY_SOURCE
@@ -155,7 +155,7 @@ AUTHORITY = (
     + r")"
 )
 
-# The word that binds a condition to its decision. **The reader accepts no conjunction as
+# The word that binds a condition to its ruling. **The reader accepts no conjunction as
 # well**, because a semicolon and the word `means` each state the same rule. A pattern
 # that named one conjunction would fall to the next writer who chose another.
 CONJUNCTION = r"(?:\b(?:where|when|if|whenever|because|since|unless|given\s+that)\b\s*)?"
@@ -177,7 +177,7 @@ READER_PREMISE = re.compile(
 # decide`.
 CONDITION_FIRST = CONJUNCTION + r"\bimages?\b" + _gap() + AMBIGUITY + _gap() + AUTHORITY
 
-# The word order that opens with the decision, as in `The expected-output file decides
+# The word order that opens with the ruling, as in `The expected-output file decides
 # where the image is ambiguous`.
 AUTHORITY_FIRST = (
     AUTHORITY
@@ -196,8 +196,8 @@ REQUIREMENT_FORM = (
 )
 
 # The word order that opens with the ambiguous image, as in `An ambiguous image gives the
-# decision to the expected-output file`. The noun pair `ambiguous image` already states
-# the condition, so this pattern needs no verb of decision after the expected-output
+# ruling to the expected-output file`. The noun pair `ambiguous image` already states
+# the condition, so this pattern needs no verb of ruling after the expected-output
 # files. A bare `vector` needs that verb, because `the vectors team` names no authority.
 AMBIGUOUS_IMAGE_FIRST = (
     r"\bambiguous\s+images?\b"

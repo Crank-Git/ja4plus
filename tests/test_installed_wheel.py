@@ -784,7 +784,7 @@ def test_the_wheel_declares_one_top_level_name(artifacts: dict[str, pathlib.Path
     **This case reads the whole declared list, and it names no tree.** A case for each known
     tree passes on the next accidental namespace package, and this one fails on it.
 
-    A second top-level name is a deliberate decision of this project, so a legitimate new
+    A second top-level name is a deliberate ruling of this project, so a legitimate new
     package moves this case. That is the intended cost: the case states which names the
     release publishes, and a new name changes what a user can import.
     """

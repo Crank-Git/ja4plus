@@ -46,7 +46,7 @@ SCHEMA_PAGE = DOCS_DIR / "output-schema.md"
 MIGRATION_PAGE = DOCS_DIR / "migration-0.6-to-1.0.md"
 
 # The one FoxIO method this project declines. `docs/specs/spec.md` § Non-goals holds the
-# decision and #197 holds the reading. It reaches no method page, and
+# ruling and #197 holds the reading. It reaches no method page, and
 # `docs/methods/index.md` states the decline.
 DECLINED_METHOD = "JA4TScan"
 

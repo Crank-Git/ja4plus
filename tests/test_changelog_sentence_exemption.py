@@ -38,7 +38,7 @@ of git. It reports three states, and each one refuses the rule.
 ## What a case here does not read
 
 **A case here measures no sentence of a document outside the two records.** The exemption
-decides which document the limit covers, and this file holds that decision. A sweep that
+decides which document the limit covers, and this file holds that ruling. A sweep that
 measured every sentence of every page is a separate piece of work, and #457 orders none.
 
 `over_limit_sentences` and `over_limit_units` measure the two records, so a case proves

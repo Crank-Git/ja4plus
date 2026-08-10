@@ -157,7 +157,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
 
         # Connection key for tracking
         conn_key = f"{client_ip}:{client_port}-{server_ip}:{server_port}"
-        # An eviction from the handshake table would otherwise move the decision, and
+        # An eviction from the handshake table would otherwise move the ruling, and
         # the connection would split into two entries. The connection that already
         # exists keeps the endpoints it started with.
         reversed_key = f"{server_ip}:{server_port}-{client_ip}:{client_port}"
@@ -205,7 +205,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         conn = self.connections[conn_key]
 
         # The connection holds the endpoints it started with, so the direction of this
-        # packet reads from the connection and not from a fresh decision. A handshake
+        # packet reads from the connection and not from a fresh ruling. A handshake
         # that arrives late would otherwise count one packet in the wrong direction.
         is_client_to_server = (src_ip, src_port) == (conn["client_ip"], conn["client_port"])
 
@@ -385,7 +385,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         never sends a FIN+ACK packet holds its last window open, and no other rule
         emits it. `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164` both
         emit that window, and the two agree on its value for `ssh2.pcapng`. #214 holds
-        the decision.
+        the ruling.
 
         A window that holds no SSH packet emits nothing, because `_close_window`
         declines it. #97 declines the same value in the FoxIO Python reference.
@@ -430,7 +430,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 "connection": conn_key,
                 "timestamp": time.time(),
                 # A consumer reads a measured side and a guessed side differently, so
-                # the source of the decision reaches the result.
+                # the source of the ruling reaches the result.
                 "server_decided_by": conn["server_decided_by"],
             }
         )
@@ -620,7 +620,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         # returns None, so a caller reaches this method with None. `TypeError` names a
         # value of type bytes or bytearray, which holds a `split` method that denies the
         # separator `"_"`. It also names a part of type bytes, which the string pattern
-        # of the part guard denies. Issue #262 records the decision. A value of the wrong
+        # of the part guard denies. Issue #262 records the ruling. A value of the wrong
         # type is a malformed fingerprint, and the method answers None that way already.
         # `ValueError` names a part that holds more than 4300 digits, which
         # matches the pattern and exceeds the CPython limit on an integer conversion.

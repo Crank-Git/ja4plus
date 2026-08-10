@@ -1,7 +1,7 @@
 """JA4L marker tests for a QUIC connection.
 
 The FoxIO specification image labels three parts, and `ja4plus` writes two timing parts.
-#225 holds the decision. The user decided on 2026-08-08 that JA4L keeps two timing
+#225 holds the ruling. The user decided on 2026-08-08 that JA4L keeps two timing
 parts, and that a QUIC connection carries a protocol marker as the third part.
 
 **The marker spells `quic`.** Two FoxIO implementations write a marker, and they spell it
@@ -93,7 +93,7 @@ class TestTheQUICMarker:
     def test_no_tcp_value_of_any_vector_holds_a_third_part(self):
         """Fail when a TCP connection gains a third part.
 
-        The decision moves a QUIC value alone. This case reads every capture, so a
+        The ruling moves a QUIC value alone. This case reads every capture, so a
         marker that reaches the TCP branch fails here and not in one named case.
         """
         offenders = []

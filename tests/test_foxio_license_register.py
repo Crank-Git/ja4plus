@@ -74,7 +74,7 @@ FOXIO_RECORDS = (
 # The sentence that records the state of `JA4Scan`.
 NO_RULING = "recorded no ruling about JA4Scan"
 
-# A phrase that would turn the `JA4Scan` row into a decline. **No decision about JA4Scan is
+# A phrase that would turn the `JA4Scan` row into a decline. **No ruling about JA4Scan is
 # recorded**, so a row that states a reason for a decline states something the project
 # never decided.
 DECLINE_PHRASES = (
