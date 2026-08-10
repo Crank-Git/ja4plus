@@ -806,9 +806,22 @@ holds every breaking change of this record against a row of that page.
   `test_the_test_job_fetches_the_base_commit_of_a_pull_request` failed against the workflow
   of the base commit with
   `AssertionError: assert 'BASE_SHA: ${{ github.event.pull_request.base.sha }}' in 'name: Tests\n\n# ...'`.
-  **The runner proved the case in both directions**, and the record of the two runs stays in
-  the pull-request body of this round, because a green run alone would not part a passing
-  check from a skipped one. No file under `ja4plus/` changes and no fingerprint moves.
+  **No reading of the runner proves this round in the failing direction yet, and #438
+  measured the reason.** `.github/workflows/test.yml` reads
+  `pull_request: branches: [master, dev]`, and that filter matches the base branch of a
+  pull request. **A pull request into an integration branch therefore creates no run at
+  all.** Pull request #519 carried a keyword-free head that edited two tracked files and
+  recorded no round, it targeted `batch/510-dry-run-and-gates`, and the provider held no
+  run for it after 150 seconds. Every pull-request run this repository holds carries an
+  integration branch as its head, so no run has ever come from a pull request into one.
+  **The batch pull request of #510 is the first run that reads this reading**, because it
+  targets `dev`. A local run reproduced both directions against the same reference the
+  runner reads. With `ROUND_ENTRY_REFERENCE` set to the tip of the integration branch, the
+  change set of #519 failed with
+  `the change set holds these paths outside the two records: .github/workflows/test.yml, tests/test_round_entry_existence.py. CHANGELOG.md holds 104 round entries against 104 at the reference commit`,
+  and the branch of this round passes the same reading. **A green run alone proves nothing
+  here**, because the case skipped before and a skip is not a pass, so #438 stays open on
+  the failing direction. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The prose names the statistics thread by its controlled term** (#441). Round 183. The
   `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
