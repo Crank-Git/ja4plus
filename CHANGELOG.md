@@ -506,7 +506,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **The fingerprint move count of the migration page states the row count of its own table**
-  (#398). Round TBD. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
+  (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
   rows. #395 measured the difference and filed the issue rather than repair it. **The count
   lived in prose and no case read it.** #399 added a row to the breaking-change table of the
   same page and #401 corrected a citation of it, and neither edit moved either sentence.
@@ -555,7 +555,7 @@ holds every breaking change of this record against a row of that page.
   no issue in 31 source files, and `ruff check` and `ruff format --check` pass. No file under
   `ja4plus/` changes and no fingerprint moves.
 
-- **The FoxIO License 1.1 list of the README names every method it covers** (#388). Round TBD.
+- **The FoxIO License 1.1 list of the README names every method it covers** (#388). Round 164.
   The list named JA4S, JA4H, JA4T, JA4TS, JA4L, JA4X and JA4SSH. It named neither JA4LS, nor
   JA4D, nor JA4D6, and this project builds all three under that license. **A published
   statement about another party's license is the user's decision.** #62 therefore measured the
@@ -588,7 +588,7 @@ holds every breaking change of this record against a row of that page.
   proved in both directions on this host.** The removal of JA4D6 from the list fails the set
   case alone. The deletion of the whole paragraph fails both cases. Each run restored the file
   it moved. No file under `ja4plus/` changes and no fingerprint moves.
-- **A batch merge fails where the pull-request event created no run** (#459). Round TBD.
+- **A batch merge fails where the pull-request event created no run** (#459). Round 165.
   **The failure mode is not a missing run. It is an absent run read as a passed run.**
   `gh pr checks` writes "no checks reported", which refuses no merge, so a reader takes the
   absence for a pass. The batch merged then carries members whose cases never ran on Linux,
@@ -658,7 +658,7 @@ holds every breaking change of this record against a row of that page.
   file names the four steps and the eleven check names. **Two limits stand.** A run of the branch
   head is no run of the merge result, and this gate reads a run rather than the code. No file
   under `ja4plus/` changes and no fingerprint moves.
-- **The built wheel carries the `ja4plus` package alone** (#455). Round TBD.
+- **The built wheel carries the `ja4plus` package alone** (#455). Round 166.
   `docs/specs/features/09-release.md:156` requires the wheel to carry no file under
   `docs/`. `python -m build` on the base commit `d94d8c1` produced a wheel of 96 entries.
   56 of those entries lay under `docs/`. #393 measured that state on 2026-08-09, and this
