@@ -45,6 +45,11 @@ follows. **An info string carries no backtick**, so a line that holds a second r
 backticks opens no fence. `test_the_reader_reads_an_inline_code_span_as_no_fence` holds
 the JA4X shape against it.
 
+**The reader is no CommonMark parser, and three limits follow.** It reads a tilde fence as
+prose, it accepts an indent of any depth before the backticks, and it reads a run of four
+backticks and a run of three as one delimiter class. No page of the corpus holds any of
+the three shapes, and a page that did would need a reading here first.
+
 These cases read prose. They produce no fingerprint and they open no capture socket.
 """
 
