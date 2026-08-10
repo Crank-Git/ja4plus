@@ -130,7 +130,7 @@ holds every breaking change of this record against a row of that page.
 
 - **The publish workflow reaches TestPyPI on a manual event, and the release body holds the
   summary and the breaking-change tables of the version** (#70).
-  Round TBD. `FR-release-13` and `FR-release-14` state the two requirements, and
+  Round 191. `FR-release-13` and `FR-release-14` state the two requirements, and
   `.github/workflows/publish.yml` held one event and one job before this round. **A manual
   trigger on a publish workflow creates a path to PyPI**, so the project manager ruled that
   the dry run must be structurally incapable of reaching the real index. The file now holds
@@ -774,7 +774,7 @@ holds every breaking change of this record against a row of that page.
   3901 passed and the same conformance counts.
 
 - **The `dropped` field of the statistics line reports the drop count of the capture
-  socket on Linux** (#326). Round TBD. #423 closed the macOS half and it left the Linux
+  socket on Linux** (#326). Round 192. #423 closed the macOS half and it left the Linux
   half open, because no Linux host had run the reading. **`scapy` 2.7.0 calls `getsockopt`
   in no file**, which a `grep` over the installed package of the granted host confirms.
   The kernel reports a drop count, `scapy` reads it nowhere, and `ja4plus` now reads the
@@ -868,7 +868,7 @@ holds every breaking change of this record against a row of that page.
   moves.
 
 - **The exemption of the writing standard covers rule 3 as well as rule 1** (#502).
-  Round TBD. Rule 3 of `.claude/rules/ste.md` reads `One topic per paragraph, six
+  Round 190. Rule 3 of `.claude/rules/ste.md` reads `One topic per paragraph, six
   sentences at most.` The self-review of #484 found its own Changelog row past that limit,
   and that finding is correct against the letter of the rule. **One row records one round,
   which is one topic**, so the sentence count of a row follows from how much that round
@@ -914,7 +914,7 @@ holds every breaking change of this record against a row of that page.
   `ruff check`, `ruff format --check` and `mypy --strict ja4plus/` each report no issue.
 
 - **A member pull request reaches the round-entry check, and the runner reads its change
-  set** (#438). Round TBD. **The finding that outranks the rest of this round is that the
+  set** (#438). Round 193. **The finding that outranks the rest of this round is that the
   check passed by construction.** The base-branch filter of `.github/workflows/test.yml`
   read `branches: [master, dev]`, and that filter matches the base branch of a pull request,
   so the only pull requests that reached the `test` job were the batch pull request and the
