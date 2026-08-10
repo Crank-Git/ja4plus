@@ -822,6 +822,33 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The branch-protection claims of the batch-gate rule reach a case** (#511). Round
+  TBD. `.claude/rules/batch-gate.md` states that each of the eleven required contexts
+  carries `app_id` 15368, and `CHANGELOG.md` and the round 174 row of `docs/specs/spec.md`
+  state it too. **No case read the number.** `provider_contexts` reads
+  `required_status_checks.contexts`, which holds the context names alone, and the provider
+  holds the application under `required_status_checks.checks[]`. New reader
+  `check_applications` reads that list, and
+  `test_the_provider_carries_the_stated_application_on_every_context` requires `app_id`
+  15368 on each of the eleven contexts. **The case reads its floor before it reads the
+  provider**, so a file that states another number fails the case rather than compares two
+  empty sets. A read of the provider on 2026-08-10 reports `app_id` 15368 on all eleven
+  entries of `checks`. Where `gh` returns no reading, the case skips and it does not pass,
+  and `test_the_application_case_skips_where_the_provider_returns_no_reading` measures that
+  state. The same round repairs three wordings of the rule file. The opening claim of
+  `## The provider refuses an ungated merge` names the `enforce_admins` reading, which is
+  `false`, so an administrator merge reaches `dev` with no run. The steps intro promised a
+  change of the rule and the four steps below it are four reads, so it states the read and
+  a case holds the verb of every step. One sentence dated its warning against the day a
+  reader reads it, and it names the read of 2026-08-10 instead.
+  `test_the_opening_claim_of_the_protection_section_names_its_condition`,
+  `test_the_steps_of_the_protection_section_read_the_rule_and_change_nothing` and
+  `test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader` hold the three
+  repairs, and each reader runs in both directions.
+  `tests/test_batch_gate_protection_rule.py` gains 21 cases and it holds 114. **No file
+  under `ja4plus/` changes and no fingerprint moves.** The unit suite reports 4060 passed,
+  7 skipped and 8 xfailed, and coverage holds at 94% with 4316 statements and 273 misses.
+
 - **The sentence-length rule exempts the two records and no other document** (#457).
   Round 180. #393 found about twelve sentences of its own Changelog row past the 25-word
   limit, and that finding is correct against the letter of the rule. All 159 numbered rows

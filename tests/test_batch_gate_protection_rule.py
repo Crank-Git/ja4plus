@@ -31,6 +31,24 @@ case with a reader that returns nothing and requires a skip.
 network, so a file that lists no context fails the case rather than comparing two empty
 sets.
 
+## The application of a required context
+
+`.claude/rules/batch-gate.md`, `CHANGELOG.md` and the round 174 row of
+`docs/specs/spec.md` each state that every required context carries `app_id` 15368. #511
+found that no case read the number, because `provider_contexts` reads
+`required_status_checks.contexts` and that field holds the context names alone. The
+provider holds the application under `required_status_checks.checks[]`, so
+`check_applications` reads that list and `test_the_provider_carries_the_stated_application_on_every_context`
+holds the file against it.
+
+## The prose defects #511 repairs
+
+Three cases hold the wording the same issue repaired. The opening claim of the protection
+section names the `enforce_admins` reading, because an administrator merge reaches `dev`
+with no run. The steps of that section read the provider and change nothing, and the intro
+states that. No live sentence of the file carries a floating date, because a floating word
+turns a dated reading into a standing fact.
+
 ## What these cases cannot test
 
 A case here reads the state of the provider on the day it runs. It proves no statement
@@ -66,6 +84,12 @@ SUPERSEDED_READ_DATE = "2026-08-09"
 
 # The command the live cases run. `gh` reads the authentication of the host.
 PROTECTION_COMMAND = ("gh", "api", "repos/Crank-Git/ja4plus/branches/dev/protection")
+
+# The application that publishes every required context. The provider holds this number
+# under `required_status_checks.checks[]` and never under `contexts`, which is a list of
+# names alone. A context of another application would satisfy the rule with a run this
+# project never wrote, so a case reads the number rather than the name.
+REQUIRED_APP_ID = 15368
 
 # The read of 2026-08-10 reports these eleven contexts, each carrying `app_id` 15368.
 # A live case compares the provider against the list the file carries, and this tuple
@@ -137,6 +161,30 @@ UNPROTECTED = re.compile(r"\bunprotected\b|\bnot protected\b", re.IGNORECASE)
 
 # A sentence that names a check term and one of these states that the check exists.
 AFFIRMATION = re.compile(r"\bcarries\b|\bholds\b|\breads\b", re.IGNORECASE)
+
+# The `app_id` the rule file states, as `` `app_id` 15368 ``.
+APP_ID_STATEMENT = re.compile(r"`app_id` (\d+)")
+
+# A numbered step of the rule file, as `1. Open ...`. The first word is the verb the step
+# gives the reader.
+NUMBERED_STEP = re.compile(r"^\s*\d+\.\s+(\S+)")
+
+# The verbs a read step takes. A step that opens a page and a step that reads a field each
+# leave the provider as it stands.
+READ_VERBS = ("Open", "Read")
+
+# A promise that the steps below change the rule. #511 measured the defect: the intro read
+# `the exact steps to read the rule or to change it` and the four steps were four reads.
+CHANGE_PROMISE = re.compile(r"steps?\s+to\s+[^.]*\bchange\b|to change it", re.IGNORECASE)
+
+# A word that dates a sentence against the day a reader reads it. This file exists because
+# a dated reading was quoted as a standing fact, so a floating word is the defect it
+# records. `\bnow\b` matches no `nowhere`, because the boundary needs the word to end.
+FLOATING_DATE = re.compile(
+    r"\btoday\b|\byesterday\b|\btomorrow\b|\bnow\b|\bcurrently\b|\brecently\b"
+    r"|\blately\b|at present|at the moment|these days|as of now",
+    re.IGNORECASE,
+)
 
 
 def documentation_files() -> List[Path]:
@@ -409,6 +457,129 @@ def provider_contexts(reading: Dict[str, object]) -> List[str]:
     return [str(name) for name in contexts]
 
 
+def provider_checks(reading: Dict[str, object]) -> List[Dict[str, object]]:
+    """Return the `checks` entries of one protection reading.
+
+    `contexts` holds the context names alone, so the application of a context reaches a
+    reader through this list and through no other field.
+
+    Args:
+        reading: The parsed response body.
+
+    Returns:
+        The objects the provider holds under `required_status_checks.checks`.
+
+    Raises:
+        AssertionError: The reading holds no `checks` list, or an entry of it is no object.
+    """
+    checks = required_status_checks(reading).get("checks")
+    assert isinstance(checks, list), "the provider holds no `checks` list"
+    entries = [entry for entry in checks if isinstance(entry, dict)]
+    assert len(entries) == len(checks), (
+        f"the provider holds a `checks` entry that is no object: {checks}"
+    )
+    return entries
+
+
+def check_applications(reading: Dict[str, object]) -> Dict[str, object]:
+    """Return the application of each required context, by context name.
+
+    Args:
+        reading: The parsed response body.
+
+    Returns:
+        One entry for each required context, holding the `app_id` the provider states.
+
+    Raises:
+        AssertionError: A `checks` entry names no context.
+    """
+    found: Dict[str, object] = {}
+    for entry in provider_checks(reading):
+        context = entry.get("context")
+        assert isinstance(context, str), f"a `checks` entry names no context: {entry}"
+        found[context] = entry.get("app_id")
+    return found
+
+
+def stated_application(text: str) -> Optional[int]:
+    """Return the `app_id` the rule file states, or None where it states none.
+
+    Args:
+        text: The whole page or one section of it.
+
+    Returns:
+        The stated number, or None where the text states no `app_id`.
+    """
+    match = APP_ID_STATEMENT.search(text)
+    if match is None:
+        return None
+    return int(match.group(1))
+
+
+def opening_paragraph(body: str) -> str:
+    """Return the first paragraph of one section body.
+
+    Args:
+        body: The body of one section.
+
+    Returns:
+        The first block that holds text, which carries the claim the section opens with.
+    """
+    for block in body.split("\n\n"):
+        if block.strip():
+            return block
+    return ""
+
+
+def numbered_steps(body: str) -> List[str]:
+    """Return the first word of each numbered step of one section body.
+
+    Args:
+        body: The body of one section.
+
+    Returns:
+        One verb for each numbered step, in the order the body holds them.
+    """
+    return [
+        match.group(1)
+        for match in (NUMBERED_STEP.match(line) for line in body.splitlines())
+        if match is not None
+    ]
+
+
+def steps_intro(body: str) -> str:
+    """Return the paragraph that stands in front of the numbered steps of one section.
+
+    Args:
+        body: The body of one section.
+
+    Returns:
+        The last block before the first numbered step, or an empty string where the body
+        holds no step.
+    """
+    previous = ""
+    for block in body.split("\n\n"):
+        if numbered_steps(block):
+            return previous
+        if block.strip():
+            previous = block
+    return ""
+
+
+def floating_sentences(text: str) -> List[str]:
+    """Return every live sentence that dates itself against the day a reader reads it.
+
+    Args:
+        text: The whole page.
+
+    Returns:
+        The offending sentences, which is empty where every sentence names its date.
+    """
+    return [
+        sentence for sentence in sentences(readable_text(text)) if FLOATING_DATE.search(sentence)
+    ]
+
+
 def listed_contexts() -> List[str]:
     """Return the check names the rule file lists.
 
@@ -443,6 +614,57 @@ def test_the_rule_file_states_no_live_claim_that_the_repository_holds_no_check()
     """No live sentence of the rule file states that the repository holds no check."""
     claims = superseded_claims(RULE_FILE.read_text())
     assert claims == [], f"{RULE_FILE} states the superseded claim: {claims}"
+
+
+def test_the_rule_file_states_the_application_of_the_required_contexts() -> None:
+    """The protection section names the `app_id` that every required context carries."""
+    body = section(RULE_FILE.read_text(), PROTECTION_HEADING)
+    assert stated_application(body) == REQUIRED_APP_ID, (
+        f"{RULE_FILE} states `app_id` {stated_application(body)!r} and the read of "
+        f"{LIVE_READ_DATE} reports {REQUIRED_APP_ID}"
+    )
+
+
+def test_the_opening_claim_of_the_protection_section_names_its_condition() -> None:
+    """The opening claim names the administrator limit the same section measures."""
+    opening = opening_paragraph(section(RULE_FILE.read_text(), PROTECTION_HEADING))
+    assert "enforce_admins" in opening, (
+        f"{RULE_FILE} opens its protection section with a refusal that names no "
+        "`enforce_admins` reading, and that reading is the condition on the refusal"
+    )
+    assert "administrator" in opening.lower(), (
+        f"{RULE_FILE} opens its protection section with a refusal that names no "
+        "administrator, and an administrator merge passes the provider with no run"
+    )
+
+
+def test_the_steps_of_the_protection_section_read_the_rule_and_change_nothing() -> None:
+    """Every numbered step of the protection section reads, and its intro promises a read."""
+    body = section(RULE_FILE.read_text(), PROTECTION_HEADING)
+    verbs = numbered_steps(body)
+    assert verbs, f"{RULE_FILE} holds no numbered step in its protection section"
+    unread = [verb for verb in verbs if verb not in READ_VERBS]
+    assert unread == [], (
+        f"{RULE_FILE} states the steps {unread} in its protection section, and a change to "
+        "branch protection is the user's, so every step here reads"
+    )
+    intro = steps_intro(body)
+    assert CHANGE_PROMISE.search(intro) is None, (
+        f"{RULE_FILE} promises a change of the rule and the {len(verbs)} steps below it "
+        f"read: {intro!r}"
+    )
+    assert "read" in intro.lower(), (
+        f"{RULE_FILE} states what the steps below it do nowhere: {intro!r}"
+    )
+
+
+def test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader() -> None:
+    """No live sentence of the rule file carries a floating date."""
+    floating = floating_sentences(RULE_FILE.read_text())
+    assert floating == [], (
+        f"{RULE_FILE} dates these sentences against the day a reader reads them, and this "
+        f"file records the cost of a reading quoted as a standing fact: {floating}"
+    )
 
 
 # --- The 2026-08-09 reading survives as a dated record --------------------------------
@@ -722,6 +944,90 @@ def test_the_section_reader_reads_an_issue_reference_as_no_heading() -> None:
     assert "third" not in body
 
 
+FLOATING_SENTENCES = (
+    "The read of 2026-08-10 reports no `build` context, so the rule holds this warning today.",
+    "A keyword-free head is the one head that now starts one.",
+    "The provider currently holds eleven required contexts.",
+    "The ruleset list is empty at the moment.",
+)
+
+DATED_SENTENCES = (
+    "The read of 2026-08-10 reports no `build` context, so this warning follows that read.",
+    "A read of 2026-08-09 returned a different result, and this record supersedes it.",
+    # The boundary of `\bnow\b` ends the word, so `nowhere` reaches no match.
+    "A member commit ends with the keyword, and it names the keyword nowhere else.",
+)
+
+
+@pytest.mark.parametrize("sentence", FLOATING_SENTENCES)
+def test_the_floating_date_reader_reads_each_sentence_that_names_no_date(
+    sentence: str,
+) -> None:
+    """The reader reports each sentence that dates itself against its reader."""
+    assert floating_sentences(sentence) == [sentence]
+
+
+@pytest.mark.parametrize("sentence", DATED_SENTENCES)
+def test_the_floating_date_reader_reads_no_sentence_that_names_its_date(
+    sentence: str,
+) -> None:
+    """The reader reports no sentence that names the date of its reading."""
+    assert floating_sentences(sentence) == []
+
+
+def test_the_steps_intro_reader_reads_the_promise_of_a_change() -> None:
+    """The reader parts a promise of a change from a statement of a read."""
+    assert CHANGE_PROMISE.search("These are the exact steps to read the rule or to change it.")
+    assert (
+        CHANGE_PROMISE.search(
+            "These four steps read the rule at the provider, and they change nothing."
+        )
+        is None
+    )
+
+
+def test_the_step_reader_reads_the_verb_of_every_numbered_step() -> None:
+    """The step reader returns the first word of each numbered step."""
+    assert numbered_steps("text\n\n1. Open the page.\n2. Read the rule.\n") == [
+        "Open",
+        "Read",
+    ]
+
+
+def test_the_steps_intro_reader_returns_the_block_in_front_of_the_steps() -> None:
+    """The intro reader returns the last paragraph before the first numbered step."""
+    assert steps_intro("first\n\nthe intro\n\n1. Open the page.\n") == "the intro"
+
+
+def test_the_opening_paragraph_reader_returns_the_first_block_that_holds_text() -> None:
+    """The opening reader passes over a blank block and returns the first paragraph."""
+    assert opening_paragraph("\n\nfirst\n\nsecond\n") == "first"
+
+
+def test_the_application_reader_reads_the_number_the_file_states() -> None:
+    """The application reader reads an `app_id` statement and an absent one apart."""
+    assert stated_application("Each context carries `app_id` 15368.") == REQUIRED_APP_ID
+    assert stated_application("Each context carries one application.") is None
+
+
+def test_the_check_reader_reads_the_application_of_every_context() -> None:
+    """The check reader returns the `app_id` the provider states for each context."""
+    reading = {"required_status_checks": {"checks": [{"context": "lint", "app_id": 15368}]}}
+    assert check_applications(reading) == {"lint": REQUIRED_APP_ID}
+
+
+def test_the_check_reader_reports_a_context_of_another_application() -> None:
+    """The check reader reports the `app_id` of a context another application publishes."""
+    reading = {"required_status_checks": {"checks": [{"context": "lint", "app_id": 99}]}}
+    assert check_applications(reading) == {"lint": 99}
+
+
+def test_the_check_reader_reports_a_reading_that_holds_no_check_list() -> None:
+    """The check reader fails a reading that holds `contexts` and no `checks`."""
+    with pytest.raises(AssertionError):
+        provider_checks({"required_status_checks": {"contexts": ["lint"]}})
+
+
 def test_the_fenced_block_reader_reads_the_first_block_alone() -> None:
     """The block reader returns the lines of the first fenced block and stops there."""
     body = "```\nlint\nfuzz\n```\n\ntext\n\n```\nbuild\n```\n"
@@ -813,6 +1119,41 @@ def test_the_provider_requires_the_contexts_the_rule_file_lists() -> None:
     assert held, "the provider requires no context, and the rule file states eleven"
     assert sorted(held) == sorted(listed), (
         f"the provider requires {sorted(held)} and {RULE_FILE} lists {sorted(listed)}"
+    )
+
+
+def test_the_application_case_skips_where_the_provider_returns_no_reading(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The application case skips where no call is possible, and it does not pass."""
+    monkeypatch.setattr(subprocess, "run", _refuse_every_call)
+    with pytest.raises(pytest.skip.Exception):
+        test_the_provider_carries_the_stated_application_on_every_context()
+
+
+def test_the_provider_carries_the_stated_application_on_every_context() -> None:
+    """The provider publishes every required context from the application the file states."""
+    stated = stated_application(section(RULE_FILE.read_text(), PROTECTION_HEADING))
+    listed: Sequence[str] = listed_contexts()
+    # The floor reads with no network. An empty map compares equal to an empty list of
+    # listed contexts, so a file that lists none would otherwise pass against any provider.
+    assert stated == REQUIRED_APP_ID, (
+        f"{RULE_FILE} states `app_id` {stated!r} and the read of {LIVE_READ_DATE} reports "
+        f"{REQUIRED_APP_ID}"
+    )
+    assert len(listed) == len(REQUIRED_CONTEXTS), (
+        f"{RULE_FILE} lists {len(listed)} contexts and the reading holds {len(REQUIRED_CONTEXTS)}"
+    )
+    reading = reading_or_skip()
+    held = check_applications(reading)
+    assert held, "the provider holds no `checks` entry, and the rule file lists eleven contexts"
+    assert sorted(held) == sorted(listed), (
+        f"the provider publishes {sorted(held)} and {RULE_FILE} lists {sorted(listed)}"
+    )
+    other = {name: found for name, found in held.items() if found != stated}
+    assert other == {}, (
+        f"the provider publishes these contexts from another application, and {RULE_FILE} "
+        f"states `app_id` {stated}: {other}"
     )
 
 
