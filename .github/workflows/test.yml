@@ -72,6 +72,31 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
+      - name: Fetch the base commit of the pull request
+        # `tests/test_round_entry_existence.py` reads the change set of the branch against
+        # a reference commit. The step above makes a clone of depth 1, which holds no
+        # `origin/dev` ref and no history behind the checked-out commit, so
+        # `git merge-base` fails and the case skipped on every job before #438.
+        #
+        # **`git diff` and `git show` read a commit that no history connects to `HEAD`.**
+        # A diff compares two trees, so one extra commit is the whole requirement. #438
+        # measured the pair on a clone of depth 1: both commands answered and
+        # `git merge-base` exited 1.
+        #
+        # **#438 declined `fetch-depth: 0` on cost.** A read of 2026-08-10 reports 14844 KB
+        # for the clone of depth 1, 15452 KB after this fetch, and 18728 KB for the whole
+        # history of every branch. This step therefore costs 608 KB against 3884 KB, and
+        # the `fetch-depth: 0` cost rises with every commit the project makes.
+        #
+        # A push event carries no base commit, and a push to the integration branch has no
+        # change set to read. The case skips there and the `if` condition states that.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --depth=1 origin "$BASE_SHA"
+          echo "ROUND_ENTRY_REFERENCE=$BASE_SHA" >> "$GITHUB_ENV"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:

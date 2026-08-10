@@ -27,10 +27,32 @@ The change set holds two readings that `changed_paths` joins.
 - `git ls-files --others --exclude-standard` reports every new file that no rule ignores.
   A commit tracks such a file, and #412 shipped exactly one of them.
 
+## The reference point on the runner
+
+**A shallow clone holds no merge base, so the runner names the reference commit instead.**
+The `actions/checkout` step of `.github/workflows/test.yml` makes a clone of depth 1. That
+clone carries no `origin/dev` ref and no history behind the checked-out commit, so
+`git merge-base` fails on it. The `test` job therefore fetches the base commit of the pull
+request at depth 1 and writes it into the `ROUND_ENTRY_REFERENCE` environment variable.
+`environment_reference` reads that variable and `reference_commit` prefers it over the
+merge base.
+
+**`git diff` and `git show` read a commit that no history connects to `HEAD`, and
+`git merge-base` does not.** A diff compares two trees, so it needs the two commits and
+nothing between them. #438 measured the pair on a clone of depth 1: the diff and the
+show each answered, and `git merge-base` exited 1. That measurement is why the runner
+names a commit rather than deepens the clone.
+
+**A pull-request event carries the base commit, so the runner fetches one commit.** #438
+measured the cost against the repository on 2026-08-10. A clone of depth 1 holds 14844 KB.
+The extra fetch of one commit raises it to 15452 KB, which is 608 KB. `fetch-depth: 0`
+raises it to 18728 KB, which is 3884 KB, and that cost rises with every commit the project
+makes.
+
 **Where the change set cannot be read, a case here skips and the reason names the state.**
-A shallow clone carries no `origin/dev` ref, and the `actions/checkout` step of
-`.github/workflows/test.yml` makes such a clone. A case therefore skips on the runner and
-runs on the gate of a worker, whose worktree carries the ref. `evaluate` returns the skip
+A push event carries no base commit, so the variable stays empty and the case skips. A push
+to the integration branch has no change set to read, so that skip loses nothing.
+`evaluate` returns the skip
 reason and the failure as two separate fields, so a case reports which one it met.
 
 ## What a case here cannot test
@@ -56,10 +78,11 @@ These cases read prose and the commit graph. They import nothing from `ja4plus` 
 produce no fingerprint.
 """
 
+import os
 from pathlib import Path
 import re
 import subprocess
-from typing import List, NamedTuple, Optional, Sequence
+from typing import List, Mapping, NamedTuple, Optional, Sequence
 
 import pytest
 
@@ -78,6 +101,14 @@ EXEMPT_PATHS = frozenset(EXEMPT_RECORDS)
 # A worktree of this project carries `origin/dev`. A clone that fetched no remote ref
 # carries the local `dev` alone, and a shallow clone carries neither.
 REFERENCE_BRANCHES = ("origin/dev", "dev")
+
+# The environment variable that names the reference commit. The `test` job of
+# `.github/workflows/test.yml` writes the base commit of the pull request into it, because
+# a clone of depth 1 holds no merge base for `git merge-base` to report.
+REFERENCE_ENVIRONMENT_VARIABLE = "ROUND_ENTRY_REFERENCE"
+
+# The workflow whose `test` job runs this case on the runner.
+WORKFLOW_PATH = ".github/workflows/test.yml"
 
 # A git command that reads one ref or one index answers in well under a second. The limit
 # bars a hung command from stopping the whole gate.
@@ -133,19 +164,61 @@ def _git(repository: Path, *arguments: str) -> Optional[str]:
     return finished.stdout
 
 
+def environment_reference(environment: Mapping[str, str] = os.environ) -> str:
+    """Return the commit the environment names for the change set to read against.
+
+    Args:
+        environment: The environment to read.
+
+    Returns:
+        The name the `ROUND_ENTRY_REFERENCE` variable holds, or an empty string where the
+        environment holds no such variable.
+    """
+    return environment.get(REFERENCE_ENVIRONMENT_VARIABLE, "").strip()
+
+
+def named_commit(repository: Path, name: str) -> Optional[str]:
+    """Return the commit one name states.
+
+    Args:
+        repository: The root of the repository.
+        name: The name of a commit, or an empty string where the caller names none.
+
+    Returns:
+        The full commit identifier, or None where the name is empty and None where the
+        repository holds no such commit.
+    """
+    if not name:
+        return None
+    output = _git(repository, "rev-parse", "--verify", f"{name}^{{commit}}")
+    if output is None or not output.strip():
+        return None
+    return output.strip()
+
+
 def reference_commit(
-    repository: Path, reference_branches: Sequence[str] = REFERENCE_BRANCHES
+    repository: Path,
+    reference_branches: Sequence[str] = REFERENCE_BRANCHES,
+    named: str = "",
 ) -> Optional[str]:
     """Return the commit the change set reads against.
+
+    A named commit outranks the merge base, because the runner holds a clone of depth 1
+    and `git merge-base` fails on such a clone. A name the repository cannot read reads
+    as no name, so a stale value of the environment leaves the local gate as it is.
 
     Args:
         repository: The root of the repository.
         reference_branches: The refs that name the integration branch, in read order.
+        named: The name of a commit, or an empty string where the caller names none.
 
     Returns:
-        The merge base of `HEAD` and the first ref the repository holds, or None where it
-        holds none of them.
+        The named commit, then the merge base of `HEAD` and the first ref the repository
+        holds, or None where it holds neither.
     """
+    commit = named_commit(repository, named)
+    if commit is not None:
+        return commit
     for branch in reference_branches:
         output = _git(repository, "merge-base", branch, "HEAD")
         if output is not None and output.strip():
@@ -269,21 +342,26 @@ def missing_round_entry(
 
 
 def evaluate(
-    repository: Path = REPO_ROOT, reference_branches: Sequence[str] = REFERENCE_BRANCHES
+    repository: Path = REPO_ROOT,
+    reference_branches: Sequence[str] = REFERENCE_BRANCHES,
+    named: str = "",
 ) -> Verdict:
     """Return the verdict on the change set of one repository.
 
     Args:
         repository: The root of the repository.
         reference_branches: The refs that name the integration branch, in read order.
+        named: The name of the reference commit, or an empty string where the caller
+            names none. `environment_reference` reads the name the runner writes.
 
     Returns:
         A verdict that carries a skip reason where the change set cannot be read, and a
         failure reason where the change set records no round.
     """
-    reference = reference_commit(repository, reference_branches)
+    reference = reference_commit(repository, reference_branches, named)
     if reference is None:
         return Verdict(
+            f"{REFERENCE_ENVIRONMENT_VARIABLE} names no commit this repository holds, and "
             f"git reports no merge base between HEAD and any of {list(reference_branches)}",
             None,
         )
@@ -418,7 +496,7 @@ def _record_a_round(
 
 def test_the_change_set_of_this_branch_records_a_round() -> None:
     """The branch of this repository records a round for the files it changes."""
-    verdict = evaluate()
+    verdict = evaluate(named=environment_reference())
     if verdict.skip_reason is not None:
         pytest.skip(verdict.skip_reason)
     assert verdict.failure is None, verdict.failure
@@ -565,6 +643,107 @@ def test_the_reader_counts_a_round_sentence_that_wraps() -> None:
     """The reader counts an entry whose round sentence wraps to the next line."""
     wrapped = "- **A change** (#3). Round\n  TBD.\n"
     assert read_record(BASE_CHANGELOG + wrapped, BASE_SPECIFICATION).entries == 2
+
+
+def _unrelated_head(repository: Path) -> str:
+    """Return the first commit and leave `HEAD` on a branch that shares no history with it.
+
+    A clone of depth 1 holds the base commit and the head commit with no history between
+    them, and `git merge-base` fails on that pair. An orphan branch reproduces that state
+    inside a scratch repository, so a case reads the runner state without a network.
+
+    Args:
+        repository: The root of the scratch repository.
+
+    Returns:
+        The commit the scratch repository started from.
+    """
+    base = _git(repository, "rev-parse", "HEAD")
+    assert base is not None
+    _run(repository, "checkout", "--orphan", "shallow")
+    return base.strip()
+
+
+def test_the_environment_names_the_reference_commit() -> None:
+    """The reader returns the commit that `ROUND_ENTRY_REFERENCE` names."""
+    environment = {REFERENCE_ENVIRONMENT_VARIABLE: "  864b70d  "}
+    assert environment_reference(environment) == "864b70d"
+
+
+def test_an_environment_that_holds_no_variable_names_no_commit() -> None:
+    """The reader returns an empty name where the environment holds no variable."""
+    assert environment_reference({}) == ""
+
+
+def test_a_named_commit_outranks_the_merge_base(tmp_path: Path) -> None:
+    """The reference reads the named commit where the repository also holds a merge base."""
+    repository = _scratch_repository(tmp_path / "named")
+    _write(repository, "ja4plus/cli.py", "VALUE = 2\n")
+    _commit(repository, "the second commit")
+    head = _git(repository, "rev-parse", "HEAD")
+    assert head is not None
+    merge_base = reference_commit(repository, ("dev",))
+    assert merge_base is not None and merge_base != head.strip()
+    assert reference_commit(repository, ("dev",), named="HEAD") == head.strip()
+
+
+def test_a_named_commit_reads_a_change_set_that_no_merge_base_reaches(tmp_path: Path) -> None:
+    """A change set against a commit no history connects to `HEAD` fails without a round."""
+    repository = _scratch_repository(tmp_path / "shallow-red")
+    base = _unrelated_head(repository)
+    _write(repository, "ja4plus/cli.py", "VALUE = 2\n")
+    _commit(repository, "the head of the shallow clone")
+    # The runner state: git reports no merge base, and the case must still read the diff.
+    assert reference_commit(repository, ("origin/dev", "dev")) is None
+    verdict = evaluate(repository, ("origin/dev", "dev"), named=base)
+    assert verdict.skip_reason is None
+    assert verdict.failure is not None
+    assert "ja4plus/cli.py" in verdict.failure
+
+
+def test_a_named_commit_passes_a_change_set_that_records_a_round(tmp_path: Path) -> None:
+    """A change set against an unconnected commit passes where it records one round."""
+    repository = _scratch_repository(tmp_path / "shallow-green")
+    base = _unrelated_head(repository)
+    _write(repository, "ja4plus/cli.py", "VALUE = 2\n")
+    _record_a_round(repository)
+    _commit(repository, "the head of the shallow clone")
+    verdict = evaluate(repository, ("origin/dev", "dev"), named=base)
+    assert verdict.skip_reason is None
+    assert verdict.failure is None, verdict.failure
+
+
+def test_a_name_the_repository_cannot_read_reads_the_merge_base(tmp_path: Path) -> None:
+    """A name that states no commit of the repository leaves the merge base as the reference."""
+    repository = _scratch_repository(tmp_path / "unreadable")
+    _write(repository, "ja4plus/cli.py", "VALUE = 2\n")
+    verdict = evaluate(repository, ("dev",), named="0" * 40)
+    assert verdict.skip_reason is None
+    assert verdict.failure is not None
+    assert "ja4plus/cli.py" in verdict.failure
+
+
+def test_a_repository_that_holds_neither_reference_names_both_in_the_skip(tmp_path: Path) -> None:
+    """A skip reason names the environment variable and the refs it read."""
+    repository = _scratch_repository(tmp_path / "neither", initial_branch="release")
+    _write(repository, "ja4plus/cli.py", "VALUE = 2\n")
+    verdict = evaluate(repository, ("origin/dev", "dev"), named="0" * 40)
+    assert verdict.skip_reason is not None
+    assert REFERENCE_ENVIRONMENT_VARIABLE in verdict.skip_reason
+    assert "origin/dev" in verdict.skip_reason
+
+
+def test_the_test_job_fetches_the_base_commit_of_a_pull_request() -> None:
+    """The `test` job of the workflow fetches the base commit of the pull request."""
+    workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
+    assert "BASE_SHA: ${{ github.event.pull_request.base.sha }}" in workflow
+    assert 'git fetch --depth=1 origin "$BASE_SHA"' in workflow
+
+
+def test_the_test_job_writes_the_reference_variable() -> None:
+    """The fetch step writes the base commit into `ROUND_ENTRY_REFERENCE`."""
+    workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
+    assert f'{REFERENCE_ENVIRONMENT_VARIABLE}=$BASE_SHA" >> "$GITHUB_ENV"' in workflow
 
 
 def test_the_reader_counts_no_round_a_quotation_holds() -> None:
