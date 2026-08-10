@@ -309,6 +309,7 @@ carries a connection key and no `FingerprintResult` field holds one.
 | `.reset()` | Reset every fingerprinter, and return every count to zero |
 | `.stats()` | Return one `ProcessorStats` for each of the ten fingerprinters |
 | `.thread_safe` | The value the constructor read |
+| `ProcessorStats` | The counts of one method, which `Processor.stats` reports |
 
 #### How to read the parse failures
 
@@ -724,7 +725,7 @@ starts, and `report_statistics` starts it only when the caller states an interva
 | `StopRequest.stop_after(packet)` | Return True when the capture stops after this packet |
 | `stop_on_signal(signal_numbers)` | Yield the stop request, with a handler installed for each signal |
 | `capture_drop_count(capture_socket)` | Return the drop count of one capture socket, or None |
-| `packet_statistics_drops(capture_socket)` | Return the drops one Linux packet socket counted since the last read, or None |
+| `packet_statistics_drops(capture_socket)` | Return the drop count one Linux packet socket reported since the last read, or None |
 | `SOL_PACKET` | The socket level of a Linux packet socket, which the Python `socket` module omits |
 | `PACKET_STATISTICS` | The socket option that reads `struct tpacket_stats` of a Linux packet socket |
 | `CaptureDropCount` | The drop count of the capture socket the monitor reads |
@@ -815,7 +816,7 @@ reading a terminal, and it carries no promise.
 | `CSV_COLUMNS` | The column names of the CSV format, in the order FR-structured-output-4 fixes |
 | `SCHEMA_VERSION` | The version number every JSON object and every CSV row carries |
 
-A new CSV column appends to the end of `CSV_COLUMNS`, because a downstream parser reads a
+A new CSV column appends to the end of `CSV_COLUMNS`, because a downstream reader reads a
 column by position and an insertion breaks it.
 
 ## Lookup Module

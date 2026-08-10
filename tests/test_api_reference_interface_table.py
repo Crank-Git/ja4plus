@@ -32,8 +32,8 @@ The page holds two table shapes, and the reader reads both.
 
 The reader therefore reads every code span of a table row, and it reads no code span
 outside a table. **Prose is not the table.** `docs/api_reference.md` names
-`packet_statistics_drops` in a paragraph today, and #562 records that this reading is what
-the finding rests on.
+`packet_statistics_drops` in a paragraph today. #562 records that reading, and the review
+of round 206 rests on it.
 
 These cases read no packet and they produce no fingerprint.
 """
@@ -58,6 +58,11 @@ PACKAGE_DIRECTORY = "ja4plus/"
 
 # A Markdown code span. The page writes every name it documents as one.
 CODE_SPAN = re.compile(r"`([^`]+)`")
+
+# The pipe that bounds one cell of a table row. **A backslash escapes a pipe inside a code
+# span.** The result table writes `str \| None`, so a split on every pipe cuts that cell in
+# two.
+CELL_BOUNDARY = re.compile(r"(?<!\\)\|")
 
 # The floors below refuse a reader that finds nothing. Each number stands under the count
 # of a read of 2026-08-10, so a name a later round removes fails no case here.
@@ -84,26 +89,72 @@ def documented_name(span: str) -> str:
     return name.split(".")[0]
 
 
-def table_names(text: str) -> Set[str]:
-    """Return every name the table rows of one Markdown document document.
+def is_separator_row(line: str) -> bool:
+    """Return True where the line separates the header of a table from its body.
 
-    A table row starts with a pipe. The reader reads every code span of such a row, and it
+    Args:
+        line: One line of a Markdown page.
+
+    Returns:
+        True where the line holds pipes, dashes, colons and spaces alone.
+    """
+    stripped = line.strip()
+    if not stripped.startswith("|"):
+        return False
+    return set(stripped) <= set("|-: ")
+
+
+def is_name_cell(cell: str) -> bool:
+    """Return True where one cell of a table row states names and nothing else.
+
+    **A name cell holds code spans, commas and spaces alone.** A description cell states
+    a sentence, and a name inside such a sentence documents the row it stands in rather
+    than itself. `| `.stats()` | Return one `ProcessorStats` for each ... |` is that shape.
+    The self-review of #562 measured it, and the page named `ProcessorStats` in no cell of
+    its own.
+
+    Args:
+        cell: The text of one cell, without the pipes that bound it.
+
+    Returns:
+        True where the cell holds one code span at least, and no other text.
+    """
+    if not CODE_SPAN.search(cell):
+        return False
+    return not set(CODE_SPAN.sub("", cell).strip()) - set(", ")
+
+
+def table_names(text: str) -> Set[str]:
+    """Return every name the name cells of one Markdown document state.
+
+    A table row starts with a pipe. The reader reads the name cells of such a row, and it
     reads no other line, so a name that reaches the prose alone reaches no result here.
+
+    **A header row documents no name, so the reader drops it.** A separator row follows
+    every header row, and `| Field of `ProcessorStats` | Description |` is such a header.
 
     Args:
         text: The whole text of one Markdown document.
 
     Returns:
-        The bare name of every code span of every table row.
+        The bare name of every code span of every name cell of every body row.
     """
     names: Set[str] = set()
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
         if not line.strip().startswith("|"):
             continue
-        for span in CODE_SPAN.findall(line):
-            name = documented_name(span)
-            if name:
-                names.add(name)
+        if is_separator_row(line):
+            continue
+        if index + 1 < len(lines) and is_separator_row(lines[index + 1]):
+            continue
+        for cell in CELL_BOUNDARY.split(line.strip())[1:-1]:
+            if not is_name_cell(cell):
+                continue
+            for span in CODE_SPAN.findall(cell):
+                name = documented_name(span)
+                if name:
+                    names.add(name)
     return names
 
 
@@ -232,6 +283,23 @@ def test_the_reader_reads_the_owner_of_an_attribute_row() -> None:
     assert table_names(row) == {"Monitor"}
 
 
+def test_the_reader_reads_no_name_of_a_description_cell() -> None:
+    """A name inside a sentence documents the row it stands in, and never itself.
+
+    The self-review of #562 found `ProcessorStats` under this shape. The page named it in
+    the description of `.stats()` and in one table header, and it gave the class no cell of
+    its own. A reader of the whole row reported that page as complete.
+    """
+    row = "| `.stats()` | Return one `ProcessorStats` for each of the ten fingerprinters |"
+    assert table_names(row) == {"stats"}
+
+
+def test_the_reader_reads_no_name_of_a_table_header() -> None:
+    """`| Field of `ProcessorStats` | Description |` heads a table, and it documents no name."""
+    table = "| Field of `ProcessorStats` | Description |\n|---|---|\n| `method` | The name |\n"
+    assert table_names(table) == {"method"}
+
+
 def test_the_reader_reads_no_name_of_a_prose_line() -> None:
     """**Prose is not the table.** #562 rests on this reading."""
     prose = "On Linux it holds a whole number, which `packet_statistics_drops` reads.\n"
@@ -289,7 +357,7 @@ def test_the_public_name_reader_reads_a_module_that_states_no_all() -> None:
 
 
 def test_the_public_name_reader_refuses_an_all_it_cannot_read() -> None:
-    """A reader that returned nothing here would report a clean table over a whole module."""
+    """A reader that returns nothing here reports a clean table over a whole module."""
     with pytest.raises(ValueError):
         public_names("__all__ = names\n", "sample.py")
     with pytest.raises(ValueError):

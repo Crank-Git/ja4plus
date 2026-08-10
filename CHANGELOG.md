@@ -994,7 +994,7 @@ holds every breaking change of this record against a row of that page.
   `SOL_PACKET`. **The repair is the case rather than the three rows**, because #70 measured
   what a repair of the known sites buys: round 191 repaired one site and round 197 wrote the
   same defect into a new file. New file `tests/test_api_reference_interface_table.py` holds
-  21 cases. **It reads the `__all__` of every published module against the table rows of the
+  23 cases. **It reads the `__all__` of every published module against the table rows of the
   page, and the reader found 13 names rather than 3.** A published module is a tracked module
   under `ja4plus/` that states `__all__`, which is 6 modules and 69 names; the file list comes
   from `git ls-files`, because #473 measured that a walk of the checkout reads the pages of
@@ -1003,8 +1003,8 @@ holds every breaking change of this record against a row of that page.
   keyed on those headings would read none of the seven names of `ja4plus.output`, and #530,
   #524, #438 and #70 each recorded that shape. **The page holds two table shapes and the
   reader reads both**: `| Class/Function | Description |` states the name first, and
-  `| Group | Names |` states the 25 top-level names second. It therefore reads every code
-  span of a table row and it reads no code span outside a table, so the paragraph that names
+  `| Group | Names |` states the 25 top-level names second. It therefore reads the name cells
+  of a body row and it reads no code span outside a table, so the paragraph that names
   `packet_statistics_drops` documents nothing. **The cases came first**, and
   `test_the_interface_table_names_every_published_name` failed with the 13 names: the 7 of
   `ja4plus.output`, and `DEFAULT_CONNECTION_TIMEOUT`, `DEFAULT_MAX_CONNECTIONS`,
@@ -1019,11 +1019,25 @@ holds every breaking change of this record against a row of that page.
   published names reach 60, the table names reach 100, and `ja4plus.__all__` holds the 25
   names the page promises. Six rows join the `### ja4plus.watch` table and the new
   `### ja4plus.output` section states the three writers, the two module constants and the
-  `build_writer` call. **`docs/migration-0.6-to-1.0.md:3` read
+  `build_writer` call. **A self-review found that the first reader read the whole row, and
+  it reported one name the page states in no cell of its own.** `ProcessorStats` reached the reader through
+  the description of the `.stats()` row at `docs/api_reference.md:310` and through the table
+  header `| Field of `ProcessorStats` | Description |`, and the page gave the class no row.
+  **The reader now reads a name cell alone**, which holds code spans, commas and spaces and
+  no other text, and it drops every header row. That rule reports one miss over the 69
+  published names and it costs no other name, so `ProcessorStats` joins the
+  `### ja4plus.processor` table. **A second self-review read the new prose against the
+  `## Terms` table and found one barred word.** The `packet_statistics_drops` row read
+  `Return the drops one Linux packet socket counted since the last read, or None`, and row 86
+  of that table bars `drops` in favour of `drop count`. The identifier keeps its name and the
+  description now names the term. **Round 205 built a case that bars one noun, and no case
+  bars the other 258 rejected words**, so a sweep of this class stays a reading for a later
+  round.
+  **`docs/migration-0.6-to-1.0.md:3` read
   `Version 1.0.0 follows version 0.6.0, and no version stands between them.`, which restates
   the page title.** It now tells a reader how to read the version the environment holds, and
   it names no release that a later version makes false; #545 removed the sentence that named
-  what PyPI carried, and this round restores no such claim. `mkdocs build --strict` passes.
+  what the package index carried, and this round restores no such claim. `mkdocs build --strict` passes.
   **No file under `ja4plus/` changes and no fingerprint moves.**
 
 - **The documentation states no version claim and no conformance claim that version 1.0.0
