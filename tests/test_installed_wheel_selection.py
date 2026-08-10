@@ -24,14 +24,15 @@ from typing import List
 REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parent.parent
 WHEEL_TESTS = REPOSITORY_ROOT / "tests" / "test_installed_wheel.py"
 
-# The case count of `tests/test_installed_wheel.py` on 2026-08-09. A reader that finds
-# nothing passes every count case on zero, so the cases below hold this floor. Three issues
+# The case count of `tests/test_installed_wheel.py` on 2026-08-10. A reader that finds
+# nothing passes every count case on zero, so the cases below hold this floor. Four issues
 # wrote the cases.
 #
 #   1. #408 wrote seven cases against the wheel.
 #   2. #409 added nine against the source distribution.
 #   3. #455 added seven that read the entry list, the metadata and the member list.
-EXPECTED_CASE_COUNT = 23
+#   4. #67 added one that reads the version the build resolved into the wheel metadata.
+EXPECTED_CASE_COUNT = 24
 
 
 def _collect(arguments: List[str]) -> str:
