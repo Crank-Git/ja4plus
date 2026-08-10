@@ -34,6 +34,7 @@ from ja4plus.watch import (
     DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_MAX_CONNECTIONS,
     Monitor,
+    MonitorStats,
     StopRequest,
     connection_key,
     stop_on_signal,
@@ -253,7 +254,12 @@ def run_cli(*argv, source=None, monitor_factory=None):
     from ja4plus.cli import main
 
     def read_interface(
-        interface, handle_packet, stop_filter=None, capture_filter=None, stop_requested=None
+        interface,
+        handle_packet,
+        stop_filter=None,
+        capture_filter=None,
+        stop_requested=None,
+        drop_count=None,
     ):
         """Replay the packets the test states, the way `scapy` reads an interface.
 
@@ -354,7 +360,12 @@ class TheCommandPassesTheBoundsToTheMonitor(unittest.TestCase):
             monitor_factory=factory,
         )
         self.assertEqual(status, 0, err)
-        self.assertEqual(built, [{"max_connections": 7, "connection_timeout": 11.5}])
+        self.assertEqual(len(built), 1)
+        # #423 passes the counts too, because the `dropped` field reads the capture
+        # socket. The case reads the two bounds it names, and it names no other key.
+        bounds = {name: value for name, value in built[0].items() if name != "stats"}
+        self.assertEqual(bounds, {"max_connections": 7, "connection_timeout": 11.5})
+        self.assertIsInstance(built[0]["stats"], MonitorStats)
 
     def test_the_command_refuses_a_maximum_below_one(self):
         _, err, status = run_cli("watch", "eth0", "--max-connections", "0")

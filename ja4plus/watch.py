@@ -51,12 +51,14 @@ __all__ = [
     "DEFAULT_MAX_CONNECTIONS",
     "DEFAULT_POLL_INTERVAL",
     "STATISTICS_THREAD_NAME",
+    "CaptureDropCount",
     "Monitor",
     "MonitorStats",
     "StatisticsReporter",
     "StatisticsSnapshot",
     "StopRequest",
     "available_interfaces",
+    "capture_drop_count",
     "connection_key",
     "describe_capture_failure",
     "format_statistics",
@@ -206,6 +208,122 @@ def format_statistics(snapshot: StatisticsSnapshot) -> str:
     )
 
 
+def capture_drop_count(capture_socket: Any) -> Optional[int]:
+    """Return the drop count of one capture socket, or None where it reports none.
+
+    On macOS the capture socket reads the count through the `BIOCGSTATS` ioctl.
+    `_L2bpfSocket.get_stats` returns the received count and the drop count, and it
+    returns two `None` values where the ioctl raised. On Linux the capture socket of
+    `scapy` 2.7.0 holds no such method, so this call returns None there.
+
+    **The kernel gives the file descriptor of a closed socket to the next file the
+    process opens.** The call therefore reads no socket that reports itself closed,
+    because the ioctl would reach a file this module does not own.
+
+    **Warning: that reading alone closes no race.** `SuperSocket.close` calls `os.close`
+    and then sets `closed`, so a reader between the two statements reads a released file
+    descriptor. `CaptureDropCount.release` holds the lock over the whole read and drops
+    the socket before the capture closes it, which is the guard that answers the race.
+
+    Verified against `scapy` 2.7.0, at `scapy/arch/bpf/supersocket.py:297` and
+    `scapy/arch/bpf/supersocket.py:324`, read on 2026-08-10.
+
+    Args:
+        capture_socket: The capture socket to read, or None where the capture opened
+            none.
+
+    Returns:
+        The drop count, or None where the capture layer reports no count.
+    """
+    if capture_socket is None or getattr(capture_socket, "closed", False):
+        return None
+    read_stats = getattr(capture_socket, "get_stats", None)
+    if read_stats is None:
+        return None
+    _, dropped = read_stats()
+    count: Optional[int] = dropped
+    return count
+
+
+class CaptureDropCount:
+    """The drop count of the capture socket the monitor reads.
+
+    `MonitorStats` accepts a callable, and the capture socket exists only after the
+    capture opens it. An instance of this class holds the socket for the two. The
+    monitor builds it first, the capture attaches the socket it opened, and each call
+    reads the ioctl again.
+
+    **The exit summary of FR-live-capture-8 runs after the capture closed the socket.**
+    The class therefore holds the last count it read, and `read_interface` reads the
+    count once more before it closes the socket. A class that read the closed socket
+    would report `null` on the one line every operator reads.
+
+    **The statistics thread reads this object and the capture thread releases it**, so
+    one lock guards every read of the socket. `release` holds that lock over the last
+    read and over the drop of the socket, so no read is in flight when the capture calls
+    `close`. A release that acquired nothing would leave a reader inside the ioctl of a
+    file descriptor the close already released.
+    """
+
+    __slots__ = ("_lock", "_capture_socket", "_dropped")
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._capture_socket: Any = None
+        self._dropped: Optional[int] = None
+
+    def attach(self, capture_socket: Any) -> None:
+        """Hold the capture socket the monitor reads.
+
+        Args:
+            capture_socket: The open capture socket.
+        """
+        with self._lock:
+            self._capture_socket = capture_socket
+
+    def _read(self) -> Optional[int]:
+        """Read the socket and hold what it reported. The caller holds the lock.
+
+        Returns:
+            The drop count, or None where the capture layer reports no count.
+        """
+        dropped = capture_drop_count(self._capture_socket)
+        if dropped is not None:
+            self._dropped = dropped
+        return self._dropped
+
+    def refresh(self) -> Optional[int]:
+        """Read the drop count of the capture socket, and hold what it reported.
+
+        Returns:
+            The drop count, or None where the capture layer reports no count.
+        """
+        with self._lock:
+            return self._read()
+
+    def release(self) -> Optional[int]:
+        """Read the drop count one last time, and drop the capture socket.
+
+        The caller closes the socket after this call returns. Every later call reports
+        the count this call read.
+
+        Returns:
+            The drop count, or None where the capture layer reports no count.
+        """
+        with self._lock:
+            dropped = self._read()
+            self._capture_socket = None
+            return dropped
+
+    def __call__(self) -> Optional[int]:
+        """Return the drop count `MonitorStats` reports in the `dropped` field.
+
+        Returns:
+            The drop count, or None where the capture layer reports no count.
+        """
+        return self.refresh()
+
+
 class MonitorStats:
     """The counts of one monitor, and the lock that guards them.
 
@@ -218,22 +336,26 @@ class MonitorStats:
     dictionary that the capture thread writes on each packet, and a second reader of it
     reads entries the writer is moving.
 
-    The `dropped` field reports a measurement, and `null` where none exists. `scapy`
-    2.7.0 gives the monitor no drop count through `sniff`, so `ja4plus watch` passes no
-    source and the field reads `null`. Two readings support that.
+    The `dropped` field reports a measurement, and `null` where none exists.
+    `ja4plus watch` passes a `CaptureDropCount`, which reads the capture socket the
+    command opened. Two readings decide what the field holds.
 
-    1. On macOS the capture socket reports a drop count, and `sniff` hides the socket.
-       `_L2bpfSocket.get_stats` reads the `BIOCGSTATS` ioctl and returns the received
-       count and the drop count. `AsyncSniffer._run` holds the socket it opens in a
+    1. On macOS the capture socket reports a drop count. `_L2bpfSocket.get_stats` reads
+       the `BIOCGSTATS` ioctl and returns the received count and the drop count, so the
+       field holds a whole number there. `AsyncSniffer._run` holds the socket it opens in a
        local name, so a caller reaches that socket through the `opened_socket` argument
-       alone. #56 owns the socket the command opens.
+       alone. #56 owns the socket the command opens and #423 owns the count.
     2. On Linux `scapy` reads no drop count at all. It defines `PACKET_STATISTICS = 6`
-       and calls `getsockopt` with that option nowhere.
+       and calls `getsockopt` with that option nowhere, so the field reads `null` there.
+
+    **The `BIOCGSTATS` ioctl reads the two counters and it resets neither one**, so the
+    macOS monitor reports the count of the socket and accumulates nothing. #423 measured
+    it: two reads of one socket returned 29910 and then 59910 drops.
 
     Verified against `scapy` 2.7.0, at `scapy/arch/bpf/supersocket.py:297`,
     `scapy/arch/linux/__init__.py:95` and `scapy/sendrecv.py:1205`, read on
-    2026-08-08. Reading 1 ran on macOS 25.6.0. Reading 2 is a reading of the `scapy`
-    source, and no Linux host ran it.
+    2026-08-10. Reading 1 ran on macOS 26.6.1, build 25G76. Reading 2 is a reading of
+    the `scapy` source, and no Linux host ran it.
 
     Args:
         clock: The callable that returns the current time in seconds. The default is
@@ -801,6 +923,7 @@ def read_interface(
     stop_requested: Optional[Callable[[], bool]] = None,
     poll_interval: float = DEFAULT_POLL_INTERVAL,
     open_socket: Callable[[str, Optional[str]], Any] = open_capture_socket,
+    drop_count: Optional[CaptureDropCount] = None,
 ) -> None:
     """Read packets from one interface, and call the handler with each one.
 
@@ -845,6 +968,9 @@ def read_interface(
             read a socket it supplies, and a test states one to open no interface. The
             socket it returns holds `closed`, which `SuperSocket` holds as a class
             attribute.
+        drop_count: The drop count the capture attaches its socket to, or None where the
+            caller reads no drop count. The call reads the count once more before it
+            closes the socket, so the exit summary reports the last state of the socket.
 
     Raises:
         Scapy_Exception: The host refuses the `/dev/bpf` device, or `libpcap` refuses
@@ -881,6 +1007,8 @@ def read_interface(
         return stopped
 
     capture_socket = open_socket(interface, capture_filter)
+    if drop_count is not None:
+        drop_count.attach(capture_socket)
     try:
         while not stopped:
             sniff(
@@ -899,4 +1027,13 @@ def read_interface(
             if capture_socket.closed:
                 return
     finally:
-        capture_socket.close()
+        # The close makes the socket unreadable, and the exit summary of
+        # FR-live-capture-8 runs after this call returns. The release also ends every
+        # read of the statistics thread, which runs until the caller stops it.
+        try:
+            if drop_count is not None:
+                drop_count.release()
+        finally:
+            # A release that raised would leave the capture socket open for as long as
+            # the process runs.
+            capture_socket.close()

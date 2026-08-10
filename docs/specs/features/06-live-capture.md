@@ -3,7 +3,7 @@ id: live-capture
 feature: Live capture
 epic: "Epic 6: Live capture"
 status: issued
-issues: [17, 53, 54, 55, 56, 320]
+issues: [17, 53, 54, 55, 56, 320, 423]
 mockups: []
 ---
 
@@ -65,6 +65,12 @@ FR-live-capture-13 — The command works on Linux and on macOS.
 FR-live-capture-14 — The command `ja4plus live` remains as an alias of
 `ja4plus watch`.
 
+FR-live-capture-15 — The `dropped` field of the statistics line reports the drop
+count of the capture socket the command opened.
+
+FR-live-capture-16 — The `dropped` field reads `null` where the capture layer
+reports no drop count.
+
 ## User flows
 
 **An operator starts a monitor.**
@@ -120,8 +126,8 @@ The statistics line, written to standard error:
   it loses no packet between two calls.
 - The privilege check uses a failed capture attempt, not `os.geteuid`. A Linux host
   may grant the capability without granting the user identity zero.
-- Dropped-packet counts come from the capture layer when it reports them, and are
-  `null` when it does not.
+- The drop count comes from the capture socket where the capture layer reports one,
+  and the field reads `null` where it reports none.
 - The default connection timeout is 300 seconds. The default maximum connection
   count is 10000. These match the library defaults.
 
@@ -134,6 +140,8 @@ The statistics line, written to standard error:
 - New file `tests/test_watch.py`.
 - New file `tests/test_watch_stop.py`, holding the stop on an interface that carries no
   traffic.
+- New file `tests/test_watch_drop_count.py`, holding the drop count of the capture
+  socket.
 
 ## Interfaces
 
@@ -204,6 +212,9 @@ name a refused privilege, and `ENODEV` names an interface the host does not hold
 - [ ] The final statistics line reports the packet count, the fingerprint count,
       the connection count and the eviction count.
 - [ ] `--stats-interval 1` writes a statistics line every second.
+- [ ] A monitor on macOS reports a whole number in the `dropped` field, read from a
+      real capture socket of the host.
+- [ ] The `dropped` field reads `null` where the capture layer reports no drop count.
 - [ ] Running without capture privilege exits with status 1 and names the required
       privilege.
 - [ ] Naming a nonexistent interface exits with status 1 and lists the available
@@ -223,12 +234,33 @@ name a refused privilege, and `ENODEV` names an interface the host does not hold
 
 ## Open questions
 
-- Whether `scapy` reports dropped-packet counts on both Linux and macOS. #55 measured
-  it against `scapy` 2.7.0, and the field reads `null`. On macOS the capture socket
-  reads a drop count through the `BIOCGSTATS` ioctl, at
-  `scapy/arch/bpf/supersocket.py:297`, and `sniff` holds the socket it opens in a local
-  name, so a caller reaches that socket through the `opened_socket` argument alone. On
-  Linux `scapy` defines `PACKET_STATISTICS = 6` at `scapy/arch/linux/__init__.py:95`
-  and calls `getsockopt` with that option nowhere. The macOS reading ran on macOS
-  25.6.0. The Linux reading is a reading of the `scapy` source, and no Linux host ran
-  it. #326 owns the socket work that reports a count, and it follows #56.
+- Whether `scapy` reports a drop count on Linux. On Linux `scapy` defines
+  `PACKET_STATISTICS = 6` at `scapy/arch/linux/__init__.py:95` and calls `getsockopt`
+  with that option nowhere, so the field reads `null` there. That is a reading of the
+  `scapy` source, and no Linux host ran it. #326 owns the Linux measurement.
+
+## The macOS drop count
+
+**#423 closed the macOS half of the question above, and it took the reading from a real
+capture socket of the development host.** The `dropped` field holds a whole number on
+macOS.
+
+`open_capture_socket` opens an `_L2bpfSocket`, `read_interface` attaches that socket to a
+`CaptureDropCount`, and `MonitorStats` calls that object for each statistics line.
+`_L2bpfSocket.get_stats` reads the `BIOCGSTATS` ioctl at
+`scapy/arch/bpf/supersocket.py:297`, and it returns the received count and the drop
+count. `AsyncSniffer._run` holds the socket it opens in a local name at
+`scapy/sendrecv.py:1205`, so a caller reaches the socket through the `opened_socket`
+argument alone.
+
+**The `BIOCGSTATS` ioctl resets neither counter**, so the monitor reports the count of
+the socket and it accumulates nothing. Two reads of one socket returned 29910 drops and
+then 59910 drops.
+
+**A count of 0 on a clean capture proves nothing**, because a field no code writes reads
+the same way. `tests/test_watch_drop_count.py` therefore fills the kernel buffer of a
+real capture socket and reads a count above zero.
+
+The measurements ran on macOS 26.6.1, build 25G76, against `scapy` 2.7.0, on 2026-08-10.
+**Where no `/dev/bpf` node opens, each live case of that file skips and none of them
+passes.**

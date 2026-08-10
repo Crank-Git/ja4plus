@@ -85,7 +85,12 @@ def run_watch(*argv, source=None, during=None, report=None):
     from ja4plus.cli import main
 
     def read_interface(
-        interface, handle_packet, stop_filter=None, capture_filter=None, stop_requested=None
+        interface,
+        handle_packet,
+        stop_filter=None,
+        capture_filter=None,
+        stop_requested=None,
+        drop_count=None,
     ):
         if during is not None:
             during()

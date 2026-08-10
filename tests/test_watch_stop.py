@@ -776,7 +776,12 @@ def run_watch(capture, *argv, poll_interval=TEST_POLL_INTERVAL):
     from ja4plus.cli import main
 
     def read_interface_on_the_socket(
-        interface, handle_packet, stop_filter=None, capture_filter=None, stop_requested=None
+        interface,
+        handle_packet,
+        stop_filter=None,
+        capture_filter=None,
+        stop_requested=None,
+        drop_count=None,
     ):
         watch_module.read_interface(
             interface,
@@ -786,6 +791,7 @@ def run_watch(capture, *argv, poll_interval=TEST_POLL_INTERVAL):
             stop_requested=stop_requested,
             poll_interval=poll_interval,
             open_socket=one_socket(capture),
+            drop_count=drop_count,
         )
 
     captured_out = io.StringIO()

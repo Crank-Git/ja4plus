@@ -528,6 +528,68 @@ holds every breaking change of this record against a row of that page.
   pages #64 added hold `:::` directives and no fenced block, so both counts stay at 157.
   No file under `ja4plus/` changes and no fingerprint moves.
 
+- **The `dropped` field of the statistics line reports the drop count of the capture
+  socket on macOS** (#423). Round TBD. #55 built the field, `MonitorStats` accepted a
+  `dropped_source`, and `ja4plus/cli.py` passed none, so every monitor read `dropped=null`
+  whatever the capture layer knew. `read_interface` now attaches the socket it opened to a
+  `CaptureDropCount`, and `MonitorStats` calls that object for each line.
+  `_L2bpfSocket.get_stats` reads the `BIOCGSTATS` ioctl at
+  `scapy/arch/bpf/supersocket.py:297`, and `AsyncSniffer._run` holds the socket it opens in
+  a local name at `scapy/sendrecv.py:1205`, so a caller reaches the socket through the
+  `opened_socket` argument alone. **The reading came from a real capture socket of the
+  development host, and #423 bars an injected one.** This project has recorded sixteen
+  instances of a comparison that is never made reading as a comparison that passes, and a
+  criterion marked met against a fake socket would be the seventeenth. The grant was
+  measured at the moment of the run: `/dev/bpf0` through `/dev/bpf3` opened, `/dev/bpf4`
+  answered `[Errno 13] Permission denied`, and `/dev/bpf5` and above answered
+  `[Errno 2] No such file or directory`. **Each live case captures on the loopback
+  interface and it generates every packet it reads.** A monitor on `lo0` read 4 packets of
+  one TCP connection this run opened, over an `L2bpfListenSocket`, and reported
+  `dropped=0`. **A count of 0 on a clean capture proves nothing**, because a field no code
+  writes reads the same way. A second case therefore opens a real capture socket with a
+  4096-byte kernel buffer, sends 50 UDP packets of 1400 bytes to the loopback address, and
+  reads `received=55 dropped=46`. **Two mutations prove that case measures a real drop**:
+  the whole 65535-byte buffer and a burst of one packet each fail it with
+  `AssertionError: 0 not greater than 0`. **The `BIOCGSTATS` ioctl resets neither
+  counter**, so the macOS monitor reports the count of the socket and accumulates nothing;
+  two reads of one socket returned 29910 drops and then 59910 drops. That reading is the
+  opposite of the Linux one, where `getsockopt(SOL_PACKET, PACKET_STATISTICS)` resets the
+  counter as it reads, and #326 owns the Linux half. **`read_interface` reads the count
+  once more before it closes the socket**, because the exit summary of FR-live-capture-8
+  runs after the capture returned, and the kernel gives the file descriptor of a closed
+  socket to the next file the process opens. New file `tests/test_watch_drop_count.py`
+  holds 22 cases, and the whole file failed to collect before the change with
+  `ImportError: cannot import name 'CaptureDropCount' from 'ja4plus.watch'`. **Where no
+  `/dev/bpf` node opens, the two live cases skip and neither one passes**, and a probe that
+  refused the device reported the skip reason
+  `this host opened no capture socket on 'lo0': [Errno 13] Permission denied`. **Five more
+  mutations prove the wiring**: a drop count that reports nothing fails 10 cases, a capture
+  that attaches no socket fails 3, a capture that reads no count before the close fails 3,
+  a command that passes no drop count fails 2, and a holder that keeps no last count fails
+  4. Each mutation was restored. **The self-review found a race between the statistics
+  thread and the close, and the class now holds a lock.** The statistics thread reads the
+  socket while the capture closes it, and `SuperSocket.close` calls `os.close` and then
+  sets `closed`, so a reader between the two statements reads a released file descriptor.
+  `CaptureDropCount.release` holds the lock over the last read and over the drop of the
+  socket, and `read_interface` calls it before the close. **Two of the three mutations that
+  cover the guard passed against the first form of the cases**, which is the fault this
+  project records sixteen times, and both cases were repaired until each mutation failed
+  one. A socket that made every read wait blocked the release inside the ioctl rather than
+  on the lock, so only the first read waits now. A case that read a closed socket could not
+  see the difference between a release and a refresh, so it reopens the socket under
+  another count and models the reused file descriptor. **The release now runs inside its
+  own `try`**, because an exception there would leave the capture socket open for as long
+  as the process runs. `docs/specs/features/06-live-capture.md` gains FR-live-capture-15
+  and FR-live-capture-16, and the `## Terms` table gains `drop count`. The measurements ran
+  on macOS 26.6.1, build 25G76, against `scapy` 2.7.0 and Python 3.14.3, on 2026-08-10.
+  **No file under `ja4plus/fingerprinters/` changes and no fingerprint moves.** The
+  conformance suite reports 1532 passed, 143 skipped and 134 xfailed before and after. The
+  unit suite rises from 3827 passed to 3851 passed. Coverage holds at 94%, the total misses
+  hold at 273 while the statement count rises from 4253 to 4292, and `ja4plus/watch.py`
+  holds 99%. **Every count above measures this change against the base commit `cf77598`.**
+  The branch then took the integration branch of batch #499, and the merged tree reports
+  3901 passed and the same conformance counts.
+
 ### Fixed
 
 - **The sentence-length rule exempts the two records and no other document** (#457).
