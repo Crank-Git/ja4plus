@@ -132,7 +132,8 @@ The statistics line, written to standard error:
 - The drop count comes from the capture socket where the capture layer reports one,
   and the field reads `null` where it reports none.
 - The monitor adds each reading to a running total where the capture layer resets its
-  counter on the read, and it reports the reading itself where the counter holds.
+  counter on the read.
+- The monitor reports the reading itself where the capture layer holds its counter.
 - The default connection timeout is 300 seconds. The default maximum connection
   count is 10000. These match the library defaults.
 
@@ -294,9 +295,10 @@ states the rule: "Receiving statistics resets the internal counters." The Linux 
 therefore adds each reading to a running total. A monitor that reported the last reading
 would report the drops of one interval and call it the drops of the whole run.
 
-`ja4plus` measured that reset rather than trusting it. One packet socket on `lo`, with a
-small receive buffer and a burst of 50 UDP packets, answered `tp_drops` above zero and
-then answered `tp_drops` of zero to the next read, with no packet between the two reads.
+`ja4plus` measured that reset, and it assumed nothing. One packet socket on `lo` held a
+small receive buffer and read a burst of 50 UDP packets. It answered `tp_drops` above
+zero, and it then answered `tp_drops` of zero to the next read. The case sent no packet
+between the two reads.
 
 **A count of 0 on a clean capture proves nothing**, because a field no code writes reads
 the same way. `tests/test_watch_drop_count.py` therefore fills the kernel buffer of a

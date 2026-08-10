@@ -334,9 +334,9 @@ class CaptureDropCount:
     file descriptor the close already released.
 
     **On Linux the object holds a running total rather than the last reading.** The
-    kernel resets `tp_drops` as the read returns it, so a holder of the last reading
-    would report the drops of one interval and call it the drops of the whole run. `_read`
-    states the rule and #326 measured the reset.
+    kernel resets `tp_drops` as the read returns it. A holder of the last reading would
+    report the drops of one interval, and it would call them the drops of the whole run.
+    `_read` states the rule and #326 measured the reset.
     """
 
     __slots__ = ("_lock", "_capture_socket", "_dropped")

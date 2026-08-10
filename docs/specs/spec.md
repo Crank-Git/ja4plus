@@ -84,6 +84,7 @@ that user, because comparison is the only thing a fingerprint is for.
 | poll interval | noun | The count of seconds one `sniff` call reads before it returns to the monitor loop. | tick, poll rate, timeout |
 | capture socket | noun | The socket the monitor opens on one interface. It stays open across the `sniff` calls. | listener, raw socket, handle |
 | drop count | noun | The count of packets the capture layer dropped. The `dropped` field of the statistics line reports it. | loss, misses, drops |
+| packet socket | noun | The `AF_PACKET` socket a Linux capture socket holds in `SuperSocket.ins`. The drop count of a Linux monitor comes from it. | raw socket, AF_PACKET handle |
 | capture layer | noun | The code that opens an interface and reports packets to the monitor. `scapy` holds it. | sniffer, driver, backend |
 | capture filter | noun | The Berkeley Packet Filter expression the `--bpf` option passes to the capture layer. | BPF, packet filter, filter expression |
 | statistics line | noun | The one line the monitor writes to standard error to report its counts. | stats output, status line, summary |

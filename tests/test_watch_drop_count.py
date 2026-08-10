@@ -45,7 +45,7 @@ from tests.test_watch_stop import SilentSocket, one_socket
 
 # The loopback interface of this host. A live case captures on this interface alone, and
 # it generates every packet it reads. macOS names the interface `lo0` and Linux names it
-# `lo`, so a case that stated one name would open the wrong interface on the other host.
+# `lo`. A case that stated one name would open the wrong interface on the other host.
 LOOPBACK_INTERFACE = "lo0" if sys.platform == "darwin" else "lo"
 
 # The layout of `struct tpacket_stats`, at `/usr/include/linux/if_packet.h:77`. A case
@@ -84,9 +84,9 @@ COUNT_DEADLINE = 5.0
 # kernel granted rather than the length it asked for.
 SMALL_RECEIVE_BUFFER = 1024
 
-# The count of packets the second Linux burst sends. It is far below `BURST_PACKETS`, so
-# a monitor that reported the last reading rather than the running total would report a
-# smaller count after the second burst than after the first one.
+# The count of packets the second Linux burst sends. It is far below `BURST_PACKETS`. A
+# monitor that reported the last reading would therefore report a smaller count after the
+# second burst than after the first one.
 SECOND_BURST_PACKETS = 8
 
 
@@ -929,15 +929,15 @@ class TheDroppedFieldReadsRealDropsOnLinux(unittest.TestCase):
     """The `dropped` field carries a drop the Linux kernel counted.
 
     **A field that reads 0 on a clean capture proves nothing.** This case fills the
-    receive buffer of a real packet socket and reads a count above zero, so it separates
+    receive buffer of a real packet socket. It reads a count above zero, so it separates
     a written field from an absent one.
 
     **The second burst is far smaller than the first one.** A monitor that reported the
-    last reading rather than the running total would therefore report a smaller count
-    after the second burst, and the case fails there.
+    last reading would therefore report a smaller count after the second burst. The case
+    fails there.
     """
 
-    def test_the_dropped_field_reads_a_count_above_zero_and_it_accumulates(self):
+    def test_the_dropped_field_reads_a_running_total_of_real_drops(self):
         from scapy.arch.linux import L2ListenSocket
 
         capture_socket = the_packet_socket_or_skip(
