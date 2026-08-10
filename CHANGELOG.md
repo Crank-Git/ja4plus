@@ -529,7 +529,7 @@ holds every breaking change of this record against a row of that page.
   No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The `dropped` field of the statistics line reports the drop count of the capture
-  socket on macOS** (#423). Round TBD. #55 built the field, `MonitorStats` accepted a
+  socket on macOS** (#423). Round 186. #55 built the field, `MonitorStats` accepted a
   `dropped_source`, and `ja4plus/cli.py` passed none, so every monitor read `dropped=null`
   whatever the capture layer knew. `read_interface` now attaches the socket it opened to a
   `CaptureDropCount`, and `MonitorStats` calls that object for each line.
@@ -683,7 +683,7 @@ holds every breaking change of this record against a row of that page.
   `ja4plus/fingerprinters/` changes and no fingerprint moves.
 
 - **The package prose counts fingerprinters where it counted methods** (#484).
-  Round TBD. Eight comments and docstrings under `ja4plus/` stated the count of
+  Round 184. Eight comments and docstrings under `ja4plus/` stated the count of
   fingerprinter classes as a count of methods. **FoxIO publishes twelve methods and this
   project implements eleven.** `JA4LFingerprinter` writes `JA4L-C=` and `JA4L-S=`, so ten
   fingerprinter classes carry eleven methods, and a count of classes read as a count of
@@ -1611,7 +1611,7 @@ holds every breaking change of this record against a row of that page.
   fingerprint moves.**
 
 - **One reader reads the entries of a dependency block, and it reads no quoted substring**
-  (#452). Round TBD. `_dependency_block` of `tests/test_documentation_site.py` collected
+  (#452). Round 185. `_dependency_block` of `tests/test_documentation_site.py` collected
   every double-quoted substring of a dependency block, so a comment inside the block read
   as an entry. **A reader that is correct only because of what its callers happen to read
   is the defect**, and #378 found it while it stopped importing the helper rather than
