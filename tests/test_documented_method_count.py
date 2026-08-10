@@ -34,16 +34,19 @@ and `docs/api_reference.md` counts them. The prose of this repair therefore coun
 and fingerprinters where it counted methods, matching the `FingerprintResult.type`
 docstring that round 139 wrote.
 
-**A case here reads the comments and the docstrings of every Python file under `tests/`,
-and #450 widened the corpus to them.** `python_prose` extracts that prose before `_unquoted`
-runs. **A docstring of one line sits inside quotation marks.** `_unquoted` therefore drops
-the whole of it, and a search of the raw source reads nothing in it. Three of the ten places
-#450 repaired hold that shape. A case fixture stays out of reach, because it is a string
-literal and no docstring.
+**A case here reads the comments and the docstrings of every Python file under `ja4plus/`
+and under `tests/`.** #450 widened the corpus to the suite and #484 widened it to the
+package. `python_prose` extracts that prose before `_unquoted` runs. **A docstring of one
+line sits inside quotation marks.** `_unquoted` therefore drops the whole of it, and a
+search of the raw source reads nothing in it. Three of the ten places #450 repaired hold
+that shape. A case fixture stays out of reach, because it is a string literal and no
+docstring.
 
-**The Python files under `ja4plus/` reach no case here.** They hold eight more places, and
-#484 owns them. `ja4plus/watch.py` holds four that #450 repaired under the ruling on its
-own issue thread.
+**The package carries its own floor, because the suite alone meets `PYTHON_SOURCE_FLOOR`.**
+A read of 2026-08-10 counts 203 files in the corpus, 31 under `ja4plus/` and 172 under
+`tests/`. #484 repaired eight places under the package, five of them in
+`ja4plus/processor.py`. `ja4plus/watch.py` holds four that #450 repaired under the ruling on
+its own issue thread.
 
 ## Where the document set comes from
 
@@ -472,7 +475,8 @@ def python_prose(text: str) -> str:
     A string literal that is no docstring stays out. A case fixture holds the sentence it
     measures, and a fixture states no claim of this project. **A bare string below a class
     attribute stays out too**, because `ast.get_docstring` reads the first statement of a
-    node alone. No file under `tests/` holds such a string today.
+    node alone. No file of the corpus holds such a string today, and a read of 2026-08-10
+    measured `ja4plus/` as well as `tests/`.
 
     Args:
         text: The whole source of one Python file.
@@ -499,10 +503,17 @@ def python_prose(text: str) -> str:
 def python_sources() -> List[Path]:
     """Return every Python source a case reads for the class count.
 
+    The corpus holds the package as well as the suite, because a comment under `ja4plus/`
+    states the count to a reader of the library. #484 widened it and repaired the eight
+    places the widening found.
+
     Returns:
-        The Python files under `tests/`, sorted by path.
+        The Python files under `ja4plus/` and under `tests/`, sorted by path within each
+        directory.
     """
-    return sorted((REPO_ROOT / "tests").rglob("*.py"))
+    return sorted((REPO_ROOT / "ja4plus").rglob("*.py")) + sorted(
+        (REPO_ROOT / "tests").rglob("*.py")
+    )
 
 
 def _read(path: Path) -> str:
@@ -538,6 +549,12 @@ PYTHON_IDS = [_name(path) for path in PYTHON_SOURCES]
 # The count of Python files the corpus holds at the least. **An aggregate over an empty set
 # passes**, so a corpus that read nothing would report a green run over no file at all.
 PYTHON_SOURCE_FLOOR = 120
+
+# The count of package files the corpus holds at the least. **The suite alone passes
+# `PYTHON_SOURCE_FLOOR`**, because 172 files under `tests/` stand above 120. A corpus that
+# dropped `ja4plus/` would meet that floor and read no package file, so the package carries
+# its own floor. A read of 2026-08-10 counts 31 files under `ja4plus/`.
+PACKAGE_SOURCE_FLOOR = 25
 
 # The documents that state a count of implemented methods today. The reader finds them, so
 # a document that gains a count reaches the reason case without an edit here.
@@ -625,6 +642,23 @@ def test_the_python_corpus_holds_the_test_suite() -> None:
         f"{PYTHON_SOURCE_FLOOR}, so a case over it proves little"
     )
     assert Path(__file__).resolve() in PYTHON_SOURCES, "the corpus misses this file"
+
+
+def test_the_python_corpus_holds_the_package() -> None:
+    """The Python corpus holds the package files, and it holds `ja4plus/processor.py`.
+
+    #484 widened the corpus to `ja4plus/`, and the eight places it repaired all sit there.
+    A corpus that dropped the package again would pass every case above it, because the
+    suite alone stands above `PYTHON_SOURCE_FLOOR`.
+    """
+    package = [path for path in PYTHON_SOURCES if path.is_relative_to(REPO_ROOT / "ja4plus")]
+    assert len(package) >= PACKAGE_SOURCE_FLOOR, (
+        f"the corpus holds {len(package)} package files, below the floor of "
+        f"{PACKAGE_SOURCE_FLOOR}, so a case over it proves little"
+    )
+    assert REPO_ROOT / "ja4plus" / "processor.py" in PYTHON_SOURCES, (
+        "the corpus misses ja4plus/processor.py, which held five of the eight places #484 repaired"
+    )
 
 
 def test_the_python_reader_reads_a_docstring_of_one_line() -> None:
