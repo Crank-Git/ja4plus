@@ -1659,6 +1659,55 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **One file declares the version, and two gates hold it against the project metadata and
+  the changelog** (#67). Round TBD. `pyproject.toml` declared `version = "0.6.0"` at line 7
+  and `ja4plus/__init__.py` declared it again at line 94, so the two records could
+  disagree. `ja4plus/__init__.py` is now the one declaration. `pyproject.toml` names
+  `version` in its `dynamic` list and reads the value from `ja4plus.__version__`, so a
+  build resolves the version the package declares. **This round declines the
+  `importlib.metadata` reader that `docs/specs/features/09-release.md` proposed, and it
+  measured three reasons on 2026-08-10.** That call reads the metadata of an installed
+  distribution and it does not read the source tree. A checkout that carries no install
+  raises `PackageNotFoundError`, so the reader needs a literal fallback, and a fallback is
+  the second declaration `FR-release-1` bars. An editable install freezes its metadata at
+  install time: with `pyproject.toml` changed to `0.7.0` and no reinstall,
+  `importlib.metadata.version("ja4plus")` returned `0.6.0`. That metadata resolves through
+  `ja4plus.egg-info` of the working directory, so the answer follows the directory a
+  command runs in. **A gate that reads the version out of an install compares a value
+  against itself**, because continuous integration installs the project from
+  `pyproject.toml`. The two gates read tracked text instead, and the two texts are
+  independent inputs. `version_disagreement` of `tests/version_gate.py` holds
+  `pyproject.toml` against `ja4plus/__init__.py` for `FR-release-2`, and
+  `changelog_disagreement` requires a `## [<version>]` section of `CHANGELOG.md` for
+  `FR-release-3`. **Each gate carries a control case that feeds it a contradicting pair and
+  reads the message it returns**, because a comparison that is never made reads as a
+  comparison that passes. **`setuptools` resolves the attribute from the syntax tree and
+  imports no module**, so a build needs neither `scapy` nor `cryptography`; a read of
+  2026-08-10 built `ja4plus-0.6.0-py3-none-any.whl` in an isolated build environment that
+  holds neither. **The acceptance criterion of `docs/specs/features/09-release.md` now
+  counts the declaration and no longer the text `0.6.0`.** #456 measured seven files that
+  hold that text and it handed the decision here: five of the seven state in prose what
+  version 0.6.0 did, a reader of `docs/migration-0.6-to-1.0.md` needs that prose, and a
+  count of the text can therefore never reach one. A read of 2026-08-10 reports one
+  declaration file and six files that hold the text. **The closing quote is part of the
+  command the criterion names.** `[tool.setuptools.dynamic]` writes
+  `version = {attr = "ja4plus.__version__"}`, which states where a build reads the version
+  and declares none, so a pattern without the quote reads two files where one declaration
+  exists. This round wrote that pattern first and the re-measurement caught it. **A
+  self-review of this round found one silent pass, and a case now holds the reader against
+  it.** `project_version` searched the whole file for a `version = "..."` line, so a
+  `[tool]` table that carried the package version beside a `dynamic` list naming the wrong
+  attribute read as agreement and the gate reported nothing. `project_version` and
+  `project_version_attribute` each search one table now.
+  `test_the_gate_reads_the_version_of_the_project_table_alone` reproduces the state.
+  `declaration_files` still searches no single table, on purpose: a second `version` key
+  fails the one-file case of `FR-release-1` rather than pass it. **`MEASURED_CRITERIA` of
+  `tests/test_criterion_counts.py` now holds no pending criterion**, so the two pending
+  cases aggregate over an empty set; `PENDING_CONTROL` feeds the pending reader a criterion
+  whose end state this tree holds. `tests/test_installed_wheel.py` reads the version from
+  the package rather than from `pyproject.toml`, and a new case reads the version the build
+  resolved into the wheel metadata.
+
 - **The `dev` extra states one recorded shape for every entry, and one record holds every
   version** (#446). Round 181. #378 pinned `ruff` alone, so four entries of the `dev` extra
   still floated and two of them had drifted across a major line. **The user ruled the shape

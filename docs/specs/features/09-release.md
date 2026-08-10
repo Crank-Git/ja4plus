@@ -99,8 +99,10 @@ version.
 
 ## Behaviour rules
 
-- The version lives in `pyproject.toml`. `ja4plus/__init__.py` reads it with
-  `importlib.metadata.version`, so the two cannot disagree.
+- The version lives in `ja4plus/__init__.py`. `pyproject.toml` names `version` in its
+  `dynamic` list and reads it from `ja4plus.__version__`, so the two cannot disagree.
+  **#67 measured this shape against the `importlib.metadata` form this page proposed
+  first, and `### Why the version lives in the package` records the three readings.**
 - The publish workflow triggers on a published GitHub release, as it does now.
 - The verification step installs the wheel in a fresh virtual environment that has
   no source tree on its path, so an import cannot resolve to the working copy.
@@ -118,7 +120,45 @@ version.
 - Changed file `CHANGELOG.md`.
 - Changed file `.github/workflows/publish.yml`.
 - New file `tests/test_packaging.py`.
-- New file `.github/workflows/version-check.yml`, or a job inside `test.yml`.
+- New file `tests/version_gate.py` and new file `tests/test_version_gate.py`.
+
+**#67 added no workflow file and no job.** The cases of `tests/test_version_gate.py` run
+inside `pytest tests/ -m "not spec_validation"`, which the `test` job of
+`.github/workflows/test.yml` runs on every entry of the matrix. Each of those six entries
+is a required status check of `dev`, so a disagreement fails continuous integration.
+`.claude/rules/batch-gate.md` lists the eleven required contexts, and a new job would add
+a twelfth context that the rule does not require.
+
+### Why the version lives in the package
+
+**This page proposed that `ja4plus/__init__.py` read the version with
+`importlib.metadata.version`, and #67 declines that reader.** The call reads the metadata
+of an installed distribution, and it does not read the source tree. Three readings of
+2026-08-10 state the reason.
+
+1. A source checkout that carries no install raises `PackageNotFoundError`. A reader
+   therefore needs a literal fallback, and a fallback is the second declaration that
+   FR-release-1 bars.
+2. An editable install freezes its metadata at install time. With `pyproject.toml`
+   changed to `0.7.0` and no reinstall, `importlib.metadata.version("ja4plus")` returned
+   `0.6.0`.
+3. The metadata of an editable install resolves through `ja4plus.egg-info` of the working
+   directory, so the answer follows the directory a command runs in.
+
+**A gate that reads the version out of an install compares a value against itself.**
+Continuous integration installs the project from `pyproject.toml`, so the metadata always
+equals the file the gate reads. FR-release-2 then names a comparison that reports nothing.
+The `dynamic` shape holds two independent texts against each other instead:
+`ja4plus/__init__.py` declares the version and `pyproject.toml` states where a build reads
+it.
+
+**`setuptools` resolves the attribute from the syntax tree and imports no module.** The
+declaration is a plain string assignment at the top level of `ja4plus/__init__.py`, so a
+build needs neither `scapy` nor `cryptography`. A read of 2026-08-10 built
+`ja4plus-0.6.0-py3-none-any.whl` in an isolated build environment that holds neither
+dependency. Verified against
+https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata,
+retrieved 2026-08-10.
 
 ## Interfaces
 
@@ -153,11 +193,11 @@ TestPyPI site.
 
 ## Acceptance criteria
 
-- [ ] `grep -rn "0\.6\.0" pyproject.toml ja4plus/` finds the version in one file
-      only. **This criterion states an end state that this repository does not hold
-      yet, and #67 builds it.** `tests/test_criterion_counts.py` reads this number and
-      measures it, so the case fails on the day the two agree.
-- [ ] A pull request that changes the version without changing the changelog fails
+- [x] `grep -rnE '^(__version__|version) = "' pyproject.toml ja4plus/` finds the version
+      declaration in one file only. **The closing quote is part of the command**, because
+      `[tool.setuptools.dynamic]` writes `version = {attr = ...}` and that line declares no
+      version. `tests/test_criterion_counts.py` reads this number and measures it.
+- [x] A pull request that changes the version without changing the changelog fails
       continuous integration.
 - [ ] The publish workflow builds a source distribution and a wheel.
 - [ ] `twine check dist/*` reports `PASSED` for both files.
@@ -179,10 +219,10 @@ TestPyPI site.
       `ja4plus analyze` on a committed capture.
 - [ ] The GitHub release body holds the `1.0.0` changelog section.
 
-### The version count, measured on 2026-08-09
+### The version count, measured on 2026-08-09 and settled on 2026-08-10
 
-**The first criterion above counts files and not declarations, and the two differ.** A
-read of `git ls-files pyproject.toml ja4plus/` on 2026-08-09 reports seven files that
+**The first criterion counted files and not declarations until #67, and the two differ.**
+A read of `git ls-files pyproject.toml ja4plus/` on 2026-08-09 reported seven files that
 hold the text `0.6.0`.
 
 | File | What it holds |
@@ -195,11 +235,15 @@ hold the text `0.6.0`.
 | `ja4plus/types.py` | Two lines of prose that state what version 0.6.0 used. |
 | `ja4plus/watch.py` | Two lines of prose that state what version 0.6.0 called. |
 
-**Two files declare the version and five name it in prose.** #67 removes one
-declaration, so the command still reads six files after #67 lands. The prose records the
-released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it. #67
-therefore narrows the command and keeps the prose. #456 measured this, and #67 owns the
-decision.
+**Two files declared the version and five name it in prose.** #67 removed one
+declaration, so a count of the text `0.6.0` reads six files today. The prose records the
+released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it. #456 measured
+this and #67 took the decision: the criterion counts the declaration, and the prose stays.
+
+**The criterion therefore names a command that matches a declaration line.** A read of
+2026-08-10 reports one file, `ja4plus/__init__.py`. `declaration_files` of
+`tests/version_gate.py` is the reader, and it takes the file list from `git ls-files`
+rather than from `grep -r`. `grep -r` also reads an untracked build artifact.
 
 ## Out of scope
 

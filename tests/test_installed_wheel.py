@@ -59,6 +59,8 @@ import zipfile
 
 import pytest
 
+from tests.version_gate import package_version
+
 pytestmark = pytest.mark.installed_wheel
 
 REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -484,21 +486,49 @@ def top_level_names(wheel: pathlib.Path) -> list[str]:
 
 
 def declared_version() -> str:
-    """Return the version that the `[project]` block of `pyproject.toml` declares.
+    """Return the version that `ja4plus/__init__.py` declares.
 
-    Python 3.9 carries no `tomllib`, and the test matrix holds 3.9, so this reader
-    matches the line rather than parsing the file.
+    **`FR-release-1` puts the version number in one place, and #67 made that place
+    `ja4plus/__init__.py`.** `pyproject.toml` reads the value from `ja4plus.__version__`,
+    so it holds no version line of its own. A reader that took the version from an
+    installed distribution would compare the artifacts below against themselves, and this
+    reader takes it from the tracked source instead.
 
     Returns:
         The version string.
 
     Raises:
-        AssertionError: The file holds no top-level `version` line.
+        AssertionError: The package holds no `__version__` line.
     """
-    text = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    match = re.search(r'^version = "([^"]+)"$', text, re.MULTILINE)
-    assert match is not None, "pyproject.toml holds no top-level version line"
-    return match.group(1)
+    text = (REPOSITORY_ROOT / "ja4plus" / "__init__.py").read_text(encoding="utf-8")
+    version = package_version(text)
+    assert version is not None, "ja4plus/__init__.py holds no `__version__` line"
+    return version
+
+
+def wheel_metadata_version(wheel: pathlib.Path) -> str:
+    """Return the version that the `METADATA` file of one wheel states.
+
+    Args:
+        wheel: The wheel to read.
+
+    Returns:
+        The value of the `Version` field.
+
+    Raises:
+        AssertionError: The wheel carries no `METADATA` file, or that file states no
+            version.
+    """
+    names = wheel_entry_names(wheel)
+    matches = [name for name in names if name.endswith(f"{METADATA_SUFFIX}METADATA")]
+    assert len(matches) == 1, (
+        f"the wheel carries {len(matches)} METADATA files, and it must carry one: {sorted(names)}"
+    )
+    with zipfile.ZipFile(wheel) as archive:
+        text = archive.read(matches[0]).decode("utf-8")
+    match = re.search(r"^Version: (.+)$", text, re.MULTILINE)
+    assert match is not None, "the METADATA file of the wheel states no Version field"
+    return match.group(1).strip()
 
 
 @pytest.fixture(scope="session")
@@ -609,7 +639,19 @@ def test_the_import_check_fails_for_the_source_tree(
     )
 
 
-def test_the_clean_environment_reports_the_version_of_pyproject(
+def test_the_wheel_metadata_states_the_version_the_package_declares(
+    artifacts: dict[str, pathlib.Path],
+) -> None:
+    """The `METADATA` file of the wheel states the version `ja4plus/__init__.py` declares.
+
+    `pyproject.toml` names `version` in its `dynamic` list, so a build resolves this field
+    from `ja4plus.__version__`. This case reads the resolved value, so a
+    `[tool.setuptools.dynamic]` table that reads the wrong attribute fails here.
+    """
+    assert wheel_metadata_version(artifacts["wheel"]) == declared_version()
+
+
+def test_the_clean_environment_reports_the_declared_version(
     wheel_environment: CleanEnvironment, workspace: pathlib.Path
 ) -> None:
     """The console script of the clean environment writes the declared version."""
@@ -837,7 +879,7 @@ def test_the_source_distribution_environment_imports_ja4plus_from_its_own_site_p
     )
 
 
-def test_the_source_distribution_environment_reports_the_version_of_pyproject(
+def test_the_source_distribution_environment_reports_the_declared_version(
     sdist_environment: CleanEnvironment, workspace: pathlib.Path
 ) -> None:
     """The console script of the source-distribution environment writes the version."""

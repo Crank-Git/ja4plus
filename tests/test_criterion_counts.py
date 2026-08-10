@@ -25,6 +25,8 @@ from typing import Callable, List, Optional
 import re
 import subprocess
 
+from tests.version_gate import declaration_files
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 FEATURES = REPO_ROOT / "docs" / "specs" / "features"
@@ -49,9 +51,6 @@ HEADING = re.compile(r"^#{1,6} ")
 # fails such a parser.
 MINIMUM_CRITERIA = 151
 
-# The version string of the released package. `docs/specs/features/09-release.md` states a
-# criterion against it, and #67 owns the work that reduces the count.
-RELEASED_VERSION = re.compile(r"0\.6\.0")
 
 # A criterion writes a small count as a word and a large one as a digit. The reader accepts
 # both forms. A reader that accepted the digit alone would force a digit into a sentence
@@ -105,23 +104,28 @@ def _vector_files() -> List[str]:
     return _tracked("tests/foxio_vectors")
 
 
-def _version_files() -> List[str]:
-    """Return every tracked file of `pyproject.toml` and `ja4plus/` that holds the version.
+def _version_declaration_files() -> List[str]:
+    """Return every tracked file of `pyproject.toml` and `ja4plus/` that declares a version.
 
-    The criterion of `docs/specs/features/09-release.md` names `grep -rn`. This reader takes
-    the file list from `git ls-files` instead. `grep -r` also reads an untracked build
-    artifact and a compiled module, so its count depends on what a previous command left in
-    the working tree.
+    The criterion of `docs/specs/features/09-release.md` names `grep -rnE`. This reader
+    takes the file list from `git ls-files` instead. `grep -r` also reads an untracked
+    build artifact and a compiled module, so its count depends on what a previous command
+    left in the working tree.
+
+    **The reader and the command both require the closing quote.** `pyproject.toml` writes
+    `version = {attr = "ja4plus.__version__"}` under `[tool.setuptools.dynamic]`, and that
+    line states where a build reads the version rather than declaring one. A pattern
+    without the quote reads two files where one declaration exists.
+
+    **The criterion counted every file that held the text `0.6.0` until #67, and seven
+    files held it.** Five of those seven state in prose what version 0.6.0 did, and a
+    reader of `docs/migration-0.6-to-1.0.md` needs that prose. #456 measured the seven and
+    #67 narrowed the command to the declaration, which is the thing FR-release-1 counts.
 
     Returns:
-        One path for each file whose text holds the released version string.
+        One path for each file that holds a version declaration.
     """
-    holders = []
-    for path in _tracked("pyproject.toml", "ja4plus/"):
-        text = (REPO_ROOT / path).read_bytes().decode("utf-8", errors="ignore")
-        if RELEASED_VERSION.search(text):
-            holders.append(path)
-    return holders
+    return declaration_files(REPO_ROOT)
 
 
 @dataclass(frozen=True)
@@ -157,10 +161,10 @@ MEASURED_CRITERIA = (
     ),
     MeasuredCriterion(
         page="09-release.md",
-        locator='`grep -rn "0\\.6\\.0" pyproject.toml ja4plus/`',
-        stated=re.compile(r"finds the version in (\w+) file"),
-        measure=_version_files,
-        pending_issue="#67",
+        locator="`grep -rnE '^(__version__|version) = \"' pyproject.toml ja4plus/`",
+        stated=re.compile(r"finds the version declaration in (\w+) file"),
+        measure=_version_declaration_files,
+        pending_issue=None,
     ),
 )
 
@@ -300,6 +304,34 @@ def test_a_pending_criterion_names_the_issue_that_builds_its_end_state() -> None
     assert unnamed == [], f"these criteria state an end state and name no issue: {unnamed}"
 
 
+def _reached(entry: MeasuredCriterion) -> bool:
+    """Return whether the repository already holds the count a pending criterion states.
+
+    Args:
+        entry: One row of `MEASURED_CRITERIA`, or the control entry below.
+
+    Returns:
+        True where the entry names an issue and the stated count equals the measured
+        count. False for a built criterion, which names no issue.
+    """
+    return entry.pending_issue is not None and _stated_count(entry) == len(entry.measure())
+
+
+# The criterion of `09-release.md` as it read before #67 landed, and no row of
+# `MEASURED_CRITERIA` holds it. **The table carries no pending criterion today, so the two
+# cases below aggregate over an empty set and pass whatever the reader does.** A
+# comparison that is never made reads as a comparison that passes, and this project
+# records that failure mode more than eighteen times. This entry therefore feeds `_reached`
+# a criterion whose stated count the repository now holds.
+PENDING_CONTROL = MeasuredCriterion(
+    page="09-release.md",
+    locator="`grep -rnE '^(__version__|version) = \"' pyproject.toml ja4plus/`",
+    stated=re.compile(r"finds the version declaration in (\w+) file"),
+    measure=_version_declaration_files,
+    pending_issue="#67",
+)
+
+
 def test_a_pending_criterion_states_a_count_the_repository_does_not_hold() -> None:
     """A pending criterion states a count this repository does not report.
 
@@ -310,6 +342,14 @@ def test_a_pending_criterion_states_a_count_the_repository_does_not_hold() -> No
     reached = sorted(
         f"{entry.page} states {_stated_count(entry)} and {entry.pending_issue} has landed"
         for entry in MEASURED_CRITERIA
-        if entry.pending_issue is not None and _stated_count(entry) == len(entry.measure())
+        if _reached(entry)
     )
     assert reached == [], f"these criteria state an end state the repository now holds: {reached}"
+
+
+def test_the_pending_reader_reports_a_criterion_whose_end_state_the_repository_holds() -> None:
+    """The pending reader reports the control criterion, whose end state this tree holds."""
+    assert _reached(PENDING_CONTROL), (
+        "the pending reader accepted a criterion that states the count this repository "
+        f"holds, which is {len(PENDING_CONTROL.measure())}"
+    )
