@@ -229,7 +229,7 @@ on one side.
 **This rule is uncertain, and #214 settled the behaviour without it.** The specification
 states nothing, so the user decided. `ja4plus` closes the last window at the end of the
 capture, as the FoxIO Rust implementation and the FoxIO Zeek package do. The section "The
-trailing window" holds the measurement, and the decision is reversible.
+trailing window" holds the measurement, and the ruling is reversible.
 
 The image states one boundary, the 200 SSH packets of R7. It states nothing about these
 three things.
@@ -366,8 +366,8 @@ it.
 
 ## The trailing window, and the reading #214 needed
 
-**This page states what the specification holds.** #214 held the user's decision, and the
-user decided it on 2026-08-08. The section "The decision #214 made" records the result.
+**This page states what the specification holds.** #214 held the user's ruling, and the
+user decided it on 2026-08-08. The section "The ruling #214 made" records the result.
 
 ### What the specification states
 
@@ -455,12 +455,12 @@ that holds the two `ja4ssh` values and never reads the field.** This is the same
 `docs/specs/foxio/JA4T.md` reports for `ja4t`, and `.claude/rules/conformance.md` names it
 under "Ask whether a case can fail".
 
-### The decision #214 made
+### The ruling #214 made
 
 **`ja4plus` closes the last window at the end of a capture, as the Rust and Zeek
-references do.** The user decided it on 2026-08-08, and the decision is reversible.
+references do.** The user decided it on 2026-08-08, and the ruling is reversible.
 
-Two reasons carry the decision.
+Two reasons carry the ruling.
 
 1. **The specification cannot settle it, and the reference values can.** #199 read the
    deleted `technical_details/JA4SSH.md`, and it states nothing about a FIN packet, a
@@ -631,7 +631,7 @@ image's example.
 for a statement about the window boundary, and the file names no FIN packet, no connection
 that closes, no end of a capture and no trailing window. **A source that states nothing is
 not a source that states a rule**, so R11 stays uncertain and the vector fallback stays.
-**#214 is still the user's decision.**
+**#214 is still the user's ruling.**
 
 ## What this page does not do
 
@@ -639,4 +639,4 @@ not a source that states a rule**, so R11 stays uncertain and the vector fallbac
 - It changes no file under `ja4plus/`.
 - It adds no entry to `tests/foxio_deviations.json`, and it removes none. The three
   declines stand.
-- **It rules on nothing. #214 holds the one open decision, and the user decides it.**
+- **It rules on nothing. #214 holds the one open ruling, and the user decides it.**

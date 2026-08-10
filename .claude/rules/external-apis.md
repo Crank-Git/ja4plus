@@ -133,7 +133,7 @@ tie between two sources this project trusts. A value this project already ruled 
 not a tie. Where `tests/foxio_deviations.json` declines the Python value for one method on
 one connection, under a decided entry, **any other FoxIO implementation may hold the
 reference value** for that method on that connection. The Zeek baseline, the Rust
-snapshot and the Wireshark dissector each qualify. #332 records the first decision, #334
+snapshot and the Wireshark dissector each qualify. #332 records the first ruling, #334
 records the source-neutral form, and #97 is the decline that raised the family.
 
 **Read the condition from the register and the vectors.** Five facts state it, and a
@@ -143,7 +143,7 @@ reader checks each one.
    and the FoxIO Python expected-output file holds a value at that connection, that
    method and that occurrence. The occurrence form `<vector>/<method>` records a stream
    that file omits, and the Rust snapshot rule above decides that case.
-2. The entry carries `"decided": true`, so a recorded decision names the issue.
+2. The entry carries `"decided": true`, so a recorded ruling names the issue.
    `tests/foxio_deviations.py` states the marker rule.
 3. The entry carries `"capability": false`, so it is a value decline and not a capability
    decline. `tests/foxio_deviations.py` states the field.
@@ -161,7 +161,7 @@ Python one. The exception rests on a declined Python value, so it passes over th
 records a disagreement about the value. It does not reach a row whose decline records a
 capability this project chose not to build, because no implementation change could ever
 close that difference. **#129 is that case.** `ja4plus` reads no encrypted request, by
-decision, and the Wireshark file holds the decrypted values. #129 carries 37 decided
+ruling, and the Wireshark file holds the decrypted values. #129 carries 37 decided
 value-form keys, and another FoxIO source holds a value for 35 of them. Naming those as
 the reference would create 35 permanent divergences of a kind this project chose.
 
@@ -184,7 +184,7 @@ the Rust value and the Wireshark value differ on each one.
 
 **A disagreement between the remaining sources bars the row.** Where the remaining FoxIO
 sources hold different values, **no source holds the reference and the row stays declined
-exactly as it is today.** The decision removes a wrong value's precedence. It promotes no
+exactly as it is today.** The ruling removes a wrong value's precedence. It promotes no
 survivor. A standing ranking among Rust, Zeek and Wireshark is declined, because this
 project has found each of the three wrong in different places, so a ranking would be a
 claim the evidence does not support.
@@ -203,12 +203,12 @@ not name it.** The dissector appends a third part to every JA4L and JA4LS value 
 writes: a delta on a TCP connection, and the marker `quic` on a QUIC connection. That is
 the second of the three rules. #225 nevertheless records that this project adopted the
 `quic` marker from the dissector on purpose, so widening the bar would contradict a
-recorded decision. #334 reports the finding and leaves the bar as it stands. The user
+recorded ruling. #334 reports the finding and leaves the bar as it stands. The user
 decides what the bar covers.
 
 **This exception adopts no source as a vector.** It states which source may hold a
-reference value, and adoption is its own decision. "Which baselines are usable as
-vectors" in `docs/specs/foxio/zeek.md` holds that decision for the Zeek package.
+reference value, and adoption is its own ruling. "Which baselines are usable as
+vectors" in `docs/specs/foxio/zeek.md` holds that ruling for the Zeek package.
 
 **The exception reaches 6 rows of the 140 the register holds.**
 `tests/test_precedence_exception.py` measures the reach and both counts, and #334 records
@@ -225,7 +225,7 @@ the search. A case reads this sentence, so a register move fails the gate here.
 
 **`FoxIO-LLC/ja4tscan` holds prose and no baseline.** Its `README.md` gives eight
 JA4TScan example values against named operating systems, and two of them record TCP
-option kind 0 inside the JA4T option list. #197 owns the scope decision.
+option kind 0 inside the JA4T option list. #197 owns the scope ruling.
 
 **Warning: FoxIO states that `FoxIO-LLC/ja4-nginx-module` is not correct.** Its
 `README.md` opens with a `# NOTICE` section that reads "This version of JA4 has known

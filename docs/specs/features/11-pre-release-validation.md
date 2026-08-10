@@ -314,7 +314,7 @@ manual event and on a push, as well as on a pull-request event.
 - A change to a file under `ja4plus/fingerprinters/` needs a vector, or a test derived
   from the FoxIO material, that proves the change. `CLAUDE.md` rule 1 binds it.
 - Where a candidate shows that a fingerprinter produces a wrong value, the worker opens a
-  decision issue and changes no fingerprinter.
+  ruling issue and changes no fingerprinter.
 - A candidate belongs to one sweep. The sweep names a case a candidate when both
   statements below hold.
   1. No mutation of that sweep makes the case fail.
@@ -499,7 +499,7 @@ the checkout is.
 1. **No check confirms that a recorded transcript came from the granted Linux host.** The
    output is evidence under `.claude/rules/ste.md`, so a worker pastes it verbatim and
    rewrites none of it. A reader trusts the transcript or repeats the run.
-2. **No check states whether a measured throughput is adequate.** Adequacy is a decision
+2. **No check states whether a measured throughput is adequate.** Adequacy is a ruling
    the user makes against a use, and `Non-goals` states no target.
 3. **No check confirms that a worker proved a mutation live in both directions with
    `inspect.getsource`.** `FR-pre-release-validation-23a` states that procedure, and a
@@ -516,7 +516,7 @@ the checkout is.
 - The publish itself. Epic 9 owns it.
 - A throughput target, and a continuous-integration gate on a throughput value.
 - A reading of the FoxIO material. This feature set settles no register entry.
-- A change to a fingerprinter. A candidate that exposes a wrong value opens a decision
+- A change to a fingerprinter. A candidate that exposes a wrong value opens a ruling
   issue.
 - The 3.9, 3.10, 3.11 and 3.13 rows of the matrix on the granted Linux host. That host
   holds `python3.12` alone.

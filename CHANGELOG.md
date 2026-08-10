@@ -2556,6 +2556,107 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **The vocabulary keeps `ruling`, and `decision` gives way to it** (#533). Round
+  TBD. The `## Terms` table of `docs/specs/spec.md` held neither word, and the prose rotated
+  the two against each other across the whole specification. Rule 7 of
+  `.claude/rules/ste.md` bars that: "One concept, one word. Never rotate synonyms for
+  variety." **The user ruled on 2026-08-10 that the vocabulary keeps `ruling`**, and #533
+  records that ruling. The table now holds one row: `ruling` is one determination the user
+  makes where no source settles the question, and the fourth column rejects `decision`,
+  `call` and `verdict`. **A ruling is the choice of a person and a reading is a conclusion
+  about a source**, so the row states the boundary against `reading` that #533 found
+  missing. 135 lines of 29 documents now name the
+  term, and `docs/specs/spec.html` carries two corrections because a writer edits that page
+  by hand. **New file `tests/test_ruling_vocabulary.py` holds 142 cases**, and 30 of them
+  failed before the sweep landed. It reads the tracked Markdown corpus with
+  `git ls-files` and it walks no directory, because #473 measured that a walk of the
+  checkout reads the pages of every live worker worktree. **Two mutations prove that the
+  cases bite, and both are restored.** A page that names the barred word reports
+  ``AssertionError: docs/usage.md names 'decision' at ['form, and #215 records the
+  decision'], and the `## Terms` row of 'ruling' rejects that word``. A row that drops the
+  barred word from its fourth column reports `AssertionError: the row of 'ruling' rejects
+  ['call', 'verdict'], and it names no 'decision', so every case here forbids a word the
+  vocabulary admits`. **The floor fails a reader that names no page**, and it reports `the
+  corpus holds 1 Markdown pages, below the floor of 20, and an aggregate over an empty set
+  passes`, because an aggregate over an empty set passes. **The sweep reads the noun and it
+  reads no verb.** Rule 6 states one word, one meaning, one part of speech, so `decides` and
+  `decided` stay everywhere. The `decided` field of `tests/foxio_deviations.json` is a
+  schema key that `tests/foxio_deviations.py` reads, and a schema key is not prose. The rule
+  of `CLAUDE.md` that the specification decides intent and schema keeps its verb. **Three
+  records keep the barred word, and each decline is stated rather than left to a reader.**
+  `CHANGELOG.md` and the `## Changelog` table of `docs/specs/spec.md` each record one past
+  round, and #441 already made that reading for `reporter`. Eighteen entries and about
+  fifty-five rows hold the word, and this round leaves every one exactly as it reads.
+  **`.claude/rules/ste.md` exempts those two records from rule 1 and rule 3 alone, and it
+  states that rule 7 reaches both**, so the decline rests on the verbatim list of that file
+  and not on the exemption. Where the reading is unclear this project leaves the record
+  alone. The third record is the blockquote of `docs/specs/foxio/zeek.md`, which quotes a
+  sentence #515 superseded under the line "The sentence below is the state before that,
+  quoted rather than rewritten"; the live sentence below it now names the term.
+  `readable_prose` cuts all three, and it cuts every fenced block and every code span, so
+  the branch name `batch/266-register-gate-and-decisions` stays. **The case reads no Python
+  file, which is a hole this round states rather than hides.** #533 bars a change under
+  `ja4plus/`, and nine comments and docstrings there hold the noun, so a reader of the
+  Python corpus would fail a case #533 forbids the repair of. #548 holds that hole and it
+  names the nine. `tests/test_foxio_license_register.py` renamed `NO_DECISION` to
+  `NO_RULING` and one case with it, because the divergence register row it reads now states
+  `recorded no ruling about JA4Scan`. **A review of the first push found two defects, and
+  both are repaired here.** The first is that the reader carried a blind region and the
+  sweep therefore had a gap. **A line that opens with three backticks is not always a
+  fence.** `docs/specs/foxio/JA4X.md:235` opens with three backticks, wraps the value
+  `JA4X=2bab15409345_af684594efb4_000000000000` in them, and closes them again on the same
+  line, so it is an inline span. The first reader took it for a fence
+  opener, which shifted every pair below it across the 17 markers of that file and built
+  three phantom blocks of 34, 128 and 160 lines. **The reader read no prose inside them, so
+  nine rotations passed the gate and a review found them instead.** CommonMark states that
+  the info string of a fence holds no backtick, so `FENCE_DELIMITER` now requires that no
+  backtick follows the marker, and `without_quoted` tracks a fence one line at a time. The
+  corrected reader reported all nine at once and the sweep took them. **The gap reached one
+  file and no other**, because the fences of every other page paired correctly. The second
+  defect is a wrong-sense swap at `docs/specs/spec.html:92`. That sentence read "That card
+  gave the decision to the expected-output files", where the word named precedence handed to
+  a source rather than a determination a person makes, and an expected-output file issues no
+  ruling. It now reads "That card gave precedence to the expected-output files", which names
+  the mechanism. **All 135 swapped lines were read again against the Terms row**, and this is
+  the one instance that was reverted. **One case was missing, and it is the reason a review
+  found the first defect rather than a gate.** The corpus case reads one word at a time, so
+  it reports nothing about a pair, and the reference at `docs/specs/foxio/JA4X.md:635` took
+  the term while the heading at line 254 kept the barred word.
+  `test_no_quoted_cross_reference_disagrees_with_the_heading_it_names` now holds every quoted
+  cross-reference against the heading it names, and it pairs a reference that wraps across
+  two lines. A heading that reads `#### The rulings of 2026-08-08, and the contradiction it
+  records` while the reference keeps the singular reports ``AssertionError:
+  docs/specs/foxio/JA4X.md holds a cross-reference that no heading matches: ["'The ruling of
+  2026-08-08, and the contradiction it records' names the heading 'The rulings of 2026-08-08,
+  and the contradiction it records'"]``, and the corpus case stays green under that mutation,
+  which proves the new case reads a class the word-level case cannot. The mutation is
+  restored. **A third review found a readability regression at five sites, and it is no
+  vocabulary error.** The clause `The ruling reverses the D6 and D7 ruling of #215` carries
+  both words in the right sense, and the swap put two different rulings under one word in one
+  clause. The second word goes rather than the first, because `#215` already names which
+  ruling it is, so each site now reads `The ruling reverses D6 and D7 of #215`. The five are
+  `docs/specs/foxio/JA4T.md:73`, `docs/specs/foxio/JA4T.md:216`,
+  `docs/specs/foxio/deleted-text-specifications.md:242`, `docs/implementation_notes.md:578`
+  and the `Part e of JA4TS` row of the divergence register. Each one was read in place,
+  because the five sentences differ around the clause. `docs/specs/foxio/zeek.md:618` carries
+  the clause once and this round leaves it, because that line held `ruling` before #533 and
+  no swap reached it. **The sub-merge gate found one more instance, and a member wrote it
+  after the sweep ran.** #512 landed on the integration branch while this member worked, and
+  it wrote `records the decision` into `.claude/skills/release/SKILL.md:36`. Neither member
+  is wrong: #512 wrote correct prose against the vocabulary of its day, and this round states
+  the vocabulary that now holds. This member took the integration branch, swept that line to
+  `records the ruling`, and read the whole file rather than the one line, because #512
+  rewrote two steps and added a section. #546 also landed while this member worked and wrote
+  prose into `.claude/rules/batch-gate.md`, `.github/workflows/test.yml` and
+  `docs/specs/features/09-release.md`; a read of all three reports no instance. The case
+  reports 146 passed on the merge result and 136 lines of 30 documents now name the term.
+  **A member gate reads the corpus at one moment, and it bars no word a later member
+  writes.** This case therefore holds the corpus where it runs, and only a run on the merge
+  result holds the corpus a reader gets. #438 and #530 recorded the same shape for two other
+  gates. **The batch gate is where this case must run**, and it runs there today, because
+  `.github/workflows/test.yml` filters no path and accepts every pull request into `dev`. No
+  repair is needed for that, and it is a property of the batch model rather than a defect of
+  this case. **This round moves no fingerprint, and no file under `ja4plus/` changes.**
 - **One file declares the version, and two gates hold it against the project metadata and
   the changelog** (#67). Round 187. `pyproject.toml` declared `version = "0.6.0"` at line 7
   and `ja4plus/__init__.py` declared it again at line 94, so the two records could

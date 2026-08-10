@@ -7,7 +7,7 @@ can therefore be true**, and the README of this project names the ten it impleme
 subset.
 
 The user ruled on 2026-08-10. The README does not change, the divergence register carries
-the contradiction, and `JA4Scan` is recorded as not implemented with no decision taken.
+the contradiction, and `JA4Scan` is recorded as not implemented with no ruling taken.
 #466 read the three lines again at the pinned commit and #388 measured them first.
 
 **A measurement that lives only in a closed issue is a measurement the next reader
@@ -72,7 +72,7 @@ FOXIO_RECORDS = (
 )
 
 # The sentence that records the state of `JA4Scan`.
-NO_DECISION = "recorded no decision about JA4Scan"
+NO_RULING = "recorded no ruling about JA4Scan"
 
 # A phrase that would turn the `JA4Scan` row into a decline. **No decision about JA4Scan is
 # recorded**, so a row that states a reason for a decline states something the project
@@ -184,9 +184,9 @@ def test_the_register_records_ja4scan_as_not_implemented() -> None:
     assert "Not implemented." in _row(SCAN_ITEM), "the JA4Scan row states no implementation state"
 
 
-def test_the_register_records_no_decision_about_ja4scan() -> None:
-    """The register states that this project took no decision about JA4Scan."""
-    assert NO_DECISION in _row(SCAN_ITEM), f"the JA4Scan row holds no {NO_DECISION!r}"
+def test_the_register_records_no_ruling_about_ja4scan() -> None:
+    """The register states that this project took no ruling about JA4Scan."""
+    assert NO_RULING in _row(SCAN_ITEM), f"the JA4Scan row holds no {NO_RULING!r}"
 
 
 def test_the_register_states_no_reason_to_decline_ja4scan() -> None:
