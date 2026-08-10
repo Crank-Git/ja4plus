@@ -506,7 +506,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **The image count of `docs/specs/spec.html` states the count the FoxIO inventory measures**
-  (#449). Round TBD. The page held two image counts. Line 316 read `Eleven of the twelve
+  (#449). Round 172. The page held two image counts. Line 316 read `Eleven of the twelve
   FoxIO methods carry no complete text specification`. Line 436 read `Seven of twelve FoxIO
   methods are specified only as images`, 120 lines below it. **A case existed to forbid the
   second sentence, and a missing article defeated it.**
