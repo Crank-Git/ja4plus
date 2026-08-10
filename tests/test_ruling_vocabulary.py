@@ -93,9 +93,21 @@ RECORD_SECTIONS = ("## Risks & open questions", "## Changelog", TERMS_HEADING)
 # The file that records one past round in every entry.
 RECORD_FILE = "CHANGELOG.md"
 
-# A fenced block of a Markdown page. The reader drops one before it reads, because a fence
-# holds code and the writing standard reproduces code verbatim.
-FENCED_BLOCK = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
+# A fence delimiter of a Markdown page. The reader drops a fenced block before it reads,
+# because a fence holds code and the writing standard reproduces code verbatim.
+#
+# **Warning: a line that opens with three backticks is not always a fence.** An inline span
+# may carry three backticks and close them on the same line, and CommonMark states that the
+# info string of a fence holds no backtick. The pattern therefore requires that no backtick
+# follows the delimiter on that line.
+#
+# **A reader that takes such a line for a fence opener shifts every pair below it.** #533
+# measured the cost on `docs/specs/foxio/JA4X.md`, whose line 235 reads
+# ```` ```JA4X=2bab15409345_af684594efb4_000000000000```. ````. That one line paired 17
+# markers wrongly and built three phantom blocks of 34, 128 and 160 lines. The reader then
+# read none of the prose inside them, so a rotation there passed the gate and a review found
+# it instead.
+FENCE_DELIMITER = re.compile(r"^\s*```[^`]*$")
 
 # A code span. The reader drops one before it reads. A span holds an identifier, a path or a
 # command, and the writing standard reproduces each one verbatim.
@@ -130,6 +142,24 @@ ANCHOR_FILES = (
     "docs/specs/foxio/JA4X.md",
     RENDERED_PAGE,
 )
+
+
+# A Markdown heading of any level.
+HEADING_LINE = re.compile(r"^#{1,6}\s+(.+?)\s*$")
+
+# A phrase inside double quotation marks. **The reader normalizes the whitespace of the prose
+# first**, because a cross-reference wraps across two lines and the closing mark then stands
+# on the line below the opening one. `docs/specs/foxio/JA4X.md:635` is such a reference.
+QUOTED_PHRASE = re.compile(r'"([^"]{8,120})"')
+
+# The words the vocabulary folds together, so that a quoted cross-reference and the heading
+# it names compare equal under the fold and unequal character for character. That pair is
+# exactly the state a sweep leaves when it renames one side and not the other.
+VOCABULARY_FOLD = re.compile(r"\b(rulings?|decisions?)\b", re.IGNORECASE)
+
+# The least count of headings the corpus holds. **An aggregate over an empty set passes**, so
+# a reader that collected no heading would pair every cross-reference with nothing.
+HEADING_FLOOR = 200
 
 
 def rejected_words() -> List[str]:
@@ -197,14 +227,24 @@ def without_quoted(text: str) -> str:
     The reader drops a code span one line at a time. A search over the whole text pairs a
     backtick of one line with a backtick far below it.
 
+    **The reader tracks a fence one line at a time**, because a line that opens with three
+    backticks and closes them again is an inline span and not a fence opener.
+
     Args:
         text: The text of one document.
 
     Returns:
         The text with no fenced block, no code span and no blockquote line.
     """
-    plain = FENCED_BLOCK.sub(" ", text)
-    kept = [line for line in plain.splitlines() if not BLOCKQUOTE_LINE.match(line)]
+    kept = []
+    fenced = False
+    for line in text.splitlines():
+        if FENCE_DELIMITER.match(line):
+            fenced = not fenced
+            continue
+        if fenced or BLOCKQUOTE_LINE.match(line):
+            continue
+        kept.append(line)
     return "\n".join(CODE_SPAN.sub(" ", line) for line in kept)
 
 
@@ -277,7 +317,100 @@ def tracked_pages(pathspec: str) -> List[str]:
     return sorted(name for name in listed if name)
 
 
+def headings_of(prose: str) -> List[str]:
+    """Return the text of every heading of one document.
+
+    Args:
+        prose: The output of `readable_prose` for one document.
+
+    Returns:
+        One heading text for each heading line, with the marks and the spacing removed.
+    """
+    found = []
+    for line in prose.splitlines():
+        match = HEADING_LINE.match(line)
+        if match:
+            found.append(" ".join(match.group(1).split()))
+    return found
+
+
+def folded(phrase: str) -> str:
+    """Return the phrase with every word of the vocabulary pair folded to one token.
+
+    Args:
+        phrase: One heading text, or one quoted cross-reference.
+
+    Returns:
+        The folded text, in lower case, with the whitespace normalized.
+    """
+    return VOCABULARY_FOLD.sub("TERM", " ".join(phrase.split())).casefold()
+
+
+def quoted_phrases(prose: str) -> List[str]:
+    """Return every phrase the prose holds inside double quotation marks.
+
+    The reader normalizes the whitespace first, because a cross-reference wraps across two
+    lines and the closing mark then stands on the line below the opening one.
+
+    Args:
+        prose: The output of `readable_prose` for one document.
+
+    Returns:
+        One phrase for each pair of quotation marks.
+    """
+    return [" ".join(m.group(1).split()) for m in QUOTED_PHRASE.finditer(" ".join(prose.split()))]
+
+
+def corpus_headings() -> List[str]:
+    """Return the text of every heading of every document a case reads.
+
+    Returns:
+        One heading text for each heading of the corpus.
+
+    Raises:
+        AssertionError: The corpus holds fewer headings than `HEADING_FLOOR`.
+    """
+    found = []
+    for name in MARKDOWN_DOCUMENTS:
+        text = (REPO_ROOT / name).read_text(encoding="utf-8")
+        found.extend(headings_of(readable_prose(name, text)))
+    assert len(found) >= HEADING_FLOOR, (
+        f"the corpus holds {len(found)} headings, below the floor of {HEADING_FLOOR}, and a "
+        "reader that collected none would pair every cross-reference with nothing"
+    )
+    return found
+
+
+def stale_cross_references(prose: str, headings: List[str]) -> List[str]:
+    """Return every quoted cross-reference that disagrees with the heading it names.
+
+    A phrase names a heading where the two match under `folded`. Where they then differ
+    character for character, one side took the controlled term and the other kept the barred
+    word, which is the state a sweep leaves when it renames one side alone.
+
+    Args:
+        prose: The output of `readable_prose` for one document.
+        headings: The heading text of every document of the corpus.
+
+    Returns:
+        One passage for each stale reference, which names the phrase and the heading.
+    """
+    exact = set(headings)
+    by_fold = {}
+    for heading in headings:
+        by_fold.setdefault(folded(heading), heading)
+    found = []
+    for phrase in quoted_phrases(prose):
+        if phrase in exact:
+            continue
+        heading = by_fold.get(folded(phrase))
+        if heading is not None:
+            found.append(f"{phrase!r} names the heading {heading!r}")
+    return found
+
+
 MARKDOWN_DOCUMENTS = markdown_documents()
+CORPUS_HEADINGS = corpus_headings()
 
 
 def test_the_terms_table_holds_the_row_for_the_ruled_term() -> None:
@@ -318,6 +451,64 @@ def test_no_document_names_a_determination_of_the_user_by_the_rejected_word(name
     )
 
 
+@pytest.mark.parametrize("name", MARKDOWN_DOCUMENTS)
+def test_no_quoted_cross_reference_disagrees_with_the_heading_it_names(name: str) -> None:
+    """Every quoted cross-reference matches the heading it names, character for character.
+
+    **A sweep that renames a heading and not the reference to it leaves a reader with a
+    section that no page holds.** #533 shipped that state on `docs/specs/foxio/JA4X.md`: the
+    reference at line 635 took the controlled term while the heading at line 254 kept the
+    barred word. The corpus case reads one word at a time, so it reports nothing about a
+    pair, and a review found this rather than a gate.
+    """
+    text = (REPO_ROOT / name).read_text(encoding="utf-8")
+    stale = stale_cross_references(readable_prose(name, text), CORPUS_HEADINGS)
+    assert stale == [], f"{name} holds a cross-reference that no heading matches: {stale}"
+
+
+def test_the_reader_reports_a_cross_reference_that_lost_its_heading() -> None:
+    """The reader reports a reference whose heading kept the barred word."""
+    prose = 'See "The ruling of 2026-08-08" above.'
+    stale = stale_cross_references(prose, ["The decision of 2026-08-08"])
+    assert stale == ["'The ruling of 2026-08-08' names the heading 'The decision of 2026-08-08'"]
+
+
+def test_the_reader_reports_no_cross_reference_that_matches_its_heading() -> None:
+    """The reader reports nothing where the reference and the heading agree."""
+    prose = 'See "The ruling of 2026-08-08" above.'
+    assert stale_cross_references(prose, ["The ruling of 2026-08-08"]) == []
+
+
+def test_the_reader_reports_no_quotation_that_names_no_heading() -> None:
+    """The reader reports nothing for an ordinary quotation, which names no section."""
+    prose = 'The standard states "One concept, one word. Never rotate synonyms for variety."'
+    assert stale_cross_references(prose, ["The ruling of 2026-08-08"]) == []
+
+
+def test_the_reader_pairs_a_cross_reference_that_wraps_across_two_lines() -> None:
+    """The reader pairs a reference whose closing mark stands on the line below.
+
+    `docs/specs/foxio/JA4X.md:635` opens a quotation that closes on the line below it.
+    """
+    prose = '"The ruling of 2026-08-08, and the\ncontradiction it records" above holds it.'
+    heading = "The decision of 2026-08-08, and the contradiction it records"
+    assert len(stale_cross_references(prose, [heading])) == 1
+
+
+def test_the_corpus_pairs_at_least_one_cross_reference_with_its_heading() -> None:
+    """The corpus holds a quoted phrase that matches a heading, so the reader pairs a real one.
+
+    **A reader that paired nothing would report a clean corpus over every page.**
+    """
+    exact = set(CORPUS_HEADINGS)
+    paired = []
+    for name in MARKDOWN_DOCUMENTS:
+        text = (REPO_ROOT / name).read_text(encoding="utf-8")
+        prose = readable_prose(name, text)
+        paired.extend(phrase for phrase in quoted_phrases(prose) if phrase in exact)
+    assert paired, "no quoted phrase of the corpus matches a heading, so the reader pairs none"
+
+
 def test_the_reader_reads_the_rejected_word_in_a_sentence() -> None:
     """The reader reads the rejected word where a sentence names it."""
     assert rejected_uses("The decision is reversible.", RULED_WORD) == ["The decision"]
@@ -355,6 +546,18 @@ def test_the_reader_reads_no_fenced_block() -> None:
     """The reader reads no word inside a fenced block."""
     passage = "A plain line.\n```\ndecision = read()\n```\nAnother plain line.\n"
     assert rejected_uses(without_quoted(passage), RULED_WORD) == []
+
+
+def test_the_reader_reads_a_line_that_opens_with_an_inline_span_of_three_backticks() -> None:
+    """The reader reads the prose below a line that opens with an inline triple-backtick span.
+
+    **A line that opens with three backticks and closes them again is no fence opener.** A
+    reader that takes one for a fence shifts every pair below it. #533 measured that on
+    `docs/specs/foxio/JA4X.md`, where one such line built three phantom blocks of 34, 128 and
+    160 lines and hid the prose inside them from every case here.
+    """
+    passage = "```JA4X=2bab15409345```. The parts match.\nThe decision is reversible.\n"
+    assert rejected_uses(without_quoted(passage), RULED_WORD) == ["The decision"]
 
 
 def test_the_reader_reads_no_blockquote_line() -> None:

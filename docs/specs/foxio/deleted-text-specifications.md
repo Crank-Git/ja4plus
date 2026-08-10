@@ -239,7 +239,7 @@ with a connection, which appends part e. The image and `rust/ja4/src/tcp.rs` sta
 other reading.
 
 **The user decided for the deleted text on 2026-08-08, and #226 built part e.** The
-ruling reverses the D6 and D7 ruling of #215 of the same day, which followed the image.
+ruling reverses D6 and D7 of #215 of the same day, which followed the image.
 R2 of `docs/specs/foxio/JA4T.md` now holds for JA4T alone, and R12 states the JA4TS rule.
 
 **#226 read the blob rather than this page**, and it confirms every quotation above. It

@@ -575,7 +575,7 @@ no reference value settles a question the image leaves open.
 
 ### JA4TS carries part e, the time since the last SYN-ACK
 
-**The user decided this on 2026-08-08, and the ruling reverses the D6 and D7 ruling of
+**The user decided this on 2026-08-08, and the ruling reverses D6 and D7 of
 #215 of the same day.** The image caption reads
 `TCP Retransmission Timings (only on JA4TScan)`, and three FoxIO sources contradict it:
 the deleted `technical_details/JA4T.md`, `wireshark/source/packet-ja4.c:1595` through

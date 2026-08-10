@@ -70,7 +70,7 @@ The fingerprint is `<window size>_<options>_<mss>_<window scale>`.
 - Corroboration 2: `rust/ja4/src/tcp.rs` emits four parts and no timing part.
 
 **This rule holds for JA4T alone. JA4TS carries part e, and the user decided that on
-2026-08-08.** The ruling reverses the D6 and D7 ruling of #215, which followed the
+2026-08-08.** The ruling reverses D6 and D7 of #215, which followed the
 image. #226 holds the ruling and the measurement, and R12 below states the reading.
 `ja4plus/fingerprinters/ja4ts.py` writes part e.
 
@@ -213,7 +213,7 @@ d, and 7 of the 12 moved values are of that shape.
 
 ### R12 — JA4TS carries part e, and the fingerprint omits part e when the server answers once
 
-**The user decided this on 2026-08-08, and the ruling reverses the D6 and D7 ruling of
+**The user decided this on 2026-08-08, and the ruling reverses D6 and D7 of
 #215.** R2 above names the three FoxIO sources. #226 built the reading.
 
 Part e holds the delay between each SYN-ACK of one connection, in whole seconds, joined

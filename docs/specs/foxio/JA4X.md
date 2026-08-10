@@ -251,10 +251,10 @@ records the FoxIO Rust output and the Wireshark output.**
 sentinel. Measured on 2026-08-08 with `grep -rl "e3b0c44298fc" tests/foxio_vectors/`, which
 matched no file.
 
-#### The decision of 2026-08-08, and the contradiction it records
+#### The ruling of 2026-08-08, and the contradiction it records
 
-**The user decided the zero sentinel.** #228 holds the decision comment, and Changelog
-round 77 of `docs/specs/spec.md` records it. The decision is reversible.
+**The user decided the zero sentinel.** #228 holds the ruling comment, and Changelog
+round 77 of `docs/specs/spec.md` records it. The ruling is reversible.
 
 | Form | Value | Sources at the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` |
 |---|---|---|
@@ -326,14 +326,14 @@ corroboration.
 file under `tests/foxio_vectors/` holds a `JA4X_r` key. Measured on 2026-08-08 with
 `grep -l "JA4X_r" tests/foxio_vectors/*.json`, which matched no file.
 
-#### The decision of 2026-08-08, and the form it names
+#### The ruling of 2026-08-08, and the form it names
 
-**The user decided that this project publishes the raw form, and the decision is
-reversible.** #267 holds the decision comment. `ja4plus` writes `JA4X_r`, which holds the
+**The user decided that this project publishes the raw form, and the ruling is
+reversible.** #267 holds the ruling comment. `ja4plus` writes `JA4X_r`, which holds the
 three unhashed lists joined with `_`. The name follows the `JA4S_r` form this package
 already publishes.
 
-**Two of the three FoxIO implementations publish the value.** The decision comment of
+**Two of the three FoxIO implementations publish the value.** The ruling comment of
 #267 states the reading in the user's words:
 `Two of the three FoxIO implementations publish it, and FoxIO specifies the value, so
 parity rule 1 decides it and the port does not outrank it.` Read "FoxIO specifies the
@@ -437,7 +437,7 @@ holds the key, so no vector measured D1 and the reading was a code reading.
 
 **#267 built the value, and the disagreement is gone.** `generate_ja4x_raw` in `ja4x.py`
 writes `JA4X_r`, and `TestTheJa4xRawFormTheRustSnapshotImplies` compares all 43 values
-against the FoxIO Rust snapshots through the hash. "The decision of 2026-08-08, and the
+against the FoxIO Rust snapshots through the hash. "The ruling of 2026-08-08, and the
 form it names" above holds the whole reading.
 
 **D2 — `cryptography` rejects a certificate that holds a duplicate attribute inside one
@@ -496,7 +496,7 @@ no rule for any of these three subjects.
 `docs/specs/foxio/deleted-text-specifications.md` holds the provenance. Nothing at the
 pinned commit corrects that sentence, so it stands as FoxIO-authored evidence under the
 rule that #221 set. **It names the mechanism the seven entries record**, and it supports the
-#129 decision that decryption is out of scope. It changes no fingerprint.
+#129 ruling that decryption is out of scope. It changes no fingerprint.
 
 ### The measurement that supports the two #138 entries
 

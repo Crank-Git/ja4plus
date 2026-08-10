@@ -2418,10 +2418,10 @@ holds every breaking change of this record against a row of that page.
   makes where no source settles the question, and the fourth column rejects `decision`,
   `call` and `verdict`. **A ruling is the choice of a person and a reading is a conclusion
   about a source**, so the row states the boundary against `reading` that #533 found
-  missing. 109 lines of 27 documents and 18 more lines of three FoxIO pages now name the
-  term, and `docs/specs/spec.html` carries the same two corrections because a writer edits
-  that page by hand. **New file `tests/test_ruling_vocabulary.py` holds 76 cases**, and 30
-  of them failed before the sweep landed. It reads the tracked Markdown corpus with
+  missing. 135 lines of 29 documents now name the
+  term, and `docs/specs/spec.html` carries two corrections because a writer edits that page
+  by hand. **New file `tests/test_ruling_vocabulary.py` holds 142 cases**, and 30 of them
+  failed before the sweep landed. It reads the tracked Markdown corpus with
   `git ls-files` and it walks no directory, because #473 measured that a walk of the
   checkout reads the pages of every live worker worktree. **Two mutations prove that the
   cases bite, and both are restored.** A page that names the barred word reports
@@ -2453,8 +2453,48 @@ holds every breaking change of this record against a row of that page.
   Python corpus would fail a case #533 forbids the repair of. #548 holds that hole and it
   names the nine. `tests/test_foxio_license_register.py` renamed `NO_DECISION` to
   `NO_RULING` and one case with it, because the divergence register row it reads now states
-  `recorded no ruling about JA4Scan`. **This round moves no fingerprint, and no file under
-  `ja4plus/` changes.**
+  `recorded no ruling about JA4Scan`. **A review of the first push found two defects, and
+  both are repaired here.** The first is that the reader carried a blind region and the
+  sweep therefore had a gap. **A line that opens with three backticks is not always a
+  fence.** `docs/specs/foxio/JA4X.md:235` opens with three backticks, wraps the value
+  `JA4X=2bab15409345_af684594efb4_000000000000` in them, and closes them again on the same
+  line, so it is an inline span. The first reader took it for a fence
+  opener, which shifted every pair below it across the 17 markers of that file and built
+  three phantom blocks of 34, 128 and 160 lines. **The reader read no prose inside them, so
+  nine rotations passed the gate and a review found them instead.** CommonMark states that
+  the info string of a fence holds no backtick, so `FENCE_DELIMITER` now requires that no
+  backtick follows the marker, and `without_quoted` tracks a fence one line at a time. The
+  corrected reader reported all nine at once and the sweep took them. **The gap reached one
+  file and no other**, because the fences of every other page paired correctly. The second
+  defect is a wrong-sense swap at `docs/specs/spec.html:92`. That sentence read "That card
+  gave the decision to the expected-output files", where the word named precedence handed to
+  a source rather than a determination a person makes, and an expected-output file issues no
+  ruling. It now reads "That card gave precedence to the expected-output files", which names
+  the mechanism. **All 135 swapped lines were read again against the Terms row**, and this is
+  the one instance that was reverted. **One case was missing, and it is the reason a review
+  found the first defect rather than a gate.** The corpus case reads one word at a time, so
+  it reports nothing about a pair, and the reference at `docs/specs/foxio/JA4X.md:635` took
+  the term while the heading at line 254 kept the barred word.
+  `test_no_quoted_cross_reference_disagrees_with_the_heading_it_names` now holds every quoted
+  cross-reference against the heading it names, and it pairs a reference that wraps across
+  two lines. A heading that reads `#### The rulings of 2026-08-08, and the contradiction it
+  records` while the reference keeps the singular reports ``AssertionError:
+  docs/specs/foxio/JA4X.md holds a cross-reference that no heading matches: ["'The ruling of
+  2026-08-08, and the contradiction it records' names the heading 'The rulings of 2026-08-08,
+  and the contradiction it records'"]``, and the corpus case stays green under that mutation,
+  which proves the new case reads a class the word-level case cannot. The mutation is
+  restored. **A third review found a readability regression at five sites, and it is no
+  vocabulary error.** The clause `The ruling reverses the D6 and D7 ruling of #215` carries
+  both words in the right sense, and the swap put two different rulings under one word in one
+  clause. The second word goes rather than the first, because `#215` already names which
+  ruling it is, so each site now reads `The ruling reverses D6 and D7 of #215`. The five are
+  `docs/specs/foxio/JA4T.md:73`, `docs/specs/foxio/JA4T.md:216`,
+  `docs/specs/foxio/deleted-text-specifications.md:242`, `docs/implementation_notes.md:578`
+  and the `Part e of JA4TS` row of the divergence register. Each one was read in place,
+  because the five sentences differ around the clause. `docs/specs/foxio/zeek.md:618` carries
+  the clause once and this round leaves it, because that line held `ruling` before #533 and
+  no swap reached it. **This round moves no fingerprint, and no file under `ja4plus/`
+  changes.**
 - **One file declares the version, and two gates hold it against the project metadata and
   the changelog** (#67). Round 187. `pyproject.toml` declared `version = "0.6.0"` at line 7
   and `ja4plus/__init__.py` declared it again at line 94, so the two records could
