@@ -10,7 +10,7 @@ until the host stopped it.
 
 The table this module owns is a `BoundedStateTable`, the form Epic 14 shipped. Its
 eviction hook calls `Processor.cleanup_connection`, so one eviction drops the entry of
-this table and the per-connection state of all ten methods together. An eviction that
+this table and the per-connection state of all ten fingerprinters together. An eviction that
 dropped the entry alone would leave the leak behind a bound.
 
 Eviction runs on packet arrival. The statistics thread is the only thread this module
@@ -78,7 +78,7 @@ DEFAULT_MAX_CONNECTIONS = 10000
 
 # The maximum age of one connection, in seconds. `--connection-timeout` changes it.
 # `features/06-live-capture.md` states the value. It sits below the age bound of the
-# state tables the ten methods hold, so the monitor sheds an idle connection before
+# state tables the ten fingerprinters hold, so the monitor sheds an idle connection before
 # those tables do.
 DEFAULT_CONNECTION_TIMEOUT = 300.0
 
@@ -112,7 +112,7 @@ def connection_key(packet: Packet) -> tuple[str, str, int, str, int] | None:
     for one connection. The call therefore sorts the two endpoints.
 
     The address pair names the outer address layer and the port pair names the innermost
-    port layer, because the ten methods read the same two layers. A key that read other
+    port layer, because the ten fingerprinters read the same two layers. A key that read other
     layers would name a connection whose state `Processor.cleanup_connection` never
     drops.
 
@@ -515,7 +515,7 @@ class Monitor:
         self._report(packet)
 
     def _drop_connection(self, key: Any) -> None:
-        """Drop the per-connection state of all ten methods for one evicted connection.
+        """Drop the per-connection state of all ten fingerprinters for one evicted connection.
 
         Args:
             key: The connection key the table evicted.
