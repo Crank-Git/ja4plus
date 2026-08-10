@@ -35,9 +35,9 @@ and fingerprinters where it counted methods, matching the `FingerprintResult.typ
 docstring that round 139 wrote.
 
 **A case here reads the comments and the docstrings of every Python file under `ja4plus/`
-and under `tests/`.** #450 widened the corpus to the suite and #484 widened it to the
-package. `python_prose` extracts that prose before `_unquoted` runs. **A docstring of one
-line sits inside quotation marks.** `_unquoted` therefore drops the whole of it, and a
+and under `tests/`**, because #450 widened the corpus to the suite and #484 widened it to
+the package. `python_prose` extracts that prose before `_unquoted` runs. **A docstring of
+one line sits inside quotation marks.** `_unquoted` therefore drops the whole of it, and a
 search of the raw source reads nothing in it. Three of the ten places #450 repaired hold
 that shape. A case fixture stays out of reach, because it is a string literal and no
 docstring.
@@ -505,7 +505,7 @@ def python_sources() -> List[Path]:
 
     The corpus holds the package as well as the suite, because a comment under `ja4plus/`
     states the count to a reader of the library. #484 widened it and repaired the eight
-    places the widening found.
+    places it then found.
 
     Returns:
         The Python files under `ja4plus/` and under `tests/`, sorted by path within each
