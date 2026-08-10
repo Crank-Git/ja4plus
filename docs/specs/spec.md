@@ -130,7 +130,7 @@ that user, because comparison is the only thing a fingerprint is for.
 | transcription | noun | This project's own prose form of one image, held under `docs/specs/foxio/`. | translation, copy, write-up |
 | corroboration | noun | One FoxIO-authored source, other than the image, that states the same rule. | confirmation, second opinion, backup |
 | baseline | noun | One expected-output file of the FoxIO Zeek package, held under `zeek/tests/Traces/`. | golden file, expected log, snapshot |
-| reading | noun | One recorded conclusion about what the FoxIO material states, with the evidence that supports it. | interpretation, take, finding |
+| reading | noun | One recorded conclusion about what a source states, with the evidence that supports it. The FoxIO material is one such source. The documentation of a tool is another. | interpretation, take, finding |
 | object identifier | noun | One ASN.1 identifier, written as a dotted string such as `2.5.4.3`. JA4X hashes its hex form. | OID, identifier, tag |
 | RDN | noun | One relative distinguished name of an X.509 issuer name or subject name. JA4X reads the object identifier of each one. | attribute, name part, DN component |
 | tunnel | noun | One connection that carries another protocol inside its payload, for example a SOCKS4 proxy connection. | proxy, wrapper, encapsulation |

@@ -43,7 +43,10 @@ REQUIREMENT_FILE = REPO_ROOT / "docs" / "specs" / "features" / "11-pre-release-v
 # The requirement states its pathspec as one `git ls-files` command with quoted terms.
 # The case runs what the document states, so a document that states a different pathspec
 # than the sweep reads fails here rather than misleading the next reader.
-LS_FILES_COMMAND = re.compile(r"`(git ls-files (?:'[^']*' ?)+)`")
+# The pattern reads `\s` between the terms, because the feature document wraps its lines
+# and `FR-pre-release-validation-16a` already holds a command that wraps inside its
+# backticks. A pattern that reads one space alone finds nothing after such a wrap.
+LS_FILES_COMMAND = re.compile(r"`(git ls-files\s+(?:'[^']*'\s*)+)`")
 
 SEPARATOR_RULE = "`*` crosses `/`"
 
@@ -144,9 +147,9 @@ class TestTheModuleListOfOneSweep:
 class TestThePathspecTheRequirementStates:
     """These cases read `FR-pre-release-validation-16` and they run what it states.
 
-    A requirement that names a pathspec teaches a rule to every reader who copies it.
-    Three defects of one epic came from a pathspec whose plain reading missed what git
-    matches, so these cases bind the text and not a count a writer transcribed.
+    A reader copies the pathspec of a requirement and applies its rule elsewhere. Three
+    defects of one epic came from a pathspec whose plain reading missed what git matches,
+    so these cases bind the text and not a count a writer transcribed.
     """
 
     def test_the_stated_pathspec_lists_the_module_set_the_sweep_reads(self) -> None:
