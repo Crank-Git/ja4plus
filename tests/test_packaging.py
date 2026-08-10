@@ -7,8 +7,8 @@ owns both requirements, and `docs/specs/features/09-release.md` names this file.
 **#455 already repaired the wheel, so these cases measure a state that holds today.** That
 round moved the wheel from 96 entries and 3139637 bytes to 39 entries and 152780 bytes. A
 read of 2026-08-10 reports 39 entries and 155900 bytes on this branch. The value of a case
-here is therefore the direction it fails in, and the mutation cases below prove both
-directions on a copy of the built wheel.
+here is the direction it fails in. The mutation cases below prove both directions on a copy
+of the built wheel.
 
 **This file adds three readings that `tests/test_installed_wheel.py` does not hold.**
 
@@ -18,25 +18,31 @@ directions on a copy of the built wheel.
 3. The proof that the reader fails on a wheel with the marker removed, and on a wheel with
    a file under an excluded tree added.
 
-`tests/test_installed_wheel.py` keeps the readings it already holds: the mapping file, the
-documentation tree, the assets tree, the top-level name and the payload of the whole wheel.
-This file imports `build_artifacts` and `wheel_entry_names` from it, so one reader opens
-the archive and one command builds it.
+`tests/test_installed_wheel.py` keeps the readings it already holds: the assets tree, the
+top-level name and the payload of the whole wheel. This file imports `build_artifacts` and
+`wheel_entry_names` from it, so one reader opens the archive.
+
+**Two readings stand in both files, and the acceptance criterion of #69 is the reason.**
+That criterion names the mapping file and the marker in one sentence, and `FR-release-11`
+names the documentation tree beside the two other trees. A case that dropped half of each
+sentence would read half a requirement. `test_the_wheel_carries_the_mapping_file` and
+`test_the_wheel_carries_no_file_under_the_documentation_tree` of
+`tests/test_installed_wheel.py` therefore keep their names and their readings.
 
 **Every case here carries the `installed_wheel` marker**, because a case here runs
 `python -m build` and that command reaches the index. `tests/conftest.py` deselects the
-marker from a run that does
-not name it, and the `installed-wheel` job of `.github/workflows/test.yml` runs
-`pytest tests/ -m installed_wheel`, which collects this file.
+marker from a run that does not name it. The `installed-wheel` job of
+`.github/workflows/test.yml` runs `pytest tests/ -m installed_wheel`, and that command
+collects this file.
 
 **A read of 2026-08-10 reports which mechanism ships each required entry.** The read cut
 `[tool.setuptools.package-data]` to `ja4plus = ["data/*.csv"]`. It also cut the exclusion
 list to `["examples", "assets", "assets.*"]`. The build still listed `ja4plus/py.typed`.
-`include-package-data` is true by default, and the file finder of `setuptools-scm` reports
+`include-package-data` is true by default. The file finder of `setuptools-scm` reports
 every tracked file, so a tracked file below the package ships whatever the package-data
 list holds. That build listed 376 entries and 337 of them lay under the three excluded
 trees. **The marker case therefore fails on an absent file and not on an absent list
-entry.** The mutation cases below prove both directions on a copy of the built wheel.
+entry.**
 
 **This module builds the wheel again rather than share the fixture of
 `tests/test_installed_wheel.py`.** `pytest` registers a fixture on the module that defines
@@ -185,17 +191,18 @@ def reported(faults: Iterable[str], text: str) -> bool:
 
 @pytest.fixture(scope="session")
 def wheel(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
-    """Build the wheel once for this module and return it."""
+    """Return the wheel this fixture builds once for the module."""
     artifacts: Dict[str, pathlib.Path] = build_artifacts(tmp_path_factory.mktemp("packaging"))
     return artifacts["wheel"]
 
 
-def test_the_wheel_lists_the_mapping_file_and_the_type_marker(wheel: pathlib.Path) -> None:
+def test_the_wheel_lists_the_two_entries_the_release_requires(wheel: pathlib.Path) -> None:
     """`FR-release-10`. The wheel lists the mapping file and the `py.typed` marker.
 
-    Both files fail silently at run time. A wheel without the mapping file reports an empty
-    database, and a wheel without the marker hides the annotations from a caller who runs
-    `mypy`. The build therefore reads both here.
+    **`FR-release-10` names the two entries in one sentence**, so one case reads both. Each
+    absence fails at run time and it raises nothing. A wheel without the mapping file
+    reports an empty database. A wheel without the `py.typed` marker hides every annotation
+    from a caller who runs `mypy`.
     """
     names = wheel_entry_names(wheel)
     missing = [entry for entry in REQUIRED_ENTRIES if entry not in names]
@@ -246,7 +253,7 @@ def test_the_built_wheel_reports_no_packaging_fault(wheel: pathlib.Path) -> None
     assert faults == [], f"the built wheel failed {len(faults)} requirements: {faults}"
 
 
-def test_the_reader_refuses_a_wheel_that_lost_the_type_marker(
+def test_the_reader_refuses_a_wheel_that_lost_the_py_typed_marker(
     wheel: pathlib.Path, tmp_path: pathlib.Path
 ) -> None:
     """The reader reports a fault where the wheel lists no `py.typed` marker.

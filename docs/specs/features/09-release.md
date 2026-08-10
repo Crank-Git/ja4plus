@@ -182,7 +182,8 @@ retrieved 2026-08-10.
 ### The commit that writes the stable classifier
 
 **The user ruled on 2026-08-10, on #69. The project holds
-`Development Status :: 3 - Alpha` until version 1.0.0 is tagged.**
+`Development Status :: 3 - Alpha` until the maintainer tags version 1.0.0.** These are the
+words of the ruling.
 
 > **The classifier is a promise about the interface, so it is written by the commit that makes
 > the promise true.**
@@ -192,23 +193,31 @@ states a promise the project cannot yet hold. `FR-release-12` therefore stays op
 release commit of 1.0.0 writes the line. **#69 built `FR-release-10` and `FR-release-11`,
 and it changed no classifier.**
 
-### How the wheel contents are read
+### How `tests/test_packaging.py` reads the wheel
 
 `tests/test_packaging.py` holds `FR-release-10` and `FR-release-11` against the built
-wheel. It reads three states, and a reader of a new packaging rule starts there.
+wheel. It reads three states. A reader of a new packaging rule starts there.
 
 1. The wheel lists `ja4plus/data/ja4plus-mapping.csv` and `ja4plus/py.typed`.
 2. The wheel lists no entry under `tests/`, `examples/` or `docs/`.
 3. The wheel lists at least 30 entries. **An aggregate over an empty set passes**, so this
    floor stands in front of the exclusion rule.
 
-**A mutation proves each direction.** The file copies the built wheel, removes one required
-entry, adds one entry under `tests/`, and reads the copy again. The copy carries the
-mutation and the built wheel keeps its bytes, which a digest measures.
+**A mutation proves each direction.** The file takes four steps.
 
-`tests/test_installed_wheel.py` reads the documentation tree, the assets tree, the
-top-level name and the whole payload. #69 repeats none of those readings, and it imports
-`build_artifacts` and `wheel_entry_names` from that file.
+1. It copies the built wheel.
+2. It removes one required entry from the copy.
+3. It adds one entry under `tests/` to the copy.
+4. It reads the copy again.
+
+The copy carries the mutation, and the built wheel keeps its bytes. A digest measures that
+second fact.
+
+`tests/test_installed_wheel.py` reads the assets tree, the top-level name and the whole
+payload. #69 repeats none of those readings, and it imports `build_artifacts` and
+`wheel_entry_names` from that file. **The mapping file and the documentation tree stand in
+both files**, because each of the two requirements names them beside another entry and a
+case reads a whole requirement.
 
 ## Interfaces
 
@@ -231,7 +240,7 @@ TestPyPI site.
 |---|---|
 | The version already exists on PyPI. | The publish step fails. PyPI refuses to replace a file. |
 | The wheel omits the mapping file. | The verification step fails, because a lookup returns an empty database. |
-| The wheel omits `py.typed`. | `test_the_wheel_lists_the_mapping_file_and_the_type_marker` of `tests/test_packaging.py` fails. A caller who runs `mypy` reads no annotation of such an install. |
+| The wheel omits `py.typed`. | `test_the_wheel_lists_the_two_entries_the_release_requires` of `tests/test_packaging.py` fails. A caller who runs `mypy` reads no annotation of such an install. |
 | The wheel carries a file under `tests/` or under `examples/`. | `test_the_wheel_lists_no_file_under_an_excluded_tree` fails. |
 | The wheel lists no entry at all. | `test_the_wheel_lists_at_least_the_minimum_entry_count` fails. **An aggregate over an empty set passes**, so every exclusion rule reads an empty archive as correct. |
 | The wheel carries a file under `docs/`. | `test_the_wheel_carries_no_file_under_the_documentation_tree` fails. #455 records the defect and the exclusion rule that repairs it. |

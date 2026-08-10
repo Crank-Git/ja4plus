@@ -128,7 +128,7 @@ holds every breaking change of this record against a row of that page.
   commit and the same three counts after. Coverage holds at 94% with 4292 statements and 273
   misses.
 
-- **The built wheel carries the mapping file and the type marker, and it carries no test,
+- **The built wheel carries the mapping file and the `py.typed` marker, and it carries no test,
   example or documentation file** (#69). Round TBD. `FR-release-10` and `FR-release-11` state
   the two requirements, and new file `tests/test_packaging.py` holds nine cases against the
   built wheel. **#455 already repaired the wheel these cases read**, so this round measures a
@@ -146,22 +146,24 @@ holds every breaking change of this record against a row of that page.
   the build still listed `ja4plus/py.typed`. `include-package-data` is true by default and the
   file finder of `setuptools-scm` reports every tracked file, so a tracked file below the
   package ships whatever the package-data list holds. That weakened build listed 376 entries
-  and 337 of them lay under `tests/`, `examples/` and `docs/`, and the case for the excluded
-  trees failed with `the wheel carries 337 of its 376 entries under ['tests/', 'examples/',
+  and 337 of them lay under `tests/`, `examples/` and `docs/`, and the excluded-tree case
+  failed with `the wheel carries 337 of its 376 entries under ['tests/', 'examples/',
   'docs/']`. The measurement restored `pyproject.toml`, and `git status` reported the file
-  unchanged after the restore. **This round repeats no reading of
-  `tests/test_installed_wheel.py`**, which holds the documentation tree, the assets tree, the
-  top-level name and the whole payload; the new file imports `build_artifacts` and
-  `wheel_entry_names` from it. **The user ruled on 2026-08-10 that the project holds
-  `Development Status :: 3 - Alpha` until version 1.0.0 is tagged**, because the classifier is
-  a promise about the interface and the release commit of 1.0.0 makes that promise true.
-  `FR-release-12` therefore stays open, this round changes no line of `pyproject.toml`, and
-  the third acceptance criterion of #69 is declined rather than built.
-  `docs/specs/features/09-release.md` gains two sections, three edge cases and two ticked
-  criteria. No file under `ja4plus/` changes and no fingerprint moves. The unit suite reports
-  3949 passed, 4 skipped and 8 xfailed, the conformance suite reports 1532 passed, 143 skipped
-  and 134 xfailed, and the `installed_wheel` marker reports 43 passed. Coverage holds at 94%
-  with 4292 statements and 273 misses.
+  unchanged after the restore. **This round repeats one reading of that file for the mapping
+  file and one for the documentation tree**, because `FR-release-10` and `FR-release-11` each
+  name them beside another entry and a case reads a whole requirement. **It repeats no other
+  reading of `tests/test_installed_wheel.py`**, which holds the assets tree, the top-level
+  name and the whole payload; the new file imports `build_artifacts` and `wheel_entry_names`
+  from it. **The user ruled on 2026-08-10 that the project holds
+  `Development Status :: 3 - Alpha` until the maintainer tags version 1.0.0.** The classifier
+  is a promise about the interface, and the release commit of 1.0.0 makes that promise true.
+  `FR-release-12` therefore stays open, and this round changes no line of `pyproject.toml`.
+  **The ruling declines the third acceptance criterion of #69**, so this round builds no part
+  of it. `docs/specs/features/09-release.md` gains two sections, three edge cases and two
+  ticked criteria. No file under `ja4plus/` changes and no fingerprint moves. The unit suite
+  reports 3950 passed, 4 skipped and 8 xfailed, the conformance suite reports 1532 passed,
+  143 skipped and 134 xfailed, and the `installed_wheel` marker reports 43 passed. Coverage
+  holds at 94% with 4292 statements and 273 misses.
 
 - **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round 182.
   **Three FoxIO records at the pinned commit
