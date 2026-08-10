@@ -505,7 +505,7 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
-- **One pass at the batch gate assigns every round number of a batch** (#482). Round TBD.
+- **One pass at the batch gate assigns every round number of a batch** (#482). Round 175.
   The project manager assigned a round number at each sub-merge. A sub-merge is an event of
   one batch, and the round sequence is global to the repository. One live integration branch
   hides that, because it is then the only writer. **Two live branches make the assignment a
@@ -542,7 +542,7 @@ holds every breaking change of this record against a row of that page.
   No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The batch-gate rule states the branch protection the provider now holds** (#480).
-  Round TBD. #459 wrote the protection section of `.claude/rules/batch-gate.md` from a read
+  Round 174. #459 wrote the protection section of `.claude/rules/batch-gate.md` from a read
   of 2026-08-09, which returned `404`, `Branch not protected`. #468 turned the rule on, so a
   reader who followed that wording concluded that nothing at the provider refuses an ungated
   merge. **This round re-took the measurement rather than quoting the issue body.** A read of
@@ -596,7 +596,7 @@ holds every breaking change of this record against a row of that page.
   asserts. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **Every statement of the vector-fallback rule names the reader the rule needs** (#477).
-  Round TBD. Round 49 corrected the rule on 2026-08-08: the fallback needs an image that a
+  Round 172. Round 49 corrected the rule on 2026-08-08: the fallback needs an image that a
   person read and found ambiguous, and an image nobody read is not a license to use it.
   `.claude/rules/external-apis.md` and `.claude/rules/conformance.md` carried the correction
   and three pages kept the superseded premise, which gives the decision to the
@@ -633,7 +633,7 @@ holds every breaking change of this record against a row of that page.
   they bite**: against the unrepaired corpus they failed 2 of 48, and the failure named all
   three pages. No file under `ja4plus/` changes and no fingerprint moves.
 
-- **The document set of the count cases reads the tracked file list** (#473). Round TBD.
+- **The document set of the count cases reads the tracked file list** (#473). Round 173.
   `tests/test_documented_method_count.py` built `DOCUMENTS` from a walk of `docs/`,
   `.claude/`, `tests/` and the repository root. **The agent harness places a worker worktree
   at `.claude/worktrees/agent-<id>`, and that worktree is a whole checkout**, so the walk of
