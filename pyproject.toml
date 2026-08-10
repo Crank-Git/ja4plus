@@ -114,7 +114,7 @@ dev = [
     # and the test matrix runs Python 3.9. 1.4.4 is the newest release that carries a
     # wheel for Python 3.9 through 3.13. Verified against
     # https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
-    "build==1.4.4",
+    "build==1.5.0",
     # `FR-release-9` states `twine check` on the built files, and
     # `tests/release_verification.py` runs it. The publish workflow installs this extra, so
     # the version lives here and no workflow states one of its own.
