@@ -179,6 +179,37 @@ dependency. Verified against
 https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata,
 retrieved 2026-08-10.
 
+### The commit that writes the stable classifier
+
+**The user ruled on 2026-08-10, on #69. The project holds
+`Development Status :: 3 - Alpha` until version 1.0.0 is tagged.**
+
+> **The classifier is a promise about the interface, so it is written by the commit that makes
+> the promise true.**
+
+The interface may still move before 1.0.0. A classifier that runs ahead of the version
+states a promise the project cannot yet hold. `FR-release-12` therefore stays open, and the
+release commit of 1.0.0 writes the line. **#69 built `FR-release-10` and `FR-release-11`,
+and it changed no classifier.**
+
+### How the wheel contents are read
+
+`tests/test_packaging.py` holds `FR-release-10` and `FR-release-11` against the built
+wheel. It reads three states, and a reader of a new packaging rule starts there.
+
+1. The wheel lists `ja4plus/data/ja4plus-mapping.csv` and `ja4plus/py.typed`.
+2. The wheel lists no entry under `tests/`, `examples/` or `docs/`.
+3. The wheel lists at least 30 entries. **An aggregate over an empty set passes**, so this
+   floor stands in front of the exclusion rule.
+
+**A mutation proves each direction.** The file copies the built wheel, removes one required
+entry, adds one entry under `tests/`, and reads the copy again. The copy carries the
+mutation and the built wheel keeps its bytes, which a digest measures.
+
+`tests/test_installed_wheel.py` reads the documentation tree, the assets tree, the
+top-level name and the whole payload. #69 repeats none of those readings, and it imports
+`build_artifacts` and `wheel_entry_names` from that file.
+
 ## Interfaces
 
 | Service | What it does | Documentation |
@@ -200,7 +231,9 @@ TestPyPI site.
 |---|---|
 | The version already exists on PyPI. | The publish step fails. PyPI refuses to replace a file. |
 | The wheel omits the mapping file. | The verification step fails, because a lookup returns an empty database. |
-| The wheel omits `py.typed`. | The packaging test fails. |
+| The wheel omits `py.typed`. | `test_the_wheel_lists_the_mapping_file_and_the_type_marker` of `tests/test_packaging.py` fails. A caller who runs `mypy` reads no annotation of such an install. |
+| The wheel carries a file under `tests/` or under `examples/`. | `test_the_wheel_lists_no_file_under_an_excluded_tree` fails. |
+| The wheel lists no entry at all. | `test_the_wheel_lists_at_least_the_minimum_entry_count` fails. **An aggregate over an empty set passes**, so every exclusion rule reads an empty archive as correct. |
 | The wheel carries a file under `docs/`. | `test_the_wheel_carries_no_file_under_the_documentation_tree` fails. #455 records the defect and the exclusion rule that repairs it. |
 | The wheel carries a file under `assets/`. | `test_the_wheel_carries_no_file_under_the_assets_tree` fails. `assets/logo.png` holds 2423363 bytes, and `README.md` is its one reader. |
 | The wheel carries a tree that the exclusion list does not name. | `test_the_wheel_carries_no_file_outside_the_package_and_its_metadata` fails, and `test_the_wheel_declares_one_top_level_name` fails where the tree is a discovered package. |
@@ -230,9 +263,9 @@ TestPyPI site.
       `ja4plus --version`.
 - [ ] The workflow runs the conformance suite against the installed wheel and it
       passes.
-- [ ] `unzip -l dist/*.whl` lists `ja4plus/data/ja4plus-mapping.csv` and
+- [x] `unzip -l dist/*.whl` lists `ja4plus/data/ja4plus-mapping.csv` and
       `ja4plus/py.typed`.
-- [ ] `unzip -l dist/*.whl` lists no file under `tests/`, `examples/`, `docs/` or
+- [x] `unzip -l dist/*.whl` lists no file under `tests/`, `examples/`, `docs/` or
       `assets/`.
 - [ ] `unzip -l dist/*.whl` lists every file below `ja4plus/` or below the
       `.dist-info` directory, and no other file.
