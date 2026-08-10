@@ -8,7 +8,7 @@ form, the new form and the reason. `CHANGELOG.md` and the `## Changelog` table o
 carries it.
 
 **Warning: a fingerprint of version 0.6.0 and a fingerprint of version 1.0.0 are not
-always comparable.** Six of the changes below move a value that a tool may have stored.
+always comparable.** Seven of the changes below move a value that a tool may have stored.
 Read [The fingerprints that move](#the-fingerprints-that-move) before you compare two
 sets of results.
 
@@ -32,8 +32,9 @@ sets of results.
 
 ## The fingerprints that move
 
-Six changes move a fingerprint value. A stored value of version 0.6.0 therefore does not
-always match the value that version 1.0.0 produces for the same traffic.
+Seven changes move a fingerprint value, and the table below holds one row for each. A
+stored value of version 0.6.0 therefore does not always match the value that version
+1.0.0 produces for the same traffic.
 
 | Method | The version 0.6.0 value | The version 1.0.0 value | Record |
 |---|---|---|---|
@@ -47,7 +48,8 @@ always match the value that version 1.0.0 produces for the same traffic.
 
 **JA4SSH also gained a trailing fingerprint.** `Processor.close_open_windows` emits every
 window a connection left open, so a capture produces one more JA4SSH value than version
-0.6.0 produced. #214 records the change.
+0.6.0 produced. #214 records the change. **That change adds a value and it moves none.**
+The count above excludes it, and the table above holds no row for it.
 
 ## What stays the same
 

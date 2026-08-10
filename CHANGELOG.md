@@ -505,6 +505,228 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The fingerprint move count of the migration page states the row count of its own table**
+  (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
+  rows. #395 measured the difference and filed the issue rather than repair it. **The count
+  lived in prose and no case read it.** #399 added a row to the breaking-change table of the
+  same page and #401 corrected a citation of it, and neither edit moved either sentence.
+  **The record already stated seven, so the page is the half that is wrong.** This file reads
+  "That table holds eight rows. Seven of them move a value a tool may have stored". Round 139
+  of the Changelog table of `docs/specs/spec.md` reads "plus seven fingerprints that move".
+  Both are dated records of a past measurement, so both keep their text and the repair is in
+  the page. **The trailing paragraph adds a value and it moves none.**
+  `Processor.close_open_windows` emits every window a connection left open under #214, so a
+  capture produces one more JA4SSH value than version 0.6.0 produced. A reader who counts
+  that paragraph as a move reaches eight. The page now states the decision rather than leave
+  it to the reader. #214 is a row of the fingerprint table of these notes and a paragraph of
+  the page, so the two tables differ by exactly that one row. **Three new cases in
+  `tests/test_release_notes.py` read each count against the table that carries it.**
+  `test_the_migration_page_states_the_count_its_own_fingerprint_table_holds` reads the page
+  against its own table and never against a second copy of the sentence. Round 143 records a
+  citation case that compared two copies of one claim and passed on the error it exists to
+  catch. **The floor bars a reader that finds no sentence**, because a
+  comparison over an empty set of sentences passes, and `MINIMUM_MIGRATION_FINGERPRINT_ROWS`
+  bars a table that an edit empties. **The self-review found this entry building the second
+  copy that round 143 warns about.** The paragraph above quotes the live count sentence of
+  these notes verbatim as evidence, the first form of the notes case searched the whole
+  version section, and `re.search` takes the first match. The live claim would therefore go
+  and the quote would answer for it. `_release_notes_introduction` reads the text above the
+  first third-level heading, so the case reads the claim where it lives. **Fourteen mutations
+  prove the three cases discriminate, and each was restored.** Either sentence back to six
+  fails the count case alone. It reports
+  `the migration page states ['Six'] fingerprints that move, and its own table holds 7 rows`.
+  The deletion of either sentence, the deletion of both, and a rewording the pattern misses
+  each fail the sentence floor. One row removed from the table fails the row floor. Every data
+  row removed fails it with
+  `the fingerprint table of the migration page holds 0 rows, and the floor is 7`. The decision
+  sentence deleted fails the trailing case alone. The count of these notes moved to nine rows,
+  moved to six moves, and deleted, each fails the notes case alone. **Two mutations prove the
+  scope.** The live claim deleted while the quote above stands fails with
+  `the release notes state no row count for their fingerprint table`. The live claim moved to
+  nine rows fails with
+  `the release notes state 9 rows of moved fingerprints, and their table holds 8 rows`.
+  **This branch merged the integration branch at `b0bab60` and at `ab73bd6`**, because #459 and
+  #455 landed after the branch left `d4a1305` and each round appends an unassigned row to the
+  Changelog table. Each resolution keeps both rows, and the earlier row stands first.
+  **The whole gate ran on this host after both merges**: the unit
+  suite reports 2865 passed, 4 skipped, 8 xfailed and 114 subtests, coverage holds at 94 with
+  273 lines missed of 4232 statements, the conformance suite reports 1532 passed, 143 skipped
+  and 134 xfailed against the 134 keys of `tests/foxio_deviations.json`, `mypy --strict` finds
+  no issue in 31 source files, and `ruff check` and `ruff format --check` pass. No file under
+  `ja4plus/` changes and no fingerprint moves.
+
+- **The FoxIO License 1.1 list of the README names every method it covers** (#388). Round 164.
+  The list named JA4S, JA4H, JA4T, JA4TS, JA4L, JA4X and JA4SSH. It named neither JA4LS, nor
+  JA4D, nor JA4D6, and this project builds all three under that license. **A published
+  statement about another party's license is the user's decision.** #62 therefore measured the
+  difference and changed nothing. The user ruled on 2026-08-09 that the list follows FoxIO's
+  list. **The premise of the issue is that `License FAQ.md:5` names ten methods, and the
+  source names twelve.** Read at the pinned commit
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, that line names JA4S, JA4L, JA4LS, JA4H, JA4X,
+  JA4SSH, JA4T, JA4TS, JA4TScan, JA4Scan, JA4D and JA4D6. **Two of those names reach no row of
+  this list.** This project builds neither JA4TScan nor JA4Scan. The list therefore holds the
+  names the user named, and it is a subset of FoxIO's. **Three FoxIO records at that commit
+  disagree with each other.** This round records the three readings and chooses among them for
+  nothing. `License FAQ.md:5` names the twelve above. `README.md:293` omits JA4Scan, JA4D and
+  JA4D6. `LICENSE:3` spells the scanner `JA4SScan`, beside a `JA4E` that the other two never
+  name.
+  **The list now cites the document and the commit**, so a reader checks it against the source
+  without a second measurement. **The license list is not the implemented set.** This project
+  implements eleven methods, and JA4 is one of them. FoxIO publishes JA4 under BSD-3-Clause and
+  not under the FoxIO License 1.1. JA4 therefore reaches the method table and reaches no row of
+  this list. **The case parses the paragraph and never searches for a name.** `JA4L` is a
+  substring of `JA4LS`, so a substring reader reports JA4L on a paragraph that names JA4LS
+  alone. **The first form of the reader lost `JA4S` for the opposite reason.** An underscore is
+  a word character, so Markdown emphasis hid the name from the word boundary. The reader now
+  removes the emphasis characters first. **The case derives the expected set from the
+  `Implemented` column of the README method table**, without the BSD-3-Clause method. A name
+  that table gains therefore reaches the list or fails the case, and
+  `tests/test_documented_method_count.py` holds that table to `ja4plus/`. **No transcription
+  under `docs/specs/foxio/` carries the license list.** The transcriptions cover
+  `technical_details/`, and `docs/specs/foxio/README.md` bars a copy of FoxIO material into
+  this repository. No case here therefore reads the FoxIO document itself. **Both new cases were
+  proved in both directions on this host.** The removal of JA4D6 from the list fails the set
+  case alone. The deletion of the whole paragraph fails both cases. Each run restored the file
+  it moved. No file under `ja4plus/` changes and no fingerprint moves.
+- **A batch merge fails where the pull-request event created no run** (#459). Round 165.
+  **The failure mode is not a missing run. It is an absent run read as a passed run.**
+  `gh pr checks` writes "no checks reported", which refuses no merge, so a reader takes the
+  absence for a pass. The batch merged then carries members whose cases never ran on Linux,
+  because every member commit carries a skip keyword by design. **The cause is measured, and
+  it is not the throttled webhook path the workflow comment named.** A skip keyword anywhere
+  in a commit message creates no run for that commit. GitHub reads five keywords, matches the
+  subject and the body, and reads no intent. The head commit `2a589ca` of pull request #444
+  and the head commit `b593de5` of pull request #458 each held the line
+  ``This commit carries no `[skip ci]`, so it is the head that starts the full run``.
+  **The sentence that states the absence of the keyword is the keyword.** **The correlation is
+  perfect across four heads.** The two heads that hold the keyword created no run, and the two
+  control heads `ec697c0e` and `b21604ce` hold none and both created their runs.
+  **All four observations of the issue re-measured true, and one premise re-measured false.**
+  `gh run list` reports `workflow_dispatch` runs alone on both batch branches, both green, and
+  it reports the push runs on `dev` after each merge. The premise that neither head commit
+  carries the keyword is false, and that premise is what ruled the documented skip path out.
+  **New file `tests/batch_gate.py` holds the condition**, and
+  `python -m tests.batch_gate --pr <number>` reads it. The command exits 0 where every
+  required workflow holds a terminal successful run at the head commit, and where every other
+  run of that commit concluded `success`. It exits 1 on an absent run, on a run that has not
+  finished, on any other conclusion, and on a failed read of the provider.
+  **`.github/workflows/test.yml` is the one required workflow**, because it accepts every pull
+  request into `dev` and it filters no path. `.github/workflows/docs-build.yml` filters four
+  paths, so an absent run of it proves nothing, and a red run of it still refuses the merge.
+  **New file `tests/test_batch_gate.py` holds 48 cases and every one failed before the module
+  existed.** They cover an absent run, a run of another commit, a queued run, a run in
+  progress, four terminal conclusions that are not `success`, a `skipped` conclusion, a re-run
+  that passed after a failure, a failure after a success, a red run of the unrequired
+  workflow, an abbreviated commit identifier, and the head commit message of both measured
+  pull requests against both controls. **The empty required set carries a case of its own,
+  because an aggregate over an empty set passes.** **The gate names the cause it cannot
+  otherwise show.** Where a required run is absent and the head commit message holds a
+  keyword, the failure names the keyword and this issue. It names no keyword where a run
+  exists and failed, because a red run has a cause in its log.
+  **The self-review found three defects in the first form of this gate and each is closed.**
+  **The first is the fault this project records most often, and it reached the gate itself.**
+  One workflow holds two runs at one commit where a push event and a pull-request event both
+  reach it, and two runs can carry one creation time. `max` returns the first of several equal
+  keys, so a green run listed before a red one made the gate report a pass. A measurement
+  proves it: on the unrepaired reader the order `success, failure` reads `PASSED` and the
+  order `failure, success` reads `REFUSED`, on one input. **The verdict rested on the order of
+  the response.** The reader now breaks that tie toward a refusal, and it refuses both orders.
+  **The second is a check name that names no check.** The rule file listed the six job names
+  of `.github/workflows/test.yml` as the required checks. The `test` job runs a matrix, so the
+  provider publishes one check for each combination, and a read of commit `b593de5` reports
+  `test (ubuntu-latest, 3.9)` and five more. A required check named `test` would have matched
+  nothing. The rule now lists the eleven names, and it bars the `build` check of the
+  path-filtered workflow, because a required `build` would block every batch that touches
+  none of its four paths. `test_the_rule_names_every_job_of_the_required_workflow` reads the
+  `jobs:` keys against the rule file. **The third is a reader that tested a region it never
+  found.** The two path-filter cases sliced the file on the text `pull_request:`, and a slice
+  that landed wrong would have satisfied `paths: not in trigger` on a claim nobody read. The
+  reader now takes the `on:` block by indent, and it raises where the region it took holds no
+  `branches:` key. Against `.github/workflows/publish.yml` it raises
+  `accepts no pull-request event` rather than returning a region.
+  **A caller that passed the upper form of a commit identifier read an absent run**, so the
+  comparison now folds the case and a fourth new case reads it. **The procedure reaches the
+  loop and not an issue alone.** New file `.claude/rules/batch-gate.md` states it, `CLAUDE.md`
+  names that file under `## Branch model`, and `.issue-flow.json` replaces the note that read
+  "A batch pull request into dev starts a run, so provider continuous integration is the batch
+  gate". **The strongest shape needs the user.**
+  `gh api repos/Crank-Git/ja4plus/branches/dev/protection` returns `404` with
+  `Branch not protected`, and `gh api repos/Crank-Git/ja4plus/rulesets` returns `[]`, so this
+  repository holds no required status check. The token carries the `repo` scope and both reads
+  returned a determinate answer, so this is a measurement and no stated limit. A change to
+  branch protection changes the repository configuration, so the user makes it, and the rule
+  file names the four steps and the eleven check names. **Two limits stand.** A run of the branch
+  head is no run of the merge result, and this gate reads a run rather than the code. No file
+  under `ja4plus/` changes and no fingerprint moves.
+- **The built wheel carries the `ja4plus` package alone** (#455). Round 166.
+  `docs/specs/features/09-release.md:156` requires the wheel to carry no file under
+  `docs/`. `python -m build` on the base commit `d94d8c1` produced a wheel of 96 entries.
+  56 of those entries lay under `docs/`. #393 measured that state on 2026-08-09, and this
+  round re-measured both counts on its own base and read the same two numbers. **Two
+  defaults produced the defect together.** A `pyproject.toml` project reads implicit
+  namespaces by default, so `docs` and every directory below it are discovered packages
+  although none of them holds an `__init__.py`. `include-package-data` is true by default
+  since `setuptools` 61. The file finder of `setuptools-scm` reports every file that git
+  tracks. Each tracked file below a discovered package therefore shipped.
+  `ja4plus-0.6.0.dist-info/top_level.txt`
+  named `assets`, `docs` and `ja4plus`, which is the reading that proves the discovery.
+  **The repair adds two entries to the one list that already excludes `tests/` and
+  `examples/`**, and it adds no second mechanism beside it. The `exclude` key of
+  `[tool.setuptools.packages.find]` now reads
+  `["tests", "tests.*", "examples", "docs", "docs.*", "assets", "assets.*"]`. A pattern
+  matches one package and no subpackage, so the entry `docs.*` carries `docs.specs` and
+  `docs.specs.features`. The repository holds no `MANIFEST.in`. **The project manager
+  widened this round to `assets/`, which is the same defect on another tree.** `assets/`
+  holds one tracked file, `assets/logo.png` at 2423363 bytes. It holds no `__init__.py`, so
+  cause 1 above discovered it, and cause 2 shipped it. `README.md` is its one reader, and a
+  logo is no run-time dependency of a fingerprinting library. **`assets` carries the
+  wildcard entry although it holds no subdirectory today**, because the requirement is that
+  no file of the tree ever ships. `examples` keeps the bare name it already had, and
+  `test_the_wheel_carries_no_file_outside_the_package_and_its_metadata` covers it.
+  **The wheel falls from 96 entries to 39, and it carries the `ja4plus` package and the
+  metadata directory alone.** The reading after the `docs/` repair was 40 entries, so the
+  three counts are 96, 40 and 39. The file falls from 3139637 bytes to 2551426 and then to
+  152780, which is 5% of the first reading. `top_level.txt` fell from `assets`, `docs` and
+  `ja4plus` to `ja4plus` alone. The wheel still carries `ja4plus/data/ja4plus-mapping.csv`
+  and `ja4plus/py.typed`. **The source distribution does not change, and that is the
+  intended state.** It holds 417 members before the repair and 417 after. 64 of those
+  members lie under `docs/`, and `assets/logo.png` is among the rest. The file finder adds
+  every tracked file whatever the package list holds. `tests/` and `examples/` prove the
+  same split: the list excludes both from the wheel and both ship in the source
+  distribution. `FR-release-11b` and `FR-release-11c` name both trees, and `FR-release-11d`
+  states the top-level name, because `FR-release-11` named the test suite, the examples and
+  the vectors and named neither tree. The `Terms` table gains `documentation tree` and
+  `assets tree`. **The tests came first.**
+  `test_the_wheel_carries_no_file_under_the_documentation_tree` failed on the unrepaired
+  tree with `AssertionError: the wheel carries 56 of its 96 entries under docs/, and it must
+  carry none`. The three cases of the widened scope failed with
+  `the wheel carries 1 of its 40 entries under assets/`, with
+  `the wheel declares the top-level names ['assets', 'ja4plus'], and it must declare
+  ['ja4plus']`, and with
+  `the wheel carries 1 of its 40 entries outside ja4plus/ and the metadata directory`.
+  **Each new case reads the artifact and never the working tree**, because the defect lives
+  in what the build includes. **An assertion over an empty entry list passes**, so each
+  wheel case holds `ja4plus/__init__.py` against the entry list before it reads the rest.
+  `test_the_wheel_carries_the_mapping_file`,
+  `test_the_source_distribution_carries_the_documentation_tree` and
+  `test_the_source_distribution_carries_the_assets_tree` hold the states a wrong exclusion
+  rule would produce. **Two cases hold the whole wheel rather than one named tree, and they
+  fail on two different faults.** `test_the_wheel_declares_one_top_level_name` reads the
+  declaration of `top_level.txt`, and
+  `test_the_wheel_carries_no_file_outside_the_package_and_its_metadata` reads the payload. A
+  file that ships outside `ja4plus/` under no discovered package reaches no `top_level.txt`,
+  so the payload case catches what the declaration case cannot. **A legitimate new top-level
+  package moves both cases, and that cost is intended**, because a new importable name
+  changes what a user of the release can import. **A mutation proves the three new cases
+  discriminate, and it isolates them.** The removal of the two `assets` entries from the
+  exclusion list fails exactly those three and passes the other 20. The mutation was written
+  to disk, measured, and restored, and the file compared equal by digest after the restore.
+  `EXPECTED_CASE_COUNT` of `tests/test_installed_wheel_selection.py` moves from 16 to 23,
+  and the `installed-wheel` job stays the only runner of the marker. **#462 filed the
+  `assets` finding before the project manager widened this round, so #462 closes as absorbed
+  and this round holds the repair.** No file under `ja4plus/` changes and no fingerprint
+  moves.
+
 - **The documentation behaviour rule names a command that runs, and a case holds every named
   command to a collection** (#393). Round 163. The Behaviour rules of
   `docs/specs/features/08-documentation.md` read **A code sample is tested by

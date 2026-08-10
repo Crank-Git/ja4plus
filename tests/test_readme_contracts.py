@@ -75,6 +75,33 @@ INDEPENDENCE_SENTENCE = "This library is an independent implementation of that s
 # The lines of the README that a reader sees before the first heading.
 INTRODUCTION_LINES = 20
 
+# The heading of the section that states the license of this project and of each method.
+LICENSE_HEADING = "## License"
+
+# The name of the license FoxIO applies to every method but one. The reader finds the
+# paragraph by this name, so a rewording of the surrounding prose defeats no case here.
+LICENSE_NAME = "FoxIO License 1.1"
+
+# The one method FoxIO publishes under BSD-3-Clause. The license list of the README names
+# the methods that carry `LICENSE_NAME`, so it names every other implemented method and
+# not this one.
+BSD_METHOD = "JA4"
+
+# The FoxIO document that names each method the FoxIO License 1.1 covers, and the commit
+# this project reads it at. `docs/specs/foxio/README.md` pins the same commit.
+LICENSE_SOURCE = "License%20FAQ.md"
+LICENSE_SOURCE_COMMIT = "27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8"
+
+# One JA4+ method name. **The trailing boundary is what stops `JA4L` from matching inside
+# `JA4LS`**, so a reader that searched for each name as a substring would report `JA4L` on a
+# paragraph that names `JA4LS` alone.
+METHOD_NAME = re.compile(r"\bJA4[A-Za-z0-9]*\b")
+
+# The characters Markdown emphasis writes around a name. **An underscore is a word
+# character, so `__JA4S__` hides `JA4S` from the boundary of `METHOD_NAME`.** The first form
+# of this reader lost `JA4S` for that reason, so the reader removes these first.
+EMPHASIS = "_*"
+
 # One imported fingerprinter of the `All Fingerprinters` block. The name must open a line
 # of the import statement, because a name inside a comment imports nothing.
 IMPORTED_FINGERPRINTER = re.compile(r"^\s+(JA4\w*Fingerprinter)\s*,", re.MULTILINE)
@@ -315,4 +342,88 @@ def test_the_readme_names_this_project_an_independent_implementation() -> None:
     """The README introduction states that this project is an independent implementation."""
     assert INDEPENDENCE_SENTENCE in _introduction(), (
         f"the first {INTRODUCTION_LINES} lines hold no {INDEPENDENCE_SENTENCE!r}"
+    )
+
+
+def _license_paragraph() -> str:
+    """Return the paragraph of the README that names the FoxIO License 1.1.
+
+    The reader normalizes the whitespace, so it finds a sentence whether the paragraph
+    occupies one line or wraps over several.
+
+    Returns:
+        The paragraph, with each run of whitespace written as one space.
+
+    Raises:
+        AssertionError: The license section holds no paragraph that names the license, or
+            it holds more than one.
+    """
+    section = _section(_readme(), LICENSE_HEADING)
+    found = [block for block in section.split("\n\n") if LICENSE_NAME in block]
+    assert found, f"the {LICENSE_HEADING!r} section holds no paragraph that names {LICENSE_NAME}"
+    assert len(found) == 1, (
+        f"the {LICENSE_HEADING!r} section holds {len(found)} paragraphs that name "
+        f"{LICENSE_NAME}, and a reader cannot tell which one states the list"
+    )
+    return " ".join(found[0].split())
+
+
+def _licensed_methods() -> set[str]:
+    """Return the methods the README license paragraph names under the FoxIO License 1.1.
+
+    The reader parses the names out of the paragraph. **A reader that searched for each
+    expected name instead would report a name the paragraph never holds**, because `JA4L`
+    is a substring of `JA4LS`.
+
+    Returns:
+        Every method name of the paragraph, without the BSD-3-Clause method.
+    """
+    plain = _license_paragraph()
+    for character in EMPHASIS:
+        plain = plain.replace(character, " ")
+    return {name for name in METHOD_NAME.findall(plain) if name != BSD_METHOD}
+
+
+def _methods_under_the_foxio_license() -> set[str]:
+    """Return the implemented methods that FoxIO does not publish under BSD-3-Clause.
+
+    The count of these methods is not the count of methods this project implements. The
+    implemented set holds `BSD_METHOD` as well, and
+    `tests/test_documented_method_count.py` measures that larger set against `ja4plus/`.
+
+    Returns:
+        The methods the README method table marks implemented, without `BSD_METHOD`.
+
+    Raises:
+        AssertionError: The method table marks no method implemented.
+    """
+    implemented = {
+        method for method, row in _method_rows().items() if _implemented_cell(row) == "Yes"
+    }
+    expected = implemented - {BSD_METHOD}
+    # **An aggregate over an empty set passes.** A table that marked nothing implemented
+    # would make the set case agree with a paragraph that names nothing, so the floor
+    # states that the comparison read something.
+    assert expected, "the README method table marks no method implemented beside JA4"
+    return expected
+
+
+def test_the_readme_license_paragraph_names_every_method_the_foxio_license_covers() -> None:
+    """The README license list names each implemented method that carries FoxIO License 1.1."""
+    expected = _methods_under_the_foxio_license()
+    named = _licensed_methods()
+    assert named == expected, (
+        f"the license paragraph names no {sorted(expected - named)} and names "
+        f"{sorted(named - expected)}, which the method table does not mark implemented"
+    )
+
+
+def test_the_readme_license_paragraph_cites_the_foxio_document_it_follows() -> None:
+    """The README license list cites the FoxIO document and the commit this project read."""
+    paragraph = _license_paragraph()
+    assert LICENSE_SOURCE in paragraph, (
+        f"the license paragraph cites no {LICENSE_SOURCE}, so a reader cannot check the list"
+    )
+    assert LICENSE_SOURCE_COMMIT in paragraph, (
+        f"the license paragraph names no commit {LICENSE_SOURCE_COMMIT}"
     )

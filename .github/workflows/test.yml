@@ -5,8 +5,19 @@ name: Tests
 #
 # `workflow_dispatch` starts a run by hand. GitHub sends a push event and a pull request
 # event through the webhook path. It starts a manual run through the interface instead.
-# When GitHub throttles the webhook path, a push and a pull request create no run, and a
-# manual run is the only way to get one. See issue #85.
+# Where a push and a pull request create no run, a manual run is the only way to get one.
+# See issue #85.
+#
+# **#459 measured the cause of an absent run, and it is not a throttled webhook path.** A
+# skip keyword anywhere in a commit message creates no run for that commit. GitHub reads
+# five keywords, `[skip ci]` among them, and it matches the subject and the body. It reads
+# no intent, so a sentence that states a commit carries no keyword carries one. The head
+# commit of pull request #444 and the head commit of pull request #458 each held such a
+# sentence, and neither created a run from the pull-request event.
+#
+# **An absent run is not a passed run.** `gh pr checks` writes "no checks reported", which
+# refuses no merge. `.claude/rules/batch-gate.md` states the procedure, and
+# `python -m tests.batch_gate --pr <number>` holds the condition.
 on:
   push:
     branches: [master, dev]
