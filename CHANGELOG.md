@@ -73,7 +73,7 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
-- **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round TBD.
+- **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round 182.
   **Three FoxIO records at the pinned commit
   `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` name a different set of methods.**
   `License FAQ.md:5` names twelve, the FoxIO `README.md:293` names nine, and `LICENSE:3`
@@ -531,7 +531,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **The sentence-length rule exempts the two records and no other document** (#457).
-  Round TBD. #393 found about twelve sentences of its own Changelog row past the 25-word
+  Round 180. #393 found about twelve sentences of its own Changelog row past the 25-word
   limit, and that finding is correct against the letter of the rule. All 159 numbered rows
   read the same way, so a row written to the limit is a house-style change for the whole
   record. **The user ruled on 2026-08-10 that the record is exempt.** A dated record of a
@@ -575,7 +575,7 @@ holds every breaking change of this record against a row of that page.
   finding and this round ends them. No file under `ja4plus/` changes and no fingerprint
   moves.
 
-- **The prose names the statistics thread by its controlled term** (#441). Round TBD. The
+- **The prose names the statistics thread by its controlled term** (#441). Round 183. The
   `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
   thread, and the prose of the package used `the reporter` throughout. The self-review of
   #371 found the disagreement and declined the repair, because a repair inside that diff
@@ -1515,7 +1515,7 @@ holds every breaking change of this record against a row of that page.
 ### Changed
 
 - **The `dev` extra states one recorded shape for every entry, and one record holds every
-  version** (#446). Round TBD. #378 pinned `ruff` alone, so four entries of the `dev` extra
+  version** (#446). Round 181. #378 pinned `ruff` alone, so four entries of the `dev` extra
   still floated and two of them had drifted across a major line. **The user ruled the shape
   on 2026-08-10, and this round builds that ruling.** `build`, `pytest` and `pytest-cov`
   each carry an exact version beside `ruff==0.16.2`. `mypy` floats. `requirements.txt` is
