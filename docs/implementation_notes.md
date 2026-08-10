@@ -9,9 +9,9 @@ Only JA4 holds one, in `technical_details/JA4.md`. `technical_details/JA4H.md` i
 bytes and states one rule, the header count, so JA4H is an image method too.
 `docs/specs/foxio/README.md` holds the inventory, every byte count and every SHA-256.
 
-Where an image leaves a question open, the expected-output file decides, and the reading
-goes here. An entry names the vector that supports the reading, or it states that no
-FoxIO material validates it.
+Where a reader reads the image and finds it ambiguous, the expected-output file decides,
+and the reading goes here. An image nobody read reaches no fallback. An entry names the
+vector that supports the reading, or it states that no FoxIO material validates it.
 
 ---
 
