@@ -65,12 +65,12 @@ ruled on 2026-08-10, on #457 for rule 1 and on #502 for rule 3.
 - The `## Changelog` table of `docs/specs/spec.md`, which holds one row for each round.
 
 **A record states a past measurement, and this project quotes such a record.** A rewrite
-of the 189 rows falsifies nothing they record. It does mean that the text a past reader
+of the 190 rows falsifies nothing they record. It does mean that the text a past reader
 saw is not the text a future reader sees.
 
 **One row records one round, which is one topic.** The sentence count of a row follows
-from how much that round measured. A read of 2026-08-10 reports 177 of the 189 rows past
-six sentences, and 112 of the 135 entries of `CHANGELOG.md` past six.
+from how much that round measured. A read of 2026-08-10 reports 178 of the 190 rows past
+six sentences, and 113 of the 136 entries of `CHANGELOG.md` past six.
 
 **The exemption covers rule 1 and rule 3.** It covers the word limit of a sentence and the
 sentence limit of a paragraph, and it covers no other rule of this standard.

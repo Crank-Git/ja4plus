@@ -395,7 +395,9 @@ def rule_failures(rule_text: str) -> List[str]:
         failures.append(f"the exemption places these rules of the standard nowhere: {unplaced}")
     unknown = sorted(number for number in covered + reaching if number not in standard)
     if unknown:
-        failures.append(f"the exemption places these rules, and the standard states none: {unknown}")
+        failures.append(
+            f"the exemption places these rules, and the standard states none: {unknown}"
+        )
     return failures
 
 
@@ -742,7 +744,9 @@ LONG_SENTENCE = (
 
 # The 16 numbered rules a fixture states, so that a fixture holds the rule floor and the
 # placement reads against a whole standard.
-FIXTURE_RULES = "".join(f"{number}. A rule of the standard.\n" for number in range(1, RULE_FLOOR + 1))
+FIXTURE_RULES = "".join(
+    f"{number}. A rule of the standard.\n" for number in range(1, RULE_FLOOR + 1)
+)
 
 # The two sentences that place every rule. The shipped rule states the same two.
 COVERED_SENTENCE = "**The exemption covers rule 1 and rule 3.**\n"
@@ -1017,7 +1021,9 @@ def test_the_exemption_places_every_rule_of_the_standard() -> None:
 def test_every_rule_the_exemption_leaves_out_reaches_both_records() -> None:
     """The exemption states that the 14 rules outside it reach both records."""
     reaching = rules_that_reach_the_records(read_document(RULE_PATH))
-    assert reaching == tuple(number for number in range(1, RULE_FLOOR + 1) if number not in EXEMPT_RULES)
+    assert reaching == tuple(
+        number for number in range(1, RULE_FLOOR + 1) if number not in EXEMPT_RULES
+    )
 
 
 def test_a_reader_that_names_no_rule_fails() -> None:
@@ -1044,7 +1050,9 @@ def test_an_exemption_that_covers_a_rule_and_states_that_it_reaches_fails() -> N
     """A rule that puts rule 2 on both sides fails, and the failure names rule 2."""
     rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1, rule 2 and rule 3.")
     failures = rule_failures(rule)
-    assert any("both covers these rules and states that they reach: [2]" in failure for failure in failures)
+    assert any(
+        "both covers these rules and states that they reach: [2]" in failure for failure in failures
+    )
 
 
 def test_a_rule_placement_failure_reaches_the_whole_reading() -> None:
@@ -1072,7 +1080,9 @@ def test_the_shipped_exemption_measures_no_rule_against_the_changelog() -> None:
     failures = uncovered_failures(
         read_document(RULE_PATH), CHANGELOG_PATH, read_document(CHANGELOG_PATH)
     )
-    assert failures == [], f"these paragraphs of {CHANGELOG_PATH} fail an uncovered rule: {failures}"
+    assert failures == [], (
+        f"these paragraphs of {CHANGELOG_PATH} fail an uncovered rule: {failures}"
+    )
 
 
 def test_the_shipped_exemption_measures_no_rule_against_the_specification_table() -> None:
@@ -1144,7 +1154,9 @@ def test_the_paragraph_reader_reads_a_paragraph_of_the_limit_as_no_failure() -> 
 
 def test_the_reader_reads_one_row_of_the_specification_table_as_one_paragraph() -> None:
     """Each row of the `## Changelog` table is one paragraph, and the separator row is none."""
-    table = f"| Round | Date | What changed |\n|---|---|---|\n| 1 | 2026-08-10 | {LONG_PARAGRAPH} |\n"
+    table = (
+        f"| Round | Date | What changed |\n|---|---|---|\n| 1 | 2026-08-10 | {LONG_PARAGRAPH} |\n"
+    )
     units = record_units(SPECIFICATION_PATH, table)
     assert len(units) == 2
     assert over_limit_units(units) == [f"| 1 | 2026-08-10 | {LONG_PARAGRAPH} |"]
