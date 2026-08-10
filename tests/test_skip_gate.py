@@ -4,11 +4,17 @@
 `tests/test_round_entry_existence.py` reported a skip on every job of the matrix, and a
 reader of a green run took that for a pass. This file holds the condition that refuses
 such a case.
+
+#530 widened the reach of the gate from the six matrix jobs to the ten reports of the five
+jobs that run cases. The section `The reach` holds `.github/workflows/test.yml` against
+that rule.
 """
 
 from __future__ import annotations
 
+import fnmatch
 import json
+import re
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence
 
@@ -16,18 +22,29 @@ import pytest
 
 from tests.skip_gate import (
     ALLOWLIST_PATH,
+    CASE_JOBS_OUTSIDE_THE_MATRIX,
     MATRIX_JOB_COUNT,
+    MINIMUM_REPORTS,
     Allowance,
     Report,
     census_lines,
     counted,
+    covering_prefix,
     gate_reasons,
+    holders,
     main,
     read_allowlist,
     read_report,
     read_reports,
     universal_skips,
 )
+
+REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+
+WORKFLOW_PATH = REPOSITORY_ROOT / ".github" / "workflows" / "test.yml"
+
+# The job that holds the gate. It runs no case of its own.
+GATE_JOB = "skip-gate"
 
 # A case every job runs. It keeps a report from holding no case at all, which the reader
 # refuses, so a fixture can leave one case out of one job on purpose.
@@ -37,12 +54,24 @@ JOB_LABELS = [f"test-results-ubuntu-latest-py3.{minor}" for minor in range(9, 14
     "test-results-macos-latest-py3.12"
 ]
 
+# The artifact name of each job outside the matrix, as `.github/workflows/test.yml` writes
+# it. The download labels each report by the directory it extracts into.
+OTHER_JOB_LABELS = [
+    "conformance-results",
+    "fuzz-results",
+    "installed-wheel-results",
+    "sample-results",
+]
+
 CaseMap = Mapping[str, Optional[str]]
 JobMap = Mapping[str, CaseMap]
 
 
 def junit_report(cases: CaseMap) -> str:
     """Return the text of one JUnit report.
+
+    `pytest --junitxml` writes the reason into the `message` attribute of the `skipped`
+    element, and a prefix entry of the allowlist reads that attribute.
 
     Args:
         cases: The identifier of each case against its skip reason, or None where the
@@ -54,7 +83,11 @@ def junit_report(cases: CaseMap) -> str:
     lines = ['<?xml version="1.0" encoding="utf-8"?>', "<testsuites>", "  <testsuite>"]
     for identifier, reason in cases.items():
         classname, name = identifier.rsplit("::", 1)
-        inner = "" if reason is None else f'<skipped type="pytest.skip">{reason}</skipped>'
+        inner = (
+            ""
+            if reason is None
+            else f'<skipped type="pytest.skip" message="{reason}">{reason}</skipped>'
+        )
         lines.append(f'    <testcase classname="{classname}" name="{name}">{inner}</testcase>')
     lines += ["  </testsuite>", "</testsuites>", ""]
     return "\n".join(lines)
@@ -94,17 +127,39 @@ def six_jobs(cases: CaseMap) -> Dict[str, Dict[str, Optional[str]]]:
     return jobs
 
 
-def allowance(case: str, reason: str) -> Allowance:
+def every_job(
+    matrix_cases: CaseMap, other_cases: Optional[JobMap] = None
+) -> Dict[str, Dict[str, Optional[str]]]:
+    """Return the ten reports the download holds on a whole run.
+
+    Args:
+        matrix_cases: The case map every job of the matrix reports.
+        other_cases: The case map of each job outside the matrix, by artifact name. A job
+            the map leaves out reports the anchor case alone.
+
+    Returns:
+        A map of ten report labels against their case maps.
+    """
+    jobs = six_jobs(matrix_cases)
+    for label in OTHER_JOB_LABELS:
+        entry: Dict[str, Optional[str]] = {ANCHOR: None}
+        entry.update((other_cases or {}).get(label, {}))
+        jobs[label] = entry
+    return jobs
+
+
+def allowance(case: str, reason: str, message_prefix: str = "") -> Allowance:
     """Return one allowlist entry.
 
     Args:
-        case: The case identifier.
+        case: The case identifier, or an empty string on a prefix entry.
         reason: The environment limit that stops the case on every job.
+        message_prefix: The prefix of the skip message the entry covers.
 
     Returns:
         The entry.
     """
-    return Allowance(case=case, reason=reason)
+    return Allowance(case=case, reason=reason, message_prefix=message_prefix)
 
 
 def reasons_for(
@@ -353,7 +408,7 @@ def test_the_command_exits_one_on_a_universal_skip(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """The job reads the exit status, so a red gate must exit non-zero."""
-    reports = write_reports(tmp_path / "reports", six_jobs({"tests.test_a::test_c": "a limit"}))
+    reports = write_reports(tmp_path / "reports", every_job({"tests.test_a::test_c": "a limit"}))
     allowlist = tmp_path / "empty.json"
     allowlist.write_text(json.dumps({"entries": []}), encoding="utf-8")
     status = main(["--reports", str(reports), "--allowlist", str(allowlist)])
@@ -363,7 +418,7 @@ def test_the_command_exits_one_on_a_universal_skip(
 
 def test_the_command_exits_zero_where_every_case_runs(tmp_path: Path) -> None:
     """A gate that never exits zero blocks every merge and reads as broken."""
-    reports = write_reports(tmp_path / "reports", six_jobs({"tests.test_a::test_c": None}))
+    reports = write_reports(tmp_path / "reports", every_job({"tests.test_a::test_c": None}))
     allowlist = tmp_path / "empty.json"
     allowlist.write_text(json.dumps({"entries": []}), encoding="utf-8")
     assert main(["--reports", str(reports), "--allowlist", str(allowlist)]) == 0
@@ -397,3 +452,250 @@ def test_the_report_type_is_frozen() -> None:
     report = Report(label="a", cases={"tests.test_a::test_c": True})
     with pytest.raises(Exception):
         report.label = "b"  # type: ignore[misc]
+
+
+# --- The reach ----------------------------------------------------------------------------
+
+
+def workflow_jobs() -> Dict[str, str]:
+    """Return the text block of each top-level job of `.github/workflows/test.yml`.
+
+    A job name sits at two spaces of indent below `jobs:`, and every key of a job sits at
+    four or more. The reader takes no YAML parser, because no test dependency of this
+    project holds one and `tests/test_installed_wheel_selection.py` reads the same file as
+    text.
+
+    Returns:
+        The block of each job, by job name.
+    """
+    body = WORKFLOW_PATH.read_text(encoding="utf-8").split("\njobs:\n", 1)[1]
+    blocks: Dict[str, str] = {}
+    name = ""
+    lines: List[str] = []
+    for line in body.splitlines():
+        match = re.match(r"^  ([A-Za-z][\w-]*):\s*$", line)
+        if match:
+            if name:
+                blocks[name] = "\n".join(lines)
+            name, lines = match.group(1), []
+        elif name:
+            lines.append(line)
+    if name:
+        blocks[name] = "\n".join(lines)
+    return blocks
+
+
+def case_jobs() -> Dict[str, str]:
+    """Return the block of every job of the workflow that runs cases.
+
+    Returns:
+        The block of each job whose steps run `pytest`, by job name.
+    """
+    return {name: block for name, block in workflow_jobs().items() if "-m pytest" in block}
+
+
+def test_the_workflow_reader_finds_the_jobs_the_file_holds() -> None:
+    """A reader that found nothing passes every case below on an empty set."""
+    names = set(workflow_jobs())
+    assert {"lint", "test", GATE_JOB, "fuzz", "samples", "installed-wheel", "conformance"} <= names
+
+
+def test_every_job_that_runs_cases_writes_one_report() -> None:
+    """The gate reads reports, so a job that writes none reaches it nowhere."""
+    for name, block in case_jobs().items():
+        assert "--junitxml=" in block, f"the {name} job runs cases and writes no JUnit report"
+        assert "upload-artifact" in block, f"the {name} job writes a report and uploads none"
+
+
+def test_the_skip_gate_job_depends_on_every_job_that_runs_cases() -> None:
+    """A job the gate does not wait for reaches the download with no report.
+
+    This is the reading #530 exists to build. The `test` job collects 4150 cases of the
+    6111 the suite holds, and a gate behind that job alone reports a clean corpus over the
+    1961 it cannot see.
+    """
+    block = workflow_jobs()[GATE_JOB]
+    match = re.search(r"^    needs: \[([^\]]*)\]$", block, re.M)
+    assert match is not None, f"the {GATE_JOB} job states no needs list"
+    named = {name.strip() for name in match.group(1).split(",")}
+    assert named == set(case_jobs()), f"the {GATE_JOB} job waits for {named}"
+
+
+def test_the_gate_requires_one_report_for_each_job_that_runs_cases() -> None:
+    """An absent report is not a passed job, so the count follows the workflow."""
+    outside = sorted(set(case_jobs()) - {"test"})
+    assert outside == sorted(CASE_JOBS_OUTSIDE_THE_MATRIX)
+    assert MINIMUM_REPORTS == MATRIX_JOB_COUNT + len(outside)
+
+
+def test_the_download_pattern_matches_the_artifact_name_of_every_job() -> None:
+    """A report the pattern misses never reaches the gate, and the gate then reads less."""
+    block = workflow_jobs()[GATE_JOB]
+    pattern = re.search(r'^          pattern: "?([^"\n]+)"?$', block, re.M)
+    assert pattern is not None, f"the {GATE_JOB} job states no download pattern"
+    names = []
+    for job_block in case_jobs().values():
+        names += re.findall(r"upload-artifact@[^\n]*\n\s*with:\n\s*name: (\S+)", job_block)
+    assert len(names) == len(case_jobs()), f"the reader found the artifact names {names}"
+    for name in names:
+        assert fnmatch.fnmatch(name, pattern.group(1)), f"{pattern.group(1)} misses {name}"
+
+
+def test_a_case_that_one_job_outside_the_matrix_holds_and_skips_fails_the_gate(
+    tmp_path: Path,
+) -> None:
+    """This is the case the six-report reader of #524 accepted and this reader refuses.
+
+    The `conformance` job runs `pytest tests/ -m spec_validation`, and every other job
+    deselects that marker. A spec_validation case that skips there therefore ran nowhere,
+    and no report of the `test` job holds it at all.
+    """
+    conformance = {"conformance-results": {"tests.test_spec_validation::test_c": "no vector"}}
+    reasons = reasons_for(tmp_path, every_job({}, conformance), minimum=MINIMUM_REPORTS)
+    assert len(reasons) == 1
+    assert "tests.test_spec_validation::test_c" in reasons[0]
+
+
+def test_the_six_report_reader_accepts_the_same_case(tmp_path: Path) -> None:
+    """The reader of #524 downloaded `test-results-*` alone, so that case reached it never."""
+    reasons = reasons_for(tmp_path, six_jobs({}), minimum=MATRIX_JOB_COUNT)
+    assert reasons == []
+
+
+# --- The job scope of an entry --------------------------------------------------------------
+
+
+def test_the_reader_names_every_report_that_holds_one_case(tmp_path: Path) -> None:
+    """#530 declined a job field on an entry because the reports state the same scope."""
+    conformance = {"conformance-results": {"tests.test_spec_validation::test_c": "no vector"}}
+    reports = read_reports(write_reports(tmp_path, every_job({}, conformance)))
+    assert holders(reports, "tests.test_spec_validation::test_c") == ["conformance-results"]
+    assert len(holders(reports, ANCHOR)) == MINIMUM_REPORTS
+
+
+def test_the_census_names_the_scope_of_a_case_it_lists(tmp_path: Path) -> None:
+    """An entry that covers a matrix case says more than one that covers a one-job case."""
+    conformance = {"conformance-results": {"tests.test_spec_validation::test_c": "no vector"}}
+    write_reports(tmp_path, every_job({}, conformance))
+    lines = census_lines(read_reports(tmp_path), [])
+    listed = [line for line in lines if "tests.test_spec_validation::test_c" in line]
+    assert len(listed) == 1
+    assert "held by conformance-results" in listed[0]
+
+
+# --- The class of skip one message states -----------------------------------------------------
+
+# The class `tests/test_spec_validation.py` produces once for each cell of a cross product
+# that holds no data. #530 measured 143 such cases on 2026-08-10, all of one function that
+# ran 199 other parameter sets.
+NOT_APPLICABLE = "not applicable:"
+
+
+def test_the_gate_passes_a_universal_skip_under_a_prefix_entry(tmp_path: Path) -> None:
+    """One entry covers a class, so 143 parameter sets need no 143 entries."""
+    conformance = {
+        "conformance-results": {
+            "tests.test_spec_validation::test_c[a]": "not applicable: a holds no JA4 value",
+            "tests.test_spec_validation::test_c[b]": "not applicable: b holds no JA4S value",
+        }
+    }
+    reasons = reasons_for(
+        tmp_path,
+        every_job({}, conformance),
+        [allowance("", "the cell holds no data on either side", NOT_APPLICABLE)],
+        minimum=MINIMUM_REPORTS,
+    )
+    assert reasons == []
+
+
+def test_a_prefix_entry_covers_no_case_whose_message_differs_on_one_report(
+    tmp_path: Path,
+) -> None:
+    """A second reason on one job must reach the gate, so one class hides no other."""
+    jobs = every_job({"tests.test_a::test_c": "not applicable: the vector holds no value"})
+    jobs["test-results-macos-latest-py3.12"]["tests.test_a::test_c"] = "no /dev/bpf device"
+    reasons = reasons_for(
+        tmp_path,
+        jobs,
+        [allowance("", "the cell holds no data on either side", NOT_APPLICABLE)],
+        minimum=MINIMUM_REPORTS,
+    )
+    assert len(reasons) == 1
+    assert "tests.test_a::test_c" in reasons[0]
+
+
+def test_a_prefix_entry_reads_the_start_of_the_message_and_never_the_middle(
+    tmp_path: Path,
+) -> None:
+    """A prefix that matched anywhere would cover a case whose reason merely quotes it."""
+    conformance = {
+        "conformance-results": {"tests.test_a::test_c": "the runner states not applicable: nothing"}
+    }
+    reasons = reasons_for(
+        tmp_path,
+        every_job({}, conformance),
+        [allowance("", "the cell holds no data on either side", NOT_APPLICABLE)],
+        minimum=MINIMUM_REPORTS,
+    )
+    assert len(reasons) == 1
+
+
+def test_the_gate_fails_a_prefix_entry_that_names_no_reason(tmp_path: Path) -> None:
+    """The reason rule reads every entry, and a prefix entry covers the most cases."""
+    reasons = reasons_for(
+        tmp_path, every_job({}), [allowance("", "  ", NOT_APPLICABLE)], minimum=MINIMUM_REPORTS
+    )
+    assert len(reasons) == 1
+    assert "names no reason" in reasons[0]
+    assert NOT_APPLICABLE in reasons[0]
+
+
+def test_the_prefix_reader_finds_no_entry_for_a_case_that_every_job_ran(
+    tmp_path: Path,
+) -> None:
+    """A case with no skip message matches no prefix, so the reader states None."""
+    reports = read_reports(write_reports(tmp_path, every_job({"tests.test_a::test_c": None})))
+    entry = allowance("", "a reason", NOT_APPLICABLE)
+    assert covering_prefix(reports, "tests.test_a::test_c", [entry]) is None
+
+
+def test_the_allowlist_reader_holds_a_skip_message_prefix(tmp_path: Path) -> None:
+    """The tracked file states a class entry under `skip_message_prefix`."""
+    path = tmp_path / "universal_skips.json"
+    path.write_text(
+        json.dumps({"entries": [{"skip_message_prefix": NOT_APPLICABLE, "reason": "a reason"}]}),
+        encoding="utf-8",
+    )
+    assert read_allowlist(path) == [
+        Allowance(case="", reason="a reason", message_prefix=NOT_APPLICABLE)
+    ]
+
+
+def test_the_allowlist_reader_refuses_an_entry_that_names_neither(tmp_path: Path) -> None:
+    """An entry that names no case and no prefix covers everything or nothing."""
+    path = tmp_path / "universal_skips.json"
+    path.write_text(json.dumps({"entries": [{"reason": "a reason"}]}), encoding="utf-8")
+    with pytest.raises(ValueError):
+        read_allowlist(path)
+
+
+def test_the_census_groups_the_cases_a_prefix_entry_covers(tmp_path: Path) -> None:
+    """143 near-identical lines would bury every case-level line of the census."""
+    conformance = {
+        "conformance-results": {
+            "tests.test_spec_validation::test_c[a]": "not applicable: a holds no JA4 value",
+            "tests.test_spec_validation::test_c[b]": "not applicable: b holds no JA4S value",
+        }
+    }
+    write_reports(tmp_path, every_job({}, conformance))
+    entry = allowance("", "the cell holds no data on either side", NOT_APPLICABLE)
+    lines = census_lines(read_reports(tmp_path), [entry])
+    assert any("2 cases" in line and NOT_APPLICABLE in line for line in lines)
+    assert not any("test_c[a]" in line for line in lines)
+
+
+def test_the_census_names_the_corpus_the_reports_hold(tmp_path: Path) -> None:
+    """The corpus size is the reach of the reader, and a reader of six reports saw less."""
+    write_reports(tmp_path, every_job({"tests.test_a::test_c": None}))
+    lines = census_lines(read_reports(tmp_path), [])
+    assert "2 cases between them" in lines[0]
