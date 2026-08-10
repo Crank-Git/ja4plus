@@ -763,8 +763,8 @@ holds every breaking change of this record against a row of that page.
   the shipped standard prove that the cases bite in the failing direction**, and each one
   runs inside a case rather than against the working tree: an exemption that drops rule 3
   reports every long entry and every long row, an exemption that drops rule 1 reports every
-  long sentence, an exemption that covers rule 2 fails the placement, and an exemption that
-  places rule 5 nowhere fails it too. `mutated_rule` refuses a mutation that matches no
+  long sentence, an exemption that names rule 2 on both sides fails the placement, and an
+  exemption that places rule 2 on neither side fails it too. `mutated_rule` refuses a mutation that matches no
   span, because a mutation that matches nothing proves nothing. **An aggregate over an empty
   set passes**, so the rule floor of 16 and the document floor of 40 each carry a case that
   feeds the reader nothing. **No other prose loses rule 3**: the standard itself, and a page
