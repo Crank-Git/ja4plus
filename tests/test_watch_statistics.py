@@ -462,7 +462,7 @@ class TheReporterWritesOneLinePerInterval(unittest.TestCase):
     asserts the elapsed time between two lines**, and #369 removed that assertion on
     purpose, because the host decides that time.
 
-    The statistics thread still runs here, so the cases measure a real thread and not a
+    The statistics thread still runs here, so the cases measure that thread and not a
     loop the case wrote. `stop` joins that thread. The thread blocks on nothing once the
     scripted wait returns True, so the join is a liveness bound and no measurement of
     promptness. Each case names the end of the thread, so a join that timed out reports

@@ -1,8 +1,8 @@
 """Tests that the prose names the statistics thread by its controlled term.
 
-The `## Terms` table of `docs/specs/spec.md` holds one row for the statistics thread, and
-the fourth column of that row names `reporter` as a word a writer does not use. The prose
-of the package used `the reporter` throughout, so the controlled vocabulary and the prose
+The `## Terms` table of `docs/specs/spec.md` holds one row for the statistics thread. The
+fourth column of that row names `reporter` as a word a writer does not use. The prose of
+the package used `the reporter` throughout, so the controlled vocabulary and the prose
 disagreed. #441 records the ruling of the user, and these cases hold the result.
 
 **A corrected sentence goes stale the next time a writer reaches for the rejected word.**
@@ -31,6 +31,11 @@ one row for each round. The rows of #55, #369 and #371 each name the rejected wo
 **The `## Terms` section states the rejected word, so `readable_prose` cuts it too.** The
 row is the authority these cases read, and a reader that forbade its own authority would
 fail on the specification itself.
+
+**The Markdown corpus holds `docs/specs/spec.html` beside the Markdown pages.** A writer
+edits that page by hand, so a rejected word reaches a reader there as it reaches one in a
+Markdown page. `documents` of `tests/test_documented_method_count.py` reads it for the
+same reason. The page states no round and it holds no `## Terms` table.
 
 ## The two words the reader leaves alone
 
@@ -79,11 +84,11 @@ RECORD_FILE = "CHANGELOG.md"
 # holds code and the writing standard reproduces code verbatim.
 FENCED_BLOCK = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
 
-# A code span. The reader drops one before it reads, because a span holds an identifier, a
-# path or a command, and the writing standard reproduces each one verbatim.
+# A code span. The reader drops one before it reads. A span holds an identifier, a path or
+# a command, and the writing standard reproduces each one verbatim.
 #
 # **Warning: the reader drops a code span one line at a time.** A search over a whole page
-# pairs a backtick of one line with a backtick far below it, and it then drops every word
+# pairs a backtick of one line with a backtick far below it. It then drops every word
 # between them. `tests/test_documented_method_count.py` records the same measurement for
 # the quotation mark.
 CODE_SPAN = re.compile(r"`[^`]*`")
@@ -91,6 +96,11 @@ CODE_SPAN = re.compile(r"`[^`]*`")
 # The git pathspec that names every tracked Markdown page. **In a default git pathspec `*`
 # crosses `/`**, so this one term reaches every depth.
 MARKDOWN_PATHSPEC = "*.md"
+
+# The rendered page of the specification. A writer edits it by hand, so a rejected word
+# reaches a reader there as it reaches one in a Markdown page. The pathspec above names no
+# `.html` file, so the corpus takes this page by name.
+RENDERED_PAGE = "docs/specs/spec.html"
 
 # The directories whose Python files a case reads.
 PYTHON_ROOTS = ("ja4plus", "tests")
@@ -102,12 +112,14 @@ MARKDOWN_FLOOR = 20
 # The least count of Python files the corpus holds, for the same reason.
 PYTHON_FLOOR = 120
 
-# One file of each corpus that held the rejected word before #441. A case names each one,
-# so a reader that stops reaching a corpus fails here rather than passes over nothing.
+# The three files that held the rejected word before #441, and the rendered page. A case
+# names each one, so a reader that stops reaching a corpus fails here rather than passes
+# over nothing.
 ANCHOR_FILES = (
     "docs/api_reference.md",
     "ja4plus/watch.py",
     "tests/test_watch_statistics.py",
+    RENDERED_PAGE,
 )
 
 
@@ -174,8 +186,8 @@ def readable_prose(name: str, text: str) -> str:
 def without_code(text: str) -> str:
     """Return the text with every fenced block and every code span removed.
 
-    The reader drops a code span one line at a time, because a search over the whole text
-    pairs a backtick of one line with a backtick far below it.
+    The reader drops a code span one line at a time. A search over the whole text pairs a
+    backtick of one line with a backtick far below it.
 
     Args:
         text: The text of one document, or of the prose of one Python file.
@@ -206,7 +218,12 @@ def rejected_uses(text: str, word: str) -> List[str]:
 
 
 def markdown_documents() -> List[str]:
-    """Return every tracked Markdown page, relative to the repository root.
+    """Return every prose page a case reads, relative to the repository root.
+
+    The set holds `docs/specs/spec.html` beside the Markdown pages, because that page is
+    prose a writer edits by hand. `documents` of `tests/test_documented_method_count.py`
+    reads it for the same reason. The page states no round and it holds no `## Terms`
+    table, so `readable_prose` cuts nothing out of it.
 
     Returns:
         One path for each page, sorted.
@@ -215,6 +232,7 @@ def markdown_documents() -> List[str]:
         AssertionError: The corpus holds fewer pages than `MARKDOWN_FLOOR`.
     """
     found = [str(path.relative_to(REPO_ROOT)) for path in tracked_documents(MARKDOWN_PATHSPEC)]
+    found.append(RENDERED_PAGE)
     assert len(found) >= MARKDOWN_FLOOR, (
         f"the corpus holds {len(found)} Markdown pages, below the floor of {MARKDOWN_FLOOR}, "
         "and an aggregate over an empty set passes"
@@ -227,8 +245,8 @@ def tracked_python_files(roots: Tuple[str, ...] = PYTHON_ROOTS) -> List[str]:
 
     **The reader asks git for the files and it walks no directory.** The agent harness
     places a worker worktree at `.claude/worktrees/agent-<id>`, and that worktree is a
-    whole checkout, so a walk would read the files of every live worker. #473 records the
-    measurement.
+    whole checkout. A walk would therefore read the files of every live worker. #473
+    records the measurement.
 
     Args:
         roots: The directories to read.
@@ -348,8 +366,8 @@ def test_the_reader_reads_no_code_span() -> None:
 def test_the_reader_reads_a_line_below_a_line_that_holds_one_backtick() -> None:
     """The reader reads a sentence below a line that holds one unpaired backtick.
 
-    A search over a whole page pairs a backtick of one line with a backtick far below it,
-    and it then drops every word between them.
+    A search over a whole page pairs a backtick of one line with a backtick far below it.
+    It then drops every word between them.
     """
     passage = "A line with one ` mark.\nAnother plain line.\nThe reporter writes a line.\n"
     assert rejected_uses(without_code(passage), RULED_WORD) == ["The reporter"]
@@ -391,7 +409,7 @@ def test_the_reader_reads_no_record_of_a_past_round() -> None:
 
 @pytest.mark.parametrize("name", ANCHOR_FILES)
 def test_the_corpus_holds_every_anchor_file(name: str) -> None:
-    """Each corpus names the file of its own kind that held the rejected word."""
+    """A corpus names each file the reader must reach."""
     assert name in MARKDOWN_DOCUMENTS or name in PYTHON_FILES, f"no corpus names {name}"
 
 

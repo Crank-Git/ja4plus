@@ -563,11 +563,13 @@ holds every breaking change of this record against a row of that page.
   measurement is quoted, not rewritten.** The Changelog rows of #55, #369 and #371 each
   name the rejected word, this round read all three, and it leaves all three exactly as
   they read. **The case is worth more than the edit, so the case came first.** New file
-  `tests/test_statistics_thread_term.py` holds 280 cases at this commit. `rejected_words` reads the
+  `tests/test_statistics_thread_term.py` holds 283 cases at this commit. `rejected_words` reads the
   fourth column of the `## Terms` row, so a change to the row changes what every case
   forbids, and a case fails where the row stops rejecting the word. Two parametrized cases
   read the Markdown corpus of `git ls-files '*.md'` and the Python corpus of
-  `git ls-files 'ja4plus/*.py' 'tests/*.py'`. `python_prose` of
+  `git ls-files 'ja4plus/*.py' 'tests/*.py'`. The Markdown corpus holds
+  `docs/specs/spec.html` beside the Markdown pages, because a writer edits that page by
+  hand. `python_prose` of
   `tests/test_documented_method_count.py` extracts the comments and the docstrings of a
   Python file, so no line of code reaches a case. **The reader reads a whole word alone**,
   so no part of a compound identifier reaches a case, and six exempt identifiers hold that
@@ -578,9 +580,9 @@ holds every breaking change of this record against a row of that page.
   and a case proves the floor fails a corpus of no file. `readable_prose` cuts
   `CHANGELOG.md`, the `## Changelog` table of the specification and the `## Terms`
   section, which is the authority the cases read. **The cases bite**: against the
-  unrepaired prose they failed 3 of 280 and named `docs/api_reference.md`,
-  `ja4plus/watch.py` and `tests/test_watch_statistics.py`. **Each paragraph was read whole
-  after the change, and not line by line**, which is the defect rule 7 names. The repair
+  unrepaired prose they failed 3 cases and named `docs/api_reference.md`,
+  `ja4plus/watch.py` and `tests/test_watch_statistics.py`. **This round read each paragraph
+  whole after the change, and not line by line**, which is the defect rule 7 names. The repair
   removes 24 prose occurrences of the rejected word, across the docstrings of
   `ja4plus/watch.py`, one table cell and one paragraph of `docs/api_reference.md`, and the
   docstrings and the comments of `tests/test_watch_statistics.py`. Seventeen of them now
