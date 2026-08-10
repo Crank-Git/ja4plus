@@ -11,6 +11,7 @@ capture. The case at 600 seconds loses no entry. The case at 300 seconds loses t
 connection that holds the gap.
 """
 
+import threading
 import types
 from pathlib import Path
 
@@ -526,3 +527,153 @@ class TestTheOptionalEvictionMemory:
         table.on_packet(1100.0)
         assert table.evict_aged() == 1
         assert len(table._evicted_keys) == 0
+
+
+class TestTheAgePassOfOneThread:
+    """The age pass evicts the entries of the thread that runs it, and no other entry.
+
+    A caller who gives each thread whole connections gives each thread whole entries.
+    Eight such threads stand at eight points of one timeline. One clock for the whole
+    table then lets the thread that runs ahead evict an entry a slower thread still
+    reads. #461 measured that eviction on `SynAckTracker.times`, and the fingerprint of
+    the slower thread lost a field.
+
+    Each case states its own bounds as literal numbers. Each one forces the interleaving
+    rather than hoping for it.
+    """
+
+    def test_the_age_pass_of_one_thread_holds_the_entry_of_another_thread(self):
+        table = BoundedStateTable(max_connection_age=120)
+        table.on_packet(1000.0)
+        table["a"] = 1
+
+        run_on_a_second_thread(table, 1200.0)
+
+        assert "a" in table, "the clock of another thread evicted the entry"
+
+    def test_the_age_pass_evicts_the_entry_of_the_thread_that_runs_it(self):
+        # The case above passes on a table that evicts nothing at all. This one holds
+        # the age bound against that reading.
+        table = BoundedStateTable(max_connection_age=120)
+        table.on_packet(1000.0)
+        table["a"] = 1
+        table.on_packet(1200.0)
+
+        assert table.evict_aged() == 1
+        assert "a" not in table
+
+    @pytest.mark.parametrize(
+        "read",
+        [
+            pytest.param(lambda table, key: key in table, id="the in operator"),
+            pytest.param(lambda table, key: table[key], id="the read of one key"),
+        ],
+    )
+    def test_a_read_on_another_thread_moves_the_entry_to_that_thread(self, read):
+        """The entry belongs to the thread that read it last.
+
+        A caller who splits one connection across two threads gets undefined results.
+        This case states which of the two threads the age pass then follows. Both read
+        forms hold the entry against both bounds, so both name the thread.
+        """
+        table = BoundedStateTable(max_connection_age=120)
+        table.on_packet(1000.0)
+        table["a"] = 1
+
+        # The thread collects its readings rather than asserting them. Python prints an
+        # `AssertionError` of a thread to standard error and raises nothing in the thread
+        # that joins, so an assertion here would report no cause.
+        readings = []
+
+        def read_and_run_ahead():
+            table.on_packet(1000.0)
+            readings.append(read(table, "a"))
+            table.on_packet(1200.0)
+            readings.append(table.evict_aged())
+
+        thread = threading.Thread(target=read_and_run_ahead)
+        thread.start()
+        thread.join(timeout=60)
+
+        assert readings[0], "the second thread read no entry"
+        assert readings[1] == 1, "the pass of the second thread evicted no entry"
+        assert "a" not in table
+
+    def test_a_write_reads_the_clock_of_the_thread_that_makes_it(self):
+        """The packet of another thread moves no entry of this thread forward.
+
+        `JA4TFingerprinter` announces a packet that carries no timestamp to no table, and
+        it then writes to `connections`. That write reads the clock the table holds. A
+        shared clock would store the entry at the timeline of another shard, and it would
+        then hold the entry past its maximum age.
+        """
+        table = BoundedStateTable(max_connection_age=120)
+        table.on_packet(1000.0)
+
+        run_on_a_second_thread(table, 1200.0)
+
+        table["a"] = 1
+        table.on_packet(1121.0)
+
+        assert table.evict_aged() == 1, "the entry carries the clock of another thread"
+
+    def test_the_age_pass_evicts_an_entry_that_the_wall_clock_dated(self, monkeypatch):
+        """One wall clock serves every thread, so no thread owns such an entry.
+
+        `JA4DBClient` builds the one table that reads the wall clock. Its callers share
+        every entry under one lock rather than owning whole connections, so a pass that
+        held the entry of another thread would age out nothing there.
+        """
+        readings = iter([1000.0, 1200.0, 1200.0, 1200.0])
+        monkeypatch.setattr(state_table, "time", types.SimpleNamespace(time=lambda: next(readings)))
+        table = BoundedStateTable(max_connection_age=120)
+        table.on_packet()
+        table["a"] = 1
+
+        removed = []
+        thread = threading.Thread(target=lambda: removed.append(table.evict_aged()))
+        thread.start()
+        thread.join(timeout=60)
+
+        assert removed == [1]
+
+    def test_a_thread_that_announces_no_packet_reads_the_clock_of_the_table(self):
+        """A thread that drives no packet stores an entry at the clock the table holds.
+
+        A wall clock reading stands above 1.7e9 seconds, so an entry stored at that
+        reading ages out against no capture timestamp. The pass below removes the entry,
+        so the thread read 1000.0 and not the wall clock.
+        """
+        table = BoundedStateTable(max_connection_age=120)
+        table.on_packet(1000.0)
+
+        removed = []
+
+        def store_and_run_ahead():
+            table["a"] = 1
+            table.on_packet(1121.0)
+            removed.append(table.evict_aged())
+
+        thread = threading.Thread(target=store_and_run_ahead)
+        thread.start()
+        thread.join(timeout=60)
+
+        assert removed == [1]
+
+
+def run_on_a_second_thread(table, timestamp):
+    """Announce one packet on a second thread and run the age pass there.
+
+    Args:
+        table: The table to announce the packet to.
+        timestamp: The capture timestamp of that packet, in seconds.
+    """
+
+    def run_ahead():
+        table.on_packet(timestamp)
+        table.evict_aged()
+
+    thread = threading.Thread(target=run_ahead)
+    thread.start()
+    thread.join(timeout=60)
+    assert not thread.is_alive(), "the second thread did not finish"
