@@ -586,7 +586,9 @@ holds every breaking change of this record against a row of that page.
   conformance suite reports 1532 passed, 143 skipped and 134 xfailed before and after. The
   unit suite rises from 3827 passed to 3851 passed. Coverage holds at 94%, the total misses
   hold at 273 while the statement count rises from 4253 to 4292, and `ja4plus/watch.py`
-  holds 99%.
+  holds 99%. **Every count above measures this change against the base commit `cf77598`.**
+  The branch then took the integration branch of batch #499, and the merged tree reports
+  3901 passed and the same conformance counts.
 
 ### Fixed
 
