@@ -987,6 +987,45 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The interface table of the API reference names every published name** (#562). Round
+  TBD. `docs/api_reference.md:5` frames the page as the interface this project promises, and
+  version 1.0.0 published that interface. **A review of round 206 named three names of
+  `ja4plus/watch.py` outside the table**: `packet_statistics_drops`, `PACKET_STATISTICS` and
+  `SOL_PACKET`. **The repair is the case rather than the three rows**, because #70 measured
+  what a repair of the known sites buys: round 191 repaired one site and round 197 wrote the
+  same defect into a new file. New file `tests/test_api_reference_interface_table.py` holds
+  21 cases. **It reads the `__all__` of every published module against the table rows of the
+  page, and the reader found 13 names rather than 3.** A published module is a tracked module
+  under `ja4plus/` that states `__all__`, which is 6 modules and 69 names; the file list comes
+  from `git ls-files`, because #473 measured that a walk of the checkout reads the pages of
+  every live worker worktree. **The reader takes no module set from the headings of the
+  page.** The page holds a `### ja4plus.<module>` heading for five of the six, so a reader
+  keyed on those headings would read none of the seven names of `ja4plus.output`, and #530,
+  #524, #438 and #70 each recorded that shape. **The page holds two table shapes and the
+  reader reads both**: `| Class/Function | Description |` states the name first, and
+  `| Group | Names |` states the 25 top-level names second. It therefore reads every code
+  span of a table row and it reads no code span outside a table, so the paragraph that names
+  `packet_statistics_drops` documents nothing. **The cases came first**, and
+  `test_the_interface_table_names_every_published_name` failed with the 13 names: the 7 of
+  `ja4plus.output`, and `DEFAULT_CONNECTION_TIMEOUT`, `DEFAULT_MAX_CONNECTIONS`,
+  `PACKET_STATISTICS`, `SOL_PACKET`, `STATISTICS_THREAD_NAME` and `packet_statistics_drops`
+  of `ja4plus.watch`. **A restored mutation proves that the corpus case bites**:
+  `test_the_corpus_case_fails_a_table_that_drops_one_row` removes the row that names
+  `SOL_PACKET`, reads `['ja4plus.watch.SOL_PACKET']` back, then reads the whole text again
+  and reads no missing name. That mutation runs over the text in memory and it writes no
+  file, so `docs/api_reference.md` holds the row throughout. **Four cases state the floor**,
+  because a reader that finds nothing reports a clean table it never read: the module set
+  holds at least 6 modules and names `ja4plus`, `ja4plus.watch` and `ja4plus.output`, the
+  published names reach 60, the table names reach 100, and `ja4plus.__all__` holds the 25
+  names the page promises. Six rows join the `### ja4plus.watch` table and the new
+  `### ja4plus.output` section states the three writers, the two module constants and the
+  `build_writer` call. **`docs/migration-0.6-to-1.0.md:3` read
+  `Version 1.0.0 follows version 0.6.0, and no version stands between them.`, which restates
+  the page title.** It now tells a reader how to read the version the environment holds, and
+  it names no release that a later version makes false; #545 removed the sentence that named
+  what PyPI carried, and this round restores no such claim. `mkdocs build --strict` passes.
+  **No file under `ja4plus/` changes and no fingerprint moves.**
+
 - **The documentation states no version claim and no conformance claim that version 1.0.0
   makes false** (#545). Round 206. **`docs/migration-0.6-to-1.0.md:3` read
   `Version 0.6.0 is the released version on PyPI. Version 1.0.0 is not released yet.`, and
