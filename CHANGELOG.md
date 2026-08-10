@@ -845,8 +845,8 @@ holds every breaking change of this record against a row of that page.
   `test_the_steps_of_the_protection_section_read_the_rule_and_change_nothing` and
   `test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader` hold the three
   repairs, and each reader runs in both directions.
-  `tests/test_batch_gate_protection_rule.py` gains 21 cases and it holds 114. **No file
-  under `ja4plus/` changes and no fingerprint moves.** The unit suite reports 4060 passed,
+  `tests/test_batch_gate_protection_rule.py` gains 26 cases and it holds 119. **No file
+  under `ja4plus/` changes and no fingerprint moves.** The unit suite reports 4065 passed,
   7 skipped and 8 xfailed, and coverage holds at 94% with 4316 statements and 273 misses.
 
 - **The sentence-length rule exempts the two records and no other document** (#457).
