@@ -34,11 +34,18 @@ cuts all three places, so a correction here destroys no record.
 **A count of the tables one fingerprinter holds is a different count, and it stands.** The
 readers below match a claim about one processor, so a sentence that counts the two tables
 of JA4L reports nothing.
+
+**A sentence that records what one past run ended with is a dated measurement, and no
+reader here takes it.** `docs/specs/features/03-concurrency-safety.md` states "The run ends
+with 40200 entries across the seventeen state tables" under the memory ceiling, and #279
+measured that run. A reader that took the sentence would demand a rewrite of the record on
+the day the code moves. **This is the widest limit of this file**: such a number stands
+unread, and the docstring states the limit rather than the reader widening.
 """
 
 import re
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import pytest
 
@@ -97,6 +104,9 @@ MEMORY_PATTERN = re.compile(r"\bthe memory costs\s+\*{0,2}([0-9]+\.[0-9]+)\s+MiB
 # The section of the feature file that records the bound of each state table.
 BOUNDS_FILE = REPO_ROOT / "docs" / "specs" / "features" / "03-concurrency-safety.md"
 BOUNDS_HEADING = "## State bounds the code holds today"
+
+# The heading of the column of that table that states the maximum entry count.
+BOUNDS_COLUMN = "Maximum entry count"
 
 # The two rows of that table that describe no state table of a processor. The lookup client
 # holds a cache that reads no packet, and `BaseFingerprinter.fingerprints` holds one result
@@ -201,31 +211,43 @@ def stated_memory_figures(text: str) -> List[str]:
     return [match.group(1) for match in MEMORY_PATTERN.finditer(_plain(text))]
 
 
-def bounds_table_rows() -> List[List[str]]:
-    """Return the rows of the state-bound table of the feature file, as cell lists.
+def bounds_table_rows() -> List[Tuple[str, int]]:
+    """Return the name and the maximum entry count of each state table of the bound table.
+
+    The reader finds the entry-count column by its heading rather than by its position. A
+    column that a later writer inserts before it would otherwise misread that column in
+    silence.
 
     Returns:
-        One list of cells for each row that states a numeric maximum entry count and
-        describes a state table of a processor.
+        One pair for each row that states a numeric maximum entry count and describes a
+        state table of a processor. The first member is the name cell and the second is
+        the maximum entry count.
 
     Raises:
-        AssertionError: The feature file holds no section under `BOUNDS_HEADING`.
+        AssertionError: The feature file holds no section under `BOUNDS_HEADING`, or that
+            section holds no column named `BOUNDS_COLUMN`.
     """
     text = BOUNDS_FILE.read_text(encoding="utf-8")
     start = text.find(BOUNDS_HEADING)
-    assert start != -1, f"{BOUNDS_FILE} holds no section {BOUNDS_HEADING!r}"
+    assert start != -1, f"{_name(BOUNDS_FILE)} holds no section {BOUNDS_HEADING!r}"
     end = text.find("\n## ", start + 1)
     section = text[start:] if end == -1 else text[start:end]
-    rows: List[List[str]] = []
+    column = -1
+    rows: List[Tuple[str, int]] = []
     for line in section.splitlines():
         if not line.startswith("|"):
             continue
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) < 2 or not cells[1].isdigit():
+        if column == -1:
+            if BOUNDS_COLUMN in cells:
+                column = cells.index(BOUNDS_COLUMN)
+            continue
+        if len(cells) <= column or not cells[column].isdigit():
             continue
         if any(name in cells[0] for name in NON_PROCESSOR_ROWS):
             continue
-        rows.append(cells)
+        rows.append((cells[0], int(cells[column])))
+    assert column != -1, f"{_name(BOUNDS_FILE)} holds no column named {BOUNDS_COLUMN!r}"
     return rows
 
 
@@ -279,13 +301,13 @@ def test_the_bounds_table_names_one_row_for_each_state_table_of_the_processor() 
     assert len(rows) == live_state_table_count(), (
         f"{_name(BOUNDS_FILE)} states the bound of {len(rows)} state tables, and one "
         f"processor holds {live_state_table_count()}: "
-        f"{[row[0] for row in rows]}"
+        f"{[name for name, _ in rows]}"
     )
 
 
 def test_the_bounds_table_states_the_remembered_key_count_of_the_processor() -> None:
     """The maximum entry counts of the state-bound table sum to the live key count."""
-    total = sum(int(row[1]) for row in bounds_table_rows())
+    total = sum(entries for _, entries in bounds_table_rows())
     assert total == live_remembered_key_count(), (
         f"{_name(BOUNDS_FILE)} states entry bounds that sum to {total}, and one processor "
         f"bounds {live_remembered_key_count()} remembered keys"
@@ -396,5 +418,5 @@ def test_the_memory_reader_reads_the_cost_of_the_remembered_keys() -> None:
 
 def test_the_bounds_table_reader_reads_no_row_of_the_lookup_client() -> None:
     """The reader drops the two rows that describe no state table of a processor."""
-    names = [row[0] for row in bounds_table_rows()]
+    names = [name for name, _ in bounds_table_rows()]
     assert not [name for name in names if any(other in name for other in NON_PROCESSOR_ROWS)]

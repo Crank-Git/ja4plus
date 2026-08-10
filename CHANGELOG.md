@@ -639,24 +639,26 @@ holds every breaking change of this record against a row of that page.
   either page: `sum(len(report.tables) for report in Processor().stats().values())` reads
   17. **The two other numbers rest on the table count**, so a repair of the count alone
   leaves both wrong. The remembered-key count is the sum of `max_entries` over the same
-  tables, which reads 57400, and 57400 keys at the 187 bytes #41 measured cost 10.2 MiB.
+  tables, which reads 57400. 57400 keys at the 187 bytes #41 measured cost 10.2 MiB.
   **The state-bound table of the feature file lost a row, and that row is the whole
   difference.** #215 added `JA4TFingerprinter.connections` at 10000 entries and 600
-  seconds, the table never gained the row, and 47400 plus 10000 is 57400. **A count in
+  seconds. The table never gained the row. 47400 plus 10000 is 57400. **A count in
   prose that nothing measures goes stale on the day the code moves.** New file
   `tests/test_documented_state_table_count.py` reads the three numbers out of a live
-  `Processor`, compares every Markdown page under `docs/`, `.claude/` and `tests/` against
-  them, and reads the state-bound table row by row. **Four reversals prove the cases fail.**
+  `Processor`. It compares every Markdown page of the corpus against them, and it reads the
+  state-bound table row by row. **Four reversals prove the cases fail.**
   The removed `JA4TFingerprinter.connections` row fails the two table cases with
   `states the bound of 16 state tables, and one processor holds 17`. The superseded
   sentence restored fails three cases, one for each number. The same mutation on
   `docs/api_reference.md` fails two. **Floors refuse a reader that matched nothing**,
-  because an aggregate over an empty set passes, and eleven more cases prove the readers
-  take each wording and take no count of another thing. **A dated record keeps its
+  because an aggregate over an empty set passes. Eleven more cases prove the readers take
+  each wording and take no count of another thing. **A dated record keeps its
   numbers.** `readable_text` cuts `CHANGELOG.md` and the two recording sections of
-  `docs/specs/spec.md`, so round 85 keeps fifteen tables, 46400 keys and 8.3 MiB, and the
-  #279 reading of 40200 entries across the seventeen state tables stands unchanged. No file
-  under `ja4plus/` changes, no fingerprint moves, and the conformance counts do not change.
+  `docs/specs/spec.md`, so round 85 keeps fifteen tables, 46400 keys and 8.3 MiB. The
+  #279 reading of 40200 entries across the seventeen state tables stands unchanged. The
+  `Terms` table gains `remembered key`, because this repair counts them in three places. No
+  file under `ja4plus/` changes, no fingerprint moves, and the conformance counts do not
+  change.
 - **The fingerprint move count of the migration page states the row count of its own table**
   (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
   rows. #395 measured the difference and filed the issue rather than repair it. **The count

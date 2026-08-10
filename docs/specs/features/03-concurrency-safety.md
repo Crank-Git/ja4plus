@@ -445,22 +445,22 @@ connections raises the entry count by zero while the eviction count rises.
 **#41 landed before #43, so the contract states the statistics it built.**
 `docs/api_reference.md` holds a `stats()` row, the six fields of `ProcessorStats`, and
 the definition of a returned connection. **#215 re-measured the table count and reads
-seventeen**: `Processor.stats()` reports seventeen state tables across the ten
-fingerprinters, and the walk of `tests/test_memory_bounds.py` reads seventeen state tables
-by an independent route.
+seventeen.** `Processor.stats()` reports seventeen state tables across the ten
+fingerprinters. The walk of `tests/test_memory_bounds.py` reads seventeen state tables by
+an independent route.
 `test_the_walk_of_this_file_agrees_with_the_report_of_the_processor` compares the two, so
 a change that hides a table from one of them fails. The count moved four times, from six
 in #179 to thirteen in #39 to fifteen in #41 to sixteen in #285 to seventeen in #215. Two
-of the four moves followed a better walk rather than new code, and two followed new code:
+of the four moves followed a better walk rather than new code. Two followed new code:
 #246 added `SynAckTracker.prefixes` while Epic 3 was live, and #215 added
 `JA4TFingerprinter.connections`.
 
 **This file stated sixteen until #453, and #215 moved the count without moving this
-file.** A count that a reader states in prose goes stale on the day the code moves, so
-`tests/test_documented_state_table_count.py` reads the count out of a live `Processor` and
-compares every document against it. It reads the two numbers that rest on the count as
-well, and it reads the state-bound table above row by row, because that table lost the
-`JA4TFingerprinter.connections` row for the same reason.
+file.** A count that a reader states in prose goes stale on the day the code moves.
+`tests/test_documented_state_table_count.py` therefore reads the count out of a live
+`Processor`, and it compares every document against that count. It reads the two numbers
+that rest on the count as well. It reads the state-bound table above row by row, because
+that table lost the `JA4TFingerprinter.connections` row for the same reason.
 
 ## The memory ceiling this package states
 
