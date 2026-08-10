@@ -1114,7 +1114,7 @@ holds every breaking change of this record against a row of that page.
 ### Changed
 
 - **`FR-pre-release-validation-16` names a pathspec whose plain reading equals what it
-  matches** (#436). Round TBD. The requirement named
+  matches** (#436). Round 170. The requirement named
   `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'`, which lists all 31 modules of the
   package. Its first term alone lists all 31 too. **In a default git pathspec, `*` crosses
   `/`, and only `:(glob)` magic stops it at a separator.** A read of 2026-08-09 reports
