@@ -505,6 +505,52 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The batch-gate rule states the branch protection the provider now holds** (#480).
+  Round TBD. #459 wrote the protection section of `.claude/rules/batch-gate.md` from a read
+  of 2026-08-09, which returned `404`, `Branch not protected`. #468 turned the rule on, so a
+  reader who followed that wording concluded that nothing at the provider refuses an ungated
+  merge. **This round re-took the measurement rather than quoting the issue body.** A read of
+  2026-08-10 returns `200` with eleven required contexts, each carrying `app_id` 15368, and
+  `gh api repos/Crank-Git/ja4plus/rulesets` returns `[]`. The eleven names match the eleven
+  the file already listed, so no name moved, and no context reads `build` or the bare `test`.
+  The reading agrees with the issue body on every field. **The section is renamed to
+  `The provider refuses an ungated merge`**, because the earlier heading named a shape the
+  repository did not hold. **A dated record of a past measurement is quoted and not
+  rewritten**, so the 2026-08-09 sentence stays in the file as a quotation under a paragraph
+  that marks it superseded, beside a table that holds both dates. **The same call returned
+  two limits and the file states each one.** `enforce_admins` reads `false`, so the rule
+  binds a contributor and binds no repository administrator, and an administrator merges past
+  the eleven contexts with no run at all. `strict` reads `false`, so a branch merges where it
+  is behind `dev`, and that reading suits the batch model: `strict: true` would demand that
+  every integration branch take `dev` again after another batch lands, and the run that
+  proved the batch would then not be a run of the head. `python -m tests.batch_gate --pr
+  <number>` stays in the procedure, because it reads the same condition before the merge
+  rather than at it. **A case reads the claim against the provider, because prose carries no
+  other gate.** New file `tests/test_batch_gate_protection_rule.py` holds 62 cases.
+  `protection_reading` runs `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, and it
+  returns nothing where the host holds no `gh`, where the command exits non-zero, or where
+  the body is no JSON object. **Where the call cannot be made a live case skips, and it does
+  not pass**, which `test_the_live_context_case_skips_where_the_provider_returns_no_reading`
+  proves by driving the live case with a refused call and requiring the skip. **Every live
+  case reads its floor before it reads the provider**, so a file that lists no context fails
+  rather than comparing two empty sets. **The sweep reads a shape and no phrase.**
+  `superseded_claims` pairs the term `required status check` with a negation over six
+  spellings, and `readable_text` cuts a quotation, a paragraph that marks itself superseded,
+  and the `## Changelog` section that quotes round 165. **An aggregate over an empty set
+  passes**, so a case requires the file set to name both `.claude/rules/batch-gate.md` and
+  `CLAUDE.md`. **The cases were written first and they bite**: against the unrepaired file
+  they failed 18 of 59, and the sweep named exactly one document. **Two defects of the
+  section reader were found by that first run and each is closed.** The reader ended a
+  section at the next heading of any level, so a `###` subsection cut the list of check names
+  out of the body. It then read `#468 turned the rule on` as a first-level heading and
+  returned one paragraph, because a heading needs a space after its `#` characters and an
+  issue reference does not. Three cases now hold the reader in both directions. **Two
+  mutations prove the live cases discriminate.** Adding `build` to the listed names and
+  writing `` `strict` reads `true` `` killed five cases, among them both provider cases, and
+  deleting the superseded record killed two. Each mutation was restored. **No sentence of
+  `CLAUDE.md` rested on the superseded reading**, which the sweep measures rather than
+  asserts. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **Every statement of the vector-fallback rule names the reader the rule needs** (#477).
   Round TBD. Round 49 corrected the rule on 2026-08-08: the fallback needs an image that a
   person read and found ambiguous, and an image nobody read is not a license to use it.
