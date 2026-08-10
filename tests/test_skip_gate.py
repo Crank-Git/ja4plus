@@ -485,13 +485,51 @@ def workflow_jobs() -> Dict[str, str]:
     return blocks
 
 
+def commands_of(block: str) -> str:
+    """Return the block with every comment line removed.
+
+    A comment names a command that the job does not run. The `skip-gate` block names
+    `pytest tests/ -m "not spec_validation"` in prose, and a reader of the raw block would
+    read that job as a job that runs cases.
+
+    Args:
+        block: The text block of one job.
+
+    Returns:
+        The lines that carry no comment.
+    """
+    return "\n".join(line for line in block.splitlines() if not line.lstrip().startswith("#"))
+
+
 def case_jobs() -> Dict[str, str]:
     """Return the block of every job of the workflow that runs cases.
+
+    **Warning: this reader finds a job that names `pytest` in a command, and it finds no
+    other job.** A job that ran cases through another program would reach no case below,
+    and every count here would stay green while that job reached the gate nowhere.
+    `test_the_skip_gate_job_depends_on_every_job_that_uploads_a_report` reads the same
+    workflow from the artifact side, so a job that writes a report reaches the gate
+    whatever command it runs.
 
     Returns:
         The block of each job whose steps run `pytest`, by job name.
     """
-    return {name: block for name, block in workflow_jobs().items() if "-m pytest" in block}
+    return {
+        name: block for name, block in workflow_jobs().items() if "pytest" in commands_of(block)
+    }
+
+
+def report_jobs() -> Dict[str, str]:
+    """Return the block of every job of the workflow that uploads a report.
+
+    Returns:
+        The block of each job whose steps upload an artifact, by job name.
+    """
+    return {
+        name: block
+        for name, block in workflow_jobs().items()
+        if "upload-artifact" in commands_of(block)
+    }
 
 
 def test_the_workflow_reader_finds_the_jobs_the_file_holds() -> None:
@@ -519,6 +557,20 @@ def test_the_skip_gate_job_depends_on_every_job_that_runs_cases() -> None:
     assert match is not None, f"the {GATE_JOB} job states no needs list"
     named = {name.strip() for name in match.group(1).split(",")}
     assert named == set(case_jobs()), f"the {GATE_JOB} job waits for {named}"
+
+
+def test_the_skip_gate_job_depends_on_every_job_that_uploads_a_report() -> None:
+    """The reader of `case_jobs` finds a `pytest` command, and this one finds an artifact.
+
+    A job that ran cases through another program would reach `case_jobs` nowhere, and every
+    count that rests on that reader would stay green. This case reads the artifact instead,
+    which is the thing the gate consumes.
+    """
+    block = workflow_jobs()[GATE_JOB]
+    match = re.search(r"^    needs: \[([^\]]*)\]$", block, re.M)
+    assert match is not None, f"the {GATE_JOB} job states no needs list"
+    named = {name.strip() for name in match.group(1).split(",")}
+    assert set(report_jobs()) <= named, f"the {GATE_JOB} job waits for {named}"
 
 
 def test_the_gate_requires_one_report_for_each_job_that_runs_cases() -> None:

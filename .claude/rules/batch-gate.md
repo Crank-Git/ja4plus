@@ -108,16 +108,19 @@ job waits for all five jobs and it downloads ten reports.
 
 **The `fuzz` job and the `samples` job added no case at that read, and the gate reads them
 anyway.** A gate bound to the jobs that one read finds goes stale on the day a job changes
-its selection. `tests/test_skip_gate.py` reads `.github/workflows/test.yml` instead: every job
-that runs `pytest` writes a report, the download pattern matches the artifact name of every
-one of them, and the `needs` list of `skip-gate` names all of them.
+its selection. `tests/test_skip_gate.py` reads `.github/workflows/test.yml` instead, and it
+holds three rules.
+
+1. Every job that runs `pytest` writes one JUnit report and uploads it.
+2. The download pattern of `skip-gate` matches the artifact name of every one of them.
+3. The `needs` list of `skip-gate` names every one of them.
 
 **The verdict reads over the jobs that select the case, and over no other job.** A case the
 whole matrix collects rests on six environments. A conformance case rests on one, because
 the `conformance` job is the one job that selects the `spec_validation` marker. The census
-names the report that holds each case it lists, so a reader takes that scope from the run
-rather than from a field somebody keeps by hand. **#530 declined a job field on an allowlist
-entry on that reading.**
+names the report that holds each case it lists. A reader therefore takes that scope from
+the run, and never from a field that somebody keeps by hand. **#530 declined a job field on
+an allowlist entry on that reading.**
 
 **A case that no job selects at all reaches no report, and this gate holds no such case.**
 That is a different finding, and `.claude/rules/batch-gate.md` records it here so that no

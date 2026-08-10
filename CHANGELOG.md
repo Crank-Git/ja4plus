@@ -959,8 +959,12 @@ holds every breaking change of this record against a row of that page.
   the six-report reader accepted. **A manual run carries no base commit**, so
   `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
   skipped on all six matrix jobs of that run and stands among the 155. That case runs on a
-  pull-request run, so the green direction ran at RUN_URL_GREEN, which the pull-request
-  event of #540 started with the prefix entry in place.
+  pull-request run, so the green direction ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31420269200, which the pull-request
+  event of #540 started with the prefix entry in place. All twelve jobs of that run
+  concluded `success`, and its census reads `The skip gate read 10 reports that hold 6132
+  cases between them, and found 153 cases that ran on no job.` beside the line
+  `- 143 cases: allowed by the skip message prefix 'not applicable:'`.
   `docs/specs/features/11-pre-release-validation.md` gains
   `FR-pre-release-validation-35a`, `FR-pre-release-validation-36a` and
   `FR-pre-release-validation-38a` and three acceptance criteria, and

@@ -20,9 +20,9 @@ clean corpus over 32 percent of the suite it cannot see.
 
 **The `fuzz` job and the `samples` job add no case to that corpus, and the gate reads them
 anyway.** The same read reports 127 cases of the `fuzz` job and 31 of the `samples` job,
-and the `test` job holds every one of them. A gate bound to the jobs that add a case today
-would go stale on the day a job changes its selection, so this gate binds every job that
-runs cases and `tests/test_skip_gate.py` holds the workflow against that rule.
+and the `test` job holds every one of them. A gate bound to the jobs that one read finds
+goes stale on the day a job changes its selection. This gate binds every job that runs
+cases, and `tests/test_skip_gate.py` holds the workflow against that rule.
 
 **A case one job alone selects reads one environment, and the gate says so.** The union
 means `the suite ran this case nowhere`, and it means that over the jobs that select the
