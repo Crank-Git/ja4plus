@@ -76,6 +76,30 @@ and that this project is an independent implementation.
 
 FR-documentation-15 — A broken internal link fails the documentation build.
 
+FR-documentation-16 — `tests/test_documented_method_count.py` reads its document set from
+the tracked file list of git. It walks no directory. **The agent harness places a worker
+worktree at `.claude/worktrees/agent-<id>`, and that worktree is a whole checkout**, so a
+walk reads the documents of every live worker and the collected case count then measures
+the host.
+
+FR-documentation-16a — The pathspec of that document set is `git ls-files '*.md'`. **In a
+default git pathspec, `*` crosses `/`**, so the one term reaches every depth. Only
+`:(glob)` magic stops `*` at a separator. **Never write `'**/*.md'`**, because git reads
+`**` in a pathspec as one or more directories, so that form drops every root page. A read
+of 2026-08-10 reports three counts: `git ls-files '*.md'` lists 59 files,
+`git ls-files '**/*.md'` lists 56, and `git ls-files ':(glob)*.md'` lists 3.
+
+FR-documentation-16b — A case fails when a Markdown page below `.claude/worktrees/`
+reaches the document set. That case fails against a reader that walks the directories.
+
+FR-documentation-16c — A case fails when the document set misses one of the anchor
+documents. The anchor set names one page of each depth and one page of each root the
+corpus covers.
+
+FR-documentation-16d — The reader fails where its pathspec names no document. **An
+aggregate over an empty set passes**, so a floor states the count rather than the
+comparison.
+
 ## User flows
 
 **An integrator learns the library.**
