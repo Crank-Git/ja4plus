@@ -45,6 +45,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# The description the command line reports.
+#
+# **`python -OO` sets `__doc__` to None on every module.** A parser that read the module
+# docstring here raised no error, and it reported no description at all under that
+# interpreter. `tests/test_parser_description.py` holds every parser of the repository
+# against that run.
+DESCRIPTION = "Measure the resident memory one `Processor` holds after a stated packet run."
+
 MIB = 1024.0 * 1024.0
 
 # The resident page count of `/proc/<pid>/statm`. `proc_pid_statm(5)` states the field
@@ -106,7 +114,7 @@ def main(argv=None):
     Returns:
         Zero. The program reports through its JSON object and not through its status.
     """
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument("--packets", type=int, required=True)
     parser.add_argument("--connections", type=int, required=True)
     parser.add_argument(

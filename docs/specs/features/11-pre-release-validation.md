@@ -213,6 +213,24 @@ FR-pre-release-validation-38 — `tests/universal_skips.json` allows a universal
 environment limit explains, and each entry names that limit.
 `tests/skip_gate.py` fails an entry that names no limit, whatever the reports hold.
 
+FR-pre-release-validation-39 — No tracked module reads the module docstring for the
+description of an argument parser. `tests/test_parser_description.py` reads the tracked
+file list of `git ls-files` and it fails a module that reads `__doc__` there.
+
+FR-pre-release-validation-39a — Every tool module of `tests/` reports the same `--help`
+under `python -OO` as it reports under a plain run. That comparison covers both failure
+modes, because a description that splits `__doc__` raises and a description that passes
+`__doc__` reports nothing.
+
+FR-pre-release-validation-39b — A case fails where the reader finds no parser in the
+tracked corpus, and a second case fails where it finds no tool module. A reader that lists
+nothing otherwise reports a clean corpus that it never read.
+
+FR-pre-release-validation-39c — The reader reads the description of a parser at the third
+position as well as at the keyword, because `ArgumentParser` takes it third. It reads the
+main guard of a tool module from the syntax tree, so a guard of another quote style or
+another operand order still reaches the run case.
+
 ## User flows
 
 **A maintainer proves the shipped package runs.**

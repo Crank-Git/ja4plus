@@ -920,6 +920,44 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **Every argument parser of the repository states a description that `python -OO` does not
+  remove** (#513). Round TBD. **`python -OO` sets `__doc__` to None on every module**, so a
+  parser that reads `__doc__.splitlines()[0]` for its description raises
+  `AttributeError: 'NoneType' object has no attribute 'splitlines'` before it reads one
+  argument. **#70 repaired that line at `tests/release_body.py:139` at round 191, and the
+  same line reached `tests/skip_gate.py:333` at round 197.** A repair of the known sites
+  stops no new one, so the deliverable of this round is the case and not the repair. New
+  file `tests/test_parser_description.py` parses every tracked Python file and fails a
+  parser whose description reads `__doc__`. A read of `dev` at `31cca24` named four sites,
+  and the case reported all four:
+  `['tests/memory_ceiling_run.py:109', 'tests/mutation_cover.py:211', 'tests/mutation_sweep.py:520', 'tests/skip_gate.py:333']`.
+  The first three raise and the fourth passes `__doc__` itself, which argparse accepts as
+  None, so it reports no description at all. Each of the four now names a `DESCRIPTION`
+  constant, which is the repair `tests/release_body.py` already carries. A second case runs
+  every tool module of `tests/` twice, once plain and once under `-OO`, and it requires the
+  same `--help` from both runs. **That comparison covers both failure modes at once**,
+  because the first raises and the second drops the description.
+  `test_the_help_comparison_fails_a_module_that_reads_the_module_docstring` writes a module
+  that reads `__doc__` and measures the two outputs apart, so the comparison bites. **The
+  reader takes its file list from `git ls-files` and it walks the checkout nowhere.** #473
+  measured a reader that walked the repository root and picked up a worker worktree under
+  `.claude/`, so its corpus grew with the number of live workers.
+  `test_the_tracked_corpus_holds_an_argument_parser` and
+  `test_the_tracked_corpus_holds_a_tool_module` state the floor, so a pathspec that lists
+  nothing fails rather than reports a clean corpus. `FR-pre-release-validation-39`,
+  `FR-pre-release-validation-39a` and `FR-pre-release-validation-39b` state the three
+  requirements. **The self-review found two latent gaps in the reader itself, and
+  `FR-pre-release-validation-39c` states the repair.** `ArgumentParser` takes `description`
+  third, so `ArgumentParser(prog, usage, __doc__)` reached no report while the reader read
+  the keyword alone. The tool reader matched the text `__name__ == "__main__"`, so a guard
+  of another quote style or another operand order reached no run case. Both gaps were
+  latent, because every call site of the repository writes the form each reader expected.
+  **A latent gap in this reader is the defect this round exists to remove**, so both reach
+  a repair and a case. The reader reports `description=__doc__ or "Read the run."`, which
+  raises nothing, and that stricter reading is a decision rather than a defect: a module
+  states one description, and a fallback beside `__doc__` states it twice. `pyright`
+  reports no `reportOptionalMemberAccess` against the four files. No file under `ja4plus/`
+  changes and no fingerprint moves.
 - **The branch-protection claims of the batch-gate rule reach a case** (#511). Round
   194. `.claude/rules/batch-gate.md` states that each of the eleven required contexts
   carries `app_id` 15368, and `CHANGELOG.md` and the round 174 row of `docs/specs/spec.md`

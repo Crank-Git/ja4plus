@@ -32,6 +32,14 @@ from typing import List, Optional, Sequence, Set, Tuple
 # repair.
 DEFAULT_TEST_PATTERNS = ("tests/test_*.py", "tests/*/test_*.py")
 
+# The description the command line reports.
+#
+# **`python -OO` sets `__doc__` to None on every module.** A parser that read the module
+# docstring here raised `AttributeError` under that interpreter, and it read no argument at
+# all. `tests/test_parser_description.py` holds every parser of the repository against that
+# run.
+DESCRIPTION = "Name the test file that reads the values one module body builds."
+
 SECTION = "## How to scope one sweep: the minimal cover"
 
 # A cost the rule states is a measurement of one run, so the prover asks for a number.
@@ -208,7 +216,7 @@ def states_the_reader_cost(text: str) -> bool:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument("module", help="The module to read, below the repository root.")
     parser.add_argument(
         "--top", type=int, default=5, help="The count of readers to print. 0 prints every one."
