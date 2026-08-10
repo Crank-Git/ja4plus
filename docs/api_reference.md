@@ -709,7 +709,7 @@ starts, and `report_statistics` starts it only when the caller states an interva
 | `Monitor.tracked_connections()` | Return the key of every connection the table holds |
 | `Monitor.evictions` | The count of connections the monitor evicted |
 | `connection_key(packet)` | Return the key of the connection the packet belongs to, or None |
-| `read_interface(interface, handle_packet, stop_filter, capture_filter, stop_requested, poll_interval, open_socket)` | Read packets from one interface until the capture stops |
+| `read_interface(interface, handle_packet, stop_filter, capture_filter, stop_requested, poll_interval, open_socket, drop_count)` | Read packets from one interface until the capture stops |
 | `open_capture_socket(interface, capture_filter)` | Return an open capture socket for one interface |
 | `DEFAULT_POLL_INTERVAL` | The count of seconds one `sniff` call reads before the loop reads the stop request |
 | `CAPTURE_FAILURES` | The exception classes the capture layer raises when it refuses an interface |
@@ -720,6 +720,11 @@ starts, and `report_statistics` starts it only when the caller states an interva
 | `StopRequest.requested()` | Return True after a termination signal arrived |
 | `StopRequest.stop_after(packet)` | Return True when the capture stops after this packet |
 | `stop_on_signal(signal_numbers)` | Yield the stop request, with a handler installed for each signal |
+| `capture_drop_count(capture_socket)` | Return the drop count of one capture socket, or None |
+| `CaptureDropCount` | The drop count of the capture socket the monitor reads |
+| `CaptureDropCount.attach(capture_socket)` | Hold the capture socket the monitor reads |
+| `CaptureDropCount.refresh()` | Read the drop count of the capture socket, and hold what it reported |
+| `CaptureDropCount.release()` | Read the drop count one last time, and drop the capture socket |
 | `MonitorStats(clock, dropped_source)` | The counts of one monitor, and the lock that guards them |
 | `MonitorStats.count_fingerprints(count)` | Add the fingerprints of one packet to the fingerprint count |
 | `MonitorStats.record_packet(connections, evicted)` | Count one packet, and publish the two table counts |
@@ -736,8 +741,17 @@ thread publishes the two table counts through `record_packet`, so the statistics
 reads `MonitorStats` and never the connection table.
 
 The `dropped` field reports the count a `dropped_source` returns, and `null` where the
-caller passes none. `ja4plus watch` passes none, because `scapy` 2.7.0 reports no drop
-count to a caller of `sniff`. Issue #326 records the measurement.
+caller passes none. `ja4plus watch` passes a `CaptureDropCount`, and `read_interface`
+attaches the capture socket to it. On macOS the field holds a whole number, which
+`_L2bpfSocket.get_stats` reads through the `BIOCGSTATS` ioctl. On Linux the capture
+socket of `scapy` 2.7.0 reports no count, so the field reads `null` there.
+
+**A `CaptureDropCount` holds the last count it read.** The exit summary runs after the
+capture closed the socket, and the kernel gives the file descriptor of a closed socket to
+the next file the process opens. `read_interface` therefore calls `release`, which reads
+the count once more and drops the socket, before it closes the socket. One lock guards
+every read, so no read of the statistics thread is in flight at the close. Issue #423
+records the macOS measurement and issue #326 records the Linux reading.
 
 The `wait` parameter of `StatisticsReporter` is a test seam. It receives the interval and
 returns True when the stop arrives, which matches `threading.Event.wait`. The default

@@ -31,7 +31,9 @@ from ja4plus.watch import (
     CAPTURE_FAILURES,
     DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_MAX_CONNECTIONS,
+    CaptureDropCount,
     Monitor,
+    MonitorStats,
     available_interfaces,
     describe_capture_failure,
     read_interface,
@@ -157,9 +159,9 @@ def _split_endpoint(endpoint: str) -> tuple[str, int]:
 def _reporting_order(types: list[str]) -> dict[str, int]:
     """Return the position each method holds in the output, keyed by the method name.
 
-    The processor runs the ten methods in one fixed order, and FR-typed-api-3 states
-    that the order is part of the library interface. The command reports the order the
-    user asked for instead, so `--types ja4t,ja4` writes the JA4T value first.
+    The processor runs the ten fingerprinters in one fixed order, and FR-typed-api-3
+    states that the order is part of the library interface. The command reports the
+    order the user asked for instead, so `--types ja4t,ja4` writes the JA4T value first.
 
     A name the user wrote twice keeps its first position, because version 0.6.0 built a
     dict of fingerprinters and a repeated key kept the position of its first write.
@@ -568,11 +570,17 @@ def cmd_watch(args: argparse.Namespace) -> None:
                 # the packet and the report counts what the packet produced.
                 monitor.stats.count_fingerprints(len(batch))
 
+        # FR-live-capture-8 asks for the drop count. The capture attaches
+        # the socket it opens to this object, so the `dropped` field reports the
+        # `BIOCGSTATS` reading of that socket. #423 owns the reading.
+        drop_count = CaptureDropCount()
+
         monitor = Monitor(
             processor,
             report,
             max_connections=args.max_connections,
             connection_timeout=args.connection_timeout,
+            stats=MonitorStats(dropped_source=drop_count),
         )
 
         try:
@@ -597,6 +605,7 @@ def cmd_watch(args: argparse.Namespace) -> None:
                         stop.stop_after,
                         capture_filter=args.bpf,
                         stop_requested=stop.requested,
+                        drop_count=drop_count,
                     )
             if stop.requested():
                 print("\nCapture stopped.", file=sys.stderr)

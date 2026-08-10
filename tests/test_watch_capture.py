@@ -119,7 +119,12 @@ def run_watch(*argv, source=None, failure=None, calls=None, platform=None, euid=
     from ja4plus.cli import main
 
     def read_interface_stub(
-        interface, handle_packet, stop_filter=None, capture_filter=None, stop_requested=None
+        interface,
+        handle_packet,
+        stop_filter=None,
+        capture_filter=None,
+        stop_requested=None,
+        drop_count=None,
     ):
         if calls is not None:
             calls.append(

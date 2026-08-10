@@ -73,7 +73,7 @@ class BaseFingerprinter:
         # then calls `process_packet` on this fingerprinter, which holds it again. A
         # `threading.Lock` deadlocks on that second acquisition, and it deadlocks on the
         # first packet. One fingerprinter holds one lock, so ten threads work at once on
-        # ten methods.
+        # ten fingerprinters.
         self._lock: Lock = threading.RLock() if thread_safe else NULL_LOCK
 
     @property
