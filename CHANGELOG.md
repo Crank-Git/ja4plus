@@ -128,6 +128,97 @@ holds every breaking change of this record against a row of that page.
   commit and the same three counts after. Coverage holds at 94% with 4292 statements and 273
   misses.
 
+- **The publish workflow reaches TestPyPI on a manual event, and the release body holds the
+  summary and the breaking-change tables of the version** (#70).
+  Round TBD. `FR-release-13` and `FR-release-14` state the two requirements, and
+  `.github/workflows/publish.yml` held one event and one job before this round. **A manual
+  trigger on a publish workflow creates a path to PyPI**, so the project manager ruled that
+  the dry run must be structurally incapable of reaching the real index. The file now holds
+  two events and two jobs, and each job accepts one event. The published-release event runs
+  the `publish` job, which names the `pypi` environment and states no repository URL. The
+  manual event runs the `dry-run` job, which names the `testpypi` environment and states
+  `https://test.pypi.org/legacy/`. **The manual trigger declares no input**, because an
+  input that selected the index is the hazard the separation removes. Each environment name
+  and the repository URL are literals of the file, so no value a caller chooses reaches
+  either one. **The dry run runs the same verification as the release**, because a dry run
+  that skipped the check would prove the publisher and not the artifact. `FR-release-14`
+  puts the changelog record of the version in the release body, and new file
+  `tests/release_body.py` builds it. **The whole `## [1.0.0]` section is 242778 characters
+  and the provider accepts 125000**, so the requirement as first written cannot hold. The
+  user ruled on 2026-08-10 that the body holds a named part and links `CHANGELOG.md` at the
+  tag for the rest, and the named part is the summary and the two breaking-change tables.
+  `CHANGELOG.md` keeps every row it holds, no round entry moves, and this round rewrites
+  nothing. The body a release of version 1.0.0 carries measures 4727 characters.
+  **The reader truncates nothing**, because a truncated section reads as complete and is
+  not, and the choice of what to drop belongs to the maintainer. A named part above the
+  limit fails the reader, the step fails, and the release publishes nothing. **A `####`
+  heading of a breaking-change table carries one more mark than a part heading**, so the
+  reader keeps both tables and stops at the entry list. A section that names no breaking
+  change reaches the body in whole, and the `## [0.6.0]` section is such a section. **The
+  reader matches a whole heading line, and it reads no line of a code block.** The
+  self-review raised both cases and a run raised neither. A summary paragraph that names
+  `### The breaking changes` in prose, and a code block that quotes the heading, would each
+  end the named part above the tables it exists to carry, and **such a reader reports no
+  fault**, because it returns a part that reads as complete and is not. A line anchor alone
+  does not close the second case, because a line inside a code block opens a line of the
+  file like any other, so `breaking_heading_end` tracks the code fence. The
+  link names the tag and never the default branch, because a link to the default branch
+  moves under the reader after the next merge. **The release-body step stands in front of
+  the publish step**, so a changelog that holds no section for the version fails the release
+  and publishes nothing. **The value of a case here is the direction it fails in**, so six
+  mutations of the workflow and seven of the reader prove both directions, and each one was
+  written to disk, measured and restored. The workflow compared equal by digest
+  `36941ecb201aed94a19d8c63ee920144beafbda00e205e6c55059f7f5d0916d1` after the restore. A
+  `dry-run` job that takes the environment `pypi` fails
+  `test_each_job_of_the_publish_workflow_names_its_environment_as_a_literal`. A `dry-run`
+  job that reads its repository URL from an input fails
+  `test_the_manual_path_of_the_publish_workflow_reaches_no_real_index`. A `publish` job that
+  takes the TestPyPI repository URL fails
+  `test_the_release_path_of_the_publish_workflow_reaches_no_test_index`. Two jobs that lose
+  their condition fail `test_each_job_of_the_publish_workflow_accepts_one_event`. A manual
+  trigger that declares an input fails
+  `test_the_manual_trigger_of_the_publish_workflow_declares_no_input`. A `publish` job that
+  loses the release-body step fails
+  `test_the_publish_job_writes_the_release_body_before_it_publishes`. A reader that returns
+  the whole section fails `test_the_release_body_of_this_repository_stands_below_the_provider_limit`,
+  a `named_part` that keeps the entry list fails
+  `test_the_named_part_holds_no_entry_of_the_entry_list`, a link that names the default
+  branch fails `test_the_link_names_the_changelog_at_the_tag_of_the_release`, a
+  `body_fault` that reads no limit fails three cases, a substring match of the
+  breaking-change heading fails
+  `test_the_named_part_reader_passes_over_the_heading_named_inside_a_paragraph` and the case
+  below it, and a whole-line match that reads the code fence not at all fails
+  `test_the_named_part_reader_passes_over_the_heading_quoted_in_a_code_block` alone. **One defect of the recovered work
+  reached the repair, and `pyright` found it before a run did.** `main` read the module
+  docstring for the description of its argument parser, and **`python -OO` sets `__doc__` to
+  None on every module**, so the command raised `AttributeError: 'NoneType' object has no
+  attribute 'splitlines'` before it read one argument. The case came first and it failed on
+  that message. `DESCRIPTION` is now a literal of the module, and
+  `test_the_module_runs_where_the_interpreter_strips_every_docstring` holds the reader
+  against `python -OO`. #513 records the same pattern at `tests/mutation_cover.py:211` and
+  `tests/mutation_sweep.py:520`, which this round leaves alone. **The second reported
+  `pyright` diagnostic does not reproduce.** `tests/release_body.py:38` imports
+  `tests.version_gate`, which `tests/release_verification.py:47` imports in the same form,
+  and `pyright` reports no diagnostic against either file from the repository root or from
+  `tests/`. **A workflow step that never runs cannot fail**, and no case here starts the
+  publish workflow, because a run of it would publish. **No dry run has run.** The
+  `testpypi` environment exists at the provider, it holds no protection rule and it carries
+  zero deployments, and no agent reads the TestPyPI publisher page. An absent publisher
+  fails the index at `invalid-publisher`, the upload sends no artifact, and the literal
+  repository URL keeps the job away from PyPI whatever the publisher state is. The first dry
+  run is the measurement, and this round started none. `python -m tests.release_verification
+  --dist dist` ran on this host against a real build and reported
+  `release check: PASSED. The release is ready to publish.`, with 1809 cases collected and
+  `1532 passed, 143 skipped, 134 xfailed`. #512 records the stale step 1 of
+  `.claude/skills/release/SKILL.md`, which still names `pyproject.toml` as the version
+  declaration that #67 removed, and this round leaves it alone. No file under `ja4plus/`
+  changes and no fingerprint moves. The whole gate ran on this host. The conformance suite
+  reports 1532 passed, 143 skipped and 134 xfailed, which are the three counts round 189
+  reports. The unit suite reports 3990 passed, 4 skipped and 8 xfailed, and
+  `pytest tests/ -m installed_wheel` reports 43 passed. **Coverage holds at 94%**, with 273
+  misses of 4292 statements, which is the reading round 143 records. `mypy --strict` finds
+  no issue in 31 source files, and `ruff check` and `ruff format --check` pass on 214 files.
+
 - **The built wheel carries the mapping file and the `py.typed` marker, and it carries no test,
   example or documentation file** (#69). Round 189. `FR-release-10` and `FR-release-11` state
   the two requirements, and new file `tests/test_packaging.py` holds nine cases against the
@@ -775,6 +866,52 @@ holds every breaking change of this record against a row of that page.
   sentence length now reads the exemption and records nothing.** #393 raised the second such
   finding and this round ends them. No file under `ja4plus/` changes and no fingerprint
   moves.
+
+- **The exemption of the writing standard covers rule 3 as well as rule 1** (#502).
+  Round TBD. Rule 3 of `.claude/rules/ste.md` reads `One topic per paragraph, six
+  sentences at most.` The self-review of #484 found its own Changelog row past that limit,
+  and that finding is correct against the letter of the rule. **One row records one round,
+  which is one topic**, so the sentence count of a row follows from how much that round
+  measured. **The user ruled on 2026-08-10 that the exemption widens to rule 3 for the same
+  two records**, the entries of this file and the `## Changelog` table of
+  `docs/specs/spec.md`. #457 exempted rule 1 on that same reason and this round repeats it
+  for rule 3. **The exemption covers rule 1 and rule 3, and it covers no other rule of the
+  standard.** A read of 2026-08-10 reports 178 of the 190 rows of the specification table
+  past six sentences, and 113 of the 136 entries of this file past six, so the exemption
+  does work. Both counts include the entry and the row of this round. The section of the
+  standard is now `## The exemption` rather than `## The one exemption`, and it names the
+  rules it covers, the fourteen rules that reach both records, and the two rulings by
+  issue. The checklist of the standard gains one item for the paragraph limit.
+  **The reader holds the section against the numbered rule list rather than against a
+  transcribed count.** `standard_rules` reads the 16 rules of `## The rules`, `exempt_rules`
+  and `rules_that_reach_the_records` read the two placement sentences, and `rule_failures`
+  reports five states: a rule set below the floor of 16, a covered set that is not rule 1
+  and rule 3, a rule the section places on both sides, a rule the section places nowhere,
+  and a rule the section names that the standard states nowhere. **A rule this project adds
+  later therefore needs a reading before it ships.** `uncovered_failures` measures the
+  exempt region of each record under every rule the exemption drops, so a record that
+  breaks an uncovered rule fails a case. `paragraphs` and `record_units` read one entry and
+  one table row as one paragraph. **A list is not a paragraph**, so the paragraph reader
+  parts one item from the next, and a reader that joined them would report the 16 rules of
+  the standard as one paragraph of 16 sentences. **The cases came first.** The 51 cases of
+  `tests/test_changelog_sentence_exemption.py` failed 17 against the writing standard of
+  the base commit, among them
+  `test_the_exemption_covers_rule_one_and_rule_three`, which read
+  `the ruling exempts the rules [1, 3], and the exemption covers []`. **Five mutations of
+  the shipped standard prove that the cases bite in the failing direction**, and each one
+  runs inside a case rather than against the working tree: an exemption that drops rule 3
+  reports every long entry and every long row, an exemption that drops rule 1 reports every
+  long sentence, an exemption that names rule 2 on both sides fails the placement, and an
+  exemption that places rule 2 on neither side fails it too. `mutated_rule` refuses a mutation that matches no
+  span, because a mutation that matches nothing proves nothing. **An aggregate over an empty
+  set passes**, so the rule floor of 16 and the document floor of 40 each carry a case that
+  feeds the reader nothing. **No other prose loses rule 3**: the standard itself, and a page
+  outside the two records, each hold the paragraph limit under a case. **No file under
+  `ja4plus/` changes and no fingerprint moves.** The unit suite reports 3974 passed, 4
+  skipped and 8 xfailed, and the conformance suite reports 1532 passed, 143 skipped and 134
+  xfailed, which are the three counts the base commit reports. **Coverage holds at 94%**
+  with 4292 statements and 273 misses, which are the counts the base commit reports.
+  `ruff check`, `ruff format --check` and `mypy --strict ja4plus/` each report no issue.
 
 - **The prose names the statistics thread by its controlled term** (#441). Round 183. The
   `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics

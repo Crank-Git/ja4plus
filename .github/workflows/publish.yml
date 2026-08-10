@@ -8,23 +8,39 @@ name: Publish to PyPI
 # earlier step passed. `FR-release-8` states that rule, and
 # `tests/test_publish_workflow.py` holds the step order against it.
 #
-# The published-release event is the one trigger. A second trigger would publish outside a
-# release.
+# **This file holds two events and two jobs, and each job accepts one event.** A manual
+# trigger on a publish workflow creates a path to PyPI, so the separation below is
+# structural and not a choice a caller makes.
+#
+#   1. The published-release event runs the `publish` job. That job uses the `pypi`
+#      environment, and it states no repository URL, so it uploads to PyPI.
+#   2. The manual event runs the `dry-run` job. That job uses the `testpypi` environment,
+#      and its publish step states the TestPyPI repository URL.
+#
+# **The manual trigger declares no input.** An input that selected the index is the hazard
+# this separation removes. Each job names its environment as a literal, so no value chosen
+# at run time reaches either name. `tests/test_publish_workflow.py` fails in both
+# directions: where the manual path can select PyPI, and where the release path can select
+# TestPyPI.
 #
 # Trusted publishing needs `id-token: write` and the configured environment, and it stores
-# no token. Verified against https://docs.pypi.org/trusted-publishers/, retrieved
+# no token. The permission stands on each job, so each job carries the identity of its own
+# environment alone. Verified against https://docs.pypi.org/trusted-publishers/, retrieved
 # 2026-08-10.
 on:
   release:
     types: [published]
-
-permissions:
-  id-token: write
+  workflow_dispatch:
 
 jobs:
   publish:
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment: pypi
+    permissions:
+      # `contents: write` writes the changelog section to the release body. `FR-release-14`.
+      id-token: write
+      contents: write
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -58,5 +74,56 @@ jobs:
         # the whole reading.
         run: python -m tests.release_verification --dist dist
 
+      - name: Write the changelog section to the release body
+        # `FR-release-14`. `tests/release_body.py` reads the version from
+        # `ja4plus/__init__.py` and it returns the `## [<version>]` section of
+        # `CHANGELOG.md`.
+        #
+        # **This step stands in front of the publish step.** A changelog that holds no
+        # section for the version fails the release here, and it publishes nothing. The
+        # reader also refuses a section that the provider refuses, which is a body of more
+        # than 125000 characters.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python -m tests.release_body --output "${RUNNER_TEMP}/release-body.md"
+          gh release edit "${RELEASE_TAG}" --notes-file "${RUNNER_TEMP}/release-body.md"
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
+
+  dry-run:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      # The dry run writes no repository content. The manual event names no release, so a
+      # job that could write would edit a release the maintainer already published.
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install the development extra
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Build the release and verify it in a clean environment
+        # **The dry run runs the same check as the release.** A dry run that skipped the
+        # check would prove the publisher and not the artifact.
+        run: python -m tests.release_verification --dist dist
+
+      - name: Publish to TestPyPI
+        # `FR-release-13`. The repository URL is a literal of this file. A URL that came
+        # from an expression would follow a value chosen at run time, and this job would
+        # then reach PyPI.
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
