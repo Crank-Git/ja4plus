@@ -71,6 +71,10 @@ python -m tests.skip_gate --reports <download directory>
 the condition the case needs.** A capture grant is such a condition. Every entry names a
 reason, and the gate fails an entry that names none.
 
+**An entry that records an open finding names the issue that removes it.** The census of
+#524 found two cases that run on no job while no limit of the runner explains either one.
+#528 and #529 hold them. Such an entry states the finding, and it goes out with the repair.
+
 **Warning: `skip-gate` is a twelfth check, and the required list below holds eleven names.**
 A red `skip-gate` fails the run, so the batch gate refuses the merge on the run conclusion.
 The branch protection rule of `dev` reaches this check once the user adds the name to it,

@@ -1,4 +1,45 @@
 {
-  "note": "Each entry names one case that skips on every job of the matrix, and the environment limit that stops it. tests/skip_gate.py reads this file and it fails an entry that names no reason. Repair a case rather than add an entry, unless a runner can never hold the condition the case needs.",
-  "entries": []
+  "note": "Each entry names one case that skips on every job of the test matrix, and the reason that stops it. tests/skip_gate.py reads this file and it fails an entry that names no reason. Repair a case rather than add an entry, unless a runner can never hold the condition the case needs. An entry that records an open finding names the issue that removes it. The census of #524 measured every entry below on 2026-08-10, in run https://github.com/Crank-Git/ja4plus/actions/runs/31408763259.",
+  "entries": [
+    {
+      "case": "tests.test_batch_gate_protection_rule::test_the_provider_holds_each_limit_the_rule_file_states[enforce_admins]",
+      "reason": "The case reads `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, and the provider grants that read to a repository administrator alone. A runner holds no such token, so the call returns nothing and the case skips. tests/test_batch_gate_protection_rule.py records the decision that the case skips there and passes never."
+    },
+    {
+      "case": "tests.test_batch_gate_protection_rule::test_the_provider_holds_each_limit_the_rule_file_states[strict]",
+      "reason": "The case reads `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, and the provider grants that read to a repository administrator alone. A runner holds no such token, so the call returns nothing and the case skips. tests/test_batch_gate_protection_rule.py records the decision that the case skips there and passes never."
+    },
+    {
+      "case": "tests.test_batch_gate_protection_rule::test_the_provider_requires_the_contexts_the_rule_file_lists",
+      "reason": "The case reads `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, and the provider grants that read to a repository administrator alone. A runner holds no such token, so the call returns nothing and the case skips. tests/test_batch_gate_protection_rule.py records the decision that the case skips there and passes never."
+    },
+    {
+      "case": "tests.test_watch_drop_count.TheDropCountReadsTheKernelReset::test_a_second_read_of_one_socket_reports_no_drop_of_the_first_burst",
+      "reason": "The case opens a real capture socket. Linux needs CAP_NET_RAW and macOS needs a /dev/bpf device, and no runner of the matrix grants either one. #326 records the grant the live cases need."
+    },
+    {
+      "case": "tests.test_watch_drop_count.TheDroppedFieldReadsRealDrops::test_the_dropped_field_reads_a_count_above_zero",
+      "reason": "The case opens a real capture socket. Linux needs CAP_NET_RAW and macOS needs a /dev/bpf device, and no runner of the matrix grants either one. #326 records the grant the live cases need."
+    },
+    {
+      "case": "tests.test_watch_drop_count.TheDroppedFieldReadsRealDropsOnLinux::test_the_dropped_field_reads_a_running_total_of_real_drops",
+      "reason": "The case opens a real capture socket. Linux needs CAP_NET_RAW and macOS needs a /dev/bpf device, and no runner of the matrix grants either one. #326 records the grant the live cases need."
+    },
+    {
+      "case": "tests.test_watch_drop_count.TheMonitorReadsARealCaptureSocket::test_a_monitor_reports_a_whole_number_in_the_dropped_field",
+      "reason": "The case opens a real capture socket. Linux needs CAP_NET_RAW and macOS needs a /dev/bpf device, and no runner of the matrix grants either one. #326 records the grant the live cases need."
+    },
+    {
+      "case": "tests.test_watch_drop_count.TheMonitorReadsARealPacketSocket::test_a_monitor_reports_a_whole_number_in_the_dropped_field",
+      "reason": "The case opens a real capture socket. Linux needs CAP_NET_RAW and macOS needs a /dev/bpf device, and no runner of the matrix grants either one. #326 records the grant the live cases need."
+    },
+    {
+      "case": "tests.test_round_entry_existence::test_the_reading_fails_the_change_set_of_the_defect",
+      "reason": "An open finding of class c, which #528 removes. The clone of depth 1 holds neither the recorded defect commit nor its parent, so the case skips on every job. No limit of the runner explains it, and this entry goes out with the repair."
+    },
+    {
+      "case": "tests.test_documentation_site::test_the_slug_of_a_case_matches_the_slug_of_the_build",
+      "reason": "An open finding of class c, which #529 removes. Every job installs the `dev` extra and the case needs the `docs` extra, so the case skips on every job. No limit of the runner explains it, and this entry goes out with the repair."
+    }
+  ]
 }

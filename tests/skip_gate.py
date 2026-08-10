@@ -68,6 +68,15 @@ CASE_ELEMENT = "testcase"
 
 SKIPPED_ELEMENT = "skipped"
 
+# **`pytest --junitxml` writes an expected failure as a `skipped` element too, and that
+# element records a case that ran.** The element carries `type="pytest.xfail"` there and
+# `type="pytest.skip"` for a real skip. A reader that ignored the type would report every
+# registered FoxIO deviation as a case the suite runs nowhere. The first run of this gate
+# measured it: 8 of the 19 cases it named were expected failures.
+#
+# **A type the reader does not know counts as a skip**, because an absence is not a pass.
+XFAIL_TYPE = "pytest.xfail"
+
 
 @dataclass(frozen=True)
 class Report:
@@ -110,6 +119,24 @@ def case_identifier(element: ElementTree.Element) -> str:
     return f"{classname}::{name}"
 
 
+def reports_a_skip(element: ElementTree.Element) -> bool:
+    """Return True where one `testcase` element records a skip rather than a run.
+
+    An expected failure carries a `skipped` element as well, and it records a case the job
+    ran. `XFAIL_TYPE` names that shape, and every other `skipped` element reads as a skip.
+
+    Args:
+        element: One `testcase` element.
+
+    Returns:
+        True where the job ran no assertion of the case.
+    """
+    skipped = element.find(SKIPPED_ELEMENT)
+    if skipped is None:
+        return False
+    return skipped.get("type") != XFAIL_TYPE
+
+
 def read_report(path: Path) -> Report:
     """Return the skip state of every case one JUnit report holds.
 
@@ -128,7 +155,7 @@ def read_report(path: Path) -> Report:
         raise ValueError(f"{path} is no readable JUnit report: {error}") from error
     cases: Dict[str, bool] = {}
     for element in tree.getroot().iter(CASE_ELEMENT):
-        cases[case_identifier(element)] = element.find(SKIPPED_ELEMENT) is not None
+        cases[case_identifier(element)] = reports_a_skip(element)
     if not cases:
         raise ValueError(f"{path} holds no case, and a job that ran nothing is not a pass")
     return Report(label=path.parent.name, cases=cases)

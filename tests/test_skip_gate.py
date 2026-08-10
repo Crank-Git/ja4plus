@@ -144,6 +144,36 @@ def test_the_reader_marks_a_case_the_job_ran(tmp_path: Path) -> None:
     assert read_report(path).cases == {"tests.test_a::test_c": False}
 
 
+def test_the_reader_reads_an_expected_failure_as_a_run(tmp_path: Path) -> None:
+    """An `xfail` carries a `skipped` element and it records a case the job ran.
+
+    The first run of this gate named 8 expected failures among 19 cases, and every one of
+    them is a registered FoxIO deviation that the suite runs on every job.
+    """
+    path = tmp_path / "test-results.xml"
+    path.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite>'
+        '<testcase classname="tests.test_a" name="test_c">'
+        '<skipped type="pytest.xfail" message="issue #129"/>'
+        "</testcase></testsuite></testsuites>",
+        encoding="utf-8",
+    )
+    assert read_report(path).cases == {"tests.test_a::test_c": False}
+
+
+def test_the_reader_reads_a_skip_type_it_does_not_know_as_a_skip(tmp_path: Path) -> None:
+    """An absence is not a pass, so an unknown type reads as the state that fails."""
+    path = tmp_path / "test-results.xml"
+    path.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite>'
+        '<testcase classname="tests.test_a" name="test_c">'
+        '<skipped type="pytest.something_new"/>'
+        "</testcase></testsuite></testsuites>",
+        encoding="utf-8",
+    )
+    assert read_report(path).cases == {"tests.test_a::test_c": True}
+
+
 def test_the_reader_labels_a_report_by_its_directory(tmp_path: Path) -> None:
     """The download writes one directory for each artifact, and that name names the job."""
     write_reports(tmp_path, {"test-results-macos-latest-py3.12": {ANCHOR: None}})
