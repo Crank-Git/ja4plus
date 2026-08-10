@@ -110,8 +110,9 @@ __all__ = [
     # The typed result and the aggregator that returns it.
     "FingerprintResult",
     "Processor",
-    # One fingerprinter class for each of the ten methods. The Go port exports the same
-    # ten types, under parity rule 2.
+    # The ten fingerprinter classes. `JA4LFingerprinter` writes JA4L and JA4LS, so these
+    # ten classes carry eleven methods. The Go port exports the same ten fingerprinters,
+    # under parity rule 2.
     "JA4Fingerprinter",
     "JA4SFingerprinter",
     "JA4HFingerprinter",
