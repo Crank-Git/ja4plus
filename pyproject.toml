@@ -58,7 +58,7 @@ dev = [
     # Python 3.9 job red. 8.4.2 is the newest release that carries a wheel for Python 3.9
     # through 3.13. Verified against https://pypi.org/pypi/pytest/9.1.1/json, retrieved
     # 2026-08-10.
-    "pytest==8.4.2",
+    "pytest==9.1.1",
     # **The version is exact, and #446 records the decision.** A `pytest-cov` release that
     # changes the report format moves the number the coverage gate reads. **A version
     # change is a deliberate commit, and this line is its whole diff.**
