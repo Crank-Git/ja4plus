@@ -987,6 +987,113 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The release body names every link absolutely, against the tag of the version** (#566).
+  Round
+  TBD. `FR-release-14a` and `FR-release-14b` state the two requirements. **The published
+  body of version 1.0.0 held one relative target at line 9**, and the same body ends with an
+  absolute link, so `changelog_link` already wrote the form this round adopts. The target
+  reads `docs/migration-0.6-to-1.0.md`. **The relative link is
+  correct in `CHANGELOG.md` and wrong in the stored release body**, because a reader of the
+  repository follows it and a reader of the stored body has no base to follow it against.
+  The repair therefore lands in `tests/release_body.py` alone, and this file keeps every
+  relative link it holds. New reader `absolute_links` writes the copy the release carries,
+  and `test_the_record_keeps_the_relative_link_that_the_release_body_rewrites` holds that
+  separation. **The reader holds three forms.** A path of the repository takes the
+  repository, `blob`, the tag and the path. An anchor of the same body stays an anchor,
+  because the body holds the heading it names and the version 1.0.0 body links
+  `#the-fingerprints-that-move`. A target that already names an address reaches the reader
+  unchanged, which `changelog_link` needs. A target that opens with one slash reads from the
+  repository root, so the reader joins the tag and never a second slash. **The reader writes
+  into no code block**, because a rewrite there changes an example a reader copies, and
+  `breaking_heading_end` reads the same fence for the same reason. **The reader passes over
+  an image**, because every URL it writes names `blob` and an image needs the raw host; the
+  named part holds no image today. **The case came first and it failed on the defect**:
+  `AssertionError: the release body holds the relative targets ['docs/migration-0.6-to-1.0.md']`.
+  **The value of a case here is the direction it fails in**, so eight mutations of the
+  reader prove both directions, each written to disk, measured and restored, and the file
+  compared equal by digest `81b9767601db08411c67949f9dad01f5e9257850b137891a78c1e65368a60469`. A reader that
+  loses the wiring fails `test_the_release_body_of_this_repository_holds_no_relative_link`,
+  a reader that loses the anchor rule fails
+  `test_the_reader_keeps_an_anchor_of_the_same_body`, a reader that loses the scheme rule
+  fails `test_the_reader_keeps_a_link_that_is_already_absolute`, a reader that loses the
+  code-fence rule fails `test_the_reader_rewrites_no_link_inside_a_code_block`, a reader
+  that loses the repository-root rule fails
+  `test_the_reader_writes_an_absolute_url_for_a_link_from_the_repository_root`, a reader
+  that reads a flat link text fails `test_the_reader_reads_a_link_whose_text_holds_brackets`,
+  a reader that reads a flat target fails
+  `test_the_reader_reads_a_target_that_holds_parentheses`, and a fault reader that reports
+  nothing fails
+  `test_the_relative_link_reader_names_the_target_of_a_text_that_holds_one`. **The
+  self-review found the two nested forms, and a run found neither.** A flat reader matched
+  `[a [b] c](x)` not at all, so that link stayed relative and no case reported it. A flat
+  reader took the target `docs/note(1` out of `docs/note(1).md` and left `.md)` outside the
+  link, so **it wrote a URL that reads as complete and is not**. `LINK` now reads one
+  bracket level in the text and one parenthesis level in the target. **An aggregate
+  over an empty set passes**, so the body case requires two links before it reads a clean
+  report, and that floor is the sixth mutation. **The provider documentation settles the
+  rule for a file of a repository, and it names no release page**, so a read of the
+  published page took the measurement on 2026-08-10. **The rendered release page resolves
+  the relative target against the tag and answers `200`, and #566 states that it resolves
+  none**, so this round corrects that sentence rather than repeats it. The stored body the
+  REST API returns holds the relative target alone, and `gh release view`, an RSS feed and a
+  mirror each read that same text, so the repair stands for every reader outside the
+  rendered page. The body of version 1.0.0 grows from 4706 to 4755 characters against a
+  limit of 125000. `docs/specs/features/09-release.md` gains `FR-release-14a`, one section
+  and one subsection that records the measurement. No file under `ja4plus/` changes and no
+  fingerprint moves.
+- **The interface table of the API reference names every published name** (#562). Round
+  TBD. `docs/api_reference.md:5` frames the page as the interface this project promises, and
+  version 1.0.0 published that interface. **A review of round 206 named three names of
+  `ja4plus/watch.py` outside the table**: `packet_statistics_drops`, `PACKET_STATISTICS` and
+  `SOL_PACKET`. **The repair is the case rather than the three rows**, because #70 measured
+  what a repair of the known sites buys: round 191 repaired one site and round 197 wrote the
+  same defect into a new file. New file `tests/test_api_reference_interface_table.py` holds
+  23 cases. **It reads the `__all__` of every published module against the table rows of the
+  page, and the reader found 13 names rather than 3.** A published module is a tracked module
+  under `ja4plus/` that states `__all__`, which is 6 modules and 69 names; the file list comes
+  from `git ls-files`, because #473 measured that a walk of the checkout reads the pages of
+  every live worker worktree. **The reader takes no module set from the headings of the
+  page.** The page holds a `### ja4plus.<module>` heading for five of the six, so a reader
+  keyed on those headings would read none of the seven names of `ja4plus.output`, and #530,
+  #524, #438 and #70 each recorded that shape. **The page holds two table shapes and the
+  reader reads both**: `| Class/Function | Description |` states the name first, and
+  `| Group | Names |` states the 25 top-level names second. It therefore reads the name cells
+  of a body row and it reads no code span outside a table, so the paragraph that names
+  `packet_statistics_drops` documents nothing. **The cases came first**, and
+  `test_the_interface_table_names_every_published_name` failed with the 13 names: the 7 of
+  `ja4plus.output`, and `DEFAULT_CONNECTION_TIMEOUT`, `DEFAULT_MAX_CONNECTIONS`,
+  `PACKET_STATISTICS`, `SOL_PACKET`, `STATISTICS_THREAD_NAME` and `packet_statistics_drops`
+  of `ja4plus.watch`. **A restored mutation proves that the corpus case bites**:
+  `test_the_corpus_case_fails_a_table_that_drops_one_row` removes the row that names
+  `SOL_PACKET`, reads `['ja4plus.watch.SOL_PACKET']` back, then reads the whole text again
+  and reads no missing name. That mutation runs over the text in memory and it writes no
+  file, so `docs/api_reference.md` holds the row throughout. **Four cases state the floor**,
+  because a reader that finds nothing reports a clean table it never read: the module set
+  holds at least 6 modules and names `ja4plus`, `ja4plus.watch` and `ja4plus.output`, the
+  published names reach 60, the table names reach 100, and `ja4plus.__all__` holds the 25
+  names the page promises. Six rows join the `### ja4plus.watch` table and the new
+  `### ja4plus.output` section states the three writers, the two module constants and the
+  `build_writer` call. **A self-review found that the first reader read the whole row, and
+  it reported one name the page states in no cell of its own.** `ProcessorStats` reached the reader through
+  the description of the `.stats()` row at `docs/api_reference.md:310` and through the table
+  header `| Field of `ProcessorStats` | Description |`, and the page gave the class no row.
+  **The reader now reads a name cell alone**, which holds code spans, commas and spaces and
+  no other text, and it drops every header row. That rule reports one miss over the 69
+  published names and it costs no other name, so `ProcessorStats` joins the
+  `### ja4plus.processor` table. **A second self-review read the new prose against the
+  `## Terms` table and found one barred word.** The `packet_statistics_drops` row read
+  `Return the drops one Linux packet socket counted since the last read, or None`, and row 86
+  of that table bars `drops` in favour of `drop count`. The identifier keeps its name and the
+  description now names the term. **Round 205 built a case that bars one noun, and no case
+  bars the other 258 rejected words**, so a sweep of this class stays a reading for a later
+  round.
+  **`docs/migration-0.6-to-1.0.md:3` read
+  `Version 1.0.0 follows version 0.6.0, and no version stands between them.`, which restates
+  the page title.** It now tells a reader how to read the version the environment holds, and
+  it names no release that a later version makes false; #545 removed the sentence that named
+  what the package index carried, and this round restores no such claim. `mkdocs build --strict` passes.
+  **No file under `ja4plus/` changes and no fingerprint moves.**
+
 - **The documentation states no version claim and no conformance claim that version 1.0.0
   makes false** (#545). Round 206. **`docs/migration-0.6-to-1.0.md:3` read
   `Version 0.6.0 is the released version on PyPI. Version 1.0.0 is not released yet.`, and
