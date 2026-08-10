@@ -974,7 +974,10 @@ holds every breaking change of this record against a row of that page.
   stays exactly as strong: None equals no case identifier.
   `test_the_slug_reader_accepts_an_entry_that_names_a_class_of_skip` holds the repair and
   `test_the_slug_reader_still_finds_the_slug_case_in_an_entry` states the floor, so a reader
-  that found nothing fails rather than passes.
+  that found nothing fails rather than passes. **The merge result runs green on the runner
+  at https://github.com/Crank-Git/ja4plus/actions/runs/31423103064**, where all twelve jobs
+  concluded `success` and the census reads `The skip gate read 10 reports that hold 6137
+  cases between them, and found 152 cases that ran on no job.`
   `docs/specs/features/11-pre-release-validation.md` gains
   `FR-pre-release-validation-35a`, `FR-pre-release-validation-36a`,
   `FR-pre-release-validation-38b` and `FR-pre-release-validation-38c`, plus three acceptance
