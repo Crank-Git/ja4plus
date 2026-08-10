@@ -80,9 +80,32 @@ FR-foundation-8b — The `dev` extra of `pyproject.toml` states one exact `ruff`
 
 FR-foundation-8c — The `dev` extra is the one place a tool reads the `ruff` version from.
 
-> `tests/test_lint_gate_pin.py` holds both requirements. It reads the pin against the
-> installed release, against every file under `.github/workflows/` and against
-> `requirements.txt`.
+FR-foundation-8d — The `dev` extra of `pyproject.toml` states one exact version for
+`build`, for `pytest` and for `pytest-cov`.
+
+FR-foundation-8e — The `dev` extra of `pyproject.toml` states no exact `mypy` version.
+
+FR-foundation-8f — Each entry of the `dev` extra carries a comment that cites the issue
+which chose its shape.
+
+FR-foundation-8g — The repository holds one dependency record, and that record is
+`pyproject.toml`.
+
+> `tests/test_lint_gate_pin.py` holds these requirements. It reads each pin against the
+> installed release, against every file under `.github/workflows/` and against every second
+> dependency record this repository could carry.
+
+> **Warning: a pinned version that Python 3.9 refuses turns every Python 3.9 job red.**
+> Read the `requires_python` value of a release before you pin it. `FR-foundation-13` runs
+> the matrix from Python 3.9, so each pin names the newest release that carries a wheel for
+> Python 3.9 through 3.13. #446 measured `pytest` 9.1.1 and `build` 1.5.0, and each one
+> requires Python 3.10.
+
+> **`mypy` floats, and that reading is the opposite of `FR-foundation-8b` on purpose.** A
+> pinned type checker falls behind, and a frozen release hides a defect that a later release
+> reports. A floating formatter turns a green tree red, which is noisy and safe. A frozen
+> type checker keeps a red tree green, which is quiet and unsafe. The user ruled the trade
+> on 2026-08-10 and #446 records it.
 
 FR-foundation-9 — `mypy ja4plus/` runs on every pull request.
 

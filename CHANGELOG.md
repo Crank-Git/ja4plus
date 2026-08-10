@@ -1399,6 +1399,56 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **The `dev` extra states one recorded shape for every entry, and one record holds every
+  version** (#446). Round TBD. #378 pinned `ruff` alone, so four entries of the `dev` extra
+  still floated and two of them had drifted across a major line. **The user ruled the shape
+  on 2026-08-10, and this round builds that ruling.** `build`, `pytest` and `pytest-cov`
+  each carry an exact version beside `ruff==0.16.2`. `mypy` floats. `requirements.txt` is
+  deleted. **`mypy` reads the opposite way from the four pins, on purpose.** A pinned type
+  checker falls behind, and a frozen release hides a defect that a later release reports. A
+  floating formatter turns a green tree red, which is noisy and safe. A frozen type checker
+  keeps a red tree green, which is quiet and unsafe. **The pinned versions are a measurement
+  of 2026-08-10 and not a copy of the issue body.** A clean environment that installed
+  `pip install -e ".[dev]"` resolved `pytest` 9.1.1, `pytest-cov` 7.1.0, `build` 1.5.0,
+  `mypy` 2.3.0 and `ruff` 0.16.2. **Two of those five versions would turn every Python 3.9
+  job red, and the pin declines both.** `pytest` 9.1.1 states `requires_python` `>=3.10` and
+  `build` 1.5.0 states the same, while `FR-foundation-13` runs the matrix from Python 3.9. A
+  read of the PyPI interface reports the newest release of each distribution that carries a
+  wheel for Python 3.9 through 3.13: `pytest` 8.4.2, `pytest-cov` 7.1.0 and `build` 1.4.4.
+  The extra therefore reads `pytest==8.4.2`, `pytest-cov==7.1.0` and `build==1.4.4`.
+  **The deletion left one instruction pointing at a deleted file, and this round repairs
+  it.** A read of every tracked file found two: the `ruff` comment of `pyproject.toml` and
+  the note under `FR-foundation-8c`. No workflow reads the file, no `Makefile` exists, no
+  `tox.ini` exists and `README.md` names it nowhere. **`tests/test_lint_gate_pin.py` widens
+  from 6 cases to 30**, because the Notes of #446 asked for one reader over the extra rather
+  than a second one. The file keeps its name, because `pyproject.toml`,
+  `docs/specs/features/00-foundation.md` and this file each name that path. **The tests came
+  first**, and the unrepaired tree failed 18 of the 30, among them
+  `AssertionError: the dev extra states no exact version for pytest: 'pytest>=7.0'` and
+  `AssertionError: these files name requirements.txt: ['docs/specs/features/00-foundation.md', 'pyproject.toml']`.
+  **Eight mutations prove the cases discriminate, and each one isolates to the case it
+  targets.** The floating `pytest` specifier restored fails the pin case and the
+  installed-release case. A `build` comment that drops `#446` fails the citation case
+  alone. A `pytest` comment that drops the word `commit` fails the commit rule alone. A
+  `mypy` comment that drops the word `hides` fails the hidden-defect case alone.
+  `mypy==2.3.0` fails the floating case alone. A `tox>=4.0` entry appended to the extra
+  fails the coverage case alone, at `Left contains one more item: 'tox'`. A restored
+  `requirements.txt` fails three cases. An `Install with pip install -r` line appended to
+  `README.md` fails the instruction case alone. Each mutation restored from a snapshot of
+  the implemented tree, and the restored form passes 30 of 30 every time.
+  **The reader reads dependency entries and never every quoted substring**, which is the
+  defect #452 records. `_dev_entries` strips the comment lines of the list before it
+  collects an entry, and each comment of this round quotes a version. **Two floors fail a
+  reader that collected nothing**, because an aggregate over an empty set passes.
+  `MINIMUM_DEV_ENTRIES` holds the extra at five entries and `MINIMUM_INSTRUCTION_FILES`
+  holds the instruction set at ten files. **A case fails a `dev` entry whose shape no
+  decision chose**, so an entry a later round appends reaches
+  `test_the_decision_covers_every_entry_of_the_dev_extra` rather than the next install.
+  **One statement here reaches no case, and the file states that.** No case reads whether a
+  pinned version installs on Python 3.9, because that read needs the package index and this
+  suite opens no network connection. `FR-foundation-8d` through `FR-foundation-8g` carry the
+  four new requirements. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **`FR-pre-release-validation-16` names a pathspec whose plain reading equals what it
   matches** (#436). Round 170. The requirement named
   `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'`, which lists all 31 modules of the
