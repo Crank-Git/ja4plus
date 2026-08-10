@@ -505,6 +505,56 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The fingerprint move count of the migration page states the row count of its own table**
+  (#398). Round TBD. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
+  rows. #395 measured the difference and filed the issue rather than repair it. **The count
+  lived in prose and no case read it.** #399 added a row to the breaking-change table of the
+  same page and #401 corrected a citation of it, and neither edit moved either sentence.
+  **The record already stated seven, so the page is the half that is wrong.** This file reads
+  "That table holds eight rows. Seven of them move a value a tool may have stored". Round 139
+  of the Changelog table of `docs/specs/spec.md` reads "plus seven fingerprints that move".
+  Both are dated records of a past measurement, so both keep their text and the repair is in
+  the page. **The trailing paragraph adds a value and it moves none.**
+  `Processor.close_open_windows` emits every window a connection left open under #214, so a
+  capture produces one more JA4SSH value than version 0.6.0 produced. A reader who counts
+  that paragraph as a move reaches eight. The page now states the decision rather than leave
+  it to the reader. #214 is a row of the fingerprint table of these notes and a paragraph of
+  the page, so the two tables differ by exactly that one row. **Three new cases in
+  `tests/test_release_notes.py` read each count against the table that carries it.**
+  `test_the_migration_page_states_the_count_its_own_fingerprint_table_holds` reads the page
+  against its own table and never against a second copy of the sentence. Round 143 records a
+  citation case that compared two copies of one claim and passed on the error it exists to
+  catch. **The floor bars a reader that finds no sentence**, because a
+  comparison over an empty set of sentences passes, and `MINIMUM_MIGRATION_FINGERPRINT_ROWS`
+  bars a table that an edit empties. **The self-review found this entry building the second
+  copy that round 143 warns about.** The paragraph above quotes the live count sentence of
+  these notes verbatim as evidence, the first form of the notes case searched the whole
+  version section, and `re.search` takes the first match. The live claim would therefore go
+  and the quote would answer for it. `_release_notes_introduction` reads the text above the
+  first third-level heading, so the case reads the claim where it lives. **Fourteen mutations
+  prove the three cases discriminate, and each was restored.** Either sentence back to six
+  fails the count case alone. It reports
+  `the migration page states ['Six'] fingerprints that move, and its own table holds 7 rows`.
+  The deletion of either sentence, the deletion of both, and a rewording the pattern misses
+  each fail the sentence floor. One row removed from the table fails the row floor. Every data
+  row removed fails it with
+  `the fingerprint table of the migration page holds 0 rows, and the floor is 7`. The decision
+  sentence deleted fails the trailing case alone. The count of these notes moved to nine rows,
+  moved to six moves, and deleted, each fails the notes case alone. **Two mutations prove the
+  scope.** The live claim deleted while the quote above stands fails with
+  `the release notes state no row count for their fingerprint table`. The live claim moved to
+  nine rows fails with
+  `the release notes state 9 rows of moved fingerprints, and their table holds 8 rows`.
+  **This branch merged the integration branch at `b0bab60` and at `ab73bd6`**, because #459 and
+  #455 landed after the branch left `d4a1305` and each round appends an unassigned row to the
+  Changelog table. Each resolution keeps both rows, and the earlier row stands first.
+  **The whole gate ran on this host after both merges**: the unit
+  suite reports 2865 passed, 4 skipped, 8 xfailed and 114 subtests, coverage holds at 94 with
+  273 lines missed of 4232 statements, the conformance suite reports 1532 passed, 143 skipped
+  and 134 xfailed against the 134 keys of `tests/foxio_deviations.json`, `mypy --strict` finds
+  no issue in 31 source files, and `ruff check` and `ruff format --check` pass. No file under
+  `ja4plus/` changes and no fingerprint moves.
+
 - **The FoxIO License 1.1 list of the README names every method it covers** (#388). Round TBD.
   The list named JA4S, JA4H, JA4T, JA4TS, JA4L, JA4X and JA4SSH. It named neither JA4LS, nor
   JA4D, nor JA4D6, and this project builds all three under that license. **A published
