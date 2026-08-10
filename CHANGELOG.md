@@ -545,9 +545,10 @@ holds every breaking change of this record against a row of that page.
   `the release notes state no row count for their fingerprint table`. The live claim moved to
   nine rows fails with
   `the release notes state 9 rows of moved fingerprints, and their table holds 8 rows`.
-  **This branch merged the integration branch at `b0bab60`**, because #459 landed after the
-  branch left it and both rounds append an unassigned row to the Changelog table. The
-  resolution keeps both rows. **The whole gate ran on this host after that merge**: the unit
+  **This branch merged the integration branch at `b0bab60` and at `ab73bd6`**, because #459 and
+  #455 landed after the branch left `d4a1305` and each round appends an unassigned row to the
+  Changelog table. Each resolution keeps both rows, and the earlier row stands first.
+  **The whole gate ran on this host after both merges**: the unit
   suite reports 2865 passed, 4 skipped, 8 xfailed and 114 subtests, coverage holds at 94 with
   273 lines missed of 4232 statements, the conformance suite reports 1532 passed, 143 skipped
   and 134 xfailed against the 134 keys of `tests/foxio_deviations.json`, `mypy --strict` finds
