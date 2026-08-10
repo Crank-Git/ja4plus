@@ -52,6 +52,16 @@ from typing import Dict, List, Mapping, Optional, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# The description the command line reports.
+#
+# **`python -OO` sets `__doc__` to None on every module.** A parser that read the module
+# docstring here raised `AttributeError` under that interpreter, and it read no argument at
+# all. `tests/test_parser_description.py` holds every parser of the repository against that
+# run.
+DESCRIPTION = (
+    "The skip gate reads the report of every matrix job, and a case that ran nowhere fails."
+)
+
 # The allowlist the runner reads. Each entry names one case and the environment limit that
 # stops it on every job.
 ALLOWLIST_PATH = REPO_ROOT / "tests" / "universal_skips.json"
@@ -330,7 +340,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     Returns:
         0 where the gate passes, and 1 where it holds a reason.
     """
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument("--reports", required=True, type=Path, help="the download target")
     parser.add_argument("--allowlist", default=ALLOWLIST_PATH, type=Path, help="the allowlist")
     parser.add_argument(
