@@ -1512,6 +1512,43 @@ holds every breaking change of this record against a row of that page.
   rather than a document of this repository. **No file under `ja4plus/` changes and no
   fingerprint moves.**
 
+- **One reader reads the entries of a dependency list, and it reads no quoted substring**
+  (#452). Round TBD. `_dependency_block` of `tests/test_documentation_site.py` collected
+  every double-quoted substring of a dependency block, so a comment inside the block read
+  as an entry. **A reader that is correct only because of what its callers happen to read
+  is the defect**, and #378 found it while it stopped importing the helper rather than
+  change it. **The premise was re-measured against the current tree and it holds.** The
+  unrepaired reader returns `['pytest==8.4.2', 'pytest-cov==7.1.0', 'ruff==0.16.2',
+  'mypy>=1.11', 'not spec_validation', 'build==1.4.4']` for the `dev` extra, and
+  `not spec_validation` is a fragment of the command inside the comment beside
+  `build==1.4.4`. New file `tests/dependency_entries.py` holds `dependency_lines` and
+  `dependency_entries`, and every caller now reads it. `_dependency_block` and the
+  `_dev_lines` and `_dev_entries` of `tests/test_lint_gate_pin.py` parse nothing of their
+  own. **#446 widened the hazard and answered it with a second reader inside that file**,
+  because every entry of the extra now carries a comment above it, and two readers of one
+  list can disagree. **The module reads lines and not TOML.** `tomllib` reaches the
+  standard library at Python 3.11, `pyproject.toml` states `requires-python = ">=3.9"`, and
+  `FR-foundation-13` runs the matrix from Python 3.9, so an import of `tomllib` would fail
+  two jobs. The `dev` extra names no `tomli`. **A comment starts at a `#` that stands
+  outside a string**, so one scan drops a comment line and a comment after an entry, and an
+  entry that carries a fragment marker in a URL survives. **The tests came first**, and the
+  unrepaired tree failed
+  `tests/test_documentation_site.py::test_the_reader_returns_the_entries_of_the_dev_extra_and_no_comment_fragment`
+  with `AssertionError: At index 4 diff: 'not spec_validation' != 'build==1.4.4'`. **Each
+  case names the entries it expects**, because a repair that returns an empty list passes a
+  case that reads the absence of the fragment alone. Three cases hold the `dev` extra, the
+  runtime list and the `docs` extra by name, and new file
+  `tests/test_dependency_entries.py` holds eight cases against the shapes no block of
+  `pyproject.toml` carries today. **The reader refuses a block that holds no entry**,
+  because an aggregate over an empty set passes and a caller would read a clean list.
+  **Three mutations prove the cases discriminate.** A reader that keeps every comment fails
+  4 cases, among them the `dev` extra case and
+  `test_the_decision_covers_every_entry_of_the_dev_extra`. A reader that cuts a line at the
+  first `#` fails the fragment-marker case alone. A reader without the floor fails the
+  empty-block case alone. Each mutation restored from a snapshot of the implemented tree,
+  and the restored form passes 55 of 55 every time. **No file under `ja4plus/` changes and
+  no fingerprint moves.**
+
 ### Changed
 
 - **The `dev` extra states one recorded shape for every entry, and one record holds every

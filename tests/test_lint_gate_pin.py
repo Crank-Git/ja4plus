@@ -30,19 +30,17 @@ The user ruled the difference on 2026-08-10.
 
 ## What a case here reads
 
-The pin is one entry of the `dev` extra. `_dependency_block` of
-`tests/test_documentation_site.py` parses a dependency list, and **this file declines it**.
-That reader collects every double-quoted substring of the block. The `dev` extra carries
-comment lines inside the list, and a comment that quotes a version therefore reads as an
-entry. The reader already returns `not spec_validation` from the comment beside
-`build==1.4.4`. **A comment that quoted `"ruff==0.14.5"` would then fail a case here on the
-wording of a comment**, which is a check a rewording defeats. `_dev_entries` below strips
-the comment lines first. #446 widened that hazard, because every entry now carries a
-comment and three of those comments quote a version.
+The pin is one entry of the `dev` extra, and `tests/dependency_entries.py` reads it.
+**That module is the one reader of a dependency list, and #452 built it.** The reader of
+#378 collected every double-quoted substring of the block, so a comment that quotes a
+version read as an entry, and a comment that quoted `"ruff==0.14.5"` would have failed a
+case here on the wording of a comment. #446 widened that hazard, because every entry now
+carries a comment and three of those comments quote a version.
 
-The self-review of #378 found that hazard. `_dependency_block` stays correct where it is
-used today, because the `docs` list and the runtime list carry no comment inside the
-brackets.
+The self-review of #378 found the hazard, and #446 answered it with a second reader inside
+this file. **Two readers of one list can disagree**, so #452 removed the second one.
+`_dev_lines` and `_dev_entries` below call the shared module and parse nothing of their
+own.
 
 **The `dev` extra is the one place a tool reads a version from.** Every job of
 `.github/workflows/test.yml` installs the extra, and no workflow names one of these
@@ -76,6 +74,8 @@ import re
 
 import pytest
 
+from tests.dependency_entries import dependency_entries, dependency_lines
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 PYPROJECT = REPO_ROOT / "pyproject.toml"
@@ -95,8 +95,9 @@ PINNED = ("build", "pytest", "pytest-cov", LINT_TOOL)
 FLOATING = ("mypy",)
 
 # The `dev` extra holds at least this many entries. **An aggregate over an empty set
-# passes**, so a reader that collects no entry fails here rather than reporting no
-# offender.
+# passes**, so a reader that collects too few entries fails here rather than reporting no
+# offender. `dependency_entries` refuses a block of no entry, and this floor holds the
+# count that the recorded decisions of #378 and #446 cover.
 MINIMUM_DEV_ENTRIES = 5
 
 # The line that opens the development extra of `pyproject.toml`.
@@ -186,30 +187,24 @@ def _dev_lines() -> list[str]:
     Raises:
         AssertionError: `pyproject.toml` holds no `dev` extra, or the list is not closed.
     """
-    text = PYPROJECT.read_text(encoding="utf-8")
-    start = text.find(f"\n{DEV_EXTRA}\n")
-    assert start != -1, f"pyproject.toml holds no {DEV_EXTRA!r} list"
-    end = text.find("\n]", start)
-    assert end != -1, f"the {DEV_EXTRA!r} list is not closed"
-    return [line.strip() for line in text[start:end].splitlines()[2:]]
+    return dependency_lines(PYPROJECT.read_text(encoding="utf-8"), DEV_EXTRA)
 
 
 def _dev_entries() -> list[str]:
     """Return every dependency entry of the `dev` extra of `pyproject.toml`.
 
-    A comment line reaches no entry. The `dev` extra states the reason for every one of its
+    A comment reaches no entry. The `dev` extra states the reason for every one of its
     entries in a comment, and a comment that quotes a version is prose rather than a
     dependency.
 
     Returns:
-        The quoted entries, without their quotes, in file order.
+        The entries, without their quotes, in file order.
+
+    Raises:
+        AssertionError: `pyproject.toml` holds no `dev` extra, the list is not closed, or
+            the extra holds no entry.
     """
-    return [
-        found
-        for line in _dev_lines()
-        if not line.startswith("#")
-        for found in re.findall(r"\"([^\"]+)\"", line)
-    ]
+    return dependency_entries(PYPROJECT.read_text(encoding="utf-8"), DEV_EXTRA)
 
 
 def _distribution(entry: str) -> str:

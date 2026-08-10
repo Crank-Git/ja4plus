@@ -95,6 +95,15 @@ FR-foundation-8g — The repository holds one dependency record, and that record
 > installed release, against every file under `.github/workflows/` and against every second
 > dependency record this repository could carry.
 
+> **`tests/dependency_entries.py` is the one reader of a dependency list, and #452 built
+> it.** An entry of the `dev` extra carries a comment above it, and the earlier reader
+> collected every double-quoted substring of the block. That reader returned
+> `not spec_validation` as an entry, from the command inside one comment.
+> `tests/test_dependency_entries.py` holds the cases against the module. **Warning: read a
+> dependency list through that module and never through a second reader.** Two readers of
+> one list can disagree, and a reader that is correct only because of what its callers
+> happen to read fails on the caller that arrives next.
+
 > **Warning: a pinned version that Python 3.9 refuses turns every Python 3.9 job red.**
 > Read the `requires_python` value of a release before you pin it. `FR-foundation-13` runs
 > the matrix from Python 3.9, so each pin names the newest release that carries a wheel for
