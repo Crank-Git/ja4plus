@@ -71,6 +71,9 @@ count of the capture socket the command opened.
 FR-live-capture-16 — The `dropped` field reads `null` where the capture layer
 reports no drop count.
 
+FR-live-capture-17 — The `dropped` field reports the drop count of the whole run
+where the capture layer resets its counter on each read.
+
 ## User flows
 
 **An operator starts a monitor.**
@@ -128,6 +131,9 @@ The statistics line, written to standard error:
   may grant the capability without granting the user identity zero.
 - The drop count comes from the capture socket where the capture layer reports one,
   and the field reads `null` where it reports none.
+- The monitor adds each reading to a running total where the capture layer resets its
+  counter on the read.
+- The monitor reports the reading itself where the capture layer holds its counter.
 - The default connection timeout is 300 seconds. The default maximum connection
   count is 10000. These match the library defaults.
 
@@ -214,6 +220,10 @@ name a refused privilege, and `ENODEV` names an interface the host does not hold
 - [ ] `--stats-interval 1` writes a statistics line every second.
 - [ ] A monitor on macOS reports a whole number in the `dropped` field, read from a
       real capture socket of the host.
+- [ ] A monitor on Linux reports a whole number in the `dropped` field, read from a real
+      `AF_PACKET` socket of the host.
+- [ ] The `dropped` field of a Linux monitor holds the running total, and not the last
+      reading the kernel returned.
 - [ ] The `dropped` field reads `null` where the capture layer reports no drop count.
 - [ ] Running without capture privilege exits with status 1 and names the required
       privilege.
@@ -234,10 +244,8 @@ name a refused privilege, and `ENODEV` names an interface the host does not hold
 
 ## Open questions
 
-- Whether `scapy` reports a drop count on Linux. On Linux `scapy` defines
-  `PACKET_STATISTICS = 6` at `scapy/arch/linux/__init__.py:95` and calls `getsockopt`
-  with that option nowhere, so the field reads `null` there. That is a reading of the
-  `scapy` source, and no Linux host ran it. #326 owns the Linux measurement.
+- None. #423 closed the macOS half of the drop count question and #326 closed the Linux
+  half. The two sections below hold each reading.
 
 ## The macOS drop count
 
@@ -256,6 +264,41 @@ argument alone.
 **The `BIOCGSTATS` ioctl resets neither counter**, so the monitor reports the count of
 the socket and it accumulates nothing. Two reads of one socket returned 29910 drops and
 then 59910 drops.
+
+## The Linux drop count
+
+**#326 closed the Linux half of the question above, and it took the reading from a real
+`AF_PACKET` socket of the granted Linux host.** The `dropped` field holds a whole number
+on Linux.
+
+**`scapy` 2.7.0 reads no drop count on any platform through `getsockopt`.** It defines
+`PACKET_STATISTICS = 6` at `scapy/arch/linux/__init__.py:95`, and the word `getsockopt`
+appears in no file of the package. `ja4plus` therefore reads the socket option itself, in
+`packet_statistics_drops`. The call reaches the packet socket through `SuperSocket.ins`,
+which holds the `socket.socket` the Linux capture opened.
+
+**The Python `socket` module publishes neither constant**, so `ja4plus/watch.py` defines
+both. The table names the source of each value, read on the granted host on 2026-08-10.
+
+| Name | Value | Source |
+|---|---|---|
+| `SOL_PACKET` | 263 | `/usr/include/x86_64-linux-gnu/bits/socket.h:151` |
+| `PACKET_STATISTICS` | 6 | `/usr/include/linux/if_packet.h:44` |
+| `struct tpacket_stats` | `tp_packets`, then `tp_drops` | `/usr/include/linux/if_packet.h:77` |
+
+Each field of `struct tpacket_stats` is an `unsigned int` of the host byte order, so the
+reader unpacks eight bytes and takes the second field. A reader of the first field would
+report the received count as the drop count.
+
+**Warning: the kernel resets both counters as the read returns them.** `man 7 packet`
+states the rule: "Receiving statistics resets the internal counters." The Linux monitor
+therefore adds each reading to a running total. A monitor that reported the last reading
+would report the drops of one interval and call it the drops of the whole run.
+
+`ja4plus` measured that reset, and it assumed nothing. One packet socket on `lo` held a
+small receive buffer and read a burst of 50 UDP packets. It answered `tp_drops` above
+zero, and it then answered `tp_drops` of zero to the next read. The case sent no packet
+between the two reads.
 
 **A count of 0 on a clean capture proves nothing**, because a field no code writes reads
 the same way. `tests/test_watch_drop_count.py` therefore fills the kernel buffer of a
