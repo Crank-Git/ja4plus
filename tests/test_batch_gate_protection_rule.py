@@ -99,15 +99,41 @@ SUPERSEDED_MARKER = "superseded"
 # `#468` at the start of a line therefore reaches no match.
 HEADING_LINE = re.compile(r"^(#{1,6})\s")
 
-# A sentence that names one of these terms makes a claim about branch protection.
-CHECK_TERM = re.compile(r"required status check(?:s)?", re.IGNORECASE)
-
-# A sentence that names a check term and one of these states that no such check exists.
-NEGATION = re.compile(
-    r"holds none|holds no\b|carries none|carries no\b|has none|has no\b"
-    r"|there is no\b|not protected|no required status check",
+# A sentence that names one of these terms makes a claim about branch protection. **The
+# term is not the phrase `required status check` alone.** A self-review wrote
+# `This repository holds no required check.` and the first form of this pattern read
+# nothing in it.
+CHECK_TERM = re.compile(
+    r"required status check(?:s)?|required check(?:s)?|branch protection",
     re.IGNORECASE,
 )
+
+# A sentence that names a check term and one of these states that no such check exists.
+# **The pattern reads a shape and no phrase**, because #211 and #449 each proved that one
+# forbidden phrase guards one spelling. A self-review drove the first form with fifteen
+# candidate sentences and eight reached no match, so each of those eight added its verb.
+NEGATION = re.compile(
+    r"holds none|holds no\b|carries none|carries no\b|has none|has no\b"
+    r"|there is no\b|there are no\b|not protected|unprotected"
+    r"|no required status check|no required check"
+    r"|\blacks\b|without a\b|without any\b|requires no\b"
+    r"|never added|never configured|never turned on"
+    r"|is absent|are absent|is empty|is off\b",
+    re.IGNORECASE,
+)
+
+# A second shape of the same claim, which names no check term. A sentence that states the
+# provider refuses nothing means the same thing to a reader.
+PROVIDER_REFUSES_NOTHING = re.compile(
+    r"nothing (?:at |inside |in )?the provider refuses|the provider refuses nothing"
+    r"|the provider refuses no\b",
+    re.IGNORECASE,
+)
+
+# A third shape, which names the branch rather than the check. `The branch `dev` is
+# unprotected.` states the same claim and it names no check at all.
+BRANCH_TERM = re.compile(r"\bdev\b|\bbranch\b|\brepository\b", re.IGNORECASE)
+UNPROTECTED = re.compile(r"\bunprotected\b|\bnot protected\b", re.IGNORECASE)
 
 # A sentence that names a check term and one of these states that the check exists.
 AFFIRMATION = re.compile(r"\bcarries\b|\bholds\b|\breads\b", re.IGNORECASE)
@@ -209,6 +235,10 @@ def superseded_claims(text: str) -> List[str]:
     found: List[str] = []
     for sentence in sentences(readable_text(text)):
         if CHECK_TERM.search(sentence) and NEGATION.search(sentence):
+            found.append(sentence)
+        elif PROVIDER_REFUSES_NOTHING.search(sentence):
+            found.append(sentence)
+        elif BRANCH_TERM.search(sentence) and UNPROTECTED.search(sentence):
             found.append(sentence)
     return found
 
@@ -568,6 +598,16 @@ SUPERSEDED_PHRASINGS = (
     "The provider holds no required status check for `dev`.",
     "There is no required status check on the integration branch.",
     "A required status check is the strongest shape, and this repository has none.",
+    # The eight a self-review wrote, which the first form of the pattern read nothing in.
+    "The repository lacks a required status check.",
+    "`dev` runs without a required status check.",
+    "The required status checks were never added.",
+    "A required status check is absent from this repository.",
+    "The branch `dev` is unprotected.",
+    "This repository holds no required check.",
+    "Branch protection is off for `dev`.",
+    "The required status check list is empty.",
+    "Nothing at the provider refuses an ungated merge.",
 )
 
 LIVE_PHRASINGS = (
@@ -582,6 +622,12 @@ CONTROL_SENTENCES = (
     "A run of the head commit has not finished.",
     "`gh pr checks` writes 'no checks reported' where the event created nothing.",
     "A member commit ends with the keyword and it names the keyword nowhere else.",
+    # The widened pattern names `required check` and `branch protection`, so these four
+    # true sentences of the repaired file prove that it reports no correct statement.
+    "A required check that never reports blocks the merge.",
+    "The required status checks hold no `build` context.",
+    "A change to branch protection changes the repository configuration.",
+    "The rule binds a contributor, and it binds no repository administrator.",
 )
 
 
