@@ -1027,14 +1027,24 @@ holds every breaking change of this record against a row of that page.
   `test_the_batch_gate_rule_states_the_reference_commit_of_a_manual_run` each failed against
   the workflow and the rule of the base commit. **The repair is proven on the runner in both
   directions, because a green manual run alone would also follow from a gate somebody turned
-  off.** The green direction ran at GREEN_RUN_URL, a manual run of the branch head, where
-  every job concluded `success` and the `skip-gate` census names the change-set case
-  nowhere. The red direction ran at RED_RUN_URL, a pull-request run of RED_PR_NUMBER into
-  `batch/544-release-blockers`, which carried the deliberately universal skip
+  off.** The green direction ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31427241390, a manual run of the branch
+  head `e7aa178`. All twelve jobs concluded `success`, the step `Resolve the reference
+  commit of a manual run` wrote `61e04f121624dda8a415a8a71e3148681f2bfb22` into
+  `refs/ja4plus/round-entry-base`, and the log of `test (ubuntu-latest, 3.13)` records
+  `tests/test_round_entry_existence.py::test_the_change_set_of_this_branch_records_a_round PASSED`.
+  Its census reads `The skip gate read 10 reports that hold 6139 cases between them, and
+  found 152 cases that ran on no job.` and it names that case nowhere. **The red direction
+  ran at https://github.com/Crank-Git/ja4plus/actions/runs/31427370413**, the pull-request
+  run of #549 into `batch/544-release-blockers`, whose head `b5b93c5` carried no skip
+  keyword. That branch carried the deliberately universal skip
   `tests.test_universal_skip_proof::test_the_case_that_skips_in_every_environment` that
   round 197 used. Every other job of that run concluded `success` and `skip-gate` concluded
-  `failure` on that case. That pull request landed in no branch, and it is closed with its
-  branch deleted. `FR-pre-release-validation-41` states the requirement, one acceptance
+  `failure` on `tests.test_universal_skip_proof::test_the_case_that_skips_in_every_environment skipped on every job that selects it, so the suite ran it nowhere. The download holds 6 reports of it. Repair the case, or record the environment limit in universal_skips.json`.
+  **The change-set case stands among neither census**, so the repair turned the gate off
+  nowhere. #549 landed in no branch, and it is closed with its branch deleted. **Coverage
+  holds at 94%**, with 4316 statements and 273 misses.
+  `FR-pre-release-validation-41` states the requirement, one acceptance
   criterion reads it, and `.claude/rules/batch-gate.md` gains the subsection
   `### A manual run names its own reference commit`. No file under `ja4plus/` changes and no
   fingerprint moves.
