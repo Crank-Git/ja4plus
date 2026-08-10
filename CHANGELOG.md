@@ -946,8 +946,18 @@ holds every breaking change of this record against a row of that page.
   `test_the_tracked_corpus_holds_a_tool_module` state the floor, so a pathspec that lists
   nothing fails rather than reports a clean corpus. `FR-pre-release-validation-39`,
   `FR-pre-release-validation-39a` and `FR-pre-release-validation-39b` state the three
-  requirements. `pyright` reports no `reportOptionalMemberAccess` against the four files.
-  No file under `ja4plus/` changes and no fingerprint moves.
+  requirements. **The self-review found two latent gaps in the reader itself, and
+  `FR-pre-release-validation-39c` states the repair.** `ArgumentParser` takes `description`
+  third, so `ArgumentParser(prog, usage, __doc__)` reached no report while the reader read
+  the keyword alone. The tool reader matched the text `__name__ == "__main__"`, so a guard
+  of another quote style or another operand order reached no run case. Both gaps were
+  latent, because every call site of the repository writes the form each reader expected.
+  **A latent gap in this reader is the defect this round exists to remove**, so both reach
+  a repair and a case. The reader reports `description=__doc__ or "Read the run."`, which
+  raises nothing, and that stricter reading is a decision rather than a defect: a module
+  states one description, and a fallback beside `__doc__` states it twice. `pyright`
+  reports no `reportOptionalMemberAccess` against the four files. No file under `ja4plus/`
+  changes and no fingerprint moves.
 - **The branch-protection claims of the batch-gate rule reach a case** (#511). Round
   194. `.claude/rules/batch-gate.md` states that each of the eleven required contexts
   carries `app_id` 15368, and `CHANGELOG.md` and the round 174 row of `docs/specs/spec.md`

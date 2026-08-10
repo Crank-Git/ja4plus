@@ -226,6 +226,11 @@ FR-pre-release-validation-39b — A case fails where the reader finds no parser 
 tracked corpus, and a second case fails where it finds no tool module. A reader that lists
 nothing otherwise reports a clean corpus that it never read.
 
+FR-pre-release-validation-39c — The reader reads the description of a parser at the third
+position as well as at the keyword, because `ArgumentParser` takes it third. It reads the
+main guard of a tool module from the syntax tree, so a guard of another quote style or
+another operand order still reaches the run case.
+
 ## User flows
 
 **A maintainer proves the shipped package runs.**

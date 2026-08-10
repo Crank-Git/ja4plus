@@ -11,7 +11,7 @@ These cases read every tracked module instead, so the next site fails here on th
 that writes it.
 
 The reader takes the file list from `git ls-files`. **Never walk the checkout with
-`rglob`.** #473 records the reason: the harness places a worker worktree under `.claude/`,
+`rglob`.** #473 records the reason. The harness places a worker worktree under `.claude/`,
 so a walk of the checkout grows its corpus with the number of live workers.
 
 These cases read no packet and they produce no fingerprint.
@@ -32,6 +32,11 @@ REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parent.parent
 # The call names that build a parser. `ArgumentParser` builds the top parser and
 # `add_parser` builds a subcommand parser, and each one accepts `description`.
 PARSER_CALLS = frozenset({"ArgumentParser", "add_parser"})
+
+# `ArgumentParser(prog, usage, description, ...)` takes the description third, so a caller
+# reaches it with no keyword at all. `add_parser(name, **kwargs)` takes one positional
+# argument, so this position reads the top parser alone.
+POSITIONAL_DESCRIPTION = 2
 
 
 class ParserCall(NamedTuple):
@@ -58,7 +63,13 @@ def _called_name(func: ast.expr) -> str:
 
 
 def _reads_module_docstring(value: ast.expr) -> bool:
-    """Return True where the expression reads the name `__doc__`."""
+    """Return True where the expression reads the name `__doc__`.
+
+    The reader reports every expression that names `__doc__`, and it reads no control
+    flow. `description=__doc__ or "Read the run."` raises nothing under `-OO`, and this
+    reader still reports it. **A module states its description**, and a fallback beside
+    `__doc__` states that description twice.
+    """
     return any(isinstance(node, ast.Name) and node.id == "__doc__" for node in ast.walk(value))
 
 
@@ -83,12 +94,51 @@ def parser_calls(source: str, path: str) -> List[ParserCall]:
         if _called_name(node.func) not in PARSER_CALLS:
             continue
         description: Optional[ast.expr] = None
+        if _called_name(node.func) == "ArgumentParser" and len(node.args) > POSITIONAL_DESCRIPTION:
+            description = node.args[POSITIONAL_DESCRIPTION]
         for keyword in node.keywords:
             if keyword.arg == "description":
                 description = keyword.value
         reads = description is not None and _reads_module_docstring(description)
         calls.append(ParserCall(path=path, line=node.lineno, reads_module_docstring=reads))
     return calls
+
+
+def _is_main_name(node: ast.expr) -> bool:
+    """Return True where the expression is the name `__name__`."""
+    return isinstance(node, ast.Name) and node.id == "__name__"
+
+
+def _is_main_string(node: ast.expr) -> bool:
+    """Return True where the expression is the string `__main__`."""
+    return isinstance(node, ast.Constant) and node.value == "__main__"
+
+
+def holds_main_guard(source: str) -> bool:
+    """Return True where the source compares `__name__` against `__main__`.
+
+    The reader reads the syntax tree rather than the text. A text match reads one quote
+    style and one operand order, so a guard that writes either one differently reaches no
+    run case and the suite reports a corpus it never read.
+
+    Args:
+        source: The text of one Python file.
+
+    Returns:
+        True where one comparison of the file holds both operands.
+
+    Raises:
+        SyntaxError: The source is not Python.
+    """
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, ast.Compare):
+            continue
+        operands = [node.left, *node.comparators]
+        if any(_is_main_name(one) for one in operands) and any(
+            _is_main_string(one) for one in operands
+        ):
+            return True
+    return False
 
 
 def tracked_python_files() -> List[str]:
@@ -121,7 +171,7 @@ def tool_modules() -> List[str]:
         source = (REPOSITORY_ROOT / path).read_text(encoding="utf-8")
         if not parser_calls(source, path):
             continue
-        if '__name__ == "__main__"' not in source:
+        if not holds_main_guard(source):
             continue
         names.append(path[: -len(".py")].replace("/", "."))
     return names
@@ -175,6 +225,44 @@ def test_the_reader_passes_a_parser_that_states_its_own_description() -> None:
     source = "import argparse\nargparse.ArgumentParser(description='Measure the run.')\n"
     calls = parser_calls(source, "sample.py")
     assert [call.reads_module_docstring for call in calls] == [False]
+
+
+def test_the_reader_finds_a_parser_that_takes_the_module_docstring_in_the_third_position() -> None:
+    """`ArgumentParser` takes the description third, so a caller reaches it with no keyword."""
+    source = "import argparse\nargparse.ArgumentParser('tool', None, __doc__)\n"
+    calls = parser_calls(source, "sample.py")
+    assert [call.reads_module_docstring for call in calls] == [True]
+
+
+def test_the_reader_reads_the_keyword_above_the_third_position() -> None:
+    """A caller that writes both forms reaches the keyword, which is what Python binds."""
+    source = "import argparse\nargparse.ArgumentParser('tool', None, description='Run it.')\n"
+    calls = parser_calls(source, "sample.py")
+    assert [call.reads_module_docstring for call in calls] == [False]
+
+
+def test_the_reader_reports_a_fallback_beside_the_module_docstring() -> None:
+    """A fallback raises nothing, and the reader still reports it.
+
+    The docstring of `_reads_module_docstring` states the reason. A module states one
+    description, and this form states that description twice.
+    """
+    source = "import argparse\nargparse.ArgumentParser(description=__doc__ or 'Run it.')\n"
+    calls = parser_calls(source, "sample.py")
+    assert [call.reads_module_docstring for call in calls] == [True]
+
+
+def test_the_tool_reader_reads_a_main_guard_whatever_its_quotes_and_order() -> None:
+    """A guard that writes another quote style, or the other operand order, still reads."""
+    assert holds_main_guard("if __name__ == '__main__':\n    pass\n")
+    assert holds_main_guard('if "__main__" == __name__:\n    pass\n')
+    assert holds_main_guard('if __name__=="__main__":\n    pass\n')
+
+
+def test_the_tool_reader_reads_no_guard_where_the_file_holds_none() -> None:
+    """A file that names one operand alone holds no guard."""
+    assert not holds_main_guard('print("__main__")\n')
+    assert not holds_main_guard("print(__name__)\n")
 
 
 def test_the_reader_passes_a_call_that_is_no_parser() -> None:
