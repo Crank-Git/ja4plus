@@ -130,8 +130,8 @@ jobs:
         # `tests/test_round_entry_existence.py` reads two commits of this repository, each
         # against its parent. `DEFECT_SHA` is the commit #412 shipped, which recorded no
         # round, and `CONTROL_SHA` is the commit #429 shipped, which recorded one. **A
-        # green reading of one commit proves nothing on its own**, so the case set holds
-        # the two directions and this step carries both to the runner.
+        # green reading of one commit proves nothing on its own.** The case set therefore
+        # holds the two directions, and this step carries both commits to the runner.
         #
         # **The clone of depth 1 holds neither pair, so the two cases skipped on every job
         # of the matrix.** #524 measured that state on 2026-08-10 and #528 repaired it. A
@@ -147,8 +147,8 @@ jobs:
         # and git answered `fatal: couldn't find remote ref 46aa502`.
         #
         # **This step carries no `if` condition, because the two cases read no event.** The
-        # step above reads the base commit of a pull request and it skips on a push, and
-        # these two commits stand in the recorded history whatever event starts the run.
+        # step above reads the base commit of a pull request, so it skips on a push. These
+        # two commits stand in the recorded history whatever event starts the run.
         #
         # **#528 declined `continue-on-error` for the reason #438 states.** A failed fetch
         # leaves the two cases skipped, and the `skip-gate` job then fails the run on a

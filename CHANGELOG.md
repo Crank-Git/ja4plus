@@ -952,8 +952,20 @@ holds every breaking change of this record against a row of that page.
   `AssertionError: assert 'DEFECT_SHA: 46aa502ca47f3c29f3c5ece15e4e78500e2f59c5' in ...`.
   **The runner read the check in both directions, on one pull request that landed in no
   branch.** The user approved that deliberately red pull request under the standing rules,
-  and #536 targeted `batch/535-skip-gate-repairs`, it targeted neither `dev` nor `master`,
-  and each of its heads carried no skip keyword. `tests/universal_skips.json` loses the
+  and #538 targeted `batch/535-skip-gate-repairs`, it targeted neither `dev` nor `master`,
+  and each of its two heads carried no skip keyword. **The red head `4da756b` raised in
+  place of each assertion, so the run states the reading the runner made.** It ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31416675503, where every one of the six
+  matrix jobs reported both cases as `FAILED` rather than `SKIPPED`, on
+  `AssertionError: the runner read the defect commit: the change set holds these paths outside the two records: .claude/rules/conformance.md, docs/mutation_reports/412-utils.json, docs/mutation_settlements/412-utils.json and 3 more. CHANGELOG.md holds 64 round entries against 64 at the reference commit`
+  and on `AssertionError: the runner read the control commit: None`. **The two readings on
+  the runner match the two readings of the local gate word for word.** The green head
+  `837f88e` carried the cases as this branch ships them, and it ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31417379359, where all twelve jobs
+  concluded `success`, both cases reported `PASSED`, and the `skip-gate` job read 6 reports
+  and found 10 cases that ran on no job of the matrix, all 10 allowed and neither of these
+  two among them. #538 is closed and its branch is deleted.
+  `tests/universal_skips.json` loses the
   entry that named this case, so the allowlist holds one open finding and #529 names it.
   `docs/specs/features/11-pre-release-validation.md` gains
   `FR-pre-release-validation-39` and one acceptance criterion, and

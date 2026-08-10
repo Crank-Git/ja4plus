@@ -57,9 +57,9 @@ reason and the failure as two separate fields, so a case reports which one it me
 
 ## The two recorded change sets
 
-**A scratch repository proves the reading against a change set the case wrote, and a
-recorded commit proves it against a change set the project made.** Two commits carry that
-proof, and `recorded_change_set` reads each one against its parent.
+**A scratch repository proves the reading against a change set the case wrote.** A recorded
+commit proves it against a change set the project made. Two commits carry that proof, and
+`recorded_change_set` reads each one against its parent.
 
 - `DEFECT_COMMIT` is the commit #412 shipped. It carried eleven sweeps, two repairs and a
   new test file, it recorded no round, and the whole unit gate passed it.
