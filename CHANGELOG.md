@@ -505,6 +505,47 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The image count of `docs/specs/spec.html` states the count the FoxIO inventory measures**
+  (#449). Round TBD. The page held two image counts. Line 316 read `Eleven of the twelve
+  FoxIO methods carry no complete text specification`. Line 436 read `Seven of twelve FoxIO
+  methods are specified only as images`, 120 lines below it. **A case existed to forbid the
+  second sentence, and a missing article defeated it.**
+  `tests/test_documentation_image_count.py` held the fixed phrase `seven of the twelve` and
+  searched each line for it. The page writes `Seven of twelve`, so it carried the superseded
+  count for 97 rounds while the case passed. **This round re-measured `technical_details/` at
+  the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` rather than quoting round
+  70.** The directory holds twelve files: three text files of 1567, 9153 and 278 bytes, and
+  nine images. The upstream `README.md` lists twelve methods and embeds nine image links.
+  Every byte count reproduces `docs/specs/foxio/README.md`, so eleven is the measured count.
+  **The case now reads a shape and no phrase.** `image_count_claims` matches a count that
+  binds to the word `method`, followed by a claim about an image or about a complete text
+  specification. It reads the whole page with the line breaks removed, so a claim that a
+  line break splits reaches it. **The number comes out of the inventory.**
+  `measured_image_count` is the method count less the count of complete text
+  specifications, and it reads both halves out of `docs/specs/foxio/README.md`. A case that
+  restated eleven would pass on the day the inventory moves. **Sixteen spellings of the
+  superseded count reach the reader, and each one is a case.** They include `Seven of
+  twelve`, `seven of the twelve`, `7 of 12`, `Seven FoxIO methods`, `publishes seven methods
+  as images`, `the count of FoxIO methods specified only as images is seven` and
+  `image-only`. **Eight control sentences reach no wrong count.** They include the `7 of the
+  12 moved values` of `docs/specs/foxio/JA4T.md`, the seven deleted text files of
+  `docs/specs/foxio/README.md` and `All but one FoxIO method is specified only as an image`.
+  The reader therefore matches a claim and not a page. **A self-review drove the first form
+  of the reader with more than 40 candidate sentences.** It found fourteen evasions and one
+  false positive. Six evasions became spellings of the case set, and the false positive
+  became the two complement controls. **The module docstring records the six holes that
+  stay**, among them a synonym of `method` and a claim further than 40 characters from the
+  noun. **A dated record of a past measurement is quoted and not rewritten.** Round
+  162 of the Changelog table of `docs/specs/spec.md` quotes the defective sentence word for
+  word. `readable_text` cuts that section, and
+  `test_the_reader_reads_the_quoted_count_of_a_changelog_round_and_a_case_does_not` reads
+  the cut in both directions. **The cases were written first and they bite**: against the
+  unrepaired page they failed 2 of 47. Five more cases hold the inventory against itself, so
+  a table that loses a row fails before any page does. **One premise of the issue body is
+  false and the measurement disproves it.** The body states that the two counts sit 60 lines
+  apart, and its own table names lines 314 and 434. No file under `ja4plus/` changes and no
+  fingerprint moves.
+
 - **The fingerprint move count of the migration page states the row count of its own table**
   (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
   rows. #395 measured the difference and filed the issue rather than repair it. **The count

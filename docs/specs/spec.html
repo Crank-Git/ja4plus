@@ -88,6 +88,11 @@
   <p><strong>Read <code>docs/specs/spec.md</code> wherever the two disagree.</strong> #211
   records this note and corrects the two statements that contradicted the measurement.
   Whether this page survives is a question for the user.</p>
+  <p><strong>#211 left a third statement, and #449 corrects it.</strong> The image count of
+  the <code>Open, but not blocking</code> card read seven, and this page states eleven
+  120 lines above it. <code>tests/test_documentation_image_count.py</code> now reads a
+  count out of the inventory rather than one forbidden phrase. A rewording of the same
+  wrong number therefore fails a case.</p>
 </div>
 
 <h2>Executive summary</h2>
@@ -433,7 +438,9 @@ may not render in an iframe.</p>
 <div class="card q">
   <h3>Open, but not blocking</h3>
   <ul>
-    <li><strong>Seven of twelve FoxIO methods are specified only as images.</strong> Where an
+    <li><strong>Eleven of the twelve FoxIO methods are specified only as images.</strong> JA4
+      is the one method that holds a complete text specification, and
+      <code>docs/specs/foxio/README.md</code> holds the inventory. Where an
       image is ambiguous, the expected-output files decide and the reading is recorded.</li>
     <li><strong>A vector may not exercise a method.</strong> The suite must record that as
       not-applicable and must fail if <em>everything</em> is not-applicable.</li>
