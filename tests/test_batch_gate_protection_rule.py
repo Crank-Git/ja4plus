@@ -43,7 +43,7 @@ holds the file against it.
 
 ## The prose defects #511 repairs
 
-Three cases hold the wording the same issue repaired. The opening claim of the protection
+Three cases hold the sentences the same issue repaired. The opening claim of the protection
 section names the `enforce_admins` reading, because an administrator merge reaches `dev`
 with no run. The steps of that section read the provider and change nothing, and the intro
 states that. No live sentence of the file carries a floating date, because a floating word
@@ -87,8 +87,8 @@ PROTECTION_COMMAND = ("gh", "api", "repos/Crank-Git/ja4plus/branches/dev/protect
 
 # The application that publishes every required context. The provider holds this number
 # under `required_status_checks.checks[]` and never under `contexts`, which is a list of
-# names alone. A context of another application would satisfy the rule with a run this
-# project never wrote, so a case reads the number rather than the name.
+# names alone. A context of another application satisfies the rule with a run this project
+# never wrote. A case therefore reads the number and not the name alone.
 REQUIRED_APP_ID = 15368
 
 # The read of 2026-08-10 reports these eleven contexts, each carrying `app_id` 15368.
@@ -177,12 +177,13 @@ READ_VERBS = ("Open", "Read")
 # `the exact steps to read the rule or to change it` and the four steps were four reads.
 CHANGE_PROMISE = re.compile(r"steps?\s+to\s+[^.]*\bchange\b|to change it", re.IGNORECASE)
 
-# A word that dates a sentence against the day a reader reads it. This file exists because
-# a dated reading was quoted as a standing fact, so a floating word is the defect it
-# records. `\bnow\b` matches no `nowhere`, because the boundary needs the word to end.
+# A word that dates a sentence against the day a reader reads it. The rule file states a
+# dated reading, and a floating word turns that reading into a standing fact.
+# `\bnow\b` matches no `nowhere`, because the boundary needs the word to end.
 FLOATING_DATE = re.compile(
     r"\btoday\b|\byesterday\b|\btomorrow\b|\bnow\b|\bcurrently\b|\brecently\b"
-    r"|\blately\b|at present|at the moment|these days|as of now",
+    r"|\blately\b|\bpresently\b|\bnowadays\b"
+    r"|at present|at the moment|at this time|these days|as of now",
     re.IGNORECASE,
 )
 
@@ -949,6 +950,9 @@ FLOATING_SENTENCES = (
     "A keyword-free head is the one head that now starts one.",
     "The provider currently holds eleven required contexts.",
     "The ruleset list is empty at the moment.",
+    # A self-review of #511 read these two sentences past the first form of the pattern.
+    "The rule presently binds every contributor.",
+    "The provider holds no run of that commit at this time.",
 )
 
 DATED_SENTENCES = (
@@ -999,9 +1003,24 @@ def test_the_steps_intro_reader_returns_the_block_in_front_of_the_steps() -> Non
     assert steps_intro("first\n\nthe intro\n\n1. Open the page.\n") == "the intro"
 
 
+def test_the_step_reader_reads_no_step_in_a_body_that_holds_none() -> None:
+    """The step reader returns an empty list where the body numbers nothing."""
+    assert numbered_steps("text\n\n- Open the page.\n") == []
+
+
+def test_the_steps_intro_reader_returns_no_intro_where_the_body_holds_no_step() -> None:
+    """The intro reader returns an empty string where the body numbers nothing."""
+    assert steps_intro("first\n\nsecond\n") == ""
+
+
 def test_the_opening_paragraph_reader_returns_the_first_block_that_holds_text() -> None:
     """The opening reader passes over a blank block and returns the first paragraph."""
     assert opening_paragraph("\n\nfirst\n\nsecond\n") == "first"
+
+
+def test_the_opening_paragraph_reader_returns_no_paragraph_of_an_empty_body() -> None:
+    """The opening reader returns an empty string where the body holds no text."""
+    assert opening_paragraph("\n\n   \n") == ""
 
 
 def test_the_application_reader_reads_the_number_the_file_states() -> None:

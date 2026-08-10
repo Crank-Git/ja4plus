@@ -827,7 +827,7 @@ holds every breaking change of this record against a row of that page.
   carries `app_id` 15368, and `CHANGELOG.md` and the round 174 row of `docs/specs/spec.md`
   state it too. **No case read the number.** `provider_contexts` reads
   `required_status_checks.contexts`, which holds the context names alone, and the provider
-  holds the application under `required_status_checks.checks[]`. New reader
+  holds the application under `required_status_checks.checks[]`. The new reader
   `check_applications` reads that list, and
   `test_the_provider_carries_the_stated_application_on_every_context` requires `app_id`
   15368 on each of the eleven contexts. **The case reads its floor before it reads the
@@ -835,11 +835,11 @@ holds every breaking change of this record against a row of that page.
   empty sets. A read of the provider on 2026-08-10 reports `app_id` 15368 on all eleven
   entries of `checks`. Where `gh` returns no reading, the case skips and it does not pass,
   and `test_the_application_case_skips_where_the_provider_returns_no_reading` measures that
-  state. The same round repairs three wordings of the rule file. The opening claim of
+  state. The same round repairs three statements of the rule file. The opening claim of
   `## The provider refuses an ungated merge` names the `enforce_admins` reading, which is
   `false`, so an administrator merge reaches `dev` with no run. The steps intro promised a
-  change of the rule and the four steps below it are four reads, so it states the read and
-  a case holds the verb of every step. One sentence dated its warning against the day a
+  change of the rule and the four steps below it are four reads, so it states what the
+  steps do, and a case holds the verb of every step. One sentence dated its warning against the day a
   reader reads it, and it names the read of 2026-08-10 instead.
   `test_the_opening_claim_of_the_protection_section_names_its_condition`,
   `test_the_steps_of_the_protection_section_read_the_rule_and_change_nothing` and
