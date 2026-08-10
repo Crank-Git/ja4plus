@@ -201,4 +201,4 @@ holds commas, so the writer quotes it.
 
 | Version | Release | What changed |
 |---|---|---|
-| 1 | Unreleased | The first published schema. It holds the eleven fields above. |
+| 1 | 1.0.0 | The first published schema. It holds the eleven fields above. |

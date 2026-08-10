@@ -6,8 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.0] - unreleased
 
-Version 0.6.0 is the released version on PyPI. Version 1.0.0 is not released yet, and the
-date of this section arrives with the promotion of `dev` to `master`.
+Version 1.0.0 follows version 0.6.0, and no version stands between them. The date of the
+heading above is the date `dev` reaches `master`.
 
 `FR-documentation-13` asks this file to record every breaking change of the release. The
 two tables below name each one and cite the round that records it. The entries under
@@ -987,6 +987,41 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The documentation states no version claim and no conformance claim that version 1.0.0
+  makes false** (#545). Round TBD. **`docs/migration-0.6-to-1.0.md:3` read
+  `Version 0.6.0 is the released version on PyPI. Version 1.0.0 is not released yet.`, and
+  the preamble of this section held the same two sentences.** Both become false at the
+  release. The sweep read the four classes #545 names over `README.md`, every tracked page
+  under `docs/` outside `docs/specs/`, and this file. **Class 1 reports 4 instances**: the
+  two sentences above, the `Unreleased` release of the schema history in
+  `docs/output-schema.md`, and a sentence of `docs/api_reference.md` that named version
+  1.0.0 as the first release that may make the lookup interval configurable. **Class 2
+  reports 3 instances**, all of them stale at round 196: the heading
+  `### The Rust snapshot is the only FoxIO reference this project holds for JA4T`, the
+  heading `### No FoxIO vector validates JA4T or JA4TS`, and the paragraph of
+  `docs/implementation_notes.md` that named the Zeek baselines as the one JA4TS reference.
+  `tests/foxio_vectors/wireshark_expected/` holds 118 `ja4.ja4t` values and 58 `ja4.ja4ts`
+  values across 26 files, which a read of the committed files measures. **Class 3 reports 2
+  instances**: `docs/usage.md` stated that the `dropped` field reads `null` today, and
+  `docs/api_reference.md` stated that the field reads `null` on Linux. Round 192 gave the
+  field a real reading on Linux through `packet_statistics_drops`. **The statistics line of
+  `README.md:149` holds `dropped=0`, which round 192 makes correct**, so it needs no
+  repair. **Class 4 reports 0 instances**, and no page calls this project alpha or
+  unstable. New file `tests/test_documentation_version_claims.py` holds 13 cases. It reads
+  the declaration of `ja4plus/__init__.py` and every version this file records a section
+  for, and it refuses a sentence that calls one of them unreleased. **The declared version
+  reaches the set through `ja4plus.__version__` and never through a literal**, so #543
+  moves the set rather than breaks it. The reader keeps the preamble of this file, cuts
+  every entry, and cuts the release heading that #543 dates. **Its fence reader refuses a
+  line that opens and closes a code span with three backticks**, which is the shape
+  `docs/specs/foxio/JA4X.md:235` holds and the shape that cost #533 nine missed instances.
+  Three cases failed before the repairs. **A restored mutation proves the rule bites**: the
+  sentence `Version 0.6.0 is not released yet.` in `docs/migration-0.6-to-1.0.md` fails
+  `test_no_page_calls_a_checked_version_unreleased` against the current declaration. **The
+  corpus floor is 20 pages and the corpus holds 28**, and five anchor files stand beside
+  it. **A claim no case holds is a finding rather than a repair**, and the pull-request body
+  carries the two this sweep found. `mkdocs build --strict` passes. **No file under
+  `ja4plus/` changes and no fingerprint moves.**
 - **The release skill reads the version from `ja4plus/__init__.py`** (#512). Round TBD.
   **Step 1 of `.claude/skills/release/SKILL.md` named `pyproject.toml` as the one version
   declaration, and it said that `ja4plus/__init__.py` reads the value with

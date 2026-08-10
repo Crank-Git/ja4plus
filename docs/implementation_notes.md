@@ -278,7 +278,7 @@ register entries stay. Each one is `decided`, because no fix removes it.
 
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`.
 
-### The Rust snapshot is the only FoxIO reference this project holds for JA4T
+### The Rust snapshot holds 38 JA4T reference values
 
 The FoxIO Python implementation writes no JA4T value and no JA4TS value, so
 `tests/foxio_vectors/*.json` decides neither method. The six Rust snapshots this
@@ -310,6 +310,14 @@ alone. Neither entry is `decided`: #215 decides both, and a repair removes them.
 Zeek baselines hold ten JA4TS values, `Scripts.ja4-conn/conn.log` holds
 `ja4ts 65535_00_00_00`, and #198 owns that reading. #226 added part e and re-ran the
 comparison, which holds at 9 of 10.
+
+**The FoxIO Wireshark dissector is a second source for both methods, and #515 found it.**
+`tests/foxio_vectors/wireshark_expected/` holds 26 files, which carry 118 `ja4.ja4t`
+values and 58 `ja4.ja4ts` values. The earlier search read the key `ja4t`, and the
+dissector writes the key `ja4.ja4t`, so it matched nothing.
+`tests/test_foxio_wireshark_ja4ts.py` compares all 58 JA4TS values, and 52 match byte for
+byte. The six differences are the RST decline that R13 of `docs/specs/foxio/JA4T.md`
+records, and #246 owns each one.
 
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`,
 `docs/specs/foxio/JA4T.md`.
@@ -567,11 +575,17 @@ changelog records it at round 11.
 
 ## JA4T and JA4TS - TCP
 
-### No FoxIO vector validates JA4T or JA4TS
+### The FoxIO Wireshark dissector validates JA4T and JA4TS
 
 No expected-output file of the 37 carries a `JA4T` key or a `JA4TS` key, and the vector
-set holds many TCP handshakes. The image is the only FoxIO material for both methods, and
-no reference value settles a question the image leaves open.
+set holds many TCP handshakes. **The FoxIO Wireshark dissector writes a reference value
+for both methods, and #515 found it.** `tests/foxio_vectors/wireshark_expected/` holds 118
+`ja4.ja4t` values and 58 `ja4.ja4ts` values across 26 files. The seven Zeek baselines under
+`tests/foxio_vectors/zeek_expected/` hold ten more JA4TS values.
+`tests/test_foxio_wireshark_ja4ts.py` and `tests/test_foxio_zeek_ja4ts.py` read them.
+
+The image stays the only FoxIO material that states the rules of the two methods. A
+question the image leaves open therefore reaches a reference value and never a rule.
 
 ### JA4TS carries part e, the time since the last SYN-ACK
 
