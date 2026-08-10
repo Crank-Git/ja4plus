@@ -168,8 +168,8 @@ of `CHANGELOG.md` is 242778 characters and the provider accepts 125000.
 inside `pytest tests/ -m "not spec_validation"`, which the `test` job of
 `.github/workflows/test.yml` runs on every entry of the matrix. Each of those six entries
 is a required status check of `dev`, so a disagreement fails continuous integration.
-`.claude/rules/batch-gate.md` lists the eleven required contexts, and a new job would add
-a twelfth context that the rule does not require.
+`.claude/rules/batch-gate.md` lists the twelve required contexts, and a new job would add
+a thirteenth context that the rule does not require.
 
 ### Why the version lives in the package
 
@@ -212,9 +212,22 @@ words of the ruling.
 > the promise true.**
 
 The interface may still move before 1.0.0. A classifier that runs ahead of the version
-states a promise the project cannot yet hold. `FR-release-12` therefore stays open, and the
+states a promise the project cannot yet hold. `FR-release-12` therefore stayed open, and the
 release commit of 1.0.0 writes the line. **#69 built `FR-release-10` and `FR-release-11`,
 and it changed no classifier.**
+
+**#543 is that release commit, and it wrote the line on 2026-08-10.** The same commit moved
+`ja4plus/__init__.py:101` to `1.0.0` and dated the `## [1.0.0]` section of `CHANGELOG.md`,
+so the classifier and the version reached the repository together.
+
+**A case now reads the classifier against the declaration, and a later version cannot
+return to the alpha classifier without a failure.**
+`classifier_disagreement` of `tests/version_gate.py` holds the rule. A version of 1.0.0 or
+later states `Development Status :: 5 - Production/Stable`. A version below 1.0.0 states
+`Development Status :: 3 - Alpha`. The reader takes the version from
+`ja4plus/__init__.py` and never from a literal, so the rule follows every later bump.
+`test_the_gate_reports_a_stable_version_that_carries_the_alpha_classifier` measures the
+direction that matters, against version 2.0.0.
 
 ### The two paths of the publish workflow
 
@@ -415,7 +428,7 @@ TestPyPI site.
 - [ ] `unzip -l dist/*.whl` lists every file below `ja4plus/` or below the
       `.dist-info` directory, and no other file.
 - [ ] The `top_level.txt` of the wheel names `ja4plus` alone.
-- [ ] `pyproject.toml` declares `Development Status :: 5 - Production/Stable`.
+- [x] `pyproject.toml` declares `Development Status :: 5 - Production/Stable`.
 - [ ] A dry run publishes to TestPyPI and not to PyPI.
 - [ ] Version 1.0.0 appears on PyPI.
 - [ ] `pip install ja4plus==1.0.0` in a clean environment runs
@@ -442,7 +455,7 @@ hold the text `0.6.0`.
 **Two files declared the version and five name it in prose.** #67 removed one
 declaration, so a count of the text `0.6.0` reads six files today. The prose records the
 released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it. #456 measured
-this and #67 took the decision: the criterion counts the declaration, and the prose stays.
+this and #67 took the ruling: the criterion counts the declaration, and the prose stays.
 
 **The criterion therefore names a command that matches a declaration line.** A read of
 2026-08-10 reports one file, `ja4plus/__init__.py`. `declaration_files` of

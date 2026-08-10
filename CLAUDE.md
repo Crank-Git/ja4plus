@@ -4,7 +4,8 @@
 produces JA4+ fingerprints. FoxIO publishes the JA4+ standard. This project is an
 independent implementation of it.
 
-Version 0.6.0 is on PyPI. The project is working toward version 1.0.0.
+This repository declares version 1.0.0, and `ja4plus/__init__.py:101` holds that one
+declaration. A publish to PyPI is a separate step, and the maintainer runs it.
 
 Design lives in `docs/specs/`. Read `docs/specs/spec.md` and the relevant
 `docs/specs/features/*.md` before you build a feature.
@@ -86,7 +87,7 @@ register.
   across packets, and nothing that survives across packets grows without a limit.
 - A structure that one packet or one request builds and releases is not a state table,
   and it holds neither bound. The cookie list of one HTTP request is such a structure.
-  #175 records the decision. The boundary removes no bound from a state table. The six
+  #175 records the ruling. The boundary removes no bound from a state table. The six
   unbounded state tables that #179 records keep their bound.
 - No code holds a reference to a packet object after `process_packet` returns.
 - Prose and code comments follow `.claude/rules/ste.md`. The controlled vocabulary is

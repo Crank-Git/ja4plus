@@ -65,7 +65,7 @@ fingerprinter returns an empty list.
 
 A connection that sends no FIN+ACK packet holds its last window open, and no other rule
 emits it. `ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK packet, so this
-method produces its second value, `c36s52_c42s76_c51s2`. #214 holds the decision.
+method produces its second value, `c36s52_c42s76_c51s2`. #214 holds the ruling.
 
 A window that holds no SSH packet emits nothing. A fingerprint of an empty window
 describes no traffic, and #97 declines the same value in the FoxIO Python reference.
@@ -168,7 +168,7 @@ TCP client fingerprinting from SYN packets.
 One connection produces one value, from its first SYN. The fingerprinter holds a
 connection table that carries 10000 entries at most and evicts an entry after 600
 seconds. Call `cleanup_connection` when a connection ends, or `reset` to drop every
-entry. #215 records the decision.
+entry. #215 records the ruling.
 
 ```python
 from ja4plus import JA4TFingerprinter
@@ -743,8 +743,10 @@ reads `MonitorStats` and never the connection table.
 The `dropped` field reports the count a `dropped_source` returns, and `null` where the
 caller passes none. `ja4plus watch` passes a `CaptureDropCount`, and `read_interface`
 attaches the capture socket to it. On macOS the field holds a whole number, which
-`_L2bpfSocket.get_stats` reads through the `BIOCGSTATS` ioctl. On Linux the capture
-socket of `scapy` 2.7.0 reports no count, so the field reads `null` there.
+`_L2bpfSocket.get_stats` reads through the `BIOCGSTATS` ioctl. On Linux it holds a whole
+number too, which `packet_statistics_drops` reads through the `PACKET_STATISTICS` socket
+option. The Linux kernel resets its counters as the read returns them, so
+`CaptureDropCount` adds each Linux reading to a running total.
 
 **A `CaptureDropCount` holds the last count it read.** The exit summary runs after the
 capture closed the socket, and the kernel gives the file descriptor of a closed socket to
@@ -883,8 +885,8 @@ module-level `lookup` function holds the same default.
 `JA4DBClient(allow_remote=True)` permits one request for each fingerprint the mapping
 file holds no entry for, FR-db-enrichment-2. The request goes to
 `https://ja4db.com/api/read/<fingerprint>`, and it waits 5 seconds at most,
-FR-db-enrichment-14. Version 1.0.0 is the first release that may make the interval
-configurable.
+FR-db-enrichment-14. `_REMOTE_TIMEOUT` in `ja4plus/ja4db.py` holds that interval, and no
+parameter of the client changes it.
 
 `allow_remote` takes True or False, and the constructor raises `TypeError` for every
 other value. `cache_size` was the first parameter before #57, so `JA4DBClient(100)` asked

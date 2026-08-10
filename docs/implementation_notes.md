@@ -187,8 +187,8 @@ value `h`. `.claude/rules/conformance.md` states that a defect outside its two n
 shapes is a question for the user, and #141 asks it.
 
 **What the user settled.** On 2026-08-07 the user decided that both values stay. #162
-records the decision. `docs/specs/spec.md` § Divergence register holds one row for the
-disputed-byte reading and one row for the one-byte reading, and both decisions are
+records the ruling. `docs/specs/spec.md` § Divergence register holds one row for the
+disputed-byte reading and one row for the one-byte reading, and both rulings are
 reversible.
 
 **How the divergence became a comparison.** #141 left the disputed inputs out of every
@@ -278,11 +278,17 @@ register entries stay. Each one is `decided`, because no fix removes it.
 
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`.
 
-### The Rust snapshot is the only FoxIO reference this project holds for JA4T
+### The Rust snapshot holds 39 JA4T reference values
 
 The FoxIO Python implementation writes no JA4T value and no JA4TS value, so
-`tests/foxio_vectors/*.json` decides neither method. The six Rust snapshots this
-repository holds carry 38 `ja4t` values between them.
+`tests/foxio_vectors/*.json` decides neither method. This repository holds eleven Rust
+snapshots, and seven of them carry 39 `ja4t` values between them.
+
+**Warning: the heading and the table below state a count that a case holds, and an earlier
+form of both drifted.** The heading read 38 and the table read 38, 37, 10 and 44, while
+`test_the_local_snapshots_hold_the_thirty_nine_values_the_reading_counts` asserted 39 and
+`docs/specs/foxio/JA4T.md:506` read 39. A read of 2026-08-10 took every number of this
+section from the repository again, and #543 records the repair.
 
 **The gap.** `tests/test_foxio_rust_parity.py` read `ja4` and `ja4s` from a snapshot and
 never read `ja4t`. No test compared a JA4T value against a FoxIO value, so the suite
@@ -294,22 +300,36 @@ reported green on a comparison it never made. #216 closed it, and
 | Measurement | Count |
 |---|---|
 | JA4T values in `python/test/testdata/` | 0 |
-| JA4T values in the six local Rust snapshots | 38 |
-| Values `ja4plus` reproduces exactly | 37 |
+| JA4T values in the seven local Rust snapshots that hold one | 39 |
+| Values `ja4plus` reproduces exactly | 38 |
 | Values that differ | 1 |
-| Streams on which `ja4plus` emits more than one value | 10 |
-| Cases that stop running when `("JA4T", "ja4t")` leaves `SNAPSHOT_METHODS` | 44 |
+| Streams on which `ja4plus` emits more than one value | 0 |
+| Cases that stop running when `("JA4T", "ja4t")` leaves `SNAPSHOT_METHODS` | 46 |
 
-**The two entries.** `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` records
-that scapy reports one `EOL` entry for the two pad bytes of the SYN, so part b holds one
-`0` where the reference holds two. `ssh2.pcapng/JA4T` records that `ja4plus` holds no
-connection state and fingerprints every SYN, where the reference reads the first SYN
-alone. Neither entry is `decided`: #215 decides both, and a repair removes them.
+**The one entry.** `tests/foxio_deviations.json` holds one JA4T key today, and it is
+`gre-erspan-vxlan.pcap/0:65174/JA4T.1`. The FoxIO Rust snapshot holds `8192__0_0` and
+`ja4plus` writes `8192_00_00_00`. The SYN carries no TCP option, and the three FoxIO forms
+disagree. The user chose the two-digit form on 2026-08-08, so the entry is `decided` and it
+stays. #215 records the ruling.
+
+**Two entries this section named have gone, and the repairs removed them.**
+`chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` recorded a part b that held one
+`0` where the reference held two. `ssh2.pcapng/JA4T` recorded that `ja4plus` fingerprinted
+every SYN of a stream, where the reference reads the first SYN alone. The register holds
+neither key, and the stream count above reads 0 rather than 10.
 
 **JA4TS reaches no reference value here.** No local snapshot writes a `ja4ts` field. The
 Zeek baselines hold ten JA4TS values, `Scripts.ja4-conn/conn.log` holds
 `ja4ts 65535_00_00_00`, and #198 owns that reading. #226 added part e and re-ran the
 comparison, which holds at 9 of 10.
+
+**The FoxIO Wireshark dissector is a second source for both methods, and #515 found it.**
+`tests/foxio_vectors/wireshark_expected/` holds 26 files, which carry 118 `ja4.ja4t`
+values and 58 `ja4.ja4ts` values. The earlier search read the key `ja4t`, and the
+dissector writes the key `ja4.ja4t`, so it matched nothing.
+`tests/test_foxio_wireshark_ja4ts.py` compares all 58 JA4TS values, and 52 match byte for
+byte. The six differences are the RST decline that R13 of `docs/specs/foxio/JA4T.md`
+records, and #246 owns each one.
 
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`,
 `docs/specs/foxio/JA4T.md`.
@@ -365,11 +385,11 @@ that carries it. One behaviour produces both readings:
 | `https-connect.pcap` | HTTP CONNECT, port 8080 | Rust and Wireshark, two of three |
 | `socks4-https.pcap` | SOCKS4, port 9901 | none |
 
-**The decision.** `ja4plus` keeps the three values, and the register records the
+**The ruling.** `ja4plus` keeps the three values, and the register records the
 divergence. A gate on the record-layer scan would suppress the SOCKS4 values, and it
 would risk the `https-connect.pcap` values that two FoxIO implementations hold. The cost
 of a gate falls on a case this project wins. The cost of the divergence is one register
-entry. The decision is deliberate and reversible, and it follows the form of #127 and
+entry. The ruling is deliberate and reversible, and it follows the form of #127 and
 #129.
 
 **The cost.** One register entry, `socks4-https.pcap/JA4X`, marked `decided`.
@@ -567,15 +587,21 @@ changelog records it at round 11.
 
 ## JA4T and JA4TS - TCP
 
-### No FoxIO vector validates JA4T or JA4TS
+### The FoxIO Wireshark dissector validates JA4T and JA4TS
 
 No expected-output file of the 37 carries a `JA4T` key or a `JA4TS` key, and the vector
-set holds many TCP handshakes. The image is the only FoxIO material for both methods, and
-no reference value settles a question the image leaves open.
+set holds many TCP handshakes. **The FoxIO Wireshark dissector writes a reference value
+for both methods, and #515 found it.** `tests/foxio_vectors/wireshark_expected/` holds 118
+`ja4.ja4t` values and 58 `ja4.ja4ts` values across 26 files. The seven Zeek baselines under
+`tests/foxio_vectors/zeek_expected/` hold ten more JA4TS values.
+`tests/test_foxio_wireshark_ja4ts.py` and `tests/test_foxio_zeek_ja4ts.py` read them.
+
+The image stays the only FoxIO material that states the rules of the two methods. A
+question the image leaves open therefore reaches a reference value and never a rule.
 
 ### JA4TS carries part e, the time since the last SYN-ACK
 
-**The user decided this on 2026-08-08, and the decision reverses the D6 and D7 ruling of
+**The user decided this on 2026-08-08, and the ruling reverses D6 and D7 of
 #215 of the same day.** The image caption reads
 `TCP Retransmission Timings (only on JA4TScan)`, and three FoxIO sources contradict it:
 the deleted `technical_details/JA4T.md`, `wireshark/source/packet-ja4.c:1595` through
@@ -954,7 +980,7 @@ all, and `tls3.pcapng` holds 2 FIN packets against 13 client values.
 
 `ja4plus` reads the stored list, so the conformance suite measures the correct value.
 The user decided on 2026-08-07 to record the divergence and to leave the return path as
-it is. The `Divergence register` of `docs/specs/spec.md` holds the row, and the decision
+it is. The `Divergence register` of `docs/specs/spec.md` holds the row, and the ruling
 is reversible.
 
 `tests/foxio_deviations.json` holds no entry for the divergence. The conformance harness
@@ -1062,7 +1088,7 @@ the capture. `python/ja4.py:610` runs no end-of-capture step at all, because the
 `ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK packet, so no FIN+ACK
 rule fires on it. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217`
 holds `c36s52_c42s76_c51s2`, and the Zeek baseline holds the same value. The user decided
-on 2026-08-08 that `ja4plus` emits it, and #214 holds the decision. The decision is
+on 2026-08-08 that `ja4plus` emits it, and #214 holds the ruling. The ruling is
 reversible.
 
 **A window that holds no SSH packet still emits nothing.** #97 declines
@@ -1108,13 +1134,13 @@ of another tool. The measurement ran `python/ja4.py` at the pinned commit agains
 dictionary and not the two lists inside it, so every window on every connection
 shares one `client_payloads` list and one `server_payloads` list. `ssh-r.pcap`
 stream 2 window 1 reports `c64s64`, and the packets of that window read `c76s76`.
-`ja4plus` reads the lengths of the window. #96 records the decision.
+`ja4plus` reads the lengths of the window. #96 records the ruling.
 
 **A bare ACK writes another occurrence.** `(entry['count'] % ssh_sample_count) == 0`
 stays true for every bare ACK that follows a window boundary, so each of those
 packets writes the next occurrence key from a window that holds no SSH packet.
 `ssh-r.pcap` stream 0 holds `JA4SSH.2` equal to `c64s64_c0s0_c0s1`. `ja4plus` emits
-a value only for a window that holds SSH packets. #97 records the decision.
+a value only for a window that holds SSH packets. #97 records the ruling.
 
 **The stream index 0 is false.** `finalize_ja4ssh` guards with `if stream:`, so the
 reference emits no trailing window for the connection it holds at index 0.
@@ -1123,7 +1149,7 @@ index, and the reference holds no JA4SSH value for any of them. The same run, wi
 that guard read as `if stream is not None:` and nothing else changed, emits
 `c24s23_c4s4_c5s4` for `gre-sample.pcap` and `c20s12_c18s23_c10s1` for `sshv1.pcap`.
 `ja4plus` emits the window for every connection that closes. #105 records the
-decision.
+ruling.
 
 ### The SSH message, not the TCP segment
 
@@ -1191,7 +1217,7 @@ defect. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` 
 or `zeek/ja4ssh/main.zeek:160-164`, which close it at the end of the capture.
 
 **`ssh2.pcapng` carries no FIN+ACK packet on port 22**, so `ja4plus` emits one value for
-it where the Rust and Zeek references emit two. **#214 holds the decision, and no
+it where the Rust and Zeek references emit two. **#214 holds the ruling, and no
 fingerprint moves until the user rules.**
 
 Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4SSH.png
@@ -1205,7 +1231,7 @@ Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/J
 
 `ja4plus` writes `JA4X_r`. The value holds the three unhashed lists of the fingerprint,
 joined with `_`. Each list holds the hex object identifiers in wire order, joined with
-`,`. The user decided the form on 2026-08-08, and #267 holds the decision.
+`,`. The user decided the form on 2026-08-08, and #267 holds the ruling.
 
 Two FoxIO implementations publish the value. `rust/ja4x/src/lib.rs` builds one list of
 three parts, hashes each part for `ja4x` and joins the same three parts for `ja4x_r`.
@@ -1687,7 +1713,7 @@ implementation holds a JA4S value for the stream.
 
 `ja4plus` reads the record layer without regard to the tunnel protocol that carries it,
 which is the behaviour #138 decided to keep for the three JA4X values on the same stream.
-The register records the JA4S value under the same decision.
+The register records the JA4S value under the same ruling.
 
 ### The register
 

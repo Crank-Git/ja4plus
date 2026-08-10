@@ -122,7 +122,7 @@ raw TCP option bytes, so each End of Option List byte adds one `0` to the list.
 **An absent field and a zero field each write two digits.** A SYN that carries no option
 writes `8192_00_00_00`. A window scale of zero writes `00`, and a maximum segment size of
 zero writes `00`. The FoxIO Wireshark dissector and the FoxIO Zeek package write the same
-form, and #215 records the decision.
+form, and #215 records the ruling.
 
 **One connection produces one JA4T value.** The fingerprinter reads the first SYN of a
 connection and reads no later SYN of it. Call `cleanup_connection` when a connection ends,
@@ -533,8 +533,9 @@ fingerprints alone.
 thread ends with the capture, so a termination signal stops the monitor and the thread
 together.
 
-The `dropped` field reads `null` today. `scapy` 2.7.0 reports no drop count to a caller
-of `sniff`: on macOS the capture socket reads the count and `sniff` keeps that socket to
-itself, and on Linux `scapy` reads the count from no socket at all. Issue #326 records
-the finding and the work that reports a count. Read the interface counters of the host
-until then, with `netstat -i` on macOS or `ip -s link` on Linux.
+The `dropped` field reads a whole number on macOS and on Linux, and `null` where the
+capture layer reports no count. On macOS the monitor reads the count of the capture socket
+through the `BIOCGSTATS` ioctl. On Linux it reads the `PACKET_STATISTICS` socket option
+itself, because `scapy` 2.7.0 reads that option nowhere. **The Linux kernel resets its
+counters as the read returns them**, so the monitor adds each reading to a running total.
+#326 records the whole measurement.

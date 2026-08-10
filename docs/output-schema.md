@@ -63,7 +63,7 @@ value, and a sender who chooses the bytes chooses that value too.
 
 The behaviour follows the FoxIO reference. No FoxIO material rejects such a packet, so a
 guard here would make `ja4plus` answer differently from every FoxIO implementation on the
-same bytes. #343 holds the decision, the `Divergence register` of `docs/specs/spec.md`
+same bytes. #343 holds the ruling, the `Divergence register` of `docs/specs/spec.md`
 holds the measurement, and `tests/fuzz/test_structural_validity.py` holds the cases.
 
 ## Where the output goes
@@ -201,4 +201,4 @@ holds commas, so the writer quotes it.
 
 | Version | Release | What changed |
 |---|---|---|
-| 1 | Unreleased | The first published schema. It holds the eleven fields above. |
+| 1 | 1.0.0 | The first published schema. It holds the eleven fields above. |

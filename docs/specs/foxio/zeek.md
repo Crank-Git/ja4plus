@@ -268,7 +268,7 @@ follows the Python reference.
 `3911_64`. Each value carries two parts, and so does every one of the 114 JA4L values
 this repository holds. **The authority rule keeps the two-part form today and no
 fingerprint moves**, because no vector this project reads measures a third part. #225
-holds the decision, and the user decides it.
+holds the ruling, and the user decides it.
 
 `ja4plus` reports a second measurement as a second `JA4L-C` value where the Zeek script
 reports it as a third part. The two implementations measure different intervals, so the
@@ -317,8 +317,8 @@ declined.**
 `zeek/ja4ssh/main.zeek:160-164` emits the value from `connection_state_remove`, so the
 Zeek script always writes the window a connection holds open when it closes.
 
-**This page held one open decision, and #214 closed it.** The value rating of the JA4SSH
-baseline rested on that decision, and "The rating this baseline now carries" below states
+**This page held one open ruling, and #214 closed it.** The value rating of the JA4SSH
+baseline rested on that ruling, and "The rating this baseline now carries" below states
 the rating #332 settled.
 
 ### The Zeek log columns `ja4l_delta` and `ja4ls_delta` are ratios, not fingerprints
@@ -349,7 +349,7 @@ each one is answered.
    **#200 corrected the conclusion this reading drew.** The Zeek script is not alone: the
    specification labels three parts and every value under `wireshark/test/testdata/`
    holds three. This reading compared two sources of five, and the section above states
-   the measurement. #225 holds the decision.
+   the measurement. #225 holds the ruling.
 3. **`ja4l_delta` and `ja4ls_delta` appear in no other reference.** Confirmed. Both are
    ratios that the Zeek script writes with `%.1f`, and neither is part of a fingerprint.
 
@@ -482,7 +482,7 @@ state before that, quoted rather than rewritten.
 > own decision.
 
 The exception still states which source may hold a reference value, and adoption is still
-its own decision. **The JA4TS adoption rests on no exception**, because the FoxIO Python
+its own ruling. **The JA4TS adoption rests on no exception**, because the FoxIO Python
 implementation writes no JA4TS value for any capture, so no precedence breaks.
 
 ## The Zeek reading of each method
@@ -671,7 +671,7 @@ SYN packet to a target to read a server fingerprint.
 **It holds prose worth reading and it holds no baseline.** `README.md` gives eight
 JA4TScan example values against named operating systems, and those values carry the JA4T
 option list. Two of them record TCP option kind 0 inside the list, which corroborates the
-`ja4plus` rule. #197 owns the JA4TScan scope decision, and `Non-goals` in
+`ja4plus` rule. #197 owns the JA4TScan scope ruling, and `Non-goals` in
 `docs/specs/spec.md` records the decline.
 
 ### `FoxIO-LLC/ja4-nginx-module`

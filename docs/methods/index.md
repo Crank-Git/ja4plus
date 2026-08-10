@@ -38,13 +38,13 @@ accepts ten tokens, and `ja4l` names both JA4L and JA4LS.
 
 ## Why this project builds no JA4TScan
 
-**This project declines JA4TScan by decision, and the absence is no omission.** JA4TScan
+**This project declines JA4TScan by ruling, and the absence is no omission.** JA4TScan
 sends crafted packets to a host the operator names, and it reads the responses. Every
 other method reads traffic that already exists, so JA4TScan reaches a network the
 operator did not capture. That capability is larger than fingerprint production.
 
-`docs/specs/spec.md` holds the decision under `Non-goals`, and #197 holds the reading.
-The decision is reversible.
+`docs/specs/spec.md` holds the ruling under `Non-goals`, and #197 holds the reading.
+The ruling is reversible.
 
 ## What a fingerprint is evidence of
 

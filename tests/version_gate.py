@@ -63,6 +63,25 @@ DYNAMIC_TABLE = re.compile(
 # A version section of `CHANGELOG.md`, as `## [0.6.0] - 2026-05`.
 CHANGELOG_SECTION = re.compile(r"^## \[([^\]]+)\]", re.MULTILINE)
 
+# One release heading of `CHANGELOG.md`, which holds the version and the text behind it.
+# The reader keeps that text, because `changelog_release_date` reads it for a date.
+CHANGELOG_HEADING = re.compile(r"^## \[([^\]]+)\][ \t]*-?[ \t]*(.*)$", re.MULTILINE)
+
+# The release date of a section, as `2026-08-10`.
+RELEASE_DATE = re.compile(r"^\d{4}-\d{2}(-\d{2})?$")
+
+# One `Development Status` classifier of the `classifiers` list, as
+# `    "Development Status :: 3 - Alpha",`.
+CLASSIFIER_DECLARATION = re.compile(r'^\s*"(Development Status :: [^"]+)",?\s*$', re.MULTILINE)
+
+# The classifier a version below 1.0.0 states. #69 ruled that this line holds until the
+# release commit of version 1.0.0 writes the stable one.
+ALPHA_CLASSIFIER = "Development Status :: 3 - Alpha"
+
+# The classifier FR-release-12 names. A version of 1.0.0 or later promises a stable
+# interface, and this line is that promise.
+STABLE_CLASSIFIER = "Development Status :: 5 - Production/Stable"
+
 # The attribute `pyproject.toml` reads the version from.
 VERSION_ATTRIBUTE = "ja4plus.__version__"
 
@@ -194,6 +213,109 @@ def changelog_disagreement(changelog_text: str, version: str) -> Optional[str]:
         return "`CHANGELOG.md` holds no version section"
     if version not in sections:
         return f"`CHANGELOG.md` holds no `## [{version}]` section, and it holds {sections}"
+    return None
+
+
+def changelog_release_date(changelog_text: str, version: str) -> Optional[str]:
+    """Return the text that stands behind the version in its release heading.
+
+    Args:
+        changelog_text: The text of `CHANGELOG.md`.
+        version: The version the package declares.
+
+    Returns:
+        The text behind the version, or None where the file holds no heading for it. The
+        heading `## [1.0.0] - 2026-08-10` returns `2026-08-10`.
+    """
+    for found, trailer in CHANGELOG_HEADING.findall(changelog_text):
+        if found == version:
+            return trailer.strip()
+    return None
+
+
+def release_date_disagreement(changelog_text: str, version: str) -> Optional[str]:
+    """Return the reason the section of the declared version carries no release date.
+
+    **A section the package declares is a released section, and it states a date.** The
+    heading reads `unreleased` while the project builds toward that version, and the bump
+    of #543 writes the date. A reader who meets the declared version under the word
+    `unreleased` reads a contradiction.
+
+    Args:
+        changelog_text: The text of `CHANGELOG.md`.
+        version: The version the package declares.
+
+    Returns:
+        One sentence that states what the heading holds, or None where it holds a date.
+    """
+    trailer = changelog_release_date(changelog_text, version)
+    if trailer is None:
+        return f"`CHANGELOG.md` holds no `## [{version}]` heading"
+    if not RELEASE_DATE.match(trailer):
+        return (
+            f"`CHANGELOG.md` heads the declared version {version} with {trailer!r}, "
+            "and a declared version carries a release date"
+        )
+    return None
+
+
+def expected_classifier(version: str) -> str:
+    """Return the development-status classifier that one version states.
+
+    FR-release-12 names the stable classifier, and #69 ruled that the alpha classifier
+    holds until version 1.0.0. The major number therefore decides the line.
+
+    Args:
+        version: The version the package declares.
+
+    Returns:
+        The classifier that version promises.
+    """
+    major = version.split(".")[0]
+    if major.isdigit() and int(major) >= 1:
+        return STABLE_CLASSIFIER
+    return ALPHA_CLASSIFIER
+
+
+def project_classifiers(pyproject_text: str) -> List[str]:
+    """Return every `Development Status` classifier that the `[project]` table declares.
+
+    The reader searches that table alone, for the reason `project_version` states.
+
+    Args:
+        pyproject_text: The text of `pyproject.toml`.
+
+    Returns:
+        One string for each classifier, in file order.
+    """
+    body = _table_body(PROJECT_TABLE, pyproject_text)
+    if body is None:
+        return []
+    return CLASSIFIER_DECLARATION.findall(body)
+
+
+def classifier_disagreement(pyproject_text: str, version: str) -> Optional[str]:
+    """Return the reason the classifier and the declared version state two promises.
+
+    **The classifier is a promise about the interface, so it follows the version.** A
+    version of 2.0.0 that carried the alpha classifier would withdraw that promise and no
+    other record would report it.
+
+    Args:
+        pyproject_text: The text of `pyproject.toml`.
+        version: The version the package declares.
+
+    Returns:
+        One sentence that states the disagreement, or None where the two agree.
+    """
+    found = project_classifiers(pyproject_text)
+    if not found:
+        return "`pyproject.toml` declares no `Development Status` classifier"
+    if len(found) > 1:
+        return f"`pyproject.toml` declares {len(found)} `Development Status` classifiers: {found}"
+    wanted = expected_classifier(version)
+    if found[0] != wanted:
+        return f"`pyproject.toml` declares `{found[0]}`, and version {version} states `{wanted}`"
     return None
 
 

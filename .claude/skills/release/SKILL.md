@@ -20,20 +20,57 @@ Confirm all of the following. Stop and report if any is false.
 
 ## Steps
 
-1. Set the version. It lives in `pyproject.toml` only. `ja4plus/__init__.py` reads it
-   with `importlib.metadata.version`.
+1. Set the version. The version lives in `ja4plus/__init__.py` at line 101, and a bump
+   edits that line alone. `pyproject.toml` declares no version. It names `version` in its
+   `dynamic` list and reads the value from `ja4plus.__version__`, so the two files cannot
+   disagree.
+
+   **Warning: keep the plain string assignment.** `setuptools` reads the value from the
+   syntax tree of the module. #67 measured that a computed value makes a build import the
+   package and every dependency it loads, and that failure appears at release time.
+
+   **A bump needs a matching `## [<version>]` section of `CHANGELOG.md`.** Write that
+   section in the same commit. `tests/release_body.py` reads it for the release body, so
+   an absent section fails step 5.
+
+   **A bump to version 1.0.0 or later writes `Development Status :: 5 -
+   Production/Stable` in the `classifiers` list of `pyproject.toml`.** The classifier is a
+   promise about the interface, so the commit that makes the promise true writes it.
+   `classifier_disagreement` of `tests/version_gate.py` reads the line against the
+   declaration, and the command of step 2 runs that reader.
+
+   `docs/specs/features/09-release.md` records the ruling under `### Why the version
+   lives in the package`, and #512 corrected this step. `### The commit that writes the
+   stable classifier` of the same page records the classifier ruling, and #543 wrote the
+   line.
 
 2. Confirm the version and the changelog agree.
 
    ```bash
    python - <<'PY'
-   import re, tomllib, pathlib
-   v = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+   import pathlib
+   from tests import version_gate
+
+   package = pathlib.Path("ja4plus/__init__.py").read_text()
+   pyproject = pathlib.Path("pyproject.toml").read_text()
    changelog = pathlib.Path("CHANGELOG.md").read_text()
-   assert re.search(rf"^## \[{re.escape(v)}\]", changelog, re.M), f"no changelog section for {v}"
-   print(f"version {v} has a changelog section")
+   version = version_gate.package_version(package)
+   assert version is not None, "ja4plus/__init__.py declares no __version__"
+   for reason in (
+       version_gate.version_disagreement(pyproject, package),
+       version_gate.changelog_disagreement(changelog, version),
+       version_gate.release_date_disagreement(changelog, version),
+       version_gate.classifier_disagreement(pyproject, version),
+   ):
+       assert reason is None, reason
+   print(f"version {version} has a dated changelog section and the right classifier")
    PY
    ```
+
+   **Run the command from the repository root.** `tests/version_gate.py` is the reader
+   that `tests/test_version_gate.py` holds cases against, and the `test` job of
+   `.github/workflows/test.yml` runs those cases on every entry of the matrix. The command
+   above therefore reads the same condition continuous integration reads.
 
 3. Build the release and verify it in a clean environment. This one command runs every
    check the publish workflow runs, and `.github/workflows/publish.yml` runs the same

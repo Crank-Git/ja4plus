@@ -203,7 +203,7 @@ and each one holds two parts.
 
 The authority rule decides the bytes this project writes, and it does not close the
 question the image raises. `.claude/rules/conformance.md` states the rule, and #225 holds
-the decision.
+the ruling.
 
 **This measurement corrects a reading of #198.** `docs/specs/foxio/zeek.md` stated that the
 Zeek script adds a third part that no other reference holds. #198 compared the Python
@@ -577,9 +577,9 @@ PY
    `tests/foxio_vectors/wireshark_expected/` holds two files today, and neither carries a
    JA4L key.
 
-## The decisions this page raises
+## The rulings this page raises
 
-**#225 holds these decisions**, as #215 holds those of #196, #214 those of #198 and #219
+**#225 holds these rulings**, as #215 holds those of #196, #214 those of #198 and #219
 those of #203. Each one needs the user, because each one changes a fingerprint that this
 project publishes or changes a recorded cause. **This page changes no fingerprinter and no
 register entry.**
@@ -590,9 +590,9 @@ register entry.**
    the reason and the spelling reading. A TCP connection carries no marker.
 3. **D2. Open.** If part c stays absent, does `calculate_distance` keep an interface that
    cannot compute the VPN case the image works? #225 ruled on the part count and on the
-   marker, and it ruled on neither D2 nor D4. **Both await a decision.**
+   marker, and it ruled on neither D2 nor D4. **Both await a ruling.**
 4. **D4. Settled on 2026-08-09. A retransmitted SYN-ACK produces no second `JA4L-S`.**
-   #272 holds the decision and the measurement. A retransmitted SYN-ACK moves neither
+   #272 holds the ruling and the measurement. A retransmitted SYN-ACK moves neither
    point `B` nor the server TTL, so a second value repeats the first one and describes no
    second measurement. `ssh2.pcapng` stream 15 held `JA4L-S=6252_58` twice against one
    reference value, and a replay of the 38 committed captures moves that one value alone.
