@@ -116,7 +116,28 @@ Documentation = "https://github.com/Crank-Git/ja4plus/tree/main/docs"
 ja4plus = "ja4plus.cli:main"
 
 [tool.setuptools.packages.find]
-exclude = ["tests", "tests.*", "examples"]
+# **This list is the one mechanism that keeps a tree out of the wheel, and `docs` needs an
+# entry here.** #455 measured a wheel of 96 entries that carried 56 under `docs/`, against
+# the requirement `FR-release-11b`. Two defaults produce that state together.
+#
+#   1. A `pyproject.toml` project reads implicit namespaces by default, so `docs` and
+#      `docs.specs` are discovered packages although they hold no `__init__.py`.
+#   2. `include-package-data` is true by default since setuptools 61, and `setuptools-scm`
+#      reports every file that git tracks, so each file below a discovered package ships.
+#
+# **The exclusion reaches the wheel and it leaves the source distribution whole.** A source
+# distribution is the project at one revision, and the file finder of `setuptools-scm` adds
+# every tracked file to it whatever this list holds. `tests/` and `examples/` prove that
+# split: both are excluded here and both ship in the source distribution.
+#
+# A pattern matches one package and no subpackage, so each tree needs a wildcard entry
+# beside its own. `examples` carries no subdirectory today and needs none.
+#
+# `tests/test_installed_wheel.py` holds all three facts against the built artifacts.
+#
+# Verified against https://setuptools.pypa.io/en/latest/userguide/package_discovery.html
+# and https://setuptools.pypa.io/en/latest/userguide/datafiles.html, retrieved 2026-08-09.
+exclude = ["tests", "tests.*", "examples", "docs", "docs.*"]
 
 [tool.setuptools.package-data]
 # PEP 561 asks for the `py.typed` marker, and setuptools ships no file this list omits.

@@ -56,6 +56,10 @@ FR-release-10 — The wheel contains the mapping file and the `py.typed` marker.
 FR-release-11 — The wheel does not contain the test suite, the examples, or the
 vectors.
 
+FR-release-11b — The wheel contains no file under the documentation tree.
+
+FR-release-11c — The source distribution contains the documentation tree.
+
 FR-release-12 — The project classifier reads `Development Status :: 5 -
 Production/Stable`.
 
@@ -134,6 +138,8 @@ TestPyPI site.
 | The version already exists on PyPI. | The publish step fails. PyPI refuses to replace a file. |
 | The wheel omits the mapping file. | The verification step fails, because a lookup returns an empty database. |
 | The wheel omits `py.typed`. | The packaging test fails. |
+| The wheel carries a file under `docs/`. | `test_the_wheel_carries_no_file_under_the_documentation_tree` fails. #455 records the defect and the exclusion rule that repairs it. |
+| The exclusion rule reaches the source distribution as well. | `test_the_source_distribution_carries_the_documentation_tree` fails. A source distribution is the project at one revision. |
 | The changelog has no section for the version. | The version-check job fails before a release is created. |
 | The conformance suite fails against the installed wheel. | The workflow stops and does not publish. |
 | The maintainer creates a release from a branch other than the live branch. | The workflow runs against that reference. The version-check job is the guard. |
