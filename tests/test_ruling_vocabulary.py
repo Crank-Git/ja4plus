@@ -97,9 +97,13 @@ RECORD_FILE = "CHANGELOG.md"
 # because a fence holds code and the writing standard reproduces code verbatim.
 #
 # **Warning: a line that opens with three backticks is not always a fence.** An inline span
-# may carry three backticks and close them on the same line, and CommonMark states that the
-# info string of a fence holds no backtick. The pattern therefore requires that no backtick
-# follows the delimiter on that line.
+# may carry three backticks and close them on the same line. CommonMark states the rule that
+# tells the two apart: "If the info string comes after a backtick fence, it may not contain
+# any backtick characters." The pattern therefore requires that no backtick follows the
+# delimiter on that line.
+#
+# Verified against https://spec.commonmark.org/0.31.2/#fenced-code-blocks (CommonMark 0.31.2,
+# retrieved 2026-08-10).
 #
 # **A reader that takes such a line for a fence opener shifts every pair below it.** #533
 # measured the cost on `docs/specs/foxio/JA4X.md`, whose line 235 reads
