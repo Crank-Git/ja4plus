@@ -1042,7 +1042,14 @@ holds every breaking change of this record against a row of that page.
   `tests/test_spec_validation.py` names neither JA4T nor JA4TS, so the addition adds no case
   there. **The cases came first**, and the ten comparison cases of
   `tests/test_foxio_zeek_ja4ts.py` failed against the base index with
-  `assert () == ('65535_2-1-1-4-1-3_1346_10',)`. `tests/download_test_vectors.py` fetches
+  `assert () == ('65535_2-1-1-4-1-3_1346_10',)`. **One mutation of
+  `ja4plus/fingerprinters/ja4ts.py` proves that the comparison bites, and the mutation was
+  restored.** `return prefix + "x" + _part_e(packet, tracker, prefix)` in place of
+  `return prefix + _part_e(packet, tracker, prefix)` moves every JA4TS value and no value
+  of another method. It kills 62 cases: the 52 Wireshark comparisons, the 9 Zeek
+  comparisons and the one case that reads the `ja4plus` value of the barred row. The six
+  registered cases stay `xfailed` under it, which is correct, because a mutation moves no
+  declined value onto the dissector value. `tests/download_test_vectors.py` fetches
   and validates both new file sets and it rewrites `tests/foxio_vectors/NOTICE` with them,
   so a refresh at a newer commit carries them. A baseline that names no column and a
   baseline that holds no data row each fail the refresh. **No file under `ja4plus/` changes
