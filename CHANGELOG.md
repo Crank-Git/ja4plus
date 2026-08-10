@@ -799,8 +799,19 @@ holds every breaking change of this record against a row of that page.
   the case would skip exactly as before. **The base commit is a stricter reference than the
   merge base with `dev`**, because it reads the change set of one pull request rather than
   the change set of a whole integration branch. A push event carries no base commit, so the
-  case skips there, and a push to the integration branch has no change set to read. **Nine
-  new cases hold the reading.** Two of them build an orphan branch, which reproduces the
+  case skips there, and a push to the integration branch has no change set to read. **The
+  fetch writes the ref `refs/ja4plus/round-entry-base`, because a commit that no ref reaches
+  is unreachable.** A bare `git fetch origin <sha>` writes `FETCH_HEAD` and no ref, and a
+  read of 2026-08-10 on a clone of depth 1 reports that the ref form survives
+  `git gc --prune=now` and that `git diff` and `git show` still read the commit after it.
+  **The self-review raised `continue-on-error` on the fetch step and #438 declined it**,
+  because a failed fetch leaves the variable empty, the case skips, and a green job over a
+  silent skip is the failure this round exists to remove. **The expression reaches the
+  `env` block and never the `run` block**, because an expression inside a shell command is
+  a script-injection path. **Ten
+  new cases hold the reading.** The self-review also found that `named_commit` rested on
+  its one caller to drop the space around a name, and the reader now drops it itself. Two
+  of the ten build an orphan branch, which reproduces the
   runner state where `git merge-base` reports nothing and the diff still answers, and two
   read `.github/workflows/test.yml` for the fetch step. **The cases came first**, and
   `test_the_test_job_fetches_the_base_commit_of_a_pull_request` failed against the workflow

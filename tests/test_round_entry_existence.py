@@ -182,12 +182,15 @@ def named_commit(repository: Path, name: str) -> Optional[str]:
 
     Args:
         repository: The root of the repository.
-        name: The name of a commit, or an empty string where the caller names none.
+        name: The name of a commit, or an empty string where the caller names none. The
+            reader drops the space around the name, because a caller other than
+            `environment_reference` reaches this function too.
 
     Returns:
         The full commit identifier, or None where the name is empty and None where the
         repository holds no such commit.
     """
+    name = name.strip()
     if not name:
         return None
     output = _git(repository, "rev-parse", "--verify", f"{name}^{{commit}}")
@@ -687,6 +690,14 @@ def test_a_named_commit_outranks_the_merge_base(tmp_path: Path) -> None:
     assert reference_commit(repository, ("dev",), named="HEAD") == head.strip()
 
 
+def test_a_named_commit_reads_through_the_space_around_the_name(tmp_path: Path) -> None:
+    """The reader resolves a name that carries a space at each end."""
+    repository = _scratch_repository(tmp_path / "spaced")
+    head = _git(repository, "rev-parse", "HEAD")
+    assert head is not None
+    assert named_commit(repository, "  HEAD  ") == head.strip()
+
+
 def test_a_named_commit_reads_a_change_set_that_no_merge_base_reaches(tmp_path: Path) -> None:
     """A change set against a commit no history connects to `HEAD` fails without a round."""
     repository = _scratch_repository(tmp_path / "shallow-red")
@@ -737,7 +748,7 @@ def test_the_test_job_fetches_the_base_commit_of_a_pull_request() -> None:
     """The `test` job of the workflow fetches the base commit of the pull request."""
     workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
     assert "BASE_SHA: ${{ github.event.pull_request.base.sha }}" in workflow
-    assert 'git fetch --depth=1 origin "$BASE_SHA"' in workflow
+    assert 'git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"' in workflow
 
 
 def test_the_test_job_writes_the_reference_variable() -> None:

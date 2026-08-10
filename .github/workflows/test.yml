@@ -90,11 +90,24 @@ jobs:
         #
         # A push event carries no base commit, and a push to the integration branch has no
         # change set to read. The case skips there and the `if` condition states that.
+        #
+        # **The fetch writes a ref, because a commit that no ref reaches is unreachable.**
+        # A bare `git fetch origin <sha>` writes `FETCH_HEAD` and no ref. #438 measured the
+        # ref form on a clone of depth 1: the commit survived `git gc --prune=now` and both
+        # `git diff` and `git show` still read it.
+        #
+        # **#438 declined `continue-on-error` on this step.** A failed fetch leaves the
+        # variable empty and the case skips, and `.claude/rules/batch-gate.md` states that
+        # an absent result is not a passed result. A red step names the state, and a green
+        # job over a silent skip is the failure this issue exists to remove.
+        #
+        # `${{ }}` reaches the `env` block and never the `run` block, because an expression
+        # inside a shell command is a script-injection path.
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          git fetch --depth=1 origin "$BASE_SHA"
+          git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"
           echo "ROUND_ENTRY_REFERENCE=$BASE_SHA" >> "$GITHUB_ENV"
 
       - name: Set up Python ${{ matrix.python-version }}
