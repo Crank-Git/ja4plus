@@ -35,9 +35,10 @@ The pin is one entry of the `dev` extra. `_dependency_block` of
 That reader collects every double-quoted substring of the block. The `dev` extra carries
 comment lines inside the list, and a comment that quotes a version therefore reads as an
 entry. The reader already returns `not spec_validation` from the comment beside
-`build>=1.0`. **A comment that quoted `"ruff==0.14.5"` would then fail a case here on the
+`build==1.4.4`. **A comment that quoted `"ruff==0.14.5"` would then fail a case here on the
 wording of a comment**, which is a check a rewording defeats. `_dev_entries` below strips
-the comment lines first.
+the comment lines first. #446 widened that hazard, because every entry now carries a
+comment and three of those comments quote a version.
 
 The self-review of #378 found that hazard. `_dependency_block` stays correct where it is
 used today, because the `docs` list and the runtime list carry no comment inside the
