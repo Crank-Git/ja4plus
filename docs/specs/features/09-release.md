@@ -56,6 +56,14 @@ FR-release-10 — The wheel contains the mapping file and the `py.typed` marker.
 FR-release-11 — The wheel does not contain the test suite, the examples, or the
 vectors.
 
+FR-release-11b — The wheel contains no file under the documentation tree and no file
+under the assets tree.
+
+FR-release-11c — The source distribution contains the documentation tree and the assets
+tree.
+
+FR-release-11d — The wheel declares `ja4plus` as its only top-level name.
+
 FR-release-12 — The project classifier reads `Development Status :: 5 -
 Production/Stable`.
 
@@ -134,6 +142,10 @@ TestPyPI site.
 | The version already exists on PyPI. | The publish step fails. PyPI refuses to replace a file. |
 | The wheel omits the mapping file. | The verification step fails, because a lookup returns an empty database. |
 | The wheel omits `py.typed`. | The packaging test fails. |
+| The wheel carries a file under `docs/`. | `test_the_wheel_carries_no_file_under_the_documentation_tree` fails. #455 records the defect and the exclusion rule that repairs it. |
+| The wheel carries a file under `assets/`. | `test_the_wheel_carries_no_file_under_the_assets_tree` fails. `assets/logo.png` holds 2423363 bytes, and `README.md` is its one reader. |
+| The wheel carries a tree that the exclusion list does not name. | `test_the_wheel_carries_no_file_outside_the_package_and_its_metadata` fails, and `test_the_wheel_declares_one_top_level_name` fails where the tree is a discovered package. |
+| The exclusion rule reaches the source distribution as well. | `test_the_source_distribution_carries_the_documentation_tree` and `test_the_source_distribution_carries_the_assets_tree` fail. A source distribution is the project at one revision. |
 | The changelog has no section for the version. | The version-check job fails before a release is created. |
 | The conformance suite fails against the installed wheel. | The workflow stops and does not publish. |
 | The maintainer creates a release from a branch other than the live branch. | The workflow runs against that reference. The version-check job is the guard. |
@@ -153,8 +165,11 @@ TestPyPI site.
       passes.
 - [ ] `unzip -l dist/*.whl` lists `ja4plus/data/ja4plus-mapping.csv` and
       `ja4plus/py.typed`.
-- [ ] `unzip -l dist/*.whl` lists no file under `tests/`, `examples/` or
-      `docs/`.
+- [ ] `unzip -l dist/*.whl` lists no file under `tests/`, `examples/`, `docs/` or
+      `assets/`.
+- [ ] `unzip -l dist/*.whl` lists every file below `ja4plus/` or below the
+      `.dist-info` directory, and no other file.
+- [ ] The `top_level.txt` of the wheel names `ja4plus` alone.
 - [ ] `pyproject.toml` declares `Development Status :: 5 - Production/Stable`.
 - [ ] A dry run publishes to TestPyPI and not to PyPI.
 - [ ] Version 1.0.0 appears on PyPI.
