@@ -30,6 +30,51 @@ every pull request into `dev` and it filters no path. `.github/workflows/docs-bu
 filters four paths, so the gate requires no run of it and a red run of it still refuses
 the merge.
 
+## Assign every round number at the batch gate
+
+**Warning: assign a round number at the batch gate, and never at a sub-merge.** A
+sub-merge is the merge of one member branch into the integration branch. The project
+manager assigns the numbers of a whole batch in one pass, immediately before the batch
+pull request. `dev` holds a fixed row count at that moment, so the pass reads one
+sequence that no other writer moves.
+
+A member writes the literal `TBD` in place of its round number. The `TBD` reaches two
+records, and it stays in both through every sub-merge.
+
+1. The entry of `CHANGELOG.md`, as `Round TBD.`.
+2. The Changelog row of `docs/specs/spec.md`, as `| TBD | 2026-08-10 | ... |`.
+
+`tests/test_changelog_round_agreement.py` holds the two records against each other, so an
+assignment that covers one file alone fails a case. An integration branch carries one
+`TBD` for each member that has not reached the gate, and every one of them is correct.
+
+**The round sequence is global to the repository, and a sub-merge is an event of one
+batch.** Two live integration branches therefore assign from one sequence at once, and
+neither branch reads the rows of the other until that other branch merges. #482 measured
+the result on 2026-08-10, at the sub-merge gate of #456.
+
+```
+AssertionError: the Changelog holds 169 rows and its highest round is 173
+assert 169 == 173
+```
+
+**A project manager who assigns 168 and 169 on the second branch writes two rows numbered
+168 and two numbered 169.** That state merges cleanly, and the rule above removes it
+rather than reports it.
+
+**Warning: a wrong pairing survives the row-count rule, so read the contiguity case
+instead.** `row count == highest round` reads a table that carries 168 twice and 170
+nowhere as correct. The count and the maximum both still read right under the wrong
+pairing.
+`tests/test_specification_changelog.py::test_the_changelog_assigns_every_round_from_one_to_the_row_count`
+requires the rounds 1 to the row count, each on one row, and
+`test_the_row_count_rule_passes_on_a_table_that_repeats_a_round` holds the measurement of
+the older rule.
+
+**One integration branch at a time also removes the race, and this project declines that
+order.** It costs the concurrency the batch model exists to provide. #482 records the
+decline.
+
 ## Never write a skip keyword in a head commit message
 
 **Warning: a skip keyword anywhere in a commit message creates no run for that commit.**
@@ -74,30 +119,64 @@ gh run list --repo Crank-Git/ja4plus --branch <branch> --json event,status,concl
 Read the gate again after the run finishes. **Warning: a manual run reads the branch head
 and not the merge result**, so it proves the branch and it does not prove the merge.
 
-## The strongest shape needs the user
+## The provider refuses an ungated merge
 
-**A required status check refuses the merge inside the provider, and this repository holds
-none.** A read of 2026-08-09 reports the state.
+**`dev` carries a required status check, and the provider refuses a merge that no
+successful run of every required context covers.** A read of 2026-08-10 reports the state.
+#468 turned the rule on and #480 re-took the measurement.
 
 | Read | Result |
 |---|---|
-| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `404`, `Branch not protected` |
+| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, eleven required contexts |
 | `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` |
 
-The token carries the `repo` scope and the read returned a determinate answer, so the
-result is a measurement and not a limit. **A change to branch protection changes the
-repository configuration, so the user makes it and no agent makes it.** These are the
-exact steps.
+Each of the eleven contexts carries `app_id` 15368. No context reads `build` and none
+reads the bare `test`. The ruleset list stays empty, so the branch protection rule is the
+one place the provider holds this condition.
+
+**A read of 2026-08-09 returned a different result, and this record supersedes it.** That
+read reported no protection, and #459 wrote the section around it. The sentence below is
+the superseded wording, quoted rather than rewritten.
+
+> **A required status check refuses the merge inside the provider, and this repository
+> holds none.** A read of 2026-08-09 reports the state.
+
+| Read | 2026-08-09, superseded | 2026-08-10 |
+|---|---|---|
+| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `404`, `Branch not protected` | `200`, eleven required contexts |
+| `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` | `[]` |
+
+**Read the local gate before every batch merge, because the provider rule stands beside it
+and replaces it nowhere.** `python -m tests.batch_gate --pr <number>` reads the same
+condition, and it reads it before the merge rather than at it. The section above states
+that procedure.
+
+### Two limits the same call returned
+
+**`enforce_admins` reads `false`.** The rule binds a contributor, and it binds no
+repository administrator. A merge an administrator makes therefore passes the provider
+with no run at all, so the local gate stays the procedure for every merge.
+
+**`strict` reads `false`.** A branch merges where it is behind `dev`, and it takes `dev`
+again for no other reason. **That reading suits the batch model.** `strict: true` would
+demand that every integration branch take `dev` again after another batch lands, and the
+new head would then carry no run, so the run that proved the batch would not be a run of
+the head.
+
+The token carries the `repo` scope and each read returned a determinate answer, so every
+result above is a measurement and not a limit. **A change to branch protection changes the
+repository configuration, so the user makes it and no agent makes it.** These are the exact
+steps to read the rule or to change it.
 
 1. Open `https://github.com/Crank-Git/ja4plus/settings/branches`.
-2. Add a branch protection rule for `dev`.
-3. Turn on `Require status checks to pass before merging`.
-4. Add the eleven check names of the list below.
+2. Open the branch protection rule for `dev`.
+3. Read `Require status checks to pass before merging`, which is on.
+4. Read the eleven check names of the list below against the rule.
 
 **Warning: a check name is not a job name.** The `test` job of
 `.github/workflows/test.yml` runs a matrix, so the provider publishes one check for each
-combination. A required check named `test` matches nothing. These are the names a read of
-commit `b593de5` reports.
+combination. A required check named `test` matches nothing. These are the eleven names the
+read of 2026-08-10 reports, and a read of commit `b593de5` reported the same names.
 
 ```
 lint
@@ -115,10 +194,16 @@ conformance
 
 **Warning: leave the `build` check out of the required list.** It belongs to
 `.github/workflows/docs-build.yml`, which filters four paths. A batch that touches none of
-those paths creates no run of it, so a required `build` would block every such batch.
+those paths creates no run of it, so a required `build` would block every such batch. The
+read of 2026-08-10 reports no `build` context, so the rule holds this warning today.
 
 A required check that never reports blocks the merge, which is the condition this file
 otherwise reads by hand.
+
+`tests/test_batch_gate_protection_rule.py` reads this section against
+`gh api repos/Crank-Git/ja4plus/branches/dev/protection`, so a change at the provider
+fails a case here rather than leaving a reader with a stale rule. **Where the call cannot
+be made, that case skips and it does not pass.**
 
 ## What this file does not cover
 

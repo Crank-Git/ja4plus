@@ -141,9 +141,9 @@ This feature set has no screen. Its output is the test report.
 
 ## Behaviour rules
 
-- FoxIO specifies the behaviour. Where the FoxIO material is an image and the image
-  is ambiguous, the expected-output file decides, and the reading goes into
-  `docs/implementation_notes.md`.
+- FoxIO specifies the behaviour. Where a reader reads the image and finds it
+  ambiguous, the expected-output file decides, and the reading goes into
+  `docs/implementation_notes.md`. An image nobody read reaches no fallback.
 - The JA4SSH window counts SSH packets sent by either side. A bare ACK is not an
   SSH packet, and does not advance the window. The bare-ACK counters reset with the
   window.
