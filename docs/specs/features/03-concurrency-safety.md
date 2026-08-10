@@ -213,7 +213,7 @@ that the hook keeps the table away from.
 
 `TCPStreamReassembler.streams` stays an `OrderedDict`. It holds both bounds already, and
 `add_segment` applies two more per-stream caps that no mapping models. #39 records the
-decision and changes no behaviour of that class.
+ruling and changes no behaviour of that class.
 
 The `JA4HFingerprinter` tables and `JA4XFingerprinter.scan_offsets` read
 `TCPStreamReassembler.max_streams` and `max_stream_age` of the reassembler that
@@ -775,7 +775,7 @@ memory ceiling, and `The memory ceiling this package states` above holds it and 
 measurement behind it. No constant in `ja4plus/` names the ceiling, because the ceiling
 is a claim this package publishes and no code reads it.
 
-The measurement #38 produced stays on record, because it is the reading the decision
+The measurement #38 produced stays on record, because it is the reading the ruling
 started from. An idle `Processor()` with scapy imported held 91.03 MiB resident. One full
 table of 10000 entries shaped like `JA4LFingerprinter.connections` held 10.69 MiB, at
 1121 bytes for each entry. One full table of 10000 entries shaped like

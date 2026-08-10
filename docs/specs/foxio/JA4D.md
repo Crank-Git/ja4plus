@@ -298,7 +298,7 @@ table: `solct`, `advrt`, `reqst`, `reply` and `relse`.
 
 **D1 of #271 settles the nesting depth of this rule, and the rule stays uncertain.** The
 field reaches an inner relay message, because the dissector matches on the field name
-alone. The mark stays, because the mark counts corroborations and this decision adds no
+alone. The mark stays, because the mark counts corroborations and this ruling adds no
 second FoxIO implementation.
 
 ### R17 — Part b of JA4D6 lists every DHCPv6 option code in the order Wireshark reports it, and omits none
@@ -701,7 +701,7 @@ project adds fails the same as a value it drops.
 snapshots this project holds carry `ja4t` values that no harness reads. Here the reference
 values are read, and they all pass.
 
-## The decisions this page raised
+## The rulings this page raised
 
 **The user decided all eleven on 2026-08-08, and #231 landed them.** Changelog round 78
 records the round. Each item above states its ruling, and

@@ -193,5 +193,5 @@ reports neither as true.
    at one moment, and this project holds no second instrument. The two hosts above differ
    in processor, in operating system and in interpreter, so the difference between their
    rates names no cause.
-2. **No check states whether a rate is adequate.** Adequacy is a decision the user makes
+2. **No check states whether a rate is adequate.** Adequacy is a ruling the user makes
    against a use, and `Non-goals` states no target.

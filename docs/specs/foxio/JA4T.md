@@ -70,8 +70,8 @@ The fingerprint is `<window size>_<options>_<mss>_<window scale>`.
 - Corroboration 2: `rust/ja4/src/tcp.rs` emits four parts and no timing part.
 
 **This rule holds for JA4T alone. JA4TS carries part e, and the user decided that on
-2026-08-08.** The decision reverses the D6 and D7 ruling of #215, which followed the
-image. #226 holds the decision and the measurement, and R12 below states the reading.
+2026-08-08.** The ruling reverses the D6 and D7 ruling of #215, which followed the
+image. #226 holds the ruling and the measurement, and R12 below states the reading.
 `ja4plus/fingerprinters/ja4ts.py` writes part e.
 
 The image is the one source that keeps part e off JA4TS. Three FoxIO sources put it
@@ -213,7 +213,7 @@ d, and 7 of the 12 moved values are of that shape.
 
 ### R12 — JA4TS carries part e, and the fingerprint omits part e when the server answers once
 
-**The user decided this on 2026-08-08, and the decision reverses the D6 and D7 ruling of
+**The user decided this on 2026-08-08, and the ruling reverses the D6 and D7 ruling of
 #215.** R2 above names the three FoxIO sources. #226 built the reading.
 
 Part e holds the delay between each SYN-ACK of one connection, in whole seconds, joined
@@ -560,7 +560,7 @@ and name the loss.
 ## What the comparison reports
 
 **#216 and #242 read 37 of the 39 values as exact and two as different. #215 landed the
-decisions, and the reading is now 38 of 39 exact and one decided divergence.** No value
+rulings, and the reading is now 38 of 39 exact and one decided divergence.** No value
 the register does not name disagrees.
 
 | Capture | Values | Result before #215 | Result after #215 |
@@ -731,14 +731,14 @@ The deleted text carries two findings for this page.
    `WindowSize_TCPOptions_MSSValue_WindowScale_TimeSinceLastSYNACK`, and the image's caption
    reads `TCP Retransmission Timings (only on JA4TScan)`. The deleted text agrees with the
    Wireshark dissector, which D6 records. **The user decided for the deleted text on
-   2026-08-08, and #226 built part e.** R12 states the rule. The decision reverses the
+   2026-08-08, and #226 built part e.** R12 states the rule. The ruling reverses the
    #215 ruling of the same day, which followed the image.
 2. **It states the empty-field form that R11 records the image does not settle.** It reads
    `If any field does not exist, then the output is 00.` and it gives
    `JA4T = 1024_00_00_00`. `wireshark/source/packet-ja4.c:664` and the Zeek baseline both
    write that form, so the rule now holds two corroborations that are not the deleted file.
    `rust/ja4/src/tcp.rs` writes `8192__0_0` and `ja4plus` writes `8192_0_0_0`. **#215 item 1
-   owns the decision, and this is the FoxIO prose it lacked.**
+   owns the ruling, and this is the FoxIO prose it lacked.**
 
 The deleted text also states four rules the image does not state: the interval of part e
 rounds to the nearest second, a RST appends an `R` and its delay, a RST carries no window
@@ -775,9 +775,9 @@ to `0`. Packet 369 is the first SYN-ACK and keeps four parts, which R12 rule 1 r
 bound of ten, and the largest interval is 0.005829 s, against a timeout of two minutes.
 `tests/test_ja4ts_part_e.py` therefore carries the constructed cases that measure them.
 
-## The decisions this page raises
+## The rulings this page raises
 
-**#215 holds these decisions. #216 and #242 hold the conformance evidence.** Each item needs the
+**#215 holds these rulings. #216 and #242 hold the conformance evidence.** Each item needs the
 user, because each changes a fingerprint that this project publishes. This page changes no
 fingerprinter.
 

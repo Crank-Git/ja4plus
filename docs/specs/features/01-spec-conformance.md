@@ -208,7 +208,7 @@ This feature set has no screen. Its output is the test report.
   `socks4-https.pcap` produces three JA4X values on the SOCKS4 tunnel on port 9901,
   and no FoxIO implementation holds one. The same behaviour produces the
   `https-connect.pcap` values that the FoxIO Rust snapshot and the Wireshark
-  dissector both hold. #138 holds the decision, and the register records the
+  dissector both hold. #138 holds the ruling, and the register records the
   divergence.
 - A reader collects at most 16384 bytes of CRYPTO frame data for one connection. RFC
   9000 Section 16 lets a CRYPTO frame offset reach 4611686018427387903, and a
@@ -449,10 +449,10 @@ https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
 
 ## Out of scope
 
-- JA4TScan. The user declined it on 2026-08-08, and the decision is reversible. It sends
+- JA4TScan. The user declined it on 2026-08-08, and the ruling is reversible. It sends
   crafted packets to a host the operator names, and every other method reads traffic that
   already exists. #197 holds the reading, and `Non-goals` in `docs/specs/spec.md` holds
-  the decision.
+  the ruling.
 - Any change that no vector requires. That work is Epic 2.
 - Performance of the conformance suite.
 

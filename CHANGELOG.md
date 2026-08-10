@@ -2409,6 +2409,52 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **The vocabulary keeps `ruling`, and `decision` gives way to it** (#533). Round
+  TBD. The `## Terms` table of `docs/specs/spec.md` held neither word, and the prose rotated
+  the two against each other across the whole specification. Rule 7 of
+  `.claude/rules/ste.md` bars that: "One concept, one word. Never rotate synonyms for
+  variety." **The user ruled on 2026-08-10 that the vocabulary keeps `ruling`**, and #533
+  records that ruling. The table now holds one row: `ruling` is one determination the user
+  makes where no source settles the question, and the fourth column rejects `decision`,
+  `call` and `verdict`. **A ruling is the choice of a person and a reading is a conclusion
+  about a source**, so the row states the boundary against `reading` that #533 found
+  missing. 109 lines of 27 documents and 18 more lines of three FoxIO pages now name the
+  term, and `docs/specs/spec.html` carries the same two corrections because a writer edits
+  that page by hand. **New file `tests/test_ruling_vocabulary.py` holds 76 cases**, and 30
+  of them failed before the sweep landed. It reads the tracked Markdown corpus with
+  `git ls-files` and it walks no directory, because #473 measured that a walk of the
+  checkout reads the pages of every live worker worktree. **Two mutations prove that the
+  cases bite, and both are restored.** A page that names the barred word reports
+  ``AssertionError: docs/usage.md names 'decision' at ['form, and #215 records the
+  decision'], and the `## Terms` row of 'ruling' rejects that word``. A row that drops the
+  barred word from its fourth column reports `AssertionError: the row of 'ruling' rejects
+  ['call', 'verdict'], and it names no 'decision', so every case here forbids a word the
+  vocabulary admits`. **The floor fails a reader that names no page**, and it reports `the
+  corpus holds 1 Markdown pages, below the floor of 20, and an aggregate over an empty set
+  passes`, because an aggregate over an empty set passes. **The sweep reads the noun and it
+  reads no verb.** Rule 6 states one word, one meaning, one part of speech, so `decides` and
+  `decided` stay everywhere. The `decided` field of `tests/foxio_deviations.json` is a
+  schema key that `tests/foxio_deviations.py` reads, and a schema key is not prose. The rule
+  of `CLAUDE.md` that the specification decides intent and schema keeps its verb. **Three
+  records keep the barred word, and each decline is stated rather than left to a reader.**
+  `CHANGELOG.md` and the `## Changelog` table of `docs/specs/spec.md` each record one past
+  round, and #441 already made that reading for `reporter`. Eighteen entries and about
+  fifty-five rows hold the word, and this round leaves every one exactly as it reads.
+  **`.claude/rules/ste.md` exempts those two records from rule 1 and rule 3 alone, and it
+  states that rule 7 reaches both**, so the decline rests on the verbatim list of that file
+  and not on the exemption. Where the reading is unclear this project leaves the record
+  alone. The third record is the blockquote of `docs/specs/foxio/zeek.md`, which quotes a
+  sentence #515 superseded under the line "The sentence below is the state before that,
+  quoted rather than rewritten"; the live sentence below it now names the term.
+  `readable_prose` cuts all three, and it cuts every fenced block and every code span, so
+  the branch name `batch/266-register-gate-and-decisions` stays. **The case reads no Python
+  file, which is a hole this round states rather than hides.** #533 bars a change under
+  `ja4plus/`, and nine comments and docstrings there hold the noun, so a reader of the
+  Python corpus would fail a case #533 forbids the repair of. #548 holds that hole and it
+  names the nine. `tests/test_foxio_license_register.py` renamed `NO_DECISION` to
+  `NO_RULING` and one case with it, because the divergence register row it reads now states
+  `recorded no ruling about JA4Scan`. **This round moves no fingerprint, and no file under
+  `ja4plus/` changes.**
 - **One file declares the version, and two gates hold it against the project metadata and
   the changelog** (#67). Round 187. `pyproject.toml` declared `version = "0.6.0"` at line 7
   and `ja4plus/__init__.py` declared it again at line 94, so the two records could

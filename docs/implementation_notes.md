@@ -187,8 +187,8 @@ value `h`. `.claude/rules/conformance.md` states that a defect outside its two n
 shapes is a question for the user, and #141 asks it.
 
 **What the user settled.** On 2026-08-07 the user decided that both values stay. #162
-records the decision. `docs/specs/spec.md` § Divergence register holds one row for the
-disputed-byte reading and one row for the one-byte reading, and both decisions are
+records the ruling. `docs/specs/spec.md` § Divergence register holds one row for the
+disputed-byte reading and one row for the one-byte reading, and both rulings are
 reversible.
 
 **How the divergence became a comparison.** #141 left the disputed inputs out of every
@@ -365,11 +365,11 @@ that carries it. One behaviour produces both readings:
 | `https-connect.pcap` | HTTP CONNECT, port 8080 | Rust and Wireshark, two of three |
 | `socks4-https.pcap` | SOCKS4, port 9901 | none |
 
-**The decision.** `ja4plus` keeps the three values, and the register records the
+**The ruling.** `ja4plus` keeps the three values, and the register records the
 divergence. A gate on the record-layer scan would suppress the SOCKS4 values, and it
 would risk the `https-connect.pcap` values that two FoxIO implementations hold. The cost
 of a gate falls on a case this project wins. The cost of the divergence is one register
-entry. The decision is deliberate and reversible, and it follows the form of #127 and
+entry. The ruling is deliberate and reversible, and it follows the form of #127 and
 #129.
 
 **The cost.** One register entry, `socks4-https.pcap/JA4X`, marked `decided`.
@@ -575,7 +575,7 @@ no reference value settles a question the image leaves open.
 
 ### JA4TS carries part e, the time since the last SYN-ACK
 
-**The user decided this on 2026-08-08, and the decision reverses the D6 and D7 ruling of
+**The user decided this on 2026-08-08, and the ruling reverses the D6 and D7 ruling of
 #215 of the same day.** The image caption reads
 `TCP Retransmission Timings (only on JA4TScan)`, and three FoxIO sources contradict it:
 the deleted `technical_details/JA4T.md`, `wireshark/source/packet-ja4.c:1595` through
@@ -954,7 +954,7 @@ all, and `tls3.pcapng` holds 2 FIN packets against 13 client values.
 
 `ja4plus` reads the stored list, so the conformance suite measures the correct value.
 The user decided on 2026-08-07 to record the divergence and to leave the return path as
-it is. The `Divergence register` of `docs/specs/spec.md` holds the row, and the decision
+it is. The `Divergence register` of `docs/specs/spec.md` holds the row, and the ruling
 is reversible.
 
 `tests/foxio_deviations.json` holds no entry for the divergence. The conformance harness
@@ -1062,7 +1062,7 @@ the capture. `python/ja4.py:610` runs no end-of-capture step at all, because the
 `ssh2.pcapng` carries 452 TCP packets on port 22 and no FIN+ACK packet, so no FIN+ACK
 rule fires on it. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217`
 holds `c36s52_c42s76_c51s2`, and the Zeek baseline holds the same value. The user decided
-on 2026-08-08 that `ja4plus` emits it, and #214 holds the decision. The decision is
+on 2026-08-08 that `ja4plus` emits it, and #214 holds the ruling. The ruling is
 reversible.
 
 **A window that holds no SSH packet still emits nothing.** #97 declines
@@ -1108,13 +1108,13 @@ of another tool. The measurement ran `python/ja4.py` at the pinned commit agains
 dictionary and not the two lists inside it, so every window on every connection
 shares one `client_payloads` list and one `server_payloads` list. `ssh-r.pcap`
 stream 2 window 1 reports `c64s64`, and the packets of that window read `c76s76`.
-`ja4plus` reads the lengths of the window. #96 records the decision.
+`ja4plus` reads the lengths of the window. #96 records the ruling.
 
 **A bare ACK writes another occurrence.** `(entry['count'] % ssh_sample_count) == 0`
 stays true for every bare ACK that follows a window boundary, so each of those
 packets writes the next occurrence key from a window that holds no SSH packet.
 `ssh-r.pcap` stream 0 holds `JA4SSH.2` equal to `c64s64_c0s0_c0s1`. `ja4plus` emits
-a value only for a window that holds SSH packets. #97 records the decision.
+a value only for a window that holds SSH packets. #97 records the ruling.
 
 **The stream index 0 is false.** `finalize_ja4ssh` guards with `if stream:`, so the
 reference emits no trailing window for the connection it holds at index 0.
@@ -1123,7 +1123,7 @@ index, and the reference holds no JA4SSH value for any of them. The same run, wi
 that guard read as `if stream is not None:` and nothing else changed, emits
 `c24s23_c4s4_c5s4` for `gre-sample.pcap` and `c20s12_c18s23_c10s1` for `sshv1.pcap`.
 `ja4plus` emits the window for every connection that closes. #105 records the
-decision.
+ruling.
 
 ### The SSH message, not the TCP segment
 
@@ -1191,7 +1191,7 @@ defect. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` 
 or `zeek/ja4ssh/main.zeek:160-164`, which close it at the end of the capture.
 
 **`ssh2.pcapng` carries no FIN+ACK packet on port 22**, so `ja4plus` emits one value for
-it where the Rust and Zeek references emit two. **#214 holds the decision, and no
+it where the Rust and Zeek references emit two. **#214 holds the ruling, and no
 fingerprint moves until the user rules.**
 
 Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4SSH.png
@@ -1205,7 +1205,7 @@ Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/J
 
 `ja4plus` writes `JA4X_r`. The value holds the three unhashed lists of the fingerprint,
 joined with `_`. Each list holds the hex object identifiers in wire order, joined with
-`,`. The user decided the form on 2026-08-08, and #267 holds the decision.
+`,`. The user decided the form on 2026-08-08, and #267 holds the ruling.
 
 Two FoxIO implementations publish the value. `rust/ja4x/src/lib.rs` builds one list of
 three parts, hashes each part for `ja4x` and joins the same three parts for `ja4x_r`.
@@ -1687,7 +1687,7 @@ implementation holds a JA4S value for the stream.
 
 `ja4plus` reads the record layer without regard to the tunnel protocol that carries it,
 which is the behaviour #138 decided to keep for the three JA4X values on the same stream.
-The register records the JA4S value under the same decision.
+The register records the JA4S value under the same ruling.
 
 ### The register
 

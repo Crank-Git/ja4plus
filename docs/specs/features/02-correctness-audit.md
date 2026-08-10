@@ -188,7 +188,7 @@ they keep their bound.
 
 The register records a reading that diverges from the FoxIO reference. The reference
 holds no cookie bound, and `ja4plus` holds no cookie bound, so the two agree. A reader
-finds no register row for this decision, and none is missing.
+finds no register row for this ruling, and none is missing.
 
 ### The test
 

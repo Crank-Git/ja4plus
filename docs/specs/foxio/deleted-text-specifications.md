@@ -199,7 +199,7 @@ the negative result from the file FoxIO's own Rust implementation cites.** The g
 gap in the specification, and not a gap in the reading.
 
 **R11 stays uncertain, and the vector fallback stays.** A second source that states
-nothing is not a source that states a rule. **#214 is still the user's decision, and this
+nothing is not a source that states a rule. **#214 is still the user's ruling, and this
 page does not answer it.**
 
 ### The rest of the deleted JA4SSH.md
@@ -239,7 +239,7 @@ with a connection, which appends part e. The image and `rust/ja4/src/tcp.rs` sta
 other reading.
 
 **The user decided for the deleted text on 2026-08-08, and #226 built part e.** The
-decision reverses the D6 and D7 ruling of #215 of the same day, which followed the image.
+ruling reverses the D6 and D7 ruling of #215 of the same day, which followed the image.
 R2 of `docs/specs/foxio/JA4T.md` now holds for JA4T alone, and R12 states the JA4TS rule.
 
 **#226 read the blob rather than this page**, and it confirms every quotation above. It
@@ -287,7 +287,7 @@ to the empty string and pads nothing, and
 `ja4plus` wrote a third form, `8192_0_0_0`, until #215. The user decided the two-digit
 form on 2026-08-08, so `ja4plus` now writes `8192_00_00_00` and follows this prose.
 
-**#215 owns this decision and this page rules on nothing.** #215 item 1 asked which empty
+**#215 owns this ruling and this page rules on nothing.** #215 item 1 asked which empty
 form this project writes, with three candidate forms and no FoxIO prose. **This page
 supplies the prose #215 lacked.** It names `00` and it names no other form.
 
@@ -364,7 +364,7 @@ it reads a tenth method.
 **`docs/specs/foxio/JA4H.md` D1 records that `ja4plus` reads the same nine methods**, and
 #219 item 5 asks whether it should read a method outside them. **The deleted text supports
 the nine, the image does not close the list, and the Python reference reads any method.**
-#219 owns the decision.
+#219 owns the ruling.
 
 ### F4 — The FoxIO worked example computes 11 headers and publishes 13
 
