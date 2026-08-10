@@ -74,7 +74,7 @@ holds every breaking change of this record against a row of that page.
 ### Added
 
 - **The publish workflow builds the release and verifies it in a clean environment before it
-  publishes** (#68). Round TBD. `FR-release-4` to `FR-release-9` state the checks, and
+  publishes** (#68). Round 188. `FR-release-4` to `FR-release-9` state the checks, and
   `.github/workflows/publish.yml` held two steps before this round: `python -m build` and the
   upload. **Nothing stood between the build and PyPI, and a publish to PyPI cannot be
   undone.** New file `tests/release_verification.py` holds the whole check, and the workflow
@@ -129,7 +129,7 @@ holds every breaking change of this record against a row of that page.
   misses.
 
 - **The built wheel carries the mapping file and the `py.typed` marker, and it carries no test,
-  example or documentation file** (#69). Round TBD. `FR-release-10` and `FR-release-11` state
+  example or documentation file** (#69). Round 189. `FR-release-10` and `FR-release-11` state
   the two requirements, and new file `tests/test_packaging.py` holds nine cases against the
   built wheel. **#455 already repaired the wheel these cases read**, so this round measures a
   state that holds and it changes no packaging rule. A read of 2026-08-10 reports 39 entries
@@ -1752,7 +1752,7 @@ holds every breaking change of this record against a row of that page.
 ### Changed
 
 - **One file declares the version, and two gates hold it against the project metadata and
-  the changelog** (#67). Round TBD. `pyproject.toml` declared `version = "0.6.0"` at line 7
+  the changelog** (#67). Round 187. `pyproject.toml` declared `version = "0.6.0"` at line 7
   and `ja4plus/__init__.py` declared it again at line 94, so the two records could
   disagree. `ja4plus/__init__.py` is now the one declaration. `pyproject.toml` names
   `version` in its `dynamic` list and reads the value from `ja4plus.__version__`, so a
