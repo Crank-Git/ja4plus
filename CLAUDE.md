@@ -57,6 +57,12 @@ The model is dev-and-live. `dev` is the default branch and the integration branc
 `master` is the release branch. Work merges into `dev`. A promotion from `dev` to
 `master` is a separate approved step.
 
+**Read `.claude/rules/batch-gate.md` before you merge a batch pull request.** An absent
+run is not a passed run, and `gh pr checks` reports an absence as "no checks reported".
+`python -m tests.batch_gate --pr <number>` exits non-zero on every state that is not a
+terminal successful run of the head commit. #459 records the cause: a skip keyword
+anywhere in a head commit message creates no run for that commit.
+
 ## Parity with ja4plus-go
 
 A Go port exists at `Crank-Git/ja4plus-go`. The two must not drift apart. Three rules:
