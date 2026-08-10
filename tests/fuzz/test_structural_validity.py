@@ -92,7 +92,7 @@ def test_a_structurally_valid_client_hello_with_a_random_body_produces_a_fingerp
 ):
     """The reader produces a well formed fingerprint for every random body.
 
-    This case holds the decision of #343. A plausibility guard makes it fail.
+    This case holds the ruling of #343. A plausibility guard makes it fail.
     """
     for load in random_client_hellos():
         produced = read_ja4(load)

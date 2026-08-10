@@ -309,6 +309,7 @@ carries a connection key and no `FingerprintResult` field holds one.
 | `.reset()` | Reset every fingerprinter, and return every count to zero |
 | `.stats()` | Return one `ProcessorStats` for each of the ten fingerprinters |
 | `.thread_safe` | The value the constructor read |
+| `ProcessorStats` | The counts of one method, which `Processor.stats` reports |
 
 #### How to read the parse failures
 
@@ -712,6 +713,9 @@ starts, and `report_statistics` starts it only when the caller states an interva
 | `read_interface(interface, handle_packet, stop_filter, capture_filter, stop_requested, poll_interval, open_socket, drop_count)` | Read packets from one interface until the capture stops |
 | `open_capture_socket(interface, capture_filter)` | Return an open capture socket for one interface |
 | `DEFAULT_POLL_INTERVAL` | The count of seconds one `sniff` call reads before the loop reads the stop request |
+| `DEFAULT_MAX_CONNECTIONS` | The count bound of the connection table, which `--max-connections` changes |
+| `DEFAULT_CONNECTION_TIMEOUT` | The age bound of one connection in seconds, which `--connection-timeout` changes |
+| `STATISTICS_THREAD_NAME` | The name the statistics thread carries |
 | `CAPTURE_FAILURES` | The exception classes the capture layer raises when it refuses an interface |
 | `available_interfaces()` | Return the name of every interface the host holds |
 | `describe_capture_failure(error, ...)` | Return the message the operator reads for one capture failure |
@@ -721,6 +725,9 @@ starts, and `report_statistics` starts it only when the caller states an interva
 | `StopRequest.stop_after(packet)` | Return True when the capture stops after this packet |
 | `stop_on_signal(signal_numbers)` | Yield the stop request, with a handler installed for each signal |
 | `capture_drop_count(capture_socket)` | Return the drop count of one capture socket, or None |
+| `packet_statistics_drops(capture_socket)` | Return the drop count one Linux packet socket reported since the last read, or None |
+| `SOL_PACKET` | The socket level of a Linux packet socket, which the Python `socket` module omits |
+| `PACKET_STATISTICS` | The socket option that reads `struct tpacket_stats` of a Linux packet socket |
 | `CaptureDropCount` | The drop count of the capture socket the monitor reads |
 | `CaptureDropCount.attach(capture_socket)` | Hold the capture socket the monitor reads |
 | `CaptureDropCount.refresh()` | Read the drop count of the capture socket, and hold what it reported |
@@ -786,6 +793,31 @@ buffered between two calls. Issue #320 records the whole reading.
 message. It calls no capture function, so it classifies the failure of any capture layer
 that raises one of `CAPTURE_FAILURES`. It reads the privilege first, because a host that
 refuses the privilege refuses it before it reads the interface name or the filter.
+
+### ja4plus.output
+
+The writers that turn a `FingerprintResult` into an output line. `--format` selects one
+of them, and the command-line program owns the two fields a writer adds:
+`schema_version` and `identified_as`.
+
+The JSON Lines format and the CSV format each carry a stability promise, so both write
+the same field set whatever flags the user passed. The table format is for a person
+reading a terminal, and it carries no promise.
+
+| Class/Function | Description |
+|----------------|-------------|
+| `OutputWriter(stream)` | The interface the three formats share |
+| `OutputWriter.write_header()` | Write the header of the format. The base class writes nothing |
+| `OutputWriter.write(result, identified_as)` | Write one output line. The base class raises `NotImplementedError` |
+| `JsonLinesWriter(stream)` | The writer that puts one JSON object on each line |
+| `CsvWriter(stream)` | The writer that puts one CSV row on each line, with all eleven columns |
+| `TableWriter(stream)` | The writer that aligns the output lines for a person reading a terminal |
+| `build_writer(fmt, stream)` | Return the writer that the format name selects |
+| `CSV_COLUMNS` | The column names of the CSV format, in the order FR-structured-output-4 fixes |
+| `SCHEMA_VERSION` | The version number every JSON object and every CSV row carries |
+
+A new CSV column appends to the end of `CSV_COLUMNS`, because a downstream reader reads a
+column by position and an insertion breaks it.
 
 ## Lookup Module
 

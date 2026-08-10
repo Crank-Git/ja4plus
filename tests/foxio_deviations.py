@@ -36,9 +36,9 @@ index 0 to two streams. The pair matches the test identifier the suite prints.
 
 ## The marker rule
 
-An entry whose cause cites a decision carries `"decided": true`. An entry that cites no
-decision stays unmarked, and that is the correct state for an entry that stays open. An
-unmarked entry states that nobody read it, so a marker that is missing hides a decision.
+An entry whose cause cites a ruling carries `"decided": true`. An entry that cites no
+ruling stays unmarked, and that is the correct state for an entry that stays open. An
+unmarked entry states that nobody read it, so a marker that is missing hides a ruling.
 
 `unmarked_decisions` in `tests/test_foxio_deviations.py` enforces the rule. It reads four
 forms of citation as evidence that a person decided an entry:
@@ -46,20 +46,20 @@ forms of citation as evidence that a person decided an entry:
 | Form | Example |
 |---|---|
 | A Changelog round named by number | `Changelog round 66 settled the marker.` |
-| A decision recorded against an issue or a date | `decided on #105`, `decided on 2026-08-07` |
-| An issue named as the place the decision was made | `#138 decided to keep the values.` |
-| An issue named as the record of the decision | `#162 records the decision.` |
+| A ruling recorded against an issue or a date | `decided on #105`, `decided on 2026-08-07` |
+| An issue named as the place the ruling was made | `#138 decided to keep the values.` |
+| An issue named as the record of the ruling | `#162 records the decision.` |
 
 Every form is past tense. An entry that names the issue that will decide it names no
-decision, so `#215 decides whether ja4plus reads the raw option bytes` leaves the entry
+ruling, so `#215 decides whether ja4plus reads the raw option bytes` leaves the entry
 open. A denied citation is not a citation either, so `no Changelog round settled it`
 leaves the entry open.
 
 The guard on a denied citation reads the word before the citation alone. A cause that
 denies a citation in other words fails the gate. Reword the cause. A gate that misses a
-decision costs more than a gate that asks a question.
+ruling costs more than a gate that asks a question.
 
-The rule runs in one direction. An entry that cites no decision may still carry the
+The rule runs in one direction. An entry that cites no ruling may still carry the
 marker, which 38 of the 140 decided entries do. A FoxIO Rust snapshot settled those by
 measurement, and no person decided them. The 38 are the 34 entries of #138 and 4 of the 5
 entries of #151.
@@ -93,7 +93,7 @@ held the same fact as a set of issue numbers inside that test file, and #341 mov
 here.
 
 43 entries record a capability decline today, and all 43 name #129. `ja4plus` reads no
-encrypted request and no encrypted certificate, by a decision Changelog round 26 settled.
+encrypted request and no encrypted certificate, by a ruling Changelog round 26 settled.
 
 ## How to remove an entry
 
@@ -105,7 +105,7 @@ Never delete an entry to make a red suite green.
 
 `tests/foxio_deviation_owners.json` records the state of every issue the register names.
 `TestTheRegisterOwners` reads it and rejects an owner that no worker can act on: an epic,
-or a closed issue that no decision record explains. The register named the epic #13 for
+or a closed issue that no ruling record explains. The register named the epic #13 for
 five batches, and no test caught it.
 
 Warning: a refresh turns the suite red whenever an owner closed since the last refresh.
@@ -156,7 +156,7 @@ class Deviation(NamedTuple):
     Attributes:
         issue: The number of the issue that fixes the deviation.
         cause: One line that states the cause.
-        decided: True when the issue is a decision record. A decided deviation is
+        decided: True when the issue is a ruling record. A decided deviation is
             permanent, so its issue is closed and no fix removes the entry.
         capability: True when the decline records a capability this project chose not to
             build. False records a disagreement about the value. The default is False,

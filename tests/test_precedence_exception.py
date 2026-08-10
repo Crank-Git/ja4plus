@@ -13,7 +13,7 @@ which value looks right.
 1. The key is the value form, and the FoxIO Python expected-output file holds a value at
    that connection, that method and that occurrence. The occurrence form records a stream
    the Python file omits, and the Rust snapshot rule already decides that case.
-2. The entry carries `decided`, so a recorded decision names the issue. An undecided
+2. The entry carries `decided`, so a recorded ruling names the issue. An undecided
    entry is an open question, and this exception does not reach it.
 3. The entry carries `capability: false`, so the decline records a disagreement about the
    value. A decline that records a capability this project chose not to build bars the
@@ -566,7 +566,7 @@ class TestTheReachOfTheException:
 
 
 class TestTheBarsOnTheException:
-    """Each bar holds out the rows the decision names."""
+    """Each bar holds out the rows the ruling names."""
 
     def test_the_exception_passes_over_a_capability_decline(self):
         register = load_register()

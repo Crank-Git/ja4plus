@@ -23,14 +23,14 @@ from tests.foxio_deviations import (
 )
 
 
-# The four forms of citation that record a decision a person made. Each one is past
-# tense, because a decision that was made is the only evidence that somebody read the
+# The four forms of citation that record a ruling a person made. Each one is past
+# tense, because a ruling that was made is the only evidence that somebody read the
 # entry. The present tense names the issue that will decide, as `#215 decides whether
-# ja4plus reads the raw option bytes` does, and that names no decision. The lookbehind
+# ja4plus reads the raw option bytes` does, and that names no ruling. The lookbehind
 # drops a denied citation, because the six JA4L entries hold `no Changelog round
 # settled it`. The guard reads the word before the citation alone. A cause that denies a
 # citation in other words fails the gate, and the repair is to reword the cause, because
-# a gate that misses a decision costs more than a gate that asks a question.
+# a gate that misses a ruling costs more than a gate that asks a question.
 DECISION_CITATION = re.compile(
     r"(?<![Nn]o )(?<![Nn]ot )"
     r"(?:Changelog round \d+"
@@ -41,11 +41,11 @@ DECISION_CITATION = re.compile(
 
 
 def unmarked_decisions(register):
-    """Return one message for every entry that cites a decision and carries no marker.
+    """Return one message for every entry that cites a ruling and carries no marker.
 
     A cause that names a Changelog round by number, or names the issue or the date a
-    decision was made on, records that a person read the entry. Such an entry carries
-    `decided`. A cause that cites no decision stays unmarked, and that is the correct
+    ruling was made on, records that a person read the entry. Such an entry carries
+    `decided`. A cause that cites no ruling stays unmarked, and that is the correct
     state for an entry that stays open.
 
     Args:
@@ -53,7 +53,7 @@ def unmarked_decisions(register):
 
     Returns:
         A list of messages, sorted by key. An empty list means every entry that cites a
-        decision carries the marker.
+        ruling carries the marker.
     """
     messages = []
     for key, deviation in sorted(register.items()):
@@ -81,7 +81,7 @@ def stated_marker_rule_counts(document):
         document: The module docstring of `tests.foxio_deviations`.
 
     Returns:
-        The stated count of decided entries that cite no decision, then the stated count
+        The stated count of decided entries that cite no ruling, then the stated count
         of decided entries.
 
     Raises:
@@ -104,7 +104,7 @@ def measured_marker_rule_counts(register):
         register: The register that `load_register` returns.
 
     Returns:
-        The count of decided entries that cite no decision, then the count of decided
+        The count of decided entries that cite no ruling, then the count of decided
         entries.
     """
     decided = [deviation for deviation in register.values() if deviation.decided]
@@ -341,7 +341,7 @@ class TestTheEncryptedHttpDeviations:
 
 # The capture whose omitted stream no FoxIO implementation reads. The rule that settles
 # every other #138 entry rests on a reference that holds the value, and this one has
-# none, so its cause states the decision rather than the rule.
+# none, so its cause states the ruling rather than the rule.
 TUNNEL_SCAN_KEY = "socks4-https.pcap/JA4X"
 
 
@@ -402,7 +402,7 @@ class TestTheReferenceOmitsTheStreamDeviations:
 
 
 # Changelog round 66 settled the JA4L protocol marker on 2026-08-08, and #225 holds the
-# decision. These are the 16 entries the decision reaches. The list names each key, and
+# ruling. These are the 16 entries the ruling reaches. The list names each key, and
 # `test_the_issue_owns_the_sixteen_keys_the_round_names` compares it against the entries
 # that name #225. An entry that joins or leaves #225 therefore fails that check.
 QUIC_MARKER_KEYS = (
@@ -471,8 +471,8 @@ METHOD_FILTER_KEYS = (
 # recorded, so the case passes and the register holds the key no longer.
 DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
 
-# The three entries that awaited the #215 decision on the JA4T form left the open set.
-# #215 landed the decision: the D2 entry and the D4 entry resolve to a pass and leave the
+# The three entries that awaited the #215 ruling on the JA4T form left the open set.
+# #215 landed the ruling: the D2 entry and the D4 entry resolve to a pass and leave the
 # register, and the `gre-erspan-vxlan.pcap` entry stays as a decided divergence from the
 # FoxIO Rust implementation.
 TCP_OPTION_KEYS = ()
@@ -549,10 +549,10 @@ class TestTheOpenRegisterEntries:
 class TestTheRegisterMarkerRule:
     """Check that every entry a person decided carries the marker.
 
-    The register gained 21 entries in batch 18, and 16 of them named a decision the user
+    The register gained 21 entries in batch 18, and 16 of them named a ruling the user
     had made while carrying no marker. #193 repaired the same fault earlier the same day,
     and #251 repaired it again. An unmarked entry states that nobody read it, so a cause
-    that cites a decision and carries no marker is a defect.
+    that cites a ruling and carries no marker is a defect.
     """
 
     def test_the_committed_register_hides_no_decision(self):
@@ -609,10 +609,10 @@ class TestTheRegisterMarkerRule:
         assert unmarked_decisions(register) == []
 
     def test_the_check_accepts_an_open_entry_that_names_the_issue_that_will_decide_it(self):
-        """The present tense names a decision nobody has made yet.
+        """The present tense names a ruling nobody has made yet.
 
         The three JA4T entries read `#215 decides whether ja4plus reads the raw option
-        bytes`. An entry that names the issue that will decide it names no decision.
+        bytes`. An entry that names the issue that will decide it names no ruling.
         """
         register = {"a.pcap/JA4T": Deviation(issue=215, cause="#215 decides the JA4T form.")}
         assert unmarked_decisions(register) == []
@@ -639,10 +639,10 @@ class TestTheRegisterMarkerRule:
         assert unmarked_decisions(register) == []
 
     def test_the_check_reads_a_citation_that_follows_a_denied_citation(self):
-        """A denied citation hides no decision that the same cause states later.
+        """A denied citation hides no ruling that the same cause states later.
 
         The check reads the whole cause. A cause that opens with a denial and then records
-        a decision still names the decision.
+        a ruling still names the ruling.
         """
         register = {
             "a.pcap/JA4": Deviation(
@@ -659,7 +659,7 @@ class TestTheMarkerRuleCounts:
     """Check that the marker rule states the counts the register holds.
 
     The `## The marker rule` section of `tests/foxio_deviations.py` states how many
-    decided entries cite no decision, and how many decided entries the register holds.
+    decided entries cite no ruling, and how many decided entries the register holds.
     The register moved twice under that sentence and no case caught either move. #345
     reads the two counts out of the prose and measures them against the register, so the
     next move fails here.
@@ -726,7 +726,7 @@ class TestTheMarkerRuleCounts:
 
 # The one issue whose entries record a capability this project chose not to build. #129
 # declines the decrypted values the reference reads from a Decryption Secrets Block, and
-# `ja4plus` reads no encrypted request by decision. #341 read the recorded cause of all
+# `ja4plus` reads no encrypted request by ruling. #341 read the recorded cause of all
 # 135 entries and found this one issue.
 #
 # Warning: these two constants record the state of the register today, and they carry no

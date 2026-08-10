@@ -39,7 +39,7 @@ CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 SPECIFICATION_ROW = re.compile(r"^\|\s*(\d+|TBD)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|\s*\*{0,2}#(\d+)\b")
 
 # A row that opens with no issue reference, as `| 90 | 2026-08-08 | Epic 4 shipped ...`.
-# Sixteen rows take this form, and each one records the shipment of a batch or a decision
+# Sixteen rows take this form, and each one records the shipment of a batch or a ruling
 # of the user. Such a row carries a number, so the numbered cases below still reach it.
 SPECIFICATION_ROW_NUMBER = re.compile(r"^\|\s*(\d+|TBD)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|")
 

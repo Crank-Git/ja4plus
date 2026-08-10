@@ -4,7 +4,7 @@ An empty list writes the zero sentinel `000000000000`. It never writes
 `e3b0c44298fc`, which is the truncated SHA-256 of the empty string.
 
 R8 of `docs/specs/foxio/JA4X.md` holds the reading and the contradiction the FoxIO
-image carries. Changelog round 77 of `docs/specs/spec.md` records the decision. No
+image carries. Changelog round 77 of `docs/specs/spec.md` records the ruling. No
 local vector reaches the case, so this file is the whole gate on the sentinel.
 """
 
@@ -23,7 +23,7 @@ from ja4plus.fingerprinters.ja4x import JA4XFingerprinter, generate_ja4x
 # The zero sentinel the user decided. The FoxIO Rust implementation, the Wireshark
 # dissector and `README.md` line 146 all write it.
 ZERO_SENTINEL = "000000000000"
-# The form the decision rejects. `python/ja4x.py` writes it, because it hashes the empty
+# The form the ruling rejects. `python/ja4x.py` writes it, because it hashes the empty
 # join with no guard, and the Qakbot row of `JA4X.png` records that output.
 EMPTY_STRING_HASH = "e3b0c44298fc"
 
@@ -57,7 +57,7 @@ def _certificate_with_no_extension():
 
 
 def test_the_rejected_form_is_the_truncated_hash_of_the_empty_string():
-    """Reproduce the arithmetic the decision rests on."""
+    """Reproduce the arithmetic the ruling rests on."""
     assert hashlib.sha256(b"").hexdigest()[:12] == EMPTY_STRING_HASH
 
 
