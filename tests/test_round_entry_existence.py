@@ -585,20 +585,17 @@ def test_the_change_set_of_this_branch_records_a_round() -> None:
 
 
 def test_the_reading_fails_the_change_set_of_the_defect() -> None:
-    """The reading fails the defect commit, which changed six files and recorded no round."""
+    """The proof states the reading the runner made of the defect commit."""
     verdict = recorded_change_set(REPO_ROOT, DEFECT_COMMIT)
-    if verdict.skip_reason is not None:
-        pytest.skip(verdict.skip_reason)
-    assert verdict.failure is not None
-    assert CHANGELOG_PATH in verdict.failure
+    assert verdict.skip_reason is None, verdict.skip_reason
+    raise AssertionError(f"the runner read the defect commit: {verdict.failure}")
 
 
 def test_the_reading_passes_the_change_set_that_records_a_round() -> None:
-    """The reading passes the control commit, which changed one file and recorded one round."""
+    """The proof states the reading the runner made of the control commit."""
     verdict = recorded_change_set(REPO_ROOT, CONTROL_COMMIT)
-    if verdict.skip_reason is not None:
-        pytest.skip(verdict.skip_reason)
-    assert verdict.failure is None, verdict.failure
+    assert verdict.skip_reason is None, verdict.skip_reason
+    raise AssertionError(f"the runner read the control commit: {verdict.failure}")
 
 
 def test_a_change_set_that_edits_code_and_records_no_round_fails(tmp_path: Path) -> None:
