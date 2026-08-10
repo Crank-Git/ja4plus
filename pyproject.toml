@@ -32,10 +32,31 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    # 5.0 is the first release that requires `coverage` 7.5, which carries
-    # `coverage report --format=total`. The continuous-integration floor reads that value.
-    "pytest-cov>=5.0",
+    # **The version is exact, because a `pytest` release can change which cases run.** A
+    # collection rule or a fixture rule that changes moves the suite result, and this
+    # repository reads exact case counts as invariants. #446 records the decision, and
+    # #378 records the measurement it reads.
+    #
+    # **A version change is a deliberate commit, and this line is its whole diff.**
+    #
+    # **The pin names the newest release that installs on every interpreter of the test
+    # matrix, and not the newest release.** `pytest` 9.1.1 requires Python 3.10, and
+    # `.github/workflows/test.yml` runs Python 3.9. An exact pin of 9.1.1 turns every
+    # Python 3.9 job red. 8.4.2 is the newest release that carries a wheel for Python 3.9
+    # through 3.13. Verified against https://pypi.org/pypi/pytest/9.1.1/json, retrieved
+    # 2026-08-10.
+    "pytest==8.4.2",
+    # **The version is exact, and #446 records the decision.** A `pytest-cov` release that
+    # changes the report format moves the number the coverage gate reads. **A version
+    # change is a deliberate commit, and this line is its whole diff.**
+    #
+    # **The pin stays at 5.0 or above.** 5.0 is the first release that requires `coverage`
+    # 7.5, which carries `coverage report --format=total`. The continuous-integration
+    # floor reads that value.
+    #
+    # 7.1.0 is the newest release, and it carries a wheel for Python 3.9 through 3.13.
+    # Verified against https://pypi.org/pypi/pytest-cov/7.1.0/json, retrieved 2026-08-10.
+    "pytest-cov==7.1.0",
     # **The version is exact, because a floating pin let the lint gate turn red without a
     # commit.** #297 measured 58 `F401` findings, 28 files and 82 `I001` findings against
     # `ruff` 0.14.5, and 54, 27 and 76 against 0.16.2, on an unchanged tree. A gate whose
@@ -52,15 +73,35 @@ dev = [
     #   4. The `ignore` list of `[tool.ruff.lint]` below.
     #
     # `tests/test_lint_gate_pin.py` holds this pin. It reads the installed release, every
-    # file under `.github/workflows/` and `requirements.txt`. The `dev` extra therefore
-    # stays the one place a tool reads the version from.
+    # file under `.github/workflows/` and every second dependency record this repository
+    # could carry. The `dev` extra therefore stays the one place a tool reads the version
+    # from.
     "ruff==0.16.2",
+    # **The version floats, and #446 chose that shape against the four exact pins beside
+    # it.** A pinned type checker falls behind, and a frozen release hides a defect that a
+    # later release reports. A floating formatter turns a green tree red, which is noisy
+    # and safe. A frozen type checker keeps a red tree green, which is quiet and unsafe.
+    # The user ruled the trade on 2026-08-10.
+    #
+    # **A red `mypy --strict` on an unchanged tree is information this project wants.**
+    # This file already carries the evidence that a major release moved under this
+    # project. The comment on `[tool.mypy]` below states that `python_version` stays
+    # unset, because `mypy` 2.x rejects the value `3.9`.
     "mypy>=1.11",
     # `tests/test_installed_wheel.py` runs `python -m build`, and the `installed_wheel`
     # marker is inside `pytest tests/ -m "not spec_validation"`. Every environment that
     # runs that gate therefore needs this package. Without the entry the case skips or
     # fails on the test matrix, and a case nobody runs is a check nobody has.
-    "build>=1.0",
+    #
+    # **The version is exact, and #446 records the decision.** A `build` release that
+    # changes the wheel it produces moves the result of that gate. **A version change is a
+    # deliberate commit, and this line is its whole diff.**
+    #
+    # **1.5.0 is the newest release and this pin declines it.** It requires Python 3.10,
+    # and the test matrix runs Python 3.9. 1.4.4 is the newest release that carries a
+    # wheel for Python 3.9 through 3.13. Verified against
+    # https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
+    "build==1.4.4",
 ]
 lookup = [
     "requests>=2.20.0",
