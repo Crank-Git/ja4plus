@@ -55,6 +55,11 @@
       "state": "closed",
       "title": "Decide the JA4L form: the part count, the protocol part and the duplicate server value"
     },
+    "246": {
+      "epic": false,
+      "state": "closed",
+      "title": "Write the JA4TS value that a RST produces"
+    },
     "272": {
       "epic": false,
       "state": "open",

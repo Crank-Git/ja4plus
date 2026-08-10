@@ -368,14 +368,63 @@ seven captures, so all seven baselines are usable. The value of each one differs
 | `Scripts.ja4-conn/conn.log` | none | **None.** Its JA4T and JA4TS values come from the `DLT_NULL` defect, and its JA4L values come from the Zeek rounding rule. |
 | `Scripts.ja4-ssh2/ja4ssh.log` | JA4SSH | Medium. #332 lets it hold the reference second JA4SSH value of `ssh2.pcapng`, because the register declines the Python value under #97. It corroborates two values that `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` already holds. "The rating this baseline now carries" below states the reason. |
 
-**A later issue adds them. This issue adds none.** Three things are needed to add one.
+**#515 added them on 2026-08-10, and it adopts the JA4TS values of two baselines.** The
+three things the list below asks for are all in place.
 
 1. A directory beside `tests/foxio_vectors/wireshark_expected/` and
    `tests/foxio_vectors/rust_expected/`, holding a copy of each baseline.
+   `tests/foxio_vectors/zeek_expected/` holds all seven.
 2. A precedence rule in `.claude/rules/external-apis.md`, of the shape the Wireshark and
-   Rust rules already have. The rule must state that `python/test/testdata/` outranks a
+   Rust rules already have. The rule states that `python/test/testdata/` outranks a
    Zeek baseline where both hold a value for one method on one connection.
+   `**A Zeek baseline holds a JA4TS reference value**` states the JA4TS reading.
 3. A reader for the Zeek TSV form. `tests/compare_zeek_baselines.py` holds one.
+
+### What #515 adopted, and what it left alone
+
+**#515 adopts the JA4TS values of `Scripts.ja4-conn-tls3` and `Scripts.ja4-conn-quic`,
+which is nine values.** `tests/test_foxio_zeek_ja4ts.py` compares each one, and `ja4plus`
+produces all nine.
+
+**It adopts no JA4T value, because the FoxIO Rust snapshots already cover the method.**
+`tests/test_foxio_rust_parity.py` compares 39 JA4T values against seven local snapshots,
+and `docs/specs/foxio/JA4T.md` records that comparison. A second source for a method one
+source already gates adds a maintenance cost and no measurement.
+
+**It adopts no value of `Scripts.ja4-conn`, and the table above rates that baseline
+None.** `zeek/ja4t/main.zeek:66-68` returns an empty option record when the link layer is
+not Ethernet, and the link type of `ipv6.pcapng` is `DLT_NULL`.
+`TestTheBarredBaselineRestsOnAProvenZeekDefect` measures four facts of that row, so the
+bar fails a case the moment any one of them stops holding. It reads the barred value as
+`65535_00_00_00`, the `ja4plus` value as `65535_2-1-1-4-1-3_1346_10`, the link type as 0,
+and the SYN-ACK packet as a packet that carries options.
+
+**The FoxIO Wireshark dissector corroborates the bar from outside the Zeek script.**
+`tests/foxio_vectors/wireshark_expected/ipv6.pcapng.json` holds
+`"ja4.ja4ts": ["65535_2-1-1-4-1-3_1346_10"]`, which is the `ja4plus` value and not the
+Zeek value. **A bar that rested on one implementation alone would rest on this project's
+own reading**, and this one does not.
+
+## The comparison now runs as a gate
+
+**`tests/compare_zeek_baselines.py` ran by hand until #515, so no gate read it.** The
+script needed the path to a `FoxIO-LLC/ja4` checkout, and a worktree holds none. A
+fingerprint that moved against the Zeek package therefore reached no case, and the counts
+on this page went stale between manual runs.
+
+The script now reads `tests/foxio_vectors/zeek_expected/` when it gets no path, and it
+reads a checkout when it gets one. Both forms work.
+
+```bash
+python tests/compare_zeek_baselines.py
+python tests/compare_zeek_baselines.py <path-to-FoxIO-ja4-checkout>
+```
+
+`TestTheCommittedBaselinesRunAsAGate` in `tests/test_compare_zeek_baselines.py` states the
+counts of the whole comparison, so a count that moves fails a case that names the method
+and the connection. **The run of #515 against the committed baselines reads 98 rows, 63
+matches and 35 differences, which are the three counts the run of #327 measured against a
+checkout.** The two runs therefore agree, and the committed copy reproduces the reference.
 
 **A JA4L or JA4LS value of any Zeek baseline is not usable as a vector.** The Zeek
 rounding rule and the Zeek third part both diverge from the Python reference.
@@ -425,9 +474,16 @@ snapshot and the Wireshark dissector reach 5 rows a Zeek baseline does not.
 decline that records a capability reaches no row, and a disagreement between the
 remaining sources leaves the row declined.
 
-**No baseline of the seven is adopted as a vector today**, which the section above already
-states. The exception states which source may hold a reference value, and adoption is its
-own decision.
+**#515 adopted the JA4TS values of two baselines on 2026-08-10.** The sentence below is the
+state before that, quoted rather than rewritten.
+
+> **No baseline of the seven is adopted as a vector today**, which the section above already
+> states. The exception states which source may hold a reference value, and adoption is its
+> own decision.
+
+The exception still states which source may hold a reference value, and adoption is still
+its own decision. **The JA4TS adoption rests on no exception**, because the FoxIO Python
+implementation writes no JA4TS value for any capture, so no precedence breaks.
 
 ## The Zeek reading of each method
 
