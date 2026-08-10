@@ -110,6 +110,15 @@ REFERENCE_ENVIRONMENT_VARIABLE = "ROUND_ENTRY_REFERENCE"
 # The workflow whose `test` job runs this case on the runner.
 WORKFLOW_PATH = ".github/workflows/test.yml"
 
+# The base-branch filter of that workflow. `master` and `dev` accept the batch pull request
+# and the promotion, and the two patterns accept a member pull request. #438 measured that
+# a filter of `[master, dev]` alone creates no run for a member pull request, so this case
+# reaches the `test` job on a batch pull request alone and passes there by construction.
+WORKFLOW_BASE_FILTER = 'branches: [master, dev, "batch/**", "epic/**"]'
+
+# The rule file that states which pull request creates a run.
+BATCH_GATE_RULE_PATH = ".claude/rules/batch-gate.md"
+
 # A git command that reads one ref or one index answers in well under a second. The limit
 # bars a hung command from stopping the whole gate.
 GIT_TIMEOUT_SECONDS = 60
@@ -749,6 +758,20 @@ def test_the_test_job_fetches_the_base_commit_of_a_pull_request() -> None:
     workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
     assert "BASE_SHA: ${{ github.event.pull_request.base.sha }}" in workflow
     assert 'git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"' in workflow
+
+
+def test_the_workflow_accepts_a_pull_request_into_an_integration_branch() -> None:
+    """The base-branch filter of the workflow names the two integration-branch patterns."""
+    workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
+    assert WORKFLOW_BASE_FILTER in workflow
+
+
+def test_the_batch_gate_rule_records_the_widened_filter() -> None:
+    """The batch-gate rule states which pull request creates a run, and it cites #438."""
+    rule = (REPO_ROOT / BATCH_GATE_RULE_PATH).read_text(encoding="utf-8")
+    assert "batch/**" in rule
+    assert "epic/**" in rule
+    assert "#438" in rule
 
 
 def test_the_test_job_writes_the_reference_variable() -> None:

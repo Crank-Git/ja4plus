@@ -18,11 +18,27 @@ name: Tests
 # **An absent run is not a passed run.** `gh pr checks` writes "no checks reported", which
 # refuses no merge. `.claude/rules/batch-gate.md` states the procedure, and
 # `python -m tests.batch_gate --pr <number>` holds the condition.
+#
+# **The `pull_request` filter matches the base branch of a pull request, and #438 measured
+# what that cost.** A filter of `[master, dev]` accepts the batch pull request and the
+# promotion, and it accepts no member pull request, so a pull request into an integration
+# branch created no run at all. `tests/test_round_entry_existence.py` therefore reached the
+# `test` job on a batch pull request alone, where the change set spans the whole batch and
+# every member has already recorded a round. **The check passed by construction and it
+# never refused the member pull request it exists to refuse.** The user ruled on 2026-08-10
+# that the filter widens to the integration branches.
+#
+# **The widened filter costs no run that the batch model saved.** A member commit ends with
+# a skip keyword by design, and #459 measured that such a commit creates no run for any
+# event. A member pull request therefore still creates no run, and a keyword-free head is
+# the one head that now starts one.
 on:
   push:
     branches: [master, dev]
   pull_request:
-    branches: [master, dev]
+    # `master` and `dev` accept the batch pull request and the promotion. `batch/**` and
+    # `epic/**` accept a member pull request, which the paragraph above explains.
+    branches: [master, dev, "batch/**", "epic/**"]
   workflow_dispatch:
 
 env:
