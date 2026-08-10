@@ -136,6 +136,33 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      - name: Install the documentation extra on one job of the matrix
+        # `tests/test_documentation_site.py` holds `_slug` against
+        # `pymdownx.slugs.slugify`, which the `docs` extra installs and the `dev` extra does
+        # not. The census of #524 read that case as a class c site: it skipped on all six
+        # jobs and no limit of the runner explained it. #529 removed the finding.
+        #
+        # **The extra reaches one job and not six.** `griffe` 2.1.0 requires Python 3.10 and
+        # the matrix runs Python 3.9, so the Python 3.9 job can never install this extra.
+        # The skip gate reads the union of the six reports, so one run of the case is the
+        # whole requirement, and five more installs buy nothing. A read of 2026-08-10
+        # measured 28 packages and 125476 KB for this step, against 197200 KB for the `dev`
+        # extra alone.
+        #
+        # **The step names one job, so the matrix keeps its six check names.** A matrix
+        # variable would reach the job name, and the branch protection rule of `dev` holds
+        # each name of the eleven required contexts.
+        #
+        # **`.github/workflows/docs-build.yml` runs no case of `tests/`, and it stays that
+        # way.** That job measures the committed pins in an empty environment, it filters
+        # four paths, and the skip gate downloads the artifacts of this workflow alone.
+        #
+        # `matrix` reaches the `if` key of a step. Verified against
+        # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts
+        # (retrieved 2026-08-10).
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        run: pip install -e ".[docs]"
+
       - name: Run tests
         # The conformance suite runs in the `conformance` job, because a suite that
         # holds registered deviations reports no useful line coverage.

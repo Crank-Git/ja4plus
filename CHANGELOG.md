@@ -920,6 +920,38 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The documentation slug case runs on one job of the matrix** (#529). Round TBD. **The
+  census of #524 read `tests/test_documentation_site.py:222` as a class c site**: the case
+  skipped on all six jobs of `.github/workflows/test.yml`, and no limit of the runner
+  explained it. Run https://github.com/Crank-Git/ja4plus/actions/runs/31408763259 holds the
+  measurement, and the report named the reason: the `docs` extra installs pymdownx, and
+  `dev` does not. **The case holds `_slug` against `pymdownx.slugs.slugify` on every published heading**, and
+  a slug that moves breaks every link into that anchor. The `test` job gains the step
+  `Install the documentation extra on one job of the matrix`, which runs
+  `pip install -e ".[docs]"` under
+  `if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'`. **The extra reaches
+  one job and not six.** `griffe` 2.1.0 requires Python 3.10 and the matrix runs Python 3.9,
+  so the Python 3.9 job can never install this extra, and an install on all six jobs is no
+  reading at all. The skip gate reads the union of the six reports, so one run of the case
+  is the whole requirement. A read of 2026-08-10 measured the step at 28 packages and
+  125476 KB, against 197200 KB for the `dev` extra alone, so five more installs would buy
+  627380 KB and nothing else. **The two extras resolve together**, which the same read
+  measured: `pip install -e ".[dev]"` and then `pip install -e ".[docs]"` reported no
+  conflict, and the unit suite passed in that environment. **The step names one job rather
+  than a matrix variable, because a matrix variable reaches the job name.** The branch
+  protection rule of `dev` holds each of eleven required check names, and a renamed job would
+  meet no required check. **The third reading runs the case in
+  `.github/workflows/docs-build.yml`, and this round declines it.** That workflow filters
+  four paths, so a batch that touches no documentation path creates no run of it, and the
+  case would then run sometimes rather than always. The skip gate downloads the
+  `test-results-*` artifacts of its own run, so a case that runs in another workflow leaves
+  the gate naming it. `tests/universal_skips.json` loses its entry for the case, and two new
+  cases of `tests/test_documentation_site.py` hold the repair:
+  `test_one_job_of_the_test_matrix_installs_the_documentation_extra` reads the step and its
+  condition, and `test_the_skip_allowlist_holds_no_entry_for_the_slug_case` reads the
+  allowlist. `FR-pre-release-validation-38a` states the requirement. No file under
+  `ja4plus/` changes and no fingerprint moves.
+
 - **Every argument parser of the repository states a description that `python -OO` does not
   remove** (#513). Round TBD. **`python -OO` sets `__doc__` to None on every module**, so a
   parser that reads `__doc__.splitlines()[0]` for its description raises
