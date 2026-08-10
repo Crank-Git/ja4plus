@@ -216,6 +216,26 @@ Build the cover from a measurement and not from a file name.
    module-level constant, so a cover built on import reach names every file.
 3. Take the test files that run a mutation line, greatest lines for each second first,
    until the set runs every reachable mutation line.
+4. Add the reader of the module body. Run `python -m tests.mutation_cover <module>` and
+   put the test file it names in the cover.
+
+**Step 2 leaves every mutation of the module body without a reader, so step 4 names one
+by the value and never by the cost.** `tests/mutation_cover.py` reads the names the module
+body binds and the identifier strings those statements build. It then names the test file
+whose own source holds the most of those tokens. A file that reads the value kills a
+mutation of the value, and the cheapest file reads no value at all.
+
+**#433 measured the repair on `ja4plus/__init__.py`, at commit `00a0c42`, over all 32
+mutations of the module.** The cost rule alone builds the cover `tests/test_parity.py`, and
+that sweep reads 1 killed and 31 survived. Step 4 adds the reader
+`tests/test_public_interface.py`, and one sweep against that file alone costs 39.9 seconds.
+The repaired cover reads 26 killed and 6 survived in 48.0 seconds, and it leaves no
+survivor on the 25 entries of `__all__`.
+
+**State this fourth limit beside the three below.** The reader kills a mutation of the
+value it reads, and it kills no other mutation of the module body. The three survivors of
+the module body above are `__version__`, `__author__` and `__license__`, which
+`tests/test_public_interface.py` names and never compares against a value.
 
 **State these three limits wherever the result is read.**
 
