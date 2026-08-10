@@ -608,6 +608,30 @@ holds every breaking change of this record against a row of that page.
   reads 151, and `test_every_measurement_reads_at_least_one_file` requires one file from each
   measurement. The `Terms` table of `docs/specs/spec.md` gains `end state`, `built criterion`
   and `pending criterion`. No file under `ja4plus/` changes and no fingerprint moves.
+
+- **The prose under `tests/` counts fingerprinters where it counted methods** (#450). Round
+  TBD. The word `method` carried two meanings and the two counts differ. FoxIO publishes
+  twelve methods and this project implements eleven. The processor drives ten
+  fingerprinters, because `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`.
+  **The user chose the prose repair and declined the rename.** `ProcessorStats.method`
+  keeps its name, its docstring and every value it holds. It is a published output field,
+  so a rename of it is a breaking change and the user owns that decision. **The ten places
+  the issue body names are all present, and one line number moved.**
+  `tests/test_thread_safety.py:372` reads 373 today. Ten docstrings and comments across six
+  files under `tests/` now count fingerprinters. The four docstrings and comments of
+  `ja4plus/watch.py` take the same repair, under the ruling the issue thread records.
+  **`tests/test_documented_method_count.py` now reads Python source, and it found three
+  more places.** `python_prose` extracts every comment with `tokenize` and every docstring
+  with `ast`. **A docstring of one line sits inside quotation marks.** `_unquoted` drops the
+  whole of it, so a search of the raw source read nothing in it. Three of the ten places
+  hold that shape. A case fixture reaches no case, because it is a string literal and no
+  docstring. A
+  case runs over each of the 166 Python files under `tests/`, and it failed on seven of
+  them before the repair. `PYTHON_SOURCE_FLOOR` refuses a corpus that shrank, because an
+  aggregate over an empty set passes. The `Terms` table of `docs/specs/spec.md` gains
+  `method name`, and the `method` row and the `fingerprinter` row now state the two counts.
+  The eight places that remain under `ja4plus/` are #484. **No fingerprint moves and the
+  conformance counts do not change.**
 - **The fingerprint move count of the migration page states the row count of its own table**
   (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
   rows. #395 measured the difference and filed the issue rather than repair it. **The count

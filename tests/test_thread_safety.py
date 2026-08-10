@@ -370,7 +370,7 @@ class TestTheThreadSafeArgument:
             assert isinstance(fingerprinter.lock, type(threading.RLock())), name
 
     def test_each_fingerprinter_holds_its_own_lock(self):
-        """Ten locks let ten threads work at once on ten methods."""
+        """Ten locks let ten threads work at once on ten fingerprinters."""
         processor = Processor()
         locks = [id(fingerprinter.lock) for fingerprinter in processor.fingerprinters.values()]
         assert len(set(locks)) == 10

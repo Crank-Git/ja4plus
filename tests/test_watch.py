@@ -61,7 +61,7 @@ def tcp_packet(src_ip="10.0.0.1", src_port=1024, dst_ip="10.0.0.2", dst_port=443
 class CleanupRecorder:
     """A stand-in for `Processor` that records every `cleanup_connection` call.
 
-    The real processor drops the state of ten methods, and a test that reads its tables
+    The real processor drops the state of ten fingerprinters, and a test that reads its tables
     measures the drop rather than the call. This recorder measures the call itself.
 
     Attributes:
@@ -170,7 +170,7 @@ class TheMonitorEvictsAnIdleConnection(unittest.TestCase):
 
 
 def stored_entries(processor):
-    """Return the count of entries the state tables of all ten methods hold.
+    """Return the count of entries the state tables of all ten fingerprinters hold.
 
     Args:
         processor: The processor the monitor drives.
@@ -182,10 +182,10 @@ def stored_entries(processor):
 
 
 class TheEvictionDropsThePerMethodState(unittest.TestCase):
-    """The eviction reaches the state tables of the ten methods, and not the key alone.
+    """The eviction reaches the state tables of the ten fingerprinters, and not the key alone.
 
     An eviction that drops the entry of the connection table and leaves the state of the
-    ten methods is the leak wearing a bound as a disguise. The two tests below measure
+    ten fingerprinters is the leak wearing a bound as a disguise. The two tests below measure
     the same two packets against two bounds, so the second is the control of the first.
     """
 
@@ -225,7 +225,7 @@ class TheMonitorReportsEveryPacket(unittest.TestCase):
         self.assertEqual(seen, [first, second])
 
     def test_the_monitor_reports_a_packet_that_names_no_connection(self):
-        """A packet the key reader refuses still reaches the ten methods."""
+        """A packet the key reader refuses still reaches the ten fingerprinters."""
         seen = []
         monitor = Monitor(CleanupRecorder(), seen.append)
         packet = Ether()
