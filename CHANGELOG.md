@@ -526,7 +526,7 @@ holds every breaking change of this record against a row of that page.
   proved the batch would then not be a run of the head. `python -m tests.batch_gate --pr
   <number>` stays in the procedure, because it reads the same condition before the merge
   rather than at it. **A case reads the claim against the provider, because prose carries no
-  other gate.** New file `tests/test_batch_gate_protection_rule.py` holds 62 cases.
+  other gate.** New file `tests/test_batch_gate_protection_rule.py` holds 93 cases.
   `protection_reading` runs `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, and it
   returns nothing where the host holds no `gh`, where the command exits non-zero, or where
   the body is no JSON object. **Where the call cannot be made a live case skips, and it does
@@ -544,7 +544,15 @@ holds every breaking change of this record against a row of that page.
   section at the next heading of any level, so a `###` subsection cut the list of check names
   out of the body. It then read `#468 turned the rule on` as a first-level heading and
   returned one paragraph, because a heading needs a space after its `#` characters and an
-  issue reference does not. Three cases now hold the reader in both directions. **Two
+  issue reference does not. Three cases now hold the reader in both directions. **A
+  self-review drove the sweep with fifteen candidate sentences and eight reached no match**,
+  among them `The repository lacks a required status check.`, ``The branch `dev` is
+  unprotected.`` and `Nothing at the provider refuses an ungated merge.` The pattern now
+  reads three shapes: a check term paired with a negation, a sentence that states the
+  provider refuses nothing, and a sentence that calls the branch unprotected. Nine evasions
+  and four controls became cases, and the four controls are true sentences of the repaired
+  file that the widened pattern reports nowhere. Against the unrepaired file the sweep now
+  reports two statements where it reported one. **Two
   mutations prove the live cases discriminate.** Adding `build` to the listed names and
   writing `` `strict` reads `true` `` killed five cases, among them both provider cases, and
   deleting the superseded record killed two. Each mutation was restored. **No sentence of
