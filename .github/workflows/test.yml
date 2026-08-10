@@ -144,7 +144,7 @@ jobs:
         # event.** `actions/checkout` writes one remote-tracking ref, which is the ref the
         # event names. A push to `dev` therefore holds `origin/dev` and `git merge-base`
         # answers, and a push to `master` holds `origin/master` alone and it answers
-        # nothing. **A promotion to `master` is a push of the second kind**, so a condition
+        # nothing. **A promotion to `master` is a push of the second kind.** A condition
         # that named the manual event alone would leave the release run red. The two `if`
         # conditions now cover every event this file accepts.
         #
@@ -154,8 +154,8 @@ jobs:
         # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28 (retrieved
         # 2026-08-10).
         #
-        # The read names `dev`, which is the branch `REFERENCE_BRANCHES` reads first, so the
-        # runner and the local gate read the change set against the same commit.
+        # The read names `dev`, which is the branch `REFERENCE_BRANCHES` reads first. The
+        # runner and the local gate therefore read the change set against the same commit.
         #
         # **This step declines `continue-on-error` for the reason #438 states.** A failed
         # read leaves the variable empty and the case skips, and the `skip-gate` job then

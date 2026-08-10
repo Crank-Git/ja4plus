@@ -290,10 +290,10 @@ https://github.com/Crank-Git/ja4plus/actions/runs/31421263768 reads `event=workf
 and `conclusion=failure`, its `skip-gate` job reads `failure`, and every other job of that
 run reads `success`.
 `tests.test_round_entry_existence::test_the_change_set_of_this_branch_records_a_round`
-skipped on all six jobs of the matrix, because `ROUND_ENTRY_REFERENCE` stayed empty and the
-clone of depth 1 holds no `origin/dev` ref for `git merge-base` to read. **The recovery path
-of the section above therefore produced a red run on every branch**, and a reader could not
-tell a real failure from that one.
+skipped on all six jobs of the matrix. `ROUND_ENTRY_REFERENCE` stayed empty, and the clone
+of depth 1 holds no `origin/dev` ref for `git merge-base` to read. **The recovery path of
+the section above therefore produced a red run on every branch.** A reader could not tell a
+real failure from that one.
 
 **The gate is right about what it measures and wrong about what it concludes.** A case that
 a given event does not select is no finding of that event. #541 took the reading that makes
@@ -318,8 +318,8 @@ MERGE_BASE=$(gh api "repos/$GITHUB_REPOSITORY/compare/dev...$GITHUB_SHA" --jq .m
 **The provider reads the merge base, because the clone of depth 1 holds no history.** The
 basehead form is `BASE...HEAD` and the response holds `merge_base_commit`. Verified against
 https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28 (retrieved
-2026-08-10). The read names `dev`, which is the first ref the local gate reads, so the
-runner and a checkout read the change set against the same commit.
+2026-08-10). The read names `dev`, which is the first ref the local gate reads. The runner
+and a checkout therefore read the change set against the same commit.
 
 **Warning: a push to `master` carries the same defect, so the condition names the pull
 request and never the manual event.** `actions/checkout` writes the one remote-tracking ref

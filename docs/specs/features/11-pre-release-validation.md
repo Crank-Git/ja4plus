@@ -265,8 +265,8 @@ directions.
 
 FR-pre-release-validation-41 — The `test` job of `.github/workflows/test.yml` names a
 reference commit on every run that carries no pull request. It reads the merge base of the
-checked-out commit and `dev` from the provider, so the change-set case runs on a manual
-event and on a push as well as on a pull-request event.
+checked-out commit and `dev` from the provider. The change-set case therefore runs on a
+manual event and on a push, as well as on a pull-request event.
 
 ## User flows
 

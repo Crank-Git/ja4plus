@@ -50,12 +50,13 @@ raises it to 18728 KB, which is 3884 KB, and that cost rises with every commit t
 makes.
 
 **A manual run carries no pull request, and #541 measured what that cost.** The variable
-stayed empty, `git merge-base` found no `origin/dev` ref in the clone of depth 1, and this
-case skipped on all six jobs of the matrix. The `skip-gate` job then failed every manual
-run, which is the recovery path `.claude/rules/batch-gate.md` names. **A case that a given
-event does not select is no finding of that event**, so the `test` job now names a
-reference commit wherever the event carries no pull request. It reads the merge base of
-`GITHUB_SHA` and `dev` from the provider, because the clone holds no history for
+stayed empty, and `git merge-base` found no `origin/dev` ref in the clone of depth 1. This
+case then skipped on all six jobs of the matrix. The `skip-gate` job failed every manual
+run, which is the recovery path `.claude/rules/batch-gate.md` names.
+
+**A case that a given event does not select is no finding of that event.** The `test` job
+now names a reference commit wherever the event carries no pull request. It reads the merge
+base of `GITHUB_SHA` and `dev` from the provider, because the clone holds no history for
 `git merge-base` to read.
 
 **A push reaches that step too, and a push to `master` needs it.** `actions/checkout`
