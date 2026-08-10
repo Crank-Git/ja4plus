@@ -256,7 +256,7 @@ holds every breaking change of this record against a row of that page.
   143 skipped and 134 xfailed, and the `installed_wheel` marker reports 43 passed. Coverage
   holds at 94% with 4292 statements and 273 misses.
 
-- **The divergence register records the JA4 ALPN ruling** (#522). Round TBD. **The user
+- **The divergence register records the JA4 ALPN ruling** (#522). Round 195. **The user
   ruled on 2026-08-10 that the form of `ja4plus` stands.** A first ALPN value that is not
   alphanumeric writes `99`, and a first ALPN value of one byte writes `hh`. The conformance
   audit of the same date named this the one condition where `ja4plus` matches no FoxIO
@@ -857,7 +857,7 @@ holds every breaking change of this record against a row of that page.
   macOS host. **Coverage holds at 94%**, the total misses hold at 273 while the statement
   count rises from 4292 to 4316, and `ja4plus/watch.py` holds 99%.
 
-- **A case that skips on every job of the matrix fails the run** (#524). Round TBD. **A
+- **A case that skips on every job of the matrix fails the run** (#524). Round 197. **A
   skip is not a pass, and a case that runs nowhere is not a case.** #438 measured that
   shape: `tests/test_round_entry_existence.py` reported a skip on every job of
   `.github/workflows/test.yml` from the day it was written, and every job stayed green
@@ -921,7 +921,7 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **The branch-protection claims of the batch-gate rule reach a case** (#511). Round
-  TBD. `.claude/rules/batch-gate.md` states that each of the eleven required contexts
+  194. `.claude/rules/batch-gate.md` states that each of the eleven required contexts
   carries `app_id` 15368, and `CHANGELOG.md` and the round 174 row of `docs/specs/spec.md`
   state it too. **No case read the number.** `provider_contexts` reads
   `required_status_checks.contexts`, which holds the context names alone, and the provider
@@ -1120,7 +1120,7 @@ holds every breaking change of this record against a row of that page.
   after 150 seconds. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **JA4TS reaches a FoxIO reference value** (#515). Round
-  TBD. The conformance audit of 2026-08-10 read JA4TS as the one method of twelve that
+  196. The conformance audit of 2026-08-10 read JA4TS as the one method of twelve that
   reached no FoxIO-produced expected output. It stood on transcribed prose of a file FoxIO
   deleted, plus a capture this project writes itself, and a self-generated capture proves
   the implementation against itself. **The finding that outranks the rest of this round is
