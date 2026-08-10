@@ -2,9 +2,9 @@
 
 `ja4plus/__init__.py:101` declares the version of this project, and `FR-release-1` puts
 that number in one place. **A page that calls the declared version unreleased is stale on
-the day the bump lands**, and #545 records the two pages that held such a sentence before
-this round. These cases read the declaration and they hold the prose against it, so a
-later bump fails here rather than leaving a reader with a false sentence.
+the day the bump lands.** #545 records the two pages that held such a sentence before this
+round. These cases read the declaration and they hold the prose against it. A later bump
+therefore fails here, and it leaves no reader with a false sentence.
 
 ## What a case reads
 
@@ -39,9 +39,9 @@ bump to a version the changelog also records adds that version to the set.
 
 **Warning: a line that opens and closes a code span with three backticks is no fence.**
 `docs/specs/foxio/JA4X.md:235` holds such a line, and #533 measured what a naive reader
-did with it: the reader took the line for a fence opener, shifted every fence pair below
-it, and reported nine instances that no page holds. CommonMark states the rule this reader
-follows. **An info string carries no backtick**, so a line that holds a second run of three
+did with it. That reader took the line for a fence opener and it shifted every fence pair
+below it. It then reported nine instances that no page holds. CommonMark states the rule
+this reader follows. **An info string carries no backtick**, so a line that holds a second run of three
 backticks opens no fence. `test_the_reader_reads_an_inline_code_span_as_no_fence` holds
 the JA4X shape against it.
 
@@ -130,7 +130,7 @@ def is_fence_delimiter(line: str) -> bool:
     """Return True where the line opens or closes a fenced code block.
 
     A line that holds a second run of three backticks carries an info string with a
-    backtick, which CommonMark forbids, so such a line is a code span and no fence.
+    backtick. CommonMark forbids that, so such a line is a code span and no fence.
 
     Args:
         line: One line of a Markdown page.
