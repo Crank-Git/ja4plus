@@ -73,6 +73,31 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round TBD.
+  **Three FoxIO records at the pinned commit
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` name a different set of methods.**
+  `License FAQ.md:5` names twelve, the FoxIO `README.md:293` names nine, and `LICENSE:3`
+  names thirteen. `LICENSE:3` spells the scanner `JA4SScan`, and it names a `JA4E` that
+  neither other record names. **This round read all three lines again**, from a checkout
+  outside this repository, because #388 measured them on 2026-08-09. All three counts
+  hold. **No statement of equality with FoxIO's list can be true**, so the subset wording
+  of `README.md` stands and the file does not change. **The user ruled on 2026-08-10.**
+  The register carries the record, because a measurement that lives only in a closed issue
+  is a measurement the next reader repeats. **This is a candidate reference defect outside
+  the two shapes `.claude/rules/conformance.md` declines**, because it moves no
+  fingerprint. That rule sends such a case to the user. **The register quotes each
+  FoxIO line verbatim**, because `.claude/rules/ste.md` bars a rewording of text copied
+  from the FoxIO material. **A second row records `JA4Scan` as not implemented, with no
+  decision taken.** That is the true state, and the row writes no reason for a decline
+  because no round holds one. **JA4TScan keeps its existing entry** under `Non-goals`.
+  `README.md:42` states that it sends crafted packets, so it reaches a network the
+  operator did not capture. That decision is unrelated to the license. New file
+  `tests/test_foxio_license_register.py` holds seven cases against the two rows, and all
+  seven failed before the rows landed. **A floor refuses a reader that found no row**,
+  because an aggregate over an empty set passes. One case bars a decline phrase from the
+  `JA4Scan` row, so a later writer cannot turn a recorded absence into a recorded
+  decision. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **A change set that records no round fails a case** (#429). Round 156. New file
   `tests/test_round_entry_existence.py` reads the change set of the branch and requires one
   new round entry in `CHANGELOG.md` and one new Changelog row in `docs/specs/spec.md`. The
