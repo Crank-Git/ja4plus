@@ -26,8 +26,9 @@ WHEEL_TESTS = REPOSITORY_ROOT / "tests" / "test_installed_wheel.py"
 
 # The case count of `tests/test_installed_wheel.py` on 2026-08-09. A reader that finds
 # nothing passes every count case on zero, so the cases below hold this floor. #408 wrote
-# seven cases against the wheel, and #409 added nine against the source distribution.
-EXPECTED_CASE_COUNT = 16
+# seven cases against the wheel, #409 added nine against the source distribution, and #455
+# added three that read the entry list of each artifact.
+EXPECTED_CASE_COUNT = 19
 
 
 def _collect(arguments: List[str]) -> str:

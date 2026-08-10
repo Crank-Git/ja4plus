@@ -55,6 +55,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import zipfile
 
 import pytest
 
@@ -87,6 +88,15 @@ NO_BINARY_ARGUMENTS = ("--no-binary", "ja4plus")
 
 # The mapping file, below the root of the installed package and below the repository root.
 MAPPING_FILE_PARTS = ("data", "ja4plus-mapping.csv")
+
+# The documentation tree. `FR-release-11b` and `docs/specs/features/09-release.md:156`
+# require the wheel to carry no file under this prefix. #455 measured 96 wheel entries on
+# the base of batch #460, and 56 of them lay under it.
+DOCUMENTATION_PREFIX = "docs/"
+
+# The module every wheel of this project carries. **An assertion over an empty entry list
+# passes**, so each case that reads the entry list holds this name against it first.
+PACKAGE_MODULE = "ja4plus/__init__.py"
 
 # The member the source distribution carries for the deviation register. `tar -tzf` writes
 # every member under the `<name>-<version>/` prefix, and this reader matches the tail.
@@ -417,6 +427,22 @@ def sdist_member_names(sdist: pathlib.Path) -> list[str]:
         return [name.split("/", 1)[1] for name in archive.getnames() if "/" in name]
 
 
+def wheel_entry_names(wheel: pathlib.Path) -> list[str]:
+    """Return the entry names of one wheel.
+
+    `unzip -l <the wheel>` writes the same listing. This reader opens the archive through
+    `zipfile`, so the case needs no `unzip` program on the host.
+
+    Args:
+        wheel: The wheel to read.
+
+    Returns:
+        Every entry name, as the archive records it.
+    """
+    with zipfile.ZipFile(wheel) as archive:
+        return archive.namelist()
+
+
 def declared_version() -> str:
     """Return the version that the `[project]` block of `pyproject.toml` declares.
 
@@ -625,6 +651,44 @@ def test_the_lookup_reports_an_empty_database_without_the_mapping_file(
     )
 
 
+def test_the_wheel_carries_no_file_under_the_documentation_tree(
+    artifacts: dict[str, pathlib.Path],
+) -> None:
+    """`FR-release-11b`. The wheel lists no entry under `docs/`.
+
+    A user who installs the wheel receives a library. The design material of
+    `docs/specs/` is not part of that library, and `docs` is not an importable name this
+    project publishes.
+
+    Warning: this case reads the artifact and never the working tree. The defect #455
+    repairs lives in what the build includes, so a reader of `docs/` on disk cannot see it.
+    """
+    names = wheel_entry_names(artifacts["wheel"])
+    assert PACKAGE_MODULE in names, (
+        f"the wheel lists no {PACKAGE_MODULE}, and it lists {len(names)} entries, so this "
+        "case reads no wheel that a user could install"
+    )
+    carried = sorted(name for name in names if name.startswith(DOCUMENTATION_PREFIX))
+    assert not carried, (
+        f"the wheel carries {len(carried)} entries under {DOCUMENTATION_PREFIX}, and it "
+        f"lists {len(names)} entries: {carried}"
+    )
+
+
+def test_the_wheel_carries_the_mapping_file(artifacts: dict[str, pathlib.Path]) -> None:
+    """`FR-release-10`. The wheel lists the bundled mapping file.
+
+    The lookup reads this file at run time. An exclusion rule that reaches it produces a
+    package that imports and then reports an empty database, so this case stands beside
+    the exclusion of the documentation tree.
+    """
+    names = wheel_entry_names(artifacts["wheel"])
+    entry = "ja4plus/" + "/".join(MAPPING_FILE_PARTS)
+    assert entry in names, (
+        f"the wheel lists no {entry}, and it lists {len(names)} entries: {sorted(names)}"
+    )
+
+
 def test_pip_built_the_package_from_the_source_distribution(
     sdist_environment: CleanEnvironment, artifacts: dict[str, pathlib.Path]
 ) -> None:
@@ -786,6 +850,24 @@ def test_the_lookup_of_the_source_distribution_reports_nothing_without_the_mappi
     assert after.split() == ["0", "False"], (
         f"the lookup reported {after.strip()!r} without the mapping file, and an empty "
         "database reports '0 False'"
+    )
+
+
+def test_the_source_distribution_carries_the_documentation_tree(
+    artifacts: dict[str, pathlib.Path],
+) -> None:
+    """`FR-release-11c`. The source distribution lists the documentation tree.
+
+    A source distribution is the whole project at one revision. A user who builds from it
+    reads the design material and runs the gates, so the exclusion of #455 reaches the
+    wheel alone. This case holds that split, and a rule that removed `docs/` from both
+    artifacts fails it.
+    """
+    members = sdist_member_names(artifacts["sdist"])
+    carried = [name for name in members if name.startswith(DOCUMENTATION_PREFIX)]
+    assert carried, (
+        f"the source distribution lists no member under {DOCUMENTATION_PREFIX}, and it "
+        f"holds {len(members)} members"
     )
 
 
