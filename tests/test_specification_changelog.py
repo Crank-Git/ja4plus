@@ -11,8 +11,8 @@ the order. These cases hold the repair, so that a later duplicate fails here rat
 in a review.
 
 **#482 found a shape that the row-count rule cannot see.** `row count == highest round`
-reads a table that carries 168 twice and 170 nowhere as correct, because the count and
-the maximum both still read right under the wrong pairing.
+reads a table that carries 168 twice and 170 nowhere as correct. The count and the
+maximum both still read right under the wrong pairing.
 `test_the_row_count_rule_passes_on_a_table_that_repeats_a_round` records that
 measurement, and `_contiguity_failures` is the reader that reports the shape.
 

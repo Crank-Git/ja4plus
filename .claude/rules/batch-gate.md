@@ -58,20 +58,21 @@ AssertionError: the Changelog holds 169 rows and its highest round is 173
 assert 169 == 173
 ```
 
-**A project manager who assigned 168 and 169 on the second branch would have written two
-rows numbered 168 and two numbered 169.** That state merges cleanly, and the rule above
-removes it rather than reports it.
+**A project manager who assigns 168 and 169 on the second branch writes two rows numbered
+168 and two numbered 169.** That state merges cleanly, and the rule above removes it
+rather than reports it.
 
 **Warning: a wrong pairing survives the row-count rule, so read the contiguity case
 instead.** `row count == highest round` reads a table that carries 168 twice and 170
-nowhere as correct, because the count and the maximum both still read right.
+nowhere as correct. The count and the maximum both still read right under the wrong
+pairing.
 `tests/test_specification_changelog.py::test_the_changelog_assigns_every_round_from_one_to_the_row_count`
 requires the rounds 1 to the row count, each on one row, and
 `test_the_row_count_rule_passes_on_a_table_that_repeats_a_round` holds the measurement of
 the older rule.
 
-**This project declines one integration branch at a time.** That order also removes the
-race, and it costs the concurrency the batch model exists to provide. #482 records the
+**One integration branch at a time also removes the race, and this project declines that
+order.** It costs the concurrency the batch model exists to provide. #482 records the
 decline.
 
 ## Never write a skip keyword in a head commit message
