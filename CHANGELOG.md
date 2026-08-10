@@ -1144,6 +1144,48 @@ holds every breaking change of this record against a row of that page.
   `.claude/rules/conformance.md` and the acceptance list of
   `docs/specs/features/11-pre-release-validation.md` state the same reading. No file under
   `ja4plus/` changes and no fingerprint moves.
+- **A state table reads the clock of the thread that touches it** (#461). Round 171.
+  Eight sharded threads wrote a JA4TS value that one thread does not write, and the
+  reading is
+  `At index 10 diff: '64240_2-1-1-4-1-3_1460_7' != '64240_2-1-1-4-1-3_1460_7_0'` on
+  `test (macos-latest, 3.12)`, run `31342645430`, merge commit `d94d8c1` of batch #445.
+  The sharded value lost part e, the delay list of the SYN-ACK retransmissions.
+  **`BoundedStateTable` held one clock for every thread, and the age pass read every
+  entry.** `SynAckTracker.times` runs one pass on every packet and holds a maximum age of
+  120 seconds. On the concatenated timeline of `TestTheConcurrencyContract`, packet 578
+  opens `('184.150.157.177', 80, '172.16.225.48', 57380)` at 19.2378 seconds and packet
+  581 retransmits the SYN-ACK 5.8 milliseconds later. Packet 1773 belongs to another
+  connection and another shard, and it stands at 151.678 seconds. It announced its
+  timestamp to the shared clock, the pass read 132.44 seconds of age, and it evicted the
+  connection. Packet 581 then found no entry, `SynAckTracker.record` returned an empty
+  delay list, and `_part_e` wrote an empty string. **The reproduction is three packets on
+  two threads and it holds no race**, so it fails every run rather than one run in four.
+  **The repair scopes the clock and the pass to the thread.** `on_packet` writes the
+  timestamp into a `threading.local`, each entry carries the identifier of the thread that
+  read it last, and `evict_aged` passes over every entry of another thread. One thread
+  owns every entry it stores, so a caller that runs one thread reads the pass this project
+  always ran. **The entry of a thread that ends now stays until the entry count bound
+  removes it**, and that bound is the one that holds the memory. **One wall clock serves
+  every thread, so the pass still evicts an entry that the wall clock dated, whichever
+  thread stored it.** `JA4DBClient` builds the one table that reads the wall clock, and
+  its callers share every entry under one lock rather than owning whole connections. A
+  self-review found that a pass scoped by thread alone would age out nothing there.
+  `FR-concurrency-safety-8`, `FR-concurrency-safety-8a`, `FR-concurrency-safety-8b` and
+  `FR-concurrency-safety-8c` state the rule. **`TestTheConcurrencyContract` passed 50 of
+  50 consecutive runs on macOS**, against the one failure in four runs the issue records.
+  **Nine new cases hold the repair and five live mutations prove them.** Every run cleared
+  every `__pycache__` outside `.venv/` and set `PYTHONDONTWRITEBYTECODE=1`, and
+  `inspect.getsource` read the loaded source in both directions. The shard filter of
+  `evict_aged` removed reads 1 occurrence clean and 0 mutated, and it kills 2 cases. The
+  thread clock of `on_packet` removed kills 1 case. The owner write of `__contains__`
+  removed kills 1 case, and the owner write of `__getitem__` removed kills 1 case. The
+  wall-clock exemption of the pass removed kills 1 case. Every case passes clean and after
+  the restore. **No file under `ja4plus/fingerprinters/` changes and no fingerprint
+  moves.** A
+  replay of all 38 committed captures produced 783 values, and the SHA-256 of that output
+  is `04014a1d7a1863bc3244e1348ce61b5f39f9805a988310af657a6a931a2d8907` before the change
+  and after it. The conformance suite reports 1532 passed, 143 skipped and 134 xfailed
+  against 134 register keys.
 - **The mutation sweep builds no mutation inside a type annotation** (#431). Round 168.
   `tests/mutation_sweep.py` built one mutation for each `BinOp` node whose operator sits in
   `BINOP_SWAP`, and `ast.BitOr` is one of them. A type annotation written `str | None` holds
