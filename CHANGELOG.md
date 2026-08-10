@@ -987,6 +987,52 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The release skill reads the version from `ja4plus/__init__.py`** (#512). Round TBD.
+  **Step 1 of `.claude/skills/release/SKILL.md` named `pyproject.toml` as the one version
+  declaration, and it said that `ja4plus/__init__.py` reads the value with
+  `importlib.metadata`.** #67 reversed both directions two rounds earlier: the declaration
+  is the plain string assignment at `ja4plus/__init__.py:101`, and `pyproject.toml` names
+  `version` in its `dynamic` list and reads it from `ja4plus.__version__`. **A maintainer
+  who followed step 1 edited a file that declares no version**, so the release shipped the
+  old number. Step 2 held the same defect in a second form: it read the version out of
+  `pyproject.toml` with `tomllib`, which the `[project]` table no longer holds, and
+  `tomllib` reaches no Python 3.9 job of the matrix. Step 1 now names the file and the
+  line, states that a bump edits that line alone, and carries two rules a bump needs.
+  **`setuptools` reads the value from the syntax tree of the module**, so the assignment
+  stays a plain string, because #67 measured that a computed value makes a build import
+  the package and every dependency it loads and that failure appears at release time. **A
+  bump needs a matching `## [<version>]` section of `CHANGELOG.md`**, which
+  `tests/release_body.py` reads for the release body, so an absent section fails step 5.
+  Step 2 now reads `package_version`, `version_disagreement` and `changelog_disagreement`
+  of `tests/version_gate.py`, which is the reader `tests/test_version_gate.py` holds cases
+  against, so the manual check and continuous integration read one condition. **A skill
+  file carried no case until this round, and that is why the defect survived two rounds.**
+  `tests/test_release_skill.py` holds 15 cases, and every one of them reads the repository
+  rather than a second copy of the skill text. The source cases open the file the skill
+  names, read the line the skill names, and require `PACKAGE_DECLARATION` of
+  `tests/version_gate.py` to match it, and one case requires `declaration_files` to report
+  that same file and no other. The command case extracts the fenced block of step 2, undoes
+  the indent of the numbered step, runs it in a subprocess at the repository root, and
+  requires the version that `ja4plus/__init__.py` declares in the output. **A line number
+  goes stale in silence, and this reader fails loudly instead**, so the case set holds a
+  mutation that names line 102 and it reports what that line holds. Eight of the 15 cases
+  failed against the unrepaired file, on
+  `AssertionError: assert 'the release skill names no version source and no line' is None`
+  among others. A restored mutation that returns step 1 to `pyproject.toml` fails three
+  cases, and the first of them reports the line below.
+
+  ```text
+  assert 'line 20 of `pyproject.toml` reads \'dynamic = ["version"]\' and declares no `__version__`' is None
+  ```
+
+  **Every pattern of the new file joins its words with `\s+`**, because the skill wraps at
+  90 columns and a literal space matches no sentence that wraps between two of its words.
+  **Steps 3, 4, 5 and 6 rest on no part of the old arrangement**, and this round leaves all
+  four unchanged: `tests/release_verification.py`, the `installed_wheel` marker,
+  `tests/release_body.py` and `gh run list` each read the package version already. **The
+  table of `### The version count, measured on 2026-08-09 and settled on 2026-08-10` in
+  `docs/specs/features/09-release.md` records a past read and this round rewrites none of
+  it.** No file under `ja4plus/` changes and no fingerprint moves.
 - **The batch-gate rule records the twelfth required context of `dev`** (#546). Round
   TBD. **The user added `skip-gate` to the branch protection rule of `dev` on 2026-08-10**,
   and `.claude/rules/batch-gate.md` stated eleven required contexts. Two cases of
