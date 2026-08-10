@@ -113,6 +113,11 @@ MOVE_COUNT_CLAIM = re.compile(
 # The sentence of the release notes that states the row count of their fingerprint table and
 # the part of it that moves a value. The notes hold #214 as a row and the migration page holds
 # it as a paragraph, so the two tables differ by exactly that one row.
+#
+# **`_release_notes_introduction` bars a second copy of this sentence, and the entry of #398
+# quotes it verbatim as evidence.** A reader of the whole file would take the first match,
+# which is the live claim today and the stale quote on the day an edit reworded the live one.
+# Round 143 records the same fault in the citation case of #66.
 NOTES_COUNT_CLAIM = re.compile(r"That table holds ([a-z]+) rows\. ([A-Z][a-z]+) of them move")
 
 # The sentence of the fingerprint section that decides the trailing paragraph. #214 adds a
@@ -226,6 +231,20 @@ def _breaking_subsection() -> str:
     assert start != -1, f"the release notes hold no heading {NOTES_BREAKING_HEADING!r}"
     following = SUBSECTION_HEADING.search(notes, start + len(NOTES_BREAKING_HEADING))
     return notes[start : following.start() if following else len(notes)]
+
+
+def _release_notes_introduction() -> str:
+    """Return the text of the release notes above their first subsection.
+
+    The introduction holds the warning that states how many fingerprint values move. A reader
+    of the whole section would reach a later entry that quotes the same sentence as evidence.
+
+    Returns:
+        The text from the version heading to the first third-level heading.
+    """
+    notes = _release_notes()
+    following = SUBSECTION_HEADING.search(notes)
+    return notes[: following.start() if following else len(notes)]
 
 
 def _migration_section(heading: str) -> str:
@@ -586,9 +605,14 @@ def test_the_release_notes_state_the_counts_their_fingerprint_table_holds() -> N
     The notes hold #214 as a row of that table, and the migration page holds it as a
     paragraph. The two counts therefore differ by exactly one row, and this case reads each
     number against the table that carries it.
+
+    **The reader takes the introduction of the notes and not the whole section.** The entry of
+    #398 quotes the same sentence verbatim as evidence, and a reader of the whole section would
+    fall back on that quote on the day an edit reworded the live claim. Round 143 records the
+    same fault in the first citation case of #66.
     """
     notes = _release_notes()
-    claim = NOTES_COUNT_CLAIM.search(notes)
+    claim = NOTES_COUNT_CLAIM.search(_release_notes_introduction())
     assert claim, "the release notes state no row count for their fingerprint table"
     stated, moved = _number(claim.group(1)), _number(claim.group(2))
     rows = len(_table_under(notes, NOTES_FINGERPRINT_HEADING))

@@ -526,15 +526,25 @@ holds every breaking change of this record against a row of that page.
   records a citation case that compared two copies of one claim and passed on the very error
   it exists to catch. **The floor bars a reader that finds no sentence**, because a
   comparison over an empty set of sentences passes, and `MINIMUM_MIGRATION_FINGERPRINT_ROWS`
-  bars a table that an edit empties. **Twelve mutations prove the three cases discriminate,
-  and each was restored.** Either sentence back to six fails the count case with `the
+  bars a table that an edit empties. **The self-review found this entry building the second
+  copy that round 143 warns about.** The paragraph above quotes the live count sentence of
+  these notes verbatim as evidence, the first form of the notes case searched the whole
+  version section, and `re.search` takes the first match. The live claim would therefore go
+  and the quote would answer for it. `_release_notes_introduction` reads the text above the
+  first third-level heading, so the case reads the claim where it lives. **Fourteen mutations
+  prove the three cases discriminate, and each was restored.** Either sentence back to six
+  fails the count case with `the
   migration page states ['Six'] fingerprints that move, and its own table holds 7 rows`. The
   deletion of either sentence, the deletion of both, and a rewording the pattern misses each
   fail the sentence floor. One row removed from the table fails the row floor, and every data
   row removed fails it with `the fingerprint table of the migration page holds 0 rows, and
   the floor is 7`. The decision sentence deleted fails the trailing case alone. The count of
   these notes moved to nine rows, moved to six moves, and deleted, each fails the notes case
-  alone. No file under `ja4plus/` changes and no fingerprint moves.
+  alone. **Two mutations prove the scope**: the live claim deleted while the quote above
+  stands fails with `the release notes state no row count for their fingerprint table`, and
+  the live claim moved to nine rows fails with `the release notes state 9 rows of moved
+  fingerprints, and their table holds 8 rows`. No file under `ja4plus/` changes and no
+  fingerprint moves.
 
 - **The FoxIO License 1.1 list of the README names every method it covers** (#388). Round TBD.
   The list named JA4S, JA4H, JA4T, JA4TS, JA4L, JA4X and JA4SSH. It named neither JA4LS, nor
