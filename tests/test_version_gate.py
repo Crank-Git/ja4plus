@@ -9,6 +9,18 @@ three.
 - FR-release-3 fails continuous integration where the version has no matching section in
   `CHANGELOG.md`.
 
+**#543 adds two readings that follow the declaration.** The bump to version 1.0.0 wrote
+both records, and a case here holds each one against the declaration rather than against a
+literal version.
+
+- FR-release-12 states `Development Status :: 5 - Production/Stable`. The classifier is a
+  promise about the interface, so a version of 1.0.0 or later carries it and a version
+  below 1.0.0 carries `Development Status :: 3 - Alpha`. **A later 2.0.0 that returned to
+  the alpha classifier fails a case here**, and no other record reports that state.
+- The `CHANGELOG.md` section of the declared version carries a release date. A section
+  reads `unreleased` while the project builds toward that version, and the bump writes the
+  date.
+
 **A comparison that is never made reads as a comparison that passes.** Each gate below
 therefore carries a control case that feeds it a contradicting pair and reads the message
 it returns. A gate that returned nothing on every input would pass the repository cases
@@ -24,10 +36,16 @@ fingerprint.
 from pathlib import Path
 
 from tests.version_gate import (
+    ALPHA_CLASSIFIER,
+    STABLE_CLASSIFIER,
     VERSION_ATTRIBUTE,
     changelog_disagreement,
+    classifier_disagreement,
     declaration_files,
+    expected_classifier,
     package_version,
+    project_classifiers,
+    release_date_disagreement,
     version_disagreement,
 )
 
@@ -163,3 +181,117 @@ def test_the_gate_reports_a_changelog_that_holds_no_section() -> None:
     """The gate reports a changelog that holds no version section."""
     found = changelog_disagreement("# Changelog\n", "0.6.0")
     assert found is not None, "the gate accepted a changelog that holds no section"
+
+
+def test_the_gate_reports_a_computed_version_assignment() -> None:
+    """The gate reports a `__version__` that a call computes.
+
+    `setuptools` reads the attribute from the syntax tree, so a computed value makes a
+    build import the package and every dependency it loads. #67 measured that.
+    """
+    computed = "from importlib.metadata import version\n\n__version__ = version('ja4plus')\n"
+    assert package_version(computed) is None, "the reader read a computed assignment"
+    found = version_disagreement(DERIVED_PROJECT, computed)
+    assert found is not None, "the gate accepted a computed version assignment"
+
+
+# --- The release date of the declared version -----------------------------------------
+
+
+def test_the_changelog_dates_the_section_of_the_declared_version() -> None:
+    """`CHANGELOG.md` heads the declared version with a release date."""
+    version = package_version(PACKAGE.read_text(encoding="utf-8"))
+    assert version is not None
+    found = release_date_disagreement(CHANGELOG.read_text(encoding="utf-8"), version)
+    assert found is None, found
+
+
+def test_the_gate_reports_a_declared_version_that_reads_unreleased() -> None:
+    """The gate reports a declared version whose heading reads `unreleased`."""
+    changelog = "# Changelog\n\n## [1.0.0] - unreleased\n"
+    found = release_date_disagreement(changelog, "1.0.0")
+    assert found is not None, "the gate accepted a declared version that reads unreleased"
+    assert "unreleased" in found, found
+
+
+def test_the_gate_accepts_a_declared_version_that_carries_a_date() -> None:
+    """The gate accepts a declared version whose heading carries a release date."""
+    changelog = "# Changelog\n\n## [1.0.0] - 2026-08-10\n\n## [0.6.0] - 2026-05\n"
+    assert release_date_disagreement(changelog, "1.0.0") is None
+    assert release_date_disagreement(changelog, "0.6.0") is None
+
+
+def test_the_gate_reports_a_declared_version_the_changelog_omits() -> None:
+    """The gate reports a declared version that heads no section."""
+    found = release_date_disagreement("# Changelog\n\n## [0.6.0] - 2026-05\n", "1.0.0")
+    assert found is not None, "the gate accepted a version that heads no section"
+
+
+# --- FR-release-12, the classifier follows the version --------------------------------
+
+
+def test_the_classifier_states_the_promise_of_the_declared_version() -> None:
+    """`pyproject.toml` declares the classifier that the declared version states."""
+    version = package_version(PACKAGE.read_text(encoding="utf-8"))
+    assert version is not None
+    found = classifier_disagreement(PYPROJECT.read_text(encoding="utf-8"), version)
+    assert found is None, found
+
+
+def test_the_project_declares_one_development_status_classifier() -> None:
+    """`pyproject.toml` declares one `Development Status` classifier, so no gate reads none."""
+    found = project_classifiers(PYPROJECT.read_text(encoding="utf-8"))
+    assert len(found) == 1, f"pyproject.toml declares these classifiers: {found}"
+
+
+def test_a_version_of_one_or_more_states_the_stable_classifier() -> None:
+    """A version of 1.0.0 or later states `Development Status :: 5 - Production/Stable`."""
+    assert expected_classifier("1.0.0") == STABLE_CLASSIFIER
+    assert expected_classifier("2.0.0") == STABLE_CLASSIFIER
+    assert expected_classifier("1.1.0") == STABLE_CLASSIFIER
+
+
+def test_a_version_below_one_states_the_alpha_classifier() -> None:
+    """A version below 1.0.0 states `Development Status :: 3 - Alpha`, which #69 ruled."""
+    assert expected_classifier("0.6.0") == ALPHA_CLASSIFIER
+    assert expected_classifier("0.7.0") == ALPHA_CLASSIFIER
+
+
+def test_the_gate_reports_a_stable_version_that_carries_the_alpha_classifier() -> None:
+    """The gate reports version 2.0.0 that returns to the alpha classifier."""
+    pyproject = f'[project]\nname = "ja4plus"\nclassifiers = [\n    "{ALPHA_CLASSIFIER}",\n]\n'
+    found = classifier_disagreement(pyproject, "2.0.0")
+    assert found is not None, "the gate accepted a 2.0.0 that reads Alpha"
+    assert ALPHA_CLASSIFIER in found, found
+
+
+def test_the_gate_reports_a_prerelease_version_that_carries_the_stable_classifier() -> None:
+    """The gate reports version 0.6.0 that carries the stable classifier."""
+    pyproject = f'[project]\nname = "ja4plus"\nclassifiers = [\n    "{STABLE_CLASSIFIER}",\n]\n'
+    found = classifier_disagreement(pyproject, "0.6.0")
+    assert found is not None, "the gate accepted a 0.6.0 that reads Production/Stable"
+
+
+def test_the_gate_reports_project_metadata_that_declares_no_classifier() -> None:
+    """The gate reports project metadata that declares no `Development Status` classifier."""
+    found = classifier_disagreement('[project]\nname = "ja4plus"\n', "1.0.0")
+    assert found is not None, "the gate accepted metadata that declares no classifier"
+
+
+def test_the_gate_reports_two_development_status_classifiers() -> None:
+    """The gate reports two `Development Status` classifiers, which state two promises."""
+    pyproject = (
+        f'[project]\nname = "ja4plus"\nclassifiers = [\n'
+        f'    "{ALPHA_CLASSIFIER}",\n    "{STABLE_CLASSIFIER}",\n]\n'
+    )
+    found = classifier_disagreement(pyproject, "1.0.0")
+    assert found is not None, "the gate accepted two Development Status classifiers"
+
+
+def test_the_classifier_reader_reads_the_project_table_alone() -> None:
+    """The reader reads no `Development Status` line of a later table."""
+    pyproject = (
+        f'[project]\nname = "ja4plus"\nclassifiers = [\n    "{STABLE_CLASSIFIER}",\n]\n'
+        f'\n[tool.example]\nclassifiers = [\n    "{ALPHA_CLASSIFIER}",\n]\n'
+    )
+    assert project_classifiers(pyproject) == [STABLE_CLASSIFIER]

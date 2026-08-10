@@ -33,8 +33,16 @@ Confirm all of the following. Stop and report if any is false.
    section in the same commit. `tests/release_body.py` reads it for the release body, so
    an absent section fails step 5.
 
+   **A bump to version 1.0.0 or later writes `Development Status :: 5 -
+   Production/Stable` in the `classifiers` list of `pyproject.toml`.** The classifier is a
+   promise about the interface, so the commit that makes the promise true writes it.
+   `classifier_disagreement` of `tests/version_gate.py` reads the line against the
+   declaration, and the command of step 2 runs that reader.
+
    `docs/specs/features/09-release.md` records the ruling under `### Why the version
-   lives in the package`, and #512 corrected this step.
+   lives in the package`, and #512 corrected this step. `### The commit that writes the
+   stable classifier` of the same page records the classifier ruling, and #543 wrote the
+   line.
 
 2. Confirm the version and the changelog agree.
 
@@ -51,9 +59,11 @@ Confirm all of the following. Stop and report if any is false.
    for reason in (
        version_gate.version_disagreement(pyproject, package),
        version_gate.changelog_disagreement(changelog, version),
+       version_gate.release_date_disagreement(changelog, version),
+       version_gate.classifier_disagreement(pyproject, version),
    ):
        assert reason is None, reason
-   print(f"version {version} has a changelog section")
+   print(f"version {version} has a dated changelog section and the right classifier")
    PY
    ```
 

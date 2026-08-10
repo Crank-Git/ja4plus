@@ -278,11 +278,17 @@ register entries stay. Each one is `decided`, because no fix removes it.
 
 **Location:** `tests/test_foxio_rust_parity.py`, `tests/foxio_deviations.json`.
 
-### The Rust snapshot holds 38 JA4T reference values
+### The Rust snapshot holds 39 JA4T reference values
 
 The FoxIO Python implementation writes no JA4T value and no JA4TS value, so
-`tests/foxio_vectors/*.json` decides neither method. The six Rust snapshots this
-repository holds carry 38 `ja4t` values between them.
+`tests/foxio_vectors/*.json` decides neither method. This repository holds eleven Rust
+snapshots, and seven of them carry 39 `ja4t` values between them.
+
+**Warning: the heading and the table below state a count that a case holds, and an earlier
+form of both drifted.** The heading read 38 and the table read 38, 37, 10 and 44, while
+`test_the_local_snapshots_hold_the_thirty_nine_values_the_reading_counts` asserted 39 and
+`docs/specs/foxio/JA4T.md:506` read 39. A read of 2026-08-10 took every number of this
+section from the repository again, and #543 records the repair.
 
 **The gap.** `tests/test_foxio_rust_parity.py` read `ja4` and `ja4s` from a snapshot and
 never read `ja4t`. No test compared a JA4T value against a FoxIO value, so the suite
@@ -294,17 +300,23 @@ reported green on a comparison it never made. #216 closed it, and
 | Measurement | Count |
 |---|---|
 | JA4T values in `python/test/testdata/` | 0 |
-| JA4T values in the six local Rust snapshots | 38 |
-| Values `ja4plus` reproduces exactly | 37 |
+| JA4T values in the seven local Rust snapshots that hold one | 39 |
+| Values `ja4plus` reproduces exactly | 38 |
 | Values that differ | 1 |
-| Streams on which `ja4plus` emits more than one value | 10 |
-| Cases that stop running when `("JA4T", "ja4t")` leaves `SNAPSHOT_METHODS` | 44 |
+| Streams on which `ja4plus` emits more than one value | 0 |
+| Cases that stop running when `("JA4T", "ja4t")` leaves `SNAPSHOT_METHODS` | 46 |
 
-**The two entries.** `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` records
-that scapy reports one `EOL` entry for the two pad bytes of the SYN, so part b holds one
-`0` where the reference holds two. `ssh2.pcapng/JA4T` records that `ja4plus` holds no
-connection state and fingerprints every SYN, where the reference reads the first SYN
-alone. Neither entry is `decided`: #215 decides both, and a repair removes them.
+**The one entry.** `tests/foxio_deviations.json` holds one JA4T key today, and it is
+`gre-erspan-vxlan.pcap/0:65174/JA4T.1`. The FoxIO Rust snapshot holds `8192__0_0` and
+`ja4plus` writes `8192_00_00_00`. The SYN carries no TCP option, and the three FoxIO forms
+disagree. The user chose the two-digit form on 2026-08-08, so the entry is `decided` and it
+stays. #215 records the ruling.
+
+**Two entries this section named have gone, and the repairs removed them.**
+`chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` recorded a part b that held one
+`0` where the reference held two. `ssh2.pcapng/JA4T` recorded that `ja4plus` fingerprinted
+every SYN of a stream, where the reference reads the first SYN alone. The register holds
+neither key, and the stream count above reads 0 rather than 10.
 
 **JA4TS reaches no reference value here.** No local snapshot writes a `ja4ts` field. The
 Zeek baselines hold ten JA4TS values, `Scripts.ja4-conn/conn.log` holds

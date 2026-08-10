@@ -4,7 +4,7 @@ All notable changes to ja4plus are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - unreleased
+## [1.0.0] - 2026-08-10
 
 Version 1.0.0 follows version 0.6.0, and no version stands between them. The date of the
 heading above is the date `dev` reaches `master`.
@@ -2591,6 +2591,65 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **Version 1.0.0 reaches the repository, and the development status moves to
+  `5 - Production/Stable`** (#543). Round TBD. Three lines change. `ja4plus/__init__.py:101`
+  reads `__version__ = "1.0.0"`, the release heading of this file reads
+  `## [1.0.0] - 2026-08-10`, and the `classifiers` list of `pyproject.toml` reads
+  `Development Status :: 5 - Production/Stable`. **The declaration stays a plain string
+  assignment**, because `setuptools` reads the value from the syntax tree and a computed
+  value would make a build import the package and every dependency it loads. #67 measured
+  that. **The classifier is a promise about the interface, so the commit that makes the
+  promise true writes it**, which is the ruling #69 records. **This round publishes nothing.**
+  It creates no release, it tags nothing and it starts no workflow. **The cases came first,
+  and two of them failed against the version edit alone.** `tests/test_version_gate.py`
+  grows from 14 cases to 28.
+  `test_the_changelog_dates_the_section_of_the_declared_version` failed with
+  ``AssertionError: `CHANGELOG.md` heads the declared version 1.0.0 with 'unreleased', and a
+  declared version carries a release date``, and
+  `test_the_classifier_states_the_promise_of_the_declared_version` failed with
+  ``AssertionError: `pyproject.toml` declares `Development Status :: 3 - Alpha`, and version
+  1.0.0 states `Development Status :: 5 - Production/Stable```. **A restored mutation
+  reproduces the first one**: the heading set back to `## [1.0.0] - unreleased` fails that
+  case and the file was restored. `tests/version_gate.py` gains four readers.
+  `release_date_disagreement` holds the heading of the declared version against a date, and
+  `classifier_disagreement` holds the classifier against the version. **A version of 1.0.0
+  or later states the stable classifier and a version below 1.0.0 states
+  `Development Status :: 3 - Alpha`**, so a later 2.0.0 cannot return to the alpha
+  classifier without a failure. **Each reader states a floor, because an aggregate over an
+  empty set passes.** A version the changelog heads nowhere fails, project metadata that
+  declares no `Development Status` classifier fails, and two such classifiers fail.
+  **The build reads the version statically, and a clean environment proves it.** A virtual
+  environment that held `build` 1.4.4 alone, and neither `scapy` nor `cryptography`, built
+  `ja4plus-1.0.0-py3-none-any.whl` and `ja4plus-1.0.0.tar.gz`. The wheel `METADATA` and the
+  source-distribution `PKG-INFO` each read `Version: 1.0.0` and
+  `Classifier: Development Status :: 5 - Production/Stable`.
+  **`python -m tests.release_verification --dist dist` reports
+  `release check: PASSED. The release is ready to publish.`**, and no continuous-integration
+  job runs that command. Its console script wrote `ja4plus 1.0.0` and its conformance run
+  reported 1635 passed, 143 skipped and 140 xfailed against the installed wheel.
+  **Three readings of an independent review reach this round, and each one is a claim about
+  the version or a number a round of this batch wrote.** `docs/implementation_notes.md`
+  headed a section `The Rust snapshot holds 38 JA4T reference values` while
+  `test_the_local_snapshots_hold_the_thirty_nine_values_the_reading_counts` asserted 39, and
+  a read of 2026-08-10 took every number of that section from the repository again: eleven
+  local Rust snapshots, seven of which hold 39 `ja4t` values, 38 values reproduced exactly,
+  1 value that differs, 0 streams that emit more than one value, and 46 cases that stop
+  running when `("JA4T", "ja4t")` leaves `SNAPSHOT_METHODS`. **The section named two register
+  entries that `tests/foxio_deviations.json` no longer holds**, and the register holds one
+  JA4T key today, `gre-erspan-vxlan.pcap/0:65174/JA4T.1`, which #215 decided. `CLAUDE.md:7`
+  read `Version 0.6.0 is on PyPI. The project is working toward version 1.0.0.`, and the
+  bump makes both sentences false. **The corpus of
+  `tests/test_documentation_version_claims.py` now reaches `CLAUDE.md`**, which #545 left
+  outside it, so the next bump cannot leave that page behind. The corpus floor is 20 pages
+  and the corpus holds 29. **A restored mutation proves the reach**: the sentence
+  `Version 1.0.0 is not released yet.` in `CLAUDE.md` fails
+  `test_no_page_calls_a_checked_version_unreleased`, and the file was restored.
+  `.claude/skills/release/SKILL.md` gains the classifier rule and its step 2 runs the two
+  new readers. `docs/specs/features/09-release.md` ticks the `FR-release-12` criterion and
+  records the commit that wrote the classifier. `mkdocs build --strict` passes. **No file
+  under `ja4plus/` changes except the version line, and no fingerprint moves.** The
+  conformance suite reports 1635 passed, 143 skipped and 140 xfailed before this round and
+  the same three counts after it.
 - **The vocabulary keeps `ruling`, and `decision` gives way to it** (#533). Round
   TBD. The `## Terms` table of `docs/specs/spec.md` held neither word, and the prose rotated
   the two against each other across the whole specification. Rule 7 of

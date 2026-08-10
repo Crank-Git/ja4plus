@@ -8,10 +8,15 @@ therefore fails here, and it leaves no reader with a false sentence.
 
 ## What a case reads
 
-The corpus is `README.md`, every tracked Markdown page under `docs/` that stands outside
-`docs/specs/`, and the preamble of `CHANGELOG.md`. That set is the documentation a reader
-of the published package meets. `docs/specs/` holds the specification package, which
-`mkdocs.yml` excludes from the site.
+The corpus is `README.md`, `CLAUDE.md`, every tracked Markdown page under `docs/` that
+stands outside `docs/specs/`, and the preamble of `CHANGELOG.md`. That set is the
+documentation a reader of the published package meets. `docs/specs/` holds the
+specification package, which `mkdocs.yml` excludes from the site.
+
+**#545 bounded the corpus to `README.md`, `docs/` and `CHANGELOG.md`, and #543 widened it
+to `CLAUDE.md`.** `CLAUDE.md:7` read `Version 0.6.0 is on PyPI. The project is working
+toward version 1.0.0.`, and the bump to 1.0.0 made both sentences false. The page is
+tracked and the provider renders it on the landing view, so a reader meets it.
 
 **A dated record of a past measurement is quoted, and it is never rewritten.**
 `.claude/rules/ste.md` states the exemption for the entries of `CHANGELOG.md` and for the
@@ -74,6 +79,10 @@ SPECIFICATION_PREFIX = "docs/specs/"
 # file and it cuts every entry.
 RECORD_FILE = "CHANGELOG.md"
 
+# The pages of the repository root that the corpus holds. **`CLAUDE.md` reaches this list
+# through #543**, because it carried a version claim that the bump to 1.0.0 made false.
+ROOT_PAGES = (RECORD_FILE, "README.md", "CLAUDE.md")
+
 # The heading that opens the first entry of `CHANGELOG.md`. Every line from here down
 # records a past measurement, which `.claude/rules/ste.md` exempts from a rewrite.
 RECORD_ENTRY_HEADING = re.compile(r"^### ", re.MULTILINE)
@@ -113,6 +122,7 @@ CORPUS_FLOOR = 20
 # corpus fails here rather than passes over nothing.
 ANCHOR_FILES = (
     "README.md",
+    "CLAUDE.md",
     "CHANGELOG.md",
     "docs/migration-0.6-to-1.0.md",
     "docs/output-schema.md",
@@ -200,7 +210,7 @@ def corpus() -> Dict[str, str]:
         name = path.relative_to(REPO_ROOT).as_posix()
         if name.startswith(SPECIFICATION_PREFIX):
             continue
-        if name != RECORD_FILE and name != "README.md" and not name.startswith("docs/"):
+        if name not in ROOT_PAGES and not name.startswith("docs/"):
             continue
         found[name] = readable_prose(name, path.read_text(encoding="utf-8"))
     assert len(found) >= CORPUS_FLOOR, (
