@@ -506,31 +506,40 @@ holds every breaking change of this record against a row of that page.
 ### Fixed
 
 - **A case measures the count an acceptance criterion states** (#456). Round TBD. Two criteria
-  of `docs/specs/features/*.md` stated a number this repository contradicts, and #393 measured
-  both. **Both premises of the issue were stale, and this round measured each one again.**
-  `git ls-files tests/foxio_vectors | wc -l` reports 90 and the criterion of
-  `docs/specs/features/00-foundation.md` stated 75. The issue reported eight files holding the
-  text `0.6.0`; `git ls-files pyproject.toml ja4plus/` reports seven, and a repository-wide
-  read reports 35. **The second criterion is an end state and not a stale count.** #67 is open
-  and its own acceptance criterion is the same sentence, `FR-release-1` states that the version
-  appears in one place, and the whole page carries criteria that name version 1.0.0, which is
-  unreleased. That criterion therefore keeps its number and states plainly that #67 builds it.
-  **The count of `grep -rn` counts files and not declarations, and #67 needs that reading.**
-  Two of the seven files declare the version and five name it in prose that records the
-  released behaviour, so the command reads six files after #67 removes one declaration.
-  `docs/specs/features/09-release.md` now holds the table, and #67 owns the decision.
-  **New file `tests/test_criterion_counts.py`.** It reads each measured criterion from the
-  feature page, takes the count out of that sentence, and compares it against a measurement of
-  this repository. A built criterion must state the measured number, and a pending criterion
-  must state a number the repository does not hold, so the case fails on the day #67 lands.
-  **The count comes from the page and never from a copy inside the case.** A reader that took
-  a copy passed on the stale 75, measured, and the shipped reader fails on it. Eight mutations
-  prove the six cases discriminate and each file was restored: the stale 75, a criterion that
-  loses its command, the end-state marker without its issue, that marker deleted, a pending
-  criterion raised to seven, a parser that reads no criterion, and a measurement that reads no
-  file. `MINIMUM_CRITERIA` reads 151 and `test_every_measurement_reads_at_least_one_file`
-  holds the floor, because a comparison over an empty set passes. No file under `ja4plus/`
-  changes and no fingerprint moves.
+  of `docs/specs/features/*.md` stated a count this repository contradicts. #393 measured both
+  on 2026-08-09. **Both premises of the issue were stale, and this round measured each one
+  again.** `git ls-files tests/foxio_vectors | wc -l` reports 90, and
+  `docs/specs/features/00-foundation.md` stated 75. The issue reported eight files that hold
+  the text `0.6.0`. `git ls-files pyproject.toml ja4plus/` reports seven, and a read of the
+  whole repository reports 35. **The criterion of `docs/specs/features/09-release.md` states an
+  end state, and it is not a stale count.** Four facts settle it. #67 is open. Its own
+  acceptance criterion is the same sentence. `FR-release-1` states that the version appears in
+  one place. The page carries criteria that name version 1.0.0, which is unreleased. A page of
+  an unbuilt feature states what that feature will hold, so that criterion keeps its count. It
+  now states plainly that #67 builds it. **The command of that criterion counts files and not
+  declarations, and #67 needs that reading.** Two of the seven files declare the version. Five
+  name it in prose that records the released behaviour. The command therefore reads six files
+  after #67 removes one declaration. `docs/specs/features/09-release.md` now holds the table of
+  all seven, and #67 owns the decision. **New file `tests/test_criterion_counts.py`.** It reads
+  each measured criterion from its feature page, takes the count out of that sentence, and
+  compares it against a measurement. A built criterion states the measured count. A pending
+  criterion states a count this repository does not hold, so a case fails on the day #67 lands.
+  **The count comes from the page and never from a copy inside the case.** A reader that held a
+  copy passed against the stale 75, and the shipped reader fails against it. **Eight mutations
+  prove the six cases discriminate, and each file was restored.**
+    - The stale 75 fails the built case alone.
+    - A criterion that loses its command fails the locator case and the built case.
+    - The end-state marker without `#67` fails the naming case alone.
+    - That marker deleted fails the naming case alone.
+    - A pending criterion raised to seven fails the end-state case alone.
+    - A parser that reads no criterion fails five cases.
+    - A measurement that reads no file fails the floor case and the built case.
+    - A reader that holds a copy of the sentence fails nothing, which is the counterfactual.
+
+  **A comparison over an empty set passes, so both floors are present.** `MINIMUM_CRITERIA`
+  reads 151, and `test_every_measurement_reads_at_least_one_file` requires one file from each
+  measurement. The `Terms` table of `docs/specs/spec.md` gains `end state`, `built criterion`
+  and `pending criterion`. No file under `ja4plus/` changes and no fingerprint moves.
 - **The fingerprint move count of the migration page states the row count of its own table**
   (#398). Round 167. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
   rows. #395 measured the difference and filed the issue rather than repair it. **The count

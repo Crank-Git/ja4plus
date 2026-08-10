@@ -197,8 +197,8 @@ hold the text `0.6.0`.
 
 **Two files declare the version and five name it in prose.** #67 removes one
 declaration, so the command still reads six files after #67 lands. The prose records the
-released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it, so #67
-narrows the command rather than deleting the prose. #456 measured this and #67 owns the
+released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it. #67
+therefore narrows the command and keeps the prose. #456 measured this, and #67 owns the
 decision.
 
 ## Out of scope

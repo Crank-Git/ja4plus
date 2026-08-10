@@ -5,13 +5,13 @@ measures goes stale the moment the repository changes, and a reader who runs it 
 failure. That reader then learns to disregard the page. #424 and #426 repaired the same
 failure mode for the suite, and #393 found it again on two criteria of
 `docs/specs/features/*.md`. This project has corrected a stale count in prose more than
-seven times, so the repair here is a case and not a new number.
+seven times, so the repair here is a case and not a corrected count.
 
 **A criterion holds one of two kinds, and this file reads both.** A built criterion states
-what the repository holds today, and the measurement must equal the stated number. A
-pending criterion states an end state that an open issue builds, and the measurement must
-differ from the stated number. A pending criterion therefore fails here on the day its
-issue lands, which is the day a writer must drop the marker.
+the count this repository holds today. Its stated count must equal the measured count. A
+pending criterion states an end state that an open issue builds. Its stated count must
+differ from the measured count. A pending criterion therefore fails here on the day its
+issue lands, and that failure instructs a writer to drop the end-state marker.
 
 `tests/test_requirement_scope.py` and `tests/test_specification_changelog.py` set the shape
 these cases follow. They read specification text as text.
@@ -54,8 +54,8 @@ MINIMUM_CRITERIA = 151
 RELEASED_VERSION = re.compile(r"0\.6\.0")
 
 # A criterion writes a small count as a word and a large one as a digit. The reader accepts
-# both, because the writing standard keeps the prose readable and the case must not force a
-# digit into a sentence that reads better with a word.
+# both forms. A reader that accepted the digit alone would force a digit into a sentence
+# the writing standard keeps readable.
 NUMBER_WORDS = {
     "one": 1,
     "two": 2,
@@ -109,9 +109,9 @@ def _version_files() -> List[str]:
     """Return every tracked file of `pyproject.toml` and `ja4plus/` that holds the version.
 
     The criterion of `docs/specs/features/09-release.md` names `grep -rn`. This reader takes
-    the file list from `git ls-files` instead, because `grep -r` also reads an untracked
-    build artifact and a compiled module, and the count must not depend on what a previous
-    command left in the working tree.
+    the file list from `git ls-files` instead. `grep -r` also reads an untracked build
+    artifact and a compiled module, so its count depends on what a previous command left in
+    the working tree.
 
     Returns:
         One path for each file whose text holds the released version string.
@@ -128,9 +128,9 @@ def _version_files() -> List[str]:
 class MeasuredCriterion:
     """One acceptance criterion whose count this file measures.
 
-    **The locator identifies the criterion and it carries no count.** A reader that took the
-    count from a copy of the sentence inside this file would compare the copy against the
-    measurement, and the page could then state any number. The count comes from the page.
+    **The locator identifies the criterion and it carries no count.** A reader that held a
+    copy of the sentence would compare that copy against the measurement. The page could
+    then state any count. The count therefore comes from the page.
 
     Attributes:
         page: The file name of the feature document that states the criterion.
@@ -277,7 +277,7 @@ def test_every_measurement_reads_at_least_one_file() -> None:
 
 
 def test_a_built_criterion_states_the_count_the_repository_holds() -> None:
-    """A criterion of a built feature states the number its own measurement reports."""
+    """A built criterion states the count its own measurement reports."""
     disagreeing = sorted(
         f"{entry.page} states {_stated_count(entry)} and the repository holds "
         f"{len(entry.measure())}"
@@ -290,7 +290,7 @@ def test_a_built_criterion_states_the_count_the_repository_holds() -> None:
 
 
 def test_a_pending_criterion_names_the_issue_that_builds_its_end_state() -> None:
-    """A criterion that states an end state says so and names the issue that builds it."""
+    """A pending criterion names the end state and names the issue that builds it."""
     unnamed = sorted(
         entry.page
         for entry in MEASURED_CRITERIA
@@ -301,10 +301,11 @@ def test_a_pending_criterion_names_the_issue_that_builds_its_end_state() -> None
 
 
 def test_a_pending_criterion_states_a_count_the_repository_does_not_hold() -> None:
-    """A criterion marked as an end state states a number the repository does not report.
+    """A pending criterion states a count this repository does not report.
 
-    The day the named issue lands, the two numbers agree and this case fails. That failure
-    is the instruction to drop the end-state marker and to record the criterion as built.
+    On the day the named issue lands, the two counts agree and this case fails. That
+    failure instructs a writer to drop the end-state marker. The writer then records the
+    criterion as a built criterion.
     """
     reached = sorted(
         f"{entry.page} states {_stated_count(entry)} and {entry.pending_issue} has landed"
