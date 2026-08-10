@@ -185,7 +185,7 @@ jobs:
         #
         # **The step names one job, so the matrix keeps its six check names.** A matrix
         # variable would reach the job name, and the branch protection rule of `dev` holds
-        # each name of the eleven required contexts.
+        # each name of the twelve required contexts.
         #
         # **`.github/workflows/docs-build.yml` runs no case of `tests/`, and it stays that
         # way.** That job measures the committed pins in an empty environment, it filters
