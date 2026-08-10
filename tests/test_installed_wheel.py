@@ -679,8 +679,8 @@ def test_the_wheel_carries_the_mapping_file(artifacts: dict[str, pathlib.Path]) 
     """`FR-release-10`. The wheel lists the bundled mapping file.
 
     The lookup reads this file at run time. An exclusion rule that reaches it produces a
-    package that imports and then reports an empty database, so this case stands beside
-    the exclusion of the documentation tree.
+    package that imports and then reports an empty database. This case therefore stands
+    beside the exclusion of the documentation tree.
     """
     names = wheel_entry_names(artifacts["wheel"])
     entry = "ja4plus/" + "/".join(MAPPING_FILE_PARTS)

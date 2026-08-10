@@ -507,14 +507,15 @@ holds every breaking change of this record against a row of that page.
 
 - **The built wheel carries no file under `docs/`** (#455). Round TBD.
   `docs/specs/features/09-release.md:156` requires the wheel to carry no file under
-  `docs/`, and `python -m build` on the base commit `d94d8c1` produced a wheel of 96
-  entries that carried 56 of them. #393 measured that state on 2026-08-09, and this round
-  re-measured both counts on its own base and read the same two numbers. **Two defaults
-  produced the defect together.** A `pyproject.toml` project reads implicit namespaces by
-  default, so `docs` and every directory below it are discovered packages although none of
-  them holds an `__init__.py`. `include-package-data` is true by default since `setuptools`
-  61, and the file finder of `setuptools-scm` reports every file that git tracks, so each
-  tracked file below a discovered package shipped. `ja4plus-0.6.0.dist-info/top_level.txt`
+  `docs/`. `python -m build` on the base commit `d94d8c1` produced a wheel of 96 entries.
+  56 of those entries lay under `docs/`. #393 measured that state on 2026-08-09, and this
+  round re-measured both counts on its own base and read the same two numbers. **Two
+  defaults produced the defect together.** A `pyproject.toml` project reads implicit
+  namespaces by default, so `docs` and every directory below it are discovered packages
+  although none of them holds an `__init__.py`. `include-package-data` is true by default
+  since `setuptools` 61. The file finder of `setuptools-scm` reports every file that git
+  tracks. Each tracked file below a discovered package therefore shipped.
+  `ja4plus-0.6.0.dist-info/top_level.txt`
   named `assets`, `docs` and `ja4plus`, which is the reading that proves the discovery.
   **The repair adds two entries to the one list that already excludes `tests/` and
   `examples/`**, and it adds no second mechanism beside it. The `exclude` key of
@@ -524,15 +525,16 @@ holds every breaking change of this record against a row of that page.
   repository holds no `MANIFEST.in`. **The wheel falls from 96 entries to 40 and it carries
   none under `docs/`.** It still carries `ja4plus/data/ja4plus-mapping.csv` and
   `ja4plus/py.typed`. **The source distribution does not change, and that is the intended
-  state.** It holds 417 members before the repair and 417 after, 64 of them under `docs/`,
-  because the file finder adds every tracked file whatever the package list holds. `tests/`
-  and `examples/` prove the same split: the list excludes both from the wheel and both ship
-  in the source distribution. `FR-release-11b` and `FR-release-11c` state the two
+  state.** It holds 417 members before the repair and 417 after. 64 of those members lie
+  under `docs/`. The file finder adds every tracked file whatever the package list holds.
+  `tests/` and `examples/` prove the same split: the list excludes both from the wheel and
+  both ship in the source distribution. `FR-release-11b` and `FR-release-11c` state the two
   requirements, because `FR-release-11` named the test suite, the examples and the vectors
-  and named no documentation tree. **The tests came first.**
+  and named no documentation tree. The `Terms` table gains `documentation tree`.
+  **The tests came first.**
   `test_the_wheel_carries_no_file_under_the_documentation_tree` failed on the unrepaired
   tree with `AssertionError: the wheel carries 56 entries under docs/, and it lists 96
-  entries`. **Each new case reads the artefact and never the working tree**, because the
+  entries`. **Each new case reads the artifact and never the working tree**, because the
   defect lives in what the build includes. **An assertion over an empty entry list
   passes**, so each wheel case holds `ja4plus/__init__.py` against the entry list before it
   reads the rest. `test_the_wheel_carries_the_mapping_file` and
@@ -540,9 +542,9 @@ holds every breaking change of this record against a row of that page.
   exclusion rule would produce. `EXPECTED_CASE_COUNT` of
   `tests/test_installed_wheel_selection.py` moves from 16 to 19, and the `installed-wheel`
   job stays the only runner of the marker. **One finding reaches no repair here.** The
-  wheel still carries `assets/logo.png` and `top_level.txt` still names `assets`, which is
-  the same defect on another tree, and #462 records it with the measurement of both
-  artefacts. No file under `ja4plus/` changes and no fingerprint moves.
+  wheel still carries `assets/logo.png`, and `top_level.txt` still names `assets`. That is
+  the same defect on another tree. #462 records it with the measurement of both artifacts.
+  No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The documentation behaviour rule names a command that runs, and a case holds every named
   command to a collection** (#393). Round 163. The Behaviour rules of
