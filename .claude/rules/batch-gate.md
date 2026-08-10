@@ -47,6 +47,55 @@ only where a worker writes one on purpose.
 **Warning: `master` and `dev` stay in the list.** The batch pull request and the promotion
 each target one of them, and they are the runs the merge gate reads.
 
+**A pull request that conflicts with its base creates no run at all, and that is a third
+condition.** The workflow runs against the merge commit of the pull request, and the
+provider builds no merge commit for a conflicting pull request. #524 measured it three
+times on 2026-08-10, on the proof pull request #526. Each time
+`gh pr view <number> --json mergeable` read `CONFLICTING`, and
+`gh api "repos/Crank-Git/ja4plus/actions/runs?head_sha=<head>"` read `total_count` 0 for a
+keyword-free head. **Take the base branch again, and the same head then starts a run.**
+
+```bash
+gh pr view <number> --repo Crank-Git/ja4plus --json mergeable,mergeStateStatus
+```
+
+**Warning: read that command before you read an absent run as a passed run.** An
+integration branch moves under every live member, so this state arrives without a push of
+your own.
+
+## A case that skips on every job fails the run
+
+**A skip is not a pass, and a case that runs nowhere is not a case.** #438 measured that
+shape. `tests/test_round_entry_existence.py` reported a skip on every job of the matrix
+from the day it was written, and every job stayed green while the case refused nothing.
+
+**One job reads no such case, because one job reads one environment.** A macOS case that
+skips on Linux is correct, and a Linux case that skips on macOS is correct. The union of
+the six reports of the `test` job is the first reading that tells a correct skip from a
+case the suite runs nowhere.
+
+The `skip-gate` job of `.github/workflows/test.yml` holds that reading. It depends on the
+`test` job, it downloads the six `test-results-*` artifacts, and it fails a case that every
+report records as skipped. `tests/skip_gate.py` holds the condition and
+`tests/test_skip_gate.py` holds that file. Read the same condition by hand:
+
+```bash
+python -m tests.skip_gate --reports <download directory>
+```
+
+**Warning: add an entry to `tests/universal_skips.json` only where a runner can never hold
+the condition the case needs.** A capture grant is such a condition. Every entry names a
+reason, and the gate fails an entry that names none.
+
+**An entry that records an open finding names the issue that removes it.** The census of
+#524 found two cases that run on no job while no limit of the runner explains either one.
+#528 and #529 hold them. Such an entry states the finding, and it goes out with the repair.
+
+**Warning: `skip-gate` is a twelfth check, and the required list below holds eleven names.**
+A red `skip-gate` fails the run, so the batch gate refuses the merge on the run conclusion.
+The branch protection rule of `dev` reaches this check once the user adds the name to it,
+and that change is the user's alone. #524 records the state.
+
 ## Read the gate before every batch merge
 
 **Warning: read this gate before you merge a batch pull request, and never after.**
