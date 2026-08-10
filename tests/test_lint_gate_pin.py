@@ -31,14 +31,14 @@ The user ruled the difference on 2026-08-10.
 ## What a case here reads
 
 The pin is one entry of the `dev` extra, and `tests/dependency_entries.py` reads it.
-**That module is the one reader of a dependency list, and #452 built it.** The reader of
+**That module is the one reader of a dependency block, and #452 built it.** The reader of
 #378 collected every double-quoted substring of the block, so a comment that quotes a
-version read as an entry, and a comment that quoted `"ruff==0.14.5"` would have failed a
+version read as an entry. A comment that quoted `"ruff==0.14.5"` would then have failed a
 case here on the wording of a comment. #446 widened that hazard, because every entry now
-carries a comment and three of those comments quote a version.
+carries a comment and four of those comments quote a version.
 
 The self-review of #378 found the hazard, and #446 answered it with a second reader inside
-this file. **Two readers of one list can disagree**, so #452 removed the second one.
+this file. **Two readers of one block can disagree**, so #452 removed the second one.
 `_dev_lines` and `_dev_entries` below call the shared module and parse nothing of their
 own.
 
@@ -185,7 +185,7 @@ def _dev_lines() -> list[str]:
         The stripped lines, comment lines included, in file order.
 
     Raises:
-        AssertionError: `pyproject.toml` holds no `dev` extra, or the list is not closed.
+        AssertionError: `pyproject.toml` holds no `dev` extra, or the block is not closed.
     """
     return dependency_lines(PYPROJECT.read_text(encoding="utf-8"), DEV_EXTRA)
 
@@ -201,7 +201,7 @@ def _dev_entries() -> list[str]:
         The entries, without their quotes, in file order.
 
     Raises:
-        AssertionError: `pyproject.toml` holds no `dev` extra, the list is not closed, or
+        AssertionError: `pyproject.toml` holds no `dev` extra, the block is not closed, or
             the extra holds no entry.
     """
     return dependency_entries(PYPROJECT.read_text(encoding="utf-8"), DEV_EXTRA)

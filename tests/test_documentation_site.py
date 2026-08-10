@@ -354,27 +354,27 @@ def _dependency_block(text: str, opener: str) -> list[str]:
     """Return the entries of one dependency list of `pyproject.toml`.
 
     **This function reads `tests/dependency_entries.py` and parses nothing of its own.**
-    #452 records the defect of the earlier form: it collected every double-quoted substring
+    #452 records the defect of the earlier form. It collected every double-quoted substring
     of the block, so a comment inside the block read as an entry.
 
     Args:
         text: The whole file.
-        opener: The line that opens the list, as `dependencies = [`.
+        opener: The line that opens the block, as `dependencies = [`.
 
     Returns:
         The entries, without their quotes, in file order.
 
     Raises:
-        AssertionError: The file holds no such list, the list is not closed, or the block
-            holds no entry.
+        AssertionError: The file holds no such block, the block is not closed, or the
+            block holds no entry.
     """
     return dependency_entries(text, opener)
 
 
 # The entries of the `dev` extra, in file order. **Every one of them carries a comment
 # above it, and that is the shape no caller of this reader read before #452.** The runtime
-# list and the `docs` extra carry no comment inside their brackets, so a reader that
-# collects a comment stays correct against them and fails here.
+# block and the `docs` extra carry no comment inside their brackets. A reader that collects
+# a comment therefore stays correct against those two blocks, and it fails here.
 DEV_ENTRIES = [
     "pytest==8.4.2",
     "pytest-cov==7.1.0",
@@ -383,7 +383,7 @@ DEV_ENTRIES = [
     "build==1.4.4",
 ]
 
-# The entries of the runtime list, in file order. A user who installs `ja4plus` installs
+# The entries of the runtime block, in file order. A user who installs `ja4plus` installs
 # these two distributions and no other.
 RUNTIME_ENTRIES = [
     "scapy>=2.4.0",
@@ -413,11 +413,11 @@ def test_the_reader_returns_the_entries_of_the_dev_extra_and_no_comment_fragment
     assert entries == DEV_ENTRIES
 
 
-def test_the_reader_returns_every_entry_of_the_runtime_list_by_name() -> None:
+def test_the_reader_returns_every_entry_of_the_runtime_block_by_name() -> None:
     """`_dependency_block` returns the runtime dependencies and drops none of them.
 
     A repair that returns an empty list passes a case that reads the absence of a comment
-    fragment alone, so this case names every entry the list holds.
+    fragment. This case therefore names every entry the block holds.
     """
     entries = _dependency_block(PYPROJECT.read_text(encoding="utf-8"), "dependencies = [")
     assert entries == RUNTIME_ENTRIES
