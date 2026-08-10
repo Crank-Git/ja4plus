@@ -96,14 +96,25 @@ FR-pre-release-validation-15 — Every record of a Linux gate states that the ho
 `python3.12` alone.
 
 FR-pre-release-validation-16 — The sweeps together apply every mutation of every module
-that `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` lists. One sweep for each module group
-satisfies this, and one sweep of the whole package satisfies it too.
+that `git ls-files 'ja4plus/*.py'` lists. **In a default git pathspec, `*` crosses `/`.**
+That one term therefore lists every module of the package, at every depth. One sweep for
+each module group satisfies this, and one sweep of the whole package satisfies it too.
 
 FR-pre-release-validation-16a — A case fails when the module list one sweep reads differs
 from the tracked Python files of `ja4plus/`. **Never write `git ls-files
 'ja4plus/**/*.py'`.** Git reads `**` in a pathspec as one or more directories. That
 pattern therefore lists 24 files where the package holds 31. It drops every module of the
 top directory of the package.
+
+FR-pre-release-validation-16b — A case runs the pathspec that
+`FR-pre-release-validation-16` states. That case fails when the file set of the pathspec
+differs from the module set one sweep reads. It fails when one term of the pathspec lists
+no file the other terms miss. `tests/test_mutation_sweep_module_list.py` holds the cases.
+
+FR-pre-release-validation-16c — Only `:(glob)` magic stops `*` at a separator. A read of
+2026-08-09 reports four counts: `git ls-files 'ja4plus/*.py'` lists 31 files,
+`git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` lists 31, `git ls-files 'ja4plus/**/*.py'`
+lists 24, and `git ls-files ':(glob)ja4plus/*.py'` lists 7.
 
 FR-pre-release-validation-17 — The report of each sweep states the commit the sweep read.
 
@@ -372,7 +383,7 @@ the checkout is.
 - [ ] #410 holds the caveat, and it states that `python3.12` is the only version the host
       measured.
 - [ ] The reports of `docs/mutation_reports/` together hold one `modules` entry for every
-      file that `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` lists.
+      file that `git ls-files 'ja4plus/*.py'` lists.
 - [ ] One case fails when the module list one sweep reads differs from the tracked Python
       files of `ja4plus/`, so no writer reintroduces the `**` pathspec in silence.
 - [ ] `tests/test_mutation_census.py` reports 0 unsettled candidates for every module of

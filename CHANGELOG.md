@@ -1113,6 +1113,37 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **`FR-pre-release-validation-16` names a pathspec whose plain reading equals what it
+  matches** (#436). Round TBD. The requirement named
+  `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'`, which lists all 31 modules of the
+  package. Its first term alone lists all 31 too. **In a default git pathspec, `*` crosses
+  `/`, and only `:(glob)` magic stops it at a separator.** A read of 2026-08-09 reports
+  four counts: `git ls-files 'ja4plus/*.py'` lists 31, the pair lists 31,
+  `git ls-files 'ja4plus/**/*.py'` lists 24, and `git ls-files ':(glob)ja4plus/*.py'`
+  lists 7. **The count was right and the rule was not.** The second term read as proof
+  that `*` stops at a separator, so the next writer who reasoned from the requirement
+  reproduced the defect. #411 and #414 each met that reading, and #414 reported the
+  contradiction. The requirement now names `git ls-files 'ja4plus/*.py'` alone, and it
+  states the separator rule. New `FR-pre-release-validation-16b` binds the cases, and new
+  `FR-pre-release-validation-16c` records the four counts.
+  **`tests/test_mutation_sweep_module_list.py` reads the pathspec out of the requirement
+  text and runs it.** A requirement that names a pathspec listing a different set than the
+  sweep reads therefore fails a case. The file gains four cases. Two compare the file set
+  of the stated pathspec against the module set the sweep reads and against the tracked
+  Python files of the package. One fails where a term of the pathspec lists no file the
+  other terms miss. One reads the separator rule out of the requirement. A floor case
+  refuses a pathspec of no term and refuses an empty file set, because a set comparison
+  over an empty set passes on its own. **Every case was proved in both directions.**
+  Against the unrepaired requirement the redundancy case read
+  `AssertionError: the term ja4plus/*/*.py lists no file the other terms miss`, and the
+  separator case read that the requirement holds no such sentence. A `**` form restored
+  into the requirement failed the two comparison cases, which named the seven
+  top-directory modules as extra items, and the revert returned all nine cases to green.
+  **`DEFAULT_MODULE_PATTERNS` keeps its two patterns.** It reaches `Path.glob`, where `*`
+  stops at `/`, so the sweep needs the depth the requirement needs one term for.
+  `.claude/rules/conformance.md` and the acceptance list of
+  `docs/specs/features/11-pre-release-validation.md` state the same reading. No file under
+  `ja4plus/` changes and no fingerprint moves.
 - **The mutation sweep builds no mutation inside a type annotation** (#431). Round 168.
   `tests/mutation_sweep.py` built one mutation for each `BinOp` node whose operator sits in
   `BINOP_SWAP`, and `ast.BitOr` is one of them. A type annotation written `str | None` holds
