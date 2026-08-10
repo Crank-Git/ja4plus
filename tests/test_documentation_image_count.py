@@ -11,11 +11,13 @@ rather than in a review.
 
 ## Why the first form of this file caught nothing
 
-**A check that a rewording defeats is not a check.** #211 wrote the constant
-`SUPERSEDED_COUNT = "seven of the twelve"` and searched each line for it.
-`docs/specs/spec.html` writes `Seven of twelve FoxIO methods are specified only as
-images.`, which carries no `the`, so the page held the superseded count for 92 rounds
-while the case passed. #449 measured that and this file now reads a shape.
+The user states the rule. **"A check that a rewording defeats is not a check."**
+
+#211 wrote the constant `SUPERSEDED_COUNT = "seven of the twelve"`. It searched each line
+of each page for that one phrase. `docs/specs/spec.html` writes `Seven of twelve FoxIO
+methods are specified only as images.`, and that sentence carries no `the`. The page
+therefore held the superseded count for 97 rounds while the case passed. #449 measured the
+defect and this file now reads a shape.
 
 Two properties follow, and each closes one half of the hole.
 
@@ -37,9 +39,28 @@ reaches no case here at all, because `_documentation_files` never held it.
 
 **A count of another thing stands.** `docs/specs/foxio/JA4T.md` states `7 of the 12 moved
 values are of that shape`, and `docs/specs/foxio/README.md` states that FoxIO published a
-text specification for seven methods. Neither sentence claims an image count, and
-`test_the_reader_reads_no_claim_where_a_sentence_counts_another_thing` holds both against
-the reader.
+text specification for seven methods. Neither sentence claims an image count.
+`test_the_reader_reads_no_wrong_count_where_a_sentence_counts_another_thing` holds eight
+such sentences against the reader.
+
+## The holes this reader keeps, which a review of #449 measured
+
+A shape reads more spellings than a phrase reads, and it reads no sentence at all. These
+spellings state a count and reach no case here. Each one is recorded and none is closed.
+
+- **A complement.** `All but one FoxIO method is specified only as an image` states the
+  true count as the number it excludes. `COMPLEMENT_COUNT` skips such a count, so
+  `All but five` states a wrong count and passes.
+- **A sentence with no count.** `Every FoxIO method except JA4 is specified only as an
+  image` holds no number to read.
+- **A long aside.** More than two words, or an aside inside two dashes, breaks the bond
+  between the count and the word `method`.
+- **A wide clause.** `CLAIM_WINDOW` is 40 characters, so a claim further than that from
+  the noun reaches no pattern.
+- **A synonym.** `technique` and `approach` reach nothing. `.claude/rules/ste.md` forbids
+  a synonym of a term, so a compliant page writes `method`.
+- **A count of another noun.** `Seven diagrams are the only specification FoxIO gives`
+  counts diagrams and not methods.
 
 These cases read prose. They import nothing from `ja4plus` and they produce no
 fingerprint.
@@ -101,13 +122,19 @@ HTML_TAG = re.compile(r"<[^>]+>")
 # because one paragraph states the image count beside a count of another thing.
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
+# One count, as a word or as a digit.
+COUNT = r"(?P<count>" + "|".join(NUMBER_WORDS) + r"|\d+)"
+
+# The noun a count binds to. `of them` and `of the twelve` carry the noun of the clause
+# before them, as in `The FoxIO methods number twelve, and seven of them are images`.
+COUNTED_NOUN = r"(?:(?:\s+[\w+/-]+){0,2}\s+methods?|\s+of\s+(?:them|the\s+twelve|twelve))\b"
+
 # A count that binds to the word `method`. The optional `of the twelve` carries the whole
 # set, and up to two words stand between the count and the noun, as in `Seven of twelve
 # FoxIO methods`.
 COUNT_PHRASE = (
-    r"\b(?P<count>" + "|".join(NUMBER_WORDS) + r"|\d+)\b"
-    r"(?:\s+(?:of|out\s+of)\s+(?:the\s+|its\s+)?(?:twelve|12))?"
-    r"(?:\s+[\w+/-]+){0,2}\s+methods?\b"
+    r"\b" + COUNT + r"\b"
+    r"(?:\s+(?:of|out\s+of)\s+(?:the\s+|its\s+)?(?:twelve|12))?" + COUNTED_NOUN
 )
 
 # The claim that makes a count an image count. FoxIO publishes a method as an image, or
@@ -117,7 +144,9 @@ IMAGE_CLAIM = (
     r"(?:"
     r"as\s+(?:an?\s+)?images?"
     r"|only\s+in\s+(?:an?\s+)?images?"
+    r"|image-only"
     r"|(?:carry|carries|hold|holds|have|has)\s+no\s+complete\s+text\s+specification"
+    r"|lacks?\s+(?:any\s+|a\s+)?complete\s+text\s+specification"
     r")"
 )
 
@@ -125,7 +154,32 @@ IMAGE_CLAIM = (
 # reaches the claim of a neighbouring clause and reports a count that sentence never made.
 CLAIM_WINDOW = r"[^.]{0,40}?"
 
-IMAGE_COUNT_CLAIM = re.compile(COUNT_PHRASE + CLAIM_WINDOW + IMAGE_CLAIM, re.IGNORECASE)
+# The word order that states the claim first and the count last, as in `The count of FoxIO
+# methods specified only as images is seven` and `FoxIO methods specified only as images:
+# seven`. #449 found four such spellings, and the first form of the reader read none.
+TRAILING_COUNT_CLAIM = (
+    r"\bmethods?\b" + CLAIM_WINDOW + IMAGE_CLAIM + r"[^.]{0,20}?(?:\bis\b|:)\s+" + COUNT + r"\b"
+)
+
+# The word order that opens with the count and names the noun after the claim, as in
+# `Seven is the count of FoxIO methods specified only as images`.
+LEADING_COUNT_CLAIM = (
+    r"\b" + COUNT + r"\s+is\s+the\s+(?:count|number)\s+of" + CLAIM_WINDOW + r"\bmethods?\b"
+    r"[^.]{0,40}?" + IMAGE_CLAIM
+)
+
+IMAGE_COUNT_CLAIMS = (
+    re.compile(COUNT_PHRASE + CLAIM_WINDOW + IMAGE_CLAIM, re.IGNORECASE),
+    re.compile(TRAILING_COUNT_CLAIM, re.IGNORECASE),
+    re.compile(LEADING_COUNT_CLAIM, re.IGNORECASE),
+)
+
+# A count that states the complement of the set, as in `All but one FoxIO method is
+# specified only as an image`. **The count of such a sentence is the count it excludes**,
+# so the reader skips it rather than report one where the inventory measures eleven.
+# **The hole is deliberate**: a page that writes `All but five` states a wrong count and
+# reaches no case here.
+COMPLEMENT_COUNT = re.compile(r"\ball\s+(?:but|except)\s*$", re.IGNORECASE)
 
 # The fixed phrase #211 forbade. It stands here as the record of the defect #449 measured,
 # and no case searches a document for it.
@@ -180,13 +234,23 @@ def image_count_claims(text: str) -> List[Tuple[int, str]]:
 
     Returns:
         The count and the matching phrase of each claim, in the order the text holds them.
+        A phrase that `all but` opens states the complement of the count, and the reader
+        returns nothing for it.
     """
     found: List[Tuple[int, str]] = []
     for sentence in SENTENCE_END.split(_plain(text)):
-        for match in IMAGE_COUNT_CLAIM.finditer(sentence):
-            word = match.group("count").lower()
-            count = NUMBER_WORDS[word] if word in NUMBER_WORDS else int(word)
-            found.append((count, match.group(0)))
+        # Two patterns match one sentence where the claim carries two word orders, so the
+        # reader reports each count of one sentence once.
+        counted: List[int] = []
+        for pattern in IMAGE_COUNT_CLAIMS:
+            for match in pattern.finditer(sentence):
+                if COMPLEMENT_COUNT.search(sentence[: match.start("count")]):
+                    continue
+                word = match.group("count").lower()
+                count = NUMBER_WORDS[word] if word in NUMBER_WORDS else int(word)
+                if count not in counted:
+                    counted.append(count)
+                    found.append((count, match.group(0)))
     return found
 
 
@@ -423,6 +487,12 @@ SUPERSEDED_PHRASINGS = (
     "Seven methods of the twelve are specified only as images.",
     "Seven of the twelve JA4+ methods hold no complete text specification.",
     "FoxIO publishes seven methods as images at the pinned commit.",
+    "The FoxIO methods number twelve, and seven of them are specified only as images.",
+    "The count of FoxIO methods specified only as images is seven.",
+    "Seven is the count of FoxIO methods specified only as images.",
+    "FoxIO methods specified only as images: seven.",
+    "Seven of the twelve FoxIO methods lack a complete text specification.",
+    "Seven of the twelve FoxIO methods are image-only.",
 )
 
 
@@ -433,9 +503,10 @@ def test_the_reader_reads_the_superseded_count_in_each_plausible_phrasing(senten
     assert counts == [7], f"the reader reads {counts} in {sentence!r}"
 
 
-# The sentences of the corpus that pair a count with an image or with a method and claim
-# no image count. A reader that reports one of these fires on every page and proves
-# nothing.
+# The sentences that pair a count with an image or with a method and claim no wrong image
+# count. The first six come out of the corpus and the last two state the true count as a
+# complement. A reader that reports a wrong count for one of these matches every page and
+# proves nothing.
 CONTROL_SENTENCES = (
     "7 of the 12 moved values are of that shape, and the prose alone covers them.",
     "FoxIO published a text specification for seven methods, and commit `b6f3ff4` deleted"
@@ -445,14 +516,24 @@ CONTROL_SENTENCES = (
     "The deleted `JA4H.md` states the nine request methods it counts.",
     "Eleven of the twelve FoxIO methods carry no complete text specification, and JA4 is"
     " the one method that holds one.",
+    "All but one FoxIO method is specified only as an image.",
+    "All except one of the twelve methods is specified only as an image.",
 )
 
 
 @pytest.mark.parametrize("sentence", CONTROL_SENTENCES)
-def test_the_reader_reads_no_claim_where_a_sentence_counts_another_thing(sentence: str) -> None:
-    """The reader reports no superseded count for a sentence that counts another thing."""
+def test_the_reader_reads_no_wrong_count_where_a_sentence_counts_another_thing(
+    sentence: str,
+) -> None:
+    """The reader reports no wrong count for a sentence that states a true count or another.
+
+    A reader that reported one of these would fail every page and prove nothing, so each
+    count it reads here must equal the count the inventory measures.
+    """
     counts = [count for count, _ in image_count_claims(sentence)]
-    assert 7 not in counts, f"the reader reads {counts} in {sentence!r}"
+    assert all(count == measured_image_count() for count in counts), (
+        f"the reader reads {counts} in {sentence!r}"
+    )
 
 
 def test_the_reader_reads_a_claim_that_a_line_break_splits() -> None:
@@ -461,11 +542,15 @@ def test_the_reader_reads_a_claim_that_a_line_break_splits() -> None:
     assert [count for count, _ in image_count_claims(wrapped)] == [7]
 
 
-def test_a_fixed_phrase_reads_over_the_phrasing_the_rendered_page_carried() -> None:
-    """The phrase #211 forbade reads nothing in the phrasing `docs/specs/spec.html` carried."""
+def test_the_fixed_phrase_matches_no_part_of_the_phrasing_the_rendered_page_carried() -> None:
+    """The phrase #211 forbade matches nothing in the sentence `docs/specs/spec.html` held.
+
+    This case is the record of the defect. The fixed phrase misses the page and the shape
+    reads it, so the two halves stand beside each other.
+    """
     carried = "Seven of twelve FoxIO methods are specified only as images."
     assert SUPERSEDED_PHRASE not in carried.lower(), (
-        "the fixed phrase now matches, and this case records why a fixed phrase is not a check"
+        "the fixed phrase now matches the sentence, and this case records the opposite"
     )
     assert [count for count, _ in image_count_claims(carried)] == [7]
 
