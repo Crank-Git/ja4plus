@@ -73,7 +73,8 @@ VERSION_CHECK_BLOCK = re.compile(
 
 # The line the version check writes on success. The case reads the declared version into
 # this form, so a check that printed a constant would fail it.
-VERSION_CHECK_REPORT = "version {version} has a changelog section"
+# #543 added the release date and the classifier to the check, and the line names both.
+VERSION_CHECK_REPORT = "version {version} has a dated changelog section and the right classifier"
 
 # The text of step 1 before #512, quoted from the file rather than rewritten. The
 # discrimination cases read it, so the defect cannot come back unmeasured.

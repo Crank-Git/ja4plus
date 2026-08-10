@@ -98,7 +98,7 @@ def compute_ja4x_from_pem(cert_pem_bytes: bytes | str) -> str | None:
 #
 # **Keep the plain string assignment.** `setuptools` reads the value from the syntax tree,
 # so a computed value would make a build import this module and every dependency it loads.
-__version__ = "0.6.0"
+__version__ = "1.0.0"
 __author__ = "ja4plus contributors"
 __license__ = "BSD-3-Clause"
 

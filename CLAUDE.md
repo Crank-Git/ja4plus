@@ -4,7 +4,8 @@
 produces JA4+ fingerprints. FoxIO publishes the JA4+ standard. This project is an
 independent implementation of it.
 
-Version 0.6.0 is on PyPI. The project is working toward version 1.0.0.
+This repository declares version 1.0.0, and `ja4plus/__init__.py:101` holds that one
+declaration. A publish to PyPI is a separate step, and the maintainer runs it.
 
 Design lives in `docs/specs/`. Read `docs/specs/spec.md` and the relevant
 `docs/specs/features/*.md` before you build a feature.

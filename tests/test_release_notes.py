@@ -41,8 +41,10 @@ MIGRATION = REPO_ROOT / "docs" / "migration-0.6-to-1.0.md"
 SPECIFICATION = REPO_ROOT / "docs" / "specs" / "spec.md"
 
 # The heading of the release notes. Keep a Changelog opens a version section with the
-# version in brackets, as `## [0.6.0] - 2026-05`. The date arrives with the promotion of
-# `dev` to `master`, so the section reads `unreleased` until then.
+# version in brackets, as `## [0.6.0] - 2026-05`. The section read `unreleased` until #543
+# declared version 1.0.0 and dated the heading, and this pattern reads no date either way.
+# `release_date_disagreement` of `tests/version_gate.py` holds the date of the declared
+# version.
 RELEASE_HEADING = re.compile(r"^## \[1\.0\.0\]", re.MULTILINE)
 
 # Any second-level heading. It closes the section above it.

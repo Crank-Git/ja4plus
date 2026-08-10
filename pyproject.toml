@@ -24,7 +24,12 @@ license = {text = "BSD-3-Clause AND LicenseRef-FoxIO-1.1"}
 requires-python = ">=3.9"
 keywords = ["ja4", "ja4plus", "fingerprinting", "tls", "tcp", "http", "ssh", "x509", "network", "security", "scapy"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    # **`FR-release-12` states this line, and #69 ruled that `Development Status :: 3 -
+    # Alpha` holds until the release commit of version 1.0.0.** The classifier is a promise
+    # about the interface, so the commit that makes the promise true writes it. #543 is that
+    # commit. `tests/version_gate.py` reads this line against `ja4plus.__version__`, so a
+    # later version that returns to the alpha classifier fails a case.
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
