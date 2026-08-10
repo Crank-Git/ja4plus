@@ -128,6 +128,43 @@ holds every breaking change of this record against a row of that page.
   commit and the same three counts after. Coverage holds at 94% with 4292 statements and 273
   misses.
 
+- **The built wheel carries the mapping file and the `py.typed` marker, and it carries no test,
+  example or documentation file** (#69). Round TBD. `FR-release-10` and `FR-release-11` state
+  the two requirements, and new file `tests/test_packaging.py` holds nine cases against the
+  built wheel. **#455 already repaired the wheel these cases read**, so this round measures a
+  state that holds and it changes no packaging rule. A read of 2026-08-10 reports 39 entries
+  and 155900 bytes, and #455 reports the same entry count. **The value of a case here is the
+  direction it fails in**, so four mutation cases prove both directions on a copy of the
+  wheel: a copy without `ja4plus/py.typed`, a copy without `ja4plus/data/ja4plus-mapping.csv`,
+  a copy that gains one entry under `tests/`, and an archive that lists no entry at all.
+  **An aggregate over an empty set passes**, so `packaging_faults` reads the entry count
+  before it reads the exclusion rule, and the floor stands at 30 entries. **A mutation writes
+  a copy and it edits no byte of the built wheel**, which `test_the_mutation_leaves_the_built_wheel_unchanged`
+  measures by digest. **A second read of 2026-08-10 states which mechanism ships each required
+  entry, and it corrects a plausible reading.** With `[tool.setuptools.package-data]` cut to
+  `ja4plus = ["data/*.csv"]` and the exclusion list cut to `["examples", "assets", "assets.*"]`,
+  the build still listed `ja4plus/py.typed`. `include-package-data` is true by default and the
+  file finder of `setuptools-scm` reports every tracked file, so a tracked file below the
+  package ships whatever the package-data list holds. That weakened build listed 376 entries
+  and 337 of them lay under `tests/`, `examples/` and `docs/`, and the excluded-tree case
+  failed with `the wheel carries 337 of its 376 entries under ['tests/', 'examples/',
+  'docs/']`. The measurement restored `pyproject.toml`, and `git status` reported the file
+  unchanged after the restore. **This round repeats one reading of that file for the mapping
+  file and one for the documentation tree**, because `FR-release-10` and `FR-release-11` each
+  name them beside another entry and a case reads a whole requirement. **It repeats no other
+  reading of `tests/test_installed_wheel.py`**, which holds the assets tree, the top-level
+  name and the whole payload; the new file imports `build_artifacts` and `wheel_entry_names`
+  from it. **The user ruled on 2026-08-10 that the project holds
+  `Development Status :: 3 - Alpha` until the maintainer tags version 1.0.0.** The classifier
+  is a promise about the interface, and the release commit of 1.0.0 makes that promise true.
+  `FR-release-12` therefore stays open, and this round changes no line of `pyproject.toml`.
+  **The ruling declines the third acceptance criterion of #69**, so this round builds no part
+  of it. `docs/specs/features/09-release.md` gains two sections, three edge cases and two
+  ticked criteria. No file under `ja4plus/` changes and no fingerprint moves. The unit suite
+  reports 3950 passed, 4 skipped and 8 xfailed, the conformance suite reports 1532 passed,
+  143 skipped and 134 xfailed, and the `installed_wheel` marker reports 43 passed. Coverage
+  holds at 94% with 4292 statements and 273 misses.
+
 - **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round 182.
   **Three FoxIO records at the pinned commit
   `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` name a different set of methods.**
