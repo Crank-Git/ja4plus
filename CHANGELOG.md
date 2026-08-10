@@ -987,6 +987,84 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The release skill reads the version from `ja4plus/__init__.py`** (#512). Round TBD.
+  **Step 1 of `.claude/skills/release/SKILL.md` named `pyproject.toml` as the one version
+  declaration, and it said that `ja4plus/__init__.py` reads the value with
+  `importlib.metadata`.** #67 reversed both directions two rounds earlier: the declaration
+  is the plain string assignment at `ja4plus/__init__.py:101`, and `pyproject.toml` names
+  `version` in its `dynamic` list and reads it from `ja4plus.__version__`. **A maintainer
+  who followed step 1 edited a file that declares no version**, so the release shipped the
+  old number. Step 2 held the same defect in a second form: it read the version out of
+  `pyproject.toml` with `tomllib`, which the `[project]` table no longer holds, and
+  `tomllib` reaches no Python 3.9 job of the matrix. Step 1 now names the file and the
+  line, states that a bump edits that line alone, and carries two rules a bump needs.
+  **`setuptools` reads the value from the syntax tree of the module**, so the assignment
+  stays a plain string, because #67 measured that a computed value makes a build import
+  the package and every dependency it loads and that failure appears at release time. **A
+  bump needs a matching `## [<version>]` section of `CHANGELOG.md`**, which
+  `tests/release_body.py` reads for the release body, so an absent section fails step 5.
+  Step 2 now reads `package_version`, `version_disagreement` and `changelog_disagreement`
+  of `tests/version_gate.py`, which is the reader `tests/test_version_gate.py` holds cases
+  against, so the manual check and continuous integration read one condition. **A skill
+  file carried no case until this round, and that is why the defect survived two rounds.**
+  `tests/test_release_skill.py` holds 15 cases, and every one of them reads the repository
+  rather than a second copy of the skill text. The source cases open the file the skill
+  names, read the line the skill names, and require `PACKAGE_DECLARATION` of
+  `tests/version_gate.py` to match it, and one case requires `declaration_files` to report
+  that same file and no other. The command case extracts the fenced block of step 2, undoes
+  the indent of the numbered step, runs it in a subprocess at the repository root, and
+  requires the version that `ja4plus/__init__.py` declares in the output. **A line number
+  goes stale in silence, and this reader fails loudly instead**, so the case set holds a
+  mutation that names line 102 and it reports what that line holds. Eight of the 15 cases
+  failed against the unrepaired file, on
+  `AssertionError: assert 'the release skill names no version source and no line' is None`
+  among others. A restored mutation that returns step 1 to `pyproject.toml` fails three
+  cases, and the first of them reports the line below.
+
+  ```text
+  assert 'line 20 of `pyproject.toml` reads \'dynamic = ["version"]\' and declares no `__version__`' is None
+  ```
+
+  **Every pattern of the new file joins its words with `\s+`**, because the skill wraps at
+  90 columns and a literal space matches no sentence that wraps between two of its words.
+  **Steps 3, 4, 5 and 6 rest on no part of the old arrangement**, and this round leaves all
+  four unchanged: `tests/release_verification.py`, the `installed_wheel` marker,
+  `tests/release_body.py` and `gh run list` each read the package version already. **The
+  table of `### The version count, measured on 2026-08-09 and settled on 2026-08-10` in
+  `docs/specs/features/09-release.md` records a past read and this round rewrites none of
+  it.** No file under `ja4plus/` changes and no fingerprint moves.
+- **The batch-gate rule records the twelfth required context of `dev`** (#546). Round
+  TBD. **The user added `skip-gate` to the branch protection rule of `dev` on 2026-08-10**,
+  and `.claude/rules/batch-gate.md` stated eleven required contexts. Two cases of
+  `tests/test_batch_gate_protection_rule.py` failed on `dev` at `61e04f1`:
+  `test_the_provider_requires_the_contexts_the_rule_file_lists` and
+  `test_the_provider_carries_the_stated_application_on_every_context`. **The repair is the
+  record, and no assertion of those cases moved.** The read of 2026-08-10 that #546 took
+  returns `200` with twelve required contexts: `lint`, `fuzz`, `samples`, `conformance`,
+  `installed-wheel`, the six `test (...)` entries of the matrix, and `skip-gate`. Every
+  entry of `required_status_checks.checks[]` carries `app_id` 15368, `enforce_admins` reads
+  `false`, `strict` reads `false`, and `gh api repos/Crank-Git/ja4plus/rulesets` returns
+  `[]`. **The protection section holds two reads of one date**, so each record names the
+  issue that took it: #480 read eleven contexts and #546 read twelve. The eleven-context
+  reading stays as a quoted record under a paragraph that marks it superseded, and the
+  2026-08-09 reading already holds that form. **A reader who meets a new required context
+  needs the condition that turns it red**, so the section states that `skip-gate` fails a
+  case which every report records as skipped, and it names Round 201 as the round that
+  built the job. New case
+  `test_the_rule_file_states_what_the_twelfth_required_context_refuses` holds that
+  statement, and it failed before the repair. **A self-review read the first form of that
+  case as satisfiable by prose that names the check and states no condition.** The case now
+  cuts every fenced block before it reads a sentence, because the check-name list holds no
+  full stop and joins the sentence beside it. It also requires the word `skipped`, which
+  names the input that turns the check red. **Two mutations prove that it bites**: prose
+  that drops `skipped` and prose that names no check each fail it.
+  `.github/workflows/test.yml` and
+  `docs/specs/features/09-release.md` each stated the eleven in live prose, and both now
+  state the twelve. **The dated records keep the eleven**: the entry of Round 197 in this
+  file, the row of Round 174 in `docs/specs/spec.md` and the quoted reading of the rule
+  file each record a past measurement, and this round supersedes such a record rather than
+  rewrites it. **No file under `ja4plus/` changes and no fingerprint moves.**
+
 - **The documentation slug case runs on one job of the matrix** (#529). Round 200. **The
   census of #524 read `tests/test_documentation_site.py:222` as a class c site**: the case
   skipped on all six jobs of `.github/workflows/test.yml`, and no limit of the runner
@@ -2493,8 +2571,23 @@ holds every breaking change of this record against a row of that page.
   and the `Part e of JA4TS` row of the divergence register. Each one was read in place,
   because the five sentences differ around the clause. `docs/specs/foxio/zeek.md:618` carries
   the clause once and this round leaves it, because that line held `ruling` before #533 and
-  no swap reached it. **This round moves no fingerprint, and no file under `ja4plus/`
-  changes.**
+  no swap reached it. **The sub-merge gate found one more instance, and a member wrote it
+  after the sweep ran.** #512 landed on the integration branch while this member worked, and
+  it wrote `records the decision` into `.claude/skills/release/SKILL.md:36`. Neither member
+  is wrong: #512 wrote correct prose against the vocabulary of its day, and this round states
+  the vocabulary that now holds. This member took the integration branch, swept that line to
+  `records the ruling`, and read the whole file rather than the one line, because #512
+  rewrote two steps and added a section. #546 also landed while this member worked and wrote
+  prose into `.claude/rules/batch-gate.md`, `.github/workflows/test.yml` and
+  `docs/specs/features/09-release.md`; a read of all three reports no instance. The case
+  reports 146 passed on the merge result and 136 lines of 30 documents now name the term.
+  **A member gate reads the corpus at one moment, and it bars no word a later member
+  writes.** This case therefore holds the corpus where it runs, and only a run on the merge
+  result holds the corpus a reader gets. #438 and #530 recorded the same shape for two other
+  gates. **The batch gate is where this case must run**, and it runs there today, because
+  `.github/workflows/test.yml` filters no path and accepts every pull request into `dev`. No
+  repair is needed for that, and it is a property of the batch model rather than a defect of
+  this case. **This round moves no fingerprint, and no file under `ja4plus/` changes.**
 - **One file declares the version, and two gates hold it against the project metadata and
   the changelog** (#67). Round 187. `pyproject.toml` declared `version = "0.6.0"` at line 7
   and `ja4plus/__init__.py` declared it again at line 94, so the two records could
