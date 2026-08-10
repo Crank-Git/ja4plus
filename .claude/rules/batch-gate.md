@@ -1,10 +1,51 @@
 # The batch gate
 
-**An absent run is not a passed run.** The batch pull request is the only run of a
-member's cases on Linux, because every member commit carries a skip keyword by design.
-`gh pr checks` writes "no checks reported" where the pull-request event created nothing.
-That line refuses no merge, so a reader takes an absence for a pass and merges an ungated
-batch. #459 records the failure and this file states the procedure.
+**An absent run is not a passed run.** The batch pull request stays the only run of a
+member's cases on Linux, because every member commit ends with a skip keyword by design and
+#459 measured that such a commit creates no run. `gh pr checks` writes "no checks reported"
+where the pull-request event created nothing. That line refuses no merge, so a reader takes
+an absence for a pass and merges an ungated batch. #459 records the failure and this file
+states the procedure.
+
+## Which pull request creates a run
+
+**Two conditions stand between a pull request and a run, and each one alone stops it.** A
+skip keyword in the head commit message is the first, which the section below states. The
+base-branch filter of the workflow is the second, and this section states that one.
+
+```yaml
+on:
+  pull_request:
+    branches: [master, dev, "batch/**", "epic/**"]
+```
+
+**The `branches` filter of a `pull_request` event matches the base branch and never the
+head branch.** GitHub states that the filter runs a workflow "only on pull requests that
+target specific branches". Verified against
+https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
+(retrieved 2026-08-10).
+
+**#438 measured what the older filter of `[master, dev]` cost, and that measurement is the
+reason the user widened it on 2026-08-10.** That filter accepted the batch pull request and
+the promotion, and it accepted no member pull request, so a pull request into an
+integration branch created no run at all. Pull request #519 carried a keyword-free head
+into `batch/510-dry-run-and-gates` and the provider held no run for it.
+
+**A check that reaches the batch pull request alone can pass by construction.**
+`tests/test_round_entry_existence.py` fails a change set that edits a tracked file and
+records no round. A batch pull request reads its change set against the tip of `dev`, and
+every member of a batch has already recorded a round, so that check finds an entry whatever
+one member did. **The member pull request is the change set the check exists to refuse, and
+the older filter kept it away from the job.** Read a new check against this shape before
+you trust it.
+
+**The widened filter costs no run that the batch model saved.** A member commit ends with
+the keyword, so a member pull request still creates no run. A keyword-free head is the one
+head that now starts one, and a member branch carries such a head only where a worker
+writes one on purpose.
+
+**Warning: `master` and `dev` stay in the list.** The batch pull request and the promotion
+each target one of them, and they are the runs the merge gate reads.
 
 ## Read the gate before every batch merge
 

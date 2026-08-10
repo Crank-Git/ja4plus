@@ -18,11 +18,27 @@ name: Tests
 # **An absent run is not a passed run.** `gh pr checks` writes "no checks reported", which
 # refuses no merge. `.claude/rules/batch-gate.md` states the procedure, and
 # `python -m tests.batch_gate --pr <number>` holds the condition.
+#
+# **The `pull_request` filter matches the base branch of a pull request, and #438 measured
+# what that cost.** A filter of `[master, dev]` accepts the batch pull request and the
+# promotion, and it accepts no member pull request, so a pull request into an integration
+# branch created no run at all. `tests/test_round_entry_existence.py` therefore reached the
+# `test` job on a batch pull request alone, where the change set spans the whole batch and
+# every member has already recorded a round. **The check passed by construction and it
+# never refused the member pull request it exists to refuse.** The user ruled on 2026-08-10
+# that the filter widens to the integration branches.
+#
+# **The widened filter costs no run that the batch model saved.** A member commit ends with
+# a skip keyword by design, and #459 measured that such a commit creates no run for any
+# event. A member pull request therefore still creates no run, and a keyword-free head is
+# the one head that now starts one.
 on:
   push:
     branches: [master, dev]
   pull_request:
-    branches: [master, dev]
+    # `master` and `dev` accept the batch pull request and the promotion. `batch/**` and
+    # `epic/**` accept a member pull request, which the paragraph above explains.
+    branches: [master, dev, "batch/**", "epic/**"]
   workflow_dispatch:
 
 env:
@@ -71,6 +87,44 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Fetch the base commit of the pull request
+        # `tests/test_round_entry_existence.py` reads the change set of the branch against
+        # a reference commit. The step above makes a clone of depth 1, which holds no
+        # `origin/dev` ref and no history behind the checked-out commit, so
+        # `git merge-base` fails and the case skipped on every job before #438.
+        #
+        # **`git diff` and `git show` read a commit that no history connects to `HEAD`.**
+        # A diff compares two trees, so one extra commit is the whole requirement. #438
+        # measured the pair on a clone of depth 1: both commands answered and
+        # `git merge-base` exited 1.
+        #
+        # **#438 declined `fetch-depth: 0` on cost.** A read of 2026-08-10 reports 14844 KB
+        # for the clone of depth 1, 15452 KB after this fetch, and 18728 KB for the whole
+        # history of every branch. This step therefore costs 608 KB against 3884 KB, and
+        # the `fetch-depth: 0` cost rises with every commit the project makes.
+        #
+        # A push event carries no base commit, and a push to the integration branch has no
+        # change set to read. The case skips there and the `if` condition states that.
+        #
+        # **The fetch writes a ref, because a commit that no ref reaches is unreachable.**
+        # A bare `git fetch origin <sha>` writes `FETCH_HEAD` and no ref. #438 measured the
+        # ref form on a clone of depth 1: the commit survived `git gc --prune=now` and both
+        # `git diff` and `git show` still read it.
+        #
+        # **#438 declined `continue-on-error` on this step.** A failed fetch leaves the
+        # variable empty and the case skips, and `.claude/rules/batch-gate.md` states that
+        # an absent result is not a passed result. A red step names the state, and a green
+        # job over a silent skip is the failure this issue exists to remove.
+        #
+        # `${{ }}` reaches the `env` block and never the `run` block, because an expression
+        # inside a shell command is a script-injection path.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"
+          echo "ROUND_ENTRY_REFERENCE=$BASE_SHA" >> "$GITHUB_ENV"
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
