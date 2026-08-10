@@ -4,6 +4,71 @@ All notable changes to ja4plus are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-08-10
+
+Version 1.0.1 follows version 1.0.0, and no version stands between them. The date of the
+heading above is the date this release reaches `master`.
+
+**No behaviour changes and no fingerprint moves.** The conformance suite reports 1635
+passed, 143 skipped and 140 xfailed at version 1.0.0, and it reports the same three
+counts here. **No published name changes.** `ja4plus/__init__.py` promises the same 25
+top-level names version 1.0.0 promised, so a caller upgrades and edits no line. The
+version string reaches no fingerprint, and the count above measures that rather than
+asserts it.
+
+Version 1.0.1 carries the three repairs of one batch, and it carries no other change.
+
+1. The release body names every link absolutely, against the tag of the version (#566).
+2. The interface table of [`docs/api_reference.md`](docs/api_reference.md) names every
+   published name, and [`docs/migration-0.6-to-1.0.md`](docs/migration-0.6-to-1.0.md)
+   states a sentence a reader can use (#562).
+3. The ruling vocabulary case reads the Python prose corpus beside the Markdown corpus
+   (#548).
+
+**The source distribution and the wheel both change.** The source distribution ships
+`docs/` and `CHANGELOG.md`, and the vocabulary repair edits docstrings under `ja4plus/`.
+The classifier holds at `Development Status :: 5 - Production/Stable`, because #69 ruled
+that the line arrives at version 1.0.0 and holds from there.
+
+- **The version reaches 1.0.1** (#567). Round
+  TBD. Three lines carry this release. `ja4plus/__init__.py:101` declares `1.0.1` as a
+  plain string, this section states what the release carries, and `pyproject.toml` moves
+  no line at all. **The plain string assignment stays**, because #67 measured that
+  `setuptools` reads the value from the syntax tree, and a computed value makes a build
+  import the package and every dependency it loads. **`pyproject.toml` declares no
+  version**, so the bump edits one file and the two records cannot disagree. **The
+  classifier stays where version 1.0.0 wrote it**, and `classifier_disagreement` of
+  `tests/version_gate.py` reads the same line at 1.0.1: `expected_classifier` splits the
+  major number, reads 1, and returns `Development Status :: 5 - Production/Stable`, which
+  is the line `pyproject.toml` already holds. **The case came first and it failed on the
+  bump**: ``AssertionError: `CHANGELOG.md` holds no `## [1.0.1]` section, and it holds
+  ['1.0.0', '0.6.0']``, beside ``AssertionError: `CHANGELOG.md` holds no `## [1.0.1]`
+  heading`` from `release_date_disagreement`. **The section states a release date and
+  never the word round 207 bars**, so the second reader passes on the dated heading. **The
+  release carries no behaviour change**, and the conformance suite reports 1635 passed,
+  143 skipped and 140 xfailed before this round and the same three counts after it.
+  **Two proofs stand beside the five gates, because no continuous-integration job runs
+  `.github/workflows/publish.yml`.** A build environment that holds neither `scapy` nor
+  `cryptography` produced `ja4plus-1.0.1.tar.gz` and
+  `ja4plus-1.0.1-py3-none-any.whl`, and each artifact reads `1.0.1` from its own metadata.
+  `python -m tests.release_verification --dist dist` then ran the five checks of step 3 of
+  `.claude/skills/release/SKILL.md` and reported the release ready to publish.
+  **`python -m tests.release_body` writes a body of 4815 characters against the limit of
+  125000**, and that body opens with the dated `## [1.0.1]` heading. **#566 writes every
+  relative target of the body against the tag**, so the interface-table link of the
+  list above reads
+  ``[`docs/api_reference.md`](https://github.com/Crank-Git/ja4plus/blob/v1.0.1/docs/api_reference.md)``
+  in the body, and it keeps its relative form in this record.
+  **The coverage count does not move**, because a version string is one statement that the
+  suite already runs: `--cov=ja4plus` reports 4316 statements, 273 missed and 94 percent,
+  which is the reading #548 took. **This round writes no case**, because
+  `test_the_changelog_holds_a_section_for_the_declared_version` already reads the
+  declaration against the record, and the bump is what makes it fail. `pytest
+  --collect-only` reads 4646 cases at the base commit `3c65146` and 4646 here, and the
+  unit suite reports 4631 passed, 7 skipped and 8 xfailed.
+  **This round publishes nothing.** It creates no release, it writes no tag, and it starts
+  no workflow.
+
 ## [1.0.0] - 2026-08-10
 
 Version 1.0.0 follows version 0.6.0, and no version stands between them. The date of the
