@@ -56,6 +56,29 @@ misrepresents the person.
 15. Write positively. State what to do.
 16. Use a vertical list whenever a sentence would carry more than two conditions.
 
+## The one exemption
+
+**Rule 1 exempts two records, and it exempts no other document.** The user ruled on
+2026-08-10, on #457.
+
+- The entries of `CHANGELOG.md`, which each record one round.
+- The `## Changelog` table of `docs/specs/spec.md`, which holds one row for each round.
+
+**A record states a past measurement, and this project quotes such a record.** A rewrite
+of the 159 rows falsifies nothing they record. It does mean that the text a past reader
+saw is not the text a future reader sees.
+
+**Warning: read the exemption as these two records alone.** A file whose name holds the
+word `changelog` holds the limit. `docs/CHANGELOG.md` is such a file. Every other rule
+of this standard reaches both records, among them one word one meaning, active voice, and
+the verbatim list above.
+
+Where a self-review finds a Changelog row past the limit, read this section and record
+nothing. #393 raised the second such finding, and #457 ends them.
+
+`tests/test_changelog_sentence_exemption.py` reads this section against the tracked
+document list of git. A third record that claims the exemption fails a case there.
+
 ## Patterns
 
 **A functional requirement.** One testable statement, active voice, no conjunction.
@@ -122,7 +145,8 @@ this standard and name the issue:
 
 ## Check before you save the file
 
-- [ ] No sentence is longer than 25 words. No instruction is longer than 20.
+- [ ] No sentence is longer than 25 words. No instruction is longer than 20. The one
+      exemption above covers two records.
 - [ ] Every step holds one instruction.
 - [ ] Every condition comes before its action. Every warning comes before its step.
 - [ ] Every domain word is in the `## Terms` table, with one meaning.

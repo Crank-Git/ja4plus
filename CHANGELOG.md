@@ -73,6 +73,31 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round 182.
+  **Three FoxIO records at the pinned commit
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` name a different set of methods.**
+  `License FAQ.md:5` names twelve, the FoxIO `README.md:293` names nine, and `LICENSE:3`
+  names thirteen. `LICENSE:3` spells the scanner `JA4SScan`, and it names a `JA4E` that
+  neither other record names. **This round read all three lines again**, from a checkout
+  outside this repository, because #388 measured them on 2026-08-09. All three counts
+  hold. **No statement of equality with FoxIO's list can be true**, so the subset wording
+  of `README.md` stands and the file does not change. **The user ruled on 2026-08-10.**
+  The register carries the record, because a measurement that lives only in a closed issue
+  is a measurement the next reader repeats. **This is a candidate reference defect outside
+  the two shapes `.claude/rules/conformance.md` declines**, because it moves no
+  fingerprint. That rule sends such a case to the user. **The register quotes each
+  FoxIO line verbatim**, because `.claude/rules/ste.md` bars a rewording of text copied
+  from the FoxIO material. **A second row records `JA4Scan` as not implemented, with no
+  decision taken.** That is the true state, and the row writes no reason for a decline
+  because no round holds one. **JA4TScan keeps its existing entry** under `Non-goals`.
+  `README.md:42` states that it sends crafted packets, so it reaches a network the
+  operator did not capture. That decision is unrelated to the license. New file
+  `tests/test_foxio_license_register.py` holds seven cases against the two rows, and all
+  seven failed before the rows landed. **A floor refuses a reader that found no row**,
+  because an aggregate over an empty set passes. One case bars a decline phrase from the
+  `JA4Scan` row, so a later writer cannot turn a recorded absence into a recorded
+  decision. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **A change set that records no round fails a case** (#429). Round 156. New file
   `tests/test_round_entry_existence.py` reads the change set of the branch and requires one
   new round entry in `CHANGELOG.md` and one new Changelog row in `docs/specs/spec.md`. The
@@ -504,6 +529,96 @@ holds every breaking change of this record against a row of that page.
   No file under `ja4plus/` changes and no fingerprint moves.
 
 ### Fixed
+
+- **The sentence-length rule exempts the two records and no other document** (#457).
+  Round 180. #393 found about twelve sentences of its own Changelog row past the 25-word
+  limit, and that finding is correct against the letter of the rule. All 159 numbered rows
+  read the same way, so a row written to the limit is a house-style change for the whole
+  record. **The user ruled on 2026-08-10 that the record is exempt.** A dated record of a
+  past measurement is quoted and not rewritten. A rewrite of the rows falsifies nothing they
+  record, and it does mean that the text a past reader saw is not the text a future reader
+  sees. `.claude/rules/ste.md` gains the section `## The one exemption`, which names the
+  entries of `CHANGELOG.md` and the `## Changelog` table of `docs/specs/spec.md`. **The
+  exemption names a path and never a class of files.** A blanket exemption for any file
+  whose name holds the word `changelog` reaches `docs/CHANGELOG.md`, which this ruling never
+  read. New file `tests/test_changelog_sentence_exemption.py` holds 27 cases.
+  `exempt_records` reads the list of that section alone, `reaches` matches one document
+  against one record, and `evaluate` reports three states: a record the ruling names
+  nowhere, a document the exemption reaches outside the two records, and a document set
+  below the floor of 40. The document set reads `git ls-files -z '*.md'`, which names 59
+  pages, and an anchor case holds one page of each depth and of each root. **An aggregate
+  over an empty set passes**, so a reading over no document fails there rather than
+  reporting a green result. **The reader reads a path before a blanket word.** The first
+  item holds the word `each` in the clause `which each record one round`, and the first form
+  of the reader read that item as a class of files. **The sentence reader drops the emphasis
+  marks first.** This project opens a paragraph with a bold sentence, the mark stands
+  between the period and the space, and a reader that keeps the mark joins two sentences
+  into one. **The cases came first and they bite**: against the unrepaired rule they failed
+  5 of 27. **Two live mutations prove the failing direction.** A third record, the entries
+  of `docs/CHANGELOG.md`, added to the shipped rule kills 2 cases, and one failure reads
+  `the exemption reaches these documents outside the two records: ['docs/CHANGELOG.md']`. A
+  blanket item that exempts any file whose name holds the word `changelog` kills 4 cases.
+  Each mutation was restored and the 27 cases are green after each restore. **A self-review
+  found a third widening and two cases now close it.** The first form of the reader kept the
+  first path of an item alone, so the item
+  that names the entries of `CHANGELOG.md` and `docs/CHANGELOG.md` reported nothing, and the
+  exemption reached a third document. `exempt_records` now returns one record for each path of an
+  item. **A case measures the two records, and it measures no other document of this
+  repository.** The entries of `CHANGELOG.md` hold 191 sentences past the limit and the
+  `## Changelog` table of the specification holds 787, so the exemption does work. Both
+  counts include the entry and the row of this round. `.claude/rules/ste.md` holds
+  no such sentence, and a case reads that file against the limit it states. **A sweep that
+  measured every sentence of every page is separate work, and this ruling orders none.**
+  Every other measurement here runs on a document the case writes. **A worker's self-review
+  that reaches a Changelog row's
+  sentence length now reads the exemption and records nothing.** #393 raised the second such
+  finding and this round ends them. No file under `ja4plus/` changes and no fingerprint
+  moves.
+
+- **The prose names the statistics thread by its controlled term** (#441). Round 183. The
+  `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
+  thread, and the prose of the package used `the reporter` throughout. The self-review of
+  #371 found the disagreement and declined the repair, because a repair inside that diff
+  would have stood `the reporter` and `the statistics thread` in adjacent sentences of one
+  paragraph. **The user ruled on 2026-08-10 that the prose changes and every identifier
+  holds its name.** `.claude/rules/ste.md` exempts an identifier from the standard, so
+  `StatisticsReporter`, `report_statistics` and `TheReporterWritesOneLinePerInterval` keep
+  their names. **A rename of a published name is a breaking change this ruling does not
+  make**, and the two published names reach a caller. **A dated record of a past
+  measurement is quoted, not rewritten.** The Changelog rows of #55, #369 and #371 each
+  name the rejected word, this round read all three, and it leaves all three exactly as
+  they read. **The case is worth more than the edit, so the case came first.** New file
+  `tests/test_statistics_thread_term.py` holds 283 cases at this commit. `rejected_words` reads the
+  fourth column of the `## Terms` row, so a change to the row changes what every case
+  forbids, and a case fails where the row stops rejecting the word. Two parametrized cases
+  read the Markdown corpus of `git ls-files '*.md'` and the Python corpus of
+  `git ls-files 'ja4plus/*.py' 'tests/*.py'`. The Markdown corpus holds
+  `docs/specs/spec.html` beside the Markdown pages, because a writer edits that page by
+  hand. `python_prose` of
+  `tests/test_documented_method_count.py` extracts the comments and the docstrings of a
+  Python file, so no line of code reaches a case. **The reader reads a whole word alone**,
+  so no part of a compound identifier reaches a case, and six exempt identifiers hold that
+  boundary. **It drops every fenced block and every code span first**, because the
+  standard reproduces an identifier verbatim. **The reader drops a code span one line at a
+  time**, because a search over a whole page pairs a backtick of one line with a backtick
+  far below it. **An aggregate over an empty set passes**, so each corpus carries a floor
+  and a case proves the floor fails a corpus of no file. `readable_prose` cuts
+  `CHANGELOG.md`, the `## Changelog` table of the specification and the `## Terms`
+  section, which is the authority the cases read. **The cases bite**: against the
+  unrepaired prose they failed 3 cases and named `docs/api_reference.md`,
+  `ja4plus/watch.py` and `tests/test_watch_statistics.py`. **This round read each paragraph
+  whole after the change, and not line by line**, which is the defect rule 7 names. The repair
+  removes 24 prose occurrences of the rejected word, across the docstrings of
+  `ja4plus/watch.py`, one table cell and one paragraph of `docs/api_reference.md`, and the
+  docstrings and the comments of `tests/test_watch_statistics.py`. Seventeen of them now
+  read `the statistics thread`. The other seven read `the thread` or a pronoun, where the
+  full term would repeat inside one sentence. One message of an assertion reads the term
+  too. **A string literal that is no docstring reaches no case**, so that message is a
+  hole this module records rather than closes. **The row rejects `timer` and `ticker`
+  beside `reporter`, and no case forbids either one.** Two feature pages state that
+  eviction runs on packet arrival and on no timer, each sentence names a general mechanism
+  rather than the statistics thread, and the ruling names `reporter` alone. No file under
+  `ja4plus/fingerprinters/` changes and no fingerprint moves.
 
 - **One pass at the batch gate assigns every round number of a batch** (#482). Round 175.
   The project manager assigned a round number at each sub-merge. A sub-merge is an event of
@@ -1398,6 +1513,56 @@ holds every breaking change of this record against a row of that page.
   fingerprint moves.**
 
 ### Changed
+
+- **The `dev` extra states one recorded shape for every entry, and one record holds every
+  version** (#446). Round 181. #378 pinned `ruff` alone, so four entries of the `dev` extra
+  still floated and two of them had drifted across a major line. **The user ruled the shape
+  on 2026-08-10, and this round builds that ruling.** `build`, `pytest` and `pytest-cov`
+  each carry an exact version beside `ruff==0.16.2`. `mypy` floats. `requirements.txt` is
+  deleted. **`mypy` reads the opposite way from the four pins, on purpose.** A pinned type
+  checker falls behind, and a frozen release hides a defect that a later release reports. A
+  floating formatter turns a green tree red, which is noisy and safe. A frozen type checker
+  keeps a red tree green, which is quiet and unsafe. **The pinned versions are a measurement
+  of 2026-08-10 and not a copy of the issue body.** A clean environment that installed
+  `pip install -e ".[dev]"` resolved `pytest` 9.1.1, `pytest-cov` 7.1.0, `build` 1.5.0,
+  `mypy` 2.3.0 and `ruff` 0.16.2. **Two of those five versions would turn every Python 3.9
+  job red, and the pin declines both.** `pytest` 9.1.1 states `requires_python` `>=3.10` and
+  `build` 1.5.0 states the same, while `FR-foundation-13` runs the matrix from Python 3.9. A
+  read of the PyPI interface reports the newest release of each distribution that carries a
+  wheel for Python 3.9 through 3.13: `pytest` 8.4.2, `pytest-cov` 7.1.0 and `build` 1.4.4.
+  The extra therefore reads `pytest==8.4.2`, `pytest-cov==7.1.0` and `build==1.4.4`.
+  **The deletion left one instruction pointing at a deleted file, and this round repairs
+  it.** A read of every tracked file found two: the `ruff` comment of `pyproject.toml` and
+  the note under `FR-foundation-8c`. No workflow reads the file, no `Makefile` exists, no
+  `tox.ini` exists and `README.md` names it nowhere. **`tests/test_lint_gate_pin.py` widens
+  from 6 cases to 30**, because the Notes of #446 asked for one reader over the extra rather
+  than a second one. The file keeps its name, because `pyproject.toml`,
+  `docs/specs/features/00-foundation.md` and this file each name that path. **The tests came
+  first**, and the unrepaired tree failed 18 of the 30, among them
+  `AssertionError: the dev extra states no exact version for pytest: 'pytest>=7.0'` and
+  `AssertionError: these files name requirements.txt: ['docs/specs/features/00-foundation.md', 'pyproject.toml']`.
+  **Eight mutations prove the cases discriminate, and each one isolates to the case it
+  targets.** The floating `pytest` specifier restored fails the pin case and the
+  installed-release case. A `build` comment that drops `#446` fails the citation case
+  alone. A `pytest` comment that drops the word `commit` fails the commit rule alone. A
+  `mypy` comment that drops the word `hides` fails the hidden-defect case alone.
+  `mypy==2.3.0` fails the floating case alone. A `tox>=4.0` entry appended to the extra
+  fails the coverage case alone, at `Left contains one more item: 'tox'`. A restored
+  `requirements.txt` fails three cases. An `Install with pip install -r` line appended to
+  `README.md` fails the instruction case alone. Each mutation restored from a snapshot of
+  the implemented tree, and the restored form passes 30 of 30 every time.
+  **The reader reads dependency entries and never every quoted substring**, which is the
+  defect #452 records. `_dev_entries` strips the comment lines of the list before it
+  collects an entry, and each comment of this round quotes a version. **Two floors fail a
+  reader that collected nothing**, because an aggregate over an empty set passes.
+  `MINIMUM_DEV_ENTRIES` holds the extra at five entries and `MINIMUM_INSTRUCTION_FILES`
+  holds the instruction set at ten files. **A case fails a `dev` entry whose shape no
+  decision chose**, so an entry a later round appends reaches
+  `test_the_decision_covers_every_entry_of_the_dev_extra` rather than the next install.
+  **One statement here reaches no case, and the file states that.** No case reads whether a
+  pinned version installs on Python 3.9, because that read needs the package index and this
+  suite opens no network connection. `FR-foundation-8d` through `FR-foundation-8g` carry the
+  four new requirements. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **`FR-pre-release-validation-16` names a pathspec whose plain reading equals what it
   matches** (#436). Round 170. The requirement named

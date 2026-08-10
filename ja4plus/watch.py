@@ -361,8 +361,8 @@ class StatisticsReporter:
     def stop(self) -> None:
         """End the thread, and wait for the line it is writing.
 
-        A second call returns, so a caller that stops the reporter twice raises
-        nothing.
+        A second call returns, so a caller that stops the statistics thread twice
+        raises nothing.
         """
         self._stop.set()
         if self._thread.is_alive():
@@ -389,7 +389,7 @@ def report_statistics(
     stream: TextIO,
     wait: Optional[Callable[[float], bool]] = None,
 ) -> Iterator[Optional[StatisticsReporter]]:
-    """Yield the statistics reporter, and stop it when the body returns.
+    """Yield the statistics thread, and stop it when the body returns.
 
     The statistics thread is the only thread the monitor starts, and this call starts
     it only when the operator states an interval.
@@ -401,11 +401,11 @@ def report_statistics(
         wait: The call that waits one interval and reports whether the stop arrived, or
             None for the wait on the stop event. `StatisticsReporter` states the form.
             `ja4plus/cli.py` passes None and a test passes its own call. A case that
-            reaches the reporter through `cmd_watch` therefore states the schedule rather
-            than samples it. #371 added the parameter.
+            reaches the statistics thread through `cmd_watch` therefore states the
+            schedule rather than samples it. #371 added the parameter.
 
     Yields:
-        The reporter, or None where the operator stated no interval.
+        The statistics thread, or None where the operator stated no interval.
     """
     if interval is None:
         yield None
