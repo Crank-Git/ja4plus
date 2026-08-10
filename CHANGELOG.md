@@ -1007,7 +1007,7 @@ holds every breaking change of this record against a row of that page.
   `tests/universal_skips.json` loses the
   entry that named this case, so the allowlist holds one open finding and #529 names it.
   `docs/specs/features/11-pre-release-validation.md` gains
-  `FR-pre-release-validation-39` and one acceptance criterion, and
+  `FR-pre-release-validation-40` and one acceptance criterion, and
   `.claude/rules/batch-gate.md` records the removal beside the entry rule. **No file under
   `ja4plus/` changes and no fingerprint moves.**
 
