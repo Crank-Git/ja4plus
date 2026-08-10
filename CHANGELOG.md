@@ -85,13 +85,13 @@ holds every breaking change of this record against a row of that page.
   The register carries the record, because a measurement that lives only in a closed issue
   is a measurement the next reader repeats. **This is a candidate reference defect outside
   the two shapes `.claude/rules/conformance.md` declines**, because it moves no
-  fingerprint, and that rule sends such a case to the user. **The register quotes each
+  fingerprint. That rule sends such a case to the user. **The register quotes each
   FoxIO line verbatim**, because `.claude/rules/ste.md` bars a rewording of text copied
   from the FoxIO material. **A second row records `JA4Scan` as not implemented, with no
   decision taken.** That is the true state, and the row writes no reason for a decline
-  because no round holds one. **JA4TScan keeps its existing entry** under `Non-goals`:
+  because no round holds one. **JA4TScan keeps its existing entry** under `Non-goals`.
   `README.md:42` states that it sends crafted packets, so it reaches a network the
-  operator did not capture, and that decision is unrelated to the license. New file
+  operator did not capture. That decision is unrelated to the license. New file
   `tests/test_foxio_license_register.py` holds seven cases against the two rows, and all
   seven failed before the rows landed. **A floor refuses a reader that found no row**,
   because an aggregate over an empty set passes. One case bars a decline phrase from the

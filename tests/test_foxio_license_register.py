@@ -57,6 +57,12 @@ FAQ_LINE = "__JA4S, JA4L, JA4LS, JA4H, JA4X, JA4SSH, JA4T, JA4TS, JA4TScan, JA4S
 FOXIO_README_LINE = "**JA4S, JA4L, JA4LS, JA4H, JA4X, JA4SSH, JA4T, JA4TS, JA4TScan and all future additions, (collectively referred to as JA4+)**"  # noqa: E501
 LICENSE_LINE = "Software: JA4S, JA4H, JA4L, JA4LS, JA4X, JA4T, JA4TS, JA4TScan, JA4D, JA4D6, JA4SScan, JA4E, and JA4SSH (Collectively referred to as JA4+)"  # noqa: E501
 
+# The end of a sentence of a register cell. **A reader of the whole row passes on a row
+# that gives one record the count of another.** All three counts still reach such a reader.
+# The reader below binds each count and each quotation to the sentence that names its own
+# reference.
+SENTENCE_END = ". "
+
 # Each FoxIO line, the reference a reader follows to it, and the count of methods it names.
 # The count is written as a word, because the register states counts in words.
 FOXIO_RECORDS = (
@@ -121,25 +127,49 @@ def _row(item: str) -> str:
     return rows[item]
 
 
-def test_the_register_quotes_each_foxio_license_list_verbatim() -> None:
-    """The register reproduces the three FoxIO license lines, word for word."""
-    row = _row(LICENSE_ITEM)
-    for reference, line, _ in FOXIO_RECORDS:
-        assert line in row, f"the register holds no verbatim copy of {reference}"
+def _sentence_of(reference: str) -> str:
+    """Return the sentence of the license row that names one FoxIO reference.
+
+    Args:
+        reference: The `file:line` reference, as `License FAQ.md:5`.
+
+    Returns:
+        The one sentence that names the reference.
+
+    Raises:
+        AssertionError: The row holds no sentence that names the reference. The row holds
+            more than one such sentence, and a reader cannot tell which one holds the
+            record.
+    """
+    found = [part for part in _row(LICENSE_ITEM).split(SENTENCE_END) if reference in part]
+    assert found, f"the license row cites no {reference}"
+    assert len(found) == 1, (
+        f"the license row holds {len(found)} sentences that name {reference}, and a reader "
+        f"cannot tell which one states the record"
+    )
+    return found[0]
 
 
 def test_the_register_names_the_file_and_line_of_each_foxio_license_list() -> None:
-    """The register cites the file and the line of each FoxIO license list."""
-    row = _row(LICENSE_ITEM)
+    """The register cites the file and the line of each FoxIO license list once."""
     for reference, _, _ in FOXIO_RECORDS:
-        assert reference in row, f"the register cites no {reference}"
+        _sentence_of(reference)
+
+
+def test_the_register_quotes_each_foxio_license_list_verbatim() -> None:
+    """The register reproduces the three FoxIO license lines, word for word."""
+    for reference, line, _ in FOXIO_RECORDS:
+        assert line in _sentence_of(reference), (
+            f"the sentence that cites {reference} holds no verbatim copy of that line"
+        )
 
 
 def test_the_register_states_the_count_of_methods_each_foxio_license_list_names() -> None:
     """The register states that the three FoxIO lists name twelve, nine and thirteen."""
-    row = _row(LICENSE_ITEM)
     for reference, _, count in FOXIO_RECORDS:
-        assert count in row, f"the register states no count {count!r} for {reference}"
+        assert count in _sentence_of(reference), (
+            f"the sentence that cites {reference} states no count {count!r}"
+        )
 
 
 def test_the_register_pins_the_commit_the_three_foxio_lists_were_read_at() -> None:
