@@ -235,10 +235,16 @@ first one, under the `scope` key.
 **Warning: `git ls-files 'ja4plus/**/*.py'` lists 24 files and the package holds 31.** Git
 reads `**` in a pathspec as one or more directories, so the pattern matches no file of the
 top directory of the package. It omits `ja4plus/cli.py` and `ja4plus/processor.py` among
-seven. Write `git ls-files 'ja4plus/*.py' 'ja4plus/*/*.py'` to list every module, which is
-`DEFAULT_MODULE_PATTERNS` and the pair the sweep applies by default.
-`tests/test_mutation_sweep_module_list.py` fails when the two stop agreeing, so no writer
-reintroduces the `**` form in silence. **The front matter of `.claude/rules/ste.md` and of
+seven. Write `git ls-files 'ja4plus/*.py'` to list every module. **In a default git
+pathspec, `*` crosses `/`**, so that one term reaches every depth. Only `:(glob)` magic
+stops `*` at a separator, and `git ls-files ':(glob)ja4plus/*.py'` lists 7 files.
+
+**Read `DEFAULT_MODULE_PATTERNS` of `tests/mutation_sweep.py` under the other rule.** It
+reaches `Path.glob`, where `*` stops at `/`, so the sweep holds the pair `ja4plus/*.py`
+and `ja4plus/*/*.py`. `tests/test_mutation_sweep_module_list.py` fails when the pathspec,
+the pair and the tracked files stop agreeing, so no writer reintroduces the `**` form in
+silence. #436 records the reading, and #411 and #414 each met the earlier one.
+**The front matter of `.claude/rules/ste.md` and of
 `.claude/rules/external-apis.md` holds `ja4plus/**/*.py`, that glob follows the gitignore
 rules, and it matches every module. Do not repair those.**
 
