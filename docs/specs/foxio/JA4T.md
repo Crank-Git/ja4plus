@@ -625,6 +625,16 @@ writes `65535_00_00_00` from the `DLT_NULL` defect that `docs/specs/foxio/zeek.m
 **The dissector is the second FoxIO source that reads the options of that packet**, so it
 corroborates the defect from outside the Zeek script.
 
+**Warning: no value of either source carries a delay list of more than one delay, so part e
+stays measured by a constructed case alone.** The self-review of #515 mutated the
+separator of the delay list in `ja4plus/fingerprinters/ja4ts.py`, from `"-".join(...)` to
+`",".join(...)`, and no case of the 58 Wireshark values or the 9 adopted Zeek values
+failed. **The gap belongs to the FoxIO material and not to the two modules.** No capture
+of the vector set holds a connection the server answered three times, which "What part e
+moved" below already measures: the largest reading is two SYN-ACKs.
+`tests/test_ja4ts_part_e.py` therefore keeps the constructed cases that measure the
+separator, the rounding rule and both bounds.
+
 **Read this as the reason part e moved no conformance case in 2026-08-08.** #226 added part
 e, and the conformance suite reported 116 `xfailed` before the change and 116 after,
 against 116 keys in `tests/foxio_deviations.json`. No case compared a JA4TS value then,

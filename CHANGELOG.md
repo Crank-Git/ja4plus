@@ -1049,7 +1049,13 @@ holds every breaking change of this record against a row of that page.
   of another method. It kills 62 cases: the 52 Wireshark comparisons, the 9 Zeek
   comparisons and the one case that reads the `ja4plus` value of the barred row. The six
   registered cases stay `xfailed` under it, which is correct, because a mutation moves no
-  declined value onto the dissector value. `tests/download_test_vectors.py` fetches
+  declined value onto the dissector value. **The self-review found one gap and it belongs
+  to the FoxIO material.** A second mutation, of the delay-list separator from `"-".join`
+  to `",".join`, killed no case of either new module, because no value of either source
+  carries more than one delay. No capture of the vector set holds a connection the server
+  answered three times, so `tests/test_ja4ts_part_e.py` keeps the constructed cases that
+  measure the separator, the rounding rule and both bounds.
+  `docs/specs/foxio/JA4T.md` records the reading as a warning. `tests/download_test_vectors.py` fetches
   and validates both new file sets and it rewrites `tests/foxio_vectors/NOTICE` with them,
   so a refresh at a newer commit carries them. A baseline that names no column and a
   baseline that holds no data row each fail the refresh. **No file under `ja4plus/` changes

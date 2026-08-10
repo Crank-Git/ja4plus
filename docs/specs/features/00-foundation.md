@@ -257,9 +257,12 @@ The matching files under `wireshark/test/testdata/` are not the authority.
 
 ## Acceptance criteria
 
-- [ ] `git ls-files tests/foxio_vectors | wc -l` reports 90 files.
+- [ ] `git ls-files tests/foxio_vectors | wc -l` reports 121 files.
       `tests/test_criterion_counts.py` reads this number and measures it, so a change
-      to the vector set fails a case rather than a review.
+      to the vector set fails a case rather than a review. #515 raised the count from 90,
+      because it committed 24 FoxIO Wireshark expected-output files and 7 FoxIO Zeek
+      baselines. The case reported the change, which is the reading this criterion exists
+      for.
 - [ ] `git check-ignore -v tests/foxio_vectors/tls12.pcap` reports no match.
 - [ ] `git check-ignore -v capture.pcap` at the repository root still reports a
       match, so an accidental capture stays excluded.
