@@ -913,10 +913,25 @@ holds every breaking change of this record against a row of that page.
   with 4292 statements and 273 misses, which are the counts the base commit reports.
   `ruff check`, `ruff format --check` and `mypy --strict ja4plus/` each report no issue.
 
-- **The runner reads the change set of a pull request** (#438). Round TBD. #429 built
+- **A member pull request reaches the round-entry check, and the runner reads its change
+  set** (#438). Round TBD. **The finding that outranks the rest of this round is that the
+  check passed by construction.** The base-branch filter of `.github/workflows/test.yml`
+  read `branches: [master, dev]`, and that filter matches the base branch of a pull request,
+  so the only pull requests that reached the `test` job were the batch pull request and the
+  promotion. A batch pull request reads its change set against the tip of `dev`, and every
+  member of a batch has already recorded a round, so the check found an entry whatever one
+  member did. **The member pull request is the change set the check exists to refuse, and
+  the filter kept it away from the job.** The user ruled on 2026-08-10 that the filter
+  widens, and it now reads `branches: [master, dev, "batch/**", "epic/**"]`. **The widened
+  filter costs no run that the batch model saved**, because a member commit ends with a skip
+  keyword and #459 measured that such a commit creates no run for any event. A keyword-free
+  head is the one head that now starts one. `.claude/rules/batch-gate.md` gains the section
+  `## Which pull request creates a run`, which states the two conditions that each stop a
+  run, and it states this shape so that a reader holds the next check against it. #429 built
   `tests/test_round_entry_existence.py`, which fails a change set that edits a tracked file
-  and records no round. **That case skipped on every job of `.github/workflows/test.yml`,
-  so it guarded the local gate of a worker and it guarded no pull request.** The
+  and records no round. **That case also skipped on every job of
+  `.github/workflows/test.yml`, so it guarded the local gate of a worker and it guarded no
+  pull request.** The
   `actions/checkout` step of that workflow names no `fetch-depth`, so it makes a clone of
   depth 1. That clone carries no `origin/dev` ref and no history behind the checked-out
   commit, and `git merge-base` fails on it. **The `test` job now fetches the base commit of
@@ -946,8 +961,9 @@ holds every breaking change of this record against a row of that page.
   because a failed fetch leaves the variable empty, the case skips, and a green job over a
   silent skip is the failure this round exists to remove. **The expression reaches the
   `env` block and never the `run` block**, because an expression inside a shell command is
-  a script-injection path. **Ten
-  new cases hold the reading.** The self-review also found that `named_commit` rested on
+  a script-injection path. **Twelve
+  new cases hold the reading, and two of them hold the widened filter and the section of
+  the rule file.** The self-review also found that `named_commit` rested on
   its one caller to drop the space around a name, and the reader now drops it itself. Two
   of the ten build an orphan branch, which reproduces the
   runner state where `git merge-base` reports nothing and the diff still answers, and two
@@ -955,22 +971,28 @@ holds every breaking change of this record against a row of that page.
   `test_the_test_job_fetches_the_base_commit_of_a_pull_request` failed against the workflow
   of the base commit with
   `AssertionError: assert 'BASE_SHA: ${{ github.event.pull_request.base.sha }}' in 'name: Tests\n\n# ...'`.
-  **No reading of the runner proves this round in the failing direction yet, and #438
-  measured the reason.** `.github/workflows/test.yml` reads
-  `pull_request: branches: [master, dev]`, and that filter matches the base branch of a
-  pull request. **A pull request into an integration branch therefore creates no run at
-  all.** Pull request #519 carried a keyword-free head that edited two tracked files and
-  recorded no round, it targeted `batch/510-dry-run-and-gates`, and the provider held no
-  run for it after 150 seconds. Every pull-request run this repository holds carries an
-  integration branch as its head, so no run has ever come from a pull request into one.
-  **The batch pull request of #510 is the first run that reads this reading**, because it
-  targets `dev`. A local run reproduced both directions against the same reference the
-  runner reads. With `ROUND_ENTRY_REFERENCE` set to the tip of the integration branch, the
-  change set of #519 failed with
-  `the change set holds these paths outside the two records: .github/workflows/test.yml, tests/test_round_entry_existence.py. CHANGELOG.md holds 104 round entries against 104 at the reference commit`,
-  and the branch of this round passes the same reading. **A green run alone proves nothing
-  here**, because the case skipped before and a skip is not a pass, so #438 stays open on
-  the failing direction. No file under `ja4plus/` changes and no fingerprint moves.
+  **The runner read the check in both directions, on one pull request that landed in no
+  branch.** The user approved one deliberately red pull request for this proof and no other
+  issue of this project may open one. #520 targeted `batch/510-dry-run-and-gates`, it
+  targeted neither `dev` nor `master`, and each of its two heads carried no skip keyword.
+  **A green run alone proves nothing here**, because the case skipped before this round and
+  a skip is not a pass. Head `8702322` edited three tracked files and recorded no round, and
+  run https://github.com/Crank-Git/ja4plus/actions/runs/31402557575 concluded `failure` with
+  `tests/test_round_entry_existence.py::test_the_change_set_of_this_branch_records_a_round`
+  reported as `FAILED` rather than `SKIPPED`. The assertion read
+  `the change set holds these paths outside the two records: .claude/rules/batch-gate.md, .github/workflows/test.yml, tests/test_round_entry_existence.py. CHANGELOG.md holds 105 round entries against 105 at the reference commit`.
+  Head `ecd1677` added the entry and the row and changed nothing else, and run
+  https://github.com/Crank-Git/ja4plus/actions/runs/31403217183 concluded `success` with the
+  same case reported as `PASSED` on all six jobs of the matrix. #520 is closed and its
+  branch is deleted. **GitHub read the widened filter from the merge commit of that pull
+  request and not from the base branch, and the run itself is that measurement.**
+  `batch/510-dry-run-and-gates` carries the old filter, and the run started anyway, so a
+  filter change takes effect inside the pull request that carries it. The documentation
+  states the same thing of `pull_request_target`: `This event runs in the context of the
+  default branch of the base repository, rather than in the context of the merge commit, as
+  the pull_request event does.` **#519 measured the older filter before the ruling**, with a
+  keyword-free head into the same integration branch, and the provider held no run for it
+  after 150 seconds. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The prose names the statistics thread by its controlled term** (#441). Round 183. The
   `## Terms` table of `docs/specs/spec.md` rejects the word `reporter` for the statistics
