@@ -73,6 +73,61 @@ holds every breaking change of this record against a row of that page.
 
 ### Added
 
+- **The publish workflow builds the release and verifies it in a clean environment before it
+  publishes** (#68). Round TBD. `FR-release-4` to `FR-release-9` state the checks, and
+  `.github/workflows/publish.yml` held two steps before this round: `python -m build` and the
+  upload. **Nothing stood between the build and PyPI, and a publish to PyPI cannot be
+  undone.** New file `tests/release_verification.py` holds the whole check, and the workflow
+  runs it in one step in front of the upload step. It builds both artifacts, reads them with
+  `twine check`, installs the wheel into a clean environment, runs the console script of that
+  environment, and runs the conformance suite against the installed package. **The
+  conformance suite lives under `tests/`, and #455 removed `tests/` from the wheel**, so the
+  suite comes from the checkout and the package comes from the environment. **A run that
+  starts in the repository root reads the source tree and proves nothing about the wheel.**
+  `python -m` puts the working directory on `sys.path`, and `pytest` inserts the parent of the
+  `tests` package there as well, and both paths hold `ja4plus/`. `verification_root` copies
+  the suite and `pyproject.toml` to a directory that holds no package source, and the check
+  reads `ja4plus.__file__` from that directory before it runs one case. A measurement of
+  2026-08-10 reports both directions from one clean environment: the copied root resolves
+  `<site-packages>/ja4plus/__init__.py` and the repository root resolves the checkout.
+  **This round rewrites no part of the repair #408 built.** It imports `build_artifacts`,
+  `create_clean_environment`, `package_file_of` and `run_probe` of
+  `tests/test_installed_wheel.py`, which scrub `PYTHONPATH`, set `PYTHONNOUSERSITE` and assert
+  that `pip` wrote the package into `site-packages`. **An aggregate over an empty set passes**,
+  so three floors stand in the check: `twine check` refuses an empty file list, the `PASSED`
+  count reads 2 against two files, and `compare_collections` refuses a clean environment whose
+  case list differs from the checkout. The clean environment collected 1809 cases against 1809
+  in the checkout, and the run reported 1532 passed, 143 skipped and 134 xfailed, which are the
+  three counts the checkout reports. **A fourth floor came from the self-review, and it is the
+  one that mattered.** The first form of the check read the exit status of the conformance run
+  alone, and `pytest` reports a run whose every case skipped as a success. A vector tree the
+  copy missed would then have printed `release check: PASSED`. `passing_summary` now reads the
+  summary line, refuses a passed count of zero and refuses a summary that names a failure, and
+  `verify` keeps the line it read. A run reduced to a collection refuses the release with
+  `RuntimeError: the conformance run wrote no passed count: '1809 tests collected in 0.23s'`.
+  New file `tests/test_publish_workflow.py` holds 28 cases, 10 of them under the
+  `installed_wheel` marker. **The cases came first**, and the whole file
+  failed to collect against the base commit `589c5ee` with
+  `ModuleNotFoundError: No module named 'tests.release_verification'`. **Three mutations prove
+  the cases bite, and each one was restored.** The workflow of the base commit fails 2 cases,
+  one reading `publish.yml runs 'python -m tests.release_verification' in 0 steps`. A check
+  that reads `ja4plus.__file__` from the repository root fails 1 case, which reports the
+  checkout path against the `site-packages` path. A file list cut to its first entry refuses
+  the release with `the clean environment collected 202 cases against 1809 in the checkout`.
+  **A workflow step that never runs cannot fail**, and no case here starts the publish
+  workflow, because a run of it would publish. The cases read the step order as text and run
+  the check itself. The `installed-wheel` job of `.github/workflows/test.yml` now runs the
+  marker over `tests/` rather than over one file, because a command that names one file runs
+  none of the cases this round adds. The `dev` extra of `pyproject.toml` gains
+  `twine==6.2.0`. **7.0.0 is the newest release and this pin declines it**, because it
+  requires Python 3.10 and the matrix runs Python 3.9, which is the reading #446 records for
+  `pytest` and `build`. `.claude/skills/release/SKILL.md` held the same trap in step 5 and it
+  now runs the same command. `docs/specs/features/09-release.md` gains six behaviour rules,
+  six edge cases and two file entries. No file under `ja4plus/` changes and no fingerprint
+  moves. The conformance suite reports 1532 passed, 143 skipped and 134 xfailed on the base
+  commit and the same three counts after. Coverage holds at 94% with 4292 statements and 273
+  misses.
+
 - **The divergence register carries the FoxIO License 1.1 contradiction** (#466). Round 182.
   **Three FoxIO records at the pinned commit
   `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` name a different set of methods.**

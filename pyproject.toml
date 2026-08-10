@@ -115,6 +115,19 @@ dev = [
     # wheel for Python 3.9 through 3.13. Verified against
     # https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
     "build==1.4.4",
+    # `FR-release-9` states `twine check` on the built files, and
+    # `tests/release_verification.py` runs it. The publish workflow installs this extra, so
+    # the version lives here and no workflow states one of its own.
+    #
+    # **The version is exact, and #68 follows the decision #446 records.** A `twine` release
+    # that changes what `check` accepts moves the result of the release gate. **A version
+    # change is a deliberate commit, and this line is its whole diff.**
+    #
+    # **7.0.0 is the newest release and this pin declines it.** It requires Python 3.10, and
+    # the test matrix runs Python 3.9. 6.2.0 is the newest release that states
+    # `requires_python` `>=3.9`. Verified against https://pypi.org/pypi/twine/json, retrieved
+    # 2026-08-10.
+    "twine==6.2.0",
 ]
 lookup = [
     "requests>=2.20.0",

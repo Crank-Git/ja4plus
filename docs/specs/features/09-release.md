@@ -108,6 +108,23 @@ version.
   no source tree on its path, so an import cannot resolve to the working copy.
 - The conformance suite runs against the installed package by pointing `pytest` at
   the test directory while the package resolves from site-packages.
+- `tests/release_verification.py` holds every command of the verification step, and
+  `.github/workflows/publish.yml` runs that module in one step.
+  `tests/test_publish_workflow.py` holds the cases against both.
+- **The test directory the verification step reads is a copy outside the checkout.**
+  `python -m` puts the working directory on `sys.path`, and `pytest` inserts the parent
+  of the `tests` package there as well. Both paths name the checkout, and the checkout
+  holds `ja4plus/`, so a run that starts there reads the source tree.
+  `tests/test_publish_workflow.py::test_the_repository_root_resolves_the_source_tree`
+  measures that state.
+- The verification step reads the case list of the checkout and the case list of the
+  clean environment. It refuses a run that collected fewer cases.
+- The verification step refuses a conformance run that passed no case. A status of zero is
+  not a passing run, because `pytest` reports a run of nothing but skips as a success.
+  `tests/test_publish_workflow.py` holds both floors.
+- The clean environment installs the shipped dependency list first, and it gains the
+  test runner after that. The runner is the `pytest` entry of the `dev` extra, so one
+  record states the version.
 - The release is not published when any verification step fails. A partial publish
   cannot be undone on PyPI.
 - Version 1.0.0 states that the interface is stable. A breaking change after this
@@ -119,6 +136,8 @@ version.
 - Changed file `ja4plus/__init__.py`.
 - Changed file `CHANGELOG.md`.
 - Changed file `.github/workflows/publish.yml`.
+- New file `tests/release_verification.py`.
+- New file `tests/test_publish_workflow.py`.
 - New file `tests/test_packaging.py`.
 - New file `tests/version_gate.py` and new file `tests/test_version_gate.py`.
 
@@ -188,6 +207,12 @@ TestPyPI site.
 | The exclusion rule reaches the source distribution as well. | `test_the_source_distribution_carries_the_documentation_tree` and `test_the_source_distribution_carries_the_assets_tree` fail. A source distribution is the project at one revision. |
 | The changelog has no section for the version. | The version-check job fails before a release is created. |
 | The conformance suite fails against the installed wheel. | The workflow stops and does not publish. |
+| The conformance run starts in the checkout. | The run imports the source tree, so it measures the working copy. `verification_root` of `tests/release_verification.py` removes that state, and `test_the_repository_root_resolves_the_source_tree` measures it. |
+| The conformance run collects no case. | `compare_collections` raises, because a run of zero cases reports zero failures. |
+| Every case of the conformance run skips. | `passing_summary` raises. `pytest` reports that run as a success, and a vector tree the copy missed produces it. |
+| `twine check` reads no file. | `twine_check` raises. A check over no file reports no failure. |
+| A built file holds no archive. | `twine check` reports a non-zero status and the check raises. `test_the_release_check_refuses_a_built_file_that_twine_rejects` proves it. |
+| The clean environment holds no test runner. | `install_test_runner` adds the `pytest` entry of the `dev` extra, after the wheel install measured the shipped dependency list. |
 | The maintainer creates a release from a branch other than the live branch. | The workflow runs against that reference. The version-check job is the guard. |
 | TestPyPI is not configured. | The dry run fails and names the missing configuration. It does not fall back to PyPI. |
 

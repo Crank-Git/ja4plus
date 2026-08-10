@@ -88,7 +88,7 @@ LINT_TOOL = "ruff"
 # The distributions the `dev` extra pins to one exact version, `FR-foundation-8b` and
 # `FR-foundation-8d`. A release of any one of them moves the result of a gate with no
 # commit.
-PINNED = ("build", "pytest", "pytest-cov", LINT_TOOL)
+PINNED = ("build", "pytest", "pytest-cov", "twine", LINT_TOOL)
 
 # The distributions the `dev` extra leaves floating, `FR-foundation-8e`. #446 records the
 # reading that separates a type checker from the four above.
@@ -98,7 +98,7 @@ FLOATING = ("mypy",)
 # passes**, so a reader that collects too few entries fails here rather than reporting no
 # offender. `dependency_entries` refuses a block of no entry, and this floor holds the
 # count that the recorded decisions of #378 and #446 cover.
-MINIMUM_DEV_ENTRIES = 5
+MINIMUM_DEV_ENTRIES = 6
 
 # The line that opens the development extra of `pyproject.toml`.
 DEV_EXTRA = "dev = ["
@@ -111,6 +111,7 @@ SHAPE_ISSUE = {
     "mypy": "#446",
     "pytest": "#446",
     "pytest-cov": "#446",
+    "twine": "#68",
 }
 
 # The second dependency record #446 deleted. It stated `pytest-cov>=3.0.0` against the
