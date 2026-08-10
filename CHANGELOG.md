@@ -31,7 +31,7 @@ The classifier holds at `Development Status :: 5 - Production/Stable`, because #
 that the line arrives at version 1.0.0 and holds from there.
 
 - **The version reaches 1.0.1** (#567). Round
-  TBD. Three lines carry this release. `ja4plus/__init__.py:101` declares `1.0.1` as a
+  211. Three lines carry this release. `ja4plus/__init__.py:101` declares `1.0.1` as a
   plain string, this section states what the release carries, and `pyproject.toml` moves
   no line at all. **The plain string assignment stays**, because #67 measured that
   `setuptools` reads the value from the syntax tree, and a computed value makes a build
@@ -1054,7 +1054,7 @@ holds every breaking change of this record against a row of that page.
 
 - **The release body names every link absolutely, against the tag of the version** (#566).
   Round
-  TBD. `FR-release-14a` and `FR-release-14b` state the two requirements. **The published
+  208. `FR-release-14a` and `FR-release-14b` state the two requirements. **The published
   body of version 1.0.0 held one relative target at line 9**, and the same body ends with an
   absolute link, so `changelog_link` already wrote the form this round adopts. The target
   reads `docs/migration-0.6-to-1.0.md`. **The relative link is
@@ -1107,7 +1107,7 @@ holds every breaking change of this record against a row of that page.
   and one subsection that records the measurement. No file under `ja4plus/` changes and no
   fingerprint moves.
 - **The interface table of the API reference names every published name** (#562). Round
-  TBD. `docs/api_reference.md:5` frames the page as the interface this project promises, and
+  209. `docs/api_reference.md:5` frames the page as the interface this project promises, and
   version 1.0.0 published that interface. **A review of round 206 named three names of
   `ja4plus/watch.py` outside the table**: `packet_statistics_drops`, `PACKET_STATISTICS` and
   `SOL_PACKET`. **The repair is the case rather than the three rows**, because #70 measured
@@ -2924,7 +2924,7 @@ holds every breaking change of this record against a row of that page.
   repair is needed for that, and it is a property of the batch model rather than a defect of
   this case. **This round moves no fingerprint, and no file under `ja4plus/` changes.**
 - **The ruling vocabulary case reads the Python prose corpus** (#548). Round
-  TBD. Round 205 built `tests/test_ruling_vocabulary.py` over the Markdown corpus, and its
+  210. Round 205 built `tests/test_ruling_vocabulary.py` over the Markdown corpus, and its
   module docstring stated the hole rather than hid it: the case read no Python file, because
   #533 barred a change under `ja4plus/`. **A read of the base commit `d0d7c81` found the
   barred noun in nine comments and docstrings under the package**, five in
