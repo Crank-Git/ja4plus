@@ -40,9 +40,9 @@ the older filter kept it away from the job.** Read a new check against this shap
 you trust it.
 
 **The widened filter costs no run that the batch model saved.** A member commit ends with
-the keyword, so a member pull request still creates no run. A keyword-free head is the one
-head that now starts one, and a member branch carries such a head only where a worker
-writes one on purpose.
+the keyword, so a member pull request still creates no run. Under the widened filter, a
+keyword-free head is the one head that starts a run. A member branch carries such a head
+only where a worker writes one on purpose.
 
 **Warning: `master` and `dev` stay in the list.** The batch pull request and the promotion
 each target one of them, and they are the runs the merge gate reads.
@@ -195,17 +195,21 @@ and not the merge result**, so it proves the branch and it does not prove the me
 
 ## The provider refuses an ungated merge
 
-**`dev` carries a required status check, and the provider refuses a merge that no
-successful run of every required context covers.** A read of 2026-08-10 reports the state.
-#468 turned the rule on and #480 re-took the measurement.
+**`dev` carries a required status check, and the provider refuses a contributor merge that
+no successful run of every required context covers.** `enforce_admins` reads `false`, so
+the rule binds no repository administrator and an administrator merge reaches `dev` with no
+run. The subsection below holds that reading. A read of 2026-08-10 reports the state. #468
+turned the rule on and #480 re-took the measurement.
 
 | Read | Result |
 |---|---|
 | `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, eleven required contexts |
 | `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` |
 
-Each of the eleven contexts carries `app_id` 15368. No context reads `build` and none
-reads the bare `test`. The ruleset list stays empty, so the branch protection rule is the
+Each of the eleven contexts carries `app_id` 15368, and the provider holds that number
+under `required_status_checks.checks[]`. `required_status_checks.contexts` holds the names
+alone, so a reader of that list reads no application at all. No context reads `build` and
+none reads the bare `test`. The ruleset list stays empty, so the branch protection rule is the
 one place the provider holds this condition.
 
 **A read of 2026-08-09 returned a different result, and this record supersedes it.** That
@@ -239,8 +243,8 @@ the head.
 
 The token carries the `repo` scope and each read returned a determinate answer, so every
 result above is a measurement and not a limit. **A change to branch protection changes the
-repository configuration, so the user makes it and no agent makes it.** These are the exact
-steps to read the rule or to change it.
+repository configuration, so the user makes it and no agent makes it.** These four steps
+read the rule at the provider, and they change nothing.
 
 1. Open `https://github.com/Crank-Git/ja4plus/settings/branches`.
 2. Open the branch protection rule for `dev`.
@@ -269,15 +273,17 @@ conformance
 **Warning: leave the `build` check out of the required list.** It belongs to
 `.github/workflows/docs-build.yml`, which filters four paths. A batch that touches none of
 those paths creates no run of it, so a required `build` would block every such batch. The
-read of 2026-08-10 reports no `build` context, so the rule holds this warning today.
+read of 2026-08-10 reports no `build` context, and this warning follows that read.
 
 A required check that never reports blocks the merge, which is the condition this file
 otherwise reads by hand.
 
 `tests/test_batch_gate_protection_rule.py` reads this section against
 `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, so a change at the provider
-fails a case here rather than leaving a reader with a stale rule. **Where the call cannot
-be made, that case skips and it does not pass.**
+fails a case here rather than leaving a reader with a stale rule. One case reads
+`required_status_checks.checks[]` and requires `app_id` 15368 on each of the eleven
+contexts, so a context of another application fails that case. **Where the call cannot be
+made, every live case skips and it does not pass.**
 
 ## What this file does not cover
 
