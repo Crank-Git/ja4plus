@@ -505,6 +505,37 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The document set of the count cases reads the tracked file list** (#473). Round TBD.
+  `tests/test_documented_method_count.py` built `DOCUMENTS` from a walk of `docs/`,
+  `.claude/`, `tests/` and the repository root. **The agent harness places a worker worktree
+  at `.claude/worktrees/agent-<id>`, and that worktree is a whole checkout**, so the walk of
+  `.claude/` read every document of every live worker. The reading counted the host and not
+  the commit. **The cases passed on such a checkout, because a worktree holds a valid copy
+  that agrees with the rule.** That is the shape this project records more than eighteen
+  times: a comparison whose result does not depend on the thing under test. A measurement of
+  2026-08-10 inside a worker worktree reports 153 collected cases with no worktree page
+  present and 156 with one page of one worktree present, and two of the three extra cases
+  failed on that page.
+  **`documents()` now reads `git ls-files -z '*.md'`.** That list names the tracked pages
+  alone, and it names no worktree copy, no ignored file and no build output.
+  `tests/mutation_sweep.py` already carried this correction for its module list. **In a
+  default git pathspec `*` crosses `/`**, so the one term reaches every depth and its plain
+  reading equals what it matches. `FR-pre-release-validation-16` and
+  `.claude/rules/conformance.md` state the rule that #436 repaired. A read of 2026-08-10
+  reports three counts: `git ls-files '*.md'` lists 59 files, `git ls-files '**/*.md'` lists
+  56, and `git ls-files ':(glob)*.md'` lists 3. **The tracked list and the walk name the same
+  59 pages on a clean checkout**, so the runner reads the set it read before.
+  **The repair is proven in both directions.**
+  `test_the_reader_names_no_markdown_page_of_a_worktree` writes one page below
+  `.claude/worktrees/`, and it removes the directory it created and no other. It fails
+  against the walk with
+  `AssertionError: .claude/worktrees/issue-473-qnt_uybr/docs/copy.md reaches a parametrized case`.
+  Nine anchor cases name one page of each depth and one page of each root, and
+  `test_the_anchor_set_fails_a_reader_that_names_one_depth_of_one_directory` proves the
+  anchor set fails a reader that drops a root. **A floor fails the reader that names no
+  document**, because an aggregate over an empty set passes. The collected count of the file
+  reads 166 with a worktree page present and 166 with none. New `FR-documentation-16` and
+  its four parts state the rule. No file under `ja4plus/` changes and no fingerprint moves.
 - **A mutation of a module body keeps a reader in the cover rule** (#433). Round 169. Step 2
   of the cover procedure in `.claude/rules/conformance.md` subtracts the lines the import
   runs. Every mutation of a module body then lost the case that reads it, and the cost rule
