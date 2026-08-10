@@ -45,6 +45,14 @@ literal and no docstring.
 #484 owns them. `ja4plus/watch.py` holds four that #450 repaired under the ruling on its
 own issue thread.
 
+## Where the document set comes from
+
+**The reader asks git for the tracked Markdown pages, and it walks no directory.** The
+agent harness places a worker worktree at `.claude/worktrees/agent-<id>`, and that worktree
+is a whole checkout of the repository. A walk of `.claude/` therefore read the documents of
+every live worker, and the collected case count measured the host rather than the commit.
+#473 records the measurement, and `FR-documentation-16` states the rule.
+
 These cases read prose and the public interface of `ja4plus`. They produce no fingerprint
 and they open no capture socket.
 """
@@ -53,6 +61,9 @@ import ast
 import inspect
 import io
 import re
+import shutil
+import subprocess
+import tempfile
 import tokenize
 from pathlib import Path
 from typing import Dict, FrozenSet, List, Tuple
@@ -66,6 +77,50 @@ from tests.test_documentation_image_count import FOXIO_METHODS
 from tests.test_readme_contracts import COUNT_WORDS, DECLINED_METHOD
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# The directory the agent harness gives a worker. A worktree there is a whole checkout of
+# the repository, so a walk of `.claude/` reads the documents of every live worker.
+WORKTREE_ROOT = REPO_ROOT / ".claude" / "worktrees"
+
+# The name prefix of the directory one case writes below `.claude/worktrees/`. The prefix
+# names the issue, so a reader who meets the directory after a killed run knows its owner.
+WORKTREE_PREFIX = "issue-473-"
+
+# The text of the page one case writes below `.claude/worktrees/`. The page states the
+# superseded count, so a reader that names it turns two parametrized cases red.
+WORKTREE_PAGE = "This project implements ten of the twelve FoxIO methods.\n"
+
+# The git pathspec that names every tracked Markdown page of the repository. **In a
+# default git pathspec `*` crosses `/`**, so this one term reaches every depth, and its
+# plain reading equals what it matches. `.claude/rules/conformance.md` states the rule and
+# `FR-pre-release-validation-16` records the reading that #436 repaired. **Never write
+# `**` here**: git reads `**` as one or more directories, so it drops every root page.
+MARKDOWN_PATHSPEC = "*.md"
+
+# The least count of documents a reader may name. **An aggregate over an empty set
+# passes**, so a pathspec that names nothing would report a green result for every case
+# here. The floor turns that state into a failure where the corpus is read.
+DOCUMENT_FLOOR = 1
+
+# One document of each depth the corpus reaches, and one of each root it covers. **A
+# pathspec whose `*` stops at a separator names one depth alone**, and a pathspec of one
+# directory names one root alone. Either mistake drops a document of this set, so a case
+# reads the set rather than a count a writer transcribed.
+ANCHOR_DOCUMENTS = (
+    "README.md",
+    "CLAUDE.md",
+    "docs/usage.md",
+    "docs/specs/spec.md",
+    "docs/specs/features/11-pre-release-validation.md",
+    ".claude/rules/ste.md",
+    "tests/fuzz/README.md",
+    "docs/specs/spec.html",
+    "mkdocs.yml",
+)
+
+# A pathspec that names a Markdown page of one depth of one directory. A case reads it to
+# prove that `ANCHOR_DOCUMENTS` fails a reader which drops a depth or a root.
+ONE_DEPTH_PATHSPEC = ":(glob)docs/*.md"
 
 # The name prefix of a one-shot generator of the public interface. The rest of the name is
 # the method it writes, in lowercase.
@@ -341,8 +396,60 @@ def readable_text(path: Path, text: str) -> str:
     return text
 
 
+def walked_documents() -> List[Path]:
+    """Return the Markdown pages a walk of the four directories finds.
+
+    This reader is the control of `test_the_reader_names_no_markdown_page_of_a_worktree`
+    and no parametrized case reads it. A walk of `.claude/` reaches every document of
+    every live worker worktree, which is the defect #473 records.
+
+    Returns:
+        Every Markdown page below `docs/`, `.claude/` and `tests/`, and every root page.
+    """
+    found = sorted((REPO_ROOT / "docs").rglob("*.md"))
+    found += sorted((REPO_ROOT / ".claude").rglob("*.md"))
+    found += sorted((REPO_ROOT / "tests").rglob("*.md"))
+    found += sorted(REPO_ROOT.glob("*.md"))
+    return found
+
+
+def tracked_documents(pathspec: str = MARKDOWN_PATHSPEC) -> List[Path]:
+    """Return every Markdown page the repository tracks, as an absolute path.
+
+    Args:
+        pathspec: The git pathspec that names the pages. A case passes another pathspec to
+            measure the floor and the anchor set.
+
+    Returns:
+        One path for each tracked page, sorted.
+
+    Raises:
+        AssertionError: The pathspec names fewer pages than `DOCUMENT_FLOOR`.
+        subprocess.CalledProcessError: The read of git failed.
+    """
+    listed = subprocess.run(
+        ["git", "ls-files", "-z", pathspec],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split("\0")
+    found = sorted(REPO_ROOT / name for name in listed if name)
+    assert len(found) >= DOCUMENT_FLOOR, (
+        f"the pathspec {pathspec!r} names {len(found)} documents, and a reader that names "
+        f"fewer than {DOCUMENT_FLOOR} passes every case here over an empty set"
+    )
+    return found
+
+
 def documents() -> List[Path]:
     """Return every prose document that could state a count of methods.
+
+    The reader asks git for the tracked pages and it walks no directory. **The harness
+    places a worker worktree at `.claude/worktrees/agent-<id>`, and that worktree is a
+    whole checkout**, so a walk of `.claude/` reads the documents of every live worker and
+    the count of collected cases then measures the host. #473 records the measurement, and
+    `tests/mutation_sweep.py` already carries this correction for its module list.
 
     The corpus holds the Markdown pages under `tests/` as well, because `tests/fuzz/README.md`
     is prose and a count there goes as stale as a count under `docs/`. **It holds no Python
@@ -350,14 +457,10 @@ def documents() -> List[Path]:
     that extracts its comments and its docstrings first.
 
     Returns:
-        The Markdown pages under `docs/`, `.claude/` and `tests/`, the root Markdown pages,
-        the rendered `docs/specs/spec.html`, and `mkdocs.yml`, which carries the count in a
-        comment.
+        Every tracked Markdown page, the rendered `docs/specs/spec.html`, and `mkdocs.yml`,
+        which carries the count in a comment.
     """
-    found = sorted((REPO_ROOT / "docs").rglob("*.md"))
-    found += sorted((REPO_ROOT / ".claude").rglob("*.md"))
-    found += sorted((REPO_ROOT / "tests").rglob("*.md"))
-    found += sorted(REPO_ROOT.glob("*.md"))
+    found = tracked_documents()
     found.append(REPO_ROOT / "docs" / "specs" / "spec.html")
     found.append(REPO_ROOT / "mkdocs.yml")
     return [path for path in found if path.is_file()]
@@ -693,6 +796,62 @@ def test_the_reader_cuts_the_two_recording_sections_and_no_other() -> None:
     removed = [heading for heading in before if heading not in after]
     assert removed == list(RECORD_SECTIONS), f"the reader removed {removed}"
     assert "## Issue map" in after, "the reader swallowed the section below the Changelog"
+
+
+@pytest.mark.parametrize("name", ANCHOR_DOCUMENTS)
+def test_the_reader_names_every_anchor_document(name: str) -> None:
+    """The reader names each document of `ANCHOR_DOCUMENTS`."""
+    assert name in DOCUMENT_IDS, f"the reader misses {name}, which every case here reads"
+
+
+def test_the_anchor_set_fails_a_reader_that_names_one_depth_of_one_directory() -> None:
+    """A pathspec that names one depth of one directory misses an anchor document.
+
+    The case above passes on a reader that drops a root, unless an anchor of another root
+    is in the set. This case measures that power, so the anchor set proves what it states.
+    """
+    listed = {_name(path) for path in tracked_documents(ONE_DEPTH_PATHSPEC)}
+    missing = [name for name in ANCHOR_DOCUMENTS if name not in listed]
+    assert missing, (
+        f"the pathspec {ONE_DEPTH_PATHSPEC} names every anchor document, so the anchor set "
+        "measures no reader that drops a depth or a root"
+    )
+
+
+def test_the_reader_fails_where_the_pathspec_names_no_document() -> None:
+    """The floor fails the reader that names no document."""
+    with pytest.raises(AssertionError, match="names 0 documents"):
+        tracked_documents("*.no-such-suffix")
+
+
+def test_the_pathspec_reaches_every_depth_of_the_corpus() -> None:
+    """The pathspec names a Markdown page of each of the four depths the corpus holds.
+
+    A depth set separates the two readings of the pathspec, and a document count does not,
+    because a count moves whenever the repository gains a page.
+    """
+    depths = {_name(path).count("/") for path in tracked_documents()}
+    assert depths == {0, 1, 2, 3}, f"the pathspec reaches the depths {sorted(depths)}"
+
+
+def test_the_reader_names_no_markdown_page_of_a_worktree() -> None:
+    """The reader names no page of a worktree, where a walk of the directories names it.
+
+    The case writes one page below `.claude/worktrees/`, and it removes the directory it
+    created and no other. A live worker holds its own directory beside it.
+    """
+    WORKTREE_ROOT.mkdir(parents=True, exist_ok=True)
+    created = Path(tempfile.mkdtemp(prefix=WORKTREE_PREFIX, dir=str(WORKTREE_ROOT)))
+    try:
+        page = created / "docs" / "copy.md"
+        page.parent.mkdir(parents=True)
+        page.write_text(WORKTREE_PAGE, encoding="utf-8")
+        assert page in walked_documents(), (
+            "a walk of the four directories misses the page, so this case proves nothing"
+        )
+        assert page not in documents(), f"{_name(page)} reaches a parametrized case"
+    finally:
+        shutil.rmtree(created)
 
 
 def test_the_reader_reads_no_entry_of_the_changelog_file() -> None:

@@ -88,6 +88,11 @@
   <p><strong>Read <code>docs/specs/spec.md</code> wherever the two disagree.</strong> #211
   records this note and corrects the two statements that contradicted the measurement.
   Whether this page survives is a question for the user.</p>
+  <p><strong>#477 corrects the vector-fallback rule of the <code>Open, but not blocking</code>
+  card.</strong> That card gave the decision to the expected-output files and named no
+  reader, and this page states the corrected rule 118 lines above it.
+  <code>tests/test_documentation_fallback_rule.py</code> now holds every statement of the
+  rule against a shape, so a rewording that drops the reader fails a case.</p>
   <p><strong>#211 left a third statement, and #449 corrects it.</strong> The image count of
   the <code>Open, but not blocking</code> card read seven, and this page states eleven
   120 lines above it. <code>tests/test_documentation_image_count.py</code> now reads a
@@ -440,8 +445,10 @@ may not render in an iframe.</p>
   <ul>
     <li><strong>Eleven of the twelve FoxIO methods are specified only as images.</strong> JA4
       is the one method that holds a complete text specification, and
-      <code>docs/specs/foxio/README.md</code> holds the inventory. Where an
-      image is ambiguous, the expected-output files decide and the reading is recorded.</li>
+      <code>docs/specs/foxio/README.md</code> holds the inventory. Where a reader reads the
+      image and finds it ambiguous, the expected-output files decide and the reading goes in
+      <code>docs/implementation_notes.md</code>. An image nobody read reaches no
+      fallback.</li>
     <li><strong>A vector may not exercise a method.</strong> The suite must record that as
       not-applicable and must fail if <em>everything</em> is not-applicable.</li>
     <li><strong>90 percent coverage may not be reachable</strong> on the scapy interface

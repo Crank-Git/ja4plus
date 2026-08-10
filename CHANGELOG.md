@@ -505,6 +505,165 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **One pass at the batch gate assigns every round number of a batch** (#482). Round 175.
+  The project manager assigned a round number at each sub-merge. A sub-merge is an event of
+  one batch, and the round sequence is global to the repository. One live integration branch
+  hides that, because it is then the only writer. **Two live branches make the assignment a
+  race**, and the project manager measured it on 2026-08-10 at the sub-merge gate of #456:
+  `batch/470-sweep-tools-and-shard-bug` held 171 rows and assigned 168 to 171, while
+  `batch/476-count-repairs` started from a `dev` of 167 rows and reported
+  `the Changelog holds 169 rows and its highest round is 173`. **Neither member was at
+  fault and the merged state of each member was correct.**
+  `.claude/rules/batch-gate.md` now states where the assignment happens. One pass on the
+  integration branch assigns it, immediately before the batch pull request, when the row
+  count of `dev` is fixed. A member writes the literal `TBD` in both records and keeps it
+  through every sub-merge. **One integration branch at a time also removes the race, and
+  this project declines that order**, because it costs the concurrency the batch model
+  exists to provide. **The rule alone leaves a shape that no case could read.**
+  `row count == highest round` passes on a table that carries 168 twice and 170 nowhere.
+  The count and the maximum both still read right under the wrong pairing.
+  `tests/test_specification_changelog.py` gains
+  `test_the_changelog_assigns_every_round_from_one_to_the_row_count`, which requires the
+  rounds 1 to the row count, each on one row. **The shipped page proves the measurement,
+  and a case keeps it.** A copy of `docs/specs/spec.md` whose round 170 reads 168
+  failed the new case with
+  `these round numbers open more than one row: [168]` and `these rounds from 1 to 171 open no row: [170]`,
+  and `test_the_changelog_row_count_equals_the_highest_round_number` passed on that same
+  page. `test_the_row_count_rule_passes_on_a_table_that_repeats_a_round` holds that
+  measurement so that no later reader takes the older rule for a complete one.
+  **A gap alone raises the maximum above the count**, so the older rule reads a pure gap.
+  The shape that hides from the older rule carries a repeat beside the gap.
+  **An aggregate over an empty list passes**, so the reader reports a table from which it
+  read no numbered row. `MINIMUM_ROWS` holds the second floor at 124. Five more cases drive
+  the reader over five fixed tables. One table repeats a round and one holds a gap. One
+  assigns each round once, and one names no numbered row at all. One carries four numbered
+  rows and two rows that read `TBD`, which an integration branch always carries and which
+  stays legal.
+  No file under `ja4plus/` changes and no fingerprint moves.
+
+- **The batch-gate rule states the branch protection the provider now holds** (#480).
+  Round 174. #459 wrote the protection section of `.claude/rules/batch-gate.md` from a read
+  of 2026-08-09, which returned `404`, `Branch not protected`. #468 turned the rule on, so a
+  reader who followed that wording concluded that nothing at the provider refuses an ungated
+  merge. **This round re-took the measurement rather than quoting the issue body.** A read of
+  2026-08-10 returns `200` with eleven required contexts, each carrying `app_id` 15368, and
+  `gh api repos/Crank-Git/ja4plus/rulesets` returns `[]`. The eleven names match the eleven
+  the file already listed, so no name moved, and no context reads `build` or the bare `test`.
+  The reading agrees with the issue body on every field. **The section is renamed to
+  `The provider refuses an ungated merge`**, because the earlier heading named a shape the
+  repository did not hold. **A dated record of a past measurement is quoted and not
+  rewritten**, so the 2026-08-09 sentence stays in the file as a quotation under a paragraph
+  that marks it superseded, beside a table that holds both dates. **The same call returned
+  two limits and the file states each one.** `enforce_admins` reads `false`, so the rule
+  binds a contributor and binds no repository administrator, and an administrator merges past
+  the eleven contexts with no run at all. `strict` reads `false`, so a branch merges where it
+  is behind `dev`, and that reading suits the batch model: `strict: true` would demand that
+  every integration branch take `dev` again after another batch lands, and the run that
+  proved the batch would then not be a run of the head. `python -m tests.batch_gate --pr
+  <number>` stays in the procedure, because it reads the same condition before the merge
+  rather than at it. **A case reads the claim against the provider, because prose carries no
+  other gate.** New file `tests/test_batch_gate_protection_rule.py` holds 93 cases.
+  `protection_reading` runs `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, and it
+  returns nothing where the host holds no `gh`, where the command exits non-zero, or where
+  the body is no JSON object. **Where the call cannot be made a live case skips, and it does
+  not pass**, which `test_the_live_context_case_skips_where_the_provider_returns_no_reading`
+  proves by driving the live case with a refused call and requiring the skip. **Every live
+  case reads its floor before it reads the provider**, so a file that lists no context fails
+  rather than comparing two empty sets. **The sweep reads a shape and no phrase.**
+  `superseded_claims` pairs the term `required status check` with a negation over six
+  spellings, and `readable_text` cuts a quotation, a paragraph that marks itself superseded,
+  and the `## Changelog` section that quotes round 165. **An aggregate over an empty set
+  passes**, so a case requires the file set to name both `.claude/rules/batch-gate.md` and
+  `CLAUDE.md`. **The cases were written first and they bite**: against the unrepaired file
+  they failed 18 of 59, and the sweep named exactly one document. **Two defects of the
+  section reader were found by that first run and each is closed.** The reader ended a
+  section at the next heading of any level, so a `###` subsection cut the list of check names
+  out of the body. It then read `#468 turned the rule on` as a first-level heading and
+  returned one paragraph, because a heading needs a space after its `#` characters and an
+  issue reference does not. Three cases now hold the reader in both directions. **A
+  self-review drove the sweep with fifteen candidate sentences and eight reached no match**,
+  among them `The repository lacks a required status check.`, ``The branch `dev` is
+  unprotected.`` and `Nothing at the provider refuses an ungated merge.` The pattern now
+  reads three shapes: a check term paired with a negation, a sentence that states the
+  provider refuses nothing, and a sentence that calls the branch unprotected. Nine evasions
+  and four controls became cases, and the four controls are true sentences of the repaired
+  file that the widened pattern reports nowhere. Against the unrepaired file the sweep now
+  reports two statements where it reported one. **Two
+  mutations prove the live cases discriminate.** Adding `build` to the listed names and
+  writing `` `strict` reads `true` `` killed five cases, among them both provider cases, and
+  deleting the superseded record killed two. Each mutation was restored. **No sentence of
+  `CLAUDE.md` rested on the superseded reading**, which the sweep measures rather than
+  asserts. No file under `ja4plus/` changes and no fingerprint moves.
+
+- **Every statement of the vector-fallback rule names the reader the rule needs** (#477).
+  Round 172. Round 49 corrected the rule on 2026-08-08: the fallback needs an image that a
+  person read and found ambiguous, and an image nobody read is not a license to use it.
+  `.claude/rules/external-apis.md` and `.claude/rules/conformance.md` carried the correction
+  and three pages kept the superseded premise, which gives the decision to the
+  expected-output files and names no reader. **The issue reported one occurrence and the
+  sweep measured three.** `docs/specs/spec.html` held one in its `Open, but not blocking`
+  card, 118 lines below the corrected form in its own `01 — Spec conformance` card, so the
+  page contradicted itself. `docs/specs/features/01-spec-conformance.md` held one in its
+  `Behaviour rules` list, and `docs/implementation_notes.md` held one in the paragraph that
+  states why the file exists. All three now state the form
+  `.claude/rules/external-apis.md` states. **The issue also stated two line numbers that a
+  re-measurement disproved.** It named `docs/specs/spec.html:444` and `:316`, and the base
+  commit `17858bf` carries the two statements at `:436` and `:317`. **The case reads a shape
+  and no phrase**, because #211 and #449 each proved that one forbidden phrase guards one
+  spelling. New file `tests/test_documentation_fallback_rule.py` holds 48 cases.
+  `fallback_statements` matches a condition about an image that settles no question, bound
+  to a sentence that gives the decision to the expected-output files, in four word orders.
+  It then reports whether a reader premise stands inside a window of 600 characters before
+  the statement and 200 after it. **A rewording that drops the reader therefore fails, and
+  the words it chooses do not matter.** Twenty-two spellings of the superseded rule reach
+  the reader, six spellings of the corrected rule pass it, and ten control sentences that
+  name the fallback for one transcription rule reach no case. **An aggregate over an empty set
+  passes**, so six pages are named and each one holds a statement the reader finds. **A
+  dated record of a past measurement is quoted and not rewritten.** Round 49 of the
+  Changelog table of `docs/specs/spec.md` records the superseded wording word for word, and
+  the row of this round quotes the sentence this round corrects. `readable_text` cuts that
+  section, and one case reads the cut in both directions. **A self-review drove the reader with
+  sentences it had not seen.** It found seven evasions and two false reports. The evasions
+  were the conjunctions `because`, `since`, `given that` and `unless`, a semicolon, the
+  word `means`, and a passive sentence, so the pattern now needs no conjunction at all and
+  it reads `decided by the expected-output files`. The false reports were a rendering
+  fallback of an image and a sentence about a slide deck, so `REQUIREMENT_FORM` names the
+  vector fallback and `AMBIGUOUS_IMAGE_FIRST` needs a verb of decision after a bare
+  `vector`. Six evasions and two controls became cases. **The cases were written first and
+  they bite**: against the unrepaired corpus they failed 2 of 48, and the failure named all
+  three pages. No file under `ja4plus/` changes and no fingerprint moves.
+
+- **The document set of the count cases reads the tracked file list** (#473). Round 173.
+  `tests/test_documented_method_count.py` built `DOCUMENTS` from a walk of `docs/`,
+  `.claude/`, `tests/` and the repository root. **The agent harness places a worker worktree
+  at `.claude/worktrees/agent-<id>`, and that worktree is a whole checkout**, so the walk of
+  `.claude/` read every document of every live worker. The reading counted the host and not
+  the commit. **The cases passed on such a checkout, because a worktree holds a valid copy
+  that agrees with the rule.** That is the shape this project records more than eighteen
+  times: a comparison whose result does not depend on the thing under test. A measurement of
+  2026-08-10 inside a worker worktree reports 153 collected cases with no worktree page
+  present and 156 with one page of one worktree present, and two of the three extra cases
+  failed on that page.
+  **`documents()` now reads `git ls-files -z '*.md'`.** That list names the tracked pages
+  alone, and it names no worktree copy, no ignored file and no build output.
+  `tests/mutation_sweep.py` already carried this correction for its module list. **In a
+  default git pathspec `*` crosses `/`**, so the one term reaches every depth and its plain
+  reading equals what it matches. `FR-pre-release-validation-16` and
+  `.claude/rules/conformance.md` state the rule that #436 repaired. A read of 2026-08-10
+  reports three counts: `git ls-files '*.md'` lists 59 files, `git ls-files '**/*.md'` lists
+  56, and `git ls-files ':(glob)*.md'` lists 3. **The tracked list and the walk name the same
+  59 pages on a clean checkout**, so the runner reads the set it read before.
+  **The repair is proven in both directions.**
+  `test_the_reader_names_no_markdown_page_of_a_worktree` writes one page below
+  `.claude/worktrees/`, and it removes the directory it created and no other. It fails
+  against the walk with
+  `AssertionError: .claude/worktrees/issue-473-qnt_uybr/docs/copy.md reaches a parametrized case`.
+  Nine anchor cases name one page of each depth and one page of each root, and
+  `test_the_anchor_set_fails_a_reader_that_names_one_depth_of_one_directory` proves the
+  anchor set fails a reader that drops a root. **A floor fails the reader that names no
+  document**, because an aggregate over an empty set passes. The collected count of the file
+  reads 166 with a worktree page present and 166 with none. New `FR-documentation-16` and
+  its four parts state the rule. No file under `ja4plus/` changes and no fingerprint moves.
 - **A mutation of a module body keeps a reader in the cover rule** (#433). Round 169. Step 2
   of the cover procedure in `.claude/rules/conformance.md` subtracts the lines the import
   runs. Every mutation of a module body then lost the case that reads it, and the cost rule
@@ -533,7 +692,7 @@ holds every breaking change of this record against a row of that page.
   that record states the sweeps that ran. No file under `ja4plus/` changes, no file under
   `tests/foxio_vectors/` changes, and no fingerprint moves.
 - **The image count of `docs/specs/spec.html` states the count the FoxIO inventory measures**
-  (#449). Round 172. The page held two image counts. Line 316 read `Eleven of the twelve
+  (#449). Round 176. The page held two image counts. Line 316 read `Eleven of the twelve
   FoxIO methods carry no complete text specification`. Line 436 read `Seven of twelve FoxIO
   methods are specified only as images`, 120 lines below it. **A case existed to forbid the
   second sentence, and a missing article defeated it.**
@@ -573,7 +732,7 @@ holds every breaking change of this record against a row of that page.
   apart, and its own table names lines 314 and 434. No file under `ja4plus/` changes and no
   fingerprint moves.
 
-- **A case measures the count an acceptance criterion states** (#456). Round 173. Two criteria
+- **A case measures the count an acceptance criterion states** (#456). Round 177. Two criteria
   of `docs/specs/features/*.md` stated a count this repository contradicts. #393 measured both
   on 2026-08-09. **Both premises of the issue were stale, and this round measured each one
   again.** `git ls-files tests/foxio_vectors | wc -l` reports 90, and
@@ -610,7 +769,7 @@ holds every breaking change of this record against a row of that page.
   and `pending criterion`. No file under `ja4plus/` changes and no fingerprint moves.
 
 - **The prose under `tests/` counts fingerprinters where it counted methods** (#450). Round
-  174. The word `method` carried two meanings and the two counts differ. FoxIO publishes
+  178. The word `method` carried two meanings and the two counts differ. FoxIO publishes
   twelve methods and this project implements eleven. The processor drives ten
   fingerprinters, because `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`.
   **The user chose the prose repair and declined the rename.** `ProcessorStats.method`
@@ -633,7 +792,7 @@ holds every breaking change of this record against a row of that page.
   The eight places that remain under `ja4plus/` are #484. **No fingerprint moves and the
   conformance counts do not change.**
 - **A case reads every stated state-table count against a live `Processor`** (#453). Round
-  175. `docs/specs/features/03-concurrency-safety.md` stated sixteen state tables, 47400
+  179. `docs/specs/features/03-concurrency-safety.md` stated sixteen state tables, 47400
   remembered keys and 8.5 MiB, and `docs/api_reference.md` stated seventeen, 57400 and
   10.2 MiB. **The code holds seventeen**, and this round re-measured it rather than quoting
   either page: `sum(len(report.tables) for report in Processor().stats().values())` reads
