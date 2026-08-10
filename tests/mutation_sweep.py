@@ -41,6 +41,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
+# The description the command line reports.
+#
+# **`python -OO` sets `__doc__` to None on every module.** A parser that read the module
+# docstring here raised `AttributeError` under that interpreter, and it read no argument at
+# all. `tests/test_parser_description.py` holds every parser of the repository against that
+# run.
+DESCRIPTION = "Ask of every test case: would this fail if the code were wrong?"
+
 # A mutant that breaks the import of a module fails the whole suite. Such a run reports
 # no test as measured, so the sweep records it and drops it from the kill sets.
 UNUSABLE_KILL_RATIO = 0.9
@@ -517,7 +525,7 @@ def markdown_report(report: Dict[str, object]) -> str:
 
 
 def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
         "--module",
         action="append",
