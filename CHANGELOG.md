@@ -620,6 +620,42 @@ holds every breaking change of this record against a row of that page.
   rather than the statistics thread, and the ruling names `reporter` alone. No file under
   `ja4plus/fingerprinters/` changes and no fingerprint moves.
 
+- **The package prose counts fingerprinters where it counted methods** (#484).
+  Round TBD. Eight comments and docstrings under `ja4plus/` stated the count of
+  fingerprinter classes as a count of methods. **FoxIO publishes twelve methods and this
+  project implements eleven.** `JA4LFingerprinter` writes `JA4L-C=` and `JA4L-S=`, so ten
+  fingerprinter classes carry eleven methods, and a count of classes read as a count of
+  methods reads one short. #387 records the measurement and #450 built the reader.
+  **This round re-measured the eight places rather than trusting the list.**
+  `python_prose` and `class_counts_of_methods` of
+  `tests/test_documented_method_count.py` report `ja4plus/__init__.py:113`,
+  `ja4plus/cli.py:160`, `ja4plus/fingerprinters/base.py:76` and
+  `ja4plus/processor.py:124`, `:264`, `:283`, `:295` and `:332`. Every line number of
+  the issue holds. **The corpus came first, and it made the failure real.**
+  `python_sources` read `tests/` alone, so no case reached the package. It now reads
+  `ja4plus/` beside `tests/`, and
+  `test_no_python_file_states_the_count_of_classes_as_a_count_of_methods` then failed
+  4 of 4 new cases, one for each file, with
+  `AssertionError: ja4plus/processor.py holds ['ten methods'], and ten counts the fingerprinter classes rather than the methods they carry`.
+  **The suite alone meets `PYTHON_SOURCE_FLOOR`, so the package carries its own floor.**
+  A read of 2026-08-10 counts 203 files in the corpus, 31 under `ja4plus/` and 172 under
+  `tests/`, against a floor of 120. A corpus that dropped the package would meet that
+  floor and read no package file. `PACKAGE_SOURCE_FLOOR` reads 25 and
+  `test_the_python_corpus_holds_the_package` holds it. That case fails on the
+  un-widened reader with
+  `AssertionError: the corpus holds 0 package files, below the floor of 25, so a case over it proves little`.
+  **`ProcessorStats.method` keeps its name, its docstring and every value it holds.** It
+  is a published output field, a rename of one is a breaking change, and #450 records
+  that the decision is the user's. **The Terms table decides each word.** `method name`
+  names the lowercase token, `fingerprinter` names the class, and the report of
+  `Processor.stats` holds one entry for each of the ten fingerprinters. **This round read
+  each paragraph whole after the change, and not line by line**, which is the defect rule
+  7 of `.claude/rules/ste.md` names and which raised #441. The `Processor.stats`
+  docstring therefore reads `fingerprinter` in all four of its paragraphs, where two of
+  them had rotated between `fingerprinter` and `method` for one thing. **The diff under
+  `ja4plus/` touches comment and docstring lines alone.** No statement changes, no
+  fingerprint moves, and the conformance counts hold.
+
 - **One pass at the batch gate assigns every round number of a batch** (#482). Round 175.
   The project manager assigned a round number at each sub-merge. A sub-merge is an event of
   one batch, and the round sequence is global to the repository. One live integration branch
