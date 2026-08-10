@@ -440,7 +440,7 @@ def gate_reasons(
         scope = counted(len(holders(reports, case)), "report")
         reasons.append(
             f"{case} skipped on every job that selects it, so the suite ran it nowhere. "
-            f"{scope} of the download holds it. Repair the case, or record the "
+            f"The download holds {scope} of it. Repair the case, or record the "
             f"environment limit in {ALLOWLIST_PATH.name}"
         )
     return reasons

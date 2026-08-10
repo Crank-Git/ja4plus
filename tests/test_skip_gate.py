@@ -679,6 +679,17 @@ def test_the_allowlist_reader_refuses_an_entry_that_names_neither(tmp_path: Path
         read_allowlist(path)
 
 
+def test_the_tracked_allowlist_covers_the_not_applicable_class() -> None:
+    """#530 records the decision that a `not applicable` cell is no case that runs nowhere.
+
+    The 143 cases belong to one function that ran 199 other parameter sets, so the function
+    asserts. A pass in place of the skip would assert an equality over two empty sets, which
+    #524 put out of scope.
+    """
+    prefixes = [entry.message_prefix for entry in read_allowlist(ALLOWLIST_PATH)]
+    assert NOT_APPLICABLE in prefixes
+
+
 def test_the_census_groups_the_cases_a_prefix_entry_covers(tmp_path: Path) -> None:
     """143 near-identical lines would bury every case-level line of the census."""
     conformance = {
