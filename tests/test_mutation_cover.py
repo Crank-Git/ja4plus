@@ -113,6 +113,17 @@ class TestTheCoverRuleText:
     def test_the_rule_states_the_measured_cost_of_the_reader(self) -> None:
         assert mutation_cover.states_the_reader_cost(RULE.read_text())
 
+    def test_the_cost_prover_reads_a_sentence_that_wraps_across_two_lines(self) -> None:
+        # The rule file wraps at 90 columns, so a rewrap moves the cost away from the file
+        # name. A prover that read one line failed on this exact rewrap.
+        wrapped = (
+            "## How to scope one sweep: the minimal cover\n"
+            "\n"
+            "Step 4 adds the reader `tests/test_public_interface.py`, and one sweep against\n"
+            "that file alone costs 39.9 seconds.\n"
+        )
+        assert mutation_cover.states_the_reader_cost(wrapped)
+
     def test_the_prover_refuses_the_rule_that_states_no_measured_cost(self) -> None:
         text = RULE.read_text()
         kept = [line for line in text.splitlines() if "seconds" not in line]

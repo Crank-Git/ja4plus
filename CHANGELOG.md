@@ -509,7 +509,8 @@ holds every breaking change of this record against a row of that page.
   of the cover procedure in `.claude/rules/conformance.md` subtracts the lines the import
   runs, so every mutation of a module body lost its reader and the cost rule then held the
   cheapest test file. #414 measured the outcome on `ja4plus/__init__.py`: the cover the cost
-  rule builds is `tests/test_parity.py`, and that sweep reads 1 killed and 31 survived.
+  rule builds is `tests/test_parity.py`, that sweep reads 1 killed and 31 survived, and all
+  25 entries of `__all__` survive it.
   **The defect follows from the construction and not from an accident of cost**, because the
   subtraction removes the whole line class at once. New step 4 names a reader by the value
   rather than by the cost. New file `tests/mutation_cover.py` reads the names a module body

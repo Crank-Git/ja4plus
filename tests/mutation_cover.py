@@ -159,11 +159,13 @@ def states_the_reader_cost(text: str) -> bool:
         text: The whole text of `.claude/rules/conformance.md`.
 
     Returns:
-        True when one line of the section names the reader of `ja4plus/__init__.py` and a
-        second count. An estimate carries no second count, so it fails this check.
+        True when one paragraph of the section names the reader of `ja4plus/__init__.py`
+        and a second count. An estimate carries no second count, so it fails this check.
+        The reader is the paragraph and not the line, because the file wraps at 90
+        columns and a rewrap moves a sentence across two lines.
     """
-    for line in _section(text).splitlines():
-        if "tests/test_public_interface.py" in line and SECONDS.search(line):
+    for paragraph in _section(text).split("\n\n"):
+        if "tests/test_public_interface.py" in paragraph and SECONDS.search(paragraph):
             return True
     return False
 

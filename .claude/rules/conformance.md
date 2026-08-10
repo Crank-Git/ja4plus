@@ -226,11 +226,11 @@ whose own source holds the most of those tokens. A file that reads the value kil
 mutation of the value, and the cheapest file reads no value at all.
 
 **#433 measured the repair on `ja4plus/__init__.py`, at commit `00a0c42`, over all 32
-mutations of the module.** The cost rule alone builds the cover `tests/test_parity.py`, and
-that sweep reads 1 killed and 31 survived. Step 4 adds the reader
-`tests/test_public_interface.py`, and one sweep against that file alone costs 39.9 seconds.
-The repaired cover reads 26 killed and 6 survived in 48.0 seconds, and it leaves no
-survivor on the 25 entries of `__all__`.
+mutations of the module.** The cost rule alone builds the cover `tests/test_parity.py`. That
+sweep costs 43.2 seconds, it reads 1 killed and 31 survived, and all 25 entries of `__all__`
+survive it. Step 4 adds the reader `tests/test_public_interface.py`, and one sweep against
+that file alone costs 39.9 seconds. The repaired cover reads 26 killed and 6 survived in
+48.0 seconds, and no entry of `__all__` survives it.
 
 **State this fourth limit beside the three below.** The reader kills a mutation of the
 value it reads, and it kills no other mutation of the module body. The three survivors of
