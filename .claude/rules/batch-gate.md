@@ -164,10 +164,11 @@ the `docs` extra, and every job installed the `dev` extra alone. The `test` job 
 `docs` extra on the `ubuntu-latest` job with Python 3.13, so one job of the six runs the
 documentation slug case. **Read a universal skip against the installed extras as well.**
 
-**Warning: `skip-gate` is a twelfth check, and the required list below holds eleven names.**
+**Warning: `skip-gate` is a twelfth check, and the required list below holds twelve names.**
 A red `skip-gate` fails the run, so the batch gate refuses the merge on the run conclusion.
-The branch protection rule of `dev` reaches this check once the user adds the name to it,
-and that change is the user's alone. #524 records the state.
+The user added `skip-gate` to the branch protection rule of `dev` on 2026-08-10, and that
+change is the user's alone. #546 records the read that measured it. #524 records the
+earlier state, where the rule held eleven names and this check stood outside them.
 
 ## Read the gate before every batch merge
 
@@ -338,15 +339,15 @@ round 197 added the `skip-gate` job.
 **`dev` carries a required status check, and the provider refuses a contributor merge that
 no successful run of every required context covers.** `enforce_admins` reads `false`, so
 the rule binds no repository administrator and an administrator merge reaches `dev` with no
-run. The subsection below holds that reading. A read of 2026-08-10 reports the state. #468
-turned the rule on and #480 re-took the measurement.
+run. The subsection below holds that reading. The read of 2026-08-10 that #546 took reports
+the state. #468 turned the rule on. #480 took the first measurement and #546 re-took it.
 
 | Read | Result |
 |---|---|
-| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, eleven required contexts |
+| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, twelve required contexts |
 | `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` |
 
-Each of the eleven contexts carries `app_id` 15368, and the provider holds that number
+Each of the twelve contexts carries `app_id` 15368, and the provider holds that number
 under `required_status_checks.checks[]`. `required_status_checks.contexts` holds the names
 alone, so a reader of that list reads no application at all. No context reads `build` and
 none reads the bare `test`. The ruleset list stays empty, so the branch protection rule is the
@@ -359,10 +360,27 @@ the superseded wording, quoted rather than rewritten.
 > **A required status check refuses the merge inside the provider, and this repository
 > holds none.** A read of 2026-08-09 reports the state.
 
-| Read | 2026-08-09, superseded | 2026-08-10 |
+| Read | 2026-08-09, #459, superseded | 2026-08-10, #480, superseded |
 |---|---|---|
 | `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `404`, `Branch not protected` | `200`, eleven required contexts |
 | `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` | `[]` |
+
+**The read of 2026-08-10 that #480 took reported eleven required contexts, and this record
+supersedes it.** The user added `skip-gate` to the branch protection rule of `dev` on the
+same date, between the two reads. The sentence below is the superseded wording, quoted
+rather than rewritten.
+
+> Each of the eleven contexts carries `app_id` 15368, and the provider holds that number
+> under `required_status_checks.checks[]`.
+
+| Read | 2026-08-10, #480, superseded | 2026-08-10, #546 |
+|---|---|---|
+| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, eleven required contexts | `200`, twelve required contexts |
+| `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` | `[]` |
+
+**Warning: two reads of 2026-08-10 stand in this section, so read the issue beside the
+date.** #480 took the first and #546 took the second. Every live sentence of this section
+states the reading of #546.
 
 **Read the local gate before every batch merge, because the provider rule stands beside it
 and replaces it nowhere.** `python -m tests.batch_gate --pr <number>` reads the same
@@ -389,12 +407,13 @@ read the rule at the provider, and they change nothing.
 1. Open `https://github.com/Crank-Git/ja4plus/settings/branches`.
 2. Open the branch protection rule for `dev`.
 3. Read `Require status checks to pass before merging`, which is on.
-4. Read the eleven check names of the list below against the rule.
+4. Read the twelve check names of the list below against the rule.
 
 **Warning: a check name is not a job name.** The `test` job of
 `.github/workflows/test.yml` runs a matrix, so the provider publishes one check for each
-combination. A required check named `test` matches nothing. These are the eleven names the
-read of 2026-08-10 reports, and a read of commit `b593de5` reported the same names.
+combination. A required check named `test` matches nothing. These are the twelve names the
+read of 2026-08-10 that #546 took reports. The record above holds the eleven names of the
+#480 read.
 
 ```
 lint
@@ -408,7 +427,14 @@ fuzz
 samples
 installed-wheel
 conformance
+skip-gate
 ```
+
+**`skip-gate` is the twelfth name.** Round 201 built the job that publishes it. The job
+downloads the report of every job that runs cases. It fails a case that every one of those
+reports records as skipped. `## A case that skips on every job fails the run` above holds
+the whole condition. **A red `skip-gate` refuses the merge on the same rule as a red
+`lint`.**
 
 **Warning: leave the `build` check out of the required list.** It belongs to
 `.github/workflows/docs-build.yml`, which filters four paths. A batch that touches none of
@@ -421,7 +447,7 @@ otherwise reads by hand.
 `tests/test_batch_gate_protection_rule.py` reads this section against
 `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, so a change at the provider
 fails a case here rather than leaving a reader with a stale rule. One case reads
-`required_status_checks.checks[]` and requires `app_id` 15368 on each of the eleven
+`required_status_checks.checks[]` and requires `app_id` 15368 on each of the twelve
 contexts, so a context of another application fails that case. **Where the call cannot be
 made, every live case skips and it does not pass.**
 
