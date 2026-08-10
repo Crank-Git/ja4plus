@@ -30,8 +30,8 @@ WHEEL_TESTS = REPOSITORY_ROOT / "tests" / "test_installed_wheel.py"
 #
 #   1. #408 wrote seven cases against the wheel.
 #   2. #409 added nine against the source distribution.
-#   3. #455 added three that read the entry list of each artifact.
-EXPECTED_CASE_COUNT = 19
+#   3. #455 added seven that read the entry list, the metadata and the member list.
+EXPECTED_CASE_COUNT = 23
 
 
 def _collect(arguments: List[str]) -> str:

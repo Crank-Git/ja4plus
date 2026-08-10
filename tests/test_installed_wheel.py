@@ -94,9 +94,22 @@ MAPPING_FILE_PARTS = ("data", "ja4plus-mapping.csv")
 # the base of batch #460, and 56 of them lay under it.
 DOCUMENTATION_PREFIX = "docs/"
 
+# The assets tree. `FR-release-11b` requires the wheel to carry no file under this prefix.
+# #455 measured one tracked file below it, `assets/logo.png` at 2423363 bytes, and a logo is
+# no run-time dependency of a fingerprinting library.
+ASSETS_PREFIX = "assets/"
+
 # The module every wheel of this project carries. **An assertion over an empty entry list
 # passes**, so each case that reads the entry list holds this name against it first.
 PACKAGE_MODULE = "ja4plus/__init__.py"
+
+# The one top-level name this project publishes. `FR-release-11d` states the requirement.
+# An environment that installs the wheel answers `import <this name>` and no other.
+TOP_LEVEL_NAME = "ja4plus"
+
+# The metadata directory of the wheel, which carries no top-level name. `unzip -l` lists it
+# beside the package, and every entry of the wheel lies below one of the two.
+METADATA_SUFFIX = ".dist-info/"
 
 # The member the source distribution carries for the deviation register. `tar -tzf` writes
 # every member under the `<name>-<version>/` prefix, and this reader matches the tail.
@@ -443,6 +456,33 @@ def wheel_entry_names(wheel: pathlib.Path) -> list[str]:
         return archive.namelist()
 
 
+def top_level_names(wheel: pathlib.Path) -> list[str]:
+    """Return the names that one wheel declares in its `top_level.txt`.
+
+    `setuptools` writes one name for each top-level package the wheel carries. **The file
+    therefore names every accidental namespace package, and not the two this project knows
+    about**, which is why a case reads it rather than one prefix at a time.
+
+    Args:
+        wheel: The wheel to read.
+
+    Returns:
+        Every declared name, in file order, without an empty line.
+
+    Raises:
+        AssertionError: The wheel carries no `top_level.txt`.
+    """
+    names = wheel_entry_names(wheel)
+    matches = [name for name in names if name.endswith(f"{METADATA_SUFFIX}top_level.txt")]
+    assert len(matches) == 1, (
+        f"the wheel carries {len(matches)} top_level.txt files, and it must carry one: "
+        f"{sorted(names)}"
+    )
+    with zipfile.ZipFile(wheel) as archive:
+        text = archive.read(matches[0]).decode("utf-8")
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
 def declared_version() -> str:
     """Return the version that the `[project]` block of `pyproject.toml` declares.
 
@@ -670,8 +710,75 @@ def test_the_wheel_carries_no_file_under_the_documentation_tree(
     )
     carried = sorted(name for name in names if name.startswith(DOCUMENTATION_PREFIX))
     assert not carried, (
-        f"the wheel carries {len(carried)} entries under {DOCUMENTATION_PREFIX}, and it "
-        f"lists {len(names)} entries: {carried}"
+        f"the wheel carries {len(carried)} of its {len(names)} entries under "
+        f"{DOCUMENTATION_PREFIX}, and it must carry none: {carried}"
+    )
+
+
+def test_the_wheel_carries_no_file_under_the_assets_tree(
+    artifacts: dict[str, pathlib.Path],
+) -> None:
+    """`FR-release-11b`. The wheel lists no entry under `assets/`.
+
+    `assets/logo.png` holds 2423363 bytes, and the `README.md` of the repository is its one
+    reader. A logo is no run-time dependency of a fingerprinting library, so every install
+    paid those bytes for nothing.
+    """
+    names = wheel_entry_names(artifacts["wheel"])
+    assert PACKAGE_MODULE in names, (
+        f"the wheel lists no {PACKAGE_MODULE}, and it lists {len(names)} entries, so this "
+        "case reads no wheel that a user could install"
+    )
+    carried = sorted(name for name in names if name.startswith(ASSETS_PREFIX))
+    assert not carried, (
+        f"the wheel carries {len(carried)} of its {len(names)} entries under "
+        f"{ASSETS_PREFIX}, and it must carry none: {carried}"
+    )
+
+
+def test_the_wheel_declares_one_top_level_name(artifacts: dict[str, pathlib.Path]) -> None:
+    """`FR-release-11d`. The `top_level.txt` of the wheel names `ja4plus` alone.
+
+    **This case reads the whole declared list, and it names no tree.** A case for each known
+    tree passes on the next accidental namespace package, and this one fails on it.
+
+    A second top-level name is a deliberate decision of this project, so a legitimate new
+    package moves this case. That is the intended cost: the case states which names the
+    release publishes, and a new name changes what a user can import.
+    """
+    declared = top_level_names(artifacts["wheel"])
+    assert declared == [TOP_LEVEL_NAME], (
+        f"the wheel declares the top-level names {declared}, and it must declare "
+        f"['{TOP_LEVEL_NAME}']"
+    )
+
+
+def test_the_wheel_carries_no_file_outside_the_package_and_its_metadata(
+    artifacts: dict[str, pathlib.Path],
+) -> None:
+    """`FR-release-11b`. Every entry of the wheel lies below the package or the metadata.
+
+    **This case reads the payload where `test_the_wheel_declares_one_top_level_name` reads
+    the declaration.** A data file that ships outside `ja4plus/` reaches no `top_level.txt`,
+    so the two cases fail on two different faults.
+
+    The case also holds the `examples` entry of the exclusion list, which carries no
+    wildcard beside it. `examples/` holds no subdirectory today, and a subdirectory added
+    later fails this case rather than ship.
+    """
+    names = wheel_entry_names(artifacts["wheel"])
+    assert PACKAGE_MODULE in names, (
+        f"the wheel lists no {PACKAGE_MODULE}, and it lists {len(names)} entries, so this "
+        "case reads no wheel that a user could install"
+    )
+    stray = sorted(
+        name
+        for name in names
+        if not name.startswith(f"{TOP_LEVEL_NAME}/") and METADATA_SUFFIX not in name
+    )
+    assert not stray, (
+        f"the wheel carries {len(stray)} of its {len(names)} entries outside "
+        f"{TOP_LEVEL_NAME}/ and the metadata directory, and it must carry none: {stray}"
     )
 
 
@@ -868,6 +975,23 @@ def test_the_source_distribution_carries_the_documentation_tree(
     assert carried, (
         f"the source distribution lists no member under {DOCUMENTATION_PREFIX}, and it "
         f"holds {len(members)} members"
+    )
+
+
+def test_the_source_distribution_carries_the_assets_tree(
+    artifacts: dict[str, pathlib.Path],
+) -> None:
+    """`FR-release-11c`. The source distribution lists the assets tree.
+
+    The reasoning of `test_the_source_distribution_carries_the_documentation_tree` holds
+    here too. A source distribution is the project at one revision, and `README.md` renders
+    `assets/logo.png`. The exclusion of #455 reaches the wheel alone.
+    """
+    members = sdist_member_names(artifacts["sdist"])
+    carried = [name for name in members if name.startswith(ASSETS_PREFIX)]
+    assert carried, (
+        f"the source distribution lists no member under {ASSETS_PREFIX}, and it holds "
+        f"{len(members)} members"
     )
 
 
