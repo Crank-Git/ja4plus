@@ -125,6 +125,22 @@ version.
 - The clean environment installs the shipped dependency list first, and it gains the
   test runner after that. The runner is the `pytest` entry of the `dev` extra, so one
   record states the version.
+- **The publish workflow holds two events and two jobs, and each job accepts one event.**
+  The published-release event runs the `publish` job, which names the `pypi` environment
+  and states no repository URL. The manual event runs the `dry-run` job, which names the
+  `testpypi` environment and states the TestPyPI repository URL. `### The two paths of the
+  publish workflow` states the guardrail and `tests/test_publish_workflow.py` holds it.
+- **The manual trigger declares no input.** The event selects the job, and each job names
+  its environment as a literal. No value that a caller chooses reaches either name.
+- The dry run runs the same verification as the release. A dry run that skipped the check
+  proves the publisher and not the artifact.
+- `tests/release_body.py` returns the `## [<version>]` section of `CHANGELOG.md` for the
+  version that `ja4plus/__init__.py` declares. The publish job writes that section to the
+  release body with `gh release edit`, and that step stands in front of the publish step.
+  `tests/test_release_body.py` holds the cases against the reader.
+- **The provider refuses a release body of more than 125000 characters.** The reader
+  reports a fault rather than truncate the section, so the workflow stops at a named step.
+  `### The release body of version 1.0.0` states what this repository measures today.
 - The release is not published when any verification step fails. A partial publish
   cannot be undone on PyPI.
 - Version 1.0.0 states that the interface is stable. A breaking change after this
@@ -193,6 +209,81 @@ states a promise the project cannot yet hold. `FR-release-12` therefore stays op
 release commit of 1.0.0 writes the line. **#69 built `FR-release-10` and `FR-release-11`,
 and it changed no classifier.**
 
+### The two paths of the publish workflow
+
+**A manual trigger on a publish workflow creates a path to PyPI.** The project manager
+stated this guardrail on #70, and it is not optional. The dry run reaches TestPyPI alone,
+and the separation is structural rather than a value a caller selects.
+
+| Path | Event | Job | Environment | Repository URL |
+|---|---|---|---|---|
+| Release | `release: published` | `publish` | `pypi` | none, so the action uploads to PyPI |
+| Dry run | `workflow_dispatch` | `dry-run` | `testpypi` | `https://test.pypi.org/legacy/` |
+
+Four properties hold the separation, and a case reads each one.
+
+1. Each job carries the condition of its own event and no second one. A job with no
+   condition runs on both events.
+2. Each job names its environment as a literal. An environment that came from an
+   expression follows a value chosen at run time.
+3. The `publish` job names the TestPyPI host in no line, and it states no repository URL.
+4. The manual trigger declares no input, so a caller selects nothing.
+
+**One file holds both paths, and two files were the alternative.** The trusted publisher
+of TestPyPI names a workflow filename, and the project manager recorded that name as
+`publish.yml` on #70. A second file would carry a second filename, which the configured
+publisher does not name. One file therefore holds both jobs.
+
+**A mutation proves both directions.** #70 wrote four mutations of
+`.github/workflows/publish.yml`, measured the failing case of each one, and restored the
+file. `### The mutations that prove the guardrail` records them.
+
+### The mutations that prove the guardrail
+
+**A case that passes on the repaired file proves nothing about the direction it fails
+in.** These six mutations of 2026-08-10 each name the one case that caught it. Each
+mutation was written to disk, measured, and restored, and the file compared equal by
+digest after the restore. The digest is
+`36941ecb201aed94a19d8c63ee920144beafbda00e205e6c55059f7f5d0916d1`.
+
+| Mutation | The one case that failed |
+|---|---|
+| The `dry-run` job takes the environment `pypi`. | `test_each_job_of_the_publish_workflow_names_its_environment_as_a_literal` |
+| The `dry-run` job reads its repository URL from an input. | `test_the_manual_path_of_the_publish_workflow_reaches_no_real_index` |
+| The `publish` job takes the TestPyPI repository URL. | `test_the_release_path_of_the_publish_workflow_reaches_no_test_index` |
+| Both jobs lose their `if:` condition. | `test_each_job_of_the_publish_workflow_accepts_one_event` |
+| The manual trigger declares an input. | `test_the_manual_trigger_of_the_publish_workflow_declares_no_input` |
+| The `publish` job loses the release-body step. | `test_the_publish_job_writes_the_release_body_before_it_publishes` |
+
+### The release body of version 1.0.0
+
+**`FR-release-14` is built and the version 1.0.0 section does not fit the release body.**
+A read of 2026-08-10 reports the two counts.
+
+| Read | Result |
+|---|---|
+| The `## [1.0.0]` section of `CHANGELOG.md` | 242778 characters |
+| The longest body the provider accepts | 125000 characters |
+
+The provider answers `422` with `body is too long (maximum is 125000 characters)`.
+Verified against https://docs.github.com/en/rest/releases/releases and
+https://github.com/cli/cli/issues/7705, both retrieved 2026-08-10.
+
+**`tests/release_body.py` truncates nothing.** A truncated changelog section reads as
+complete and is not, and the choice of what to drop belongs to the maintainer. The reader
+reports the fault, the step fails, and the release publishes nothing.
+`test_the_reader_refuses_the_version_1_0_0_section_of_this_repository` measures the state
+above, and it fails on the day that section falls below the limit.
+
+**The decision this state needs belongs to the user.** The release of version 1.0.0 needs
+one of three answers, and #70 takes none of them.
+
+1. The section shrinks. The round entries move to a record of their own, and the section
+   keeps the summary and the breaking-change tables.
+2. The body holds a named part of the section, and it links to `CHANGELOG.md` at the tag
+   for the rest.
+3. `FR-release-14` restates what the body holds.
+
 ### How `tests/test_packaging.py` reads the wheel
 
 `tests/test_packaging.py` holds `FR-release-10` and `FR-release-11` against the built
@@ -256,7 +347,14 @@ TestPyPI site.
 | A built file holds no archive. | `twine check` reports a non-zero status and the check raises. `test_the_release_check_refuses_a_built_file_that_twine_rejects` proves it. |
 | The clean environment holds no test runner. | `install_test_runner` adds the `pytest` entry of the `dev` extra, after the wheel install measured the shipped dependency list. |
 | The maintainer creates a release from a branch other than the live branch. | The workflow runs against that reference. The version-check job is the guard. |
-| TestPyPI is not configured. | The dry run fails and names the missing configuration. It does not fall back to PyPI. |
+| TestPyPI is not configured. | The dry run fails and names the missing configuration. It does not fall back to PyPI. The `dry-run` job states the TestPyPI repository URL as a literal, so it reaches PyPI in no case. |
+| A caller starts the workflow by hand and wants PyPI. | The manual event runs the `dry-run` job alone. `test_each_job_of_the_publish_workflow_accepts_one_event` fails where a condition names a second event. |
+| A later change reads the environment from an expression. | `test_each_job_of_the_publish_workflow_names_its_environment_as_a_literal` fails. A value chosen at run time lets the manual path reach `pypi`. |
+| A later change adds an input to the manual trigger. | `test_the_manual_trigger_of_the_publish_workflow_declares_no_input` fails. An input that selects the index is the hazard the separation removes. |
+| A later change adds a third job. | `test_the_publish_workflow_holds_the_two_jobs_of_the_two_events` fails. A job the guardrail cases do not name reaches neither direction. |
+| The changelog section is longer than the release body the provider accepts. | `body_fault` of `tests/release_body.py` returns the fault, the step fails, and nothing publishes. **The reader truncates nothing.** `### The release body of version 1.0.0` records the counts. |
+| The changelog section holds a heading and no line. | `changelog_section` raises. **A section of one heading passes a search for that heading**, so the floor stands in the reader. |
+| The dry run edits a release. | It cannot. The `dry-run` job declares no `contents: write` and it runs no `gh release edit`. The manual event names no release, so such a job would edit the release the maintainer published last. |
 
 ## Acceptance criteria
 
@@ -321,6 +419,24 @@ rather than from `grep -r`. `grep -r` also reads an untracked build artifact.
 
 ## Open questions
 
-- Whether TestPyPI trusted publishing is configured for this project. If it is not,
-  the dry-run requirement needs a one-time setup step that only the repository owner
-  can perform.
+- **What the release body of version 1.0.0 holds.** The changelog section is 242778
+  characters and the provider accepts 125000.
+  `### The release body of version 1.0.0` states the three answers, and the user takes
+  one of them before the release of version 1.0.0.
+
+### The TestPyPI publisher, and what proves it
+
+**The GitHub half is configured, and a read of 2026-08-10 reports it.**
+
+| Read | Result |
+|---|---|
+| `gh api repos/Crank-Git/ja4plus/environments` | `github-pages`, `pypi`, `testpypi` |
+| Deployments to `testpypi` | 0 |
+
+**The TestPyPI half is unreadable by any agent.** A trusted publisher stands on
+`test.pypi.org`, against this repository, `publish.yml` and the environment `testpypi`,
+and that page needs the account of the owner.
+
+**The first dry run is the measurement.** A dry run against an absent publisher fails at
+the publish step and it uploads nothing, so no guess is needed. #70 built the two paths
+and it started no run, because a run of this workflow publishes.

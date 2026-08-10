@@ -33,7 +33,7 @@ import pathlib
 import re
 import subprocess
 import sys
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pytest
 
@@ -64,6 +64,57 @@ PUBLISH_ACTION = "pypa/gh-action-pypi-publish@"
 RELEASE_TRIGGER = ("on:", "  release:", "    types: [published]")
 TRUSTED_PUBLISHER_PERMISSION = "id-token: write"
 
+# The two jobs of the workflow, and the one event each one accepts.
+#
+# **A manual trigger on a publish workflow creates a path to PyPI.** The separation below is
+# the guardrail #70 states, and the cases of this file hold it in both directions. The
+# release event reaches PyPI alone, and the manual event reaches TestPyPI alone.
+PUBLISH_JOB = "publish"
+DRY_RUN_JOB = "dry-run"
+JOB_EVENTS = {PUBLISH_JOB: "release", DRY_RUN_JOB: "workflow_dispatch"}
+
+# The condition each job carries. The text is exact, because a condition that names a second
+# event opens the other path.
+JOB_CONDITIONS = {name: f"github.event_name == '{event}'" for name, event in JOB_EVENTS.items()}
+
+# The environment each job declares. Both names are literals. **An environment that came
+# from an expression would let the caller of the manual event select `pypi`.**
+JOB_ENVIRONMENTS = {PUBLISH_JOB: "pypi", DRY_RUN_JOB: "testpypi"}
+
+# The index the dry run uploads to.
+#
+# Verified against: https://github.com/pypa/gh-action-pypi-publish README (retrieved
+# 2026-08-10). The input is `repository-url`, and the action uploads to PyPI where a step
+# states no such input.
+TESTPYPI_URL = "https://test.pypi.org/legacy/"
+TESTPYPI_HOST = "test.pypi.org"
+
+# The command that builds the release body, and the permission that writes it to the
+# release. `FR-release-14`.
+BODY_COMMAND = "python -m tests.release_body"
+RELEASE_EDIT_COMMAND = "gh release edit"
+CONTENTS_PERMISSION = "contents: write"
+
+# One job header of the `jobs:` block, at two spaces.
+JOBS_KEY = re.compile(r"^jobs:\s*$")
+JOB_HEADER = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
+
+# One key of a job body, at four spaces. The reader takes the value as written, so a
+# comparison against a literal fails on an expression.
+JOB_CONDITION = re.compile(r"^    if: (.+?)\s*$", re.MULTILINE)
+JOB_ENVIRONMENT = re.compile(r"^    environment: (.+?)\s*$", re.MULTILINE)
+
+# The index one publish step names. A step that states no such input uploads to PyPI.
+REPOSITORY_URL = re.compile(r"^\s*repository-url:\s*(\S+)\s*$", re.MULTILINE)
+
+# A GitHub expression. A value that holds one is chosen at run time, and the caller of the
+# manual event chooses part of it.
+EXPRESSION = re.compile(r"\$\{\{")
+
+# The `inputs:` key of the manual trigger. **An input that selected the index would be the
+# hazard this guardrail removes**, so the manual trigger declares none.
+DISPATCH_INPUTS = re.compile(r"^    inputs:\s*$", re.MULTILINE)
+
 # The two keys that let a job continue past a failed step. `FR-release-8` publishes only
 # where every check passed, so no step of this workflow carries either one.
 CONTINUATION_KEYS = ("continue-on-error", "if: always()")
@@ -84,19 +135,69 @@ ACTION_REFERENCE = re.compile(r"uses:\s+(\S+)")
 PINNED_COMMIT = re.compile(r"^[^@]+@[0-9a-f]{40}$")
 
 
-def _steps() -> List[str]:
-    """Return the steps of the publish job, in file order.
+def _jobs() -> Dict[str, str]:
+    """Return the body of each job of the workflow, keyed by its name.
 
-    The reader starts at the `steps:` key and it stops at the next key of the job. A list
-    that stands elsewhere in the job therefore reaches no step, and a `strategy` block
-    cannot add one.
+    The reader starts at the `jobs:` key and it splits the block at each header of two
+    spaces. **A case that read the whole file would pass on a value another job holds**, so
+    every guardrail case below reads one job body.
+
+    Returns:
+        One body for each job, holding every line below its header.
+    """
+    jobs: Dict[str, List[str]] = {}
+    current: Optional[str] = None
+    inside = False
+    for line in WORKFLOW.read_text(encoding="utf-8").splitlines():
+        if JOBS_KEY.match(line):
+            inside = True
+            continue
+        if not inside:
+            continue
+        if line.strip() and not line.startswith(" "):
+            break
+        header = JOB_HEADER.match(line)
+        if header:
+            current = header.group(1)
+            jobs[current] = []
+        elif current is not None:
+            jobs[current].append(line)
+    return {name: "\n".join(body) for name, body in jobs.items()}
+
+
+def _job(name: str) -> str:
+    """Return the body of one job of the workflow.
+
+    Args:
+        name: The job name, as the `jobs:` block writes it.
+
+    Returns:
+        Every line below the job header.
+
+    Raises:
+        AssertionError: The workflow holds no job of that name.
+    """
+    jobs = _jobs()
+    assert name in jobs, f"{WORKFLOW.name} holds the jobs {sorted(jobs)} and no job {name!r}"
+    return jobs[name]
+
+
+def _steps(job: str = PUBLISH_JOB) -> List[str]:
+    """Return the steps of one job, in file order.
+
+    The reader starts at the `steps:` key of that job and it stops at the next key of the
+    job. A list that stands elsewhere in the job therefore reaches no step, and a `strategy`
+    block cannot add one.
+
+    Args:
+        job: The job name.
 
     Returns:
         One string for each step, holding every line of that step.
     """
     steps: List[List[str]] = []
     inside = False
-    for line in WORKFLOW.read_text(encoding="utf-8").splitlines():
+    for line in _job(job).splitlines():
         if STEPS_KEY.match(line):
             inside = True
             continue
@@ -134,50 +235,195 @@ def _trigger_keys() -> List[str]:
 
 
 def test_the_publish_workflow_runs_on_a_published_release() -> None:
-    """The workflow accepts the published-release event and no second event.
+    """The workflow accepts the published-release event and the manual event.
 
-    A second trigger would publish outside a release, and a publish to PyPI cannot be
-    undone.
+    A trigger this project never reviewed would publish outside a release, and a publish to
+    PyPI cannot be undone. `test_each_job_of_the_publish_workflow_accepts_one_event` holds
+    the manual event to TestPyPI.
     """
     text = WORKFLOW.read_text(encoding="utf-8")
     for line in RELEASE_TRIGGER:
         assert f"\n{line}\n" in text, f"{WORKFLOW.name} holds no line {line!r}"
-    assert _trigger_keys() == ["release"], (
+    assert _trigger_keys() == ["release", "workflow_dispatch"], (
         f"the on: block of {WORKFLOW.name} holds the keys {_trigger_keys()}"
     )
 
 
-def test_the_publish_workflow_declares_the_trusted_publisher_permission() -> None:
-    """The workflow keeps the permission that trusted publishing needs.
+def test_the_manual_trigger_of_the_publish_workflow_declares_no_input() -> None:
+    """The manual trigger takes no input, so a caller selects nothing.
 
-    Trusted publishing stores no token, so a removed permission moves this project back to
-    a stored credential.
+    **An input that selected the index is the hazard this guardrail removes.** The event
+    itself selects the job, the job states its environment as a literal, and the caller
+    reaches neither value.
     """
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert TRUSTED_PUBLISHER_PERMISSION in text, (
-        f"{WORKFLOW.name} declares no {TRUSTED_PUBLISHER_PERMISSION}"
+    assert DISPATCH_INPUTS.search(text) is None, (
+        f"{WORKFLOW.name} declares an input on its manual trigger, so a caller chooses a "
+        "value the workflow reads"
     )
 
 
-def test_the_publish_workflow_runs_the_release_check_before_the_publish() -> None:
-    """`FR-release-8`. The check step stands in front of the publish step.
+def test_the_publish_workflow_holds_the_two_jobs_of_the_two_events() -> None:
+    """The workflow holds one job for each event and no third job.
+
+    A job the guardrail cases do not name reaches neither direction of the separation.
+    """
+    assert sorted(_jobs()) == sorted(JOB_EVENTS), (
+        f"{WORKFLOW.name} holds the jobs {sorted(_jobs())}"
+    )
+
+
+def test_each_job_of_the_publish_workflow_accepts_one_event() -> None:
+    """**The guardrail.** Each job carries the condition of its own event and no second one.
+
+    The release event reaches the job that publishes to PyPI. The manual event reaches the
+    job that publishes to TestPyPI. A job with no condition would run on both events, so a
+    manual run would reach PyPI.
+    """
+    for name, expected in JOB_CONDITIONS.items():
+        conditions = JOB_CONDITION.findall(_job(name))
+        assert conditions == [expected], (
+            f"the {name} job of {WORKFLOW.name} carries the conditions {conditions}, and it "
+            f"must carry [{expected!r}]"
+        )
+
+
+def test_each_job_of_the_publish_workflow_names_its_environment_as_a_literal() -> None:
+    """**The guardrail.** Each job states one environment name, written in the file.
+
+    An environment that came from an expression would follow a value chosen at run time,
+    and the manual path would then reach the `pypi` environment.
+    """
+    for name, expected in JOB_ENVIRONMENTS.items():
+        environments = JOB_ENVIRONMENT.findall(_job(name))
+        assert environments == [expected], (
+            f"the {name} job of {WORKFLOW.name} names the environments {environments}, and "
+            f"it must name [{expected!r}]"
+        )
+        assert EXPRESSION.search(environments[0]) is None, (
+            f"the {name} job selects its environment from the expression {environments[0]!r}"
+        )
+
+
+def test_the_release_path_of_the_publish_workflow_reaches_no_test_index() -> None:
+    """**The guardrail, first direction.** The release path can select TestPyPI nowhere.
+
+    The publish job names the TestPyPI host in no line, and it states no `repository-url`.
+    The action uploads to PyPI where a step states no such input.
+    """
+    body = _job(PUBLISH_JOB)
+    assert TESTPYPI_HOST not in body, (
+        f"the {PUBLISH_JOB} job of {WORKFLOW.name} names {TESTPYPI_HOST}, so the release "
+        "path can reach TestPyPI"
+    )
+    urls = REPOSITORY_URL.findall(body)
+    assert urls == [], (
+        f"the {PUBLISH_JOB} job of {WORKFLOW.name} states the repository URLs {urls}, and "
+        "it must state none"
+    )
+
+
+def test_the_manual_path_of_the_publish_workflow_reaches_no_real_index() -> None:
+    """**The guardrail, second direction.** The manual path can select PyPI nowhere.
+
+    The dry-run job states the TestPyPI URL as a literal on its publish step. A URL that
+    came from an expression would follow a value chosen at run time, and the manual path
+    would then upload to PyPI.
+    """
+    body = _job(DRY_RUN_JOB)
+    urls = REPOSITORY_URL.findall(body)
+    assert urls == [TESTPYPI_URL], (
+        f"the {DRY_RUN_JOB} job of {WORKFLOW.name} states the repository URLs {urls}, and "
+        f"it must state [{TESTPYPI_URL!r}]"
+    )
+    assert EXPRESSION.search(urls[0]) is None, (
+        f"the {DRY_RUN_JOB} job selects its index from the expression {urls[0]!r}"
+    )
+    publishes = [step for step in _steps(DRY_RUN_JOB) if PUBLISH_ACTION in step]
+    assert len(publishes) == 1, (
+        f"the {DRY_RUN_JOB} job holds {len(publishes)} publish steps, and each one needs "
+        "the repository URL of TestPyPI"
+    )
+    assert TESTPYPI_URL in publishes[0], (
+        f"the publish step of the {DRY_RUN_JOB} job states no {TESTPYPI_URL}"
+    )
+
+
+def test_each_job_of_the_publish_workflow_declares_the_trusted_publisher_permission() -> None:
+    """Each job keeps the permission that trusted publishing needs.
+
+    Trusted publishing stores no token, so a removed permission moves this project back to
+    a stored credential. The permission stands on the job and not on the workflow, so each
+    job carries the identity of its own environment alone.
+    """
+    for name in JOB_EVENTS:
+        assert TRUSTED_PUBLISHER_PERMISSION in _job(name), (
+            f"the {name} job of {WORKFLOW.name} declares no {TRUSTED_PUBLISHER_PERMISSION}"
+        )
+
+
+def test_the_dry_run_job_writes_no_repository_content() -> None:
+    """The dry run holds the read permission of the default token and no write permission.
+
+    The manual event names no release, so a dry run that could write repository content
+    would edit a release the maintainer already published.
+    """
+    assert CONTENTS_PERMISSION not in _job(DRY_RUN_JOB), (
+        f"the {DRY_RUN_JOB} job of {WORKFLOW.name} declares {CONTENTS_PERMISSION}"
+    )
+    assert RELEASE_EDIT_COMMAND not in _job(DRY_RUN_JOB), (
+        f"the {DRY_RUN_JOB} job of {WORKFLOW.name} runs {RELEASE_EDIT_COMMAND!r}"
+    )
+
+
+def test_the_publish_job_writes_the_release_body_before_it_publishes() -> None:
+    """`FR-release-14`. The publish job writes the changelog section to the release body.
+
+    The step stands in front of the publish step, so a changelog with no section for the
+    version fails the release rather than publishes it. `tests/test_release_body.py` holds
+    the reader that step runs.
+    """
+    steps = _steps(PUBLISH_JOB)
+    bodies = [index for index, step in enumerate(steps) if BODY_COMMAND in step]
+    edits = [index for index, step in enumerate(steps) if RELEASE_EDIT_COMMAND in step]
+    publishes = [index for index, step in enumerate(steps) if PUBLISH_ACTION in step]
+    assert len(bodies) == 1, f"the {PUBLISH_JOB} job runs {BODY_COMMAND!r} in {len(bodies)} steps"
+    assert edits == bodies, (
+        f"the {PUBLISH_JOB} job builds the body at {bodies} and writes it at {edits}, and "
+        "one step does both"
+    )
+    assert bodies[0] < publishes[0], (
+        f"the {PUBLISH_JOB} job writes the release body at step {bodies[0]} and publishes "
+        f"at step {publishes[0]}"
+    )
+    assert CONTENTS_PERMISSION in _job(PUBLISH_JOB), (
+        f"the {PUBLISH_JOB} job declares no {CONTENTS_PERMISSION}, so it writes no release body"
+    )
+
+
+def test_each_job_of_the_publish_workflow_runs_the_release_check_before_the_publish() -> None:
+    """`FR-release-8`. The check step stands in front of the publish step of each job.
 
     GitHub stops a job at the first step that fails, so a check in front of the publish
-    step refuses the upload. A check behind it would read an artifact PyPI already holds.
+    step refuses the upload. A check behind it would read an artifact the index already
+    holds. **The dry run carries the same order**, because a dry run that skipped the check
+    proves the publisher and not the artifact.
     """
-    steps = _steps()
-    assert len(steps) >= 2, f"{WORKFLOW.name} holds {len(steps)} steps"
-    checks = [index for index, step in enumerate(steps) if CHECK_COMMAND in step]
-    publishes = [index for index, step in enumerate(steps) if PUBLISH_ACTION in step]
-    assert len(checks) == 1, f"{WORKFLOW.name} runs {CHECK_COMMAND!r} in {len(checks)} steps"
-    assert len(publishes) == 1, f"{WORKFLOW.name} holds {len(publishes)} publish steps"
-    assert checks[0] < publishes[0], (
-        f"{WORKFLOW.name} runs the check at step {checks[0]} and publishes at step "
-        f"{publishes[0]}, so it publishes before it checks"
-    )
-    assert publishes[0] == len(steps) - 1, (
-        f"the publish step is step {publishes[0]} of {len(steps)}, and it must be the last"
-    )
+    for name in JOB_EVENTS:
+        steps = _steps(name)
+        assert len(steps) >= 2, f"the {name} job of {WORKFLOW.name} holds {len(steps)} steps"
+        checks = [index for index, step in enumerate(steps) if CHECK_COMMAND in step]
+        publishes = [index for index, step in enumerate(steps) if PUBLISH_ACTION in step]
+        assert len(checks) == 1, f"the {name} job runs {CHECK_COMMAND!r} in {len(checks)} steps"
+        assert len(publishes) == 1, f"the {name} job holds {len(publishes)} publish steps"
+        assert checks[0] < publishes[0], (
+            f"the {name} job runs the check at step {checks[0]} and publishes at step "
+            f"{publishes[0]}, so it publishes before it checks"
+        )
+        assert publishes[0] == len(steps) - 1, (
+            f"the publish step of the {name} job is step {publishes[0]} of {len(steps)}, "
+            "and it must be the last"
+        )
 
 
 def test_the_publish_workflow_holds_no_step_that_runs_after_a_failure() -> None:
@@ -186,9 +432,12 @@ def test_the_publish_workflow_holds_no_step_that_runs_after_a_failure() -> None:
     `continue-on-error` and `if: always()` each let a later step run where an earlier one
     failed. Either one would carry a failed check to the publish step.
     """
-    for key in CONTINUATION_KEYS:
-        offenders = [step.splitlines()[0].strip() for step in _steps() if key in step]
-        assert offenders == [], f"these steps of {WORKFLOW.name} carry {key}: {offenders}"
+    for name in JOB_EVENTS:
+        for key in CONTINUATION_KEYS:
+            offenders = [step.splitlines()[0].strip() for step in _steps(name) if key in step]
+            assert offenders == [], (
+                f"these steps of the {name} job of {WORKFLOW.name} carry {key}: {offenders}"
+            )
 
 
 def test_every_action_of_the_publish_workflow_pins_a_commit() -> None:
@@ -491,6 +740,8 @@ def _named_paths() -> Dict[str, pathlib.Path]:
     return {
         "check": REPOSITORY_ROOT / "tests" / "release_verification.py",
         "cases": REPOSITORY_ROOT / "tests" / "test_publish_workflow.py",
+        "body": REPOSITORY_ROOT / "tests" / "release_body.py",
+        "body cases": REPOSITORY_ROOT / "tests" / "test_release_body.py",
         "workflow": WORKFLOW,
     }
 
