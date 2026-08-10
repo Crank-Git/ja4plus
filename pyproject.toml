@@ -167,7 +167,7 @@ lookup = [
 docs = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
-    "mkdocstrings==0.30.1",
+    "mkdocstrings==1.0.6",
     "mkdocstrings-python==1.15.0",
     "griffe==2.1.0",
 ]
