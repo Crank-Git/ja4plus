@@ -231,6 +231,11 @@ position as well as at the keyword, because `ArgumentParser` takes it third. It 
 main guard of a tool module from the syntax tree, so a guard of another quote style or
 another operand order still reaches the run case.
 
+FR-pre-release-validation-40 — The `test` job of `.github/workflows/test.yml` fetches the
+two recorded commits of `tests/test_round_entry_existence.py`, each at depth 2. One commit
+records no round and the other records one, so the runner reads the check in both
+directions.
+
 ## User flows
 
 **A maintainer proves the shipped package runs.**
@@ -437,6 +442,9 @@ the checkout is.
       matrix runs.
 - [ ] `python -m tests.skip_gate` exits 1 where one entry of `tests/universal_skips.json`
       names no reason.
+- [ ] `tests/universal_skips.json` holds no entry for
+      `test_the_reading_fails_the_change_set_of_the_defect`, and the `skip-gate` job names
+      that case in no report of the matrix.
 - [ ] `pytest tests/test_requirement_scope.py` passes, so every requirement that binds a
       feature set names one path under `tests/`.
 - [ ] `pytest tests/test_settlement_procedure.py` passes, so every `repaired` verdict names
