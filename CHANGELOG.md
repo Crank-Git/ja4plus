@@ -508,32 +508,33 @@ holds every breaking change of this record against a row of that page.
 - **The FoxIO License 1.1 list of the README names every method it covers** (#388). Round TBD.
   The list named JA4S, JA4H, JA4T, JA4TS, JA4L, JA4X and JA4SSH. It named neither JA4LS, nor
   JA4D, nor JA4D6, and this project builds all three under that license. **A published
-  statement about another party's license is the user's decision, so #62 measured the
-  difference and changed nothing.** The user ruled on 2026-08-09 that the list follows FoxIO's
+  statement about another party's license is the user's decision.** #62 therefore measured the
+  difference and changed nothing. The user ruled on 2026-08-09 that the list follows FoxIO's
   list. **The premise of the issue is that `License FAQ.md:5` names ten methods, and the
   source names twelve.** Read at the pinned commit
   `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, that line names JA4S, JA4L, JA4LS, JA4H, JA4X,
   JA4SSH, JA4T, JA4TS, JA4TScan, JA4Scan, JA4D and JA4D6. **Two of those names reach no row of
-  this list**, because this project builds neither JA4TScan nor JA4Scan, so the list holds the
-  names the user named and it is a subset of FoxIO's. **Three FoxIO records at that commit
-  disagree with each other**, and this round records the three readings rather than choosing
-  among them: `License FAQ.md:5` names the twelve above, `README.md:293` omits JA4D and JA4D6,
-  and `LICENSE:3` spells the scanner `JA4SScan` beside a `JA4E` that the other two never name.
+  this list.** This project builds neither JA4TScan nor JA4Scan. The list therefore holds the
+  names the user named, and it is a subset of FoxIO's. **Three FoxIO records at that commit
+  disagree with each other.** This round records the three readings and chooses among them for
+  nothing. `License FAQ.md:5` names the twelve above. `README.md:293` omits JA4Scan, JA4D and
+  JA4D6. `LICENSE:3` spells the scanner `JA4SScan`, beside a `JA4E` that the other two never
+  name.
   **The list now cites the document and the commit**, so a reader checks it against the source
   without a second measurement. **The license list is not the implemented set.** This project
-  implements eleven methods, JA4 among them, and FoxIO publishes JA4 under BSD-3-Clause rather
-  than under the FoxIO License 1.1, so JA4 reaches the method table and reaches no row of this
-  list. **The case parses the paragraph and never searches for a name.** `JA4L` is a substring
-  of `JA4LS`, so a substring reader reports JA4L on a paragraph that names JA4LS alone. The
-  first form of the reader lost `JA4S` for the opposite reason: an underscore is a word
-  character, so Markdown emphasis hid the name from the word boundary, and the reader now
+  implements eleven methods, and JA4 is one of them. FoxIO publishes JA4 under BSD-3-Clause and
+  not under the FoxIO License 1.1. JA4 therefore reaches the method table and reaches no row of
+  this list. **The case parses the paragraph and never searches for a name.** `JA4L` is a
+  substring of `JA4LS`, so a substring reader reports JA4L on a paragraph that names JA4LS
+  alone. **The first form of the reader lost `JA4S` for the opposite reason.** An underscore is
+  a word character, so Markdown emphasis hid the name from the word boundary. The reader now
   removes the emphasis characters first. **The case derives the expected set from the
-  `Implemented` column of the README method table**, without the BSD-3-Clause method, so a name
-  that table gains reaches the list or fails the case, and
+  `Implemented` column of the README method table**, without the BSD-3-Clause method. A name
+  that table gains therefore reaches the list or fails the case, and
   `tests/test_documented_method_count.py` holds that table to `ja4plus/`. **No transcription
   under `docs/specs/foxio/` carries the license list.** The transcriptions cover
   `technical_details/`, and `docs/specs/foxio/README.md` bars a copy of FoxIO material into
-  this repository, so no case here reads the FoxIO document itself. **Both new cases were
+  this repository. No case here therefore reads the FoxIO document itself. **Both new cases were
   proved in both directions on this host.** The removal of JA4D6 from the list fails the set
   case alone. The deletion of the whole paragraph fails both cases. Each run restored the file
   it moved. No file under `ja4plus/` changes and no fingerprint moves.

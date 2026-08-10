@@ -348,8 +348,8 @@ def test_the_readme_names_this_project_an_independent_implementation() -> None:
 def _license_paragraph() -> str:
     """Return the paragraph of the README that names the FoxIO License 1.1.
 
-    The page wraps at 90 columns, so the paragraph and not the line is the unit a reader
-    of a sentence needs.
+    The reader normalizes the whitespace, so it finds a sentence whether the paragraph
+    occupies one line or wraps over several.
 
     Returns:
         The paragraph, with each run of whitespace written as one space.
@@ -393,11 +393,19 @@ def _methods_under_the_foxio_license() -> set[str]:
 
     Returns:
         The methods the README method table marks implemented, without `BSD_METHOD`.
+
+    Raises:
+        AssertionError: The method table marks no method implemented.
     """
     implemented = {
         method for method, row in _method_rows().items() if _implemented_cell(row) == "Yes"
     }
-    return implemented - {BSD_METHOD}
+    expected = implemented - {BSD_METHOD}
+    # **An aggregate over an empty set passes.** A table that marked nothing implemented
+    # would make the set case agree with a paragraph that names nothing, so the floor
+    # states that the comparison read something.
+    assert expected, "the README method table marks no method implemented beside JA4"
+    return expected
 
 
 def test_the_readme_license_paragraph_names_every_method_the_foxio_license_covers() -> None:
