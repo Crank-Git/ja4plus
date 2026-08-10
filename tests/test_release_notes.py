@@ -99,6 +99,43 @@ MINIMUM_FINGERPRINT_ROWS = 8
 # and #399 added the row of #319, so the page holds thirteen rows today.
 MINIMUM_MIGRATION_ROWS = 13
 
+# The fingerprint table of the migration page holds this many rows today. A reader that finds
+# no row passes the count comparison below on an empty set, so the floor fails such a reader.
+MINIMUM_MIGRATION_FINGERPRINT_ROWS = 7
+
+# The two sentences of the migration page that state how many fingerprint values move. **No
+# case read either one, so the page stated six against a table of seven rows through two
+# edits of the page.** #398 records it.
+MOVE_COUNT_CLAIM = re.compile(
+    r"\b([A-Z][a-z]+)\b(?= of the changes below move a value| changes move a fingerprint value)"
+)
+
+# The sentence of the release notes that states the row count of their fingerprint table and
+# the part of it that moves a value. The notes hold #214 as a row and the migration page holds
+# it as a paragraph, so the two tables differ by exactly that one row.
+NOTES_COUNT_CLAIM = re.compile(r"That table holds ([a-z]+) rows\. ([A-Z][a-z]+) of them move")
+
+# The sentence of the fingerprint section that decides the trailing paragraph. #214 adds a
+# JA4SSH value rather than move one, and a reader who counts the paragraph as a move reaches
+# eight where the record states seven.
+TRAILING_DECISION = re.compile(r"adds a value and it moves none")
+
+# The two records state a count in words, and each case compares a word against a row count.
+# A word outside this table fails a case, because no reader here converts another form.
+NUMBER_WORDS = {
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+}
+
+# The migration page states the count twice. A reader that finds one sentence passes on the
+# sentence it found and reads nothing about the other, so the floor fails such a reader.
+MINIMUM_MOVE_COUNT_CLAIMS = 2
+
 # The migration page cites this many `Round N, #M` pairs today: one for each breaking row,
 # and one in the fingerprint table. A reader that finds no citation passes the citation case
 # on an empty set, so the floor fails such a reader.
@@ -304,6 +341,41 @@ def _migration_breaking_rows() -> list[str]:
     return rows
 
 
+def _migration_fingerprint_rows() -> list[str]:
+    """Return the data rows of the fingerprint table of the migration page.
+
+    Returns:
+        One string for each data row, holding the whole row text.
+
+    Raises:
+        AssertionError: The table holds fewer rows than the recorded floor.
+    """
+    section = _migration_section(MIGRATION_FINGERPRINT_HEADING)
+    rows = _table_under(section, MIGRATION_FINGERPRINT_HEADING)
+    assert len(rows) >= MINIMUM_MIGRATION_FINGERPRINT_ROWS, (
+        f"the fingerprint table of the migration page holds {len(rows)} rows, and the floor "
+        f"is {MINIMUM_MIGRATION_FINGERPRINT_ROWS}"
+    )
+    return rows
+
+
+def _number(word: str) -> int:
+    """Return the number that one count word states.
+
+    Args:
+        word: The count word, as `Seven` or `seven`.
+
+    Returns:
+        The number.
+
+    Raises:
+        AssertionError: `NUMBER_WORDS` holds no such word.
+    """
+    number = NUMBER_WORDS.get(word.lower())
+    assert number is not None, f"the word {word!r} states no count this reader converts"
+    return number
+
+
 def _migration_issues() -> set[int]:
     """Return every issue the migration page records as a breaking change.
 
@@ -460,6 +532,74 @@ def test_every_fingerprint_that_moves_reaches_the_release_notes() -> None:
     assert missing == [], (
         f"the migration page records these moved fingerprints and the release notes omit "
         f"them: {missing}"
+    )
+
+
+def test_the_migration_page_states_the_count_its_own_fingerprint_table_holds() -> None:
+    """Each count sentence of the migration page states the row count of its own table.
+
+    **The page stated six twice and its table held seven rows.** #395 measured the difference
+    and #398 records it. The count lived in prose alone, so #399 added a row to that table and
+    #401 edited the same page, and neither edit moved either sentence.
+
+    **This case reads the page against its own table and never against a second copy of the
+    sentence.** Round 143 records a citation case that compared the `Record` cell of the
+    release notes against the cell of this page. Both files held one error, so the two agreed
+    and the case passed on the very error it exists to catch.
+
+    **The floor bars a reader that finds no sentence.** A comparison over an empty set of
+    sentences passes, so a rewording that this pattern misses fails the floor rather than pass
+    in silence.
+    """
+    claims = MOVE_COUNT_CLAIM.findall(MIGRATION.read_text(encoding="utf-8"))
+    assert len(claims) >= MINIMUM_MOVE_COUNT_CLAIMS, (
+        f"the reader found {len(claims)} count sentences on the migration page, and the floor "
+        f"is {MINIMUM_MOVE_COUNT_CLAIMS}"
+    )
+    rows = len(_migration_fingerprint_rows())
+    wrong = sorted({word for word in claims if _number(word) != rows})
+    assert wrong == [], (
+        f"the migration page states {wrong} fingerprints that move, and its own table holds "
+        f"{rows} rows"
+    )
+
+
+def test_the_migration_page_states_that_the_trailing_fingerprint_moves_no_value() -> None:
+    """The fingerprint section states that the trailing JA4SSH change moves no value.
+
+    `Processor.close_open_windows` emits every window a connection left open, so a capture
+    produces one more JA4SSH value than version 0.6.0 produced. #214 records that change, and
+    it sits in a paragraph under the table because it adds a value rather than move one.
+    **A reader who counts the paragraph as a move reaches eight where the record states
+    seven**, so the page states the decision rather than leave it to the reader.
+    """
+    section = _migration_section(MIGRATION_FINGERPRINT_HEADING)
+    assert TRAILING_DECISION.search(section), (
+        "the fingerprint section of the migration page states no decision on the trailing "
+        "JA4SSH change, so a reader who counts its paragraph reaches one move too many"
+    )
+
+
+def test_the_release_notes_state_the_counts_their_fingerprint_table_holds() -> None:
+    """The release notes state the row count of their fingerprint table and the moved part.
+
+    The notes hold #214 as a row of that table, and the migration page holds it as a
+    paragraph. The two counts therefore differ by exactly one row, and this case reads each
+    number against the table that carries it.
+    """
+    notes = _release_notes()
+    claim = NOTES_COUNT_CLAIM.search(notes)
+    assert claim, "the release notes state no row count for their fingerprint table"
+    stated, moved = _number(claim.group(1)), _number(claim.group(2))
+    rows = len(_table_under(notes, NOTES_FINGERPRINT_HEADING))
+    assert stated == rows, (
+        f"the release notes state {stated} rows of moved fingerprints, and their table holds "
+        f"{rows} rows"
+    )
+    page_rows = len(_migration_fingerprint_rows())
+    assert moved == page_rows, (
+        f"the release notes state {moved} changes that move a value, and the table of the "
+        f"migration page holds {page_rows} rows"
     )
 
 

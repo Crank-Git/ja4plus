@@ -505,6 +505,37 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The fingerprint move count of the migration page states the row count of its own table**
+  (#398). Round TBD. `docs/migration-0.6-to-1.0.md` stated six twice and its table held seven
+  rows. #395 measured the difference and filed the issue rather than repair it. **The count
+  lived in prose and no case read it.** #399 added a row to the breaking-change table of the
+  same page and #401 corrected a citation of it, and neither edit moved either sentence.
+  **The record already stated seven, so the page is the half that is wrong.** This file reads
+  "That table holds eight rows. Seven of them move a value a tool may have stored", and round
+  139 of the Changelog table of `docs/specs/spec.md` reads "plus seven fingerprints that
+  move". Both are dated records of a past measurement, so they keep their text and the repair
+  is in the page. **The trailing paragraph adds a value and it moves none.**
+  `Processor.close_open_windows` emits every window a connection left open under #214, so a
+  capture produces one more JA4SSH value than version 0.6.0 produced. A reader who counts
+  that paragraph as a move reaches eight, and the page now states the decision rather than
+  leave it to the reader. #214 is a row of the fingerprint table of these notes and a
+  paragraph of the page, so the two tables differ by exactly that one row. **Three new cases
+  in `tests/test_release_notes.py` read each count against the table that carries it.**
+  `test_the_migration_page_states_the_count_its_own_fingerprint_table_holds` reads the page
+  against its own table and never against a second copy of the sentence, because round 143
+  records a citation case that compared two copies of one claim and passed on the very error
+  it exists to catch. **The floor bars a reader that finds no sentence**, because a
+  comparison over an empty set of sentences passes, and `MINIMUM_MIGRATION_FINGERPRINT_ROWS`
+  bars a table that an edit empties. **Twelve mutations prove the three cases discriminate,
+  and each was restored.** Either sentence back to six fails the count case with `the
+  migration page states ['Six'] fingerprints that move, and its own table holds 7 rows`. The
+  deletion of either sentence, the deletion of both, and a rewording the pattern misses each
+  fail the sentence floor. One row removed from the table fails the row floor, and every data
+  row removed fails it with `the fingerprint table of the migration page holds 0 rows, and
+  the floor is 7`. The decision sentence deleted fails the trailing case alone. The count of
+  these notes moved to nine rows, moved to six moves, and deleted, each fails the notes case
+  alone. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **The FoxIO License 1.1 list of the README names every method it covers** (#388). Round TBD.
   The list named JA4S, JA4H, JA4T, JA4TS, JA4L, JA4X and JA4SSH. It named neither JA4LS, nor
   JA4D, nor JA4D6, and this project builds all three under that license. **A published
