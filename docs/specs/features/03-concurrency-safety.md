@@ -52,8 +52,14 @@ fingerprinter it builds.
 FR-concurrency-safety-7 — Every state table holds no more than a maximum entry
 count.
 
-FR-concurrency-safety-8 — Every state table evicts an entry that has not been read
-for longer than a maximum age.
+FR-concurrency-safety-8 — Every state table evicts an entry of the thread that runs the
+age pass, when that entry has not been read for longer than a maximum age.
+
+FR-concurrency-safety-8a — The age pass of one thread holds every entry of another
+thread.
+
+FR-concurrency-safety-8b — A state table measures an age against the timestamp of the
+most recent packet of the thread that reads the table.
 
 FR-concurrency-safety-9 — The maximum entry count and the maximum age are
 constructor arguments.
@@ -117,6 +123,16 @@ This feature set has no screen. The processor reports its own statistics.
 - Eviction by age uses the packet timestamp when the packet carries one, and the
   wall clock otherwise. A capture file replays faster than real time, and a wall
   clock would evict entries that the capture still needs.
+- The packet timestamp belongs to the thread that announces it, and an entry belongs to
+  the thread that read it last. The age pass of one thread therefore reads its own clock
+  and it holds every entry of another thread. Eight sharded threads stand at eight points
+  of one timeline, and #461 measured what one shared clock costs there: the thread that
+  stood 132 seconds ahead evicted a live connection of a slower thread, and the JA4TS
+  value of that connection lost part e.
+- The entry of a thread that ends stays until the entry count bound removes it. The entry
+  count bound is the bound that holds the memory, and the age bound holds the memory of a
+  thread that keeps running. A caller who runs one thread reads the age pass this project
+  always ran, because that thread owns every entry.
 - The default maximum age is 600 seconds. A measurement sets it. The longest gap
   between two segments of one connection across `tests/foxio_vectors/` is
   320.714503 seconds. It sits in `ssh-r.pcap`, on the connection between
@@ -354,6 +370,34 @@ cases and `TestTheConcurrencyContract` holds 7.
 | The nested descent of `BaseFingerprinter.state_tables` | 3 of 3 | 1 of 20 memory cases |
 | The direction sort of `Processor.get_shard_key` | 20 of 20 | 4 of 7 contract cases |
 | The age pass of `BoundedStateTable.evict_aged` | 20 of 20 | 1 of 7 contract cases |
+
+### The shared clock that #461 removed
+
+**The equality of clause 2 failed once in four runs of `test (macos-latest, 3.12)`**, on
+the merge commit `d94d8c1` of batch #445, in run `31342645430`. The reading is
+`At index 10 diff: '64240_2-1-1-4-1-3_1460_7' != '64240_2-1-1-4-1-3_1460_7_0'`, so eight
+sharded threads wrote a JA4TS value that lost part e.
+
+**The cause is the one clock that `BoundedStateTable` held for every thread**, and #461
+reproduced it without any race. `SynAckTracker.times` runs one age pass on every packet
+and it holds a maximum age of 120 seconds. On the concatenated timeline, packet 578 opens
+`('184.150.157.177', 80, '172.16.225.48', 57380)` at 19.2378 seconds, and packet 581
+retransmits the SYN-ACK 5.8 milliseconds later. Packet 1773 belongs to another connection
+and another shard, and it stands at 151.678 seconds. That packet announces its timestamp
+to the shared clock, the pass reads 132.44 seconds of age and evicts the connection.
+Packet 581 then finds no entry, `SynAckTracker.record` returns an empty delay list, and
+`_part_e` writes an empty string.
+
+**The repair scopes both the clock and the pass to the thread.** The three-packet
+reproduction writes `64240_2-1-1-4-1-3_1460_7` before it and
+`64240_2-1-1-4-1-3_1460_7_0` after it, which is the value one thread writes.
+
+| Reading | Result |
+|---|---|
+| `TestTheConcurrencyContract`, 50 consecutive runs on macOS | 50 passed, 0 failed |
+| A replay of all 38 committed captures, 783 values | The same SHA-256 before and after |
+| The shard filter of `evict_aged` removed | 2 of 2 new cases fail |
+| The thread clock of `on_packet` removed | 1 of 1 new case fails |
 
 **The first sweep found one case shape that could not fail.** The memory file held no
 case that measured the age bound, so removing the age pass failed 0 of 3 runs. The file

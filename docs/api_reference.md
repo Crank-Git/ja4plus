@@ -593,8 +593,8 @@ inherits `StateTable` and reports the six counts every state table reports.
 | Class/Function | Description |
 |----------------|-------------|
 | `BoundedStateTable(max_connections, max_connection_age, eviction_interval, track_evictions, on_eviction)` | A mapping that evicts on the entry count and on the entry age |
-| `.on_packet(timestamp)` | Announce one packet. The table reads `timestamp` for every later operation, and it runs one age eviction pass for every `eviction_interval` packets |
-| `.evict_aged(now)` | Run one age eviction pass, and return the count of entries it removed |
+| `.on_packet(timestamp)` | Announce one packet. The calling thread reads `timestamp` for every later operation of that thread, and the table runs one age eviction pass for every `eviction_interval` packets |
+| `.evict_aged(now)` | Run one age eviction pass over the entries of the calling thread, and return the count of entries it removed. The pass holds every entry of another thread |
 | `.evict_key(key)` | Remove one entry, count it as an eviction, and call `on_eviction`. Return False when the table holds no such key |
 | `.on_eviction` | A callable the table calls with the key of every entry it evicts. A caller removal calls nothing. #285 added it, so that a second table holding the same keys stays in lockstep |
 | `.evictions` | The count of entries the table itself removed. `pop`, `del` and `clear` raise none |
@@ -617,6 +617,14 @@ removes the entry it received last.
 Warning: state the packet timestamp on every packet of one capture, or on none of them.
 One `on_packet()` call that states no timestamp moves the table to the wall clock, and a
 replay of a capture recorded in the past then ages out whole.
+
+The clock belongs to the thread that announces the packet, and the entry belongs to the
+thread that read it last. Eight sharded threads stand at eight points of one timeline, so
+one clock for every thread lets the thread that stands furthest ahead evict a connection
+that a slower thread still reads. #461 measured that eviction, and the JA4TS value of the
+evicted connection lost part e. The entry of a thread that ends stays until the entry
+count bound removes it. A thread that announces no packet reads the timestamp of the most
+recent packet of any thread.
 
 The defaults are 10000 entries, 600 seconds and 1000 packets. `ssh-r.pcap` sets the age.
 It holds the longest gap between two segments of one connection across
