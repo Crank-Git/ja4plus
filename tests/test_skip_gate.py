@@ -20,6 +20,7 @@ from tests.skip_gate import (
     Allowance,
     Report,
     census_lines,
+    counted,
     gate_reasons,
     main,
     read_allowlist,
@@ -141,6 +142,32 @@ def test_the_reader_marks_a_case_the_job_ran(tmp_path: Path) -> None:
     """A `testcase` element with no `skipped` child reports that the job ran the case."""
     path = tmp_path / "test-results.xml"
     path.write_text(junit_report({"tests.test_a::test_c": None}), encoding="utf-8")
+    assert read_report(path).cases == {"tests.test_a::test_c": False}
+
+
+def test_the_reader_reads_a_failed_case_as_a_run(tmp_path: Path) -> None:
+    """A case that failed carries a `failure` element, and the job ran every assertion."""
+    path = tmp_path / "test-results.xml"
+    path.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite>'
+        '<testcase classname="tests.test_a" name="test_c">'
+        '<failure message="assert 1 == 2"/>'
+        "</testcase></testsuite></testsuites>",
+        encoding="utf-8",
+    )
+    assert read_report(path).cases == {"tests.test_a::test_c": False}
+
+
+def test_the_reader_reads_a_case_that_raised_at_setup_as_a_run(tmp_path: Path) -> None:
+    """A case whose fixture raised carries an `error` element, and it reported a state."""
+    path = tmp_path / "test-results.xml"
+    path.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite>'
+        '<testcase classname="tests.test_a" name="test_c">'
+        '<error message="fixture raised"/>'
+        "</testcase></testsuite></testsuites>",
+        encoding="utf-8",
+    )
     assert read_report(path).cases == {"tests.test_a::test_c": False}
 
 
@@ -356,6 +383,13 @@ def test_the_reader_holds_no_case_of_a_worker_worktree(tmp_path: Path) -> None:
     write_reports(tmp_path / "reports", six_jobs({"tests.test_a::test_c": None}))
     reports = read_reports(tmp_path / "reports")
     assert all("tests.test_other::test_c" not in report.cases for report in reports)
+
+
+def test_the_census_names_a_count_in_the_form_that_matches_it() -> None:
+    """`1 reports` and `6 report` each cost a reader of the job summary a second look."""
+    assert counted(1, "report") == "1 report"
+    assert counted(6, "report") == "6 reports"
+    assert counted(0, "case") == "0 cases"
 
 
 def test_the_report_type_is_frozen() -> None:

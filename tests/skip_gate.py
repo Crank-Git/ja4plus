@@ -238,6 +238,22 @@ def read_allowlist(path: Path = ALLOWLIST_PATH) -> List[Allowance]:
     return allowances
 
 
+def counted(count: int, noun: str) -> str:
+    """Return the count beside the noun, in the singular form or the plural form.
+
+    The job summary is the census a reader reads, and `1 reports` or `6 report` costs that
+    reader a second look at a line the gate exists to make plain.
+
+    Args:
+        count: The number of things.
+        noun: The noun, in the singular form, whose plural form takes `s`.
+
+    Returns:
+        The count and the noun.
+    """
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
 def gate_reasons(
     reports: Sequence[Report],
     allowances: Sequence[Allowance],
@@ -256,8 +272,8 @@ def gate_reasons(
     reasons: List[str] = []
     if len(reports) < minimum_reports:
         reasons.append(
-            f"the download holds {len(reports)} report of the {minimum_reports} the matrix "
-            f"runs, and an absent report is not a passed job: "
+            f"the download holds {counted(len(reports), 'report')} of the "
+            f"{minimum_reports} the matrix runs, and an absent report is not a passed job: "
             f"{[report.label for report in reports]}"
         )
     nameless = [entry.case for entry in allowances if not entry.reason.strip()]
@@ -293,8 +309,8 @@ def census_lines(reports: Sequence[Report], allowances: Sequence[Allowance]) -> 
     reason_of = {entry.case: entry.reason for entry in allowances}
     cases = universal_skips(reports)
     lines = [
-        f"The skip gate read {len(reports)} report and found {len(cases)} case that ran "
-        "on no job of the matrix."
+        f"The skip gate read {counted(len(reports), 'report')} and found "
+        f"{counted(len(cases), 'case')} that ran on no job of the matrix."
     ]
     for case in cases:
         reason = reason_of.get(case)

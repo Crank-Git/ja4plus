@@ -868,7 +868,7 @@ holds every breaking change of this record against a row of that page.
   `.github/workflows/test.yml` gains the job `skip-gate`, which depends on the `test` job,
   downloads the six `test-results-*` artifacts and fails a case that every report records
   as skipped. `tests/skip_gate.py` holds the condition and `tests/test_skip_gate.py` holds
-  that file with 25 cases. **The reading takes no new dependency**: the workflow already
+  that file with 28 cases. **The reading takes no new dependency**: the workflow already
   writes one JUnit report for each matrix job with `pytest --junitxml`, and a `testcase`
   element with a `skipped` child names a case that job ran no assertion for. **An expected
   failure carries a `skipped` element too, and the first run of the gate measured that
@@ -885,8 +885,15 @@ holds every breaking change of this record against a row of that page.
   deleted. **The red direction ran at
   https://github.com/Crank-Git/ja4plus/actions/runs/31408763259**, where every other job
   concluded `success` and `skip-gate` concluded `failure` on
-  `tests.test_universal_skip_proof::test_the_case_that_skips_in_every_environment`.
-  GREEN_RUN_PLACEHOLDER **The census classifies all 40 skip sites of `tests/` in
+  `tests.test_universal_skip_proof::test_the_case_that_skips_in_every_environment`. **The
+  green direction ran at
+  https://github.com/Crank-Git/ja4plus/actions/runs/31412758369**, where the same job read
+  the suite as it stands and concluded `success` with all twelve jobs green. **A pull
+  request that conflicts with its base creates no run at all**, which this proof measured
+  three times: the provider reports `mergeable: CONFLICTING` and it holds no run for the
+  head, because the workflow runs against a merge commit that does not exist. That is a
+  fourth way for a run to be absent, beside the two `.claude/rules/batch-gate.md` already
+  names. **The census classifies all 40 skip sites of `tests/` in
   the four forms `skipTest(`, `pytest.skip(`, `skipIf(` and `skipUnless(`: 28 of class a,
   10 of class b and 2 of class c.** The 10 of class b are one site of
   `tests/test_batch_gate_protection_rule.py`, which reads a branch-protection call that the
@@ -897,7 +904,11 @@ holds every breaking change of this record against a row of that page.
   further class c site sits outside the four forms**: `tests/test_documentation_site.py:222`
   carries a `pytest.mark.skipif` and its case needs the `docs` extra that no job installs.
   #529 holds it. **The gate reads the six matrix jobs and no other job**, so a conformance
-  case that skips everywhere reaches it nowhere, and #530 holds that reach.
+  case that skips everywhere reaches it nowhere, and #530 holds that reach. **The unit
+  suite rises from 4066 passed to 4108 passed**, with 7 skipped and 8 xfailed on each side,
+  and the conformance suite reports 1635 passed, 143 skipped and 140 xfailed. **Coverage
+  holds at 94%** with 4316 statements and 273 misses, which the base commit reports.
+  `ruff check`, `ruff format --check` and `mypy --strict ja4plus/` each report no issue.
   `docs/specs/features/11-pre-release-validation.md`
   gains `FR-pre-release-validation-35` through `FR-pre-release-validation-38` and three
   acceptance criteria, and `.claude/rules/batch-gate.md` gains the section

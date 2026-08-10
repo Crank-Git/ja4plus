@@ -47,6 +47,22 @@ only where a worker writes one on purpose.
 **Warning: `master` and `dev` stay in the list.** The batch pull request and the promotion
 each target one of them, and they are the runs the merge gate reads.
 
+**A pull request that conflicts with its base creates no run at all, and that is a third
+condition.** The workflow runs against the merge commit of the pull request, and the
+provider builds no merge commit for a conflicting pull request. #524 measured it three
+times on 2026-08-10, on the proof pull request #526. Each time
+`gh pr view <number> --json mergeable` read `CONFLICTING`, and
+`gh api "repos/Crank-Git/ja4plus/actions/runs?head_sha=<head>"` read `total_count` 0 for a
+keyword-free head. **Take the base branch again, and the same head then starts a run.**
+
+```bash
+gh pr view <number> --repo Crank-Git/ja4plus --json mergeable,mergeStateStatus
+```
+
+**Warning: read that command before you read an absent run as a passed run.** An
+integration branch moves under every live member, so this state arrives without a push of
+your own.
+
 ## A case that skips on every job fails the run
 
 **A skip is not a pass, and a case that runs nowhere is not a case.** #438 measured that
