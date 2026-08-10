@@ -1035,8 +1035,8 @@ holds every breaking change of this record against a row of that page.
   the workflow and the rule of the base commit. **The repair is proven on the runner in both
   directions, because a green manual run alone would also follow from a gate somebody turned
   off.** The green direction ran at
-  GREEN_RUN_URL, a manual run of the branch
-  head GREEN_HEAD. All twelve jobs concluded `success`, the step `Resolve the reference
+  https://github.com/Crank-Git/ja4plus/actions/runs/31429213997, a manual run of the branch
+  head `8ba045b`. All twelve jobs concluded `success`, the step `Resolve the reference
   commit of a run that carries no pull request` wrote
   `61e04f121624dda8a415a8a71e3148681f2bfb22` into
   `refs/ja4plus/round-entry-base`, and the log of `test (ubuntu-latest, 3.13)` records
