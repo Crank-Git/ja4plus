@@ -157,6 +157,9 @@ that user, because comparison is the only thing a fingerprint is for.
 | dependency record | noun | One tracked file that states the version of a distribution this project installs. `pyproject.toml` is the one record, and #446 deleted the second one. | requirements file, manifest, dependency list |
 | pending criterion | noun | An acceptance criterion that states an end state, and that names the issue which builds it. Its stated count and the measured count differ until that issue lands. | future criterion, aspirational criterion, unmet criterion |
 | dependency block | noun | One bracketed array of `pyproject.toml` that states dependency entries, as `dev = [` opens. A dependency record holds one block or more. `tests/dependency_entries.py` reads a block. | dependency list, dependency array, requirements list |
+| dry run | noun | The publish that the manual event of `.github/workflows/publish.yml` starts. It reaches TestPyPI alone. `FR-release-13` states it. | test publish, trial run, staging release |
+| release body | noun | The text a GitHub release carries. `tests/release_body.py` builds it, and the provider accepts 125000 characters at most. | release notes, description, body text |
+| named part | noun | The half of one changelog section that the release body holds: the summary and the two breaking-change tables. `named_part` of `tests/release_body.py` reads it. | excerpt, summary section, head |
 
 ## Goals
 

@@ -154,12 +154,19 @@ holds every breaking change of this record against a row of that page.
   limit fails the reader, the step fails, and the release publishes nothing. **A `####`
   heading of a breaking-change table carries one more mark than a part heading**, so the
   reader keeps both tables and stops at the entry list. A section that names no breaking
-  change reaches the body in whole, and the `## [0.6.0]` section is such a section. The
+  change reaches the body in whole, and the `## [0.6.0]` section is such a section. **The
+  reader matches a whole heading line, and it reads no line of a code block.** The
+  self-review raised both cases and a run raised neither. A summary paragraph that names
+  `### The breaking changes` in prose, and a code block that quotes the heading, would each
+  end the named part above the tables it exists to carry, and **such a reader reports no
+  fault**, because it returns a part that reads as complete and is not. A line anchor alone
+  does not close the second case, because a line inside a code block opens a line of the
+  file like any other, so `breaking_heading_end` tracks the code fence. The
   link names the tag and never the default branch, because a link to the default branch
   moves under the reader after the next merge. **The release-body step stands in front of
   the publish step**, so a changelog that holds no section for the version fails the release
   and publishes nothing. **The value of a case here is the direction it fails in**, so six
-  mutations of the workflow and five of the reader prove both directions, and each one was
+  mutations of the workflow and seven of the reader prove both directions, and each one was
   written to disk, measured and restored. The workflow compared equal by digest
   `36941ecb201aed94a19d8c63ee920144beafbda00e205e6c55059f7f5d0916d1` after the restore. A
   `dry-run` job that takes the environment `pypi` fails
@@ -176,8 +183,12 @@ holds every breaking change of this record against a row of that page.
   the whole section fails `test_the_release_body_of_this_repository_stands_below_the_provider_limit`,
   a `named_part` that keeps the entry list fails
   `test_the_named_part_holds_no_entry_of_the_entry_list`, a link that names the default
-  branch fails `test_the_link_names_the_changelog_at_the_tag_of_the_release`, and a
-  `body_fault` that reads no limit fails three cases. **One defect of the recovered work
+  branch fails `test_the_link_names_the_changelog_at_the_tag_of_the_release`, a
+  `body_fault` that reads no limit fails three cases, a substring match of the
+  breaking-change heading fails
+  `test_the_named_part_reader_passes_over_the_heading_named_inside_a_paragraph` and the case
+  below it, and a whole-line match that reads the code fence not at all fails
+  `test_the_named_part_reader_passes_over_the_heading_quoted_in_a_code_block` alone. **One defect of the recovered work
   reached the repair, and `pyright` found it before a run did.** `main` read the module
   docstring for the description of its argument parser, and **`python -OO` sets `__doc__` to
   None on every module**, so the command raised `AttributeError: 'NoneType' object has no
@@ -203,7 +214,7 @@ holds every breaking change of this record against a row of that page.
   declaration that #67 removed, and this round leaves it alone. No file under `ja4plus/`
   changes and no fingerprint moves. The whole gate ran on this host. The conformance suite
   reports 1532 passed, 143 skipped and 134 xfailed, which are the three counts round 189
-  reports. The unit suite reports 3988 passed, 4 skipped and 8 xfailed, and
+  reports. The unit suite reports 3990 passed, 4 skipped and 8 xfailed, and
   `pytest tests/ -m installed_wheel` reports 43 passed. **Coverage holds at 94%**, with 273
   misses of 4292 statements, which is the reading round 143 records. `mypy --strict` finds
   no issue in 31 source files, and `ruff check` and `ruff format --check` pass on 214 files.

@@ -194,6 +194,36 @@ def test_the_named_part_holds_no_entry_of_the_entry_list() -> None:
     assert "One entry." not in part, "the named part holds an entry of the entry list"
 
 
+def test_the_named_part_reader_passes_over_the_heading_named_inside_a_paragraph() -> None:
+    """A summary that names the heading in prose does not end the named part.
+
+    **A substring match would end the part above the tables it exists to carry**, so the
+    reader matches a whole heading line.
+    """
+    text = SAMPLE.replace(
+        "The first line of the new section.",
+        "The `### The breaking changes` heading below holds the two tables.",
+    )
+    part = named_part(changelog_section(text, "1.0.0"))
+    assert "One interface change." in part, "the reader ended the part above the tables"
+    assert "One fingerprint change." in part, "the reader ended the part above the tables"
+    assert "One entry." not in part, "the named part reaches the entry list"
+
+
+def test_the_named_part_reader_passes_over_the_heading_quoted_in_a_code_block() -> None:
+    """A code block that quotes the heading does not end the named part.
+
+    **A line anchor alone does not close this case**, because a line inside a code block
+    opens a line of the file like any other. The reader tracks the code fence instead.
+    """
+    quoted = "```\n### The breaking changes\n```\n\nThe first line of the new section."
+    text = SAMPLE.replace("The first line of the new section.", quoted)
+    part = named_part(changelog_section(text, "1.0.0"))
+    assert "One interface change." in part, "the reader ended the part above the tables"
+    assert "One fingerprint change." in part, "the reader ended the part above the tables"
+    assert "One entry." not in part, "the named part reaches the entry list"
+
+
 def test_the_named_part_of_a_section_with_no_breaking_change_is_the_whole_section() -> None:
     """A section that names no breaking change reaches the body in whole.
 

@@ -67,11 +67,21 @@ SECTION_HEADING = re.compile(r"^## \[", re.MULTILINE)
 # 2026-08-10 that the body holds the summary and these two tables, and that a link carries
 # the rest. A reader that named `### Added` instead would follow the entry list, and the
 # entry list is the part that does not fit.
+#
+# **The reader matches a whole line, and it reads no line of a code block.** A summary
+# paragraph that names the heading in prose, and a code block that quotes the heading, would
+# each otherwise end the named part above the tables it exists to carry. **Such a reader
+# reports no fault**, because it returns a part that reads as complete, so the self-review
+# of #70 raised both cases rather than a run.
 BREAKING_HEADING = "### The breaking changes"
 
 # The heading of a part below the version heading, as `### Added`. The `####` heading of a
 # breaking-change table holds one more mark, so this reader passes over it.
 PART_HEADING = re.compile(r"^### ", re.MULTILINE)
+
+# The line that opens one code block and the line that closes it. Markdown accepts three
+# marks or more, and it accepts the tilde beside the backtick.
+CODE_FENCE = re.compile(r"^\s*(?:`{3,}|~{3,})")
 
 # The repository the link names. `docs/specs/spec.md` records this project at that address.
 REPOSITORY_URL = "https://github.com/Crank-Git/ja4plus"
@@ -109,6 +119,30 @@ def changelog_section(changelog_text: str, version: str) -> str:
     return section
 
 
+def breaking_heading_end(section: str) -> Optional[int]:
+    """Return the offset just past the breaking-change heading of one section.
+
+    The reader takes a whole line, and it reads no line of a code block. A section that
+    quotes the heading inside a code block therefore reaches the real heading below it.
+
+    Args:
+        section: One whole changelog section.
+
+    Returns:
+        The offset just past the heading line, or None where the section holds no such
+        heading outside a code block.
+    """
+    offset = 0
+    fenced = False
+    for line in section.splitlines(True):
+        if CODE_FENCE.match(line):
+            fenced = not fenced
+        elif not fenced and line.strip() == BREAKING_HEADING:
+            return offset + len(line)
+        offset += len(line)
+    return None
+
+
 def named_part(section: str) -> str:
     """Return the summary and the breaking-change tables of one changelog section.
 
@@ -120,6 +154,10 @@ def named_part(section: str) -> str:
     nothing aside there, and `body_fault` still holds the whole part against the limit. The
     `## [0.6.0]` section of `CHANGELOG.md` is such a section.
 
+    **The reader matches a whole heading line, and it reads no line of a code block.** A
+    summary paragraph that names the heading in prose, and a code block that quotes it,
+    each reach no match. `breaking_heading_end` holds that reading.
+
     Args:
         section: One whole changelog section, as `changelog_section` returns it.
 
@@ -127,10 +165,10 @@ def named_part(section: str) -> str:
         The section text from its heading to the end of the breaking-change tables, or the
         whole section where it names no breaking change.
     """
-    opening = section.find(BREAKING_HEADING)
-    if opening == -1:
+    heading = breaking_heading_end(section)
+    if heading is None:
         return section.strip()
-    following = PART_HEADING.search(section, opening + len(BREAKING_HEADING))
+    following = PART_HEADING.search(section, heading)
     end = following.start() if following else len(section)
     return section[:end].strip()
 

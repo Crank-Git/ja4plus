@@ -289,6 +289,20 @@ heading**, so the reader keeps both tables and stops at the entry list. A sectio
 names no breaking change reaches the body in whole, and the `## [0.6.0]` section is such a
 section.
 
+**The reader matches a whole heading line, and it reads no line of a code block.** A summary
+paragraph that names `### The breaking changes` in prose, and a code block that quotes the
+heading, would each end the named part above the tables it exists to carry. **Such a reader
+reports no fault**, because it returns a part that reads as complete and is not, which is
+the failure this project records many times.
+
+The self-review of #70 raised both cases, and a run raised neither.
+`breaking_heading_end` tracks the code fence, and two cases hold the two readings.
+
+| Reader | The case that fails |
+|---|---|
+| A substring match. | `test_the_named_part_reader_passes_over_the_heading_named_inside_a_paragraph` and the case below |
+| A whole-line match that reads the code fence not at all. | `test_the_named_part_reader_passes_over_the_heading_quoted_in_a_code_block` |
+
 **`tests/release_body.py` truncates nothing.** A truncated changelog section reads as
 complete and is not, and the choice of what to drop belongs to the maintainer. A named
 part above the limit fails the reader, the step fails, and the release publishes nothing.
