@@ -505,6 +505,54 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **A batch merge fails where the pull-request event created no run** (#459). Round TBD.
+  **The failure mode is not a missing run. It is an absent run read as a passed run.**
+  `gh pr checks` writes "no checks reported", which refuses no merge, so a reader takes the
+  absence for a pass. The batch merged then carries members whose cases never ran on Linux,
+  because every member commit carries a skip keyword by design. **The cause is measured, and
+  it is not the throttled webhook path the workflow comment named.** A skip keyword anywhere
+  in a commit message creates no run for that commit. GitHub reads five keywords, matches the
+  subject and the body, and reads no intent. The head commit `2a589ca` of pull request #444
+  and the head commit `b593de5` of pull request #458 each held the line
+  ``This commit carries no `[skip ci]`, so it is the head that starts the full run``.
+  **The sentence that states the absence of the keyword is the keyword.** **The correlation is
+  perfect across four heads.** The two heads that hold the keyword created no run, and the two
+  control heads `ec697c0e` and `b21604ce` hold none and both created their runs.
+  **All four observations of the issue re-measured true, and one premise re-measured false.**
+  `gh run list` reports `workflow_dispatch` runs alone on both batch branches, both green, and
+  it reports the push runs on `dev` after each merge. The premise that neither head commit
+  carries the keyword is false, and that premise is what ruled the documented skip path out.
+  **New file `tests/batch_gate.py` holds the condition**, and
+  `python -m tests.batch_gate --pr <number>` reads it. The command exits 0 where every
+  required workflow holds a terminal successful run at the head commit, and where every other
+  run of that commit concluded `success`. It exits 1 on an absent run, on a run that has not
+  finished, on any other conclusion, and on a failed read of the provider.
+  **`.github/workflows/test.yml` is the one required workflow**, because it accepts every pull
+  request into `dev` and it filters no path. `.github/workflows/docs-build.yml` filters four
+  paths, so an absent run of it proves nothing, and a red run of it still refuses the merge.
+  **New file `tests/test_batch_gate.py` holds 44 cases and every one failed before the module
+  existed.** They cover an absent run, a run of another commit, a queued run, a run in
+  progress, four terminal conclusions that are not `success`, a `skipped` conclusion, a re-run
+  that passed after a failure, a failure after a success, a red run of the unrequired
+  workflow, an abbreviated commit identifier, and the head commit message of both measured
+  pull requests against both controls. **The empty required set carries a case of its own,
+  because an aggregate over an empty set passes.** **The gate names the cause it cannot
+  otherwise show.** Where a required run is absent and the head commit message holds a
+  keyword, the failure names the keyword and this issue. It names no keyword where a run
+  exists and failed, because a red run has a cause in its log. **The procedure reaches the
+  loop and not an issue alone.** New file `.claude/rules/batch-gate.md` states it, `CLAUDE.md`
+  names that file under `## Branch model`, and `.issue-flow.json` replaces the note that read
+  "A batch pull request into dev starts a run, so provider continuous integration is the batch
+  gate". **The strongest shape needs the user.**
+  `gh api repos/Crank-Git/ja4plus/branches/dev/protection` returns `404` with
+  `Branch not protected`, and `gh api repos/Crank-Git/ja4plus/rulesets` returns `[]`, so this
+  repository holds no required status check. The token carries the `repo` scope and both reads
+  returned a determinate answer, so this is a measurement and no stated limit. A change to
+  branch protection changes the repository configuration, so the user makes it, and the rule
+  file names the four steps and the six check names. **Two limits stand.** A run of the branch
+  head is no run of the merge result, and this gate reads a run rather than the code. No file
+  under `ja4plus/` changes and no fingerprint moves.
+
 - **The documentation behaviour rule names a command that runs, and a case holds every named
   command to a collection** (#393). Round 163. The Behaviour rules of
   `docs/specs/features/08-documentation.md` read **A code sample is tested by
