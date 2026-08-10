@@ -157,8 +157,8 @@ class JA4SSHFingerprinter(BaseFingerprinter):
 
         # Connection key for tracking
         conn_key = f"{client_ip}:{client_port}-{server_ip}:{server_port}"
-        # An eviction from the handshake table would otherwise move the ruling, and
-        # the connection would split into two entries. The connection that already
+        # An eviction from the handshake table would otherwise move the endpoint pair,
+        # and the connection would split into two entries. The connection that already
         # exists keeps the endpoints it started with.
         reversed_key = f"{server_ip}:{server_port}-{client_ip}:{client_port}"
         if conn_key not in self.connections and reversed_key in self.connections:
@@ -205,8 +205,9 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         conn = self.connections[conn_key]
 
         # The connection holds the endpoints it started with, so the direction of this
-        # packet reads from the connection and not from a fresh ruling. A handshake
-        # that arrives late would otherwise count one packet in the wrong direction.
+        # packet reads from the connection and never from the endpoint rules again. A
+        # handshake that arrives late would otherwise count one packet in the wrong
+        # direction.
         is_client_to_server = (src_ip, src_port) == (conn["client_ip"], conn["client_port"])
 
         # Check for SSH version banner
@@ -430,7 +431,7 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                 "connection": conn_key,
                 "timestamp": time.time(),
                 # A consumer reads a measured side and a guessed side differently, so
-                # the source of the ruling reaches the result.
+                # the rule that named the server reaches the result.
                 "server_decided_by": conn["server_decided_by"],
             }
         )

@@ -29,23 +29,34 @@ here. Two records rest on that limit.
 
 **A case reads a Python file as prose and never as text.** `python_prose` of
 `tests/test_documented_method_count.py` parses the file, and it returns the comments and the
-docstrings alone. The prose then passes `without_quoted`, so a code span, a fenced block and
-a blockquote line come out of a docstring exactly as they come out of a Markdown page.
+docstrings alone. The prose then passes `without_quoted`. A code span, a fenced block and a
+blockquote line therefore come out of a docstring as they come out of a Markdown page.
 
 **A string literal that is no docstring reaches no case, and the reader leaves it exactly as
-it reads.** Such a literal is data and not prose: a case compares it, an assertion states it,
-a schema names it, or a fixture holds the sentence the case measures. The verbatim list of
-`.claude/rules/ste.md` covers each of those. `test_the_reader_reads_no_code_span` builds one
-such literal, which names a branch of #266, and a rewrite there would move what the case
-compares.
+it reads.** Such a literal is data and not prose. Four shapes carry it.
+
+- A case compares it.
+- An assertion states it.
+- A schema names it.
+- A fixture holds the sentence the case measures.
+
+The verbatim list of `.claude/rules/ste.md` covers each of those four.
+`test_the_reader_reads_no_code_span` builds one such literal, which names a branch of #266.
+A rewrite there would move what the case compares.
 
 **An identifier reaches no case either.** `python_prose` reads no code, so a function name, a
 variable name and a key name all stay. `RULED_WORD` of this module binds the barred word, and
 `decided_by` of `ja4plus/fingerprinters/ja4ssh.py` names a field.
 
+**Warning: a bare string below a class attribute reaches no case, and that is a limit rather
+than a reading.** `ast.get_docstring` reads the first statement of a node alone, so a second
+string that documents an attribute stays out. **A read of 2026-08-10 counted zero such
+strings over the 227 sources of the corpus**, so the limit costs this reader nothing today.
+`tests/test_documented_method_count.py` records the same limit.
+
 **#548 reached the Python corpus, and #533 left the hole it filled.** #533 states that no
-file under `ja4plus/` changes, so its reader read the Markdown corpus alone while nine
-comments and docstrings under the package named the barred word.
+file under `ja4plus/` changes, so its reader read the Markdown corpus alone. Nine comments
+and docstrings under the package named the barred word at that moment.
 
 **A dated record of a past measurement is quoted, not rewritten.** `CHANGELOG.md` records
 one past round in every entry, and the `## Changelog` table of `docs/specs/spec.md` holds
@@ -400,8 +411,8 @@ def python_readable_prose(text: str) -> str:
     """Return the prose of one Python source, with every passage a case does not read removed.
 
     The reader takes the comments and the docstrings, and it takes no other text. A string
-    literal that is no docstring therefore stays exactly as it reads, because a case compares
-    such a literal and the writing standard reproduces it verbatim.
+    literal that is no docstring therefore stays exactly as it reads. A case compares such a
+    literal, and the writing standard reproduces it verbatim.
 
     Args:
         text: The whole source of one Python file.

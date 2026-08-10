@@ -2778,8 +2778,25 @@ holds every breaking change of this record against a row of that page.
   comment of the library. **The pattern stays `\bdecisions?\b` and it matches no verb form**,
   so `decides` and `decided` stay, the `decided` schema key of `tests/foxio_deviations.json`
   does not move, and the rule of `CLAUDE.md` that the specification decides intent and schema
-  keeps its verb. **25 sources failed the new case before the sweep**, and the sweep repaired
-  84 lines across them: 9 under `ja4plus/` and 75 across 22 files under `tests/`. **Two
+  keeps its verb. **25 sources failed the new case before the sweep**, and the sweep took the
+  barred noun out of 84 places across them: 9 under `ja4plus/` and 75 across 22 files under
+  `tests/`. **A self-review found that 15 of the 84 named something other than a
+  determination of the user, and each of the 15 names the mechanism instead.** Round 205 met
+  the same class once, at `docs/specs/spec.html:92`, and reverted it there. The other 69
+  take the controlled term. **Three sites under `ja4plus/fingerprinters/ja4ssh.py` name the
+  endpoint rules and no person**, because `_decide_endpoints` picks the client and the server
+  from the port, the handshake and the lower port, and its docstring opens `Three rules
+  decide`. Line 160 now reads `move the endpoint pair`, line 208 reads `never from the
+  endpoint rules again`, and line 433 reads `the rule that named the server`.
+  `tests/test_ja4ssh_server_side.py:147` names the same field and it now reads `names the
+  rule that named the server`. **The other 11 stand in
+  `tests/test_documentation_fallback_rule.py`, where the word named precedence handed to a
+  source.** That file reads the vector fallback, which gives the expected-output files the
+  authority over an ambiguous image, and an expected-output file issues no ruling. Each of
+  the 11 now reads `authority` or `authority clause`, which is the word that file already
+  binds in `AUTHORITY`, `AUTHORITY_SOURCE` and `AUTHORITY_FIRST`. **`decision` reaches no
+  case there either**, so the repair states the mechanism rather than restores the barred
+  word. **Two
   mutations prove that the case bites, and both are restored.** A comment under the package
   reports ``AssertionError: ja4plus/fingerprinters/ja4l.py names 'decision' at ['ne as a
   reference value. #225 holds the decision'], and the `## Terms` row of 'ruling' rejects that
@@ -2796,7 +2813,11 @@ holds every breaking change of this record against a row of that page.
   no statement, so the coverage count does not move**: `--cov=ja4plus` reports 4316
   statements, 273 missed and 94 percent before and after. The unit suite runs 4355 cases
   before and 4595 after, and the 240 new cases are the 227 parametrized sources, 4 anchors
-  and 9 readings of the reader itself.
+  and 9 readings of the reader itself. `tests/test_ruling_vocabulary.py` held 142 cases after
+  round 205 and it holds 382 now. **One limit of `python_prose` reaches this reader**: a bare
+  string below a class attribute is no docstring, because `ast.get_docstring` reads the first
+  statement of a node alone. A read of 2026-08-10 counted zero such strings over the 227
+  sources, so the limit costs this reader nothing today, and the module docstring states it.
 - **One file declares the version, and two gates hold it against the project metadata and
   the changelog** (#67). Round 187. `pyproject.toml` declared `version = "0.6.0"` at line 7
   and `ja4plus/__init__.py` declared it again at line 94, so the two records could
