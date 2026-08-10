@@ -26,6 +26,7 @@ import errno
 import logging
 import math
 import signal
+import struct
 import threading
 import time
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Optional, TextIO
@@ -50,6 +51,8 @@ __all__ = [
     "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_MAX_CONNECTIONS",
     "DEFAULT_POLL_INTERVAL",
+    "PACKET_STATISTICS",
+    "SOL_PACKET",
     "STATISTICS_THREAD_NAME",
     "CaptureDropCount",
     "Monitor",
@@ -63,6 +66,7 @@ __all__ = [
     "describe_capture_failure",
     "format_statistics",
     "open_capture_socket",
+    "packet_statistics_drops",
     "read_interface",
     "report_statistics",
     "stop_on_signal",
@@ -245,6 +249,71 @@ def capture_drop_count(capture_socket: Any) -> Optional[int]:
     return count
 
 
+# The socket level of the Linux packet socket. `SOL_PACKET` is absent from the Python
+# `socket` module, so this module defines it. `/usr/include/x86_64-linux-gnu/bits/socket.h:151`
+# of the granted host reads `#define SOL_PACKET 263`, and `scapy/data.py:43` holds 263 too.
+SOL_PACKET = 263
+
+# The socket option that reads `struct tpacket_stats`. `PACKET_STATISTICS` is absent from
+# the Python `socket` module too. `/usr/include/linux/if_packet.h:44` of the granted host
+# reads `#define PACKET_STATISTICS 6`, and `scapy/arch/linux/__init__.py:95` holds 6 too.
+PACKET_STATISTICS = 6
+
+# The layout of `struct tpacket_stats`, at `/usr/include/linux/if_packet.h:77`. It holds
+# `tp_packets` and then `tp_drops`, each one an `unsigned int` of the host byte order. A
+# reader of the first field would report the received count as the drop count.
+_TPACKET_STATS = struct.Struct("=II")
+
+
+def packet_statistics_drops(capture_socket: Any) -> Optional[int]:
+    """Return the drops one Linux packet socket counted since the last read, or None.
+
+    **The kernel resets both counters as the read returns them**, so the answer is an
+    increment and not a running total. `CaptureDropCount` adds each answer to a total.
+    A caller that reported this answer alone would under-report on every line after the
+    first.
+
+    `scapy` 2.7.0 calls `getsockopt` nowhere, so this module reads the option itself. It
+    reaches the packet socket through `SuperSocket.ins`, which holds the `socket.socket`
+    the Linux capture opened.
+
+    The call answers None for every socket that reports no such option. A socket of
+    another family answers `ENOPROTOOPT`, and the `/dev/bpf` socket of macOS holds a file
+    object in `ins` that carries no `getsockopt` at all.
+
+    **The kernel gives the file descriptor of a closed socket to the next file the
+    process opens.** The call therefore reads no socket that reports itself closed.
+
+    Verified against `man 7 packet` of the granted host, read on 2026-08-10: "Receiving
+    statistics resets the internal counters."
+
+    Args:
+        capture_socket: The capture socket to read, or None where the capture opened
+            none.
+
+    Returns:
+        The count of drops since the last read, or None where the socket reports no such
+        count.
+    """
+    if capture_socket is None or getattr(capture_socket, "closed", False):
+        return None
+    inner_socket = getattr(capture_socket, "ins", None)
+    read_option = getattr(inner_socket, "getsockopt", None)
+    if read_option is None:
+        return None
+    try:
+        payload = read_option(SOL_PACKET, PACKET_STATISTICS, _TPACKET_STATS.size)
+    except OSError:
+        # A socket of another family answers `ENOPROTOOPT` here, and this call runs on
+        # every statistics line. A raise would end the monitor over a count.
+        logger.debug("the capture socket reported no packet statistics", exc_info=True)
+        return None
+    if len(payload) < _TPACKET_STATS.size:
+        return None
+    _, dropped = _TPACKET_STATS.unpack_from(payload)
+    return int(dropped)
+
+
 class CaptureDropCount:
     """The drop count of the capture socket the monitor reads.
 
@@ -263,6 +332,11 @@ class CaptureDropCount:
     read and over the drop of the socket, so no read is in flight when the capture calls
     `close`. A release that acquired nothing would leave a reader inside the ioctl of a
     file descriptor the close already released.
+
+    **On Linux the object holds a running total rather than the last reading.** The
+    kernel resets `tp_drops` as the read returns it, so a holder of the last reading
+    would report the drops of one interval and call it the drops of the whole run. `_read`
+    states the rule and #326 measured the reset.
     """
 
     __slots__ = ("_lock", "_capture_socket", "_dropped")
@@ -284,12 +358,23 @@ class CaptureDropCount:
     def _read(self) -> Optional[int]:
         """Read the socket and hold what it reported. The caller holds the lock.
 
+        The absolute reader answers first. `capture_drop_count` reads the `BIOCGSTATS`
+        ioctl, which resets no counter, so its answer is the total the socket holds.
+
+        **The Linux reader answers an increment**, because the kernel resets both
+        counters as the read returns them. The call therefore adds that answer to the
+        running total. One platform answers, so no total mixes the two readers.
+
         Returns:
             The drop count, or None where the capture layer reports no count.
         """
         dropped = capture_drop_count(self._capture_socket)
         if dropped is not None:
             self._dropped = dropped
+            return self._dropped
+        increment = packet_statistics_drops(self._capture_socket)
+        if increment is not None:
+            self._dropped = increment if self._dropped is None else self._dropped + increment
         return self._dropped
 
     def refresh(self) -> Optional[int]:
@@ -345,17 +430,22 @@ class MonitorStats:
        field holds a whole number there. `AsyncSniffer._run` holds the socket it opens in a
        local name, so a caller reaches that socket through the `opened_socket` argument
        alone. #56 owns the socket the command opens and #423 owns the count.
-    2. On Linux `scapy` reads no drop count at all. It defines `PACKET_STATISTICS = 6`
-       and calls `getsockopt` with that option nowhere, so the field reads `null` there.
+    2. On Linux `scapy` reads no drop count, and the kernel reports one. `scapy` defines
+       `PACKET_STATISTICS = 6` and calls `getsockopt` nowhere at all, so
+       `packet_statistics_drops` reads the option itself and the field holds a whole
+       number there.
 
-    **The `BIOCGSTATS` ioctl reads the two counters and it resets neither one**, so the
-    macOS monitor reports the count of the socket and accumulates nothing. #423 measured
-    it: two reads of one socket returned 29910 and then 59910 drops.
+    **The two platforms differ on the reset, and the difference decides the arithmetic.**
+    The `BIOCGSTATS` ioctl reads the two counters and it resets neither one, so the macOS
+    monitor reports the count of the socket and accumulates nothing. #423 measured it: two
+    reads of one socket returned 29910 and then 59910 drops. The kernel resets both
+    counters of `PACKET_STATISTICS` as the read returns them, so the Linux monitor adds
+    each reading to a running total. #326 measured that reset.
 
     Verified against `scapy` 2.7.0, at `scapy/arch/bpf/supersocket.py:297`,
     `scapy/arch/linux/__init__.py:95` and `scapy/sendrecv.py:1205`, read on
-    2026-08-10. Reading 1 ran on macOS 26.6.1, build 25G76. Reading 2 is a reading of
-    the `scapy` source, and no Linux host ran it.
+    2026-08-10. Reading 1 ran on macOS 26.6.1, build 25G76. Reading 2 ran on Linux
+    6.11.0-29-generic.
 
     Args:
         clock: The callable that returns the current time in seconds. The default is
