@@ -505,6 +505,40 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **One pass at the batch gate assigns every round number of a batch** (#482). Round TBD.
+  The project manager assigned a round number at each sub-merge, which is an event of one
+  batch, from a sequence that is global to the repository. One live integration branch
+  hides that, because it is then the only writer. **Two live branches make the assignment a
+  race**, and the project manager measured it on 2026-08-10 at the sub-merge gate of #456:
+  `batch/470-sweep-tools-and-shard-bug` held 171 rows and assigned 168 to 171, while
+  `batch/476-count-repairs` started from a `dev` of 167 rows and reported
+  `the Changelog holds 169 rows and its highest round is 173`. **Neither member was at
+  fault and the merged state of each member was correct.**
+  `.claude/rules/batch-gate.md` now states where the assignment happens: one pass on the
+  integration branch, immediately before the batch pull request, when the row count of
+  `dev` is fixed. A member writes the literal `TBD` in both records and keeps it through
+  every sub-merge. **One integration branch at a time also removes the race, and this
+  project declines it**, because it costs the concurrency the batch model exists to
+  provide. **The rule alone leaves a shape that no case could read.**
+  `row count == highest round` passes on a table that carries 168 twice and 170 nowhere,
+  because the count and the maximum both still read right under the wrong pairing.
+  `tests/test_specification_changelog.py` gains
+  `test_the_changelog_assigns_every_round_from_one_to_the_row_count`, which requires the
+  rounds 1 to the row count, each on one row. **The measurement is proved on the shipped
+  page and it is kept as a case.** A copy of `docs/specs/spec.md` whose round 170 reads 168
+  failed the new case with
+  `these round numbers open more than one row: [168]` and `these rounds from 1 to 171 open no row: [170]`,
+  and `test_the_changelog_row_count_equals_the_highest_round_number` passed on that same
+  page. `test_the_row_count_rule_passes_on_a_table_that_repeats_a_round` holds that
+  measurement so that no later reader takes the older rule for a complete one.
+  **A gap alone raises the maximum above the count**, so the older rule reads a pure gap,
+  and the shape that hides from it carries a repeat beside the gap.
+  **An aggregate over an empty list passes**, so the reader reports a table from which it
+  read no numbered row, and `MINIMUM_ROWS` holds the second floor at 124. Five more cases
+  drive the reader over fixed tables: a repeat, a gap, a table that assigns each round
+  once, and a table whose new rows read `TBD`, which an integration branch always carries
+  and which stays legal. No file under `ja4plus/` changes and no fingerprint moves.
+
 - **The batch-gate rule states the branch protection the provider now holds** (#480).
   Round TBD. #459 wrote the protection section of `.claude/rules/batch-gate.md` from a read
   of 2026-08-09, which returned `404`, `Branch not protected`. #468 turned the rule on, so a
