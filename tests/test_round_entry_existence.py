@@ -55,6 +55,29 @@ to the integration branch has no change set to read, so that skip loses nothing.
 `evaluate` returns the skip
 reason and the failure as two separate fields, so a case reports which one it met.
 
+## The two recorded change sets
+
+**A scratch repository proves the reading against a change set the case wrote, and a
+recorded commit proves it against a change set the project made.** Two commits carry that
+proof, and `recorded_change_set` reads each one against its parent.
+
+- `DEFECT_COMMIT` is the commit #412 shipped. It carried eleven sweeps, two repairs and a
+  new test file, it recorded no round, and the whole unit gate passed it.
+- `CONTROL_COMMIT` is the commit #429 shipped. It added this file, it recorded one round,
+  and the reading passes it.
+
+**The clone of depth 1 holds neither commit, so the `test` job fetches both at depth 2.**
+A fetch of depth 2 carries the commit and its parent, which is the pair the reading needs.
+#528 measured the cost on 2026-08-10, after `git gc --prune=now` on each read. The clone
+of depth 1 holds 14884 KB, the defect fetch raises it to 14912 KB, and the control fetch
+raises it to 14916 KB. The two steps therefore cost 32 KB together.
+
+**#528 measured that the fetch of an abbreviated name fails, so each constant holds the
+whole identifier.** The workflow names the same two identifiers, and
+`test_the_test_job_fetches_the_two_recorded_change_sets` holds the workflow against the
+constants. A repository that holds neither commit skips the two cases, and the `skip-gate`
+job of `.github/workflows/test.yml` fails a run where that skip reaches every job.
+
 ## What a case here cannot test
 
 **A case here tests that an entry exists. It cannot test that the entry is true.** Prose
@@ -126,7 +149,23 @@ GIT_TIMEOUT_SECONDS = 60
 # The commit #412 shipped. It carried eleven sweeps, two repairs and a new test file, and
 # it recorded no round. A case reads it to prove the reading against a real change set,
 # because a scratch repository proves the reading against a change set the case wrote.
-DEFECT_COMMIT = "46aa502"
+#
+# **The constant holds the whole identifier, because the runner fetches this commit by
+# name.** #528 measured `git fetch --depth=2 origin "+46aa502:refs/ja4plus/abbrev"` on a
+# clone of depth 1, and git answered `fatal: couldn't find remote ref 46aa502`.
+DEFECT_COMMIT = "46aa502ca47f3c29f3c5ece15e4e78500e2f59c5"
+
+# The commit #429 shipped, which added this file. It changed one file outside the two
+# records and it recorded one round, so the reading passes it. **A green reading of one
+# commit proves nothing on its own**, and this commit is the second direction that #528
+# put on the runner beside `DEFECT_COMMIT`.
+CONTROL_COMMIT = "f140a5c318dfbe443b38b8f1a6a7df7d6b098cf0"
+
+# The refs the fetch of the runner writes. A commit that no ref reaches is unreachable, so
+# `git gc` removes it. #438 measured the ref form and #528 measured it again on these two.
+DEFECT_REF = "refs/ja4plus/recorded-defect"
+
+CONTROL_REF = "refs/ja4plus/recorded-control"
 
 # The count of paths a failure names. A sweep changes 30 files, and a message that names
 # all of them buries the count that follows it.
@@ -391,6 +430,37 @@ def evaluate(
     return Verdict(None, missing_round_entry(paths, base, head))
 
 
+def recorded_change_set(repository: Path, commit: str) -> Verdict:
+    """Return the verdict the reading gives one recorded commit.
+
+    The reader compares the commit against its parent, so it needs the two commits and
+    nothing between them. A clone of depth 2 over the commit holds that pair.
+
+    Args:
+        repository: The root of the repository.
+        commit: The whole identifier of the commit to read.
+
+    Returns:
+        A verdict that carries a skip reason where the repository holds no such pair, and
+        the reading of the change set otherwise.
+    """
+    parent = named_commit(repository, f"{commit}^")
+    if parent is None:
+        return Verdict(f"this clone holds no parent of commit {commit}", None)
+    changed = _git(repository, "diff", "--name-only", parent, commit)
+    if changed is None:
+        return Verdict(f"git reports no change set of commit {commit}", None)
+    base = read_record(
+        document_at(repository, parent, CHANGELOG_PATH),
+        document_at(repository, parent, SPECIFICATION_PATH),
+    )
+    head = read_record(
+        document_at(repository, commit, CHANGELOG_PATH),
+        document_at(repository, commit, SPECIFICATION_PATH),
+    )
+    return Verdict(None, missing_round_entry(changed.splitlines(), base, head))
+
+
 BASE_CHANGELOG = "# Changelog\n\n- **A first change** (#1). Round 1.\n"
 BASE_SPECIFICATION = (
     "## Changelog\n\n| Round | Date | What changed |\n|---|---|---|\n"
@@ -515,25 +585,20 @@ def test_the_change_set_of_this_branch_records_a_round() -> None:
 
 
 def test_the_reading_fails_the_change_set_of_the_defect() -> None:
-    """The reading fails commit `46aa502`, which changed six files and recorded no round."""
-    parent = _git(REPO_ROOT, "rev-parse", f"{DEFECT_COMMIT}^")
-    if parent is None:
-        pytest.skip(f"this clone holds no parent of commit {DEFECT_COMMIT}")
-    reference = parent.strip()
-    changed = _git(REPO_ROOT, "diff", "--name-only", reference, DEFECT_COMMIT)
-    if changed is None:
-        pytest.skip(f"git reports no change set of commit {DEFECT_COMMIT}")
-    base = read_record(
-        document_at(REPO_ROOT, reference, CHANGELOG_PATH),
-        document_at(REPO_ROOT, reference, SPECIFICATION_PATH),
-    )
-    head = read_record(
-        document_at(REPO_ROOT, DEFECT_COMMIT, CHANGELOG_PATH),
-        document_at(REPO_ROOT, DEFECT_COMMIT, SPECIFICATION_PATH),
-    )
-    failure = missing_round_entry(changed.splitlines(), base, head)
-    assert failure is not None
-    assert CHANGELOG_PATH in failure
+    """The reading fails the defect commit, which changed six files and recorded no round."""
+    verdict = recorded_change_set(REPO_ROOT, DEFECT_COMMIT)
+    if verdict.skip_reason is not None:
+        pytest.skip(verdict.skip_reason)
+    assert verdict.failure is not None
+    assert CHANGELOG_PATH in verdict.failure
+
+
+def test_the_reading_passes_the_change_set_that_records_a_round() -> None:
+    """The reading passes the control commit, which changed one file and recorded one round."""
+    verdict = recorded_change_set(REPO_ROOT, CONTROL_COMMIT)
+    if verdict.skip_reason is not None:
+        pytest.skip(verdict.skip_reason)
+    assert verdict.failure is None, verdict.failure
 
 
 def test_a_change_set_that_edits_code_and_records_no_round_fails(tmp_path: Path) -> None:
@@ -758,6 +823,15 @@ def test_the_test_job_fetches_the_base_commit_of_a_pull_request() -> None:
     workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
     assert "BASE_SHA: ${{ github.event.pull_request.base.sha }}" in workflow
     assert 'git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"' in workflow
+
+
+def test_the_test_job_fetches_the_two_recorded_change_sets() -> None:
+    """The `test` job fetches each recorded commit and its parent into a ref."""
+    workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
+    assert f"DEFECT_SHA: {DEFECT_COMMIT}" in workflow
+    assert f"CONTROL_SHA: {CONTROL_COMMIT}" in workflow
+    assert f'git fetch --depth=2 origin "+$DEFECT_SHA:{DEFECT_REF}"' in workflow
+    assert f'git fetch --depth=2 origin "+$CONTROL_SHA:{CONTROL_REF}"' in workflow
 
 
 def test_the_workflow_accepts_a_pull_request_into_an_integration_branch() -> None:

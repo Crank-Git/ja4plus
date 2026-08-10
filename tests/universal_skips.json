@@ -38,10 +38,6 @@
       "reason": "The case opens a real capture socket. Linux needs CAP_NET_RAW and macOS needs a /dev/bpf device, and no runner of the matrix grants either one. #326 records the grant the live cases need."
     },
     {
-      "case": "tests.test_round_entry_existence::test_the_reading_fails_the_change_set_of_the_defect",
-      "reason": "An open finding of class c, which #528 removes. The clone of depth 1 holds neither the recorded defect commit nor its parent, so the case skips on every job. No limit of the runner explains it, and this entry goes out with the repair."
-    },
-    {
       "case": "tests.test_documentation_site::test_the_slug_of_a_case_matches_the_slug_of_the_build",
       "reason": "An open finding of class c, which #529 removes. Every job installs the `dev` extra and the case needs the `docs` extra, so the case skips on every job. No limit of the runner explains it, and this entry goes out with the repair."
     }

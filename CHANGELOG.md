@@ -920,6 +920,46 @@ holds every breaking change of this record against a row of that page.
 
 ### Fixed
 
+- **The change-set defect case runs on the runner** (#528). Round
+  TBD. **A skip is not a pass, and this case had never run on any job.**
+  `tests/test_round_entry_existence.py::test_the_reading_fails_the_change_set_of_the_defect`
+  reads commit `46aa502` against its parent, which is the change set #412 shipped: eleven
+  sweeps, two repairs, a new test file, no `CHANGELOG.md` entry and a green gate. It is the
+  one case that proves the reading finds a real change set which records no round. **The
+  `actions/checkout` step makes a clone of depth 1, and that clone holds neither the commit
+  nor its parent**, so the case reported `this clone holds no parent of commit 46aa502` on
+  all six jobs. The census of #524 measured it in run
+  https://github.com/Crank-Git/ja4plus/actions/runs/31408763259 and classed it c, which
+  names a site that no limit of the runner explains. **The `test` job now fetches the two
+  recorded commits, each at depth 2**, into `refs/ja4plus/recorded-defect` and
+  `refs/ja4plus/recorded-control`. A fetch of depth 2 carries the commit and its parent,
+  which is the pair a diff needs. **A green reading of one commit proves nothing on its
+  own**, so the case set holds two directions and the runner reads both. `CONTROL_COMMIT`
+  is commit `f140a5c`, which #429 shipped to add this very file, and it recorded one round,
+  so `test_the_reading_passes_the_change_set_that_records_a_round` reads it and expects no
+  failure. **The measured cost decided the reading**, taken on 2026-08-10 after
+  `git gc --prune=now` on each read: the clone of depth 1 holds 14884 KB, the defect fetch
+  raises it to 14912 KB and the control fetch raises it to 14916 KB, so the two commands
+  cost 32 KB together against the 3884 KB of `fetch-depth: 0`. **The fetch names the whole
+  identifier, because git resolves no abbreviation at the remote**, and
+  `+46aa502:refs/ja4plus/abbrev` answered `fatal: couldn't find remote ref 46aa502` on a
+  clone of depth 1. **The step carries no `if` condition**, because the two commits stand
+  in the recorded history whatever event starts the run. **#528 declined
+  `continue-on-error` for the reason #438 states**: a failed fetch leaves the two cases
+  skipped, and the `skip-gate` job then fails the run. **The cases came first**, and
+  `test_the_test_job_fetches_the_two_recorded_change_sets` failed against the workflow of
+  the base commit on
+  `AssertionError: assert 'DEFECT_SHA: 46aa502ca47f3c29f3c5ece15e4e78500e2f59c5' in ...`.
+  **The runner read the check in both directions, on one pull request that landed in no
+  branch.** The user approved that deliberately red pull request under the standing rules,
+  and #536 targeted `batch/535-skip-gate-repairs`, it targeted neither `dev` nor `master`,
+  and each of its heads carried no skip keyword. `tests/universal_skips.json` loses the
+  entry that named this case, so the allowlist holds one open finding and #529 names it.
+  `docs/specs/features/11-pre-release-validation.md` gains
+  `FR-pre-release-validation-39` and one acceptance criterion, and
+  `.claude/rules/batch-gate.md` records the removal beside the entry rule. **No file under
+  `ja4plus/` changes and no fingerprint moves.**
+
 - **The branch-protection claims of the batch-gate rule reach a case** (#511). Round
   194. `.claude/rules/batch-gate.md` states that each of the eleven required contexts
   carries `app_id` 15368, and `CHANGELOG.md` and the round 174 row of `docs/specs/spec.md`

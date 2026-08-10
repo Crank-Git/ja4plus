@@ -213,6 +213,11 @@ FR-pre-release-validation-38 — `tests/universal_skips.json` allows a universal
 environment limit explains, and each entry names that limit.
 `tests/skip_gate.py` fails an entry that names no limit, whatever the reports hold.
 
+FR-pre-release-validation-39 — The `test` job of `.github/workflows/test.yml` fetches the
+two recorded commits of `tests/test_round_entry_existence.py`, each at depth 2. One commit
+records no round and the other records one, so the runner reads the check in both
+directions.
+
 ## User flows
 
 **A maintainer proves the shipped package runs.**
@@ -419,6 +424,9 @@ the checkout is.
       matrix runs.
 - [ ] `python -m tests.skip_gate` exits 1 where one entry of `tests/universal_skips.json`
       names no reason.
+- [ ] `tests/universal_skips.json` holds no entry for
+      `test_the_reading_fails_the_change_set_of_the_defect`, and the `skip-gate` job names
+      that case in no report of the matrix.
 - [ ] `pytest tests/test_requirement_scope.py` passes, so every requirement that binds a
       feature set names one path under `tests/`.
 - [ ] `pytest tests/test_settlement_procedure.py` passes, so every `repaired` verdict names

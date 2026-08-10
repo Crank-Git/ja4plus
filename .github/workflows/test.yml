@@ -126,6 +126,40 @@ jobs:
           git fetch --depth=1 origin "+$BASE_SHA:refs/ja4plus/round-entry-base"
           echo "ROUND_ENTRY_REFERENCE=$BASE_SHA" >> "$GITHUB_ENV"
 
+      - name: Fetch the two recorded change sets
+        # `tests/test_round_entry_existence.py` reads two commits of this repository, each
+        # against its parent. `DEFECT_SHA` is the commit #412 shipped, which recorded no
+        # round, and `CONTROL_SHA` is the commit #429 shipped, which recorded one. **A
+        # green reading of one commit proves nothing on its own**, so the case set holds
+        # the two directions and this step carries both to the runner.
+        #
+        # **The clone of depth 1 holds neither pair, so the two cases skipped on every job
+        # of the matrix.** #524 measured that state on 2026-08-10 and #528 repaired it. A
+        # fetch of depth 2 carries the commit and its parent, which is the pair a diff
+        # needs.
+        #
+        # **#528 measured the cost on 2026-08-10, after `git gc --prune=now` on each read.**
+        # The clone of depth 1 holds 14884 KB, the defect fetch raises it to 14912 KB, and
+        # the control fetch raises it to 14916 KB. The two commands cost 32 KB together.
+        #
+        # **The fetch names the whole identifier, because git resolves no abbreviation at
+        # the remote.** #528 measured `+46aa502:refs/ja4plus/abbrev` on a clone of depth 1,
+        # and git answered `fatal: couldn't find remote ref 46aa502`.
+        #
+        # **This step carries no `if` condition, because the two cases read no event.** The
+        # step above reads the base commit of a pull request and it skips on a push, and
+        # these two commits stand in the recorded history whatever event starts the run.
+        #
+        # **#528 declined `continue-on-error` for the reason #438 states.** A failed fetch
+        # leaves the two cases skipped, and the `skip-gate` job then fails the run on a
+        # case that ran nowhere.
+        env:
+          DEFECT_SHA: 46aa502ca47f3c29f3c5ece15e4e78500e2f59c5
+          CONTROL_SHA: f140a5c318dfbe443b38b8f1a6a7df7d6b098cf0
+        run: |
+          git fetch --depth=2 origin "+$DEFECT_SHA:refs/ja4plus/recorded-defect"
+          git fetch --depth=2 origin "+$CONTROL_SHA:refs/ja4plus/recorded-control"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:

@@ -90,6 +90,14 @@ reason, and the gate fails an entry that names none.
 **An entry that records an open finding names the issue that removes it.** The census of
 #524 found two cases that run on no job while no limit of the runner explains either one.
 #528 and #529 hold them. Such an entry states the finding, and it goes out with the repair.
+**#528 made that removal on 2026-08-10**, so the allowlist holds one open finding and #529
+names it.
+
+**A checkout that reads one commit is such a repair, and it costs 32 KB.**
+`tests/test_round_entry_existence.py` reads two recorded commits, each against its parent,
+and the clone of depth 1 held neither pair. The `test` job fetches each one at depth 2,
+into `refs/ja4plus/recorded-defect` and `refs/ja4plus/recorded-control`. **Read a universal
+skip against the checkout before you read it as a limit of the runner.**
 
 **Warning: `skip-gate` is a twelfth check, and the required list below holds eleven names.**
 A red `skip-gate` fails the run, so the batch gate refuses the merge on the run conclusion.
