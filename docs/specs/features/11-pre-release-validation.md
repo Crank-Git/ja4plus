@@ -223,11 +223,22 @@ FR-pre-release-validation-38 — `tests/universal_skips.json` allows a universal
 environment limit explains, and each entry names that limit.
 `tests/skip_gate.py` fails an entry that names no limit, whatever the reports hold.
 
-FR-pre-release-validation-38a — An entry of `tests/universal_skips.json` names one case
+FR-pre-release-validation-38a — One job of the matrix of `.github/workflows/test.yml`
+installs the `docs` extra beside the `dev` extra. That job runs
+`test_the_slug_of_a_case_matches_the_slug_of_the_build` of
+`tests/test_documentation_site.py`, and the skip gate therefore reads one run of that case.
+The `docs` extra needs Python 3.10 or later, so the Python 3.9 job of the matrix holds no
+such install.
+
+FR-pre-release-validation-38b — An entry of `tests/universal_skips.json` names one case
 under `case`, or it names one class of skip under `skip_message_prefix`. A prefix entry
 covers a case only where every report that skips that case states a message which starts
 with the prefix. `tests/skip_gate.py` reports the count of the cases each prefix entry
 covers, and it names none of them one by one.
+
+FR-pre-release-validation-38c — Every reader of `tests/universal_skips.json` accepts an
+entry that names no `case` key. `tests/test_documentation_site.py` holds one such reader,
+and a reader that indexes `case` raises `KeyError` on a prefix entry.
 
 FR-pre-release-validation-39 — No tracked module reads the module docstring for the
 description of an argument parser. `tests/test_parser_description.py` reads the tracked
@@ -467,6 +478,8 @@ the checkout is.
       skips, and it exits 1 on it.
 - [ ] `python -m tests.skip_gate` exits 0 over the suite as it stands, and its census
       reports the count of the cases the `not applicable:` entry covers.
+- [ ] `pytest tests/test_documentation_site.py` passes against an allowlist that holds one
+      entry with no `case` key.
 - [ ] `pytest tests/test_requirement_scope.py` passes, so every requirement that binds a
       feature set names one path under `tests/`.
 - [ ] `pytest tests/test_settlement_procedure.py` passes, so every `repaired` verdict names
