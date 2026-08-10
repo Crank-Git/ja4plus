@@ -70,8 +70,14 @@ Production/Stable`.
 FR-release-13 — The release publishes to TestPyPI first when the maintainer asks for
 a dry run.
 
-FR-release-14 — The GitHub release body holds the changelog section for that
-version.
+FR-release-14 — The GitHub release body holds the summary and the breaking-change tables
+of the changelog section for that version, and it links `CHANGELOG.md` at the tag for the
+rest.
+
+**The user restated `FR-release-14` on 2026-08-10.** The earlier form asked the body to
+hold the whole changelog section. That form cannot hold, because the `## [1.0.0]` section
+of `CHANGELOG.md` is 242778 characters and the provider accepts 125000.
+`### The release body of version 1.0.0` records the measurement and the ruling.
 
 ## User flows
 
@@ -134,12 +140,13 @@ version.
   its environment as a literal. No value that a caller chooses reaches either name.
 - The dry run runs the same verification as the release. A dry run that skipped the check
   proves the publisher and not the artifact.
-- `tests/release_body.py` returns the `## [<version>]` section of `CHANGELOG.md` for the
-  version that `ja4plus/__init__.py` declares. The publish job writes that section to the
-  release body with `gh release edit`, and that step stands in front of the publish step.
-  `tests/test_release_body.py` holds the cases against the reader.
+- `tests/release_body.py` reads the `## [<version>]` section of `CHANGELOG.md` for the
+  version that `ja4plus/__init__.py` declares. It returns the summary and the
+  breaking-change tables of that section, and a link to `CHANGELOG.md` at the tag. The
+  publish job writes that body with `gh release edit`, and that step stands in front of the
+  publish step. `tests/test_release_body.py` holds the cases against the reader.
 - **The provider refuses a release body of more than 125000 characters.** The reader
-  reports a fault rather than truncate the section, so the workflow stops at a named step.
+  reports a fault rather than truncate the part, so the workflow stops at a named step.
   `### The release body of version 1.0.0` states what this repository measures today.
 - The release is not published when any verification step fails. A partial publish
   cannot be undone on PyPI.
@@ -257,32 +264,47 @@ digest after the restore. The digest is
 
 ### The release body of version 1.0.0
 
-**`FR-release-14` is built and the version 1.0.0 section does not fit the release body.**
-A read of 2026-08-10 reports the two counts.
+**The whole version 1.0.0 section does not fit the release body.** A read of 2026-08-10
+reports the three counts.
 
 | Read | Result |
 |---|---|
 | The `## [1.0.0]` section of `CHANGELOG.md` | 242778 characters |
+| The body `tests/release_body.py` builds for version 1.0.0 | 4727 characters |
 | The longest body the provider accepts | 125000 characters |
 
 The provider answers `422` with `body is too long (maximum is 125000 characters)`.
 Verified against https://docs.github.com/en/rest/releases/releases and
 https://github.com/cli/cli/issues/7705, both retrieved 2026-08-10.
 
+**The user ruled on 2026-08-10, and the body holds a named part.** The named part is the
+summary and the two breaking-change tables. A link carries a reader to `CHANGELOG.md` at
+the tag for the rest. `CHANGELOG.md` keeps every row it holds, no round entry moves, and
+this project rewrites nothing.
+
+`named_part` of `tests/release_body.py` reads the part, and `changelog_link` writes the
+link. The part runs from the version heading to the heading that follows the
+breaking-change tables. **A `####` heading of a table carries one more mark than a part
+heading**, so the reader keeps both tables and stops at the entry list. A section that
+names no breaking change reaches the body in whole, and the `## [0.6.0]` section is such a
+section.
+
 **`tests/release_body.py` truncates nothing.** A truncated changelog section reads as
-complete and is not, and the choice of what to drop belongs to the maintainer. The reader
-reports the fault, the step fails, and the release publishes nothing.
-`test_the_reader_refuses_the_version_1_0_0_section_of_this_repository` measures the state
-above, and it fails on the day that section falls below the limit.
+complete and is not, and the choice of what to drop belongs to the maintainer. A named
+part above the limit fails the reader, the step fails, and the release publishes nothing.
 
-**The decision this state needs belongs to the user.** The release of version 1.0.0 needs
-one of three answers, and #70 takes none of them.
+Three cases hold the three readings.
 
-1. The section shrinks. The round entries move to a record of their own, and the section
-   keeps the summary and the breaking-change tables.
-2. The body holds a named part of the section, and it links to `CHANGELOG.md` at the tag
-   for the rest.
-3. `FR-release-14` restates what the body holds.
+1. `test_the_whole_version_1_0_0_section_stands_above_the_provider_limit` records the
+   reason for the named part, and it fails where that reason ends.
+2. `test_the_release_body_of_this_repository_stands_below_the_provider_limit` reads the
+   real body of version 1.0.0 and requires it below the limit.
+3. `test_the_release_body_reader_refuses_a_named_part_above_the_limit` holds the refusal
+   against a named part that grows past the limit.
+
+**The link names the tag and never the default branch.** A link to the default branch
+moves under the reader after the next merge, so a reader of an old release would reach a
+file that release never shipped.
 
 ### How `tests/test_packaging.py` reads the wheel
 
@@ -352,7 +374,9 @@ TestPyPI site.
 | A later change reads the environment from an expression. | `test_each_job_of_the_publish_workflow_names_its_environment_as_a_literal` fails. A value chosen at run time lets the manual path reach `pypi`. |
 | A later change adds an input to the manual trigger. | `test_the_manual_trigger_of_the_publish_workflow_declares_no_input` fails. An input that selects the index is the hazard the separation removes. |
 | A later change adds a third job. | `test_the_publish_workflow_holds_the_two_jobs_of_the_two_events` fails. A job the guardrail cases do not name reaches neither direction. |
-| The changelog section is longer than the release body the provider accepts. | `body_fault` of `tests/release_body.py` returns the fault, the step fails, and nothing publishes. **The reader truncates nothing.** `### The release body of version 1.0.0` records the counts. |
+| The changelog section is longer than the release body the provider accepts. | The body holds the summary and the breaking-change tables, and it links `CHANGELOG.md` at the tag for the rest. `named_part` of `tests/release_body.py` reads that part. **The reader truncates nothing.** `### The release body of version 1.0.0` records the counts. |
+| The named part itself is longer than the release body the provider accepts. | `body_fault` of `tests/release_body.py` returns the fault, the step fails, and nothing publishes. `test_the_release_body_reader_refuses_a_named_part_above_the_limit` holds the refusal. |
+| The changelog section names no breaking change. | `named_part` returns the whole section, because it sets nothing aside. `body_fault` still holds that section against the limit. The `## [0.6.0]` section is such a section. |
 | The changelog section holds a heading and no line. | `changelog_section` raises. **A section of one heading passes a search for that heading**, so the floor stands in the reader. |
 | The dry run edits a release. | It cannot. The `dry-run` job declares no `contents: write` and it runs no `gh release edit`. The manual event names no release, so such a job would edit the release the maintainer published last. |
 
@@ -382,7 +406,8 @@ TestPyPI site.
 - [ ] Version 1.0.0 appears on PyPI.
 - [ ] `pip install ja4plus==1.0.0` in a clean environment runs
       `ja4plus analyze` on a committed capture.
-- [ ] The GitHub release body holds the `1.0.0` changelog section.
+- [ ] The GitHub release body holds the summary and the breaking-change tables of the
+      `1.0.0` changelog section, and it links `CHANGELOG.md` at the tag for the rest.
 
 ### The version count, measured on 2026-08-09 and settled on 2026-08-10
 
@@ -419,10 +444,10 @@ rather than from `grep -r`. `grep -r` also reads an untracked build artifact.
 
 ## Open questions
 
-- **What the release body of version 1.0.0 holds.** The changelog section is 242778
-  characters and the provider accepts 125000.
-  `### The release body of version 1.0.0` states the three answers, and the user takes
-  one of them before the release of version 1.0.0.
+**The release body question is answered, and this list holds no open question today.** The
+user ruled on 2026-08-10 that the body holds the summary and the breaking-change tables,
+and that a link carries the rest. `### The release body of version 1.0.0` records the
+ruling and the three counts.
 
 ### The TestPyPI publisher, and what proves it
 
@@ -440,3 +465,20 @@ and that page needs the account of the owner.
 **The first dry run is the measurement.** A dry run against an absent publisher fails at
 the publish step and it uploads nothing, so no guess is needed. #70 built the two paths
 and it started no run, because a run of this workflow publishes.
+
+**The index names the failure `invalid-publisher`, and the upload fails.** The index reads
+the OIDC token, finds that it matches no known publisher, and refuses to mint a token. The
+upload therefore fails before it sends one byte of an artifact. A mismatched repository
+owner, repository name, workflow filename or environment produces the same failure, so the
+message names the configuration the dry run needs. Verified against
+https://docs.pypi.org/trusted-publishers/troubleshooting/ (retrieved 2026-08-10).
+
+**The exact message text is unmeasured, and the first dry run measures it.** The
+`pypa/gh-action-pypi-publish` README states no failure text for this case, and no agent
+reads the TestPyPI publisher page. Verified against
+https://github.com/pypa/gh-action-pypi-publish (retrieved 2026-08-10).
+
+**The dry run reaches PyPI in no case, whatever the publisher state is.** The `dry-run` job
+states `repository-url: https://test.pypi.org/legacy/` as a literal of the file, so no
+value chosen at run time moves it. `test_the_manual_path_of_the_publish_workflow_reaches_no_real_index`
+holds that reading, and a mutation that reads the URL from an input fails it.

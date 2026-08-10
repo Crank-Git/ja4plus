@@ -67,14 +67,16 @@ Confirm all of the following. Stop and report if any is false.
 5. Create the GitHub release. The publish workflow triggers on a published release and
    uses trusted publishing, so no token is needed.
 
-   `FR-release-14` puts the changelog section of the version in the release body.
+   `FR-release-14` puts the summary and the breaking-change tables of the version in the
+   release body, and it links `CHANGELOG.md` at the tag for the rest.
    `tests/release_body.py` builds that body, and the publish workflow runs the same
-   module, so the manual step and the workflow cannot disagree.
+   module, so the manual step and the workflow cannot disagree. **The reader edits
+   `CHANGELOG.md` in no way**, and it truncates nothing.
 
    **Warning: the provider refuses a body of more than 125000 characters.** The command
-   below reports a fault and it writes no file where the section is longer. Read
+   below reports a fault and it writes no file where the named part is longer. Read
    `### The release body of version 1.0.0` of `docs/specs/features/09-release.md` before
-   you release a version whose section exceeds that limit.
+   you release such a version.
 
    ```bash
    python -m tests.release_body --output /tmp/ja4plus-release-body.md
@@ -84,7 +86,7 @@ Confirm all of the following. Stop and report if any is false.
 
    The workflow writes the release body from the same reader after it verifies the
    artifacts, so a release that a maintainer creates in the provider interface carries
-   the section too.
+   the same body.
 
 6. Confirm the publish.
 
