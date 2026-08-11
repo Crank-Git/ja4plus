@@ -17,8 +17,8 @@ Eviction runs on packet arrival. The statistics thread is the only thread this m
 starts, and `report_statistics` starts it only when the operator states an interval.
 """
 
-# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
-# without this import.
+# This import makes every annotation a string. No annotation therefore evaluates at
+# import time, and a forward reference needs no quotation mark.
 from __future__ import annotations
 
 import contextlib

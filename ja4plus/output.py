@@ -10,8 +10,8 @@ owns: `schema_version` and `identified_as`. `ja4plus/types.py` states why the li
 result carries neither.
 """
 
-# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
-# without this import.
+# This import makes every annotation a string. No annotation therefore evaluates at
+# import time, and a forward reference needs no quotation mark.
 from __future__ import annotations
 
 import csv
