@@ -210,8 +210,16 @@ jobs:
         # ```
         #
         # **The first fetch succeeded and the second one failed.** #528 wrote two commands,
-        # and each one rewrote the shallow file of a clone of depth 1. One command that
-        # names both refspecs writes that file once, and it costs the same 32 KB.
+        # and each one rewrote the shallow file of a clone of depth 1. **One command that
+        # names both refspecs writes that file once**, and the two refspecs name the same
+        # objects the two commands named.
+        #
+        # **#586 measured the one command on a clone of depth 1, after `git gc --prune=now`
+        # on each read.** The clone holds 15088 KB and the fetch raises it to 15128 KB, so
+        # the command costs 40 KB. #528 read 32 KB for the pair of commands, against a
+        # clone of 14884 KB. **The object set does not move, so the difference is the
+        # growth of the repository between the two reads.** The command wrote both refs,
+        # `git rev-parse` read the parent of each commit, and each change set read.
         #
         # **The two steps above each run one fetch already, so neither one needs this
         # repair.** They carry opposite `if` conditions, so one event reaches one of them.

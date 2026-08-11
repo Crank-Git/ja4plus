@@ -178,14 +178,21 @@ that names both refspecs writes that file once**, and #586 took that repair.
 git fetch --depth=2 origin "+$DEFECT_SHA:refs/ja4plus/recorded-defect" "+$CONTROL_SHA:refs/ja4plus/recorded-control"
 ```
 
+**Read a repair of this kind on a clone of depth 1 before you read it on the runner.** A
+clone outside every worktree proves the command and it costs no run. #586 measured the one
+command that way: it reported `* [new ref]` twice, it exited 0, `git rev-parse` read the
+parent of each commit, and the shallow file carried one line before the command and three
+after it. **A read of 2026-08-10 puts the cost at 40 KB**, and a garbage collection ran
+before each of the two readings.
+
 **A failure of that step skips both recorded cases, and the `skip-gate` job then reports
 nothing at all, because it never runs.** The step fails the job, the job fails the run, and
 `needs` holds `skip-gate` behind it.
 
 **Three steps of the `test` job fetch, and the other two each run one command already.**
 `Fetch the base commit of the pull request` and `Resolve the reference commit of a run that
-carries no pull request` carry opposite `if` conditions, so one event reaches one of them.
-Neither one needs this repair.
+carries no pull request` carry opposite `if` conditions. One event therefore reaches one of
+those two steps, and neither one needs this repair.
 `tests/test_round_entry_existence.py::test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command`
 holds all three steps at one command each, and
 `test_the_workflow_holds_no_fetch_step_this_list_omits` refuses a fourth fetch that no case

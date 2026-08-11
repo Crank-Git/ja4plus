@@ -251,9 +251,22 @@ FETCH_STEPS = (
 # starts at column 6, so the next line at that column starts the next step.
 STEP_OPENER = "      - "
 
+# The indentation of a key that stands above a step. A job name sits at column 2 and a key
+# of a job sits at column 4, so a line this pattern matches ends the step above it.
+#
+# **A step reader that watched for `STEP_OPENER` alone would read past the last step of a
+# job**, and it would take the keys of the next job into that step. The self-review of #586
+# raised that reading, and no call of `step_block` met it.
+BLOCK_CLOSER = re.compile(r"^ {0,5}\S")
+
 # A line that runs `git fetch`. The pattern anchors at the start of the line, so a comment
 # that names the command matches nothing and a reader counts a command alone.
-COMMAND_FETCH = re.compile(r"^\s*git fetch\b")
+#
+# **The pattern reads three forms, because a narrower one would miss a fetch and report
+# agreement.** A block scalar writes `git fetch`, a one-line `run` key writes
+# `run: git fetch`, and an option between the program and the subcommand writes
+# `git -C <path> fetch`. The self-review of #586 raised the second form and the third.
+COMMAND_FETCH = re.compile(r"^\s*(?:run:\s+)?git\s+(?:\S+\s+)*?fetch\b")
 
 # The count of paths a failure names. A sweep changes 30 files, and a message that names
 # all of them buries the count that follows it.
@@ -280,7 +293,7 @@ def step_block(workflow: str, name: str) -> str:
             continue
         end = len(lines)
         for later in range(index + 1, len(lines)):
-            if lines[later].startswith(STEP_OPENER):
+            if lines[later].startswith(STEP_OPENER) or BLOCK_CLOSER.match(lines[later]):
                 end = later
                 break
         return "".join(lines[index:end])
@@ -1001,6 +1014,41 @@ def test_the_step_reader_refuses_a_name_the_workflow_does_not_hold() -> None:
     """The step reader raises where the workflow holds no step of that name."""
     with pytest.raises(AssertionError):
         step_block("      - name: The one step\n", "Another step")
+
+
+def test_the_step_reader_stops_at_the_last_step_of_a_job() -> None:
+    """The step reader stops at the key of the next job and it reads no line of that job."""
+    workflow = (
+        "jobs:\n"
+        "  test:\n"
+        "    steps:\n"
+        "      - name: The last step\n"
+        "        run: echo done\n"
+        "\n"
+        "  lint:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - name: The first step of the next job\n"
+        "        run: git fetch --depth=1 origin main\n"
+    )
+    block = step_block(workflow, "The last step")
+    assert block == "      - name: The last step\n        run: echo done\n\n"
+    assert fetch_count(block) == 0
+
+
+def test_the_fetch_reader_counts_a_command_a_one_line_run_key_holds() -> None:
+    """The fetch reader counts a fetch that a one-line `run` key holds."""
+    assert fetch_count('        run: git fetch --depth=1 origin "+$BASE_SHA:refs/x"\n') == 1
+
+
+def test_the_fetch_reader_counts_a_command_that_names_another_repository() -> None:
+    """The fetch reader counts a fetch that carries an option before the subcommand."""
+    assert fetch_count("          git -C /tmp/clone fetch --depth=2 origin main\n") == 1
+
+
+def test_the_fetch_reader_counts_no_git_command_other_than_a_fetch() -> None:
+    """The fetch reader counts no git command that runs another subcommand."""
+    assert fetch_count("          git rev-parse --verify HEAD\n          git diff --stat\n") == 0
 
 
 def test_the_fetch_reader_counts_no_comment_that_names_the_command() -> None:
