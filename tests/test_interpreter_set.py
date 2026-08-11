@@ -108,7 +108,7 @@ PACKAGE_PATHSPEC = "ja4plus/*.py"
 
 # The least count of package sources the corpus holds. **A sweep over an empty set passes**,
 # so a read of git that returns nothing fails here rather than reports agreement. A read of
-# 2026-08-10 reports 29 sources.
+# 2026-08-10 reports 31 sources.
 MINIMUM_PACKAGE_SOURCES = 20
 
 # One interpreter a comment names, as `Python 3.9`. The pattern reads the lower-case form
@@ -534,19 +534,23 @@ def test_no_comment_of_the_package_names_an_interpreter_the_supported_set_droppe
     """No comment under `ja4plus/` states a reason that a dropped interpreter carries.
 
     A comment states why the code is what it is. 28 sources named Python 3.9 as the reason
-    `from __future__ import annotations` stands at the top of the module, and #575 removed
-    that interpreter from the supported set. **A comment that states a superseded reason is
+    `from __future__ import annotations` stands at the top of the module. #575 removed that
+    interpreter from the supported set. **A comment that states a superseded reason is
     a defect**, because a reader takes it for the live reason. #578 repaired the 28 and this
     case holds the repair.
 
     The floor comes from `requires-python`, so a later drop fails this case and no repair
     leaves the prose of the package behind. The case reads a comment and no docstring.
+
+    **The case reads each source as `utf-8-sig`.** `tokenize` reports a `TokenError` on a
+    byte-order mark, so a source that carried one would error here rather than report the
+    comments it holds. The self-review of #578 raised that reading.
     """
     floor = floor_of(_project_text())
     offenders = {
         name: stale
         for name in package_sources()
-        for stale in [stale_comments((REPO_ROOT / name).read_text(encoding="utf-8"), floor)]
+        for stale in [stale_comments((REPO_ROOT / name).read_text(encoding="utf-8-sig"), floor)]
         if stale
     }
     assert offenders == {}, f"these comments name a dropped interpreter: {offenders}"
@@ -568,7 +572,7 @@ def test_the_comment_reader_reports_a_comment_that_names_a_dropped_interpreter()
 
 
 def test_the_comment_reader_passes_over_a_supported_interpreter() -> None:
-    """A comment that names the floor itself is no defect, so the reader reports it not."""
+    """A comment that names the floor itself is no defect, so the reader does not report it."""
     text = "# Python 3.10 evaluates this annotation.\nvalue = 1\n"
     assert stale_comments(text, (3, 10)) == []
 
@@ -584,6 +588,12 @@ def test_the_comment_reader_reads_a_two_digit_minor_version() -> None:
     text = "# Python 3.10 is the floor.\n"
     assert stale_comments(text, (3, 10)) == []
     assert stale_comments(text, (3, 11)) == ["# Python 3.10 is the floor."]
+
+
+def test_the_comment_reader_raises_on_a_text_that_tokenizes_as_no_python() -> None:
+    """A text the tokenizer refuses raises, so no source passes the sweep unread."""
+    with pytest.raises(tokenize.TokenError):
+        comments_of("value = (1\n")
 
 
 def test_the_source_reader_returns_nothing_for_a_pathspec_that_names_no_file() -> None:

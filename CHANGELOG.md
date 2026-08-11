@@ -15,8 +15,8 @@ Python 3.9 reached its end of life in October 2025, and #575 records the ruling.
 release promises that an environment which installed the version before it installs the new
 one, and this release cannot promise that. The version therefore takes a minor bump and
 never a patch bump. **The two breaking-change tables of the version 1.0.0 section hold
-version 0.6.0 against version 1.0.0**, so this section records the move and those tables do
-not. The entry of #575 states the same rule.
+version 0.6.0 against version 1.0.0.** This section records the move instead, because those
+tables do not. The entry of #575 states the same rule.
 
 Version 1.1.0 follows version 1.0.1, and no version stands between them. The date of the
 heading above is the date this release reaches `master`.
@@ -72,8 +72,12 @@ Version 1.1.0 carries the four changes of one batch, and it carries no other cha
   ``AssertionError: these comments name a dropped interpreter: {'ja4plus/__init__.py': ['# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`'], ...}``,
   reporting 28 entries. **A docstring records a past measurement, so the reader reads a
   comment alone**, and `test_the_comment_reader_reads_a_comment_and_no_docstring` states
-  that. Six more cases drive the two readers over text this file holds, and
+  that. Seven more cases drive the two readers over text this file holds, and
   `test_the_source_reader_finds_the_package` refuses a read of git that returns nothing.
+  **The sweep reads each source as `utf-8-sig`**, because `tokenize` reports a `TokenError`
+  on a byte-order mark and such a source would error rather than report its comments. The
+  self-review raised that reading, and it raised the source count of the floor comment,
+  which a read of 2026-08-10 puts at 31.
   **The change under `ja4plus/` is proven and never asserted**, and #484 records the
   technique. Every one of the 28 sources parses at the base commit `f34e31d` and at the head,
   each tree loses every docstring, and `ast.dump` compares the two. **27 of the 28 trees are
@@ -83,18 +87,18 @@ Version 1.1.0 carries the four changes of one batch, and it carries no other cha
   **The coverage count does not move**, because a comment carries no statement: `--cov=ja4plus`
   reports 4316 statements, 273 missed and 94 percent at the base commit and the same three
   readings here, which is the reading #548 took.
-  **The suite grows by the eight cases this round writes.** `pytest --collect-only` reads
-  6644 cases at the base commit `f34e31d` and 6652 here, and the unit suite reports 4676
+  **The suite grows by the nine cases this round writes.** `pytest --collect-only` reads
+  6644 cases at the base commit `f34e31d` and 6653 here, and the unit suite reports 4677
   passed, 7 skipped and 8 xfailed against 4668, 7 and 8 at the base.
   **Two proofs stand beside the five gates, because no continuous-integration job runs
   `.github/workflows/publish.yml`.** A build environment that holds neither `scapy` nor
   `cryptography` produced `ja4plus-1.1.0.tar.gz` and `ja4plus-1.1.0-py3-none-any.whl`, and
   each artifact reads `1.1.0` from its own metadata. **`Requires-Python` reads `>=3.10` on
-  both artifacts**, which is the promise this release changes, and reading it off the
-  artifact proves it rather than asserts it from `pyproject.toml`.
+  both artifacts**, which is the promise this release changes. The artifact proves that
+  value, and `pyproject.toml` only asserts it.
   `python -m tests.release_verification --dist dist` then ran the five checks of step 3 of
   `.claude/skills/release/SKILL.md` and reported the release ready to publish.
-  **`python -m tests.release_body` writes a body of 7382 characters against the
+  **`python -m tests.release_body` writes a body of 7686 characters against the
   limit of 125000**, and that body opens with the dated `## [1.1.0]` heading.
   **This round publishes nothing.** It creates no release, it writes no tag, and it starts
   no workflow.
