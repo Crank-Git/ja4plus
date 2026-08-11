@@ -40,8 +40,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   stated it as the cause before reading the error.** The tags stand on their own reading: a
   commit a workflow fetches is a commit some reference must hold. **The step fetches the
   identifier and never the tag**, because a tag moves and an identifier does not, and a
-  later sweep now finds the reference beside the commit it must keep.
-  **No file under `ja4plus/` changes and no fingerprint moves.**
+  later sweep now finds the reference beside the commit it must keep. **A read of the
+  provider on 2026-08-10 reports each tag as a commit and never a tag object**, so no
+  reader has to dereference a tag.
+  **The suite grows by the ten cases this round writes.** `pytest --collect-only` reads
+  6653 cases at the base commit `90b93e2` and 6663 here, and the unit suite reports 4687
+  passed, 7 skipped and 8 xfailed against 4677, 7 and 8 at the base. **The coverage count
+  does not move**, because this round adds no statement to the package: `--cov=ja4plus`
+  reports 4316 statements, 273 missed and 94 percent at the base commit and the same three
+  readings here.
+  **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
+  reports 1635 passed, 143 skipped and 140 xfailed.
 
 ## [1.1.0] - 2026-08-10
 
