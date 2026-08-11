@@ -39,7 +39,7 @@ Version 1.1.0 carries the four changes of one batch, and it carries no other cha
 
 - **The version reaches 1.1.0, and every interpreter comment of the package states a live
   reason** (#578). Round
-  TBD. **Two records carry this release.** `ja4plus/__init__.py:101` declares `1.1.0` as a
+  215. **Two records carry this release.** `ja4plus/__init__.py:101` declares `1.1.0` as a
   plain string, and `CHANGELOG.md` gains this dated `## [1.1.0] - 2026-08-10` section.
   `pyproject.toml` moves no line, because it declares no version and reads the value from
   the syntax tree of the package. **The plain string assignment stays**, because #67
@@ -2863,7 +2863,7 @@ holds every breaking change of this record against a row of that page.
 ### Changed
 
 - **Python 3.9 leaves the supported set** (#575). Round
-  TBD. **The user rules on 2026-08-10 that Python 3.9 leaves the set**, because it reached
+  212. **The user rules on 2026-08-10 that Python 3.9 leaves the set**, because it reached
   its end of life in October 2025. **Five dependabot pull requests each read
   `requires_python: >=3.10` against a matrix that ran Python 3.9**, so each one turned five
   jobs red and dependabot raised it again after every close. **Four records state the
@@ -2905,7 +2905,7 @@ holds every breaking change of this record against a row of that page.
   breaking-change tables of this record hold version 0.6.0 against version 1.0.0, so the
   release section of version 1.1.0 records this move and those tables do not.
 - **The three action bumps land, and the prose beside each pin moves with it** (#577). Round
-  TBD. Dependabot opened #556, #554 and #552, and each one crosses a major version.
+  215. Dependabot opened #556, #554 and #552, and each one crosses a major version.
   `actions/upload-pages-artifact` moves from 3.0.1 to 5.0.0, `actions/deploy-pages` moves
   from 4.0.5 to 5.0.0, and `actions/download-artifact` moves from 7.0.0 to 8.0.1. **Every
   pin comes from the provider, and none of the three comes from the number dependabot
@@ -2984,7 +2984,7 @@ holds every breaking change of this record against a row of that page.
   **No file under `ja4plus/` changes and no fingerprint moves.**
 
 - **The five development pins that Python 3.10 unblocks land** (#576). Round
-  TBD. **#575 dropped Python 3.9, and each of these five releases requires Python 3.10.**
+  214. **#575 dropped Python 3.9, and each of these five releases requires Python 3.10.**
   `pytest` reaches 9.1.1 (#555), `build` reaches 1.5.0 (#557), `twine` reaches 7.0.0
   (#553), `mkdocstrings` reaches 1.0.6 (#559) and `mkdocstrings-python` reaches 2.0.5
   (#558). **This round adopts each version in `pyproject.toml` and it merges no dependabot
