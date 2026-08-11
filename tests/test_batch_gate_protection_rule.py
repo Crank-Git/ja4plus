@@ -75,7 +75,7 @@ span. `floating_sentences` therefore matches `without_quoted(sentence)`, which i
 `tests/test_ruling_vocabulary.py` already holds. #548 records that reader and round 210
 repaired its fence tracking. **This file writes no second reader.**
 
-**Fourteen cases hold the repair, and two of them drive the live case.** One writes the
+**Fifteen cases hold the repair, and two of them drive the live case.** One writes the
 #586 sentence into the rule file and requires a pass. One writes
 `The provider currently holds eleven required contexts.` and requires a failure. Each one
 restores the file in a `finally` block and then reads the restored text.
@@ -90,10 +90,19 @@ A case here reads the state of the provider on the day it runs. It proves no sta
 about the day the file was written, and it proves nothing about a merge an administrator
 makes, because `enforce_admins` reads false.
 
+**The cut reads one sentence, so it pairs a backtick of that sentence alone.** Two
+readings follow, and each one reports a code span that a reader must read verbatim. A
+later round repairs them where the rule file meets one.
+
 **`sentences` splits the text before the cut reads it, so a code span that holds a full
 stop and a space reaches two sentences.** Each half then carries one backtick, `CODE_SPAN`
 pairs neither, and a barred word of that span reports. No sentence of the rule file holds
-such a span today, and a later round repairs this where one arrives.
+such a span today.
+
+**An unclosed code span moves every pair after it, so the next span reports.** A stray
+backtick is a defect of the Markdown, and a reader of that page meets a run of code set as
+prose beside this report. The self-review of #589 measured both readings, and
+`test_the_floating_date_reader_reports_a_code_span_after_an_unclosed_one` holds this one.
 
 **A fenced block stays in the text a case reads**, because `readable_text` cuts a
 blockquote, the `## Changelog` section and a superseded paragraph alone. The cut removes
@@ -261,7 +270,7 @@ FLOATING_DATE = re.compile(
 CODE_SPAN_SENTENCE = "The command costs 40 KB, after `git gc --prune=now` on each read."
 
 # A sentence that carries a barred word in prose. A live case writes it into the rule file
-# and restores the file, so the reader is proven in the direction that must still fail.
+# and restores the file, so that case proves the reader in the direction that must fail.
 PROSE_MUTATION = "The provider currently holds eleven required contexts."
 
 # The least count of sentences the floating-date reader reads in the rule file. **A reader
@@ -681,10 +690,15 @@ def steps_intro(body: str) -> str:
 def floating_sentences(text: str) -> List[str]:
     """Return every live sentence that dates itself against the day a reader reads it.
 
-    **The reader cuts every code span before it matches**, because `.claude/rules/ste.md`
-    reproduces code, configuration, commands, identifiers and paths verbatim. `--prune=now`
-    carries a barred word inside a span, because `=` closes a word boundary. #589 measured
-    that false report on a sentence #586 wrote.
+    **The reader cuts a closed code span of one sentence before it matches**, because
+    `.claude/rules/ste.md` reproduces code, configuration, commands, identifiers and paths
+    verbatim. `--prune=now` carries a barred word inside a span, because `=` closes a word
+    boundary. #589 measured that false report on a sentence #586 wrote.
+
+    **Warning: the cut reads one sentence, and it pairs a backtick of that sentence
+    alone.** A span that a full stop and a space split reports, and an unclosed span moves
+    every pair after it. `## What these cases cannot test` in the module docstring holds
+    the three readings, and a case measures each one.
 
     **The reader reports the sentence the file holds and never the cut form**, so a reader
     of the failure reads the text of the file.
@@ -1165,6 +1179,12 @@ def test_the_floating_date_reader_reports_a_code_span_that_a_full_stop_splits() 
     """A span that a full stop splits reaches two sentences, and the cut pairs no backtick."""
     sentence = "The step reads `git log --since=now. Read it.` and it names no day."
     assert floating_sentences(sentence) == ["The step reads `git log --since=now."]
+
+
+def test_the_floating_date_reader_reports_a_code_span_after_an_unclosed_one() -> None:
+    """An unclosed span moves every pair after it, so the next span reaches the report."""
+    sentence = "The reader names `oops as a stray mark, and it reads `--prune=now` as prose."
+    assert floating_sentences(sentence) == [sentence]
 
 
 def test_the_floating_date_reader_reads_the_sentences_of_the_rule_file() -> None:
