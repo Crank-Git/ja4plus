@@ -1,7 +1,7 @@
 r"""The one reader of a dependency block of `pyproject.toml`.
 
 A dependency block holds one entry for each distribution. This project writes a comment
-above each entry that a decision chose. **A reader that collects every quoted substring of
+above each entry that a ruling chose. **A reader that collects every quoted substring of
 the block returns a comment fragment as an entry.** #452 records that defect. The `dev`
 extra carries the command `pytest tests/ -m "not spec_validation"` inside one comment. The
 earlier reader returned `not spec_validation` as an entry of that extra.

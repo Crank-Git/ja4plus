@@ -592,7 +592,7 @@ def test_the_migration_page_states_that_the_trailing_fingerprint_moves_no_value(
     produces one more JA4SSH value than version 0.6.0 produced. #214 records that change, and
     it sits in a paragraph under the table because it adds a value rather than move one.
     **A reader who counts the paragraph as a move reaches eight where the record states
-    seven**, so the page states the decision rather than leave it to the reader.
+    seven**, so the page states the ruling rather than leave it to the reader.
     """
     section = _migration_section(MIGRATION_FINGERPRINT_HEADING)
     assert TRAILING_DECISION.search(section), (

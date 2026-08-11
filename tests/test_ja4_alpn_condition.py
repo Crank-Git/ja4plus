@@ -15,7 +15,7 @@ a control byte as the tshark escape text, so it reads `h\\x1f` as five character
 writes `hf`. The FoxIO Python implementation reads the byte. The two also disagree on a
 byte above `0x7E` and on a one-byte value.
 
-#162 records the user decision of 2026-08-07: the values outside the range stay as they
+#162 records the user ruling of 2026-08-07: the values outside the range stay as they
 are. The capture now carries the disputed inputs as well as the agreed ones, so the
 divergence is a comparison that runs. `STREAMS` holds the measured value of both FoxIO
 implementations and the produced value, one row per stream. The tests below compare all
@@ -35,7 +35,7 @@ VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 CAPTURE_PATH = VECTORS_DIR / "alpn-condition.pcap"
 EXPECTED_PATH = VECTORS_DIR / "alpn-condition.pcap.json"
 
-# The issue that records the decision, and the first client port of the capture.
+# The issue that records the ruling, and the first client port of the capture.
 DECISION_ISSUE = 162
 FIRST_CLIENT_PORT = 44401
 

@@ -15,7 +15,7 @@ import ja4plus
 from ja4plus import processor as processor_module
 
 # The interface version 1.0.0 promises. A name here stays until version 2.0.0, so the
-# list is the decision this test guards and not a copy of `dir(ja4plus)`.
+# list is the ruling this test guards and not a copy of `dir(ja4plus)`.
 EXPECTED_PUBLIC_NAMES = [
     "FingerprintResult",
     "Processor",

@@ -1,6 +1,10 @@
 # How to move from version 0.6.0 to version 1.0.0
 
-Version 1.0.0 follows version 0.6.0, and no version stands between them.
+Where `ja4plus --version` reports 0.6.0, read this page before you install version 1.0.0.
+That command names the version of the package your environment holds.
+
+This repository declares version 1.0.1, which is a patch release of version 1.0.0. It
+moves no interface and no fingerprint, so every row below reads the same at version 1.0.1.
 
 This page states what a reader must change. It lists each breaking change with the old
 form, the new form and the reason. `CHANGELOG.md` and the `## Changelog` table of

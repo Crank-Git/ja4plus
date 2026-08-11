@@ -1,4 +1,4 @@
-"""Tests that the `dev` extra states the shape a recorded decision chose for every entry.
+"""Tests that the `dev` extra states the shape a recorded ruling chose for every entry.
 
 `FR-foundation-7` and `FR-foundation-8` name `ruff check` and `ruff format --check` as
 gates of every pull request. Neither one names a version. `pyproject.toml` declared
@@ -9,7 +9,7 @@ gate read a different tool on two days.
 and 82 `I001` findings against `ruff` 0.14.5, and 54, 27 and 76 against 0.16.2. Every
 number differed on an unchanged tree. A gate whose result depends on the day it runs is a
 comparison that measures something other than what it names. #378 records the defect and
-the decision.
+the ruling.
 
 **The file keeps its name and it now reads the whole extra.** #378 opened it for the lint
 pin alone, and #446 widened it rather than opening a second reader over the same list.
@@ -97,7 +97,7 @@ FLOATING = ("mypy",)
 # The `dev` extra holds at least this many entries. **An aggregate over an empty set
 # passes**, so a reader that collects too few entries fails here rather than reporting no
 # offender. `dependency_entries` refuses a block of no entry, and this floor holds the
-# count that the recorded decisions of #378 and #446 cover.
+# count that the recorded rulings of #378 and #446 cover.
 MINIMUM_DEV_ENTRIES = 6
 
 # The line that opens the development extra of `pyproject.toml`.
@@ -370,7 +370,7 @@ def test_the_floating_entry_records_the_defect_a_pin_would_hide(distribution: st
 
 
 def test_the_decision_covers_every_entry_of_the_dev_extra() -> None:
-    """Every entry of the `dev` extra carries a shape that a recorded decision chose.
+    """Every entry of the `dev` extra carries a shape that a recorded ruling chose.
 
     A new entry that nobody ruled on reaches this case rather than the next install. The
     floor fails a reader that collected no entry, because an aggregate over an empty set
