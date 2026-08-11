@@ -18,6 +18,12 @@ superseded.
 The user added `skip-gate` to the branch protection rule between the two reads. #546 held
 the file to the new reading, and it weakened no assertion of this file.
 
+**#575 dropped Python 3.9 from the test matrix, so the rule requires eleven contexts
+again.** `test (ubuntu-latest, 3.9)` is the context that leaves, because no job publishes
+it any more. **The user removes it at the provider, and no agent removes it.** The two live
+cases therefore fail between the merge of #575 and that change, and each one names the
+context it found. That failure is correct, and #575 weakened no assertion to remove it.
+
 ## Why a case reads the provider
 
 Prose carries no other gate. A case that read the file twice would pass on a file that
@@ -96,12 +102,11 @@ PROTECTION_COMMAND = ("gh", "api", "repos/Crank-Git/ja4plus/branches/dev/protect
 # never wrote. A case therefore reads the number and not the name alone.
 REQUIRED_APP_ID = 15368
 
-# The read of 2026-08-10 that #546 took reports these twelve contexts, each carrying
-# `app_id` 15368. A live case compares the provider against the list the file carries, and
-# this tuple holds the file to the reading where no provider answers.
+# The eleven contexts this rule requires after #575, each carrying `app_id` 15368. A live
+# case compares the provider against the list the file carries, and this tuple holds the
+# file to the rule where no provider answers.
 REQUIRED_CONTEXTS = (
     "lint",
-    "test (ubuntu-latest, 3.9)",
     "test (ubuntu-latest, 3.10)",
     "test (ubuntu-latest, 3.11)",
     "test (ubuntu-latest, 3.12)",
@@ -118,9 +123,8 @@ REQUIRED_CONTEXTS = (
 # paths, so a batch that touches none of them creates no run of it.
 UNREQUIRED_CONTEXT = "build"
 
-# The twelfth required context, which the user added on 2026-08-10. A reader who meets a
-# red check needs the condition that turns it red, so a case holds that statement beside
-# the name.
+# The required context the user added on 2026-08-10. A reader who meets a red check needs
+# the condition that turns it red, so a case holds that statement beside the name.
 NEW_CONTEXT = "skip-gate"
 
 # The round that built the job which publishes the twelfth context. A reader follows this
@@ -783,8 +787,8 @@ def test_the_rule_file_states_why_the_strict_reading_suits_the_batch_model() -> 
 # --- The list of check names ----------------------------------------------------------
 
 
-def test_the_rule_file_lists_the_twelve_required_check_names() -> None:
-    """The rule file lists exactly the twelve contexts the read of 2026-08-10 reports."""
+def test_the_rule_file_lists_the_eleven_required_check_names() -> None:
+    """The rule file lists exactly the eleven contexts this rule requires after #575."""
     listed = listed_contexts()
     assert listed == list(REQUIRED_CONTEXTS), (
         f"{RULE_FILE} lists {listed}, and the read of {LIVE_READ_DATE} reports "
@@ -818,7 +822,7 @@ def test_the_rule_file_keeps_the_warning_that_bars_the_unrequired_check() -> Non
     )
 
 
-def test_the_rule_file_states_what_the_twelfth_required_context_refuses() -> None:
+def test_the_rule_file_states_what_the_added_required_context_refuses() -> None:
     """The protection section states the condition that turns `skip-gate` red."""
     body = section(RULE_FILE.read_text(), PROTECTION_HEADING)
     prose = prose_lines(body)
@@ -911,7 +915,7 @@ LIVE_PHRASINGS = (
     "`dev` carries a required status check, and the provider refuses a merge that no "
     "successful run covers.",
     "The provider holds a required status check on `dev`.",
-    "A read of 2026-08-10 reports that `dev` carries twelve required status checks.",
+    "A read of 2026-08-10 reports that `dev` carries eleven required status checks.",
 )
 
 CONTROL_SENTENCES = (
@@ -1022,7 +1026,7 @@ def test_the_section_reader_reads_an_issue_reference_as_no_heading() -> None:
 FLOATING_SENTENCES = (
     "The read of 2026-08-10 reports no `build` context, so the rule holds this warning today.",
     "A keyword-free head is the one head that now starts one.",
-    "The provider currently holds twelve required contexts.",
+    "The provider currently holds eleven required contexts.",
     "The ruleset list is empty at the moment.",
     # A self-review of #511 read these two sentences past the first form of the pattern.
     "The rule presently binds every contributor.",
@@ -1207,7 +1211,7 @@ def _refuse_every_call(*args: object, **kwargs: object) -> subprocess.CompletedP
 
 
 def test_the_provider_requires_the_contexts_the_rule_file_lists() -> None:
-    """The provider requires the twelve contexts the rule file lists."""
+    """The provider requires the eleven contexts the rule file lists."""
     listed: Sequence[str] = listed_contexts()
     # The floor reads with no network. Two empty sets compare equal, so a file that lists
     # no context would otherwise pass this case against any provider.
@@ -1216,7 +1220,7 @@ def test_the_provider_requires_the_contexts_the_rule_file_lists() -> None:
     )
     reading = reading_or_skip()
     held = provider_contexts(reading)
-    assert held, "the provider requires no context, and the rule file states twelve"
+    assert held, "the provider requires no context, and the rule file states eleven"
     assert sorted(held) == sorted(listed), (
         f"the provider requires {sorted(held)} and {RULE_FILE} lists {sorted(listed)}"
     )
@@ -1246,7 +1250,7 @@ def test_the_provider_carries_the_stated_application_on_every_context() -> None:
     )
     reading = reading_or_skip()
     held = check_applications(reading)
-    assert held, "the provider holds no `checks` entry, and the rule file lists twelve contexts"
+    assert held, "the provider holds no `checks` entry, and the rule file lists eleven contexts"
     assert sorted(held) == sorted(listed), (
         f"the provider publishes {sorted(held)} and {RULE_FILE} lists {sorted(listed)}"
     )

@@ -664,8 +664,8 @@ def test_the_migration_page_states_that_the_collector_module_is_removed() -> Non
 def test_the_migration_page_states_the_python_floor_the_project_requires() -> None:
     """The page states the `requires-python` floor `pyproject.toml` sets.
 
-    The move from Python 3.8 to Python 3.9 is a breaking change, and #65 found that no
-    Changelog round records it.
+    A move of the Python floor is a breaking change, and #65 found that no Changelog round
+    recorded the move from Python 3.8 to Python 3.9.
     """
     pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
     found = re.search(r'requires-python\s*=\s*"[><=]*(\d+\.\d+)"', pyproject)

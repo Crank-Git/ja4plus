@@ -3,8 +3,10 @@
 Where `ja4plus --version` reports 0.6.0, read this page before you install version 1.0.0.
 That command names the version of the package your environment holds.
 
-This repository declares version 1.0.1, which is a patch release of version 1.0.0. It
-moves no interface and no fingerprint, so every row below reads the same at version 1.0.1.
+This repository declares version 1.1.0, which is a minor release of version 1.0.0.
+**Python 3.9 leaves the supported set at version 1.1.0**, and version 1.0.1 is the release
+that still installs on it. Version 1.1.0 moves no other interface and no fingerprint, so
+every row below reads the same at version 1.1.0.
 
 This page states what a reader must change. It lists each breaking change with the old
 form, the new form and the reason. `CHANGELOG.md` and the `## Changelog` table of
@@ -33,6 +35,12 @@ sets of results.
 | The privilege check of the monitor | The monitor reads `os.geteuid()`, which raises an `AttributeError` on Windows. | The monitor opens the capture socket and reports the failure it meets, naming `CAP_NET_RAW` or `/dev/bpf*`. | The root check answered the wrong question, and it broke the import on Windows. | Round 104, #56 |
 | The certificate readers | `compute_ja4x_from_pem` and `compute_ja4x_from_der` catch `Exception`, so they return `None` for every input they cannot read. | Each one names the errors it expects. An input that returned `None` in version 0.6.0 can now raise. | A bare `Exception` handler hides a defect of the caller, and `CLAUDE.md` binds a reader to the errors it expects. | Round 133, #319 |
 | The Python floor | `requires-python` is `>=3.8`. | `requires-python` is `>=3.9`, and continuous integration runs Python 3.9 through Python 3.13. | Python 3.8 reached its end of life in October 2024. | Round 135, #76 |
+
+**The Python floor moved again after version 1.0.0.** `requires-python` reads `>=3.10`,
+and continuous integration runs Python 3.10 through Python 3.13. Python 3.9 reached its
+end of life in October 2025, and #575 records the ruling. **Version 1.1.0 publishes that
+move**, so an environment that runs Python 3.9 installs version 1.0.1 and no later
+release.
 
 ## The fingerprints that move
 

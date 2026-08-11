@@ -87,7 +87,7 @@ python -m tests.skip_gate --reports <download directory>
 the condition the case needs.** A capture grant is such a condition. Every entry names a
 reason, and the gate fails an entry that names none.
 
-### The gate reads ten reports, and #530 measured what the six missed
+### The gate reads every report, and #530 measured what the matrix missed
 
 **Warning: a reader that covers part of the suite reports a clean corpus over the part it
 cannot see.** #524 bound the gate to the six reports of the `test` job. That job runs
@@ -104,7 +104,7 @@ cannot see.** #524 bound the gate to the six reports of the `test` job. That job
 
 **The suite holds 6111 cases and the six reports held 4150 of them.** The gate therefore
 reported a clean corpus over 1961 cases, which is 32 percent of the suite. The `skip-gate`
-job waits for all five jobs and it downloads ten reports.
+job waits for all five jobs and it downloads nine reports.
 
 **The `fuzz` job and the `samples` job added no case at that read, and the gate reads them
 anyway.** A gate bound to the jobs that one read finds goes stale on the day a job changes
@@ -161,10 +161,10 @@ skip against the checkout before you read it as a limit of the runner.**
 
 **An install step is such a repair too, and #529 made it.** `pymdownx` reaches a job through
 the `docs` extra, and every job installed the `dev` extra alone. The `test` job installs the
-`docs` extra on the `ubuntu-latest` job with Python 3.13, so one job of the six runs the
+`docs` extra on the `ubuntu-latest` job with Python 3.13, so one job of the five runs the
 documentation slug case. **Read a universal skip against the installed extras as well.**
 
-**Warning: `skip-gate` is a twelfth check, and the required list below holds twelve names.**
+**Warning: `skip-gate` is a required check, and the required list below holds its name.**
 A red `skip-gate` fails the run, so the batch gate refuses the merge on the run conclusion.
 The user added `skip-gate` to the branch protection rule of `dev` on 2026-08-10, and that
 change is the user's alone. #546 records the read that measured it. #524 records the
@@ -339,15 +339,17 @@ round 197 added the `skip-gate` job.
 **`dev` carries a required status check, and the provider refuses a contributor merge that
 no successful run of every required context covers.** `enforce_admins` reads `false`, so
 the rule binds no repository administrator and an administrator merge reaches `dev` with no
-run. The subsection below holds that reading. The read of 2026-08-10 that #546 took reports
-the state. #468 turned the rule on. #480 took the first measurement and #546 re-took it.
+run. The subsection below holds that reading. #468 turned the rule on. #480 took the first
+measurement and #546 re-took it. **#575 dropped the Python 3.9 job of the matrix on
+2026-08-10, so the rule requires eleven contexts and the user removes the twelfth at the
+provider.** The table states the reading each call returns once the user makes that change.
 
 | Read | Result |
 |---|---|
-| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, twelve required contexts |
+| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, eleven required contexts |
 | `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` |
 
-Each of the twelve contexts carries `app_id` 15368, and the provider holds that number
+Each of the eleven contexts carries `app_id` 15368, and the provider holds that number
 under `required_status_checks.checks[]`. `required_status_checks.contexts` holds the names
 alone, so a reader of that list reads no application at all. No context reads `build` and
 none reads the bare `test`. The ruleset list stays empty, so the branch protection rule is the
@@ -378,9 +380,29 @@ rather than rewritten.
 | `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, eleven required contexts | `200`, twelve required contexts |
 | `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` | `[]` |
 
+**The read of 2026-08-10 that #546 took reported twelve required contexts, and this record
+supersedes it.** #575 dropped Python 3.9 from the test matrix, so no job publishes
+`test (ubuntu-latest, 3.9)` and that context never reports again. **The user removes the
+context at the provider, and no agent removes it.** The sentence below is the superseded
+wording, quoted rather than rewritten.
+
+> Each of the twelve contexts carries `app_id` 15368, and the provider holds that number
+> under `required_status_checks.checks[]`.
+
+| Read | 2026-08-10, #546, superseded | The rule after #575 |
+|---|---|---|
+| `gh api repos/Crank-Git/ja4plus/branches/dev/protection` | `200`, twelve required contexts | `200`, eleven required contexts |
+| `gh api repos/Crank-Git/ja4plus/rulesets` | `[]` | `[]` |
+
 **Warning: two reads of 2026-08-10 stand in this section, so read the issue beside the
 date.** #480 took the first and #546 took the second. Every live sentence of this section
-states the reading of #546.
+states the rule that #575 leaves.
+
+**Warning: two cases of `tests/test_batch_gate_protection_rule.py` fail between the merge
+of #575 and the change at the provider.** `test_the_provider_requires_the_contexts_the_rule_file_lists`
+and `test_the_provider_carries_the_stated_application_on_every_context` read the provider
+against this list. That failure is correct, and it clears when the user removes the
+context.
 
 **Read the local gate before every batch merge, because the provider rule stands beside it
 and replaces it nowhere.** `python -m tests.batch_gate --pr <number>` reads the same
@@ -407,17 +429,15 @@ read the rule at the provider, and they change nothing.
 1. Open `https://github.com/Crank-Git/ja4plus/settings/branches`.
 2. Open the branch protection rule for `dev`.
 3. Read `Require status checks to pass before merging`, which is on.
-4. Read the twelve check names of the list below against the rule.
+4. Read the eleven check names of the list below against the rule.
 
 **Warning: a check name is not a job name.** The `test` job of
 `.github/workflows/test.yml` runs a matrix, so the provider publishes one check for each
-combination. A required check named `test` matches nothing. These are the twelve names the
-read of 2026-08-10 that #546 took reports. The record above holds the eleven names of the
-#480 read.
+combination. A required check named `test` matches nothing. These are the eleven names this
+rule requires after #575. The record above holds the twelve names of the #546 read.
 
 ```
 lint
-test (ubuntu-latest, 3.9)
 test (ubuntu-latest, 3.10)
 test (ubuntu-latest, 3.11)
 test (ubuntu-latest, 3.12)
@@ -430,7 +450,7 @@ conformance
 skip-gate
 ```
 
-**`skip-gate` is the twelfth name.** Round 201 built the job that publishes it. The job
+**`skip-gate` is the eleventh name.** Round 201 built the job that publishes it. The job
 downloads the report of every job that runs cases. It fails a case that every one of those
 reports records as skipped. `## A case that skips on every job fails the run` above holds
 the whole condition. **A red `skip-gate` refuses the merge on the same rule as a red
@@ -447,7 +467,7 @@ otherwise reads by hand.
 `tests/test_batch_gate_protection_rule.py` reads this section against
 `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, so a change at the provider
 fails a case here rather than leaving a reader with a stale rule. One case reads
-`required_status_checks.checks[]` and requires `app_id` 15368 on each of the twelve
+`required_status_checks.checks[]` and requires `app_id` 15368 on each of the eleven
 contexts, so a context of another application fails that case. **Where the call cannot be
 made, every live case skips and it does not pass.**
 

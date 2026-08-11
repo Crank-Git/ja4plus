@@ -482,7 +482,7 @@ pytest tests/ -v
 
 ### Requirements
 
-- Python 3.9+
+- Python 3.10+
 - [scapy](https://scapy.net/) >= 2.4.0
 - [cryptography](https://cryptography.io/) >= 42.0.0
 

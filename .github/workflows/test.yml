@@ -80,7 +80,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         include:
           - os: macos-latest
             python-version: "3.12"
@@ -221,16 +221,16 @@ jobs:
         # not. The census of #524 read that case as a class c site. It skipped on all six
         # jobs and no limit of the runner explained it. #529 removed the finding.
         #
-        # **The extra reaches one job and not six.** `griffe` 2.1.0 requires Python 3.10 and
-        # the matrix runs Python 3.9, so the Python 3.9 job can never install this extra.
-        # The skip gate reads the union of the six reports, so one run of the case is the
-        # whole requirement. Five more installs buy nothing. A read of 2026-08-10 measured
-        # 28 packages and 125476 KB for this step, against 197200 KB for the `dev` extra
-        # alone.
+        # **The extra reaches one job and not five.** The skip gate reads the union of the
+        # five reports, so one run of the case is the whole requirement. Four more installs
+        # buy nothing. A read of 2026-08-10 measured 28 packages and 125476 KB for this
+        # step, against 197200 KB for the `dev` extra alone. #575 removed the second
+        # reason: `griffe` 2.1.0 requires Python 3.10, which every interpreter of the
+        # matrix now meets.
         #
-        # **The step names one job, so the matrix keeps its six check names.** A matrix
+        # **The step names one job, so the matrix keeps its five check names.** A matrix
         # variable would reach the job name, and the branch protection rule of `dev` holds
-        # each name of the twelve required contexts.
+        # each name of the eleven required contexts.
         #
         # **`.github/workflows/docs-build.yml` runs no case of `tests/`, and it stays that
         # way.** That job measures the committed pins in an empty environment, it filters
@@ -275,10 +275,10 @@ jobs:
     #
     # **One job reads no such case, because one job reads one environment.** A macOS case
     # that skips on Linux is correct, and a Linux case that skips on macOS is correct. The
-    # union of the ten reports is the first reading that tells a correct skip from a case
+    # union of the nine reports is the first reading that tells a correct skip from a case
     # the suite runs nowhere.
     #
-    # **`needs` holds this job behind every job that runs cases**, so the download finds ten
+    # **`needs` holds this job behind every job that runs cases**, so the download finds nine
     # reports. A job that fails leaves this job unrun, and the run then fails on that job
     # instead.
     #
@@ -312,15 +312,26 @@ jobs:
       - name: Download the skip report of every job that runs cases
         # `merge-multiple` stays at its default of false, so each artifact extracts into a
         # directory named after it and the gate labels each report by that name. Verified
-        # against https://github.com/actions/download-artifact/tree/v7.0.0 (retrieved
+        # against https://github.com/actions/download-artifact/tree/v8.0.1 (retrieved
         # 2026-08-10).
         #
-        # The pattern matches the six `test-results-*` artifacts and the four others:
+        # **Version 8 moves no input this step names, and #577 read both release notes
+        # against this step.** `pattern` keeps its description, `merge-multiple` keeps the
+        # default `false` and the same two layouts, and `path` keeps its meaning. Version 8
+        # adds the inputs `skip-decompress` and `digest-mismatch`, and this step names
+        # neither one.
+        #
+        # **Warning: `digest-mismatch` defaults to `error`, so a report whose digest
+        # differs from the record of the provider now fails this job.** Version 7 logged a
+        # warning in that state. A failure here refuses the merge, which is the reading
+        # this project wants from a report it cannot trust.
+        #
+        # The pattern matches the five `test-results-*` artifacts and the four others:
         # `conformance-results`, `fuzz-results`, `installed-wheel-results` and
         # `sample-results`. `tests/test_skip_gate.py` reads every uploaded artifact name of
         # this file against this pattern, so a new job that writes a report either matches
         # it or fails a case.
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           pattern: "*-results*"
           path: skip-reports

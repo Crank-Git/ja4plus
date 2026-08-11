@@ -11,6 +11,17 @@ it removed and what it requires, so a change that no round records fails here. A
 who raises the Python floor again, or who removes another module, meets this file before
 a reader of the record meets the gap.
 
+## Why the two floor cases read an unassigned record
+
+**A member writes `TBD` in place of its round number, and the project manager assigns the
+number at the batch gate.** #575 moved the Python floor and met the result: a reader that
+demanded a number could not pass on the branch that made the move, and no later branch
+makes it again. `FLOOR_ROUND` and `FLOOR_ROW` therefore accept `TBD` beside a number.
+
+**An entry that records no round at all still fails.** `tests/test_specification_changelog.py`
+requires the rounds 1 to the row count, each on one row, so a `TBD` reaches `dev` nowhere.
+The module cases keep `CHANGELOG_ROUND`, because a removed module is no move of one batch.
+
 The module census below reads the released version. `git ls-tree -r --name-only v0.6.0
 ja4plus/` reports 26 tracked paths, and 25 of them are modules. `ja4plus/collector.py`
 is the one module the census holds that the package no longer carries, and #191 removed
@@ -67,8 +78,12 @@ RELEASED_MODULE_COUNT = 25
 # A Changelog row of the specification opens with the round and the date, as
 # `| 71 | 2026-08-08 | #191 landed and ... |`. The date parts a Changelog row from every
 # other table of the page. An unassigned row carries the literal `TBD`, and it records no
-# round yet, so these cases read a numbered row alone.
+# round yet, so the module cases read a numbered row alone.
 SPECIFICATION_ROW = re.compile(r"^\|\s*(\d+)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|")
+
+# The same row, plus the unassigned form the branch that moves the floor writes. The
+# section above states why the two floor cases read it.
+FLOOR_ROW = re.compile(r"^\|\s*(\d+|TBD)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|")
 
 # The specification held this many numbered Changelog rows when #395 landed. A parser
 # that reads nothing passes every case below, so the floor fails such a parser.
@@ -82,6 +97,10 @@ CHANGELOG_HEADING = re.compile(r"^###\s+(.+?)\s*$")
 # **`\s+` carries this pattern and a literal space breaks it.** #302 records the defect.
 # The number must read as a number here, because `Round TBD.` records no round.
 CHANGELOG_ROUND = re.compile(r"Round\s+`?(\d+)`?\.")
+
+# The same sentence, plus the unassigned form. `Round TBD.` wraps at 90 columns as `Round`
+# on one line and `  TBD.` on the next, so `\s+` carries this pattern too.
+FLOOR_ROUND = re.compile(r"Round\s+`?(\d+|TBD)`?\.")
 
 # `requires-python` states the Python floor of the package, as `requires-python = ">=3.9"`.
 REQUIRES_PYTHON = re.compile(r'^requires-python\s*=\s*"([^"]+)"', re.MULTILINE)
@@ -118,6 +137,30 @@ def _changelog_entries_under(heading: str) -> list[str]:
     if collected:
         entries.append("\n".join(collected))
     return entries
+
+
+def _recorded_specification_rows() -> list[str]:
+    """Return every Changelog row of the specification that records a round.
+
+    A row of an unassigned round carries `TBD`, which the batch gate replaces with a
+    number. The two floor cases read this list.
+
+    Returns:
+        One string for each row, holding the whole row text.
+
+    Raises:
+        AssertionError: The page holds fewer rows than the recorded floor.
+    """
+    rows = [
+        line
+        for line in SPECIFICATION.read_text(encoding="utf-8").splitlines()
+        if FLOOR_ROW.match(line)
+    ]
+    assert len(rows) >= MINIMUM_SPECIFICATION_ROWS, (
+        f"the parser read {len(rows)} recorded Changelog rows, "
+        f"and the floor is {MINIMUM_SPECIFICATION_ROWS}"
+    )
+    return rows
 
 
 def _numbered_specification_rows() -> list[str]:
@@ -219,10 +262,10 @@ def test_the_changelog_records_the_python_floor_the_package_states() -> None:
     recorded = [
         entry
         for entry in CHANGELOG.read_text(encoding="utf-8").split("\n- ")
-        if "requires-python" in entry and floor in entry and CHANGELOG_ROUND.search(entry)
+        if "requires-python" in entry and floor in entry and FLOOR_ROUND.search(entry)
     ]
     assert recorded != [], (
-        f"CHANGELOG.md holds no numbered entry that names requires-python and {floor}"
+        f"CHANGELOG.md holds no recorded entry that names requires-python and {floor}"
     )
 
 
@@ -230,8 +273,22 @@ def test_the_specification_records_the_python_floor_the_package_states() -> None
     """The Changelog table of `docs/specs/spec.md` names `requires-python` and its value."""
     floor = _python_floor()
     recorded = [
-        row for row in _numbered_specification_rows() if "requires-python" in row and floor in row
+        row for row in _recorded_specification_rows() if "requires-python" in row and floor in row
     ]
     assert recorded != [], (
-        f"the Changelog table holds no numbered row that names requires-python and {floor}"
+        f"the Changelog table holds no recorded row that names requires-python and {floor}"
     )
+
+
+def test_the_floor_reader_reads_no_entry_that_records_no_round_at_all() -> None:
+    """An entry with no round sentence fails the reader, and an unassigned one passes."""
+    assert FLOOR_ROUND.search("- **A change** (#3). It records no round.") is None
+    assert FLOOR_ROUND.search("- **A change** (#3). Round\n  TBD.") is not None
+    assert FLOOR_ROUND.search("- **A change** (#3). Round 42.") is not None
+
+
+def test_the_floor_row_reader_reads_no_row_that_records_no_round_at_all() -> None:
+    """A row with no round cell fails the reader, and an unassigned one passes."""
+    assert FLOOR_ROW.match("| | 2026-08-10 | #3 landed. |") is None
+    assert FLOOR_ROW.match("| TBD | 2026-08-10 | #3 landed. |") is not None
+    assert FLOOR_ROW.match("| 42 | 2026-08-10 | #3 landed. |") is not None

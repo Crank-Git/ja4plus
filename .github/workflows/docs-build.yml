@@ -5,10 +5,13 @@ name: Documentation
 # a case that imports `mkdocs` reports that environment and not `pyproject.toml`. The
 # runner starts empty, so the install here resolves the `docs` extra alone.
 #
-# #391 records the defect that made this job necessary. `mkdocstrings==1.0.6` is an exact
-# pin and an incompatible one: it installs, and the build then fails with
+# #391 records the defect that made this job necessary. `mkdocstrings==1.0.6` beside
+# `mkdocstrings-python==1.15.0` was an exact pin and an incompatible one: it installed, and
+# the build then failed with
 # `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. Every case of
-# `tests/test_documentation_site.py` passed while the site did not build.
+# `tests/test_documentation_site.py` passed while the site did not build. #576 took the
+# handler to the 2.x line, which imports from `mkdocstrings` directly, and took the
+# generator to 1.0.6 in the same commit.
 #
 # **Never add the `dev` extra to the install step.** It brings a second resolution into
 # the environment, the release installs no such set, and a job that installs it measures
@@ -55,7 +58,8 @@ jobs:
 
       - name: Set up Python
         # The `docs` extra needs Python 3.10 or later, because `griffe` 2.1.0 requires it.
-        # The package floor of Python 3.9 stays, because no user builds the site.
+        # #575 moved the package floor to Python 3.10, so this job needs no interpreter that
+        # the test matrix leaves out.
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.13"
@@ -99,10 +103,23 @@ jobs:
         # this step runs for the publish workflow alone.** A pull request builds the site
         # to prove the pins, and it publishes nothing.
         #
-        # The documentation of both actions states this pair: `upload-pages-artifact` v3
-        # with `deploy-pages` v4. Verified against
-        # https://github.com/actions/upload-pages-artifact, retrieved 2026-08-09.
+        # **The two Pages actions agree on an artifact and never on a version number.**
+        # The artifact carries the name `github-pages`, and it holds one gzip archive of
+        # one tar file. Verified against
+        # https://github.com/actions/upload-pages-artifact/tree/v5.0.0 (retrieved
+        # 2026-08-10).
+        #
+        # **Warning: the usage example of that page is stale.** It still names version 3 of
+        # this action and version 4 of the deployment action. The release list of each
+        # repository holds 5.0.0, and #577 took the pin from the release list.
+        # This project pins `upload-pages-artifact` v5.0.0 beside `deploy-pages` v5.0.0.
+        #
+        # **Version 4 drops a hidden file from the archive, and version 5 adds the
+        # `include-hidden-files` input that keeps one.** The input stays at its default of
+        # false, because the built site holds no hidden file. #577 ran
+        # `mkdocs build --strict` on 2026-08-10 and counted 0 names that open with a period
+        # over 81 files.
         if: ${{ inputs.upload_pages_artifact }}
-        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3.0.1
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
           path: site

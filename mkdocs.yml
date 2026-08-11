@@ -13,8 +13,8 @@
 #
 # Verified against https://www.mkdocs.org/user-guide/configuration/ (MkDocs 1.6),
 # https://squidfunk.github.io/mkdocs-material/ (Material 9.7.7) and
-# https://mkdocstrings.github.io/python/usage/ (mkdocstrings-python 1.15.0),
-# retrieved 2026-08-09.
+# https://mkdocstrings.github.io/python/usage/ (mkdocstrings-python 2.0.5),
+# retrieved 2026-08-10.
 
 site_name: ja4plus
 site_description: >-
