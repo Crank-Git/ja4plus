@@ -14,8 +14,8 @@ comment.
 ## Why this module reads lines and no TOML
 
 **`tomllib` reaches the standard library at Python 3.11.** `pyproject.toml` states
-`requires-python = ">=3.9"`, and `FR-foundation-13` runs the test matrix from Python 3.9.
-A case that imports `tomllib` therefore fails two jobs of that matrix. The `dev` extra
+`requires-python = ">=3.10"`, and `FR-foundation-13` runs the test matrix from Python
+3.10. A case that imports `tomllib` therefore fails one job of that matrix. The `dev` extra
 names no `tomli`, so no third-party reader is present either. This module reads the block
 as lines, and it drops a comment the way TOML drops one.
 
