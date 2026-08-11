@@ -6,6 +6,55 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The floating-date reader cuts a code span before it matches** (#589). Round
+  TBD. **`floating_sentences` of `tests/test_batch_gate_protection_rule.py` read a code
+  span as prose**, so an identifier that holds a barred word failed a case that no prose
+  sentence broke. #586 wrote a sentence that states the cost of a fetch and names the
+  command `git gc --prune=now`, and
+  `test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader` reported it:
+  `AssertionError: .claude/rules/batch-gate.md dates these sentences against the day a
+  reader reads them, and this file records the cost of a reading quoted as a standing
+  fact: ['The command costs 40 KB, after `git gc --prune=now` on each read.']`. **The
+  sentence names no reading day.** `FLOATING_DATE` holds `\bnow\b`, and `--prune=now`
+  carries that word inside a code span, because `=` closes a word boundary.
+  **`.claude/rules/ste.md` reproduces code, configuration, commands, identifiers and paths
+  verbatim**, under `## What is not rewritten`, so a reader that measures prose reads no
+  code span. **This round wrote no second reader**, and it called `without_quoted` of
+  `tests/test_ruling_vocabulary.py`, which #548 records and round 210 repaired. **The
+  reader reports the sentence the file holds and never the cut form**, so the cut reaches
+  the match alone and a reader of the failure reads the text of the file.
+  **Twelve cases came first and seven of them failed against the committed reader**: six
+  parameter sets of `test_the_floating_date_reader_reads_no_barred_word_of_a_code_span`,
+  which name `git gc --prune=now`, `git log --since=now`, `--date=today`,
+  `docs/nowadays.md`, `pytest -k recently` and `CURRENTLY=1`, beside
+  `test_the_live_floating_date_case_passes_on_a_code_span_of_the_rule_file`. **Two cases
+  drive the live case in both directions**: one writes the #586 sentence into the rule file
+  and requires a pass, and one writes `The provider currently holds eleven required
+  contexts.` and requires a failure. **Each one restores the file in a `finally` block and
+  then reads the restored text**, so a case that fails leaves the file as it found it.
+  **Three cases prove that the cut removes the span alone**, where a barred word stands in
+  the prose beside a code span. **`test_the_floating_date_reader_reads_the_sentences_of_the_rule_file`
+  states the floor**, because a reader that finds no sentence reports a clean file rather
+  than a measurement: the rule file holds 203 sentences against a floor of 100, and the cut
+  keeps `required status check` in the prose. **A sweep of all 49 readers of `tests/` that
+  match a pattern over prose found no second reachable instance, and it records three
+  findings for a later round**: `COVERAGE_CLAIMS` of `tests/test_readme_contracts.py`,
+  `BLANKET_WORD` of `tests/test_changelog_sentence_exemption.py` and `SET_SCOPE` of
+  `tests/test_requirement_scope.py` each match over prose and cut no code span. **No
+  collision reaches any of the three today**, because each one needs a multi-word phrase or
+  a neighbouring word, and this round repairs none of them. **Six readers already cut a
+  span**: `without_quoted` and `readable_prose` of `tests/test_ruling_vocabulary.py`,
+  `without_code` of `tests/test_statistics_thread_term.py`, `sentences` of
+  `tests/test_changelog_sentence_exemption.py`, `readable_prose` of
+  `tests/test_documentation_version_claims.py` and `unfenced_lines` of
+  `tests/release_body.py`. **The suite grows by the twelve cases this round writes**:
+  `pytest --collect-only` reads 6667 cases at the base commit `4a08fea` and 6679 here, and
+  the unit suite reports 4703 passed, 7 skipped and 8 xfailed against 4691, 7 and 8 at the
+  base. **The coverage count does not move**, because this round adds no statement to the
+  package: `--cov=ja4plus` reports 4316 statements, 273 missed and 94 percent. **No file
+  under `ja4plus/` changes and no fingerprint moves**, and the conformance suite reports
+  1635 passed, 143 skipped and 140 xfailed.
+
 - **One command fetches the two recorded change sets** (#586). Round
   TBD. **Each fetch of a shallow clone reads `.git/shallow`, and it refuses to finish
   where that file moved since the read.** #528 wrote two commands in the step `Fetch the

@@ -60,6 +60,28 @@ with no run. The steps of that section read the provider and change nothing, and
 states that. No live sentence of the file carries a floating date, because a floating word
 turns a dated reading into a standing fact.
 
+## A code span is code, and the floating-date reader cuts it
+
+**#589 measured a false report on a code span.** #586 wrote a sentence that states the cost
+of a fetch and names the command `git gc --prune=now`, and
+`test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader` named that sentence
+a floating date. The sentence names no reading day. `--prune=now` carries the barred word
+inside a code span, because `=` closes a word boundary. `CODE_SPAN_SENTENCE` holds the
+sentence.
+
+**`.claude/rules/ste.md` reproduces code, configuration, commands, identifiers and paths
+verbatim**, under `## What is not rewritten`, so a reader that measures prose reads no code
+span. `floating_sentences` therefore matches `without_quoted(sentence)`, which is the reader
+`tests/test_ruling_vocabulary.py` already holds. #548 records that reader and round 210
+repaired its fence tracking. **This file writes no second reader.**
+
+**Four cases hold the repair, and two of them drive the live case.** One writes the #586
+sentence into the rule file and requires a pass. One writes
+`The provider currently holds eleven required contexts.` and requires a failure. Each one
+restores the file in a `finally` block and then reads the restored text.
+**`test_the_floating_date_reader_reads_the_sentences_of_the_rule_file` states the floor**,
+because a reader that finds no sentence reports a clean file rather than a measurement.
+
 ## What these cases cannot test
 
 A case here reads the state of the provider on the day it runs. It proves no statement
@@ -77,6 +99,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 import pytest
+
+from tests.test_ruling_vocabulary import without_quoted
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -216,6 +240,23 @@ FLOATING_DATE = re.compile(
     r"|at present|at the moment|at this time|these days|as of now",
     re.IGNORECASE,
 )
+
+# The sentence #586 wrote and then rewrote, which #589 measured. `--prune=now` holds a
+# barred word inside a code span, because `=` closes a word boundary.
+CODE_SPAN_SENTENCE = "The command costs 40 KB, after `git gc --prune=now` on each read."
+
+# A sentence that carries a barred word in prose. A live case writes it into the rule file
+# and restores the file, so the reader is proven in the direction that must still fail.
+PROSE_MUTATION = "The provider currently holds eleven required contexts."
+
+# The least count of sentences the floating-date reader reads in the rule file. **A reader
+# that finds no sentence reports a clean file**, so a case reads this floor before it trusts
+# an empty report. A read of 2026-08-10 counts 203 sentences.
+FLOATING_SENTENCE_FLOOR = 100
+
+# A phrase of the prose that the code-span cut keeps. The cut removes a span alone, and a
+# cut that removed the prose beside it would empty every sentence the floor counted.
+CUT_SURVIVOR = "required status check"
 
 
 def documentation_files() -> List[Path]:
@@ -625,6 +666,14 @@ def steps_intro(body: str) -> str:
 def floating_sentences(text: str) -> List[str]:
     """Return every live sentence that dates itself against the day a reader reads it.
 
+    **The reader cuts every code span before it matches**, because `.claude/rules/ste.md`
+    reproduces code, configuration, commands, identifiers and paths verbatim. `--prune=now`
+    carries a barred word inside a span, because `=` closes a word boundary. #589 measured
+    that false report on a sentence #586 wrote.
+
+    **The reader reports the sentence the file holds and never the cut form**, so a reader
+    of the failure reads the text of the file.
+
     Args:
         text: The whole page.
 
@@ -632,7 +681,9 @@ def floating_sentences(text: str) -> List[str]:
         The offending sentences, which is empty where every sentence names its date.
     """
     return [
-        sentence for sentence in sentences(readable_text(text)) if FLOATING_DATE.search(sentence)
+        sentence
+        for sentence in sentences(readable_text(text))
+        if FLOATING_DATE.search(without_quoted(sentence))
     ]
 
 
@@ -1055,6 +1106,75 @@ def test_the_floating_date_reader_reads_no_sentence_that_names_its_date(
 ) -> None:
     """The reader reports no sentence that names the date of its reading."""
     assert floating_sentences(sentence) == []
+
+
+CODE_SPAN_SENTENCES = (
+    CODE_SPAN_SENTENCE,
+    "The step reads `git log --since=now` and it names no day.",
+    "`ROUND_ENTRY_REFERENCE` reads `--date=today` on every job.",
+    "The gate reads `docs/nowadays.md` and it changes nothing.",
+    "A worker runs `pytest -k recently` against the corpus.",
+    "The job sets `CURRENTLY=1` and the step reads it.",
+)
+
+SPAN_AND_PROSE_SENTENCES = (
+    "The provider currently holds `skip-gate` as a required context.",
+    "`git gc --prune=now` runs today.",
+    "The rule requires `test (ubuntu-latest, 3.13)` at present.",
+)
+
+
+@pytest.mark.parametrize("sentence", CODE_SPAN_SENTENCES)
+def test_the_floating_date_reader_reads_no_barred_word_of_a_code_span(
+    sentence: str,
+) -> None:
+    """A barred word inside a code span reaches no report, because a span holds code."""
+    assert floating_sentences(sentence) == []
+
+
+@pytest.mark.parametrize("sentence", SPAN_AND_PROSE_SENTENCES)
+def test_the_floating_date_reader_reads_a_barred_word_beside_a_code_span(
+    sentence: str,
+) -> None:
+    """The cut removes the span alone, so a barred word of the prose still reports."""
+    assert floating_sentences(sentence) == [sentence]
+
+
+def test_the_floating_date_reader_reads_the_sentences_of_the_rule_file() -> None:
+    """The reader reads a sentence set above its floor, and the cut keeps the prose."""
+    read = sentences(readable_text(RULE_FILE.read_text()))
+    assert len(read) >= FLOATING_SENTENCE_FLOOR, (
+        f"the reader reads {len(read)} sentences of {RULE_FILE}, below the floor of "
+        f"{FLOATING_SENTENCE_FLOOR}, and a reader that finds no sentence reports a clean file"
+    )
+    cut = [without_quoted(sentence) for sentence in read]
+    assert any(CUT_SURVIVOR in sentence for sentence in cut), (
+        f"the code-span cut removes {CUT_SURVIVOR!r} from every sentence of {RULE_FILE}, so "
+        "the reader measures a corpus that holds no prose"
+    )
+
+
+def test_the_live_floating_date_case_passes_on_a_code_span_of_the_rule_file() -> None:
+    """The live case passes where the rule file holds a barred word inside a code span."""
+    original = RULE_FILE.read_text()
+    try:
+        RULE_FILE.write_text(f"{original}\n{CODE_SPAN_SENTENCE}\n")
+        test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader()
+    finally:
+        RULE_FILE.write_text(original)
+    assert RULE_FILE.read_text() == original
+
+
+def test_the_live_floating_date_case_fails_on_a_barred_word_of_the_prose() -> None:
+    """The live case fails where the rule file carries a barred word outside a code span."""
+    original = RULE_FILE.read_text()
+    try:
+        RULE_FILE.write_text(f"{original}\n{PROSE_MUTATION}\n")
+        with pytest.raises(AssertionError):
+            test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader()
+    finally:
+        RULE_FILE.write_text(original)
+    assert RULE_FILE.read_text() == original
 
 
 def test_the_steps_intro_reader_reads_the_promise_of_a_change() -> None:
