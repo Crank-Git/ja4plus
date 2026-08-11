@@ -159,6 +159,47 @@ and the clone of depth 1 held neither pair. The `test` job fetches each one at d
 into `refs/ja4plus/recorded-defect` and `refs/ja4plus/recorded-control`. **Read a universal
 skip against the checkout before you read it as a limit of the runner.**
 
+**Warning: write one `git fetch` in a step, and never two.** Each fetch of a shallow clone
+reads `.git/shallow`, and it refuses to finish where that file moved since the read. #586
+measured the failure on run
+https://github.com/Crank-Git/ja4plus/actions/runs/31452971377, a push of `master` at
+`2129964`, job `test (ubuntu-latest, 3.13)`.
+
+```
+* [new ref]  46aa502ca47f3c29f3c5ece15e4e78500e2f59c5 -> refs/ja4plus/recorded-defect
+fatal: shallow file has changed since we read it
+```
+
+**The first fetch succeeded and the second one failed.** #528 wrote two commands in the step
+`Fetch the two recorded change sets`, and each one rewrote the shallow file. **One command
+that names both refspecs writes that file once**, and #586 took that repair.
+
+```bash
+git fetch --depth=2 origin "+$DEFECT_SHA:refs/ja4plus/recorded-defect" "+$CONTROL_SHA:refs/ja4plus/recorded-control"
+```
+
+**A failure of that step skips both recorded cases, and the `skip-gate` job then reports
+nothing at all, because it never runs.** The step fails the job, the job fails the run, and
+`needs` holds `skip-gate` behind it.
+
+**Three steps of the `test` job fetch, and the other two each run one command already.**
+`Fetch the base commit of the pull request` and `Resolve the reference commit of a run that
+carries no pull request` carry opposite `if` conditions, so one event reaches one of them.
+Neither one needs this repair.
+`tests/test_round_entry_existence.py::test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command`
+holds all three steps at one command each, and
+`test_the_workflow_holds_no_fetch_step_this_list_omits` refuses a fourth fetch that no case
+reads.
+
+**Two tags hold the commits that step fetches, and a branch sweep must keep both.**
+`record/412-defect` holds `46aa502ca47f3c29f3c5ece15e4e78500e2f59c5` and
+`record/429-control` holds `f140a5c318dfbe443b38b8f1a6a7df7d6b098cf0`. The project manager
+created them on 2026-08-10, after a sweep left the first commit reachable from no branch.
+**That reachability caused no measured failure**, and #586 records that the project manager
+stated it as the cause before reading the error. The tags stand on their own reading: a
+commit a workflow fetches is a commit some reference must hold. **The step fetches the
+identifier and never the tag**, because a tag moves and an identifier does not.
+
 **An install step is such a repair too, and #529 made it.** `pymdownx` reaches a job through
 the `docs` extra, and every job installed the `dev` extra alone. The `test` job installs the
 `docs` extra on the `ubuntu-latest` job with Python 3.13, so one job of the five runs the

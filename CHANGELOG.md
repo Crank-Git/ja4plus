@@ -4,6 +4,45 @@ All notable changes to ja4plus are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **One command fetches the two recorded change sets** (#586). Round
+  TBD. **Each fetch of a shallow clone reads `.git/shallow`, and it refuses to finish
+  where that file moved since the read.** #528 wrote two commands in the step `Fetch the
+  two recorded change sets`, and each one rewrote that file on a clone of depth 1. Run
+  https://github.com/Crank-Git/ja4plus/actions/runs/31452971377 holds the failure, a push
+  of `master` at `2129964`, on job `test (ubuntu-latest, 3.13)`. The log reads
+  `* [new ref]  46aa502ca47f3c29f3c5ece15e4e78500e2f59c5 -> refs/ja4plus/recorded-defect`
+  and then `fatal: shallow file has changed since we read it`. **The first fetch succeeded
+  and the second one failed**, which is the shape of a race and not of a broken reference.
+  **One command that names both refspecs writes the shallow file once**, and it costs the
+  same 32 KB #528 measured.
+  **Three steps of the `test` job fetch, and the other two need no repair.** `Fetch the
+  base commit of the pull request` and `Resolve the reference commit of a run that carries
+  no pull request` each run one command, and they carry opposite `if` conditions, so one
+  event reaches one of them. **The checkout writes the shallow file first**, so a
+  pull-request job wrote it four times before this round and it writes it three times now.
+  **`.github/workflows/test.yml` is the one workflow of this repository that fetches**, so
+  no fourth shallow write stands anywhere else.
+  **The cases came first and four of them failed**, each against the committed workflow:
+  `assert 2 == 1` from
+  `test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command[Fetch the two recorded change sets]`,
+  beside `test_the_test_job_fetches_the_two_recorded_change_sets`,
+  `test_the_recorded_fetch_step_names_the_tag_that_holds_each_commit` and
+  `test_the_batch_gate_rule_records_the_one_fetch_of_the_recorded_change_sets`.
+  **`test_the_workflow_holds_no_fetch_step_this_list_omits` refuses a fourth fetch**, so a
+  step a later round adds either reaches `FETCH_STEPS` or fails a case.
+  **Two tags hold the commits the step fetches**, and the step names each tag beside its
+  identifier. `record/412-defect` holds `46aa502ca47f3c29f3c5ece15e4e78500e2f59c5` and
+  `record/429-control` holds `f140a5c318dfbe443b38b8f1a6a7df7d6b098cf0`. The project
+  manager created both on 2026-08-10, after a branch sweep left the first commit reachable
+  from no branch. **That reachability caused no measured failure, and the project manager
+  stated it as the cause before reading the error.** The tags stand on their own reading: a
+  commit a workflow fetches is a commit some reference must hold. **The step fetches the
+  identifier and never the tag**, because a tag moves and an identifier does not, and a
+  later sweep now finds the reference beside the commit it must keep.
+  **No file under `ja4plus/` changes and no fingerprint moves.**
+
 ## [1.1.0] - 2026-08-10
 
 **Warning: read this paragraph before you upgrade. Version 1.1.0 removes Python 3.9 from

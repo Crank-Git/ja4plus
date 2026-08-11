@@ -198,12 +198,41 @@ jobs:
         # **#528 declined `continue-on-error` for the reason #438 states.** A failed fetch
         # leaves the two cases skipped, and the `skip-gate` job then fails the run on a
         # case that ran nowhere.
+        #
+        # **Warning: run one `git fetch` here, and never two.** Each fetch of a shallow
+        # clone reads `.git/shallow`, and it refuses to finish where that file moved since
+        # the read. #586 measured the failure on run
+        # https://github.com/Crank-Git/ja4plus/actions/runs/31452971377, at `2129964`.
+        #
+        # ```
+        # * [new ref]  46aa502ca47f3c29f3c5ece15e4e78500e2f59c5 -> refs/ja4plus/recorded-defect
+        # fatal: shallow file has changed since we read it
+        # ```
+        #
+        # **The first fetch succeeded and the second one failed.** #528 wrote two commands,
+        # and each one rewrote the shallow file of a clone of depth 1. One command that
+        # names both refspecs writes that file once, and it costs the same 32 KB.
+        #
+        # **The two steps above each run one fetch already, so neither one needs this
+        # repair.** They carry opposite `if` conditions, so one event reaches one of them.
+        # `test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command` holds all three
+        # steps at one command each, and
+        # `test_the_workflow_holds_no_fetch_step_this_list_omits` refuses a fourth fetch
+        # that no case reads.
+        #
+        # **Two tags hold these commits, and the step names each tag beside its
+        # identifier.** A branch sweep of 2026-08-10 left `46aa502` reachable from no
+        # branch, and a commit that a workflow fetches is a commit some reference must
+        # hold. **The step fetches the identifier and never the tag, because a tag moves
+        # and an identifier does not.** The tag names the reference a later sweep must
+        # keep, and #586 records that reading.
         env:
+          # `record/412-defect` holds this commit.
           DEFECT_SHA: 46aa502ca47f3c29f3c5ece15e4e78500e2f59c5
+          # `record/429-control` holds this commit.
           CONTROL_SHA: f140a5c318dfbe443b38b8f1a6a7df7d6b098cf0
         run: |
-          git fetch --depth=2 origin "+$DEFECT_SHA:refs/ja4plus/recorded-defect"
-          git fetch --depth=2 origin "+$CONTROL_SHA:refs/ja4plus/recorded-control"
+          git fetch --depth=2 origin "+$DEFECT_SHA:refs/ja4plus/recorded-defect" "+$CONTROL_SHA:refs/ja4plus/recorded-control"
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0

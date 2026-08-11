@@ -83,7 +83,21 @@ commit proves it against a change set the project made. Two commits carry that p
 A fetch of depth 2 carries the commit and its parent, which is the pair the reading needs.
 #528 measured the cost on 2026-08-10, after `git gc --prune=now` on each read. The clone
 of depth 1 holds 14884 KB, the defect fetch raises it to 14912 KB, and the control fetch
-raises it to 14916 KB. The two steps therefore cost 32 KB together.
+raises it to 14916 KB. The two refspecs therefore cost 32 KB together.
+
+**Warning: one command carries both refspecs, and two commands fail.** Each fetch of a
+shallow clone reads `.git/shallow`, and it refuses to finish where that file moved since
+the read. #528 wrote two commands, and each one rewrote that file. #586 measured the
+failure on run https://github.com/Crank-Git/ja4plus/actions/runs/31452971377, where the
+first fetch wrote `refs/ja4plus/recorded-defect` and the second reported
+`fatal: shallow file has changed since we read it`. `RECORDED_FETCH` holds the one command
+that replaces the pair.
+
+**Two tags hold the two commits, and a branch sweep must keep both.** `DEFECT_TAG` and
+`CONTROL_TAG` name them. A commit that a workflow fetches is a commit some reference must
+hold, and a sweep of 2026-08-10 left `DEFECT_COMMIT` reachable from no branch. **The
+workflow fetches the identifier and never the tag**, because a tag moves and an identifier
+does not.
 
 **#528 measured that the fetch of an abbreviated name fails, so each constant holds the
 whole identifier.** The workflow names the same two identifiers, and
@@ -203,9 +217,87 @@ DEFECT_REF = "refs/ja4plus/recorded-defect"
 
 CONTROL_REF = "refs/ja4plus/recorded-control"
 
+# The tags that hold the two recorded commits at the provider. A commit that a workflow
+# fetches is a commit some reference must hold, and a branch sweep of 2026-08-10 left
+# `DEFECT_COMMIT` reachable from no branch. The project manager created both tags that day.
+DEFECT_TAG = "record/412-defect"
+
+CONTROL_TAG = "record/429-control"
+
+# The one command that carries the two recorded change sets to the runner. **Each fetch of
+# a shallow clone rewrites `.git/shallow`, and #586 measured the failure of a second
+# write.** One command names both refspecs and writes that file once.
+RECORDED_FETCH = (
+    f'git fetch --depth=2 origin "+$DEFECT_SHA:{DEFECT_REF}" "+$CONTROL_SHA:{CONTROL_REF}"'
+)
+
+# The step that runs `RECORDED_FETCH`.
+RECORDED_FETCH_STEP = "Fetch the two recorded change sets"
+
+# Every step of the `test` job that runs `git fetch`. The first two carry an `if` condition
+# and no event selects both, so the job runs two of these three steps.
+#
+# **A step that runs one fetch writes `.git/shallow` once, so it needs no repair.**
+# `test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command` holds each of the three
+# against that count, and `test_the_workflow_holds_no_fetch_step_this_list_omits` refuses a
+# fourth fetch that reaches no case here.
+FETCH_STEPS = (
+    "Fetch the base commit of the pull request",
+    NO_PULL_REQUEST_STEP,
+    RECORDED_FETCH_STEP,
+)
+
+# The opener of a step of a job of the workflow. A step of `.github/workflows/test.yml`
+# starts at column 6, so the next line at that column starts the next step.
+STEP_OPENER = "      - "
+
+# A line that runs `git fetch`. The pattern anchors at the start of the line, so a comment
+# that names the command matches nothing and a reader counts a command alone.
+COMMAND_FETCH = re.compile(r"^\s*git fetch\b")
+
 # The count of paths a failure names. A sweep changes 30 files, and a message that names
 # all of them buries the count that follows it.
 NAMED_PATH_LIMIT = 3
+
+
+def step_block(workflow: str, name: str) -> str:
+    """Return the text of one step of the workflow, from its name to the next step.
+
+    Args:
+        workflow: The text of `.github/workflows/test.yml`.
+        name: The value of the `name` key of the step.
+
+    Returns:
+        The lines of that step, including the line that names it.
+
+    Raises:
+        AssertionError: The workflow holds no step of that name.
+    """
+    lines = workflow.splitlines(keepends=True)
+    opener = f"{STEP_OPENER}name: {name}"
+    for index, line in enumerate(lines):
+        if line.rstrip("\n") != opener:
+            continue
+        end = len(lines)
+        for later in range(index + 1, len(lines)):
+            if lines[later].startswith(STEP_OPENER):
+                end = later
+                break
+        return "".join(lines[index:end])
+    raise AssertionError(f"the workflow holds no step named {name}")
+
+
+def fetch_count(text: str) -> int:
+    """Return the count of `git fetch` commands one block of the workflow runs.
+
+    Args:
+        text: The text of one step, or the text of the whole workflow.
+
+    Returns:
+        The count of lines that run `git fetch`. A comment that names the command counts
+        nowhere, because `COMMAND_FETCH` anchors at the start of the line.
+    """
+    return sum(1 for line in text.splitlines() if COMMAND_FETCH.match(line))
 
 
 class RoundRecord(NamedTuple):
@@ -866,8 +958,60 @@ def test_the_test_job_fetches_the_two_recorded_change_sets() -> None:
     workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
     assert f"DEFECT_SHA: {DEFECT_COMMIT}" in workflow
     assert f"CONTROL_SHA: {CONTROL_COMMIT}" in workflow
-    assert f'git fetch --depth=2 origin "+$DEFECT_SHA:{DEFECT_REF}"' in workflow
-    assert f'git fetch --depth=2 origin "+$CONTROL_SHA:{CONTROL_REF}"' in workflow
+    assert RECORDED_FETCH in workflow
+
+
+@pytest.mark.parametrize("step", FETCH_STEPS)
+def test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command(step: str) -> None:
+    """Each step of the `test` job that fetches runs one `git fetch` command."""
+    workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
+    assert fetch_count(step_block(workflow, step)) == 1
+
+
+def test_the_workflow_holds_no_fetch_step_this_list_omits() -> None:
+    """`FETCH_STEPS` names every step of the workflow that runs `git fetch`."""
+    workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
+    named = sum(fetch_count(step_block(workflow, step)) for step in FETCH_STEPS)
+    assert fetch_count(workflow) == named
+
+
+def test_the_recorded_fetch_step_names_the_tag_that_holds_each_commit() -> None:
+    """The step that fetches the two recorded change sets names both tags."""
+    block = step_block((REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8"), RECORDED_FETCH_STEP)
+    assert DEFECT_TAG in block
+    assert CONTROL_TAG in block
+
+
+def test_the_step_reader_returns_the_lines_of_one_step() -> None:
+    """The step reader stops at the next step and it keeps the line that names the step."""
+    workflow = (
+        "jobs:\n"
+        "  test:\n"
+        "    steps:\n"
+        "      - name: The first step\n"
+        "        run: git fetch --depth=1 origin main\n"
+        "      - name: The second step\n"
+        "        run: echo done\n"
+    )
+    block = step_block(workflow, "The first step")
+    assert block == "      - name: The first step\n        run: git fetch --depth=1 origin main\n"
+
+
+def test_the_step_reader_refuses_a_name_the_workflow_does_not_hold() -> None:
+    """The step reader raises where the workflow holds no step of that name."""
+    with pytest.raises(AssertionError):
+        step_block("      - name: The one step\n", "Another step")
+
+
+def test_the_fetch_reader_counts_no_comment_that_names_the_command() -> None:
+    """The fetch reader counts a command and it counts no comment that names one."""
+    block = "        # A bare git fetch origin <sha> writes FETCH_HEAD.\n        run: |\n"
+    assert fetch_count(block) == 0
+
+
+def test_the_fetch_reader_counts_one_command_that_carries_two_refspecs() -> None:
+    """The fetch reader counts one command where that command names two refspecs."""
+    assert fetch_count(f"          {RECORDED_FETCH}\n") == 1
 
 
 def test_the_workflow_accepts_a_pull_request_into_an_integration_branch() -> None:
@@ -905,6 +1049,15 @@ def test_the_batch_gate_rule_states_the_reference_commit_of_a_manual_run() -> No
     rule = (REPO_ROOT / BATCH_GATE_RULE_PATH).read_text(encoding="utf-8")
     assert "merge_base_commit" in rule
     assert "#541" in rule
+
+
+def test_the_batch_gate_rule_records_the_one_fetch_of_the_recorded_change_sets() -> None:
+    """The batch-gate rule states the shallow-file failure and names the two tags."""
+    rule = (REPO_ROOT / BATCH_GATE_RULE_PATH).read_text(encoding="utf-8")
+    assert "fatal: shallow file has changed since we read it" in rule
+    assert "#586" in rule
+    assert DEFECT_TAG in rule
+    assert CONTROL_TAG in rule
 
 
 def test_the_reader_counts_no_round_a_quotation_holds() -> None:
