@@ -75,10 +75,11 @@ span. `floating_sentences` therefore matches `without_quoted(sentence)`, which i
 `tests/test_ruling_vocabulary.py` already holds. #548 records that reader and round 210
 repaired its fence tracking. **This file writes no second reader.**
 
-**Fifteen cases hold the repair, and two of them drive the live case.** One writes the
-#586 sentence into the rule file and requires a pass. One writes
-`The provider currently holds eleven required contexts.` and requires a failure. Each one
-restores the file in a `finally` block and then reads the restored text.
+**Sixteen cases hold the repair, and three of them drive the live case.** One writes the
+#586 sentence into the rule file and requires a pass. Two write a sentence that carries a
+barred word in prose and require a failure, and `PROSE_MUTATIONS` holds the bare `now`
+beside `currently`. Each one restores the file in a `finally` block and then reads the
+restored text.
 **Warning: those two cases write a tracked file, so run this suite serially.** A run that
 writes the same file from two workers restores it from two readings.
 **`test_the_floating_date_reader_reads_the_sentences_of_the_rule_file` states the floor**,
@@ -271,7 +272,10 @@ CODE_SPAN_SENTENCE = "The command costs 40 KB, after `git gc --prune=now` on eac
 
 # A sentence that carries a barred word in prose. A live case writes it into the rule file
 # and restores the file, so that case proves the reader in the direction that must fail.
-PROSE_MUTATION = "The provider currently holds eleven required contexts."
+PROSE_MUTATIONS = (
+    "The provider now holds eleven required contexts.",
+    "The provider currently holds eleven required contexts.",
+)
 
 # The least count of sentences the floating-date reader reads in the rule file. **A reader
 # that finds no sentence reports a clean file**, so a case reads this floor before it trusts
@@ -1212,11 +1216,14 @@ def test_the_live_floating_date_case_passes_on_a_code_span_of_the_rule_file() ->
     assert RULE_FILE.read_text() == original
 
 
-def test_the_live_floating_date_case_fails_on_a_barred_word_of_the_prose() -> None:
+@pytest.mark.parametrize("mutation", PROSE_MUTATIONS)
+def test_the_live_floating_date_case_fails_on_a_barred_word_of_the_prose(
+    mutation: str,
+) -> None:
     """The live case fails where the rule file carries a barred word outside a code span."""
     original = RULE_FILE.read_text()
     try:
-        RULE_FILE.write_text(f"{original}\n{PROSE_MUTATION}\n")
+        RULE_FILE.write_text(f"{original}\n{mutation}\n")
         with pytest.raises(AssertionError):
             test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader()
     finally:

@@ -23,15 +23,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_ruling_vocabulary.py`, which #548 records and round 210 repaired. **The
   reader reports the sentence the file holds and never the cut form**, so the cut reaches
   the match alone and a reader of the failure reads the text of the file.
-  **Fifteen cases came first and eight of them failed against the committed reader**: six
+  **Sixteen cases came first and eight of them failed against the committed reader**: six
   parameter sets of `test_the_floating_date_reader_reads_no_barred_word_of_a_code_span`,
   which name `git gc --prune=now`, `git log --since=now`, `--date=today`,
   `docs/nowadays.md`, `pytest -k recently` and `CURRENTLY=1`, beside
   `test_the_floating_date_reader_reads_no_barred_word_of_a_fenced_block` and
-  `test_the_live_floating_date_case_passes_on_a_code_span_of_the_rule_file`. **Two cases
+  `test_the_live_floating_date_case_passes_on_a_code_span_of_the_rule_file`. **Three cases
   drive the live case in both directions**: one writes the #586 sentence into the rule file
-  and requires a pass, and one writes `The provider currently holds eleven required
-  contexts.` and requires a failure. **Each one restores the file in a `finally` block and
+  and requires a pass, and two write a sentence that carries a barred word in prose and
+  require a failure, where `PROSE_MUTATIONS` holds the bare `now` beside `currently`. **Each one restores the file in a `finally` block and
   then reads the restored text**, so a case that fails leaves the file as it found it.
   **Three cases prove that the cut removes the span alone**, where a barred word stands in
   the prose beside a code span. **`test_the_floating_date_reader_reads_the_sentences_of_the_rule_file`
@@ -56,9 +56,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `without_code` of `tests/test_statistics_thread_term.py`, `sentences` of
   `tests/test_changelog_sentence_exemption.py`, `readable_prose` of
   `tests/test_documentation_version_claims.py` and `unfenced_lines` of
-  `tests/release_body.py`. **The suite grows by the fifteen cases this round writes**:
-  `pytest --collect-only` reads 6667 cases at the base commit `4a08fea` and 6682 here, and
-  the unit suite reports 4706 passed, 7 skipped and 8 xfailed against 4691, 7 and 8 at the
+  `tests/release_body.py`. **The suite grows by the sixteen cases this round writes**:
+  `pytest --collect-only` reads 6667 cases at the base commit `4a08fea` and 6683 here, and
+  the unit suite reports 4707 passed, 7 skipped and 8 xfailed against 4691, 7 and 8 at the
   base. **The coverage count does not move**, because this round adds no statement to the
   package: `--cov=ja4plus` reports 4316 statements, 273 missed and 94 percent. **No file
   under `ja4plus/` changes and no fingerprint moves**, and the conformance suite reports
