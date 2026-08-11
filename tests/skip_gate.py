@@ -10,7 +10,7 @@ skips on Linux is correct, and a Linux case that skips on macOS is correct. The 
 a case that skips in every environment. The union of the reports is the first reading that
 tells the two apart, so this gate runs after every job that runs cases.
 
-**The gate reads ten reports of five jobs, and #530 measured why the four outside the
+**The gate reads nine reports of five jobs, and #530 measured why the four outside the
 matrix belong here.** The `test` job runs `pytest tests/ -m "not spec_validation"`, and
 `tests/conftest.py` deselects the `installed_wheel` marker as well, so that job collects
 4150 cases of the 6111 the suite holds. The `conformance` job holds the other 1918 and the
@@ -26,14 +26,14 @@ cases, and `tests/test_skip_gate.py` holds the workflow against that rule.
 
 **A case one job alone selects reads one environment, and the gate says so.** The union
 means `the suite ran this case nowhere`, and it means that over the jobs that select the
-case rather than over ten reports. A conformance case therefore rests on one runner, and
+case rather than over nine reports. A conformance case therefore rests on one runner, and
 the census names the report count of every case it lists. **A case no job selects at all
 reaches no report**, so it is a different finding and this gate does not hold it.
 
 **The reading is free of a new dependency.** `.github/workflows/test.yml` already writes
 one JUnit report for each job that runs cases, with `pytest --junitxml`. A `testcase`
 element with a `skipped` child names a case that job ran no assertion for. The `skip-gate`
-job downloads the ten artifacts and this file holds the condition.
+job downloads the nine artifacts and this file holds the condition.
 
 **An allowlist entry is permitted and it names a reason.** A case that needs a capture
 grant no runner holds is a legitimate entry. An entry that names no reason is the defect
@@ -94,11 +94,11 @@ DESCRIPTION = (
 # stops it on every job.
 ALLOWLIST_PATH = REPO_ROOT / "tests" / "universal_skips.json"
 
-# `.github/workflows/test.yml` runs ubuntu with Python 3.9, 3.10, 3.11, 3.12 and 3.13, and
-# macOS with 3.12. A union over fewer reports names fewer runs, so it can report a case as
+# `.github/workflows/test.yml` runs ubuntu with Python 3.10, 3.11, 3.12 and 3.13, and macOS
+# with 3.12. A union over fewer reports names fewer runs, so it can report a case as
 # universal that another job ran. The gate therefore refuses a smaller report set rather
-# than reading it.
-MATRIX_JOB_COUNT = 6
+# than reading it. #575 dropped Python 3.9 and the count fell from 6.
+MATRIX_JOB_COUNT = 5
 
 # The four other jobs of `.github/workflows/test.yml` that run cases. Each one writes one
 # JUnit report, so the download holds one report for each name here.
@@ -453,8 +453,9 @@ def census_lines(reports: Sequence[Report], allowances: Sequence[Allowance]) -> 
     half of the deliverable, so the gate writes it on a pass and on a failure.
 
     **The census names the corpus size, because that number is the reach of the reader.**
-    The six reports of the matrix hold 4150 cases and the ten reports hold 6111, so a
-    reader of this line sees at once which jobs reached the gate.
+    #530 measured the reach on 2026-08-10: the six reports of the matrix held 4150 cases
+    and the ten reports held 6111. A reader of this line sees at once which jobs reached
+    the gate.
 
     **A prefix entry reports its count and never its cases.** The `not applicable:` class
     holds 143 cases, and 143 near-identical lines would bury every case-level line under

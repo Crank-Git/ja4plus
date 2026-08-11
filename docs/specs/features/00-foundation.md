@@ -104,11 +104,11 @@ FR-foundation-8g — The repository holds one dependency record, and that record
 > one block can disagree. A reader that is correct only because of what its callers happen
 > to read fails on the caller that arrives next.
 
-> **Warning: a pinned version that Python 3.9 refuses turns every Python 3.9 job red.**
-> Read the `requires_python` value of a release before you pin it. `FR-foundation-13` runs
-> the matrix from Python 3.9, so each pin names the newest release that carries a wheel for
-> Python 3.9 through 3.13. #446 measured `pytest` 9.1.1 and `build` 1.5.0, and each one
-> requires Python 3.10.
+> **Warning: a pinned version that the oldest interpreter of the matrix refuses turns every
+> job of that row red.** Read the `requires_python` value of a release before you pin it.
+> `FR-foundation-13` states the range the matrix runs. #446 measured `pytest` 9.1.1 and
+> `build` 1.5.0 against the Python 3.9 row, and each one requires Python 3.10. #575 dropped
+> that row.
 
 > **`mypy` floats, and that reading is the opposite of `FR-foundation-8b` on purpose.** A
 > pinned type checker falls behind, and a frozen release hides a defect that a later release
@@ -124,9 +124,9 @@ job summary.
 FR-foundation-11 — The test job fails when line coverage is below the configured
 floor.
 
-FR-foundation-12 — `pyproject.toml` declares `requires-python = ">=3.9"`.
+FR-foundation-12 — `pyproject.toml` declares `requires-python = ">=3.10"`.
 
-FR-foundation-13 — The test matrix runs Python 3.9 through 3.13.
+FR-foundation-13 — The test matrix runs Python 3.10 through 3.13.
 
 FR-foundation-14 — Every test that starts a Python subprocess uses
 `sys.executable`.
@@ -253,7 +253,7 @@ The matching files under `wireshark/test/testdata/` are not the authority.
 | A vector exercises no method this project implements. | The suite reports the vector as not applicable. It does not count as a pass. |
 | Every vector is not applicable. | The suite fails, because a silent skip looks like a pass. |
 | `ruff` is not installed. | The workflow step fails. A local run is the developer's responsibility. |
-| Python 3.9 rejects a type annotation. | The test job for 3.9 fails. This is the gate working. |
+| Python 3.10 rejects a type annotation. | The test job for 3.10 fails. This is the gate working. |
 
 ## Acceptance criteria
 
@@ -277,7 +277,7 @@ The matching files under `wireshark/test/testdata/` are not the authority.
 - [ ] `mypy ja4plus/` reports no error.
 - [ ] The test job summary shows a line-coverage percentage.
 - [ ] The test job fails when coverage falls below the floor.
-- [ ] `pyproject.toml` declares `requires-python = ">=3.9"`.
+- [ ] `pyproject.toml` declares `requires-python = ">=3.10"`.
 - [ ] The full suite passes in a virtual environment that has no `python` on the
       path.
 - [ ] `git branch -r` lists `origin/dev`.

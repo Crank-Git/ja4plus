@@ -23,7 +23,7 @@ Continuous integration installs the project from `pyproject.toml`, so the metada
 equals the file the gate reads. The readers below take both values from tracked text
 instead, and the two texts are independent inputs.
 
-Python 3.9 carries no `tomllib`, and the test matrix holds Python 3.9, so each reader
+Python 3.10 carries no `tomllib`, and the test matrix holds Python 3.10, so each reader
 matches a line rather than parsing the file.
 
 `tests/test_version_gate.py` holds the cases against these readers, and

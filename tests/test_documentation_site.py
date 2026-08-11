@@ -36,7 +36,7 @@ CONFIGURATION = REPO_ROOT / "mkdocs.yml"
 DOCS_DIR = REPO_ROOT / "docs"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 
-# The workflow that runs the unit suite on the six jobs of the matrix.
+# The workflow that runs the unit suite on every job of the matrix.
 TEST_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "test.yml"
 
 # The allowlist of the skip gate. An entry here records a case that runs on no job.
@@ -48,9 +48,8 @@ SLUG_CASE = "tests.test_documentation_site::test_the_slug_of_a_case_matches_the_
 # The install command that puts `pymdownx` on the import path of a job.
 DOCS_INSTALL = 'pip install -e ".[docs]"'
 
-# The one job of the matrix that installs the `docs` extra. **The extra needs Python 3.10
-# or later**, so the Python 3.9 job of the matrix can never hold it, and an install on all
-# six jobs is no reading at all.
+# The one job of the matrix that installs the `docs` extra. One run of the slug case is the
+# whole requirement, so an install on every job of the matrix buys nothing.
 DOCS_EXTRA_CONDITIONS = ("matrix.os == 'ubuntu-latest'", "matrix.python-version == '3.13'")
 
 # One step of a job, as `.github/workflows/test.yml` indents it.
@@ -321,9 +320,9 @@ def test_one_job_of_the_test_matrix_installs_the_documentation_extra() -> None:
     of #524 measured the slug case as such a case, because every job installed the `dev`
     extra alone. #529 removed the finding.
 
-    **The extra reaches one job and not six.** `griffe` 2.1.0 requires Python 3.10, and the
-    matrix runs Python 3.9, so the Python 3.9 job can never install this extra. One report
-    of a run is what the skip gate reads, so one job carries the extra.
+    **The extra reaches one job and not every job.** One report of a run is what the skip
+    gate reads, so one job carries the extra. #575 removed the second reason: `griffe`
+    2.1.0 requires Python 3.10, which every interpreter of the matrix meets.
 
     **The reading covers the `test` job alone.** `matrix.python-version` resolves to nothing
     in a job that runs no matrix, so a step of another job would install the extra on every

@@ -2763,6 +2763,49 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
+- **Python 3.9 leaves the supported set** (#575). Round
+  TBD. **The user rules on 2026-08-10 that Python 3.9 leaves the set**, because it reached
+  its end of life in October 2025. **Five dependabot pull requests each read
+  `requires_python: >=3.10` against a matrix that ran Python 3.9**, so each one turned five
+  jobs red and dependabot raised it again after every close. **Four records state the
+  interpreter set, and a change that reaches three of them leaves a reader with a wrong
+  page.** `requires-python` of `pyproject.toml` reads `>=3.10`, the
+  `Programming Language :: Python :: 3.9` classifier leaves that file, the matrix of
+  `.github/workflows/test.yml` runs 3.10 through 3.13, and `FR-foundation-12`,
+  `FR-foundation-13`, `README.md`, `docs/specs/spec.md`, `docs/specs/spec.html` and
+  `docs/migration-0.6-to-1.0.md` each state the new floor. **`target-version` of
+  `[tool.ruff]` reads `py310`, which is a fifth statement of the same floor**, and `ruff`
+  reads it to decide which syntax a lint rule accepts. **New file
+  `tests/test_interpreter_set.py` holds those records against each other**, so a later
+  interpreter change moves all of them or fails a case. **The case came first and it failed
+  on a mutation of one record**:
+  ``AssertionError: the records of the interpreter set part: ['pyproject.toml requires >=3.10 and the matrix runs 3.9 through 3.13']``,
+  measured with `requires-python` moved alone and the file restored. **A reader that finds
+  no interpreter reports agreement over an empty set**, so
+  `test_every_reader_finds_an_interpreter` states the floor of every reader and five cases
+  drive `disagreements` over text the file holds. **The matrix falls from six jobs to
+  five**, so `MATRIX_JOB_COUNT` of `tests/skip_gate.py` reads 5 and the skip gate downloads
+  nine reports rather than ten. **`test (ubuntu-latest, 3.9)` is a required status check of
+  `dev`, and no job produces it after this round.** A required check that never reports
+  refuses every merge, so `.claude/rules/batch-gate.md` states eleven required contexts and
+  `tests/test_batch_gate_protection_rule.py` holds the same eleven. **The user removes the
+  context at the provider, and no agent removes it.** A read of 2026-08-10 reports that the
+  user already made that change: `gh api repos/Crank-Git/ja4plus/branches/dev/protection`
+  returns the eleven names the rule file lists, so the two live cases of that file pass
+  rather than fail. **Two cases of `tests/test_breaking_change_record.py` read the record
+  for the floor, and each one demanded a numbered round.** A member writes `TBD` until the
+  batch gate, so a floor move could satisfy neither case on the branch that makes it. Each
+  reader now accepts the unassigned record beside a numbered one, and
+  `test_the_floor_reader_reads_no_entry_that_records_no_round_at_all` states that an entry
+  with no round sentence still fails. The module cases keep the numbered reader. **The five
+  pins that Python 3.10 unblocks stay where they are**, because #576 takes them, and each
+  pin comment now names that issue rather than a matrix row that no longer runs. **No file
+  under `ja4plus/` changes and no fingerprint moves.** The conformance suite reports 1635
+  passed, 143 skipped and 140 xfailed before this round and the same three counts after it.
+  **This change is breaking, and #578 carries it into version 1.1.0.** The two
+  breaking-change tables of this record hold version 0.6.0 against version 1.0.0, so the
+  release section of version 1.1.0 records this move and those tables do not.
+
 - **Version 1.0.0 reaches the repository, and the development status moves to
   `5 - Production/Stable`** (#543). Round 207. Three lines change. `ja4plus/__init__.py:101`
   reads `__version__ = "1.0.0"`, the release heading of this file reads

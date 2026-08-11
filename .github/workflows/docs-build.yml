@@ -55,7 +55,8 @@ jobs:
 
       - name: Set up Python
         # The `docs` extra needs Python 3.10 or later, because `griffe` 2.1.0 requires it.
-        # The package floor of Python 3.9 stays, because no user builds the site.
+        # #575 moved the package floor to Python 3.10, so this job needs no interpreter that
+        # the test matrix leaves out.
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.13"
