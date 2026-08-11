@@ -7,7 +7,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 - **The floating-date reader cuts a code span before it matches** (#589). Round
-  TBD. **`floating_sentences` of `tests/test_batch_gate_protection_rule.py` read a code
+  217. **`floating_sentences` of `tests/test_batch_gate_protection_rule.py` read a code
   span as prose**, so an identifier that holds a barred word failed a case that no prose
   sentence broke. #586 wrote a sentence that states the cost of a fetch and names the
   command `git gc --prune=now`, and
@@ -65,7 +65,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   1635 passed, 143 skipped and 140 xfailed.
 
 - **One command fetches the two recorded change sets** (#586). Round
-  TBD. **Each fetch of a shallow clone reads `.git/shallow`, and it refuses to finish
+  216. **Each fetch of a shallow clone reads `.git/shallow`, and it refuses to finish
   where that file moved since the read.** #528 wrote two commands in the step `Fetch the
   two recorded change sets`, and each one rewrote that file on a clone of depth 1. Run
   https://github.com/Crank-Git/ja4plus/actions/runs/31452971377 holds the failure, a push
