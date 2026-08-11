@@ -5,8 +5,8 @@
 reader of a green run took that for a pass. This file holds the condition that refuses
 such a case.
 
-#530 widened the reach of the gate from the six matrix jobs to the ten reports of the five
-jobs that run cases. The section `The reach` holds `.github/workflows/test.yml` against
+#530 widened the reach of the gate from the matrix jobs to the reports of the five jobs
+that run cases. The section `The reach` holds `.github/workflows/test.yml` against
 that rule.
 """
 
@@ -50,7 +50,7 @@ GATE_JOB = "skip-gate"
 # refuses, so a fixture can leave one case out of one job on purpose.
 ANCHOR = "tests.test_anchor::test_the_job_ran_something"
 
-JOB_LABELS = [f"test-results-ubuntu-latest-py3.{minor}" for minor in range(9, 14)] + [
+JOB_LABELS = [f"test-results-ubuntu-latest-py3.{minor}" for minor in range(10, 14)] + [
     "test-results-macos-latest-py3.12"
 ]
 
@@ -110,14 +110,14 @@ def write_reports(directory: Path, jobs: JobMap) -> Path:
     return directory
 
 
-def six_jobs(cases: CaseMap) -> Dict[str, Dict[str, Optional[str]]]:
-    """Return the same case map under the six labels of the matrix.
+def matrix_jobs(cases: CaseMap) -> Dict[str, Dict[str, Optional[str]]]:
+    """Return the same case map under every label of the matrix.
 
     Args:
         cases: The case map every job reports. The anchor case joins it.
 
     Returns:
-        A map of six job labels against that case map.
+        A map of every job label of the matrix against that case map.
     """
     jobs: Dict[str, Dict[str, Optional[str]]] = {}
     for label in JOB_LABELS:
@@ -130,7 +130,7 @@ def six_jobs(cases: CaseMap) -> Dict[str, Dict[str, Optional[str]]]:
 def every_job(
     matrix_cases: CaseMap, other_cases: Optional[JobMap] = None
 ) -> Dict[str, Dict[str, Optional[str]]]:
-    """Return the ten reports the download holds on a whole run.
+    """Return the nine reports the download holds on a whole run.
 
     Args:
         matrix_cases: The case map every job of the matrix reports.
@@ -138,9 +138,9 @@ def every_job(
             the map leaves out reports the anchor case alone.
 
     Returns:
-        A map of ten report labels against their case maps.
+        A map of nine report labels against their case maps.
     """
-    jobs = six_jobs(matrix_cases)
+    jobs = matrix_jobs(matrix_cases)
     for label in OTHER_JOB_LABELS:
         entry: Dict[str, Optional[str]] = {ANCHOR: None}
         entry.update((other_cases or {}).get(label, {}))
@@ -289,13 +289,13 @@ def test_the_reader_refuses_a_directory_that_holds_no_report(tmp_path: Path) -> 
 
 def test_a_case_that_every_job_skipped_reads_as_a_universal_skip(tmp_path: Path) -> None:
     """This is the shape #438 measured, and the gate exists to name it."""
-    write_reports(tmp_path, six_jobs({"tests.test_a::test_c": "this clone holds no parent"}))
+    write_reports(tmp_path, matrix_jobs({"tests.test_a::test_c": "this clone holds no parent"}))
     assert universal_skips(read_reports(tmp_path)) == ["tests.test_a::test_c"]
 
 
 def test_a_case_that_one_job_ran_reads_as_no_universal_skip(tmp_path: Path) -> None:
     """A macOS case that skips on Linux runs somewhere, so the gate passes it."""
-    jobs = six_jobs({"tests.test_a::test_c": "the /dev/bpf devices are macOS"})
+    jobs = matrix_jobs({"tests.test_a::test_c": "the /dev/bpf devices are macOS"})
     jobs["test-results-macos-latest-py3.12"]["tests.test_a::test_c"] = None
     write_reports(tmp_path, jobs)
     assert universal_skips(read_reports(tmp_path)) == []
@@ -305,7 +305,7 @@ def test_a_case_that_one_job_alone_holds_and_skips_reads_as_a_universal_skip(
     tmp_path: Path,
 ) -> None:
     """A case the other jobs never collect still ran nowhere, so an absence adds no pass."""
-    jobs = six_jobs({})
+    jobs = matrix_jobs({})
     jobs["test-results-macos-latest-py3.12"]["tests.test_a::test_c"] = "a limit"
     write_reports(tmp_path, jobs)
     assert universal_skips(read_reports(tmp_path)) == ["tests.test_a::test_c"]
@@ -316,7 +316,7 @@ def test_a_case_that_one_job_alone_holds_and_skips_reads_as_a_universal_skip(
 
 def test_the_gate_fails_a_case_that_skips_in_every_job(tmp_path: Path) -> None:
     """The failing case of #524: a case that runs nowhere refuses the merge."""
-    reasons = reasons_for(tmp_path, six_jobs({"tests.test_a::test_c": "a limit"}))
+    reasons = reasons_for(tmp_path, matrix_jobs({"tests.test_a::test_c": "a limit"}))
     assert len(reasons) == 1
     assert "tests.test_a::test_c" in reasons[0]
 
@@ -325,7 +325,7 @@ def test_the_gate_passes_the_same_case_under_an_allowlist_entry(tmp_path: Path) 
     """A capture grant no runner holds is a legitimate entry, and #524 states it."""
     reasons = reasons_for(
         tmp_path,
-        six_jobs({"tests.test_a::test_c": "a limit"}),
+        matrix_jobs({"tests.test_a::test_c": "a limit"}),
         [allowance("tests.test_a::test_c", "no runner grants the capture privilege")],
     )
     assert reasons == []
@@ -335,7 +335,7 @@ def test_the_gate_fails_an_allowlist_entry_that_names_no_reason(tmp_path: Path) 
     """An entry with no reason is the defect #524 exists to remove."""
     reasons = reasons_for(
         tmp_path,
-        six_jobs({"tests.test_a::test_c": "a limit"}),
+        matrix_jobs({"tests.test_a::test_c": "a limit"}),
         [allowance("tests.test_a::test_c", "   ")],
     )
     assert len(reasons) == 1
@@ -346,7 +346,7 @@ def test_the_gate_fails_a_reasonless_entry_whose_case_runs_somewhere(tmp_path: P
     """The reason rule reads the entry alone, so no report state hides such an entry."""
     reasons = reasons_for(
         tmp_path,
-        six_jobs({"tests.test_a::test_c": None}),
+        matrix_jobs({"tests.test_a::test_c": None}),
         [allowance("tests.test_a::test_c", "")],
     )
     assert len(reasons) == 1
@@ -355,14 +355,14 @@ def test_the_gate_fails_a_reasonless_entry_whose_case_runs_somewhere(tmp_path: P
 
 def test_the_gate_fails_a_report_set_smaller_than_the_matrix(tmp_path: Path) -> None:
     """An absent report is not a passed job, and a smaller union proves fewer runs."""
-    reasons = reasons_for(tmp_path, {"test-results-ubuntu-latest-py3.9": {ANCHOR: None}})
+    reasons = reasons_for(tmp_path, {"test-results-ubuntu-latest-py3.10": {ANCHOR: None}})
     assert len(reasons) == 1
     assert "1 report" in reasons[0]
 
 
 def test_the_gate_passes_the_suite_that_runs_every_case(tmp_path: Path) -> None:
     """A green direction that nothing proves is a gate that may pass always."""
-    assert reasons_for(tmp_path, six_jobs({"tests.test_a::test_c": None})) == []
+    assert reasons_for(tmp_path, matrix_jobs({"tests.test_a::test_c": None})) == []
 
 
 # --- The allowlist ------------------------------------------------------------------------
@@ -396,7 +396,7 @@ def test_the_tracked_allowlist_names_a_reason_on_every_entry() -> None:
 
 def test_the_census_names_every_universal_skip(tmp_path: Path) -> None:
     """A gate that printed a verdict alone would leave the census to a log search."""
-    write_reports(tmp_path, six_jobs({"tests.test_a::test_c": "a limit"}))
+    write_reports(tmp_path, matrix_jobs({"tests.test_a::test_c": "a limit"}))
     lines = census_lines(read_reports(tmp_path), [allowance("tests.test_a::test_c", "a limit")])
     assert any("tests.test_a::test_c" in line for line in lines)
 
@@ -435,7 +435,7 @@ def test_the_reader_holds_no_case_of_a_worker_worktree(tmp_path: Path) -> None:
     (hidden / "test-results.xml").write_text(
         junit_report({"tests.test_other::test_c": None}), encoding="utf-8"
     )
-    write_reports(tmp_path / "reports", six_jobs({"tests.test_a::test_c": None}))
+    write_reports(tmp_path / "reports", matrix_jobs({"tests.test_a::test_c": None}))
     reports = read_reports(tmp_path / "reports")
     assert all("tests.test_other::test_c" not in report.cases for report in reports)
 
@@ -596,7 +596,7 @@ def test_the_download_pattern_matches_the_artifact_name_of_every_job() -> None:
 def test_a_case_that_one_job_outside_the_matrix_holds_and_skips_fails_the_gate(
     tmp_path: Path,
 ) -> None:
-    """This is the case the six-report reader of #524 accepted and this reader refuses.
+    """This is the case the matrix-report reader of #524 accepted and this reader refuses.
 
     The `conformance` job runs `pytest tests/ -m spec_validation`, and every other job
     deselects that marker. A spec_validation case that skips there therefore ran nowhere,
@@ -608,9 +608,9 @@ def test_a_case_that_one_job_outside_the_matrix_holds_and_skips_fails_the_gate(
     assert "tests.test_spec_validation::test_c" in reasons[0]
 
 
-def test_the_six_report_reader_accepts_the_same_case(tmp_path: Path) -> None:
+def test_the_matrix_report_reader_accepts_the_same_case(tmp_path: Path) -> None:
     """The reader of #524 downloaded `test-results-*` alone, so that case reached it never."""
-    reasons = reasons_for(tmp_path, six_jobs({}), minimum=MATRIX_JOB_COUNT)
+    reasons = reasons_for(tmp_path, matrix_jobs({}), minimum=MATRIX_JOB_COUNT)
     assert reasons == []
 
 
@@ -758,7 +758,7 @@ def test_the_census_groups_the_cases_a_prefix_entry_covers(tmp_path: Path) -> No
 
 
 def test_the_census_names_the_corpus_the_reports_hold(tmp_path: Path) -> None:
-    """The corpus size is the reach of the reader, and a reader of six reports saw less."""
+    """The corpus size is the reach of the reader, and a reader of the matrix saw less."""
     write_reports(tmp_path, every_job({"tests.test_a::test_c": None}))
     lines = census_lines(read_reports(tmp_path), [])
     assert "2 cases between them" in lines[0]

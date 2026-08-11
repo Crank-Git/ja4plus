@@ -227,8 +227,8 @@ FR-pre-release-validation-38a — One job of the matrix of `.github/workflows/te
 installs the `docs` extra beside the `dev` extra. That job runs
 `test_the_slug_of_a_case_matches_the_slug_of_the_build` of
 `tests/test_documentation_site.py`, and the skip gate therefore reads one run of that case.
-The `docs` extra needs Python 3.10 or later, so the Python 3.9 job of the matrix holds no
-such install.
+The other jobs of the matrix hold no such install, because one run of the case is the whole
+requirement.
 
 FR-pre-release-validation-38b — An entry of `tests/universal_skips.json` names one case
 under `case`, or it names one class of skip under `skip_message_prefix`. A prefix entry
@@ -352,8 +352,8 @@ manual event and on a push, as well as on a pull-request event.
 - The Linux host verifies a Linux code path. It predicts no `ubuntu-latest` result,
   because the runner holds another kernel, another processor count, another memory size
   and another Python version.
-- The Linux host measures `python3.12` alone. It holds no other interpreter, so the 3.9,
-  the 3.10, the 3.11 and the 3.13 rows of the matrix get no measurement on that host.
+- The Linux host measures `python3.12` alone. It holds no other interpreter, so the 3.10,
+  the 3.11 and the 3.13 rows of the matrix get no measurement on that host.
 - Every measurement this host produces carries the two rules above beside it. A record
   that omits them states more than the host measured.
 - The clean environment installs no development extra, so the run reads the shipped
@@ -518,8 +518,8 @@ the checkout is.
 - A reading of the FoxIO material. This feature set settles no register entry.
 - A change to a fingerprinter. A candidate that exposes a wrong value opens a ruling
   issue.
-- The 3.9, 3.10, 3.11 and 3.13 rows of the matrix on the granted Linux host. That host
-  holds `python3.12` alone.
+- The 3.10, 3.11 and 3.13 rows of the matrix on the granted Linux host. That host holds
+  `python3.12` alone.
 - The one-million-packet run on the granted Linux host. That host is shared, and #410
   already runs the memory ceiling case there.
 

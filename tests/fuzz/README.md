@@ -15,7 +15,7 @@ Two jobs in `.github/workflows/test.yml` run the suite:
 
 - The `fuzz` job runs `pytest tests/fuzz/` on Python 3.13. It names the suite, so a red
   malformed-input case is visible without a log search.
-- The `test` job reads `tests/`, so it runs the suite on Python 3.9 to 3.13 and on
+- The `test` job reads `tests/`, so it runs the suite on Python 3.10 to 3.13 and on
   macOS.
 
 Both jobs answer a pull request that targets `master` or `dev`. A pull request that

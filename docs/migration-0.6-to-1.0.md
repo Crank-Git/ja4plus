@@ -34,6 +34,10 @@ sets of results.
 | The certificate readers | `compute_ja4x_from_pem` and `compute_ja4x_from_der` catch `Exception`, so they return `None` for every input they cannot read. | Each one names the errors it expects. An input that returned `None` in version 0.6.0 can now raise. | A bare `Exception` handler hides a defect of the caller, and `CLAUDE.md` binds a reader to the errors it expects. | Round 133, #319 |
 | The Python floor | `requires-python` is `>=3.8`. | `requires-python` is `>=3.9`, and continuous integration runs Python 3.9 through Python 3.13. | Python 3.8 reached its end of life in October 2024. | Round 135, #76 |
 
+**The Python floor moved again after version 1.0.0.** `requires-python` reads `>=3.10`,
+and continuous integration runs Python 3.10 through Python 3.13. Python 3.9 reached its
+end of life in October 2025, and #575 records the ruling.
+
 ## The fingerprints that move
 
 Seven changes move a fingerprint value, and the table below holds one row for each. A

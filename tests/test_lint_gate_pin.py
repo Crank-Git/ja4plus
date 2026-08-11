@@ -61,8 +61,9 @@ holds the question of whether the new version reports a finding the old one did 
 **A case here cannot test that a pinned version installs on every interpreter of the test
 matrix.** That read needs the package index, and this suite opens no network connection.
 #446 took the measurement by hand and `docs/specs/spec.md` records it: `pytest` 9.1.1 and
-`build` 1.5.0 each require Python 3.10, and the matrix runs Python 3.9. Each pin therefore
-names the newest release that carries a wheel for Python 3.9 through 3.13.
+`build` 1.5.0 each require Python 3.10, and the matrix ran Python 3.9 that day. Each pin
+therefore names the newest release that carries a wheel for Python 3.9 through 3.13. #575
+dropped Python 3.9 and #576 takes the five pins that release.
 
 These cases read prose and configuration. They import nothing from `ja4plus` and they
 produce no fingerprint.

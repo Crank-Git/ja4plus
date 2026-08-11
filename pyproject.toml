@@ -21,7 +21,7 @@ dynamic = ["version"]
 description = "JA4+ network fingerprinting library for TLS, TCP, HTTP, SSH, X.509, and DHCP analysis"
 readme = "README.md"
 license = {text = "BSD-3-Clause AND LicenseRef-FoxIO-1.1"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["ja4", "ja4plus", "fingerprinting", "tls", "tcp", "http", "ssh", "x509", "network", "security", "scapy"]
 classifiers = [
     # **`FR-release-12` states this line, and #69 ruled that `Development Status :: 3 -
@@ -36,7 +36,6 @@ classifiers = [
     "Topic :: Security",
     "Topic :: System :: Networking :: Monitoring",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -57,12 +56,10 @@ dev = [
     #
     # **A version change is a deliberate commit, and this line is its whole diff.**
     #
-    # **The pin names the newest release that installs on every interpreter of the test
-    # matrix, and not the newest release.** `pytest` 9.1.1 requires Python 3.10, and
-    # `.github/workflows/test.yml` runs Python 3.9. An exact pin of 9.1.1 turns every
-    # Python 3.9 job red. 8.4.2 is the newest release that carries a wheel for Python 3.9
-    # through 3.13. Verified against https://pypi.org/pypi/pytest/9.1.1/json, retrieved
-    # 2026-08-10.
+    # **This pin declines `pytest` 9.1.1, and #576 takes it.** 9.1.1 requires Python 3.10,
+    # and the matrix ran Python 3.9 until #575 moved the floor. 8.4.2 is the newest release
+    # that carries a wheel for Python 3.9 through 3.13. Verified against
+    # https://pypi.org/pypi/pytest/9.1.1/json, retrieved 2026-08-10.
     "pytest==8.4.2",
     # **The version is exact, and #446 records the decision.** A `pytest-cov` release that
     # changes the report format moves the number the coverage gate reads. **A version
@@ -115,9 +112,9 @@ dev = [
     # changes the wheel it produces moves the result of that gate. **A version change is a
     # deliberate commit, and this line is its whole diff.**
     #
-    # **1.5.0 is the newest release and this pin declines it.** It requires Python 3.10,
-    # and the test matrix runs Python 3.9. 1.4.4 is the newest release that carries a
-    # wheel for Python 3.9 through 3.13. Verified against
+    # **This pin declines `build` 1.5.0, and #576 takes it.** 1.5.0 requires Python 3.10,
+    # and the matrix ran Python 3.9 until #575 moved the floor. 1.4.4 is the newest release
+    # that carries a wheel for Python 3.9 through 3.13. Verified against
     # https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
     "build==1.4.4",
     # `FR-release-9` states `twine check` on the built files, and
@@ -128,10 +125,10 @@ dev = [
     # that changes what `check` accepts moves the result of the release gate. **A version
     # change is a deliberate commit, and this line is its whole diff.**
     #
-    # **7.0.0 is the newest release and this pin declines it.** It requires Python 3.10, and
-    # the test matrix runs Python 3.9. 6.2.0 is the newest release that states
-    # `requires_python` `>=3.9`. Verified against https://pypi.org/pypi/twine/json, retrieved
-    # 2026-08-10.
+    # **This pin declines `twine` 7.0.0, and #576 takes it.** 7.0.0 requires Python 3.10,
+    # and the matrix ran Python 3.9 until #575 moved the floor. 6.2.0 is the newest release
+    # that states `requires_python` `>=3.9`. Verified against
+    # https://pypi.org/pypi/twine/json, retrieved 2026-08-10.
     "twine==6.2.0",
 ]
 lookup = [
@@ -160,9 +157,9 @@ lookup = [
 # `mkdocstrings>=0.28` and `griffe>=0.49`, and 1.0.6 satisfies the first one. The upper
 # bound lives here.
 #
-# **The extra needs Python 3.10 or later, and the package floor of Python 3.9 stays.** No
-# user builds the site, `griffe` 2.1.0 requires Python 3.10, and `mkdocstrings` 1.0.0
-# requires it too. The documentation job names one version, and the test matrix keeps 3.9.
+# **The extra needs Python 3.10 or later, and every interpreter of the matrix meets that
+# floor since #575.** `griffe` 2.1.0 requires Python 3.10, and `mkdocstrings` 1.0.0
+# requires it too. The documentation job names one version.
 #
 # Verified against https://pypi.org/project/mkdocs-material/9.7.7/,
 # https://pypi.org/project/mkdocstrings-python/1.15.0/,
@@ -241,7 +238,10 @@ markers = [
 ]
 
 [tool.ruff]
-target-version = "py39"
+# `tests/test_interpreter_set.py` holds this value against `requires-python`. `ruff` reads
+# it to decide which syntax a lint rule accepts, so a stale value accepts syntax that the
+# oldest supported interpreter refuses.
+target-version = "py310"
 # The formatter reaches its smallest diff on the existing code at 100 columns.
 # A wider limit changes one more line, and a narrower limit changes 32 more.
 line-length = 100
@@ -264,8 +264,10 @@ ignore = [
 ]
 
 [tool.mypy]
-# `python_version` stays unset. `mypy` 2.x rejects the value `3.9`, so the 3.9 gate is
-# the test job for Python 3.9, not the type check.
+# `python_version` stays unset, and the floor gate is the test job of the oldest
+# interpreter rather than the type check. #446 records the reading: `mypy` 2.x rejects the
+# value `3.9`, which was the floor that day. #575 moved the floor to Python 3.10 and left
+# the key unset, because no case measured the value against a `mypy` 2.x release.
 #
 # FR-typed-api-8 states `mypy --strict ja4plus/`. This key holds the same setting, so an
 # editor that reads the configuration reports what the gate reports. `files` keeps the
