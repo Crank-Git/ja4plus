@@ -4,6 +4,144 @@ All notable changes to ja4plus are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **The floating-date reader cuts a code span before it matches** (#589). Round
+  217. **`floating_sentences` of `tests/test_batch_gate_protection_rule.py` read a code
+  span as prose**, so an identifier that holds a barred word failed a case that no prose
+  sentence broke. #586 wrote a sentence that states the cost of a fetch and names the
+  command `git gc --prune=now`, and
+  `test_no_live_sentence_of_the_rule_file_dates_itself_against_the_reader` reported it:
+  `AssertionError: .claude/rules/batch-gate.md dates these sentences against the day a
+  reader reads them, and this file records the cost of a reading quoted as a standing
+  fact: ['The command costs 40 KB, after `git gc --prune=now` on each read.']`. **The
+  sentence names no reading day.** `FLOATING_DATE` holds `\bnow\b`, and `--prune=now`
+  carries that word inside a code span, because `=` closes a word boundary.
+  **`.claude/rules/ste.md` reproduces code, configuration, commands, identifiers and paths
+  verbatim**, under `## What is not rewritten`, so a reader that measures prose reads no
+  code span. **This round wrote no second reader**, and it called `without_quoted` of
+  `tests/test_ruling_vocabulary.py`, which #548 records and round 210 repaired. **The
+  reader reports the sentence the file holds and never the cut form**, so the cut reaches
+  the match alone and a reader of the failure reads the text of the file.
+  **Sixteen cases came first and eight of them failed against the committed reader**: six
+  parameter sets of `test_the_floating_date_reader_reads_no_barred_word_of_a_code_span`,
+  which name `git gc --prune=now`, `git log --since=now`, `--date=today`,
+  `docs/nowadays.md`, `pytest -k recently` and `CURRENTLY=1`, beside
+  `test_the_floating_date_reader_reads_no_barred_word_of_a_fenced_block` and
+  `test_the_live_floating_date_case_passes_on_a_code_span_of_the_rule_file`. **Three cases
+  drive the live case in both directions**: one writes the #586 sentence into the rule file
+  and requires a pass, and two write a sentence that carries a barred word in prose and
+  require a failure, where `PROSE_MUTATIONS` holds the bare `now` beside `currently`. **Each one restores the file in a `finally` block and
+  then reads the restored text**, so a case that fails leaves the file as it found it.
+  **Three cases prove that the cut removes the span alone**, where a barred word stands in
+  the prose beside a code span. **`test_the_floating_date_reader_reads_the_sentences_of_the_rule_file`
+  states the floor**, because a reader that finds no sentence reports a clean file rather
+  than a measurement: the rule file holds 203 sentences against a floor of 100, and the cut
+  keeps `required status check` in the prose.
+  **Three cases record a limit rather than a repair.** A fenced block reaches the
+  sentence reader, and the cut removes its content because the join pairs the opening
+  fence with the closing one, which is an accident of the join and not a design. A code
+  span that a full stop and a space split reaches two sentences, each half then carries
+  one backtick, and the reader still reports it. An unclosed code span moves every pair
+  after it, so the next span reports, and a stray backtick is a defect of the Markdown.
+  **No sentence and no fenced block of the rule file meets any of the three readings
+  today.** **A sweep of all 49 readers of `tests/` that
+  match a pattern over prose found no second reachable instance, and it records three
+  findings for a later round**: `COVERAGE_CLAIMS` of `tests/test_readme_contracts.py`,
+  `BLANKET_WORD` of `tests/test_changelog_sentence_exemption.py` and `SET_SCOPE` of
+  `tests/test_requirement_scope.py` each match over prose and cut no code span. **No
+  collision reaches any of the three today**, because each one needs a multi-word phrase or
+  a neighbouring word, and this round repairs none of them. **Six readers already cut a
+  span**: `without_quoted` and `readable_prose` of `tests/test_ruling_vocabulary.py`,
+  `without_code` of `tests/test_statistics_thread_term.py`, `sentences` of
+  `tests/test_changelog_sentence_exemption.py`, `readable_prose` of
+  `tests/test_documentation_version_claims.py` and `unfenced_lines` of
+  `tests/release_body.py`. **The suite grows by the sixteen cases this round writes**:
+  `pytest --collect-only` reads 6667 cases at the base commit `4a08fea` and 6683 here, and
+  the unit suite reports 4707 passed, 7 skipped and 8 xfailed against 4691, 7 and 8 at the
+  base. **The coverage count does not move**, because this round adds no statement to the
+  package: `--cov=ja4plus` reports 4316 statements, 273 missed and 94 percent. **No file
+  under `ja4plus/` changes and no fingerprint moves**, and the conformance suite reports
+  1635 passed, 143 skipped and 140 xfailed.
+
+- **One command fetches the two recorded change sets** (#586). Round
+  216. **Each fetch of a shallow clone reads `.git/shallow`, and it refuses to finish
+  where that file moved since the read.** #528 wrote two commands in the step `Fetch the
+  two recorded change sets`, and each one rewrote that file on a clone of depth 1. Run
+  https://github.com/Crank-Git/ja4plus/actions/runs/31452971377 holds the failure, a push
+  of `master` at `2129964`, on job `test (ubuntu-latest, 3.13)`. The log reads
+  `* [new ref]  46aa502ca47f3c29f3c5ece15e4e78500e2f59c5 -> refs/ja4plus/recorded-defect`
+  and then `fatal: shallow file has changed since we read it`. **The first fetch succeeded
+  and the second one failed**, which is the shape of a race and not of a broken reference.
+  **One command that names both refspecs writes the shallow file once**, and the two
+  refspecs name the same objects the two commands named.
+  **A clone of depth 1 outside every worktree proves the one command**, and that proof
+  needs no runner. The command reported `* [new ref]` twice, it exited 0, `git show-ref`
+  read `refs/ja4plus/recorded-defect` and `refs/ja4plus/recorded-control`, and
+  `git rev-parse` read the parent of each commit as `1fcec15` and `cb0ec62`. The two change
+  sets then read 6 paths and 3 paths, which is the pair `recorded_change_set` needs.
+  **The shallow file carried one line before the command and three after it**, so the one
+  command writes the two boundaries the two commands wrote. **The cost is 40 KB**, measured
+  after `git gc --prune=now` on each read: the clone holds 15088 KB and the fetch raises it
+  to 15128 KB. #528 read 32 KB for the pair, against a clone of 14884 KB, and the object set
+  does not move, so the difference is the growth of the repository between the two reads.
+  **Three steps of the `test` job fetch, and the other two need no repair.** `Fetch the
+  base commit of the pull request` and `Resolve the reference commit of a run that carries
+  no pull request` each run one command, and they carry opposite `if` conditions, so one
+  event reaches one of them. **The checkout writes the shallow file first**, so a
+  pull-request job wrote it four times before this round and it writes it three times now.
+  **`.github/workflows/test.yml` is the one workflow of this repository that fetches**, so
+  no fourth shallow write stands anywhere else.
+  **The cases came first and four of them failed**, each against the committed workflow:
+  `assert 2 == 1` from
+  `test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command[Fetch the two recorded change sets]`,
+  beside `test_the_test_job_fetches_the_two_recorded_change_sets`,
+  `test_the_recorded_fetch_step_names_the_tag_that_holds_each_commit` and
+  `test_the_batch_gate_rule_records_the_one_fetch_of_the_recorded_change_sets`.
+  **`test_the_workflow_holds_no_fetch_step_this_list_omits` refuses a fourth fetch**, so a
+  step a later round adds either reaches `FETCH_STEPS` or fails a case.
+  **Two tags hold the commits the step fetches**, and the step names each tag beside its
+  identifier. `record/412-defect` holds `46aa502ca47f3c29f3c5ece15e4e78500e2f59c5` and
+  `record/429-control` holds `f140a5c318dfbe443b38b8f1a6a7df7d6b098cf0`. The project
+  manager created both on 2026-08-10, after a branch sweep left the first commit reachable
+  from no branch. **That reachability caused no measured failure, and the project manager
+  stated it as the cause before reading the error.** The tags stand on their own reading: a
+  commit a workflow fetches is a commit some reference must hold. **The step fetches the
+  identifier and never the tag**, because a tag moves and an identifier does not, and a
+  later sweep now finds the reference beside the commit it must keep. **A read of the
+  provider on 2026-08-10 reports each tag as a commit and never a tag object**, so no
+  reader has to dereference a tag.
+  **Five manual runs of one head prove the step on the runner, and each one concluded
+  `success` on all eleven jobs.** The runs are 31454475965, 31454481311, 31454485420,
+  31454490643 and 31454494254, each at head `3e79d0e`. **The `test` job runs five jobs, so
+  the five runs ran the repaired step 25 times and all 25 concluded `success`.**
+  **A manual run reproduces the configuration that failed**, because the measurement of
+  #586 is a push of `master` and each event carries no pull request. The step
+  `Fetch the base commit of the pull request` therefore skipped on all 25 jobs, and
+  `Resolve the reference commit of a run that carries no pull request` ran instead, so each
+  job wrote the shallow file three times.
+  **Warning: 25 green readings bound a rate and they prove no absence.** Zero failures in
+  25 puts the failure rate under 12 percent at 95 percent confidence, and no lower. **The
+  proof of this repair is the mechanism and not the count**: the step holds one command, so
+  it writes the shallow file once, and the second write that failed no longer exists.
+  **A manual run reads the branch head and not the merge result**, which
+  `.claude/rules/batch-gate.md` states, so these runs prove the branch alone.
+  **The suite grows by the fourteen cases this round writes.** `pytest --collect-only`
+  reads 6653 cases at the base commit `90b93e2` and 6667 here, and the unit suite reports
+  4691 passed, 7 skipped and 8 xfailed against 4677, 7 and 8 at the base. **The coverage
+  count does not move**, because this round adds no statement to the package:
+  `--cov=ja4plus` reports 4316 statements, 273 missed and 94 percent at the base commit and
+  the same three readings here.
+  **The self-review widened two readers and raised one defect that this round declines.**
+  `step_block` now stops at the key of the next job as well as at the next step, so a call
+  on the last step of a job reads no line of the job below it. `COMMAND_FETCH` now reads
+  `run: git fetch` and `git -C <path> fetch` beside the block-scalar form, because a
+  narrower pattern would miss a fetch and report agreement. **#589 holds the defect**:
+  `floating_sentences` of `tests/test_batch_gate_protection_rule.py` reads a code span as
+  prose, so `` `git gc --prune=now` `` failed a case that no prose sentence broke.
+  **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
+  reports 1635 passed, 143 skipped and 140 xfailed.
+
 ## [1.1.0] - 2026-08-10
 
 **Warning: read this paragraph before you upgrade. Version 1.1.0 removes Python 3.9 from
