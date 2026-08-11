@@ -56,11 +56,16 @@ dev = [
     #
     # **A version change is a deliberate commit, and this line is its whole diff.**
     #
-    # **This pin declines `pytest` 9.1.1, and #576 takes it.** 9.1.1 requires Python 3.10,
-    # and the matrix ran Python 3.9 until #575 moved the floor. 8.4.2 is the newest release
-    # that carries a wheel for Python 3.9 through 3.13. Verified against
-    # https://pypi.org/pypi/pytest/9.1.1/json, retrieved 2026-08-10.
-    "pytest==8.4.2",
+    # **#576 took this pin from 8.4.2 to 9.1.1**, which #555 reported and #575 unblocked.
+    # 9.1.1 requires Python 3.10, and the floor of this file now states that interpreter.
+    #
+    # **The major release moved no case of this suite.** #576 collected 4669 unit cases
+    # under 8.4.2 and 4670 under 9.1.1, and the one case is the case #576 wrote. The
+    # conformance suite collected 1918 under each release. `pytest` 9.0.0 turns every
+    # `PytestRemovedIn9Warning` into an error and 9.1.0 removes the warned shapes, and this
+    # suite holds none of them. Verified against
+    # https://docs.pytest.org/en/stable/changelog.html, retrieved 2026-08-10.
+    "pytest==9.1.1",
     # **The version is exact, and #446 records the decision.** A `pytest-cov` release that
     # changes the report format moves the number the coverage gate reads. **A version
     # change is a deliberate commit, and this line is its whole diff.**
@@ -69,7 +74,7 @@ dev = [
     # 7.5, which carries `coverage report --format=total`. The continuous-integration
     # floor reads that value.
     #
-    # 7.1.0 is the newest release, and it carries a wheel for Python 3.9 through 3.13.
+    # 7.1.0 is the newest release, and it accepts every interpreter of the supported set.
     # Verified against https://pypi.org/pypi/pytest-cov/7.1.0/json, retrieved 2026-08-10.
     "pytest-cov==7.1.0",
     # **The version is exact, because a floating pin let the lint gate turn red without a
@@ -112,11 +117,12 @@ dev = [
     # changes the wheel it produces moves the result of that gate. **A version change is a
     # deliberate commit, and this line is its whole diff.**
     #
-    # **This pin declines `build` 1.5.0, and #576 takes it.** 1.5.0 requires Python 3.10,
-    # and the matrix ran Python 3.9 until #575 moved the floor. 1.4.4 is the newest release
-    # that carries a wheel for Python 3.9 through 3.13. Verified against
-    # https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
-    "build==1.4.4",
+    # **#576 took this pin from 1.4.4 to 1.5.0**, which #557 reported and #575 unblocked.
+    # 1.5.0 requires Python 3.10, and the floor of this file now states that interpreter.
+    # `python -m tests.release_verification --dist dist` reads the wheel this release
+    # builds, and #576 ran it by hand because no continuous-integration job runs it.
+    # Verified against https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
+    "build==1.5.0",
     # `FR-release-9` states `twine check` on the built files, and
     # `tests/release_verification.py` runs it. The publish workflow installs this extra, so
     # the version lives here and no workflow states one of its own.
@@ -125,11 +131,12 @@ dev = [
     # that changes what `check` accepts moves the result of the release gate. **A version
     # change is a deliberate commit, and this line is its whole diff.**
     #
-    # **This pin declines `twine` 7.0.0, and #576 takes it.** 7.0.0 requires Python 3.10,
-    # and the matrix ran Python 3.9 until #575 moved the floor. 6.2.0 is the newest release
-    # that states `requires_python` `>=3.9`. Verified against
-    # https://pypi.org/pypi/twine/json, retrieved 2026-08-10.
-    "twine==6.2.0",
+    # **#576 took this pin from 6.2.0 to 7.0.0**, which #553 reported and #575 unblocked.
+    # 7.0.0 requires Python 3.10, and the floor of this file now states that interpreter.
+    # `twine check` reported `PASSED` on the wheel and on the source distribution under
+    # this release. Verified against https://pypi.org/pypi/twine/7.0.0/json, retrieved
+    # 2026-08-10.
+    "twine==7.0.0",
 ]
 lookup = [
     "requests>=2.20.0",
@@ -143,34 +150,39 @@ lookup = [
 # changes without a commit. A site generator that changes between two runs moves the
 # build result, and a broken link that failed yesterday can pass today.
 #
-# `mkdocstrings-python` stays on the 1.x line, and **`mkdocstrings` therefore stays below
-# 1.0.0**. `mkdocstrings_handlers/python/handler.py` of the 1.x line imports
-# `mkdocstrings.handlers.base`, and `mkdocstrings` 1.0.0 removed that public module. The
-# pair `mkdocstrings==1.0.6` with `mkdocstrings-python==1.15.0` therefore installs and
-# then fails the build with
-# `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. #391 records the
-# measurement. **An exact pin can still be an incompatible pin**, so
+# **#576 took the two `mkdocstrings` pins across the 1.0.0 boundary together**, which #559
+# and #558 reported and #575 unblocked. `mkdocstrings` 1.0.0 removed the public module
+# `mkdocstrings.handlers`, and `mkdocstrings_handlers/python/handler.py` of the 1.x handler
+# line imported it. The pair `mkdocstrings==1.0.6` with `mkdocstrings-python==1.15.0`
+# therefore installed and then failed the build with
+# `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. #391 records that
+# measurement, and the 2.x handler line imports from `mkdocstrings` directly. **The two
+# entries move as one pair, because each line of the handler names its own generator
+# range.**
+#
+# The declared range carries no upper bound: `mkdocstrings-python` 2.0.5 accepts
+# `mkdocstrings>=0.30`, `mkdocs-autorefs>=1.4` and `griffelib>=2.0`. `griffe` 2.1.0
+# requires `griffelib==2.1.0`, so the entry below satisfies the third one.
+#
+# **An exact pin can still be an incompatible pin**, so
 # `.github/workflows/docs-build.yml` installs this list into an empty environment and
-# builds the site.
+# builds the site. #576 ran `mkdocs build --strict` against these five versions and the
+# build reported no warning.
 #
-# The declared range does not carry the constraint: `mkdocstrings-python` 1.15.0 accepts
-# `mkdocstrings>=0.28` and `griffe>=0.49`, and 1.0.6 satisfies the first one. The upper
-# bound lives here.
-#
-# **The extra needs Python 3.10 or later, and every interpreter of the matrix meets that
-# floor since #575.** `griffe` 2.1.0 requires Python 3.10, and `mkdocstrings` 1.0.0
-# requires it too. The documentation job names one version.
+# **The extra needs Python 3.10 or later, and every interpreter of the supported set meets
+# that floor since #575.** `griffe` 2.1.0, `mkdocstrings` 1.0.6 and `mkdocstrings-python`
+# 2.0.5 each require it. The documentation job names one version.
 #
 # Verified against https://pypi.org/project/mkdocs-material/9.7.7/,
-# https://pypi.org/project/mkdocstrings-python/1.15.0/,
-# https://pypi.org/project/mkdocstrings/0.30.1/,
+# https://pypi.org/pypi/mkdocstrings-python/2.0.5/json,
+# https://pypi.org/pypi/griffe/2.1.0/json,
 # https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md and
-# https://mkdocstrings.github.io/python/usage/, retrieved 2026-08-09.
+# https://mkdocstrings.github.io/python/usage/, retrieved 2026-08-10.
 docs = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
-    "mkdocstrings==0.30.1",
-    "mkdocstrings-python==1.15.0",
+    "mkdocstrings==1.0.6",
+    "mkdocstrings-python==2.0.5",
     "griffe==2.1.0",
 ]
 

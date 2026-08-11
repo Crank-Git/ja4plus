@@ -509,12 +509,12 @@ def _dependency_block(text: str, opener: str) -> list[str]:
 # block and the `docs` extra carry no comment inside their brackets. A reader that collects
 # a comment therefore stays correct against those two blocks, and it fails here.
 DEV_ENTRIES = [
-    "pytest==8.4.2",
+    "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "ruff==0.16.2",
     "mypy>=1.11",
-    "build==1.4.4",
-    "twine==6.2.0",
+    "build==1.5.0",
+    "twine==7.0.0",
 ]
 
 # The entries of the runtime block, in file order. A user who installs `ja4plus` installs
@@ -529,8 +529,8 @@ RUNTIME_ENTRIES = [
 DOCS_ENTRIES = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
-    "mkdocstrings==0.30.1",
-    "mkdocstrings-python==1.15.0",
+    "mkdocstrings==1.0.6",
+    "mkdocstrings-python==2.0.5",
     "griffe==2.1.0",
 ]
 
@@ -616,7 +616,7 @@ def _version_tuple(version: str) -> tuple[int, ...]:
     """Return one version as the integers a comparison reads.
 
     Args:
-        version: The version, as `0.30.1`.
+        version: The version, as `1.0.6`.
 
     Returns:
         The numbers of the version, in order.
@@ -629,12 +629,16 @@ def test_the_mkdocstrings_pin_holds_the_handler_module_its_handler_imports() -> 
 
     `mkdocstrings_handlers/python/handler.py` of the 1.x line imports
     `mkdocstrings.handlers.base`. `mkdocstrings` 1.0.0 removed that public module, so the
-    pair `mkdocstrings==1.0.6` with `mkdocstrings-python==1.15.0` fails the build with
-    `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`.
+    pair `mkdocstrings==1.0.6` with `mkdocstrings-python==1.15.0` failed the build with
+    `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. #576 took the handler
+    to the 2.x line, which imports from `mkdocstrings` directly, and this case holds the
+    lower bound of that line.
 
     Verified against
     https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md, which lists
-    `mkdocstrings.handlers` under the breaking changes of 1.0.0, retrieved 2026-08-09.
+    `mkdocstrings.handlers` under the breaking changes of 1.0.0, retrieved 2026-08-09, and
+    against https://pypi.org/pypi/mkdocstrings-python/2.0.5/json, which states
+    `mkdocstrings>=0.30`, retrieved 2026-08-10.
 
     This case reads two pins as text. It proves no build. The `build` job of
     `.github/workflows/docs-build.yml` proves the build.
