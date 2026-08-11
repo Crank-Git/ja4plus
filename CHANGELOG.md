@@ -4,6 +4,105 @@ All notable changes to ja4plus are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-10
+
+**Warning: read this paragraph before you upgrade. Version 1.1.0 removes Python 3.9 from
+the supported set.** `requires-python` reads `>=3.10`, so a Python 3.9 environment installs
+this release nowhere. **Version 1.0.1 is the release that still installs on Python 3.9.**
+Python 3.9 reached its end of life in October 2025, and #575 records the ruling.
+
+**`requires-python` is part of the published interface, so this move is breaking.** A patch
+release promises that an environment which installed the version before it installs the new
+one, and this release cannot promise that. The version therefore takes a minor bump and
+never a patch bump. **The two breaking-change tables of the version 1.0.0 section hold
+version 0.6.0 against version 1.0.0.** This section records the move instead, because those
+tables do not. The entry of #575 states the same rule.
+
+Version 1.1.0 follows version 1.0.1, and no version stands between them. The date of the
+heading above is the date this release reaches `master`.
+
+**The interpreter floor is the one interface change.** **No behaviour changes and no
+fingerprint moves.** The conformance suite reports 1635 passed, 143 skipped and 140 xfailed
+at version 1.0.1, and it reports the same three counts here. **No published name changes.**
+`ja4plus/__init__.py` promises the same 25 top-level names version 1.0.0 promised, so a
+caller that already runs Python 3.10 upgrades and edits no line. **The classifier holds at
+`Development Status :: 5 - Production/Stable`**, because #69 ruled that the line arrives at
+version 1.0.0 and holds from there.
+
+Version 1.1.0 carries the four changes of one batch, and it carries no other change.
+
+1. Python 3.9 leaves the supported set, and five records state the new floor (#575).
+2. Three action pins move, and the prose beside each pin moves with it (#577).
+3. Five development pins reach the releases Python 3.10 unblocks (#576).
+4. The version reaches 1.1.0, and the 28 stale interpreter comments of the package state a
+   live reason (#578).
+
+- **The version reaches 1.1.0, and every interpreter comment of the package states a live
+  reason** (#578). Round
+  TBD. **Two records carry this release.** `ja4plus/__init__.py:101` declares `1.1.0` as a
+  plain string, and `CHANGELOG.md` gains this dated `## [1.1.0] - 2026-08-10` section.
+  `pyproject.toml` moves no line, because it declares no version and reads the value from
+  the syntax tree of the package. **The plain string assignment stays**, because #67
+  measured that a computed value makes a build import the package and every dependency it
+  loads. **The classifier stays where version 1.0.0 wrote it**, and `classifier_disagreement`
+  of `tests/version_gate.py` agrees at 1.1.0: `expected_classifier` splits the major number,
+  reads 1, and returns the stable line `pyproject.toml` already holds. **The bump is minor
+  and never patch**, because #575 moved `requires-python` from `>=3.9` to `>=3.10` and that
+  field is part of the published interface.
+  **28 sources under `ja4plus/` held a comment that this release makes false.** Each one
+  read a variant of ``# Python 3.9 is the floor, and it evaluates no annotation written as
+  `str | None` without this import.``, and `ja4plus/processor.py` read the same sentence
+  against `list[str]`. **#575 could not repair them, because its own criteria barred a
+  change under `ja4plus/`**, and it declared the decline rather than hiding it. **A comment
+  that states a superseded reason is a defect**, because a reader takes it for the live
+  reason. Each of the 28 now reads `# This import makes every annotation a string. No
+  annotation therefore evaluates at import time, and a forward reference needs no quotation
+  mark.` **The import stays in every one of the 28**, because `from __future__ import
+  annotations` still defers every annotation and `ja4plus/processor.py` reads a name that
+  only `if TYPE_CHECKING:` imports.
+  **New cases hold the comments of the package against `requires-python`**, so the next
+  interpreter change cannot leave a stale comment behind. #575 built
+  `tests/test_interpreter_set.py` for the configuration records and the prose pages, and
+  that reader reached no comment of the package. `package_sources` asks git for the tracked
+  sources, `comments_of` tokenizes one source and returns a comment and no docstring, and
+  `stale_comments` reports every comment that names an interpreter below the floor.
+  **The reader asks git and it walks no directory**, because a walk reads the sources of
+  every live worker worktree, which #473 records. **The case came first and it failed on the
+  28 committed comments**:
+  ``AssertionError: these comments name a dropped interpreter: {'ja4plus/__init__.py': ['# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`'], ...}``,
+  reporting 28 entries. **A docstring records a past measurement, so the reader reads a
+  comment alone**, and `test_the_comment_reader_reads_a_comment_and_no_docstring` states
+  that. Seven more cases drive the two readers over text this file holds, and
+  `test_the_source_reader_finds_the_package` refuses a read of git that returns nothing.
+  **The sweep reads each source as `utf-8-sig`**, because `tokenize` reports a `TokenError`
+  on a byte-order mark and such a source would error rather than report its comments. The
+  self-review raised that reading, and it raised the source count of the floor comment,
+  which a read of 2026-08-10 puts at 31.
+  **The change under `ja4plus/` is proven and never asserted**, and #484 records the
+  technique. Every one of the 28 sources parses at the base commit `f34e31d` and at the head,
+  each tree loses every docstring, and `ast.dump` compares the two. **27 of the 28 trees are
+  identical, because a comment carries no syntax node at all.** `ja4plus/__init__.py` is the
+  one file whose tree moves, and it moves by the one string constant of the bump: the tree
+  reads identical once `__version__` reads the base value again.
+  **The coverage count does not move**, because a comment carries no statement: `--cov=ja4plus`
+  reports 4316 statements, 273 missed and 94 percent at the base commit and the same three
+  readings here, which is the reading #548 took.
+  **The suite grows by the nine cases this round writes.** `pytest --collect-only` reads
+  6644 cases at the base commit `f34e31d` and 6653 here, and the unit suite reports 4677
+  passed, 7 skipped and 8 xfailed against 4668, 7 and 8 at the base.
+  **Two proofs stand beside the five gates, because no continuous-integration job runs
+  `.github/workflows/publish.yml`.** A build environment that holds neither `scapy` nor
+  `cryptography` produced `ja4plus-1.1.0.tar.gz` and `ja4plus-1.1.0-py3-none-any.whl`, and
+  each artifact reads `1.1.0` from its own metadata. **`Requires-Python` reads `>=3.10` on
+  both artifacts**, which is the promise this release changes. The artifact proves that
+  value, and `pyproject.toml` only asserts it.
+  `python -m tests.release_verification --dist dist` then ran the five checks of step 3 of
+  `.claude/skills/release/SKILL.md` and reported the release ready to publish.
+  **`python -m tests.release_body` writes a body of 7686 characters against the
+  limit of 125000**, and that body opens with the dated `## [1.1.0]` heading.
+  **This round publishes nothing.** It creates no release, it writes no tag, and it starts
+  no workflow.
+
 ## [1.0.1] - 2026-08-10
 
 Version 1.0.1 follows version 1.0.0, and no version stands between them. The date of the

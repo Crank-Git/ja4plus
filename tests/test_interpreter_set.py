@@ -43,8 +43,11 @@ These cases read prose and configuration. They import nothing from `ja4plus` and
 produce no fingerprint.
 """
 
+from io import StringIO
 from pathlib import Path
 import re
+import subprocess
+import tokenize
 from typing import List, Tuple
 
 import pytest
@@ -98,6 +101,19 @@ FOUNDATION_RANGE = re.compile(
 MINIMUM_CLASSIFIERS = 2
 
 MINIMUM_MATRIX_VERSIONS = 2
+
+# The git pathspec that names every tracked Python source of the package. **In a default
+# git pathspec `*` crosses `/`**, so this one term reaches `ja4plus/utils/` as well.
+PACKAGE_PATHSPEC = "ja4plus/*.py"
+
+# The least count of package sources the corpus holds. **A sweep over an empty set passes**,
+# so a read of git that returns nothing fails here rather than reports agreement. A read of
+# 2026-08-10 reports 31 sources.
+MINIMUM_PACKAGE_SOURCES = 20
+
+# One interpreter a comment names, as `Python 3.9`. The pattern reads the lower-case form
+# beside the upper-case one, because a sentence names the interpreter in either position.
+COMMENT_INTERPRETER = re.compile(r"[Pp]ython (\d+)\.(\d+)")
 
 
 def _versions(pattern: "re.Pattern[str]", text: str) -> List[VERSION]:
@@ -259,6 +275,76 @@ def _workflow_text() -> str:
         The file text.
     """
     return TEST_WORKFLOW.read_text(encoding="utf-8")
+
+
+def package_sources(pathspec: str = PACKAGE_PATHSPEC) -> List[str]:
+    """Return every tracked Python source of the package, relative to the repository root.
+
+    **The reader asks git for the files and it walks no directory.** The agent harness
+    places a worker worktree at `.claude/worktrees/agent-<id>`, and that worktree is a whole
+    checkout. A walk would therefore read the sources of every live worker. #473 records the
+    measurement.
+
+    Args:
+        pathspec: The git pathspec that names the sources. A case passes another pathspec to
+            measure the floor.
+
+    Returns:
+        One path for each tracked source, sorted.
+
+    Raises:
+        subprocess.CalledProcessError: The read of git failed.
+    """
+    listed = subprocess.run(
+        ["git", "ls-files", "-z", pathspec],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split("\0")
+    return sorted(name for name in listed if name)
+
+
+def comments_of(text: str) -> List[str]:
+    """Return the text of every comment of one Python source.
+
+    **The reader takes a comment and it takes no docstring.** A docstring of this package
+    records a past measurement in some modules, and such a record names the interpreter it
+    measured. A comment states the live reason instead.
+
+    Args:
+        text: The whole source of one Python file.
+
+    Returns:
+        One entry for each comment, in file order.
+
+    Raises:
+        tokenize.TokenError: The text tokenizes as no Python module.
+    """
+    return [
+        token.string
+        for token in tokenize.generate_tokens(StringIO(text).readline)
+        if token.type == tokenize.COMMENT
+    ]
+
+
+def stale_comments(text: str, floor: VERSION) -> List[str]:
+    """Return every comment of one source that names an interpreter below the floor.
+
+    Args:
+        text: The whole source of one Python file.
+        floor: The lowest interpreter the package supports.
+
+    Returns:
+        One entry for each comment that names a dropped interpreter, which is empty where
+        every comment names a supported one.
+    """
+    return [
+        comment
+        for comment in comments_of(text)
+        for major, minor in COMMENT_INTERPRETER.findall(comment)
+        if (int(major), int(minor)) < floor
+    ]
 
 
 # --- The floor of every reader ----------------------------------------------------------
@@ -429,3 +515,87 @@ def test_the_macos_reader_reads_the_entry_of_the_include_block() -> None:
 def test_the_lint_target_reader_reads_a_two_digit_minor_version() -> None:
     """The reader reads `py310` as 3.10 and never as 3.1."""
     assert ruff_target_of('target-version = "py310"\n') == (3, 10)
+
+
+# --- The comments of the package name a supported interpreter ---------------------------
+
+
+def test_the_source_reader_finds_the_package() -> None:
+    """The reader returns the sources of the package, so no sweep below reads nothing."""
+    found = package_sources()
+    assert len(found) >= MINIMUM_PACKAGE_SOURCES, (
+        f"the corpus holds {len(found)} package sources, below the floor of "
+        f"{MINIMUM_PACKAGE_SOURCES}, and a sweep over an empty set passes"
+    )
+    assert "ja4plus/__init__.py" in found, f"the corpus holds no package module: {found[:5]}"
+
+
+def test_no_comment_of_the_package_names_an_interpreter_the_supported_set_dropped() -> None:
+    """No comment under `ja4plus/` states a reason that a dropped interpreter carries.
+
+    A comment states why the code is what it is. 28 sources named Python 3.9 as the reason
+    `from __future__ import annotations` stands at the top of the module. #575 removed that
+    interpreter from the supported set. **A comment that states a superseded reason is
+    a defect**, because a reader takes it for the live reason. #578 repaired the 28 and this
+    case holds the repair.
+
+    The floor comes from `requires-python`, so a later drop fails this case and no repair
+    leaves the prose of the package behind. The case reads a comment and no docstring.
+
+    **The case reads each source as `utf-8-sig`.** `tokenize` reports a `TokenError` on a
+    byte-order mark, so a source that carried one would error here rather than report the
+    comments it holds. The self-review of #578 raised that reading.
+    """
+    floor = floor_of(_project_text())
+    offenders = {
+        name: stale
+        for name in package_sources()
+        for stale in [stale_comments((REPO_ROOT / name).read_text(encoding="utf-8-sig"), floor)]
+        if stale
+    }
+    assert offenders == {}, f"these comments name a dropped interpreter: {offenders}"
+
+
+def test_the_comment_reader_reads_a_comment_and_no_docstring() -> None:
+    """A docstring that names a dropped interpreter reaches the reader nowhere."""
+    text = '"""Python 3.9 measured this."""\n\nvalue = 1\n'
+    assert comments_of(text) == []
+    assert stale_comments(text, (3, 10)) == []
+
+
+def test_the_comment_reader_reports_a_comment_that_names_a_dropped_interpreter() -> None:
+    """The comment 28 sources held before #578 reaches the reader."""
+    text = "# Python 3.9 is the floor, and it evaluates no annotation.\nvalue = 1\n"
+    assert stale_comments(text, (3, 10)) == [
+        "# Python 3.9 is the floor, and it evaluates no annotation."
+    ]
+
+
+def test_the_comment_reader_passes_over_a_supported_interpreter() -> None:
+    """A comment that names the floor itself is no defect, so the reader does not report it."""
+    text = "# Python 3.10 evaluates this annotation.\nvalue = 1\n"
+    assert stale_comments(text, (3, 10)) == []
+
+
+def test_the_comment_reader_reads_a_comment_that_stands_after_a_statement() -> None:
+    """A trailing comment carries the same defect, so the reader reads the whole file."""
+    text = "value = 1  # Python 3.8 needs this.\n"
+    assert stale_comments(text, (3, 10)) == ["# Python 3.8 needs this."]
+
+
+def test_the_comment_reader_reads_a_two_digit_minor_version() -> None:
+    """The reader reads `3.10` as ten, so a comment naming the floor fails no case."""
+    text = "# Python 3.10 is the floor.\n"
+    assert stale_comments(text, (3, 10)) == []
+    assert stale_comments(text, (3, 11)) == ["# Python 3.10 is the floor."]
+
+
+def test_the_comment_reader_raises_on_a_text_that_tokenizes_as_no_python() -> None:
+    """A text the tokenizer refuses raises, so no source passes the sweep unread."""
+    with pytest.raises(tokenize.TokenError):
+        comments_of("value = (1\n")
+
+
+def test_the_source_reader_returns_nothing_for_a_pathspec_that_names_no_file() -> None:
+    """A pathspec that matches nothing returns an empty list, which the floor case refuses."""
+    assert package_sources("ja4plus/*.no-such-suffix") == []

@@ -14,8 +14,8 @@ length that reaches past the option field stops the reader, and the reader retur
 options it read. It raises nothing.
 """
 
-# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
-# without this import.
+# This import makes every annotation a string. No annotation therefore evaluates at
+# import time, and a forward reference needs no quotation mark.
 from __future__ import annotations
 
 import logging

@@ -8,8 +8,8 @@ JA4H fingerprints HTTP requests based on:
 4. Sorted cookie fields + values hash
 """
 
-# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
-# without this import.
+# This import makes every annotation a string. No annotation therefore evaluates at
+# import time, and a forward reference needs no quotation mark.
 from __future__ import annotations
 
 import hashlib
