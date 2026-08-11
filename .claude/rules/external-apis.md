@@ -36,7 +36,7 @@ Code inside this repository is different. Read the code.
 | `scapy` | 2.4 or later | https://scapy.readthedocs.io/ |
 | `cryptography` | 42 or later | https://cryptography.io/en/latest/ |
 | PyPI trusted publishing | `pypa/gh-action-pypi-publish` release v1 | https://docs.pypi.org/trusted-publishers/ |
-| GitHub Pages deployment | `actions/deploy-pages` v4 | https://github.com/actions/deploy-pages |
+| GitHub Pages deployment | `actions/deploy-pages` v5 | https://github.com/actions/deploy-pages |
 | `mkdocs-material` | 9.x | https://squidfunk.github.io/mkdocs-material/ |
 
 ## Rules specific to this project

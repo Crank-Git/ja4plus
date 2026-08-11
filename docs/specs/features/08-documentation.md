@@ -174,9 +174,10 @@ project writes no theme, so this feature set has no mockup.
 |---|---|---|
 | `mkdocs-material` | 9.x | https://squidfunk.github.io/mkdocs-material/ |
 | `mkdocstrings-python` | 1.x | https://mkdocstrings.github.io/python/ |
-| GitHub Pages deployment | `actions/deploy-pages` v4 | https://github.com/actions/deploy-pages |
+| GitHub Pages deployment | `actions/deploy-pages` v5 | https://github.com/actions/deploy-pages |
 
-Verified against the pages above, retrieved 2026-08-06.
+Verified against the pages above, retrieved 2026-08-06. #577 read the deployment row again
+on 2026-08-10, and it read no other row of this table.
 
 The documentation workflow needs `pages: write` and `id-token: write` permissions,
 and the repository must have GitHub Pages set to build from GitHub Actions.

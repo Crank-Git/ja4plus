@@ -11,16 +11,20 @@ name: Publish the documentation
 # `build` job below therefore calls that workflow, which uploads the site as the Pages
 # artifact when the caller asks for it. #391 owns the pins and the build steps.
 #
-# **Warning: this repository holds no GitHub Pages site, so no run of this workflow has ever
-# deployed.** `gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides
-# whether to turn Pages on, because that change publishes a public website. The `settings`
-# job below reads the setting first and names it in the failure, so a red run states what a
+# **Warning: no run of this workflow has ever deployed, and the reason is no longer the
+# Pages setting.** The read of 2026-08-09 that #66 recorded reports `has_pages: false`, and
+# the read of 2026-08-10 that #577 took supersedes it. `gh api repos/Crank-Git/ja4plus`
+# reports `has_pages: true`, `gh api repos/Crank-Git/ja4plus/pages` reports
+# `build_type: workflow` and `status: null`, and the branch policies of the `github-pages`
+# environment name `dev` and `master`. **`status: null` records that Pages has built
+# nothing yet**, and this workflow deploys on a push to `master` alone. The `settings` job
+# below reads the setting first and names it in the failure, so a red run states what a
 # reader must change.
 #
-# Verified against https://github.com/actions/deploy-pages (v4),
-# https://github.com/actions/upload-pages-artifact (v3) and
+# Verified against https://github.com/actions/deploy-pages/tree/v5.0.0,
+# https://github.com/actions/upload-pages-artifact/tree/v5.0.0 and
 # https://docs.github.com/en/rest/pages/pages (API version 2022-11-28), retrieved
-# 2026-08-09.
+# 2026-08-10.
 
 on:
   push:
@@ -110,5 +114,10 @@ jobs:
 
     steps:
       - name: Deploy the artifact
+        # **Version 5 moves no input and no output this job names, and #577 read the
+        # release note against this step.** `token`, `timeout`, `error_count`,
+        # `reporting_interval`, `artifact_name` and `preview` each keep the name and the
+        # default that version 4 gave them, and `page_url` stays the one output. The
+        # runtime moves from `node20` to `node24`.
         id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4.0.5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5.0.0
