@@ -174,10 +174,11 @@ project writes no theme, so this feature set has no mockup.
 |---|---|---|
 | `mkdocs-material` | 9.x | https://squidfunk.github.io/mkdocs-material/ |
 | `mkdocstrings-python` | 2.x | https://mkdocstrings.github.io/python/ |
-| GitHub Pages deployment | `actions/deploy-pages` v4 | https://github.com/actions/deploy-pages |
+| GitHub Pages deployment | `actions/deploy-pages` v5 | https://github.com/actions/deploy-pages |
 
-Verified against the pages above, retrieved 2026-08-06. #576 took the handler to the 2.x
-line on 2026-08-10, and it read that row again against
+Verified against the pages above, retrieved 2026-08-06. #577 read the deployment row again
+on 2026-08-10, and it read no other row of this table. #576 took the handler to the 2.x
+line on the same date, and it read that row against
 https://pypi.org/pypi/mkdocstrings-python/2.0.5/json.
 
 The documentation workflow needs `pages: write` and `id-token: write` permissions,

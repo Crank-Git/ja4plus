@@ -2763,46 +2763,6 @@ holds every breaking change of this record against a row of that page.
 
 ### Changed
 
-- **The five development pins that Python 3.10 unblocks land** (#576). Round
-  TBD. **#575 dropped Python 3.9, and each of these five releases requires Python 3.10.**
-  `pytest` reaches 9.1.1 (#555), `build` reaches 1.5.0 (#557), `twine` reaches 7.0.0
-  (#553), `mkdocstrings` reaches 1.0.6 (#559) and `mkdocstrings-python` reaches 2.0.5
-  (#558). **This round adopts each version in `pyproject.toml` and it merges no dependabot
-  pull request**, because the batch model runs the provider once for the batch and five
-  pull requests into `dev` would run it five times. **A pin of this repository is an
-  invariant, so this round reads each bump rather than takes it.** **`pytest` 9 is the one
-  release that can move the suite, and it moved no case.** A read of 2026-08-10 collected
-  4669 unit cases under 8.4.2 and 4670 under 9.1.1, and the one case is the case this round
-  wrote. The conformance suite collected 1918 cases under each release. 9.0.0 turns every
-  `PytestRemovedIn9Warning` into an error, it reads one prefix of two overlapping path
-  arguments, and it enters the continuous-integration mode only where `$CI` or
-  `$BUILD_NUMBER` holds a value. **This suite holds none of those three shapes.**
-  **The two `mkdocstrings` entries move as one pair**, because each line of the handler
-  names its own generator range. #391 measured the incompatible pair: the 1.x handler
-  imported `mkdocstrings.handlers.base`, and `mkdocstrings` 1.0.0 removed that public
-  module. The 2.x handler imports from `mkdocstrings` directly and it accepts
-  `mkdocstrings>=0.30`. **The `griffe` pin stays at 2.1.0**, because that release requires
-  `griffelib==2.1.0` and `mkdocstrings-python` 2.0.5 asks for `griffelib>=2.0`.
-  `mkdocs build --strict` built the site in 2.13 seconds, it reported no warning, and each
-  of the four pages under `reference/` renders its objects. **`twine` and `build` reach the
-  release path, which no continuous-integration job runs**, so this round ran
-  `python -m tests.release_verification --dist dist` by hand. It built
-  `ja4plus-1.0.1-py3-none-any.whl` and `ja4plus-1.0.1.tar.gz`, `twine check` reported
-  `PASSED` twice, the console script of the clean environment wrote `ja4plus 1.0.1`, the
-  conformance suite ran 1918 cases there, and the command reported
-  `release check: PASSED. The release is ready to publish.` **New case
-  `test_no_pin_comment_names_an_interpreter_the_supported_set_dropped` of
-  `tests/test_lint_gate_pin.py` reads every comment of the extras table against
-  `requires-python`.** **The case came first and it failed on the committed comments**,
-  which held six lines that name a dropped interpreter, the first of them
-  ``'# and the matrix ran Python 3.9 until #575 moved the floor. 8.4.2 is the newest release'``.
-  **A comment that states a superseded reason is a defect**, so the prose of each pin moves
-  with the pin. `pyproject.toml`, `.github/workflows/docs-build.yml`, `mkdocs.yml`,
-  `docs/specs/features/08-documentation.md` and the module docstring of
-  `tests/test_lint_gate_pin.py` each state the live reason now. `[tool.mypy]` keeps its
-  reference to Python 3.9, because that comment records a past measurement and the case
-  reads the extras table alone. **No file under `ja4plus/` changes and no fingerprint
-  moves**, and the conformance suite reports 1635 passed, 143 skipped and 140 xfailed.
 - **Python 3.9 leaves the supported set** (#575). Round
   TBD. **The user rules on 2026-08-10 that Python 3.9 leaves the set**, because it reached
   its end of life in October 2025. **Five dependabot pull requests each read
@@ -2845,7 +2805,125 @@ holds every breaking change of this record against a row of that page.
   **This change is breaking, and #578 carries it into version 1.1.0.** The two
   breaking-change tables of this record hold version 0.6.0 against version 1.0.0, so the
   release section of version 1.1.0 records this move and those tables do not.
+- **The three action bumps land, and the prose beside each pin moves with it** (#577). Round
+  TBD. Dependabot opened #556, #554 and #552, and each one crosses a major version.
+  `actions/upload-pages-artifact` moves from 3.0.1 to 5.0.0, `actions/deploy-pages` moves
+  from 4.0.5 to 5.0.0, and `actions/download-artifact` moves from 7.0.0 to 8.0.1. **Every
+  pin comes from the provider, and none of the three comes from the number dependabot
+  wrote.** `gh api repos/<owner>/<repository>/git/ref/tags/<tag>` answered `"type":"commit"`
+  on all three, so each tag points at a commit and no reader has to dereference a tag
+  object. The three commits are `fc324d3547104276b827a68afc52ff2a11cc49c9`,
+  `cd2ce8fcbc39b97be8ca5fce6e763baed58fa128` and
+  `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`.
+  **`actions/download-artifact` is the one bump with a live dependent**, because round 201
+  built the `skip-gate` job on it. The release note of 8.0.0 names three changes, and this
+  round read each one against that job. The action reads the `Content-Type` header and it
+  unzips no file that is not a zip, and the new `skip-decompress` input turns the
+  extraction off. `digest-mismatch` defaults to `error`, where version 7 logged a warning
+  and carried on. The package moves to ESM. **No change of the three touches the pattern
+  behaviour, the merge behaviour or the directory layout.** A read of `action.yml` at
+  `v7.0.0` and at the new commit proves it: `pattern`, `merge-multiple` and `path` each
+  carry the same description and the same default in both files, `merge-multiple` still
+  defaults to `false`, and `download-path` is still the one output. Version 8 adds two
+  inputs and this job names neither one. **The default of `error` is the one behaviour
+  change that reaches the job**, and a report whose digest the provider disowns now fails
+  the run rather than reaches the gate.
+  **`actions/upload-pages-artifact` crosses two major versions**, because this project ran
+  3.0.1 and no 4.x release at all. Version 4.0.0 drops a hidden file from the archive, and
+  version 5.0.0 adds the `include-hidden-files` input that keeps one. The `tar` line of the
+  composite action carries `--exclude=.[^/]*` where that input reads false. **The input
+  stays at its default, because the built site holds no hidden file.**
+  `mkdocs build --strict` produced 81 files on 2026-08-10, and `find <site> -name ".*"`
+  counted 0. Version 5.0.0 also moves the inner `actions/upload-artifact` from a floating
+  `@v4` to a pinned 7.0.0, so a second reference of this project stops following a tag.
+  **`actions/deploy-pages` moves no input and no output.** `token`, `timeout`,
+  `error_count`, `reporting_interval`, `artifact_name` and `preview` each keep the name and
+  the default that 4.0.5 gave them, `page_url` stays the one output, and the runtime moves
+  from `node20` to `node24`. **The runner already runs a `node24` action of this
+  repository**, because `actions/download-artifact` 7.0.0 declared that runtime and the
+  `skip-gate` job has run green on it since round 201.
+  **New file `tests/test_workflow_action_pins.py` holds the pins and the prose against each
+  other**, and the case came first. `tests/test_documentation_publish.py` already held the
+  commit rule over one workflow, and this file holds it over all five. **The first form of
+  the citation reader read one file at a time, and its own floor refused it**:
+  `AssertionError: the reader collected 3 citations, and the floor is 5`.
+  `.github/workflows/docs.yml` names `upload-pages-artifact` and pins it nowhere, and
+  `.github/workflows/docs-build.yml` names the deployment action and pins it nowhere, so
+  the two stale sentences this round exists to repair were the two the reader missed.
+  `repository_majors` reads the pins of every workflow instead, and it leaves out an action
+  that two workflows pin at two major versions. **The corrected reader then failed on the
+  pins alone**, with five stale comments and this second failure:
+  ``AssertionError: these registers name another version: ['docs/specs/features/08-documentation.md names v4 against the pin v5', '.claude/rules/external-apis.md names v4 against the pin v5']``.
+  Ten cases hold the reader itself, and four of them read a mutation the case writes rather
+  than a file of this repository. **A self-review raised three sentences past the 25-word
+  limit of rule 1, and each one is now two sentences.** It also raised one limit of the
+  reader, and this round declines the repair. `stale_citations` matches the form `v5` and
+  never the form `version 5`, and a wider pattern reads a correct sentence as a finding,
+  because a comment of this repository reports the version another project names. The
+  module docstring records that limit.
+  **The run of the provider is https://github.com/Crank-Git/ja4plus/actions/runs/31447029196,
+  and it concluded `success` on all twelve jobs.** The `skip-gate` job proves the download
+  bump on the runner, which is the one place these actions run. Its log reports
+  `Found 10 artifact(s)` under `Filtering artifacts by pattern '*-results*'`, it extracts
+  each one into `skip-reports/<artifact name>`, and it reports a matching SHA-256 digest for
+  every one of the ten. The census reads `The skip gate read 10 reports that hold 6620 cases
+  between them, and found 152 cases that ran on no job`, and the allowlist covers all 152.
+  **No run of the provider covers the two documentation actions, and this record states why
+  rather than reads an absence as a pass.** `.github/workflows/docs-build.yml` filters four
+  paths and its `pull_request` trigger names `master` and `dev` alone, so a member pull
+  request into an integration branch creates no run of it. The upload step also carries
+  `if: ${{ inputs.upload_pages_artifact }}`, which reads false on every event other than
+  the call that `.github/workflows/docs.yml` makes. That workflow deploys on a push to
+  `master`, and a promotion to `master` is the step the user approves. **A read of
+  2026-08-10 supersedes the Pages measurement of 2026-08-09 that #66 recorded.**
+  `gh api repos/Crank-Git/ja4plus` reports `has_pages: true` where the earlier read
+  reported `has_pages: false`, `gh api repos/Crank-Git/ja4plus/pages` reports
+  `build_type: workflow` and `status: null`, and the branch policies of the `github-pages`
+  environment name `dev` and `master`. **`status: null` records that Pages has published
+  nothing yet.** This round starts no deployment, because a run of the publish workflow
+  publishes a public website and the user owns that step.
+  **No file under `ja4plus/` changes and no fingerprint moves.**
 
+- **The five development pins that Python 3.10 unblocks land** (#576). Round
+  TBD. **#575 dropped Python 3.9, and each of these five releases requires Python 3.10.**
+  `pytest` reaches 9.1.1 (#555), `build` reaches 1.5.0 (#557), `twine` reaches 7.0.0
+  (#553), `mkdocstrings` reaches 1.0.6 (#559) and `mkdocstrings-python` reaches 2.0.5
+  (#558). **This round adopts each version in `pyproject.toml` and it merges no dependabot
+  pull request**, because the batch model runs the provider once for the batch and five
+  pull requests into `dev` would run it five times. **A pin of this repository is an
+  invariant, so this round reads each bump rather than takes it.** **`pytest` 9 is the one
+  release that can move the suite, and it moved no case.** A read of 2026-08-10 collected
+  4669 unit cases under 8.4.2 and 4670 under 9.1.1, and the one case is the case this round
+  wrote. The conformance suite collected 1918 cases under each release. 9.0.0 turns every
+  `PytestRemovedIn9Warning` into an error, it reads one prefix of two overlapping path
+  arguments, and it enters the continuous-integration mode only where `$CI` or
+  `$BUILD_NUMBER` holds a value. **This suite holds none of those three shapes.**
+  **The two `mkdocstrings` entries move as one pair**, because each line of the handler
+  names its own generator range. #391 measured the incompatible pair: the 1.x handler
+  imported `mkdocstrings.handlers.base`, and `mkdocstrings` 1.0.0 removed that public
+  module. The 2.x handler imports from `mkdocstrings` directly and it accepts
+  `mkdocstrings>=0.30`. **The `griffe` pin stays at 2.1.0**, because that release requires
+  `griffelib==2.1.0` and `mkdocstrings-python` 2.0.5 asks for `griffelib>=2.0`.
+  `mkdocs build --strict` built the site in 2.13 seconds, it reported no warning, and each
+  of the four pages under `reference/` renders its objects. **`twine` and `build` reach the
+  release path, which no continuous-integration job runs**, so this round ran
+  `python -m tests.release_verification --dist dist` by hand. It built
+  `ja4plus-1.0.1-py3-none-any.whl` and `ja4plus-1.0.1.tar.gz`, `twine check` reported
+  `PASSED` twice, the console script of the clean environment wrote `ja4plus 1.0.1`, the
+  conformance suite ran 1918 cases there, and the command reported
+  `release check: PASSED. The release is ready to publish.` **New case
+  `test_no_pin_comment_names_an_interpreter_the_supported_set_dropped` of
+  `tests/test_lint_gate_pin.py` reads every comment of the extras table against
+  `requires-python`.** **The case came first and it failed on the committed comments**,
+  which held six lines that name a dropped interpreter, the first of them
+  ``'# and the matrix ran Python 3.9 until #575 moved the floor. 8.4.2 is the newest release'``.
+  **A comment that states a superseded reason is a defect**, so the prose of each pin moves
+  with the pin. `pyproject.toml`, `.github/workflows/docs-build.yml`, `mkdocs.yml`,
+  `docs/specs/features/08-documentation.md` and the module docstring of
+  `tests/test_lint_gate_pin.py` each state the live reason now. `[tool.mypy]` keeps its
+  reference to Python 3.9, because that comment records a past measurement and the case
+  reads the extras table alone. **No file under `ja4plus/` changes and no fingerprint
+  moves**, and the conformance suite reports 1635 passed, 143 skipped and 140 xfailed.
 - **Version 1.0.0 reaches the repository, and the development status moves to
   `5 - Production/Stable`** (#543). Round 207. Three lines change. `ja4plus/__init__.py:101`
   reads `__version__ = "1.0.0"`, the release heading of this file reads
