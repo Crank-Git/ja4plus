@@ -23,10 +23,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_ruling_vocabulary.py`, which #548 records and round 210 repaired. **The
   reader reports the sentence the file holds and never the cut form**, so the cut reaches
   the match alone and a reader of the failure reads the text of the file.
-  **Twelve cases came first and seven of them failed against the committed reader**: six
+  **Fourteen cases came first and eight of them failed against the committed reader**: six
   parameter sets of `test_the_floating_date_reader_reads_no_barred_word_of_a_code_span`,
   which name `git gc --prune=now`, `git log --since=now`, `--date=today`,
   `docs/nowadays.md`, `pytest -k recently` and `CURRENTLY=1`, beside
+  `test_the_floating_date_reader_reads_no_barred_word_of_a_fenced_block` and
   `test_the_live_floating_date_case_passes_on_a_code_span_of_the_rule_file`. **Two cases
   drive the live case in both directions**: one writes the #586 sentence into the rule file
   and requires a pass, and one writes `The provider currently holds eleven required
@@ -36,7 +37,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the prose beside a code span. **`test_the_floating_date_reader_reads_the_sentences_of_the_rule_file`
   states the floor**, because a reader that finds no sentence reports a clean file rather
   than a measurement: the rule file holds 203 sentences against a floor of 100, and the cut
-  keeps `required status check` in the prose. **A sweep of all 49 readers of `tests/` that
+  keeps `required status check` in the prose.
+  **Two cases record a limit rather than a repair.** A fenced block reaches the
+  sentence reader, and the cut removes its content because the join pairs the opening
+  fence with the closing one, which is an accident of the join and not a design. A code
+  span that a full stop and a space split reaches two sentences, each half then carries
+  one backtick, and the reader still reports it. **No sentence and no fenced block of
+  the rule file meets either reading today.** **A sweep of all 49 readers of `tests/` that
   match a pattern over prose found no second reachable instance, and it records three
   findings for a later round**: `COVERAGE_CLAIMS` of `tests/test_readme_contracts.py`,
   `BLANKET_WORD` of `tests/test_changelog_sentence_exemption.py` and `SET_SCOPE` of
@@ -47,9 +54,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `without_code` of `tests/test_statistics_thread_term.py`, `sentences` of
   `tests/test_changelog_sentence_exemption.py`, `readable_prose` of
   `tests/test_documentation_version_claims.py` and `unfenced_lines` of
-  `tests/release_body.py`. **The suite grows by the twelve cases this round writes**:
-  `pytest --collect-only` reads 6667 cases at the base commit `4a08fea` and 6679 here, and
-  the unit suite reports 4703 passed, 7 skipped and 8 xfailed against 4691, 7 and 8 at the
+  `tests/release_body.py`. **The suite grows by the fourteen cases this round writes**:
+  `pytest --collect-only` reads 6667 cases at the base commit `4a08fea` and 6681 here, and
+  the unit suite reports 4705 passed, 7 skipped and 8 xfailed against 4691, 7 and 8 at the
   base. **The coverage count does not move**, because this round adds no statement to the
   package: `--cov=ja4plus` reports 4316 statements, 273 missed and 94 percent. **No file
   under `ja4plus/` changes and no fingerprint moves**, and the conformance suite reports

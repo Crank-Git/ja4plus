@@ -75,10 +75,12 @@ span. `floating_sentences` therefore matches `without_quoted(sentence)`, which i
 `tests/test_ruling_vocabulary.py` already holds. #548 records that reader and round 210
 repaired its fence tracking. **This file writes no second reader.**
 
-**Four cases hold the repair, and two of them drive the live case.** One writes the #586
-sentence into the rule file and requires a pass. One writes
+**Fourteen cases hold the repair, and two of them drive the live case.** One writes the
+#586 sentence into the rule file and requires a pass. One writes
 `The provider currently holds eleven required contexts.` and requires a failure. Each one
 restores the file in a `finally` block and then reads the restored text.
+**Warning: those two cases write a tracked file, so run this suite serially.** A run that
+writes the same file from two workers restores it from two readings.
 **`test_the_floating_date_reader_reads_the_sentences_of_the_rule_file` states the floor**,
 because a reader that finds no sentence reports a clean file rather than a measurement.
 
@@ -87,6 +89,19 @@ because a reader that finds no sentence reports a clean file rather than a measu
 A case here reads the state of the provider on the day it runs. It proves no statement
 about the day the file was written, and it proves nothing about a merge an administrator
 makes, because `enforce_admins` reads false.
+
+**`sentences` splits the text before the cut reads it, so a code span that holds a full
+stop and a space reaches two sentences.** Each half then carries one backtick, `CODE_SPAN`
+pairs neither, and a barred word of that span reports. No sentence of the rule file holds
+such a span today, and a later round repairs this where one arrives.
+
+**A fenced block stays in the text a case reads**, because `readable_text` cuts a
+blockquote, the `## Changelog` section and a superseded paragraph alone. The cut removes
+the content of that block anyway, and it does so for a reason a reader cannot see:
+`sentences` joins the three fence characters onto one line, so `CODE_SPAN` pairs the
+opening fence with the closing one. `test_the_floating_date_reader_reads_no_barred_word_of_a_fenced_block`
+holds the measurement. **Read that result as an accident of the join**, because a block
+that holds a backtick of its own repairs no such pair.
 
 These cases read prose and the provider. They import nothing from `ja4plus` and they
 produce no fingerprint.
@@ -1138,6 +1153,18 @@ def test_the_floating_date_reader_reads_a_barred_word_beside_a_code_span(
 ) -> None:
     """The cut removes the span alone, so a barred word of the prose still reports."""
     assert floating_sentences(sentence) == [sentence]
+
+
+def test_the_floating_date_reader_reads_no_barred_word_of_a_fenced_block() -> None:
+    """A barred word of a fenced block reaches no report, because the cut removes the block."""
+    page = "Text before.\n\n```bash\ngit gc --prune=now\n```\n\nText after.\n"
+    assert floating_sentences(page) == []
+
+
+def test_the_floating_date_reader_reports_a_code_span_that_a_full_stop_splits() -> None:
+    """A span that a full stop splits reaches two sentences, and the cut pairs no backtick."""
+    sentence = "The step reads `git log --since=now. Read it.` and it names no day."
+    assert floating_sentences(sentence) == ["The step reads `git log --since=now."]
 
 
 def test_the_floating_date_reader_reads_the_sentences_of_the_rule_file() -> None:
