@@ -105,9 +105,9 @@ jobs:
         # https://github.com/actions/upload-pages-artifact/tree/v5.0.0 (retrieved
         # 2026-08-10).
         #
-        # **Warning: the usage example of that page still names version 3 of this action
-        # and version 4 of the deployment action, and the example is stale.** The release
-        # list of each repository holds 5.0.0, and #577 took the pin from the release list.
+        # **Warning: the usage example of that page is stale.** It still names version 3 of
+        # this action and version 4 of the deployment action. The release list of each
+        # repository holds 5.0.0, and #577 took the pin from the release list.
         # This project pins `upload-pages-artifact` v5.0.0 beside `deploy-pages` v5.0.0.
         #
         # **Version 4 drops a hidden file from the archive, and version 5 adds the

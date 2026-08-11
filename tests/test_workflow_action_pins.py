@@ -30,8 +30,15 @@ it collected 3 citations of the 5 this repository holds. `.github/workflows/docs
 so the reader that missed them was the wrong reader.
 
 **An action that two workflows pin at two major versions reaches no citation case.** No
-action of this repository holds that state today, and `repository_majors` leaves such an
-action out rather than reads one of the two numbers as the right one.
+action of this repository holds that state today. `repository_majors` leaves such an action
+out, and it reads neither of the two numbers as the right one.
+
+**A citation that spells the version out reaches no case, and #577 declines the reader that
+would catch it.** `stale_citations` matches the form `v5` and never the form `version 5`. A
+wider pattern reads a correct sentence as a finding, because a comment of this repository
+reports the version another project names. `.github/workflows/docs-build.yml` holds such a
+sentence: the usage example of the upstream page still names version 3 of
+`actions/upload-pages-artifact`, and this project pins 5.0.0 on purpose.
 
 These cases read configuration and prose. They import nothing from `ja4plus` and they
 produce no fingerprint.
@@ -309,8 +316,8 @@ def test_every_interface_register_names_the_deploy_pages_version_the_workflow_pi
     assert findings == [], f"these registers name another version: {findings}"
 
 
-def test_the_reader_reports_a_pin_that_names_a_tag() -> None:
-    """The reader reports a `uses:` line that names a tag in place of a commit."""
+def test_the_reader_returns_a_tag_that_a_pin_names_in_place_of_a_commit() -> None:
+    """The reader returns the tag of a `uses:` line, and `COMMIT` refuses that tag."""
     assert pins_of("      - uses: actions/checkout@v5  # v5") == [("actions/checkout", "v5", "v5")]
     assert not COMMIT.match("v5")
 

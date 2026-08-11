@@ -2813,7 +2813,19 @@ holds every breaking change of this record against a row of that page.
   pins alone**, with five stale comments and this second failure:
   ``AssertionError: these registers name another version: ['docs/specs/features/08-documentation.md names v4 against the pin v5', '.claude/rules/external-apis.md names v4 against the pin v5']``.
   Ten cases hold the reader itself, and four of them read a mutation the case writes rather
-  than a file of this repository.
+  than a file of this repository. **A self-review raised three sentences past the 25-word
+  limit of rule 1, and each one is now two sentences.** It also raised one limit of the
+  reader, and this round declines the repair. `stale_citations` matches the form `v5` and
+  never the form `version 5`, and a wider pattern reads a correct sentence as a finding,
+  because a comment of this repository reports the version another project names. The
+  module docstring records that limit.
+  **The run of the provider is https://github.com/Crank-Git/ja4plus/actions/runs/31447029196,
+  and it concluded `success` on all twelve jobs.** The `skip-gate` job proves the download
+  bump on the runner, which is the one place these actions run. Its log reports
+  `Found 10 artifact(s)` under `Filtering artifacts by pattern '*-results*'`, it extracts
+  each one into `skip-reports/<artifact name>`, and it reports a matching SHA-256 digest for
+  every one of the ten. The census reads `The skip gate read 10 reports that hold 6620 cases
+  between them, and found 152 cases that ran on no job`, and the allowlist covers all 152.
   **No run of the provider covers the two documentation actions, and this record states why
   rather than reads an absence as a pass.** `.github/workflows/docs-build.yml` filters four
   paths and its `pull_request` trigger names `master` and `dev` alone, so a member pull

@@ -14,8 +14,8 @@ name: Publish the documentation
 # **Warning: no run of this workflow has ever deployed, and the reason is no longer the
 # Pages setting.** The read of 2026-08-09 that #66 recorded reports `has_pages: false`, and
 # the read of 2026-08-10 that #577 took supersedes it. `gh api repos/Crank-Git/ja4plus`
-# reports `has_pages: true`, `gh api repos/Crank-Git/ja4plus/pages` reports
-# `build_type: workflow` and `status: null`, and the branch policies of the `github-pages`
+# reports `has_pages: true`. `gh api repos/Crank-Git/ja4plus/pages` reports
+# `build_type: workflow` and `status: null`. The branch policies of the `github-pages`
 # environment name `dev` and `master`. **`status: null` records that Pages has built
 # nothing yet**, and this workflow deploys on a push to `master` alone. The `settings` job
 # below reads the setting first and names it in the failure, so a red run states what a
