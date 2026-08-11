@@ -2884,6 +2884,46 @@ holds every breaking change of this record against a row of that page.
   publishes a public website and the user owns that step.
   **No file under `ja4plus/` changes and no fingerprint moves.**
 
+- **The five development pins that Python 3.10 unblocks land** (#576). Round
+  TBD. **#575 dropped Python 3.9, and each of these five releases requires Python 3.10.**
+  `pytest` reaches 9.1.1 (#555), `build` reaches 1.5.0 (#557), `twine` reaches 7.0.0
+  (#553), `mkdocstrings` reaches 1.0.6 (#559) and `mkdocstrings-python` reaches 2.0.5
+  (#558). **This round adopts each version in `pyproject.toml` and it merges no dependabot
+  pull request**, because the batch model runs the provider once for the batch and five
+  pull requests into `dev` would run it five times. **A pin of this repository is an
+  invariant, so this round reads each bump rather than takes it.** **`pytest` 9 is the one
+  release that can move the suite, and it moved no case.** A read of 2026-08-10 collected
+  4669 unit cases under 8.4.2 and 4670 under 9.1.1, and the one case is the case this round
+  wrote. The conformance suite collected 1918 cases under each release. 9.0.0 turns every
+  `PytestRemovedIn9Warning` into an error, it reads one prefix of two overlapping path
+  arguments, and it enters the continuous-integration mode only where `$CI` or
+  `$BUILD_NUMBER` holds a value. **This suite holds none of those three shapes.**
+  **The two `mkdocstrings` entries move as one pair**, because each line of the handler
+  names its own generator range. #391 measured the incompatible pair: the 1.x handler
+  imported `mkdocstrings.handlers.base`, and `mkdocstrings` 1.0.0 removed that public
+  module. The 2.x handler imports from `mkdocstrings` directly and it accepts
+  `mkdocstrings>=0.30`. **The `griffe` pin stays at 2.1.0**, because that release requires
+  `griffelib==2.1.0` and `mkdocstrings-python` 2.0.5 asks for `griffelib>=2.0`.
+  `mkdocs build --strict` built the site in 2.13 seconds, it reported no warning, and each
+  of the four pages under `reference/` renders its objects. **`twine` and `build` reach the
+  release path, which no continuous-integration job runs**, so this round ran
+  `python -m tests.release_verification --dist dist` by hand. It built
+  `ja4plus-1.0.1-py3-none-any.whl` and `ja4plus-1.0.1.tar.gz`, `twine check` reported
+  `PASSED` twice, the console script of the clean environment wrote `ja4plus 1.0.1`, the
+  conformance suite ran 1918 cases there, and the command reported
+  `release check: PASSED. The release is ready to publish.` **New case
+  `test_no_pin_comment_names_an_interpreter_the_supported_set_dropped` of
+  `tests/test_lint_gate_pin.py` reads every comment of the extras table against
+  `requires-python`.** **The case came first and it failed on the committed comments**,
+  which held six lines that name a dropped interpreter, the first of them
+  ``'# and the matrix ran Python 3.9 until #575 moved the floor. 8.4.2 is the newest release'``.
+  **A comment that states a superseded reason is a defect**, so the prose of each pin moves
+  with the pin. `pyproject.toml`, `.github/workflows/docs-build.yml`, `mkdocs.yml`,
+  `docs/specs/features/08-documentation.md` and the module docstring of
+  `tests/test_lint_gate_pin.py` each state the live reason now. `[tool.mypy]` keeps its
+  reference to Python 3.9, because that comment records a past measurement and the case
+  reads the extras table alone. **No file under `ja4plus/` changes and no fingerprint
+  moves**, and the conformance suite reports 1635 passed, 143 skipped and 140 xfailed.
 - **Version 1.0.0 reaches the repository, and the development status moves to
   `5 - Production/Stable`** (#543). Round 207. Three lines change. `ja4plus/__init__.py:101`
   reads `__version__ = "1.0.0"`, the release heading of this file reads

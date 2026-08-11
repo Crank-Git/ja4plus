@@ -132,7 +132,7 @@ def runner_requirement(text: str) -> str:
         text: The whole text of `pyproject.toml`.
 
     Returns:
-        The entry, as `pytest==8.4.2`.
+        The entry, as `pytest==9.1.1`.
 
     Raises:
         RuntimeError: The extra holds no `pytest` entry, or it holds more than one.
@@ -299,7 +299,7 @@ def install_test_runner(environment: CleanEnvironment, requirement: str) -> None
 
     Args:
         environment: The environment the wheel install created.
-        requirement: The entry the `dev` extra states, as `pytest==8.4.2`.
+        requirement: The entry the `dev` extra states, as `pytest==9.1.1`.
 
     Raises:
         subprocess.CalledProcessError: The install failed.

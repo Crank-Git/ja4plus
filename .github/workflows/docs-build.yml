@@ -5,10 +5,13 @@ name: Documentation
 # a case that imports `mkdocs` reports that environment and not `pyproject.toml`. The
 # runner starts empty, so the install here resolves the `docs` extra alone.
 #
-# #391 records the defect that made this job necessary. `mkdocstrings==1.0.6` is an exact
-# pin and an incompatible one: it installs, and the build then fails with
+# #391 records the defect that made this job necessary. `mkdocstrings==1.0.6` beside
+# `mkdocstrings-python==1.15.0` was an exact pin and an incompatible one: it installed, and
+# the build then failed with
 # `ModuleNotFoundError: No module named 'mkdocstrings.handlers'`. Every case of
-# `tests/test_documentation_site.py` passed while the site did not build.
+# `tests/test_documentation_site.py` passed while the site did not build. #576 took the
+# handler to the 2.x line, which imports from `mkdocstrings` directly, and took the
+# generator to 1.0.6 in the same commit.
 #
 # **Never add the `dev` extra to the install step.** It brings a second resolution into
 # the environment, the release installs no such set, and a job that installs it measures
