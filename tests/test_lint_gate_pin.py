@@ -395,9 +395,14 @@ def test_no_pin_comment_names_an_interpreter_the_supported_set_dropped() -> None
     reader takes it for the live reason and declines the bump again. #576 repaired the
     four and this case holds the repair.
 
-    The floor comes from `requires-python`, so a later drop fails this case rather than
-    leaving the prose behind. The case reads the extras table alone. `[tool.mypy]` records
-    a past measurement against Python 3.9, and that record is correct.
+    The floor comes from `requires-python`, so a later drop fails this case and no repair
+    leaves the prose behind. The case reads the extras table alone. `[tool.mypy]` records a
+    past measurement against Python 3.9, and that record is correct.
+
+    **The reader scans every line of the table and no comment line alone.** A comment that
+    stands after an entry carries the same defect, and the self-review of #576 found that a
+    reader of whole comment lines passes over it. No dependency entry can hold the word
+    this pattern needs, so the wider scan reports no entry.
     """
     text = PYPROJECT.read_text(encoding="utf-8")
     floor_match = re.search(r'^requires-python = ">=(\d+)\.(\d+)"', text, re.MULTILINE)
@@ -410,8 +415,7 @@ def test_no_pin_comment_names_an_interpreter_the_supported_set_dropped() -> None
     offenders = [
         line.strip()
         for line in text[start:end].splitlines()
-        if line.lstrip().startswith("#")
-        for major, minor in re.findall(r"Python (\d+)\.(\d+)", line)
+        for major, minor in re.findall(r"[Pp]ython (\d+)\.(\d+)", line)
         if (int(major), int(minor)) < floor
     ]
     assert offenders == [], f"these pin comments name a dropped interpreter: {offenders}"
