@@ -453,9 +453,9 @@ def census_lines(reports: Sequence[Report], allowances: Sequence[Allowance]) -> 
     half of the deliverable, so the gate writes it on a pass and on a failure.
 
     **The census names the corpus size, because that number is the reach of the reader.**
-    #530 measured the reach on 2026-08-10: the six reports of the matrix held 4150 cases
-    and the ten reports held 6111. A reader of this line sees at once which jobs reached
-    the gate.
+    A reader of this line sees at once which jobs reached the gate. #530 took the
+    measurement on 2026-08-10, when the matrix ran six jobs: its six reports held 4150 cases
+    and the ten reports of the run held 6111.
 
     **A prefix entry reports its count and never its cases.** The `not applicable:` class
     holds 143 cases, and 143 near-identical lines would bury every case-level line under

@@ -275,10 +275,10 @@ jobs:
     #
     # **One job reads no such case, because one job reads one environment.** A macOS case
     # that skips on Linux is correct, and a Linux case that skips on macOS is correct. The
-    # union of the ten reports is the first reading that tells a correct skip from a case
+    # union of the nine reports is the first reading that tells a correct skip from a case
     # the suite runs nowhere.
     #
-    # **`needs` holds this job behind every job that runs cases**, so the download finds ten
+    # **`needs` holds this job behind every job that runs cases**, so the download finds nine
     # reports. A job that fails leaves this job unrun, and the run then fails on that job
     # instead.
     #

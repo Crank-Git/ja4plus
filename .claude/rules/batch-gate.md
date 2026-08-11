@@ -87,7 +87,7 @@ python -m tests.skip_gate --reports <download directory>
 the condition the case needs.** A capture grant is such a condition. Every entry names a
 reason, and the gate fails an entry that names none.
 
-### The gate reads ten reports, and #530 measured what the six missed
+### The gate reads every report, and #530 measured what the matrix missed
 
 **Warning: a reader that covers part of the suite reports a clean corpus over the part it
 cannot see.** #524 bound the gate to the six reports of the `test` job. That job runs
@@ -467,7 +467,7 @@ otherwise reads by hand.
 `tests/test_batch_gate_protection_rule.py` reads this section against
 `gh api repos/Crank-Git/ja4plus/branches/dev/protection`, so a change at the provider
 fails a case here rather than leaving a reader with a stale rule. One case reads
-`required_status_checks.checks[]` and requires `app_id` 15368 on each of the twelve
+`required_status_checks.checks[]` and requires `app_id` 15368 on each of the eleven
 contexts, so a context of another application fails that case. **Where the call cannot be
 made, every live case skips and it does not pass.**
 
