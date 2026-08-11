@@ -61,8 +61,9 @@ holds the question of whether the new version reports a finding the old one did 
 **A case here cannot test that a pinned version installs on every interpreter of the test
 matrix.** That read needs the package index, and this suite opens no network connection.
 #446 took the measurement by hand and `docs/specs/spec.md` records it: `pytest` 9.1.1 and
-`build` 1.5.0 each require Python 3.10, and the matrix runs Python 3.9. Each pin therefore
-names the newest release that carries a wheel for Python 3.9 through 3.13.
+`build` 1.5.0 each require Python 3.10, and the matrix ran the interpreter that #575
+dropped. Each pin therefore named an older release until that round. #576 took the five
+pins the drop released, and each entry now names the newest release this project measured.
 
 These cases read prose and configuration. They import nothing from `ja4plus` and they
 produce no fingerprint.
@@ -383,6 +384,41 @@ def test_the_decision_covers_every_entry_of_the_dev_extra() -> None:
     chosen = set(PINNED) | set(FLOATING)
     unchosen = sorted({_distribution(entry) for entry in entries} - chosen)
     assert unchosen == [], f"these dev entries carry no recorded shape: {unchosen}"
+
+
+def test_no_pin_comment_names_an_interpreter_the_supported_set_dropped() -> None:
+    """No comment of the extras table holds a pin back for an interpreter this project drops.
+
+    A pin comment states why the version is what it is. Four comments named Python 3.9 as
+    the reason a newer release could not land, and #575 removed that interpreter from the
+    supported set. **A comment that states a superseded reason is a defect**, because a
+    reader takes it for the live reason and declines the bump again. #576 repaired the
+    four and this case holds the repair.
+
+    The floor comes from `requires-python`, so a later drop fails this case and no repair
+    leaves the prose behind. The case reads the extras table alone. `[tool.mypy]` records a
+    past measurement against Python 3.9, and that record is correct.
+
+    **The reader scans every line of the table and no comment line alone.** A comment that
+    stands after an entry carries the same defect, and the self-review of #576 found that a
+    reader of whole comment lines passes over it. No dependency entry can hold the word
+    this pattern needs, so the wider scan reports no entry.
+    """
+    text = PYPROJECT.read_text(encoding="utf-8")
+    floor_match = re.search(r'^requires-python = ">=(\d+)\.(\d+)"', text, re.MULTILINE)
+    assert floor_match, "pyproject.toml states no requires-python floor"
+    floor = (int(floor_match.group(1)), int(floor_match.group(2)))
+    start = text.find("\n[project.optional-dependencies]\n")
+    assert start != -1, "pyproject.toml holds no optional-dependencies table"
+    end = text.find("\n[project.urls]", start)
+    assert end != -1, "the optional-dependencies table reaches no following table"
+    offenders = [
+        line.strip()
+        for line in text[start:end].splitlines()
+        for major, minor in re.findall(r"[Pp]ython (\d+)\.(\d+)", line)
+        if (int(major), int(minor)) < floor
+    ]
+    assert offenders == [], f"these pin comments name a dropped interpreter: {offenders}"
 
 
 @pytest.mark.parametrize("distribution", PINNED)

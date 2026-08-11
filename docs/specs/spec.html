@@ -188,7 +188,7 @@ The processor returns the collected results.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Component</th><th>Choice</th><th>Why it beat the alternative</th></tr></thead>
 <tbody>
-<tr><td>Language</td><td>Python 3.9+</td><td>3.8 reached end of life in October 2024. 3.9 is the oldest line still receiving security fixes.</td></tr>
+<tr><td>Language</td><td>Python 3.10+</td><td>3.9 reached end of life in October 2025. 3.10 is the oldest line still receiving security fixes.</td></tr>
 <tr><td>Packet parsing</td><td><code>scapy&gt;=2.4.0</code></td><td>Reads every capture format needed, with no C toolchain. <code>dpkt</code> is faster but parses fewer link types.</td></tr>
 <tr><td>Certificates</td><td><code>cryptography&gt;=42</code></td><td>Maintained, and already a dependency for JA4X.</td></tr>
 <tr><td>Lint and format</td><td><code>ruff</code></td><td>One tool replaces flake8, isort and black. Sub-second on this codebase.</td></tr>
@@ -259,7 +259,7 @@ and files nothing there.</p>
   <li><strong>Foundation</strong> —
     <span class="goal">Build the gates before any behaviour changes, so every later epic
     has something that can fail. Vendor the 37 vectors, run conformance in CI, add
-    ruff/mypy/coverage, raise the Python floor to 3.9, create <code>dev</code>.</span></li>
+    ruff/mypy/coverage, raise the Python floor to 3.10, create <code>dev</code>.</span></li>
   <li><strong>Spec conformance</strong> —
     <span class="goal">Make all 37 vectors pass. Fix the JA4SSH 200-packet window, expose
     <code>JA4_o</code>, use FoxIO's propagation-factor table, replace the surface-area
@@ -309,7 +309,7 @@ and files nothing there.</p>
 <h3><a href="features/00-foundation.md">00 — Foundation</a></h3>
 <p>17 requirements. Vendor the vectors with a <code>NOTICE</code> recording the upstream
 commit and FoxIO License 1.1 attribution; un-ignore them; run conformance, ruff, ruff
-format, mypy and coverage on every pull request; raise the floor to Python 3.9; pin every
+format, mypy and coverage on every pull request; raise the floor to Python 3.10; pin every
 action to a commit; add Dependabot; fix the two tests that shell out to a bare
 <code>python</code> instead of <code>sys.executable</code>.</p>
 <p><strong>Key criteria:</strong> the conformance suite passes with no network access, and

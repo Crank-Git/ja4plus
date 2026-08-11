@@ -4,8 +4,8 @@ Used by JA4H (HTTP) and JA4X (certificates) to handle multi-segment
 payloads and out-of-order TCP delivery.
 """
 
-# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
-# without this import.
+# This import makes every annotation a string. No annotation therefore evaluates at
+# import time, and a forward reference needs no quotation mark.
 from __future__ import annotations
 
 import logging

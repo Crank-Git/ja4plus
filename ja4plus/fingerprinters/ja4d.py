@@ -9,8 +9,8 @@ Section b: DHCP options present (hyphen-separated decimal), skipping 53/255/50/8
 Section c: Parameter Request List contents from option 55 (hyphen-separated decimal)
 """
 
-# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
-# without this import.
+# This import makes every annotation a string. No annotation therefore evaluates at
+# import time, and a forward reference needs no quotation mark.
 from __future__ import annotations
 
 import logging

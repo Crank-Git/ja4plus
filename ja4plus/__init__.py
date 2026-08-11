@@ -6,8 +6,8 @@ created by FoxIO LLC. Supports TLS, TCP, HTTP, SSH, and X.509
 fingerprinting for network security monitoring and traffic analysis.
 """
 
-# Python 3.9 is the floor, and it evaluates no annotation written as `str | None`
-# without this import.
+# This import makes every annotation a string. No annotation therefore evaluates at
+# import time, and a forward reference needs no quotation mark.
 from __future__ import annotations
 
 from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
@@ -98,7 +98,7 @@ def compute_ja4x_from_pem(cert_pem_bytes: bytes | str) -> str | None:
 #
 # **Keep the plain string assignment.** `setuptools` reads the value from the syntax tree,
 # so a computed value would make a build import this module and every dependency it loads.
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 __author__ = "ja4plus contributors"
 __license__ = "BSD-3-Clause"
 

@@ -3,11 +3,17 @@
 `FR-documentation-8` asks the site to publish to GitHub Pages on a push to the live branch.
 The live branch is `master` under the dev-and-live branch model.
 
-**No case here observes a deployment.** This repository holds no GitHub Pages site, and
-`gh api repos/Crank-Git/ja4plus` reports `has_pages: false`. The user decides whether to
-turn Pages on, because that change publishes a public website. These cases therefore read
-the workflow as text, and the deployment stays unverified until the user changes the
-setting.
+**No case here observes a deployment.** #66 recorded a read of 2026-08-09 under the
+sentence below, and the read of 2026-08-10 that #577 took supersedes it.
+
+> This repository holds no GitHub Pages site, and `gh api repos/Crank-Git/ja4plus` reports
+> `has_pages: false`.
+
+`gh api repos/Crank-Git/ja4plus` now reports `has_pages: true`, and
+`gh api repos/Crank-Git/ja4plus/pages` reports `build_type: workflow` and `status: null`.
+**Pages has therefore built nothing yet**, because `.github/workflows/docs.yml` deploys on
+a push to `master` alone. These cases read the workflow as text, and the deployment stays
+unverified until a promotion reaches the release branch.
 The issue body states the behaviour the workflow must have until then: the run fails with a
 message that names the setting.
 
@@ -38,7 +44,7 @@ LIVE_BRANCH = "master"
 # The path the publish workflow calls. A relative path names a workflow of this repository.
 BUILD_REFERENCE = "uses: ./.github/workflows/docs-build.yml"
 
-# An action reference, as `uses: actions/deploy-pages@d6db901...  # v4.0.5`. Every workflow
+# An action reference, as `uses: actions/deploy-pages@cd2ce8f...  # v5.0.0`. Every workflow
 # of this repository pins a third-party action to a commit, because a tag moves.
 ACTION_REFERENCE = re.compile(r"uses:\s+([A-Za-z0-9][^\s@]*)@(\S+)")
 
@@ -93,7 +99,8 @@ def test_the_publish_workflow_holds_the_permissions_the_deployment_needs() -> No
     """The workflow grants `pages: write` and `id-token: write` to the deployment.
 
     `actions/deploy-pages` states both permissions and the `github-pages` environment.
-    Verified against https://github.com/actions/deploy-pages (v4), retrieved 2026-08-09.
+    Verified against https://github.com/actions/deploy-pages/tree/v5.0.0, retrieved
+    2026-08-10.
     """
     text = _publish_text()
     for permission in ("pages: write", "id-token: write"):
