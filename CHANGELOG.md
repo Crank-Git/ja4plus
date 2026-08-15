@@ -8,7 +8,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **Nine citations of `.claude/rules/external-apis.md` name a line that file no longer
   holds, and each one now names the line the sentence stands on** (#679). Round
-  TBD. **Line 95 of that file holds the fragment `reaches it.`**, which is the tail of the
+  246. **Line 95 of that file holds the fragment `reaches it.`**, which is the tail of the
   sentence that bars a Zeek JA4TS value of a capture whose link layer is not Ethernet. The
   sentence the citations quote is `Read no JA4L or JA4LS value of a Zeek baseline as a
   reference value`, and it opens line 124 of the base of this change. **The pair carries a
@@ -59,7 +59,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The divergence register records the segment one TCP stream refuses at its byte cap**
   (#654). Round
-  TBD. **#620 measured 757 segments here and 750 in the port, on the stream
+  247. **#620 measured 757 segments here and 750 in the port, on the stream
   `142.250.187.206:443->192.168.2.200:58847` of `http2-with-cookies.pcapng`, and it found
   no cause.** This round found the cause, and the cause is the byte cap alone. **The two
   ports read one feed.** A replay of that capture offers 1336 segments in one order to
@@ -97,7 +97,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   port. Restore the line and all 14 cases pass.
 - **The divergence register records the zero sentinel that JA4 and JA4S write for an
   empty list** (#653). Round
-  TBD. **JA4 and JA4S write `000000000000`, and JA4X and JA4H hash an empty list and
+  248. **JA4 and JA4S write `000000000000`, and JA4X and JA4H hash an empty list and
   write `e3b0c44298fc`.** The maintainer ruled on 2026-08-15 that the split is correct.
   **Neither image names the sentinel**, so the literal test of #653 settles nothing, and
   two measurements outside the image decide it. **JA4 carries a text specification beside
@@ -131,7 +131,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   new file.**
 - **`tests/test_foxio_rust_parity.py` reads the `ja4ssh` block of a FoxIO Rust snapshot,
   and it compares both JA4SSH values that block holds** (#671). Round
-  TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
+  242. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
   block and the `http` block**, so the 2 `ja4ssh` values reached no case. #638 counted them
   in a sweep of all eleven local snapshots, and one snapshot holds such a block:
   `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` writes them on
@@ -167,7 +167,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the snapshot and the module reports 230 passed and 1 xfailed.
 - **The FoxIO Rust parity module reads the `http` block, and it compares five of the six
   JA4H values it holds** (#670). Round
-  TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
+  241. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
   block alone**, so the 6 `ja4h` values of the `http` block reached no case. #638 counted
   them in a sweep of all eleven local snapshots. The reader now enters both nested blocks,
   and `RustStream` carries the JA4H values of a stream beside its JA4X values. **The six
@@ -206,7 +206,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   138 xfailed cases. #671 reads the JA4SSH values of the same file and it follows this
   round.
 - **The lookup reads both forms of an empty-list value** (#639). Round
-  TBD. **FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one
+  243. **FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one
   writes `000000000000` for an empty list.** This project hashes an empty list instead,
   under the ruling of 2026-08-14, so it writes `e3b0c44298fc` where a row of that file
   holds the zero sentinel. Three rows of the bundled file therefore reached no value this
@@ -264,7 +264,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The divergence register records the JA4T emission model of the two libraries** (#667).
   Round
-  TBD. **`ja4plus` emits one JA4T value for one connection, and `ja4plus-go` emits one for
+  244. **`ja4plus` emits one JA4T value for one connection, and `ja4plus-go` emits one for
   each frame that carries a readable SYN header.** **The values agree and the emission
   model differs.** #610 measured the divergence while it built the reader of the TCP header
   an ICMP error message quotes, and no register row held it. **This round re-measured every
@@ -299,7 +299,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   row fails 5.** The ruling is reversible, and a reversal changes both repositories.
 - **Every repository-owned citation of the transcription pages reads the commit its
   section pins** (#668). Round
-  TBD. **A `file:line` citation of a file this repository owns goes stale on every change
+  245. **A `file:line` citation of a file this repository owns goes stale on every change
   above the cited line, and nothing reported it.** #600 moved one line of `ja4h.py` and its
   review lens found one falsified citation of `docs/implementation_notes.md`, because the
   lens read the diff. **The title and the body of #668 state 37 stale citations of
@@ -689,7 +689,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `raw_original_order` fails four cases, among them
   `tests/test_ja4h_raw.py::test_the_cookie_vector_produces_the_reference_raw_value`.
 - **Two JA4D comments name the Wireshark version the pin file records** (#665). Round
-  TBD. **`ja4plus/fingerprinters/ja4d.py:58` and `ja4plus/fingerprinters/ja4d6.py:273`
+  240. **`ja4plus/fingerprinters/ja4d.py:58` and `ja4plus/fingerprinters/ja4d6.py:273`
   each read `at Wireshark 4.4.2, which .claude/rules/external-apis.md pins`**, and each
   now reads `v4.6.0`. #616 moved the Wireshark row of that pin file, and the FoxIO pin
   `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` records the newer version. **The `#define`
