@@ -92,7 +92,7 @@ RECORDED_CITATIONS = {
         1,
         "c$fp$ja4t$synack_delays += double_to_count(ts - c$fp$ja4t$last_ts)/1000000;",
     ),
-    "zeek/ja4t/main.zeek:185": (1, "if (|c$fp$ja4t$synack_delays| == 10) {"),
+    "zeek/ja4t/main.zeek:185": (2, "if (|c$fp$ja4t$synack_delays| == 10) {"),
     "zeek/ja4t/main.zeek:189": (
         1,
         "ConnThreshold::set_packets_threshold(c,threshold + 1,F);",
@@ -112,10 +112,6 @@ RECORDED_CITATIONS = {
         "c$fp$ja4t$last_ts)/1000000);",
     ),
 }
-
-# `zeek/ja4t/main.zeek:185` appears twice, and the count above states one occurrence of
-# each citation of the page. This map holds every citation the page repeats.
-REPEATED_CITATIONS = {"zeek/ja4t/main.zeek:185": 2}
 
 # The lines #637 moved away from. Each one holds a comment above the statement the page
 # describes, so the page cites none of them.
@@ -160,10 +156,7 @@ def test_this_record_names_no_line_the_transcription_dropped() -> None:
 
 def test_the_transcription_repeats_each_citation_the_expected_number_of_times() -> None:
     counts = counted_citations()
-    expected = {
-        citation: REPEATED_CITATIONS.get(citation, count)
-        for citation, (count, _) in RECORDED_CITATIONS.items()
-    }
+    expected = {citation: count for citation, (count, _) in RECORDED_CITATIONS.items()}
     wrong = {
         citation: (counts.get(citation, 0), want)
         for citation, want in expected.items()

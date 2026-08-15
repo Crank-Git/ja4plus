@@ -18,8 +18,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   R10 cited `wireshark/source/packet-ja4.c:1265`, and the D7 paragraph cited
   `wireshark/source/packet-ja4.c:1295`. **Two of the six named a code line that carries no
   fact the sentence states.** R11 cited `wireshark/source/packet-ja4.c:664` for the test
-  `data->window_scale == 0`, which stands at `wireshark/source/packet-ja4.c:668`, and the
-  D7 paragraph cited `wireshark/source/packet-ja4.c:1599` for the write of the `JA4TS`
+  `data->window_scale == 0`, which stands at `wireshark/source/packet-ja4.c:668`, and an
+  R13 paragraph cited `wireshark/source/packet-ja4.c:1599` for the write of the `JA4TS`
   field, which stands at `wireshark/source/packet-ja4.c:1608`. **The other 36 sites read
   correct, and this round moved none of them.** The page cites `rust/ja4/src/tcp.rs` by
   function name alone, so no citation of that file carries a line number. **The repair
