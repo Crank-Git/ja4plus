@@ -995,8 +995,9 @@ class TestJA4XComprehensive(unittest.TestCase):
         result = fp.fingerprint_certificate(cert_data)
         self.assertIsNotNone(result)
         parts = result.split("_")
-        # Empty extension list produces '000000000000' sentinel per spec
-        self.assertEqual(parts[2], "000000000000")
+        # An empty extension list hashes, so part c is the truncated SHA-256 of the empty
+        # string. R8 of `docs/specs/foxio/JA4X.md` holds the ruling of 2026-08-14.
+        self.assertEqual(parts[2], "e3b0c44298fc")
 
 
 if __name__ == "__main__":

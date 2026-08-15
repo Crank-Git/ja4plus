@@ -243,8 +243,8 @@ class TestJA4XNoExtensions(unittest.TestCase):
         result = fp.fingerprint_certificate(cert)
         self.assertIsNotNone(result)
 
-    def test_no_extensions_hash_is_zero_sentinel(self):
-        """Empty extensions should produce '000000000000' sentinel per spec."""
+    def test_no_extensions_hash_is_the_hash_of_the_empty_string(self):
+        """An empty extension list produces the truncated SHA-256 of the empty string."""
         cert = _make_cert(
             [
                 x509.NameAttribute(NameOID.COMMON_NAME, "test.com"),
@@ -254,7 +254,7 @@ class TestJA4XNoExtensions(unittest.TestCase):
         fp = JA4XFingerprinter()
         result = fp.fingerprint_certificate(cert)
         parts = result.split("_")
-        self.assertEqual(parts[2], "000000000000")
+        self.assertEqual(parts[2], "e3b0c44298fc")
 
 
 class TestJA4XSelfSignedVsCA(unittest.TestCase):

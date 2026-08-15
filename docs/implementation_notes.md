@@ -1248,9 +1248,10 @@ The first 12 characters of the SHA-256 of each part give
 `TestTheJa4xRawFormTheRustSnapshotImplies` in `tests/test_foxio_rust_parity.py` runs that
 comparison over all 43 values the five local snapshots hold.
 
-**An empty list reaches the raw form as an empty part.** R8 gives the zero sentinel
-`000000000000` to the hashed form alone, because `hash12` of the FoxIO Rust
-implementation runs on the hashed form alone.
+**An empty list reaches the raw form as an empty part, and the hashed form holds the hash
+of that same empty part.** R8 gives no zero sentinel to any part, under the ruling of
+2026-08-14, so the raw form is the exact preimage of the fingerprint on every part. #619
+holds the ruling and the reversal path.
 
 **A JA4X result holds one raw value under two keys.** R10 sorts no list, so `raw` and
 `raw_original_order` are equal. FoxIO publishes `JA4X_r` and no `JA4X_ro`, and JA4S holds
