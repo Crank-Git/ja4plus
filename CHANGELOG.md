@@ -53,9 +53,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_round_entry_existence.py::test_the_change_set_of_this_branch_records_a_round`,
   and the round entry of this change set clears it. **The conformance suite reports 1676
   passed, 142 skipped and 138 xfailed, which are the counts of the base**, and
-  `tests/foxio_deviations.json` holds 138 keys on both sides. `ruff check ja4plus/
-  tests/`, `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` each report
-  no issue.
+  `tests/foxio_deviations.json` holds 138 keys on both sides.
+  `ruff check ja4plus/ tests/`, `ruff format --check ja4plus/ tests/` and
+  `mypy --strict ja4plus/` each report no issue.
 
 - **`tests/test_foxio_rust_parity.py` reads the `ja4ssh` block of a FoxIO Rust snapshot,
   and it compares both JA4SSH values that block holds** (#671). Round
