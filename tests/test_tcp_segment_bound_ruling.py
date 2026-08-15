@@ -1,7 +1,7 @@
 """The segment count bound of one TCP stream, which #620 records.
 
 `ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`, so one stream
-stores 4096 segments at most beside its byte bound. FoxIO specifies no resource bound, so
+stores 4096 segments at most beside its byte cap. FoxIO specifies no resource bound, so
 no vector decides the value and parity rule 2 gives the port this interface.
 
 **A ruling that lives only in a closed issue is a ruling the next reader reverses by
@@ -50,12 +50,12 @@ REGISTER_SEPARATOR = re.compile(r"^\|[\s\-|]+\|$")
 # The first cell of the row this issue writes.
 RULING_ITEM = "The segment count bound of one TCP stream"
 
-# The byte bound that `TCPStreamReassembler` holds by default. A reading under this cap is
+# The byte cap that `TCPStreamReassembler` holds by default. A reading under this cap is
 # the reading that binds, because every stream of this library carries the cap.
 BYTE_CAP = 1048576
 
 # A byte cap that no capture of the corpus reaches. It reproduces the reading that a
-# reassembler without a byte bound gives.
+# reassembler without a byte cap gives.
 NO_BYTE_CAP = 10**12
 
 # The largest segment count of one stream under the byte cap, and the stream that holds it.
@@ -133,8 +133,8 @@ def _peak_segment_counts(byte_cap: int) -> tuple[tuple[int, str, str], ...]:
     """Return the largest segment count of every stream of the corpus, largest first.
 
     The replay removes the segment bound, so the reading states the demand of the corpus
-    rather than the bound this file measures. It keeps the byte bound the caller states,
-    because that bound decides which reading binds.
+    rather than the bound this file measures. It keeps the byte cap the caller states,
+    because that cap decides which reading binds.
 
     Args:
         byte_cap: The value of `max_stream_bytes` for the replay.

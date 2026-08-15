@@ -9,7 +9,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The divergence register records the segment count bound of one TCP stream, and the
   bound keeps a corrected attribution** (#620). Round
   TBD. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
-  one stream stores 4096 segments at most beside its byte bound of 1048576.
+  one stream stores 4096 segments at most beside its byte cap of 1048576.
   **FoxIO specifies no resource bound, so rule 1 settles nothing here and no vector decides
   the value.** The bound is a resource rule that this project shipped first, and rule 2
   gives the port that interface. `internal/parser/tcp_stream.go:68` holds
