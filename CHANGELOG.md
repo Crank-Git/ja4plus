@@ -138,6 +138,185 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the `haslayer(TCP)` guard fails eleven of the thirty and fifty of the one hundred and
   two. The `## Terms` table of `docs/specs/spec.md` gains three rows: `ICMP error
   message`, `quoted datagram` and `quoted header`.
+- **Two falsified sentences now state the measurement, and a sweep found three more**
+  (#611). Round
+  TBD. **A worker of `Crank-Git/ja4plus-go` read this repository at tag `v1.1.0` and it
+  found both**, and its issue is `Crank-Git/ja4plus-go#376`. **The first sentence names the
+  wrong line of the FoxIO reference.** The cause text of the five JA4L method-filter
+  entries of `tests/foxio_deviations.json` read `python/ja4.py:339` runs
+  `delete_keys(['JA4L-S','JA4L-C'], final)`. This round fetched `python/ja4.py` at the
+  pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` and read the two lines: line 339
+  holds `if 'ja4l' not in output_types:` and line 340 holds the call. **The call is the
+  line that deletes the key, so every live citation now reads 340.** The round moved ten
+  occurrences in the register, one live row of the `Divergence register` table of
+  `docs/specs/spec.md`, and two citations of `docs/specs/foxio/JA4L.md`. **The register
+  holds 138 keys before the change and 138 after it**, and the conformance suite reports
+  138 `xfailed` on both sides. **The round rewrote no dated record**, so `CHANGELOG.md` and
+  the `## Changelog` table keep the line number each past round wrote. **The second
+  sentence states a count that the corpus outgrew.** `docs/specs/foxio/JA4L.md` stated
+  twice that `tests/foxio_vectors/wireshark_expected/` holds two files and that neither
+  carries a JA4L key. #116 added those two files, and #531 raised the directory to 26
+  files. **A read of 2026-08-15 measures 26 files, 15 of them carrying a `ja4.ja4l` key,
+  and 44 `ja4.ja4l` values of which every one carries three parts.** The round corrected
+  both sentences in place, and it quoted each superseded wording under a block quote rather
+  than erase it. **The correction moves no ruling.** D1 rests on the count of the 114 JA4L
+  values of `tests/foxio_vectors/*.json`, this round re-measured that count at 114, and
+  every one of them holds two parts. **A count stated as a standing fact goes stale on the
+  day the corpus grows, so the round swept the class rather than repair two instances.**
+  The sweep read 21 count claims of `docs/specs/foxio/` against the tree, and it found 3
+  more false. `docs/specs/foxio/JA4X.md` states `tests/foxio_vectors/rust_expected/` at ten
+  snapshots on two sentences, and the directory holds 11 since #242 added
+  `ja4__insta@gre-erspan-vxlan.pcap.snap`. That snapshot holds no JA4X value, so the other
+  four rows of the same table stand. `docs/specs/foxio/JA4SSH.md` states ten JA4SSH
+  register entries under three issues, and the register holds 14 under four, because #214
+  registered 5 after the section was written. **The round corrected all three and it
+  reopened no decline.** The 18 clean negatives include the 89 JA4H values across 11
+  captures, the 114 JA4L values across 24 captures, the 194 JA4S values, the 58 JA4TS
+  values of 24 Wireshark files, the 60 JA4X values across 11 files, and the zero JA4D
+  entries of the register. New file `tests/test_wireshark_expected_counts.py` holds twelve
+  cases, and each one measures the tree and requires the document to state the measured
+  number, so the next growth of the corpus fails a run. **This round changes no file under
+  `ja4plus/`.**
+
+- **The concurrency page states that one packet dated in the future evicts every entry of
+  a state table** (#618). Round
+  TBD. **`ja4plus/utils/state_table.py:414` reads
+  `if now - entry[_LAST_SEEN] > self.max_connection_age:` inside the loop at line 411, and
+  `now` is the timestamp of the packet that arrives.** One packet dated far in the future
+  therefore ages every entry at once, and the age pass evicts all of them. **A packet
+  carries its own timestamp, so a sender influences that input**, and a capture file the
+  operator did not produce is the reachable case. **The maintainer ruled answer 1 on
+  2026-08-14**, on `Crank-Git/ja4plus-go#577` and on #618, so both projects accept the
+  property and document it and no line of the age pass changes. Each declined answer
+  invents a rule that no FoxIO source states. A monotonic clock diverges from the packet
+  clock on a replayed capture, a bound on the jump needs a number that no source justifies,
+  and an age against the highest timestamp seen bounds the forward jump alone. **A repair
+  in one implementation alone gives the two implementations two age clocks**, which the
+  parity rules of `CLAUDE.md` exist to prevent. **`docs/concurrency.md` gains the section
+  `## One packet dated in the future evicts every entry`.** It states the property, names
+  the reachable case, gives the reason this project accepts it, and states what the
+  property costs. **The section states the shard qualifier too.** `evict_aged` holds the
+  entries of another thread, at `ja4plus/utils/state_table.py:412`, so a sharded caller
+  loses the entries of the thread that reads the packet and every entry that the wall
+  clock dated, and a caller that runs one thread loses every entry. **The eviction removes fingerprinting state, so a run answers with fewer
+  fingerprints rather than with wrong ones**, and the entry count bound holds the memory
+  whatever timestamp a packet carries, because that bound reads the recency order and no
+  timestamp. **No line of `ja4plus/` changes, and `git diff --stat ja4plus/` reports
+  nothing.** **New file `tests/test_future_dated_packet_eviction.py` holds four cases**,
+  and they read the behaviour rather than the sentence alone. **One reversal measures
+  them.** A bound of `now` to the newest last-seen time of the entries, written into
+  `evict_aged` before the loop, fails
+  `test_one_packet_dated_far_in_the_future_evicts_every_entry` and
+  `test_one_packet_dated_in_the_future_evicts_an_entry_the_next_packet_needs`, and it
+  leaves the control case and the documentation case green. Following #51,
+  `inspect.getsource` of the loaded method in a fresh interpreter reported the mutation
+  present before the run and absent after the restore, and `PYTHONDONTWRITEBYTECODE=1`
+  with a cleared `__pycache__` removed the stale bytecode. **No fingerprint moves.** The
+  conformance suite reports 1642 passed, 142 skipped and 138 xfailed before the change and
+  after it, and `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed
+  cases. **This branch then took `batch/664-raw-form-and-records` again, because #638
+  landed under it**, and the suite reports 1647 passed, 142 skipped and 138 xfailed on
+  both sides of that base. The five new cases belong to #638. **The unit suite rises from 5384 passed to 5391 passed**, and 8 skipped and 8
+  xfailed hold. `pytest --collect-only` reads 7372 cases against 7365 on the base commit.
+  **The rise of seven is the four new cases and three repository-wide checks**, because
+  `tests/test_documented_method_count.py`, `tests/test_ruling_vocabulary.py` and
+  `tests/test_statistics_thread_term.py` each parametrize over every Python file of
+  `tests/`, and each one therefore gains one case for the new file.
+- **The FoxIO Rust JA4L values reach the parity module, and the reading names what each
+  one settles** (#638). Round
+  TBD. **`SNAPSHOT_METHODS` of `tests/test_foxio_rust_parity.py` named JA4, JA4S and JA4T,
+  and the 11 snapshots under `tests/foxio_vectors/rust_expected/` hold 70 JA4L values that
+  no case read.** **The omission was an oversight and no ruling made it**, because no comment,
+  no issue and no specification section recorded a reason to leave the two fields unread.
+  `SNAPSHOT_LATENCY_METHODS` now names `JA4L-C` and `JA4L-S`, and `read_rust_snapshot`
+  reads both fields. **The FoxIO Python expected-output file holds a JA4L value on 68 of
+  the 70 streams.** `.claude/rules/external-apis.md` gives `python/test/testdata/` the
+  decision where both references hold a value, so `tests/test_spec_validation.py` owns
+  those 68 and this module compares none of them. **The two the Python file omits belong to
+  `https-connect.pcap` stream 0 on port 54723**, which is the unknown-port gap #138 owns,
+  and its record holds a JA4H value alone. **`ja4plus` produces `45_64` and `13532_57`
+  there, which the FoxIO Rust snapshot holds exactly.** **The comparison therefore reports
+  no deviation**, `tests/foxio_deviations.json` holds 138 keys before and after, and the
+  conformance suite reports the same xfailed count. **No file under `ja4plus/` changed and
+  no fingerprint value moved.** **The wiring repairs a comparison that could not fail
+  before.** `test_ja4plus_produces_no_value_the_rust_snapshot_contradicts` reads
+  `handshake_cases`, and a JA4L contradiction reached that list nowhere; a mutation of
+  `ja4l_c` to `45_65` in the snapshot now fails it. **The value #638 names reaches no
+  comparison case, and the new class records why.**
+  `tests/foxio_vectors/rust_expected/ja4__insta@chrome-cloudflare-quic-with-secrets.pcapng.snap:29`
+  holds `ja4l_s: 9285_56` on stream 0 port 50280, and the FoxIO Python file holds
+  `10990_56` on the same stream, so the precedence rule gives that comparison to
+  `tests/test_spec_validation.py`. **The maintainer ruled #622 on 2026-08-15 that this
+  project declines to converge on JA4L timing**, and the split is two against two:
+  FoxIO Python and FoxIO Zeek read 10990, and Wireshark and FoxIO Rust read 9285.
+  `test_the_four_readings_of_the_ruled_value_hold_their_committed_forms` names the three
+  readings that sit in a machine-readable file, beside the `10990_56_quic` this project
+  publishes, so a vector refresh that moves any one of them fails a case rather than
+  leaving the ruling stale. **The `Divergence register` gains no row, and #622 owns the row
+  that states all four readings.** **The one comment that went stale is repaired**, because
+  `TCP_ONLY_CAPTURES` claimed that `gre-erspan-vxlan.pcap` reaches `handshake_cases`
+  nowhere, and its snapshot holds `ja4l_c: 953_64` and `ja4l_s: 997_64`; the FoxIO Python
+  file holds both, so the claim still holds and the comment now states why.
+  **`test_the_stream_measures_d1_and_the_two_forms_differ` reads the two new values as
+  well**, so D1 of #215 stays the one divergence of that capture. **A sweep read every
+  value-bearing field of the 11 snapshots against the same question, and it reports 8 field
+  classes.** `ja4` at 191 values, `ja4s` at 110, `ja4t` at 39 and `ja4x` at 43 each reach a
+  case already, `ja4l_c` and `ja4l_s` at 35 each reach one after this round, and two
+  classes reach none. **#670 holds the six `ja4h` values of the `http` block and #671 holds
+  the two `ja4ssh` values of `ssh2.pcapng` stream 14**, which `read_rust_snapshot` skips
+  because it enters the `tls_certs` block alone. **Three mutations prove the new cases
+  bite.** A move of the snapshot value to `9285_57` fails the four-readings case, a move of
+  `45_64` to `45_65` fails two cases, and a `SNAPSHOT_LATENCY_METHODS` that drops `JA4L-S`
+  fails five.
+- **JA4H fills the sorted raw form, so the `raw` field carries the `JA4H_r` value** (#600).
+  Round
+  TBD. **`ja4plus/fingerprinters/ja4h.py:70` stated that FoxIO publishes no `JA4H_r` key,
+  and the per-packet expected-output files publish it.** That claim held for the per-stream
+  files under `tests/foxio_vectors/`, which hold 89 `JA4H_ro` values and no `JA4H_r` value.
+  It did not hold for `tests/foxio_vectors/wireshark_expected/`, which holds 62 `ja4.ja4h_r`
+  values beside 62 `ja4.ja4h_ro` values. `docs/specs/foxio/JA4H.md` recorded the defect as
+  D6, and this round repairs it. **The form is
+  `<part a>_<header names>_<sorted cookie names>_<sorted cookie pairs>`.** The header names
+  hold the wire order in both raw forms, and the cookie order is the one thing that
+  separates them. Both cookie lists sort by the cookie name, and the sort is stable, so two
+  cookies of one name keep their wire order. **The vectors decide that sort key, and this
+  round read them rather than the plan.**
+  `tests/foxio_vectors/wireshark_expected/http1-with-cookies.pcapng.json` gives
+  `ge11cr04da00_Host,User-Agent,Accept,Accept-Language_tasty_cookie,yummy_cookie_tasty_cookie=strawberry,yummy_cookie=choco`
+  for `ja4.ja4h_r` and `yummy_cookie,tasty_cookie` for the cookie names of `ja4.ja4h_ro`, so
+  one frame separates the two orders. `ja4plus-go` built the same rule at
+  `ja4h.go:539` and `ja4h.go:608`, and the two ports agree.
+  **The three fields of that reference value hash to part b, part c and part d.**
+  `sha256` of `Host,User-Agent,Accept,Accept-Language` reads `8ddaef5d77af`, of
+  `tasty_cookie,yummy_cookie` reads `280f366eaa04`, and of
+  `tasty_cookie=strawberry,yummy_cookie=choco` reads `c2fb0fe53442`, which are the last
+  three parts of the published `ja4.ja4h` value `ge11cr04da00_8ddaef5d77af_280f366eaa04_c2fb0fe53442`.
+  **The sorted raw form is therefore the pre-image of the base value, and it needs no
+  arithmetic of its own.** New function `_ja4h_sorted_cookie_strings` builds the two
+  strings once, and the base value and the raw form each read it, so no second copy lets
+  the two disagree. New function `_ja4h_raw_prefix` builds `<part a>_<header names>_`, which
+  both raw forms share. **A request that carries no cookie ends after the header names and
+  one underscore**, which is the shape `raw_original_order` already carried.
+  `python/ja4h.py:82` appends the two cookie fields only when the request holds a cookie,
+  and `wireshark/source/packet-ja4.c:603` writes two trailing underscores.
+  `Crank-Git/ja4plus-go#285` holds that reference split, and the maintainer rules it. **This
+  round takes the wire-order shape, so one ruling moves both forms.** **This round moves no
+  fingerprint value and no `JA4H_ro` value.** A replay of every one of the 38 committed
+  captures reads 74 JA4H values before the change and 74 after, and the record of every
+  fingerprint and every `raw_original_order` value hashes to
+  `149a61f88eaec6eec6ed04ae3671c8f82380ac27740fc7ac7905a094088a7be6` on both sides. **The
+  output schema stays at version 1**, because `raw` is a field the schema already publishes
+  and JA4H wrote `null` into it. `docs/output-schema.md`, `docs/methods/ja4h.md`,
+  `docs/implementation_notes.md` and `docs/specs/foxio/JA4H.md` each record the fill. **The
+  conformance suite reads no `JA4H_r` key**, because `tests/conformance_index.py` indexes
+  the per-stream files and those publish none. It reports 1642 passed, 142 skipped and 138
+  `xfailed` before the change and the same three counts after, and
+  `tests/foxio_deviations.json` holds 138 keys on both sides. New file
+  `tests/test_ja4h_raw_sorted.py` holds twenty-three cases, and two reversals measured
+  them. A cookie order that drops the sort fails seven cases, among them
+  `test_the_cookie_vector_produces_the_reference_sorted_raw_value`. A sort applied to
+  `raw_original_order` fails four cases, among them
+  `tests/test_ja4h_raw.py::test_the_cookie_vector_produces_the_reference_raw_value`.
 - **The divergence register records the segment count bound of one TCP stream, and the
   bound keeps a corrected attribution** (#620). Round
   222. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
