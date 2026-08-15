@@ -26,9 +26,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   too**, so the token is additive in both implementations and neither command line breaks.
   **The two token lists still order the methods differently**, because the port lists
   `ja4t` and `ja4ts` before `ja4l` where this project lists `ja4l` first, and this round
-  moves no existing token. **Eight cases came first and five of the eight failed**, the
-  three that passed being the guards that `ja4l` selects both values, that a default run
-  selects every method, and that `_parse_types` declines an unknown token.
+  moves no existing token. **Eight cases came first and five of the eight failed.** The
+  three that passed are the guards this change must not break. `ja4l` selects both values,
+  a default run selects every method, and `_parse_types` declines an unknown token.
   `tests/test_cli_types_ja4ls.py` holds eleven cases, and three of them run the committed
   capture `tests/foxio_vectors/https-connect.pcap` through `main` and read the JSON lines.
   **No fingerprint moves**, because this round changes selection and never production. The
@@ -49,7 +49,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `docs/methods/index.md`, `docs/output-schema.md`, `docs/api_reference.md` and
   `README.md` each state the pair. **The `type` field still holds one of ten values**, and
   the row of `docs/specs/spec.md` and the docstring of `ja4plus/types.py` now separate that
-  count from the eleven tokens `--types` accepts. Recorded by #605.
+  count from the eleven tokens `--types` accepts. **The `## Terms` table gains the term
+  `types token`.** `ja4ls` is a value `--types` accepts and it is no method name, and the
+  `method name` row barred the word `token` as a synonym of itself. Recorded by #605.
 - **The malformed-input suite holds a fuzz target for the ServerHello reader** (#628).
   Round
   TBD. **`tests/fuzz/` named no ServerHello entry point**, and a grep for `server_hello`
