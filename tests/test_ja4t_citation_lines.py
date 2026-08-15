@@ -15,6 +15,24 @@ a case here, so the author reads the new line at the pin and records it.
 `STALE_CITATIONS` and `STALE_PROSE_LINES` name the three comment lines #637 moved away
 from. A reader who follows one of them lands above the statement the page describes.
 
+**#637 wrote this record against the page before #609 edited it, and the merge of `dev`
+into `batch/657-tunnel-icmp-citations` brought the two together.** #609 rewrote R13 for the
+reversal at `Crank-Git/ja4plus-go#484`, and that rewrite moved five citations.
+
+- It added `wireshark/source/packet-ja4.c:1599-1608`, which holds `if (syn == 3) {`.
+- It added `wireshark/source/packet-ja4.c:1600`, which looks the connection up by stream.
+- It cited `wireshark/source/packet-ja4.c:684` a second time, for the reset guard.
+- It cited `wireshark/source/packet-ja4.c:1296` a fourth time, for the flag test.
+- It dropped `wireshark/source/packet-ja4.c:693`, and the outer guard at 684 replaces it.
+
+This record reads all five lines at the pin again. Each sentence that carries one is true
+there, so this reconciliation corrects no citation of the page.
+
+**A range citation records the first line of the range**, which is the rule the five
+`zeek/ja4t/main.zeek` range entries below already hold. `wireshark/source/packet-ja4.c:1599`
+and `wireshark/source/packet-ja4.c:1599-1608` are therefore two records, and
+`CITATION_PATTERN` reads the longer form as one citation.
+
 Verified against: https://github.com/FoxIO-LLC/ja4 (`wireshark/source/packet-ja4.c` and
 `zeek/ja4t/main.zeek`, at the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`,
 retrieved 2026-08-15)
@@ -49,10 +67,9 @@ RECORDED_CITATIONS = {
     ),
     "wireshark/source/packet-ja4.c:668": (1, "if (data->window_scale == 0) {"),
     "wireshark/source/packet-ja4.c:684": (
-        1,
+        2,
         "if ((conn != NULL) && (conn->syn_ack_count > 1)) {",
     ),
-    "wireshark/source/packet-ja4.c:693": (1, "if (!nstime_is_zero(&conn->rst_time)) {"),
     "wireshark/source/packet-ja4.c:694": (
         1,
         "int64_t diff = timediff(&conn->rst_time, &conn->syn_ack_times[conn->syn_ack_count - 1]);",
@@ -63,7 +80,7 @@ RECORDED_CITATIONS = {
     ),
     "wireshark/source/packet-ja4.c:1266": (2, "if (tcp_flags == 0x02) {"),
     "wireshark/source/packet-ja4.c:1296": (
-        3,
+        4,
         "if ((packet_time != NULL) && (tcp_flags == 0x004)) {",
     ),
     "wireshark/source/packet-ja4.c:1458": (
@@ -75,6 +92,11 @@ RECORDED_CITATIONS = {
         'update_tree_item(pinfo->num, hf_ja4ts, ja4t(pinfo->pool, &ja4t_data, conn), "tcp");',
     ),
     "wireshark/source/packet-ja4.c:1599": (1, "if (syn == 3) {"),
+    "wireshark/source/packet-ja4.c:1599-1608": (1, "if (syn == 3) {"),
+    "wireshark/source/packet-ja4.c:1600": (
+        1,
+        "conn_info_t *conn = conn_lookup(ja4_data.proto, stream);",
+    ),
     "wireshark/source/packet-ja4.c:1608": (
         1,
         'update_tree_item(pinfo->num, hf_ja4ts, ja4t(pinfo->pool, &ja4t_data, conn), "tcp");',
