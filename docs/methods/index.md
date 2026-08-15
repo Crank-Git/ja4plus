@@ -30,8 +30,12 @@ the standard itself, read the
 ## Why eleven methods reach ten fingerprinter classes
 
 `JA4LFingerprinter` writes two methods. It emits a `JA4L-C=` value for the client
-latency and a `JA4L-S=` value for the server latency. The `--types` option therefore
-accepts ten tokens, and `ja4l` names both JA4L and JA4LS.
+latency and a `JA4L-S=` value for the server latency. Both values carry the type `ja4l`,
+because one fingerprinter reports one type.
+
+**The `--types` option accepts eleven tokens, and one token names each method.** `ja4l`
+names JA4L and JA4LS together, and `ja4ls` names JA4LS alone. #605 added the `ja4ls` token
+under parity rule 2.
 
 **Read the ten as a count of fingerprinter classes, and never as a count of methods.**
 #387 records the three documents that made that mistake.

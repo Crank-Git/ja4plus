@@ -826,6 +826,29 @@ inner ports.
 `ja4plus/utils/tunnels.py` imports the scapy dissectors for Geneve, VXLAN and
 ERSPAN, because scapy leaves them unbound and stops at the tunnel header.
 
+### The QUIC layer of a tunneled packet
+
+`Packet.getlayer` counts a layer from the outside, so it returns the UDP header
+of the tunnel on a tunneled packet. The QUIC branch of JA4 and the QUIC branch of
+JA4S each read that header before #594. The QUIC decoder then read the tunnel
+header bytes rather than the QUIC long header, and it produced no value.
+
+Both branches now read `innermost_layer(packet, (UDP,))`, which
+`ja4plus/utils/tunnels.py:50` publishes. `ja4plus/utils/packet_utils.py:107`
+reads the port pair through the same function, so one result names one port pair.
+
+No capture of the FoxIO corpus carries QUIC inside a tunnel, so no vector
+separates the two behaviours and no committed value moves.
+`tests/test_quic_tunnel_inner_udp.py` builds the packets that separate them. The
+connection key keeps the form the section below states: the outer address pair
+with the inner port pair. #242 decided that form, and #594 moves the port half
+alone.
+
+`Crank-Git/ja4plus-go` reads the same layer. `ja4.go:104` and `ja4s.go:103` each
+call `parser.GetUDPLayer`, which `internal/parser/packet.go:96` documents as the
+UDP layer of the innermost packet. Issue #170 of that repository made the change,
+and pull request #188 holds its constructed test.
+
 ### The connection key of a mirrored capture
 
 A mirror sends both directions of one session from one outer address to one

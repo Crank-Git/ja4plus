@@ -55,6 +55,7 @@ VALID_TYPES = [
     "ja4s",
     "ja4h",
     "ja4l",
+    "ja4ls",
     "ja4t",
     "ja4ts",
     "ja4x",
@@ -62,6 +63,13 @@ VALID_TYPES = [
     "ja4d",
     "ja4d6",
 ]
+
+# The prefix that opens a JA4LS value. One fingerprinter writes JA4L and JA4LS, and
+# `ja4plus/processor.py` sets the type from `_SPEC`, so both methods report the type
+# `ja4l`. The value prefix is therefore the one discriminator the command holds.
+# `ja4plus/fingerprinters/ja4l.py:446` writes it, and `cmd/ja4plus/types.go` of
+# `Crank-Git/ja4plus-go` reads the same prefix for the same reason.
+_SERVER_LATENCY_PREFIX = "JA4L-S="
 
 # The environment variable that permits the remote lookup. It serves an operator who
 # runs a command line another program builds. `features/07-db-enrichment.md` line 50
@@ -179,6 +187,35 @@ def _reporting_order(types: list[str]) -> dict[str, int]:
     return order
 
 
+def _selecting_token(method: str, fingerprint: str, order: dict[str, int]) -> str | None:
+    """Return the `--types` token that selects the result, or None when none selects it.
+
+    A method name is its own token for every method except JA4LS. The token `ja4l` selects
+    the JA4L value and the JA4LS value, and the token `ja4ls` selects the JA4LS value
+    alone. Version 1.1.1 accepted `ja4l` alone, so `ja4l` keeps both values and no caller
+    of that version sees a change. #605 adopted the pair from the Go port under parity
+    rule 2, and `admitsResult` in `cmd/ja4plus/types.go` states the same rule.
+
+    The call reads `ja4l` before `ja4ls`, so a JA4LS value that both tokens select reports
+    at the position of `ja4l`. A run that names no `--types` option holds both tokens, and
+    that reading keeps the output order of version 1.1.1.
+
+    Args:
+        method: The `type` field of the result, which names the method.
+        fingerprint: The `fingerprint` field of the result.
+        order: The map `_reporting_order` built.
+
+    Returns:
+        A token the map holds, or None when the user asked for no token that selects the
+        result.
+    """
+    if method == "ja4l" and fingerprint.startswith(_SERVER_LATENCY_PREFIX):
+        if "ja4l" in order:
+            return "ja4l"
+        return "ja4ls" if "ja4ls" in order else None
+    return method if method in order else None
+
+
 def _select(results: list[FingerprintResult], order: dict[str, int]) -> list[FingerprintResult]:
     """Return the results of the methods the user asked for, in the order the user wrote.
 
@@ -194,9 +231,13 @@ def _select(results: list[FingerprintResult], order: dict[str, int]) -> list[Fin
         A list of `FingerprintResult`. The list is empty when no result names a method
         the user asked for.
     """
-    selected = [result for result in results if result.type in order]
-    selected.sort(key=lambda result: order[result.type])
-    return selected
+    selected: list[tuple[int, FingerprintResult]] = []
+    for result in results:
+        token = _selecting_token(result.type, result.fingerprint, order)
+        if token is not None:
+            selected.append((order[token], result))
+    selected.sort(key=lambda pair: pair[0])
+    return [result for _, result in selected]
 
 
 def _report_errors(errors: list[tuple[str, Exception]]) -> None:
@@ -319,12 +360,17 @@ def _close_open_windows(processor: Processor, order: dict[str, int]) -> list[Fin
         the connection key of the window, because no packet produces them. The timestamp
         is None for the same reason.
     """
-    entries: list[dict[str, Any]] = [
-        entry for entry in processor.close_open_windows() if entry["type"] in order
-    ]
-    entries.sort(key=lambda entry: order[str(entry["type"])])
+    # The selection reads `_selecting_token`, so one rule covers the two paths that
+    # `--types` filters. JA4SSH is the one method that holds a window today, and that
+    # method reaches the same answer as the earlier `entry["type"] in order` test.
+    positioned: list[tuple[int, dict[str, Any]]] = []
+    for candidate in processor.close_open_windows():
+        token = _selecting_token(str(candidate["type"]), str(candidate["fingerprint"]), order)
+        if token is not None:
+            positioned.append((order[token], candidate))
+    positioned.sort(key=lambda pair: pair[0])
     results: list[FingerprintResult] = []
-    for entry in entries:
+    for _, entry in positioned:
         src_ip, src_port, dst_ip, dst_port = _endpoints_from_connection(
             entry.get("connection") or ""
         )
@@ -914,7 +960,11 @@ def _add_output_options(parser: argparse.ArgumentParser, *, defaults: bool) -> N
         "--types",
         default=default(None),
         metavar="TYPES",
-        help=f"Comma-separated fingerprint types to include. Valid: {', '.join(VALID_TYPES)}",
+        help=(
+            f"Comma-separated fingerprint types to include. Valid: {', '.join(VALID_TYPES)}. "
+            "ja4l prints the client value and the server value. ja4ls prints the server "
+            "value alone"
+        ),
     )
     parser.add_argument(
         "--lookup",

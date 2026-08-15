@@ -280,7 +280,7 @@ dataclass, because a result describes something that already happened.
 
 | Field | Type | Constraint |
 |---|---|---|
-| `type` | `str` | The method name, lowercase. One of the ten values `--types` accepts, and ten values carry eleven methods. |
+| `type` | `str` | The method name, lowercase. One of ten values, and ten values carry eleven methods. `--types` accepts these ten tokens and the token `ja4ls`. |
 | `fingerprint` | `str` | The fingerprint string. Never empty. |
 | `raw` | `str \| None` | The raw form, when the method defines one. |
 | `raw_original_order` | `str \| None` | The original-order raw form, when the method defines one. |

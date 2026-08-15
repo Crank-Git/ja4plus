@@ -38,10 +38,13 @@ def sequence_before(a: int, b: int) -> bool:
     return ((a - b) & SEQUENCE_MASK) > _SEQ_HALF
 
 
-# The largest stream of the FoxIO vectors holds 1336 segments without a byte cap, and
-# 788 with one, both in `http2-with-cookies.pcapng`. This cap sits three times above the
-# larger reading, so no vector reaches it. The byte cap alone leaves a sender of one-byte
-# segments a million entries in the segment list, so this cap carries the second bound.
+# The largest stream of the FoxIO vectors holds 1336 segments without a byte cap, in
+# `http2-with-cookies.pcapng`. The largest stream under the byte cap holds 788 segments,
+# in `ssh-scp-1050.pcap`, on the connection `192.168.1.197:22->192.168.1.169:49237`. The
+# reassembler holds a byte cap, so 788 is the reading that binds, and this cap sits above
+# five times it. The byte cap alone leaves a sender of one-byte segments a million entries
+# in the segment list, so this cap carries the second bound. #620 measured both readings on
+# 2026-08-15, and `tests/test_tcp_segment_bound_ruling.py` holds them.
 DEFAULT_MAX_STREAM_SEGMENTS = 4096
 
 # The maximum age of one stream, in seconds. `ssh-r.pcap` holds the longest gap between
