@@ -82,9 +82,8 @@ class JA4SFingerprinter(BaseFingerprinter):
         with self._lock:
             # Try QUIC path first (UDP packets)
             # A tunnel carries its own UDP header, and `getlayer` counts from the outside.
-            # The QUIC layer is the innermost one, and the port pair names the direction of
-            # an Initial packet, so a reader that takes the outer header reads the tunnel
-            # port and finds no server.
+            # The QUIC layer is the innermost one. The port pair names the direction of an
+            # Initial packet, so a reader of the outer header finds no server.
             udp = innermost_layer(packet, (UDP,))
             if udp is not None:
                 udp_payload = bytes(udp.payload)

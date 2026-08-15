@@ -9,9 +9,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The JA4 and JA4S QUIC branches read the innermost UDP layer of a packet** (#594).
   Round
   TBD. **`ja4plus/fingerprinters/ja4.py:422` and `ja4plus/fingerprinters/ja4s.py:83` each
-  read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` defaults to `nth=1`, so it
-  returns the first layer of the class counting from the outside, and on a tunneled packet
-  that layer is the UDP header of the tunnel. Both branches then passed the tunnel header
+  read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` takes the layer count as its
+  second parameter `nb`, which defaults to 1, so it returns the first layer of the class
+  counting from the outside, and on a tunneled packet that layer is the UDP header of the
+  tunnel. **#594 names that parameter `nth`, and the installed scapy names it `nb`.**
+  `scapy/packet.py:1317-1327` at scapy 2.7.0 holds the signature and the docstring `Return
+  the nb^th layer that is an instance of cls, matching flt values.`, and this round writes
+  the measured name. Both branches then passed the tunnel header
   bytes to the QUIC decoder, which produced no value, and the port pair of any result named
   the tunnel. **Both branches now read `innermost_layer(packet, (UDP,))`**, which
   `ja4plus/utils/tunnels.py:50` publishes for this purpose and which
