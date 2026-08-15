@@ -75,9 +75,10 @@ DIVERGENT_CAPTURES = (
 TUNNELED_CAPTURE = "gre-erspan-vxlan.pcap"
 
 # The captures whose local Rust snapshot holds a JA4T value and no handshake value. The
-# snapshot names no JA4 value and no JA4S value, so `handshake_cases` returns nothing for
-# such a capture and the #138 rule reaches none of it. `DIVERGENT_CAPTURES` therefore
-# holds none of them, and the JA4T cases below are the whole comparison.
+# snapshot names no JA4 value and no JA4S value. The FoxIO Python file holds both JA4L
+# values of the one stream. `handshake_cases` therefore returns nothing for such a
+# capture, and the #138 rule reaches none of it. `DIVERGENT_CAPTURES` holds none of them,
+# and the JA4T cases below are the whole comparison.
 TCP_ONLY_CAPTURES = (TUNNELED_CAPTURE,)
 
 # Every capture whose local Rust snapshot this module reads.
@@ -128,11 +129,23 @@ COALESCED_RECORD_STREAMS = (
     ("latest.pcapng", "172.16.225.48", "52941", "52.249.29.248", "t120300_c030_09f674154ab3"),
 )
 
+# The two latency method names, beside the field names the Rust snapshot writes. #638
+# added them on 2026-08-15, after a read found 70 committed JA4L values that no case
+# compared. The omission was an oversight and no ruling made it. No comment, no issue and
+# no specification section recorded a reason to leave the two fields unread.
+#
+# The FoxIO Python expected-output file holds a JA4L value on 68 of the 70. The precedence
+# rule of `.claude/rules/external-apis.md` gives those 68 to
+# `tests/test_spec_validation.py`. `omitted_cases` therefore returns the two of
+# `https-connect.pcap` alone, and `TestTheJa4lValuesTheRustSnapshotHolds` below measures
+# that split.
+SNAPSHOT_LATENCY_METHODS = (("JA4L-C", "ja4l_c"), ("JA4L-S", "ja4l_s"))
+
 # The method name the reference uses, beside the field name the Rust snapshot writes.
 # The FoxIO Python expected-output file holds no JA4T value for any capture, so the Rust
 # snapshot is the only FoxIO reference this repository holds for the method. #216 added
 # `JA4T`, and #242 added the seventh snapshot. The seven local snapshots carry 39 values.
-SNAPSHOT_METHODS = (("JA4", "ja4"), ("JA4S", "ja4s"), ("JA4T", "ja4t"))
+SNAPSHOT_METHODS = (("JA4", "ja4"), ("JA4S", "ja4s"), ("JA4T", "ja4t"), *SNAPSHOT_LATENCY_METHODS)
 
 # The method the register-keyed cases below compare, and the field name it reads. No
 # local snapshot holds a `ja4ts` field, so JA4TS reaches no reference value here.
@@ -370,6 +383,63 @@ def tcp_cases(capture):
 def tcp_captures():
     """Return every capture whose local Rust snapshot holds a JA4T value."""
     return tuple(capture for capture in SNAPSHOT_CAPTURES if tcp_cases(capture))
+
+
+class LatencyCase(NamedTuple):
+    """One JA4L value that the FoxIO Rust snapshot of one stream holds.
+
+    Attributes:
+        identity: The direction-free stream identity.
+        index: The stream index the snapshot gives.
+        src_port: The source port the snapshot gives.
+        method: The method name, `JA4L-C` or `JA4L-S`.
+        value: The value the snapshot holds.
+        python_holds: True when the FoxIO Python file holds the same method on the stream.
+    """
+
+    identity: tuple
+    index: str
+    src_port: str
+    method: str
+    value: str
+    python_holds: bool
+
+
+def latency_cases(capture):
+    """Return every JA4L value the FoxIO Rust snapshot of one capture holds.
+
+    `omitted_cases` drops a value the FoxIO Python file also holds, and that file holds 68
+    of the 70 JA4L values the local snapshots carry. This reader keeps every one, so the
+    census below counts what the repository commits rather than what one rule reaches.
+
+    Args:
+        capture: The capture file name.
+
+    Returns:
+        A list of LatencyCase entries, sorted by stream index, source port and method.
+    """
+    names = {name for name, _ in SNAPSHOT_LATENCY_METHODS}
+    rust = read_rust_snapshot(RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=capture))
+    python = read_python_methods(VECTORS_DIR / "{}.json".format(capture))
+    cases = [
+        LatencyCase(
+            identity=identity,
+            index=stream.index,
+            src_port=stream.src_port,
+            method=method,
+            value=value,
+            python_holds=method in python.get(identity, set()),
+        )
+        for identity, stream in rust.items()
+        for method, value in stream.values.items()
+        if method in names
+    ]
+    return sorted(cases, key=lambda case: (case.index, case.src_port, case.method))
+
+
+def latency_captures():
+    """Return every capture whose local Rust snapshot holds a JA4L value."""
+    return tuple(capture for capture in SNAPSHOT_CAPTURES if latency_cases(capture))
 
 
 def _tcp_value_params():
@@ -834,6 +904,116 @@ class TestTheJa4tValuesTheRustSnapshotHolds:
 
 
 @pytest.mark.spec_validation
+class TestTheJa4lValuesTheRustSnapshotHolds:
+    """Measure what the JA4L fields of the local Rust snapshots reach.
+
+    Before #638 `SNAPSHOT_METHODS` named JA4, JA4S and JA4T alone. The reader read neither
+    `ja4l_c` nor `ja4l_s`, so 70 committed values reached no case. A committed value that
+    no case reads moves with nothing to report the move. #638 read the omission as an
+    oversight, because no comment, no issue and no specification section recorded a reason
+    for it.
+
+    The FoxIO Python expected-output file holds a JA4L value on 68 of the 70 streams.
+    `.claude/rules/external-apis.md` makes `python/test/testdata/` decide where both
+    references hold a value. `tests/test_spec_validation.py` therefore owns those 68, and
+    this module compares none of them. The remaining two belong to `https-connect.pcap`,
+    which is the unknown-port gap #138 owns, and `handshake_cases` now carries them.
+
+    One of the 68 is the value #622 rules on, and the last check names all four readings.
+    """
+
+    def test_the_local_snapshots_hold_the_seventy_values_the_reading_counts(self):
+        """The 11 local snapshots carry 70 JA4L values, measured on 2026-08-15.
+
+        A snapshot that leaves the repository takes its values away, and the suite still
+        reports green. This check makes that loss as loud as a mismatch.
+        """
+        counts = {capture: len(latency_cases(capture)) for capture in latency_captures()}
+        assert counts == {
+            "browsers-x509.pcapng": 6,
+            "chrome-cloudflare-quic-with-secrets.pcapng": 4,
+            "gre-erspan-vxlan.pcap": 2,
+            "https-connect.pcap": 2,
+            "latest.pcapng": 12,
+            "ssh2.pcapng": 18,
+            "tls3.pcapng": 26,
+        }
+        assert sum(counts.values()) == 70
+
+    def test_the_python_file_omits_the_two_values_of_the_unknown_port_gap(self):
+        """The FoxIO Python file holds 68 of the 70, and it omits both values of one stream.
+
+        The split decides which module compares which value, so a vector refresh that
+        moves it fails here and names the stream that moved.
+        """
+        cases = [case for capture in latency_captures() for case in latency_cases(capture)]
+        omitted = [
+            (case.index, case.src_port, case.method) for case in cases if not case.python_holds
+        ]
+        assert omitted == [("0", "54723", "JA4L-C"), ("0", "54723", "JA4L-S")]
+        assert sum(case.python_holds for case in cases) == 68
+
+    def test_the_omitted_stream_reaches_the_handshake_comparison(self):
+        """`handshake_cases` carries both JA4L values, so the #138 rule compares them.
+
+        A reader who removes a JA4L method from `SNAPSHOT_METHODS` empties this list, and
+        this check names the loss.
+        """
+        cases = [
+            case for case in handshake_cases("https-connect.pcap") if case.method.startswith("JA4L")
+        ]
+        assert [(case.method, case.value) for case in cases] == [
+            ("JA4L-C", "45_64"),
+            ("JA4L-S", "13532_57"),
+        ]
+
+    def test_the_omitted_stream_produces_both_rust_snapshot_values(self):
+        """ja4plus produces both JA4L values the FoxIO Rust snapshot holds for the stream.
+
+        The class above lets a stream on which ja4plus emits nothing pass, so it reports a
+        pass on a comparison it never makes. This check names both values instead.
+        """
+        identity = stream_identity("10.11.12.13", "54723", "10.9.8.7", "8080")
+        produced = index_produced(VECTORS_DIR / "https-connect.pcap").get(identity, {})
+        assert produced.get("JA4L-C") == ("45_64",)
+        assert produced.get("JA4L-S") == ("13532_57",)
+
+    def test_the_four_readings_of_the_ruled_value_hold_their_committed_forms(self):
+        """The four JA4L-S readings #622 rules on each hold the value that issue records.
+
+        #622 ruled on 2026-08-15 that this project declines to converge on JA4L timing.
+        The split is two against two, so no reference breaks the tie. FoxIO Python and
+        FoxIO Zeek read 10990, and Wireshark and FoxIO Rust read 9285. The Rust reading
+        was committed and no case read it, which is the finding #638 holds.
+
+        This check names the three readings that sit in a machine-readable file, beside
+        the value ja4plus publishes. A vector refresh that moves any one of them changes
+        whether the ruling still describes the corpus, and it fails here.
+        `docs/specs/foxio/zeek.md:280` holds the fourth reading, `10990_56_q`.
+        """
+        capture = "chrome-cloudflare-quic-with-secrets.pcapng"
+        [case] = [
+            case
+            for case in latency_cases(capture)
+            if case.src_port == "50280" and case.method == "JA4L-S"
+        ]
+        assert case.value == "9285_56"
+        assert case.python_holds
+        [python_value] = [
+            record["JA4L-S"]
+            for record in json.loads((VECTORS_DIR / "{}.json".format(capture)).read_text())
+            if record.get("srcport") == "50280" and "JA4L-S" in record
+        ]
+        assert python_value == "10990_56"
+        wireshark = (VECTORS_DIR / "wireshark_expected" / "{}.json".format(capture)).read_text()
+        assert '"9285_0_quic"' in wireshark
+        # The snapshot identity finds the produced value, so the two references name one
+        # stream and the four readings above describe one connection.
+        produced = index_produced(VECTORS_DIR / capture).get(case.identity, {})
+        assert produced.get("JA4L-S") == ("10990_56_quic",)
+
+
+@pytest.mark.spec_validation
 class TestTheJa4xValuesTheRustSnapshotHolds:
     """Compare JA4X against every JA4X value the local Rust snapshots hold.
 
@@ -1180,7 +1360,14 @@ class TestTheStreamIdentityOfTheTunneledCapture:
         divergence is decided rather than open.
         """
         streams = read_rust_snapshot(RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=TUNNELED_CAPTURE))
-        assert streams[TUNNEL_OUTER_IDENTITY].values == {SNAPSHOT_TCP_METHOD: "8192__0_0"}
+        # The snapshot holds two JA4L values on the same stream, and #638 added them to
+        # the reader. Both agree with the FoxIO Python file, so neither reaches a case
+        # here and D1 stays the one divergence of this capture.
+        assert streams[TUNNEL_OUTER_IDENTITY].values == {
+            SNAPSHOT_TCP_METHOD: "8192__0_0",
+            "JA4L-C": "953_64",
+            "JA4L-S": "997_64",
+        }
         produced = index_produced(VECTORS_DIR / TUNNELED_CAPTURE).get(TUNNEL_OUTER_IDENTITY, {})
         assert produced.get(SNAPSHOT_TCP_METHOD) == ("8192_00_00_00",)
 

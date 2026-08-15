@@ -48,6 +48,52 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_documented_method_count.py`, `tests/test_ruling_vocabulary.py` and
   `tests/test_statistics_thread_term.py` each parametrize over every Python file of
   `tests/`, and each one therefore gains one case for the new file.
+- **The FoxIO Rust JA4L values reach the parity module, and the reading names what each
+  one settles** (#638). Round
+  TBD. **`SNAPSHOT_METHODS` of `tests/test_foxio_rust_parity.py` named JA4, JA4S and JA4T,
+  and the 11 snapshots under `tests/foxio_vectors/rust_expected/` hold 70 JA4L values that
+  no case read.** **The omission was an oversight and no ruling made it**, because no comment,
+  no issue and no specification section recorded a reason to leave the two fields unread.
+  `SNAPSHOT_LATENCY_METHODS` now names `JA4L-C` and `JA4L-S`, and `read_rust_snapshot`
+  reads both fields. **The FoxIO Python expected-output file holds a JA4L value on 68 of
+  the 70 streams.** `.claude/rules/external-apis.md` gives `python/test/testdata/` the
+  decision where both references hold a value, so `tests/test_spec_validation.py` owns
+  those 68 and this module compares none of them. **The two the Python file omits belong to
+  `https-connect.pcap` stream 0 on port 54723**, which is the unknown-port gap #138 owns,
+  and its record holds a JA4H value alone. **`ja4plus` produces `45_64` and `13532_57`
+  there, which the FoxIO Rust snapshot holds exactly.** **The comparison therefore reports
+  no deviation**, `tests/foxio_deviations.json` holds 138 keys before and after, and the
+  conformance suite reports the same xfailed count. **No file under `ja4plus/` changed and
+  no fingerprint value moved.** **The wiring repairs a comparison that could not fail
+  before.** `test_ja4plus_produces_no_value_the_rust_snapshot_contradicts` reads
+  `handshake_cases`, and a JA4L contradiction reached that list nowhere; a mutation of
+  `ja4l_c` to `45_65` in the snapshot now fails it. **The value #638 names reaches no
+  comparison case, and the new class records why.**
+  `tests/foxio_vectors/rust_expected/ja4__insta@chrome-cloudflare-quic-with-secrets.pcapng.snap:29`
+  holds `ja4l_s: 9285_56` on stream 0 port 50280, and the FoxIO Python file holds
+  `10990_56` on the same stream, so the precedence rule gives that comparison to
+  `tests/test_spec_validation.py`. **The maintainer ruled #622 on 2026-08-15 that this
+  project declines to converge on JA4L timing**, and the split is two against two:
+  FoxIO Python and FoxIO Zeek read 10990, and Wireshark and FoxIO Rust read 9285.
+  `test_the_four_readings_of_the_ruled_value_hold_their_committed_forms` names the three
+  readings that sit in a machine-readable file, beside the `10990_56_quic` this project
+  publishes, so a vector refresh that moves any one of them fails a case rather than
+  leaving the ruling stale. **The `Divergence register` gains no row, and #622 owns the row
+  that states all four readings.** **The one comment that went stale is repaired**, because
+  `TCP_ONLY_CAPTURES` claimed that `gre-erspan-vxlan.pcap` reaches `handshake_cases`
+  nowhere, and its snapshot holds `ja4l_c: 953_64` and `ja4l_s: 997_64`; the FoxIO Python
+  file holds both, so the claim still holds and the comment now states why.
+  **`test_the_stream_measures_d1_and_the_two_forms_differ` reads the two new values as
+  well**, so D1 of #215 stays the one divergence of that capture. **A sweep read every
+  value-bearing field of the 11 snapshots against the same question, and it reports 8 field
+  classes.** `ja4` at 191 values, `ja4s` at 110, `ja4t` at 39 and `ja4x` at 43 each reach a
+  case already, `ja4l_c` and `ja4l_s` at 35 each reach one after this round, and two
+  classes reach none. **#670 holds the six `ja4h` values of the `http` block and #671 holds
+  the two `ja4ssh` values of `ssh2.pcapng` stream 14**, which `read_rust_snapshot` skips
+  because it enters the `tls_certs` block alone. **Three mutations prove the new cases
+  bite.** A move of the snapshot value to `9285_57` fails the four-readings case, a move of
+  `45_64` to `45_65` fails two cases, and a `SNAPSHOT_LATENCY_METHODS` that drops `JA4L-S`
+  fails five.
 - **JA4H fills the sorted raw form, so the `raw` field carries the `JA4H_r` value** (#600).
   Round
   TBD. **`ja4plus/fingerprinters/ja4h.py:70` stated that FoxIO publishes no `JA4H_r` key,
