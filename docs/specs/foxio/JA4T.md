@@ -140,8 +140,8 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
 - Corroboration 1: `technical_details/README.md` lines 12 and 13 name `JA4TCP` /
   `JA4T` as `TCP Client Fingerprinting` and `JA4TCPServer` / `JA4TS` as
   `TCP Server Response Fingerprinting`.
-- Corroboration 2: `wireshark/source/packet-ja4.c:1265` marks the SYN and the dissector
-  writes the `JA4T` field for it. Line 1278 marks the SYN-ACK and the dissector writes the
+- Corroboration 2: `wireshark/source/packet-ja4.c:1266` marks the SYN and the dissector
+  writes the `JA4T` field for it. Line 1279 marks the SYN-ACK and the dissector writes the
   `JA4TS` field for it.
 
 ### R9 — JA4T reads only the first SYN of a connection
@@ -159,7 +159,7 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
 - `rust/ja4/src/tcp.rs`, `is_initial_syn`, tests the flags as a mask: SYN set and ACK
   clear. Its own unit test asserts that `0xC2`, a SYN with the two ECN flags, produces a
   fingerprint.
-- `wireshark/source/packet-ja4.c:1265` tests `tcp_flags == 0x02` for equality, so a SYN
+- `wireshark/source/packet-ja4.c:1266` tests `tcp_flags == 0x02` for equality, so a SYN
   that carries an ECN flag produces no JA4T value in the dissector.
 
 ### R11 — The empty part b, the zero part c and the zero part d take the two-digit form
@@ -185,7 +185,7 @@ carries no option.
 
 **The prose and the two implementations part on one input, and `ja4plus` follows the
 implementations.** The prose reads `00` as the mark of an absent field. The two
-implementations read the value instead: `wireshark/source/packet-ja4.c:664` tests
+implementations read the value instead: `wireshark/source/packet-ja4.c:668` tests
 `data->window_scale == 0`, and `zeek/ja4t/main.zeek:206-210` tests
 `syn_opts$window_scale == 0`. Neither one records whether the packet carried the option,
 because each stores the scale as an integer that defaults to zero. A packet that carries
@@ -298,13 +298,13 @@ one case fewer. A RST that carries ACK is common on real traffic, and the narrow
 would drop it.
 
 **`ja4plus` matched the dissector on the RST of a one-SYN-ACK connection after #609, and
-it emitted nothing before.** `wireshark/source/packet-ja4.c:1599` writes the `JA4TS` field
-whenever `syn == 3`, and `ja4t()` then omits part e. The earlier reading of this project
-declined that value under the second shape of `.claude/rules/conformance.md`, because the
-value repeats the value the SYN-ACK already produced. The maintainer reversed the decline
-at `Crank-Git/ja4plus-go#484`, so the dissector decides this value and the two libraries
-publish it. `zeek/ja4t/main.zeek` writes one JA4TS value for one connection, and the Zeek
-package therefore publishes one value where the two libraries publish two.
+it emitted nothing before.** `wireshark/source/packet-ja4.c:1599` tests `syn == 3`, and
+line 1608 writes the `JA4TS` field. `ja4t()` then omits part e. The earlier reading of this
+project declined that value under the second shape of `.claude/rules/conformance.md`,
+because the value repeats the value the SYN-ACK already produced. The maintainer reversed
+the decline at `Crank-Git/ja4plus-go#484`, so the dissector decides this value and the two
+libraries publish it. `zeek/ja4t/main.zeek` writes one JA4TS value for one connection, and
+the Zeek package therefore publishes one value where the two libraries publish two.
 
 **Three comparisons of the corpus closed on the reversal, and each one names a server
 RST.** `ssh2.pcapng` frame 849 and frame 850 each produce `42600_2-1-1-4-1-3_1300_9`, and
@@ -475,7 +475,7 @@ R12 states the rule and R2 names the three FoxIO sources.
 **D7 — measured. `ja4ts.py` writes no value on a RST, and the Wireshark dissector writes
 one.**
 
-`wireshark/source/packet-ja4.c:1295` marks a RST, and line 1608 writes a second `JA4TS`
+`wireshark/source/packet-ja4.c:1296` marks a RST, and line 1608 writes a second `JA4TS`
 value from the stored connection values, with the `-R<interval>` suffix. The image's
 example part e ends with `R6`, which corroborates the suffix shape. `ja4ts.py` reads the
 SYN-ACK alone and reaches no RST.
