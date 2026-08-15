@@ -17,12 +17,13 @@ from __future__ import annotations
 
 import csv
 import dataclasses
+import itertools
 import logging
 import os
 import sys
 import threading
 import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
@@ -121,6 +122,96 @@ _REMOTE_TIMEOUT = 5.0
 # The value the lookup cache holds for no fingerprint. A cached miss holds None, so a
 # read needs a value that no lookup produces.
 _UNCACHED = object()
+
+# The first 12 hexadecimal characters of the SHA-256 hash of an empty input. The ruling
+# of 2026-08-14 makes this the value of a part that holds an empty list, and
+# `ja4plus/fingerprinters/ja4x.py:75` and `ja4plus/fingerprinters/ja4h.py:534` write it.
+_EMPTY_LIST_HASH = "e3b0c44298fc"
+
+# The value the FoxIO Rust implementation writes for an empty list. FoxIO builds
+# `ja4plus-mapping.csv` from its own implementations, so rows of that file carry this
+# form and this project produces it for no part below.
+_EMPTY_LIST_SENTINEL = "000000000000"
+
+# The form a part takes when it reads the other way. The two forms name one empty list,
+# and each one reaches the other.
+_EMPTY_LIST_OTHER_FORM = {
+    _EMPTY_LIST_HASH: _EMPTY_LIST_SENTINEL,
+    _EMPTY_LIST_SENTINEL: _EMPTY_LIST_HASH,
+}
+
+# The part count and the part indices of each method where the two empty-list forms name
+# one value. The maintainer ruled the table on 2026-08-15, on #639.
+#
+# JA4X hashes every one of its three parts, so an empty object identifier list reaches
+# all three. JA4H hashes part b alone, so the ruling reaches index 1 of a JA4H value.
+#
+# Warning: part c and part d of JA4H hold `no cookie`, which R17 and R27 of
+# `docs/specs/foxio/JA4H.md` rule a value in its own right. The sentinel there was never
+# an empty-list hash, so the two forms name two values and this table names neither part.
+# A method this table omits gains no alias at all, and JA4 and JA4S are two such methods,
+# because each one still writes the sentinel for an empty list.
+_EMPTY_LIST_PARTS: dict[str, tuple[int, tuple[int, ...]]] = {
+    "ja4x": (3, (0, 1, 2)),
+    "ja4h": (4, (1,)),
+}
+
+
+def _empty_list_alias_forms(parts: Sequence[str], indices: Sequence[int]) -> list[str]:
+    """Return every value the parts write when an empty-list part reads the other form.
+
+    Both forms name an empty list at each index the caller gives, so a value that holds
+    one form at two such parts needs the value that reads both of them the other way.
+
+    Args:
+        parts: The parts of one fingerprint, in order.
+        indices: The part indices where the two empty-list forms name one value.
+
+    Returns:
+        The alias values, and no copy of the value the parts already write.
+    """
+    open_indices = [index for index in indices if parts[index] in _EMPTY_LIST_OTHER_FORM]
+    forms: list[str] = []
+    for count in range(1, len(open_indices) + 1):
+        for chosen in itertools.combinations(open_indices, count):
+            alias = list(parts)
+            for index in chosen:
+                alias[index] = _EMPTY_LIST_OTHER_FORM[parts[index]]
+            forms.append("_".join(alias))
+    return forms
+
+
+def _empty_list_aliases(db: Mapping[str, LookupResult]) -> dict[str, LookupResult]:
+    """Return the second key of every mapping entry that writes an empty list two ways.
+
+    The mapping file is FoxIO published data, so this project corrects no row of it and
+    reads both forms instead. #639 holds the ruling of 2026-08-15. The type of each entry
+    comes from the column the mapping file names, so no reading of the value decides
+    which part the ruling reaches.
+
+    Args:
+        db: The mapping the client reads, keyed by fingerprint.
+
+    Returns:
+        The alias mapping. Each key names a value this project produces, and each value
+        is the result the row of the mapping file holds. A row of the mapping file
+        answers first, so this mapping holds no key that `db` already holds.
+    """
+    aliases: dict[str, LookupResult] = {}
+    for fingerprint, result in db.items():
+        form = _EMPTY_LIST_PARTS.get(result.type)
+        if form is None:
+            continue
+        part_count, indices = form
+        parts = fingerprint.split("_")
+        # A row whose part count misses the form of its method names no part index that
+        # the ruling reads, so the ruling reaches none of its parts.
+        if len(parts) != part_count:
+            continue
+        for alias in _empty_list_alias_forms(parts, indices):
+            if alias not in db:
+                aliases.setdefault(alias, result)
+    return aliases
 
 
 def cache_dir_path() -> str:
@@ -311,6 +402,10 @@ class JA4DBClient:
         # The client prefers the cached mapping file over the bundled one,
         # FR-db-enrichment-13. An operator who ran `db update` reads the newer file.
         self._db, source, path = load_mapping_file()
+        # The alias mapping stands beside the mapping of the file, and it joins it
+        # nowhere. `db info` reports `len(db)` under FR-db-enrichment-11, so an alias
+        # inside `self._db` would report an entry count that the file does not hold.
+        self._empty_list_aliases = _empty_list_aliases(self._db)
         logger.debug(
             "JA4DB client initialized with %d entries from the %s mapping file at %s",
             len(self._db),
@@ -383,6 +478,14 @@ class JA4DBClient:
         # The mapping file answers first, so a hit costs no request.
         if fingerprint in self._db:
             return self._db[fingerprint]
+
+        # A row of the mapping file writes an empty list as the zero sentinel, where this
+        # project writes the hash of the empty input. #639 rules the two forms one value,
+        # and `_EMPTY_LIST_PARTS` holds the parts that ruling reaches. Every public
+        # lookup path reads this method, so one read here serves all of them.
+        alias = self._empty_list_aliases.get(fingerprint)
+        if alias is not None:
+            return alias
 
         # A client that reaches the service tells it which fingerprint the operator
         # observed. A miss stays a miss until the operator asks for that disclosure.

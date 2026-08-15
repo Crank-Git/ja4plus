@@ -76,6 +76,12 @@ code written against the dictionary keeps working for one major version.
 
 FR-db-enrichment-17 — Item access on a `LookupResult` emits a `DeprecationWarning`.
 
+FR-db-enrichment-18 — The lookup reads both forms of an empty-list value on every JA4X
+part and on part b of JA4H.
+
+FR-db-enrichment-19 — The lookup reads one form of the zero sentinel on part c and part d
+of JA4H.
+
 ## User flows
 
 **An analyst identifies fingerprints from a capture.**
@@ -140,6 +146,45 @@ the value alone. The word `bundled` describes the file that ships inside the pac
 
 Verified against: https://github.com/Crank-Git/ja4plus-go/blob/master/lookup.go (retrieved
 2026-08-08).
+
+### The lookup reads both forms of an empty-list value
+
+**FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one writes
+`000000000000` for an empty list.** This project hashes an empty list instead, under the
+ruling of 2026-08-14, so it writes `e3b0c44298fc` where a row of that file holds the zero
+sentinel. A lookup that read one form alone therefore reached three rows nowhere. **The
+mapping file is third-party data, so this project corrects no row of it.** The maintainer
+ruled on 2026-08-15, on #639: the lookup reads the two forms as one value.
+
+**Warning: `000000000000` does not name one thing across JA4+.** The table states where
+the two forms name one value, and a fallback outside it maps a real value onto an
+unrelated one.
+
+| Part | What the sentinel names there | Does the lookup read both forms |
+|---|---|---|
+| JA4X part a, part b and part c | an empty object identifier list | Yes |
+| JA4H part b | an empty header list | Yes |
+| JA4H part c and part d | `no cookie` | No |
+
+**R18 of `docs/specs/foxio/JA4H.md` is a rank 1 rule and it names no sentinel for the
+hashed part. R27 of that page confines the sentinel to part c and part d.** The sentinel
+in those two parts was never an empty-list hash, so a request that carries one cookie
+field and a request that carries none are two values there.
+
+**The client builds one alias mapping when it reads the mapping file, and it keeps that
+mapping apart from the entries of the file.** `_EMPTY_LIST_PARTS` of `ja4plus/ja4db.py`
+holds the table above, keyed by the column name the mapping file gives each row, so no
+reading of a value decides which part the ruling reaches. A row of the mapping file
+answers first, and the alias mapping answers after it. **`db info` reports the entry count
+of the file under FR-db-enrichment-11, and the alias mapping moves that count by nothing.**
+
+**A method the table omits gains no alias**, and JA4 and JA4S are two such methods, because
+each one still writes the zero sentinel for an empty list.
+
+**A read of 2026-08-15 measured the reach.** The bundled mapping file holds 70 entries, and
+three of them gain an alias: `ja4plus/data/ja4plus-mapping.csv:26` and `:27` for
+Sliver/Havoc C2 Server, and `:35` for Qakbot C2. Seven JA4H rows of that file hold the
+sentinel, every one of them in part c or part d, and none of the seven gains an alias.
 
 ## Data touched
 
