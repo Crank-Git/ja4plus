@@ -277,7 +277,7 @@ def generate_ja4d6(packet: Packet) -> str | None:
 
     # Wireshark hands the JA4 dissector a DHCPv6 message only on the ports its DHCPv6
     # dissector claims. epan/dissectors/packet-dhcpv6.c sets
-    # UDP_PORT_DHCPV6_RANGE "546-547" at Wireshark 4.4.2, which
+    # UDP_PORT_DHCPV6_RANGE "546-547" at Wireshark v4.6.0, which
     # .claude/rules/external-apis.md pins. D7 of docs/specs/foxio/JA4D.md rules that this
     # project reads the same two ports.
     if 546 not in (int(udp.sport), int(udp.dport)) and 547 not in (int(udp.sport), int(udp.dport)):
