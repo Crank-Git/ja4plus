@@ -6,6 +6,79 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **JA4H reads a request path that holds a space, and an empty header list hashes**
+  (#612). Round
+  TBD. **The two rules land together, and neither one closes a comparison alone.**
+  **Rule 1 repairs `REQUEST_LINE_PATTERN` of `ja4plus/utils/http_utils.py:31` to `:34`.**
+  The path group read `(\S+)`, which matches no path that holds a space, so frame 4 of
+  `gre-erspan-vxlan.pcap` reached no JA4H value. That frame holds
+  `GET /Hello Arkime HTTP/1.0`, the group read `/Hello`, and the match then needed the
+  version token where the line holds `Arkime`. **The repaired pattern holds four
+  readings**, and the Go half `Crank-Git/ja4plus-go#527` landed the same three that FoxIO
+  leaves open. Each separator reads `[ \t]+` and never `\s`, because `\s` matches a line
+  feed and the payload `SSH-2.0-OpenSSH_9.6\r\n/a HTTP/1.1\r\n` then reached a request
+  line that no line holds. The path group reads `[^\r\n]` and never any character,
+  because `.` matches a bare carriage return and the path of `GET /a\rFAKE HTTP/1.1`
+  would then hold two lines. The group is lazy, so a first line that holds two version
+  tokens reaches the earlier one. **The fourth rule is this project's own, and the
+  self-review found it after the first three had shipped to a branch.** The path group
+  reads neither a space nor a horizontal tab as its first character or as its last one.
+  **Rules 1 to 3 alone leave a payload that costs the square of its line length**, because
+  the lazy path body accepts a space and the greedy separator after it accepts a space
+  too. A run of spaces then admits one split for each space, and a version token that the
+  line almost holds makes the match retry every one of them. `GET a` plus 32000 spaces
+  plus `HTTPX` cost **3017.9 milliseconds** under a path group of `[^ \t\r\n][^\r\n]*?`
+  and **0.630 milliseconds** under rule 4, and a mixed run of spaces and tabs cost
+  3320.0 milliseconds against 0.593 milliseconds. **`is_http_request` reads 8192 bytes of
+  every TCP payload**, so one packet paid about 200 milliseconds of processor time under
+  the form rule 4 replaces. A path that ends with a character other than a space admits
+  one split for each such character, each split reads the run after it once, and the cost
+  is the line length. **Rule 4 moves no match**, because the greedy separator already
+  consumes every space of a run, so no match ever ended the path on a space, and a
+  differential run over 400000 random request lines reported no disagreement between the
+  two forms. **The Go half needs no rule 4**, because `regexp` of Go runs a finite
+  automaton and it backtracks nowhere, and an atomic group needs Python 3.11 while
+  `pyproject.toml` reads `requires-python = ">=3.10"`. **One further difference follows
+  from rule 1, and no vector reaches it.** Python `\s` matches the vertical tab and the
+  form feed and `[ \t]` matches neither, so those two bytes separate no field now and the
+  path group reads each one as an ordinary character. RFC 9112 names the space and it
+  names neither byte. **The port keeps its own version token**
+  `HTTP/(?:\d+\.\d+|[23])` with the lookahead, which #35 records, and the Go half holds
+  `HTTP/\d+\.\d+`. **Rule 2 removes the zero sentinel from part b of JA4H.**
+  `ja4plus/fingerprinters/ja4h.py:479` to `:481` wrote `000000000000` where the joined
+  header names were empty, and part b now reads
+  `hashlib.sha256(headers_str.encode()).hexdigest()[:12]` with no guard, so an empty
+  header list reads `e3b0c44298fc`. **The maintainer ruled on 2026-08-14, and the
+  deciding fact is a rank 1 image rule.** R12 of `docs/specs/foxio/JA4H.md` transcribes
+  `Truncated SHA256 hash of Headers, in the order they appear` and it names no sentinel,
+  and R17 confines the sentinel to part c and part d. The four FoxIO references split two
+  against two, and R19 of that page now holds the ruling and quotes the superseded
+  wording rather than rewrite it. **#619 landed the identical ruling on JA4X on
+  2026-08-14**, and `Crank-Git/ja4plus-go#527` holds the Go half of this one. **The two
+  rules close one comparison of the shared FoxIO vector set.** Frame 4 of
+  `gre-erspan-vxlan.pcap` now reads
+  `ge10nn000000_e3b0c44298fc_000000000000_000000000000`, which is the value
+  `tests/foxio_vectors/wireshark_expected/gre-erspan-vxlan.pcap.json` holds. **Rule 1
+  alone produces `ge10nn000000_000000000000_000000000000_000000000000` against that
+  value**, which is the measurement the Go half reported and this round reproduced.
+  **A replay of the 38 committed captures produces 73 JA4H values before the change and
+  74 after**, and the one new value is that frame. Every other JA4H value is unchanged,
+  capture by capture and frame by frame. **New file
+  `tests/test_ja4h_request_line_and_empty_header_list.py` holds eleven cases, and six of
+  the first eight failed on the base commit `07d906d`.** Five reversals measure the rules
+  apart. Rule 1 alone fails 3, rule 2 alone fails 3, the base fails 5, the lazy group
+  `(.+?)` fails the carriage-return case and one timing case, and a path group that ends
+  on a space fails the two timing cases and runs the file in 6.87 seconds against 0.29. **The conformance
+  suite moves one skip to one xfail.** It reports 1635 passed, 143 skipped and 140 xfailed
+  before the change, and 1635 passed, 142 skipped and 141 xfailed after it. The new key
+  is `gre-erspan-vxlan.pcap/JA4H`, and `tests/foxio_deviations.json` holds 141 keys
+  against 141 xfailed cases. **The FoxIO Python expected-output file names no JA4H key on
+  that capture**, so the value this project produces has nothing there to compare
+  against, and the FoxIO Wireshark dissector holds it exactly. The Go half predicted that
+  result and measured three of them. `## The marker rule` of `tests/foxio_deviations.py`
+  and the precedence-exception sentence of `.claude/rules/external-apis.md` each move
+  their denominator from 140 to 141.
+
 - **The JA4L request completeness gate reads the header block terminator of
   `ja4plus/utils/http_utils.py`** (#630). Round
   TBD. **`ja4plus/fingerprinters/ja4l.py:402-403` held a second copy of the terminator

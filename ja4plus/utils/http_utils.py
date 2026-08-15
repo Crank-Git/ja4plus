@@ -28,9 +28,48 @@ METHOD_TOKEN_CHARACTERS = r"!#$%&'*+\-.^_`|~0-9A-Za-z"
 # reads it as `HTTP/1` reports the version code of `HTTP/1.1`. The two requests then
 # carry one fingerprint. The lookahead ends the token for that reason. #35 records both
 # defects.
+# The path group reads a space, because a request line carries a path that holds one.
+# Frame 4 of `gre-erspan-vxlan.pcap` holds `GET /Hello Arkime HTTP/1.0`. The non-space
+# group `(\S+)` read `/Hello`, and the match then needed the version token where the line
+# holds `Arkime`. The request reached no JA4H value. #612 records the defect, and the Go
+# port holds the same three readings below.
+#
+# Each separator reads a space or a horizontal tab, and never a line ending. `\s` matches
+# a line feed, so the earlier pattern crossed into the second line of a payload. It read a
+# request line that no line holds. The payload `SSH-2.0-OpenSSH_9.6\r\n/a HTTP/1.1\r\n` is
+# such a payload, and `is_http_request` gates a JA4L measurement point.
+#
+# The path group reads no carriage return and no line feed, because a group of any
+# character matches a bare carriage return. The path of `GET /a\rFAKE HTTP/1.1` then holds
+# two lines of the payload, which the non-space group refused.
+#
+# The path group is lazy, so a first line that holds two version tokens reaches the
+# earlier one, as the non-space group did.
+#
+# The path group reads neither a space nor a horizontal tab as its first character or as
+# its last one, which bounds the work on a payload that matches nothing. The lazy path
+# body accepts a space and the greedy separator after it accepts a space too, so the two
+# overlap. A run of spaces then admits one split for each space, and a version token that
+# the line almost holds makes the match retry every one of them. The cost is the square of
+# the line length. `GET a` plus 16000 spaces plus `HTTPX` cost 733.85 milliseconds under a
+# path group of `[^ \t\r\n][^\r\n]*?`, and it costs 0.32 milliseconds under this one,
+# measured on 2026-08-15. `is_http_request` reads 8192 bytes of every TCP payload, so one
+# packet paid 200 milliseconds of processor time under that form.
+#
+# A path that ends with a character other than a space admits one split for each such
+# character, and each split reads the run of spaces after it once. The cost is the line
+# length. The rule moves no match, because the greedy separator already consumed every
+# space of the run, so no match ever ended the path on a space. A differential run over
+# 400000 random request lines reported no disagreement between the two forms.
+#
+# The Go port holds `([^\r\n]+?)` and it needs no such rule, because `regexp` of Go runs a
+# finite automaton and it backtracks nowhere. Python `re` backtracks, so this port states
+# the rule. An atomic group would state it directly, and `(?>...)` needs Python 3.11 while
+# this project supports Python 3.10.
 REQUEST_LINE_PATTERN = (
     r"^([" + METHOD_TOKEN_CHARACTERS + r"]+)"
-    r"\s+(\S+)\s+(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
+    r"[ \t]+([^ \t\r\n](?:[^\r\n]*?[^ \t\r\n])?)[ \t]+"
+    r"(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
 )
 
 # A sender may end a line with the two bytes `\r\n`, or with one line feed. A parser that
