@@ -6,6 +6,57 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **Nine citations of `.claude/rules/external-apis.md` name a line that file no longer
+  holds, and each one now names the line the sentence stands on** (#679). Round
+  TBD. **Line 95 of that file holds the fragment `reaches it.`**, which is the tail of the
+  sentence that bars a Zeek JA4TS value of a capture whose link layer is not Ethernet. The
+  sentence the citations quote is `Read no JA4L or JA4LS value of a Zeek baseline as a
+  reference value`, and it opens line 124 of the base of this change. **The pair carries a
+  second number, `:101`, which names the `q` marker as one of the three Zeek
+  divergences**, and that list item stands at line 130. **Both numbers were correct on the
+  day a worker wrote them.** Commit `ab4b998` added `tests/test_ja4l_quic_marker.py`, and
+  the pin file at that commit holds the quoted sentence on line 95 and the `q` list item
+  on line 101. #616 rewrote the interface table of that file and moved both, and #669
+  added the Zeek analyzer row and moved both again by one line. **A worker on #665 found
+  five of the citations and repaired none of them**, because
+  `batch/657-tunnel-icmp-citations` was open and it moved the target. That batch has
+  merged, so this round measures a target that stands still. **The #665 row of the
+  Changelog table records line 123 for the same sentence, and that record stands.** #669
+  landed on `dev` after that measurement, so the sentence moved one line down and this
+  round reads 124. **The issue body names five line numbers and this round took none of
+  them.** It reads `docs/specs/foxio/JA4L.md:225`, `docs/specs/spec.md:300` and
+  `docs/specs/spec.md:751`, and those three sites stand at 236, 303 and 754 on this base,
+  because #611 landed on `dev` between the two reads. **The repair reaches nine citation
+  instances on seven lines of five files.** They are `ja4plus/fingerprinters/ja4l.py:60`,
+  `tests/test_ja4l_quic_marker.py:15` and `:16`, `docs/specs/foxio/JA4L.md:236` and
+  `:237`, `docs/specs/spec.md:303`, which carries both numbers, and
+  `docs/specs/spec.md:754`, which writes `:95` in full and `:101` in a short form. **A
+  repair that moves four of five leaves the class open**, so this round moved every one.
+  **The sweep read the whole class and it found no further instance.** 249 lines of the
+  repository name a file under `.claude/rules/`. Seven lines carry the form
+  `<file>.md:<line>`, and all seven were false. The other 242 name a rules file with no
+  line number, and every one of them is a clean negative. No line uses a line-range form,
+  a heading-anchor form, or the prose form `line N of`. **This round builds no guard**,
+  and #668 holds the open question about which mechanism the project wants. **The two
+  classes differ on what a citation is read against.** A citation of `docs/specs/foxio/`
+  stands under a pinned comparison section, so it reads the commit that section declares.
+  A citation of `.claude/rules/external-apis.md` names no pin, so it reads the working
+  tree and it goes stale in the ordinary sense. The maintainer ruled that split on
+  2026-08-15. **No ruling moves, because every repair changes a line number and no repair
+  changes a word of the rule.** **The change reaches comment lines and prose alone, and no
+  fingerprint moves.** One of the nine stands in a comment of
+  `ja4plus/fingerprinters/ja4l.py`. A filter that drops every comment line from
+  `git diff -U0 -- ja4plus/` reads empty, and `ast.dump` of that module, with the
+  docstrings stripped, is equal before the change and after it at 45833 characters. **The
+  unit suite reports 5567 passed, 8 skipped, 8 xfailed and 114 subtests passed.** The base
+  reports 5566 passed beside one failure, which is
+  `tests/test_round_entry_existence.py::test_the_change_set_of_this_branch_records_a_round`,
+  and the round entry of this change set clears it. **The conformance suite reports 1676
+  passed, 142 skipped and 138 xfailed, which are the counts of the base**, and
+  `tests/foxio_deviations.json` holds 138 keys on both sides. `ruff check ja4plus/
+  tests/`, `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` each report
+  no issue.
+
 - **`tests/test_foxio_rust_parity.py` reads the `ja4ssh` block of a FoxIO Rust snapshot,
   and it compares both JA4SSH values that block holds** (#671). Round
   TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
