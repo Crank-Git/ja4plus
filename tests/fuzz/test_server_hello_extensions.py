@@ -1,9 +1,9 @@
 """The ServerHello reader raises no exception on a crafted extension block.
 
 #617 records one crash of `_parse_server_hello`. The `supported_versions` branch tested
-the length the packet declares, and it indexed the raw buffer, so a record that declared
-two bytes and supplied none raised `IndexError`. `4497e9f` repaired that one branch, and
-#629 audited every other extension branch and found no second one.
+the length the packet declares, and it indexed the raw buffer. A record that declared two
+bytes and supplied none therefore raised `IndexError`. `4497e9f` repaired that one branch,
+and #629 audited every other extension branch and found no second one.
 
 This file measures the class of defect and not the one instance. A crafted record
 declares one length in an extension header and supplies another count of bytes. #628
@@ -40,9 +40,12 @@ DRAWS = 512
 # reproduce. `test_synthetic_hostile_input.py` states the same reason.
 SEED = 628
 
-# The four extension types the ServerHello reader branches on, one type it ignores, and
-# one GREASE type. A branch that reads its data and a branch that skips it each belong to
-# the class this file measures.
+# `_parse_server_hello` branches on two extension types, which are 0x0010 and 0x002b. The
+# other four types reach the loop and no branch reads their data. A branch that reads its
+# data and a branch that skips it each belong to the class this file measures, because the
+# loop advances on the declared length in both cases. 0x0000 and 0x000d branch inside
+# `_parse_client_hello` alone, and this list holds them so that a later branch of the
+# ServerHello reader arrives with a case behind it.
 EXTENSION_TYPES = (0x0000, 0x000D, 0x0010, 0x002B, 0x0A0A, 0xFFFF)
 
 # Each declared length stands against each supplied count below, so the grid holds the
@@ -196,7 +199,7 @@ def test_a_crafted_extension_header_produces_a_server_hello_and_raises_nothing(n
     assert tls_info["cipher"] == 0x1301, name
 
 
-def test_a_declared_block_length_that_passes_the_record_produces_a_server_hello():
+def test_a_block_length_past_the_end_of_the_record_produces_a_server_hello():
     """The extension block header declares more bytes than the record holds.
 
     `extensions_end` clamps on the record length, so the reader stops at the last byte
@@ -274,8 +277,10 @@ def test_one_corrupted_byte_of_a_well_formed_record_raises_nothing(mask):
             continue
         assert tls_info["handshake_type"] == "server_hello", f"byte {index}"
 
-    # The record is 55 bytes and the reader needs 11, so no corruption of one byte
-    # silences it. A silenced read would name a guard this comment does not state.
+    # `_parse_server_hello` returns None on one condition, which is a record shorter than
+    # 11 bytes. A flip of one bit moves no length of the record, so this count holds at
+    # zero for the reader as it stands. The count therefore states the shape of the
+    # reader, and the assertion above each iteration is what measures the corruption.
     assert silenced == 0
 
 
