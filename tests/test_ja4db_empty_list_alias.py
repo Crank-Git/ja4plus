@@ -2,8 +2,8 @@
 
 #639 holds the ruling of 2026-08-15. FoxIO builds `ja4plus-mapping.csv` from an
 implementation that writes `000000000000` for an empty list, and this project writes the
-hash of the empty input instead. The lookup therefore reads the two forms as one value,
-and it reads them on the parts the ruling of 2026-08-14 moved and on no other part.
+hash of the empty input instead. The lookup therefore reads the two forms as one value.
+It reads them on the parts the ruling of 2026-08-14 moved, and on no other part.
 """
 
 import csv
@@ -143,8 +143,8 @@ class TestTheCookiePartsRefuseTheFallback:
         assert _EMPTY_LIST_PARTS["ja4h"] == (4, (1,))
 
     def test_a_sentinel_in_part_c_of_ja4h_gains_no_match(self, bundled_client):
-        # `no cookie` in part c is a value of its own, so the hashed form names a request
-        # that carries one cookie field and it names no row.
+        # `no cookie` in part c is a value of its own. The hashed form therefore names a
+        # request that carries one cookie field, and it names no row.
         assert (
             bundled_client.lookup(f"ge11nn08enus_050dd5cfb971_{_EMPTY_LIST_HASH}_000000000000")
             is None

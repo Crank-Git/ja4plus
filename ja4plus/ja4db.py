@@ -130,7 +130,7 @@ _EMPTY_LIST_HASH = "e3b0c44298fc"
 
 # The value the FoxIO Rust implementation writes for an empty list. FoxIO builds
 # `ja4plus-mapping.csv` from its own implementations, so rows of that file carry this
-# form and this project produces it for no part below.
+# form. This project writes it for no part that `_EMPTY_LIST_PARTS` names.
 _EMPTY_LIST_SENTINEL = "000000000000"
 
 # The form a part takes when it reads the other way. The two forms name one empty list,
@@ -149,7 +149,7 @@ _EMPTY_LIST_OTHER_FORM = {
 # Warning: part c and part d of JA4H hold `no cookie`, which R17 and R27 of
 # `docs/specs/foxio/JA4H.md` rule a value in its own right. The sentinel there was never
 # an empty-list hash, so the two forms name two values and this table names neither part.
-# A method this table omits gains no alias at all, and JA4 and JA4S are two such methods,
+# A method this table omits gains no alias at all. JA4 and JA4S are two such methods,
 # because each one still writes the sentinel for an empty list.
 _EMPTY_LIST_PARTS: dict[str, tuple[int, tuple[int, ...]]] = {
     "ja4x": (3, (0, 1, 2)),
@@ -160,8 +160,8 @@ _EMPTY_LIST_PARTS: dict[str, tuple[int, tuple[int, ...]]] = {
 def _empty_list_alias_forms(parts: Sequence[str], indices: Sequence[int]) -> list[str]:
     """Return every value the parts write when an empty-list part reads the other form.
 
-    Both forms name an empty list at each index the caller gives, so a value that holds
-    one form at two such parts needs the value that reads both of them the other way.
+    Both forms name an empty list at each index the caller gives. A value that holds one
+    form at two such parts needs the value that reads both of them the other way.
 
     Args:
         parts: The parts of one fingerprint, in order.
@@ -205,7 +205,7 @@ def _empty_list_aliases(db: Mapping[str, LookupResult]) -> dict[str, LookupResul
         part_count, indices = form
         parts = fingerprint.split("_")
         # A row whose part count misses the form of its method names no part index that
-        # the ruling reads, so the ruling reaches none of its parts.
+        # the ruling reads. The ruling therefore reaches none of its parts.
         if len(parts) != part_count:
             continue
         for alias in _empty_list_alias_forms(parts, indices):

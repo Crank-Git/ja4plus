@@ -151,9 +151,9 @@ Verified against: https://github.com/Crank-Git/ja4plus-go/blob/master/lookup.go 
 
 **FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one writes
 `000000000000` for an empty list.** This project hashes an empty list instead, under the
-ruling of 2026-08-14, so it writes `e3b0c44298fc` where a row of that file holds the zero
+ruling of 2026-08-14. It writes `e3b0c44298fc` where a row of that file holds the zero
 sentinel. A lookup that read one form alone therefore reached three rows nowhere. **The
-mapping file is third-party data, so this project corrects no row of it.** The maintainer
+mapping file is FoxIO published data, so this project corrects no row of it.** The maintainer
 ruled on 2026-08-15, on #639: the lookup reads the two forms as one value.
 
 **Warning: `000000000000` does not name one thing across JA4+.** The table states where
