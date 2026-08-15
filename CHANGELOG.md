@@ -98,6 +98,85 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   both emission models. **A reversal of the connection gate at
   `ja4plus/fingerprinters/ja4t.py:178` fails 3 cases of that file, and a deletion of the
   row fails 5.** The ruling is reversible, and a reversal changes both repositories.
+- **Every repository-owned citation of the transcription pages reads the commit its
+  section pins** (#668). Round
+  TBD. **A `file:line` citation of a file this repository owns goes stale on every change
+  above the cited line, and nothing reported it.** #600 moved one line of `ja4h.py` and its
+  review lens found one falsified citation of `docs/implementation_notes.md`, because the
+  lens read the diff. **The title and the body of #668 state 37 stale citations of
+  `docs/specs/foxio/JA4H.md`, and that is false.** `docs/specs/foxio/JA4H.md:358` declares
+  that its comparison reads the source at commit `1a87f45`, and 50 of the 52
+  repository-owned citations of that page are correct there. **Zero agree with the working
+  tree, which is the correct state of a pinned citation rather than a defect.** A reader
+  that held all 282 citations against the tree would have failed 253 true ones. **The
+  maintainer ruled answer A on 2026-08-15: the pins stand and the guard reads each citation
+  at the commit its section declares.** The ruling also settled the two pin forms answer A
+  left open. **The guard therefore reads two classes, and the section a citation stands in
+  decides the class, never the file it names.** A citation under a pin declaration reads
+  that commit through `git show <commit>:<path>`, and a citation under no pin declaration
+  reads the working tree. **A pin declaration is a sentence that opens with `The comparison
+  below reads`**, names one or more paths under `ja4plus/`, and names one commit. It governs
+  every citation of those paths to the next declaration or to the next `## ` heading. **A
+  table cell that names its own commit overrides the declaration above it**, because the
+  cell is the nearer statement. **The override reaches that one cell and never the whole
+  row**, which the self-review of this round raised and two lenses found independently. A
+  Reading cell of the comparison tables narrates a FoxIO commit in prose, so a reader of the
+  whole row would take that commit for the pin of a citation the row carries in another
+  cell. `_cell_of` reads the text between the pipe characters that surround the citation,
+  and one case holds a row whose Reading cell names `dcb43fc` while the citation keeps
+  `1a87f45`. **That rule needs no list a person keeps by hand.** New file
+  `tests/foxio_citation_lines.py` holds the reader and new file
+  `tests/test_foxio_citation_lines.py` holds fifteen cases against it. **The condition is
+  that the file holds the cited line at the read the citation declares**, and a range
+  citation states two lines and both must exist. **The census reports every page, including
+  the six that came back clean**, because a sweep that names what it found alone cannot be
+  told from one that never ran: `JA4D.md` 63 pinned and 1 unpinned, `JA4H.md` 50 and 2,
+  `JA4L.md` 40 and 1, `JA4S.md` 29 and 5, `JA4SSH.md` 31 and 5, `JA4T.md` 9 and 1,
+  `JA4X.md` 31 and 6, `README.md` 0 and 0, `deleted-text-specifications.md` 0 and 7, and
+  `zeek.md` 0 and 1. **282 citations, 253 pinned and 29 unpinned.** **Ten citations were
+  wrong, and every one of them was right at a commit the page did not name.** The maintainer
+  named nine and the range check found the tenth. `docs/specs/foxio/JA4H.md:400` cites
+  `ja4h.py:484` where `ja4h.py` holds 436 lines at `1a87f45`, and that line holds
+  `part_b = hashlib.sha256(headers_str.encode()).hexdigest()[:12]` at `dcb43fc`, which
+  landed the R19 ruling of 2026-08-14 after the page took its pin. The cell now names
+  `dcb43fc` and the line number did not move. **The nine numbers of the `JA4TS — the fields
+  that agree` table describe `bec84dd4`, and `ja4ts.py` holds 95 lines at the declared
+  `3c01c94`**, which corroborates #658. **No remote branch reaches `bec84dd4`, so the clone
+  of depth 1 on the runner cannot fetch it**, and this round re-read the nine at `0d3480e`
+  instead, which is the last commit of `dev` at which `ja4ts.py` holds every field that
+  table names. **`docs/specs/foxio/JA4D.md` pinned by issue as `after #231`, which no case
+  can resolve.** `6605a85` is the last commit of #231 and no remote branch reaches it
+  either, so the page names `ce2fa544`, which is the first commit of `dev` that carries both
+  files byte for byte as `6605a85` left them. `git rev-parse` reports the same blob
+  identifier `255dbfcc4e131aceeac77e7e43036bab3268d5ed` at both commits, so every line
+  number of that section reads the same at either one. **The tenth defect is
+  `ja4d6.py:298-304`, a range whose last line overran a file of 300 lines**, and it now
+  reads `ja4d6.py:293-300`, which holds `process_packet` and `cleanup_connection`. **A
+  first-line check would have passed it, and the range check refused it.**
+  `.github/workflows/test.yml` gains the step `Fetch the commits the transcription pages
+  pin`, which carries the seven pins to the runner, because the clone of depth 1 reaches
+  none of them. **The step runs one `git fetch` command with seven refspecs**, under the
+  rule #586 measured: each fetch of a shallow clone rewrites `.git/shallow` and a second one
+  then fails. **It names the whole identifier of each commit**, because #528 measured that
+  git resolves no abbreviation at the remote. **Every one of the seven is reachable from
+  `dev`, so no tag has to hold one**, and one case reads the list of the workflow against
+  the pins the pages declare. `tests/test_round_entry_existence.py` gains the fourth step to
+  `FETCH_STEPS`. **Two reversals prove the guard discriminates in both classes.** A citation
+  of line 99999 under the pin of `docs/specs/foxio/JA4H.md` reported
+  `ja4plus/fingerprinters/ja4h.py holds 436 lines at commit 1a87f45`, and one under no pin
+  on `docs/specs/foxio/zeek.md` reported
+  `ja4plus/fingerprinters/ja4l.py holds 658 lines at the working tree`. **Each class also
+  carries a control**, because a guard that refuses everything proves nothing. **This reader
+  stands beside `tests/test_ja4t_citation_lines.py` and it replaces nothing.** That file
+  reads a FoxIO citation at the FoxIO pin against a recorded source line, because this
+  repository holds no copy of `wireshark/source/packet-ja4.c`. **A reader that merged the
+  two would read a FoxIO path against a commit of this repository and a path of this
+  repository against the FoxIO pin, and neither one resolves.** **This round changes no file
+  under `ja4plus/`**, and `git diff --stat ja4plus/` reports nothing. **`docs/implementation_notes.md`
+  stays uncovered**, because the reader reads `docs/specs/foxio/` alone and #600 falsified a
+  citation of that file. **A read of 2026-08-15 measures 19 repository-owned citations
+  there, 0 past the end of their file and 5 naming a blank line or a comment line**, and
+  #690 holds them.
 
 - **The interface table names the Wireshark version and the Zeek version that the FoxIO
   pin records** (#616). Round
