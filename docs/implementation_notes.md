@@ -763,6 +763,30 @@ separating packet of each, because no vector carries one.
 
 **Location:** `ja4plus/fingerprinters/ja4d6.py:81` and `ja4plus/fingerprinters/ja4d6.py:277`.
 
+### The DHCP layer of a tunneled packet
+
+`Packet.getlayer` counts a layer from the outside, so it returns the UDP header
+of the tunnel on a tunneled packet. The JA4D branch and the JA4D6 branch each
+read that header before #646.
+
+**The defect shape of these two methods is an absent value, and it is not a wrong
+one.** Each method reads a port range before it reads the payload. `ja4d.py`
+matches 67, 68 and 4011, and `ja4d6.py` matches 546 and 547. A tunnel port is
+none of those five, so the outer header failed the port test and the method
+returned None. The QUIC branches that #594 repaired held no port test, so they
+decoded the tunnel header bytes and produced no value that way.
+
+Both branches now read `innermost_layer(packet, (UDP,))`, which
+`ja4plus/utils/tunnels.py:50` publishes. `ja4plus/utils/packet_utils.py:107`
+reads the port pair through the same function, so one result names one port pair.
+
+No capture of the FoxIO corpus carries DHCP inside a tunnel, so no vector
+separates the two behaviours and no committed value moves.
+`tests/test_dhcp_tunnel_inner_udp.py` builds the packets that separate them. The
+result keeps the form the section on the connection key of a mirrored capture
+states: the outer address pair with the inner port pair. #242 decided that form,
+and #646 moves the port half alone.
+
 ---
 
 ## JA4L - Latency
