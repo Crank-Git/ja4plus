@@ -74,7 +74,7 @@ A Go port exists at `Crank-Git/ja4plus-go`. The two must not drift apart. Three 
    subcommand, a default — the port has already shipped a choice. Adopt it.
 3. **The gate is the shared vector set.** No test here builds, runs, or imports the port.
 
-**Rule 2 carries the shape of a pattern and no statement of its cost**, so
+**Rule 2 carries the shape of a pattern and no statement of its cost.**
 `.claude/rules/conformance.md` requires a measurement against hostile input before a
 regular expression from the port lands. #612 measured 3017.9 milliseconds on the ported
 form of one pattern.

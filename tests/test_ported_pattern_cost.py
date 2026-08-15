@@ -71,8 +71,8 @@ def collapsed(text: str) -> str:
         text: The text of one Markdown section.
 
     Returns:
-        The same text on one line. Both files wrap at 90 columns, so a phrase of more
-        than a few words reaches a reader that reads a literal space on no line.
+        The same text on one line. Both files wrap at 90 columns. A phrase of more than
+        a few words therefore reaches no reader that reads a literal space on one line.
     """
     return re.sub(r"\s+", " ", text)
 

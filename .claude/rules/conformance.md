@@ -364,7 +364,8 @@ input before it lands. State the measurement where the change records its eviden
 **#612 followed parity rule 2 literally, and it shipped a backtracking defect to a
 branch.** Its own self-review found the defect and measured it. `GET a` plus 32000 spaces
 plus `HTTPX` cost **3017.9 milliseconds** under the ported form. The repaired form reads
-the same payload at **0.630 milliseconds**. `is_http_request` reads 8192 bytes of every
+the same payload at **0.630 milliseconds**. `REQUEST_LINE_LIMIT` of
+`ja4plus/utils/http_utils.py` reads 8192. `is_http_request` reads that many bytes of every
 TCP payload, so one crafted packet bought about 200 milliseconds of processor time.
 
 **The rule reaches every construct whose cost differs between a finite automaton and a
