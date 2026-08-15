@@ -157,10 +157,12 @@ def _from_server(payload: bytes, moment: float) -> Raw:
 def _quic_connection(fingerprinter: JA4LFingerprinter, start: float) -> list[str | None]:
     """Return the value each packet of one whole QUIC handshake gives.
 
-    The four packets move the four measurement points: the client Initial packet moves
-    point `A`, the server Initial packet that completes the ServerHello moves point `B`,
-    the server Handshake packet moves point `C`, and the client Handshake packet moves
-    point `D`.
+    The four packets move the four measurement points.
+
+    - The client Initial packet moves point `A`.
+    - The server Initial packet that completes the ServerHello moves point `B`.
+    - The server Handshake packet moves point `C`.
+    - The client Handshake packet moves point `D`.
 
     Args:
         fingerprinter: The fingerprinter that reads the packets.

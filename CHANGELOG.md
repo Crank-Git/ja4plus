@@ -39,10 +39,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   new-connection signal**, so a reversal states that trigger and it needs a FoxIO source.
   **No file under `ja4plus/` changed, so no fingerprint moved and no output field moved.**
   New file `tests/test_ja4l_quic_eviction_ruling.py` holds 13 cases. Five read the row,
-  three read the call sites out of the syntax tree of the module, and five drive the
-  fingerprinter. The unit suite rises from 5698 collected to 5712, which is 13 cases of the
-  new file and 1 case that parametrizes over the tracked Python files. It reports 5696
-  passed, 8 skipped, 8 xfailed and 114 subtests passed. The conformance suite reports 1676
+  three read the call sites out of the syntax tree of the module, four drive the
+  fingerprinter over two connections on one four-tuple, and one drives
+  `_restart_connection` on its own. The unit suite rises from 5698 collected to 5714, which
+  is 13 cases of the new file and 3 cases that parametrize over the tracked Python files. It
+  reports 5698 passed, 8 skipped, 8 xfailed and 114 subtests passed. The conformance suite reports 1676
   passed, 142 skipped and 138 xfailed against the 138 keys of
   `tests/foxio_deviations.json`, which are the counts of round 247.
   `ruff check ja4plus/ tests/`, `ruff format --check ja4plus/ tests/` and
