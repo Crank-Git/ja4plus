@@ -25,6 +25,7 @@ from ja4plus.utils.quic_utils import (
 )
 from ja4plus.utils.packet_utils import packet_endpoints
 from ja4plus.utils.state_table import BoundedStateTable
+from ja4plus.utils.tunnels import innermost_layer
 from ja4plus.fingerprinters.base import BaseFingerprinter
 from ja4plus.fingerprinters.ja4 import quic_fragment_table
 
@@ -80,7 +81,10 @@ class JA4SFingerprinter(BaseFingerprinter):
         """
         with self._lock:
             # Try QUIC path first (UDP packets)
-            udp = packet.getlayer(UDP)
+            # A tunnel carries its own UDP header, and `getlayer` counts from the outside.
+            # The QUIC layer is the innermost one. The port pair names the direction of an
+            # Initial packet, so a reader of the outer header finds no server.
+            udp = innermost_layer(packet, (UDP,))
             if udp is not None:
                 udp_payload = bytes(udp.payload)
                 if udp_payload and long_header_packet_type(udp_payload) == QUIC_INITIAL:
