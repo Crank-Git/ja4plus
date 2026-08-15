@@ -225,9 +225,22 @@ class TestPartEOnTheVectorSet(unittest.TestCase):
         with_part_e = [value for _, value in self.values if value.count("_") == 4]
         self.assertEqual(with_part_e, ["64240_2-1-1-4-1-3_1460_7_0"])
 
-    def test_the_capture_produces_nine_ja4ts_values(self):
-        """A value that appears or disappears changes this count."""
-        self.assertEqual(len(self.values), 9)
+    def test_the_two_server_resets_carry_the_stored_four_part_value(self):
+        """Indices 848 and 849 are frames 849 and 850, which the dissector also names.
+
+        The maintainer ruled the case at `Crank-Git/ja4plus-go#484`, and #609 ported it.
+        Each frame resets a connection that holds one SYN-ACK, so the value carries no
+        part e and no reset letter.
+        """
+        self.assertIn((848, "42600_2-1-1-4-1-3_1300_9"), self.values)
+        self.assertIn((849, "42600_2-1-1-4-1-3_1300_9"), self.values)
+
+    def test_the_capture_produces_eleven_ja4ts_values(self):
+        """A value that appears or disappears changes this count.
+
+        The count read 9 until #609, which published the two server resets above.
+        """
+        self.assertEqual(len(self.values), 11)
 
 
 class TestPartEStateRelease(unittest.TestCase):
