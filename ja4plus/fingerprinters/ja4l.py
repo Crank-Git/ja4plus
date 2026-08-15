@@ -391,11 +391,11 @@ def _holds_a_complete_http_request(payload: bytes) -> bool:
     request reaches the same cache as any other TCP packet, and it does move the
     point. `http-empty-useragent.pcap` and `latest.pcapng` prove both halves.
 
-    The reader of `ja4plus.utils.http_utils` answers where a header block ends, and this
-    gate calls it rather than holding a second copy of the rule. Two fixed byte groups
-    stood here before, and they declined a header block that ends with one line feed
-    followed by a carriage return and a line feed. Such a request then completed a client
-    value that the reference does not publish. #630 records the defect.
+    The reader of `ja4plus.utils.http_utils` answers where a header block ends. This
+    function calls that reader, and it holds no second copy of the rule. Two fixed byte
+    groups stood here before. They declined the terminator that one line feed and one
+    carriage return and line feed build. Such a request then completed a client value
+    that the reference does not publish. #630 records the defect.
 
     Args:
         payload: The TCP payload bytes.

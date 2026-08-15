@@ -31,8 +31,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   on the base commit `727a10f`. **No conformance value moves**, because no FoxIO vector
   carries a mixed line ending: the conformance suite reports 1635 passed, 143 skipped and
   140 xfailed before the change and the same three counts after it, and
-  `tests/foxio_deviations.json` holds 140 keys. **The unit suite reports 4732 passed, 8
-  skipped and 8 xfailed**, and `pytest --collect-only` reads 6666 cases against 6659 on
+  `tests/foxio_deviations.json` holds 140 keys. **The unit suite reports 4734 passed, 8
+  skipped and 8 xfailed**, and `pytest --collect-only` reads 6668 cases against 6659 on
   the base commit. `Crank-Git/ja4plus-go#685` holds the Go half.
 
 - **The HTTP header block terminator matches either line ending** (#614). Round

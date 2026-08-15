@@ -1,11 +1,11 @@
 """JA4L reads the header block terminator that `ja4plus.utils.http_utils` publishes.
 
-The reference routes a packet that holds a whole HTTP request to a cache that holds no
-measurement point, so such a packet completes no client value. `ja4plus/utils/http_utils.py`
-holds the one rule that reads the end of a header block. A second copy of that rule inside
-the fingerprinter declined the terminator `\\n\\r\\n`, so a request that ends its header
-block that way completed a client value the reference does not publish. #630 records the
-defect and `Crank-Git/ja4plus-go#685` records the Go half.
+The reference routes a packet that holds a whole HTTP request to a cache. That cache holds
+no measurement point, so such a packet completes no client value. `ja4plus/utils/http_utils.py`
+holds the one rule that reads the end of a header block. A second copy of that rule stood
+inside the fingerprinter, and it declined the terminator `\\n\\r\\n`. A request that ends
+its header block that way therefore completed a client value the reference does not
+publish. #630 records the defect and `Crank-Git/ja4plus-go#685` records the Go half.
 
 No FoxIO vector holds a mixed line ending, so each case here builds the packets.
 """
