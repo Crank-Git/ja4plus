@@ -6,6 +6,39 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The ServerHello reader bounds the `supported_versions` read on the bytes the record
+  holds** (#617). Round
+  218. **`ja4plus/utils/tls_utils.py:278` tested `ext_len`, which is the length the packet
+  declares, and line 279 indexed `raw_data` at `ext_data_start` and `ext_data_start + 1`.** Line 265 already computes
+  `ext_data_end = min(ext_data_start + ext_len, len(raw_data))`, so the clamp stood beside
+  the branch and the branch read past it. **A record that declares two bytes of
+  `supported_versions` and supplies none made the test true and raised `IndexError`**, and
+  neither `_parse_server_hello` nor its caller at `ja4plus/utils/tls_utils.py:101` holds a
+  `try` or an `except`. The exception therefore reached the caller of the library, against
+  the rule of `CLAUDE.md` that a parser which cannot read a packet returns nothing and does
+  not raise. **The branch now reads `ext_data_end - ext_data_start >= 2`**, which is the
+  reading `Crank-Git/ja4plus-go#556` took on 2026-08-14, and no other line of the loop
+  moves. **Five cases came first and two of them failed against the committed reader**:
+  `test_the_reader_returns_a_value_on_an_extension_that_declares_two_bytes_and_supplies_none`
+  built the 53-byte record of #617 and read
+  `IndexError: index out of range` at `ja4plus/utils/tls_utils.py:279`, and
+  `test_the_reader_returns_a_value_on_an_extension_that_supplies_one_byte_of_two` read the
+  same failure over a declared length of two and one supplied byte. **#617 predicted a
+  third failure and this round measured a pass**, so the entry records the prediction
+  rather than the plan. The 64-byte input the Go fuzzer wrote reaches
+  `_parse_server_hello` with a last extension that declares 12336 bytes over two present
+  bytes, and the clamp and the declared length both admit that read.
+  `test_the_reader_returns_a_value_on_the_input_the_go_fuzzer_wrote` therefore states the
+  exact value the reader produces, `[12336]`, so it proves that the repair moves nothing on
+  that input. `test_the_record_walk_returns_nothing_on_the_input_the_go_fuzzer_wrote`
+  records the second reading: `parse_tls_handshake` reads a handshake length of `0x303030`,
+  which passes the end of the record, so the library entry point returns nothing and raises
+  no exception. **This round writes no fuzz target for `_parse_server_hello` and it audits
+  no sibling extension branch**, which #617 names as two suggestions, and a separate issue
+  holds each one. **The conformance suite reports 1635 passed, 143 skipped and 140 xfailed
+  before the repair and the same three counts after it**, so no fingerprint moves. New file
+  `tests/test_tls_utils.py` holds the five cases.
+
 - **The floating-date reader cuts a code span before it matches** (#589). Round
   217. **`floating_sentences` of `tests/test_batch_gate_protection_rule.py` read a code
   span as prose**, so an identifier that holds a barred word failed a case that no prose
@@ -141,6 +174,28 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   prose, so `` `git gc --prune=now` `` failed a case that no prose sentence broke.
   **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
   reports 1635 passed, 143 skipped and 140 xfailed.
+
+## [1.1.1] - 2026-08-15
+
+Version 1.1.1 follows version 1.1.0, and no version stands between them. The date of the
+heading above is the date this release reaches `master`.
+
+**Version 1.1.1 repairs one crash and it carries no other change.** `_parse_server_hello`
+raised `IndexError` on a crafted ServerHello, and #617 records the whole reading. A record
+that declares two bytes of the `supported_versions` extension and supplies none reached the
+defect, so a crafted packet stopped a caller of the library. The entry of #617 above states
+the repair, the cases and the counts.
+
+**The bump is patch and never minor.** The repair moves no published name, it moves no
+output field, and it moves no fingerprint. `requires-python` reads `>=3.10` here, as it
+reads at version 1.1.0, so every environment that installs version 1.1.0 installs this
+release. The conformance suite reports 1635 passed, 143 skipped and 140 xfailed at version
+1.1.0, and it reports the same three counts here.
+
+**The classifier holds at `Development Status :: 5 - Production/Stable`**, and
+`classifier_disagreement` of `tests/version_gate.py` agrees at 1.1.1. `ja4plus/__init__.py`
+declares the version as a plain string, and `pyproject.toml` moves no line, because it
+reads the value from the syntax tree of the package.
 
 ## [1.1.0] - 2026-08-10
 

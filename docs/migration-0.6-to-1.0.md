@@ -3,10 +3,11 @@
 Where `ja4plus --version` reports 0.6.0, read this page before you install version 1.0.0.
 That command names the version of the package your environment holds.
 
-This repository declares version 1.1.0, which is a minor release of version 1.0.0.
+This repository declares version 1.1.1, which is a patch release of version 1.1.0.
 **Python 3.9 leaves the supported set at version 1.1.0**, and version 1.0.1 is the release
-that still installs on it. Version 1.1.0 moves no other interface and no fingerprint, so
-every row below reads the same at version 1.1.0.
+that still installs on it. Version 1.1.0 moves no other interface and no fingerprint.
+**Version 1.1.1 repairs one crash of the ServerHello reader**, and it moves no interface
+and no fingerprint either, so every row below reads the same at version 1.1.1.
 
 This page states what a reader must change. It lists each breaking change with the old
 form, the new form and the reason. `CHANGELOG.md` and the `## Changelog` table of
