@@ -135,19 +135,20 @@ belong to the command-line program, and the library result carries neither.
 ## The raw forms
 
 Four of the eleven `--types` tokens write a value into a raw field. The other seven write
-`null` into both raw fields. JA4H writes a value into one raw field and `null` into the
-other, so read the table for the exact behaviour of each token.
+`null` into both raw fields. Read the table for the exact behaviour of each token.
 
 | Method | `raw` | `raw_original_order` |
 |---|---|---|
 | `ja4` | The `JA4_r` value. | The `JA4_ro` value. |
 | `ja4s` | The `JA4S_r` value. | The `JA4S_r` value. |
-| `ja4h` | `null` | The `JA4H_ro` value. |
+| `ja4h` | The `JA4H_r` value. | The `JA4H_ro` value. |
 | `ja4x` | The `JA4X_r` value. | The `JA4X_r` value. |
 | `ja4t`, `ja4ts`, `ja4l`, `ja4ls`, `ja4ssh`, `ja4d`, `ja4d6` | `null` | `null` |
 
-JA4S and JA4X sort no list, so one value serves both raw fields. JA4H writes no `JA4H_r`
-value, so its `raw` field is always `null`.
+JA4S and JA4X sort no list, so one value serves both raw fields. JA4 and JA4H each sort a
+list, so the two raw fields of each hold different values. #600 filled the `raw` field of
+JA4H, and the schema version stays at 1, because the field is one the schema already
+publishes.
 
 **`tests/test_method_pages.py` holds this table against the output.** It runs the
 committed capture that each method page names, and it compares the two raw fields of the
@@ -195,8 +196,8 @@ schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port
 1,2004-05-13T10:17:07.311224Z,ja4t,8760_2-1-1-4_1460_00,,,145.254.160.237,3372,65.208.228.223,80,
 ```
 
-The writer quotes a value that holds a comma. The `raw_original_order` value of JA4H
-holds commas, so the writer quotes it.
+The writer quotes a value that holds a comma. The two raw values of JA4H hold commas, so
+the writer quotes both.
 
 ## The history of the schema
 

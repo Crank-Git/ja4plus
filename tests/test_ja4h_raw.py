@@ -1,8 +1,9 @@
-"""The JA4H raw form, measured against the FoxIO reference.
+"""The JA4H wire-order raw form, measured against the FoxIO reference.
 
-FoxIO publishes one raw key for JA4H, `JA4H_ro`. It holds the wire order of the header
-names, of the cookie names, and of the cookie name-and-value pairs. FoxIO publishes no
-`JA4H_r` key, so this project computes no sorted JA4H raw form.
+`JA4H_ro` holds the wire order of the header names, of the cookie names, and of the cookie
+name-and-value pairs. The per-stream expected-output files under `tests/foxio_vectors/`
+publish that key alone. `tests/test_ja4h_raw_sorted.py` holds the sorted form, `JA4H_r`,
+which the per-packet files of the Wireshark dissector publish.
 
 The form is `<part a>_<header names>_<cookie names>_<cookie pairs>`. A request that
 carries no cookie ends after the header names and one underscore.

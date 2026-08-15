@@ -572,7 +572,7 @@ now runs" below holds the result.
 | Source searched | Result |
 |---|---|
 | `tests/foxio_vectors/*.json` | **60 `JA4X.<n>` values in 11 files.** The conformance suite already compares every one. |
-| `rust/ja4/src/snapshots/` at the pinned commit | Many `ja4x` values, inside the `tls_certs` block of each stream. `tests/foxio_vectors/rust_expected/` holds ten of the snapshots. |
+| `rust/ja4/src/snapshots/` at the pinned commit | Many `ja4x` values, inside the `tls_certs` block of each stream. `tests/foxio_vectors/rust_expected/` holds 11 of the snapshots. |
 | `README.md` at the pinned commit | Six documented values, at lines 143 to 147. |
 | `zeek/` at the pinned commit | **None.** `zeek/ja4x/__load__.zeek` holds the single line `# empty`, and `zeek/config.zeek:24` sets `option JA4X_enabled:   bool = F;`. `docs/specs/foxio/zeek.md:39` records the reading, and #198 owns it. |
 | `python/test/testdata/` at the pinned commit | The local copies under `tests/foxio_vectors/` are the same files. |
@@ -614,7 +614,7 @@ hold. #229 changed no fingerprinter.
 
 | Measurement | Count |
 |---|---|
-| Local Rust snapshots | 10 |
+| Local Rust snapshots | 11 |
 | Snapshots that hold a JA4X value | 5 |
 | Streams that hold at least one | 19 |
 | JA4X values in those streams | 43 |
@@ -625,6 +625,19 @@ hold. #229 changed no fingerprinter.
 The five snapshots that hold a value are `browsers-x509.pcapng` with 7,
 `https-connect.pcap` with 2, `latest.pcapng` with 8, `ssh2.pcapng` with 12 and
 `tls-handshake.pcapng` with 14.
+
+**#611 corrected the snapshot count of this page on 2026-08-15, and this record supersedes
+the earlier wording.** #229 measured 10 snapshots, and #242 added
+`ja4__insta@gre-erspan-vxlan.pcap.snap`, which raises the directory to 11. The two
+sentences below are the superseded wording, quoted rather than rewritten.
+
+> `tests/foxio_vectors/rust_expected/` holds ten of the snapshots.
+
+> | Local Rust snapshots | 10 |
+
+**The correction moves no other row of the table.** A read of 2026-08-15 reports 11 files,
+5 of them holding a JA4X value, 19 streams and 43 values. The snapshot #242 added holds no
+JA4X value, so it changes the first row alone.
 
 **The revert proves the cases run.** Remove the `tls_certs` branch of the reader, and 48
 cases stop running: 43 value cases and 5 count cases. Three checks then fail and name the
