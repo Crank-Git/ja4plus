@@ -24,7 +24,7 @@ produce the same value, whatever names they carry.
 <issuer hash>_<subject hash>_<extension hash>
 ```
 
-`ja4plus/fingerprinters/ja4x.py:81` joins the three parts.
+`ja4plus/fingerprinters/ja4x.py:80` joins the three parts.
 
 ## The parts
 
@@ -43,14 +43,16 @@ The fingerprinter writes each object identifier in its hexadecimal form, joins t
 with a comma, and hashes the result with SHA-256. It keeps the first 12 characters of the
 hexadecimal digest.
 
-**An empty list writes the zero sentinel `000000000000` and no hash.**
-`ja4plus/fingerprinters/ja4x.py:73` holds the issuer hash and the sentinel.
+**An empty list hashes, and it writes `e3b0c44298fc`.** That value is the truncated
+SHA-256 of the empty string, and no part of JA4X writes the zero sentinel
+`000000000000`. `ja4plus/fingerprinters/ja4x.py:75` holds the issuer hash. R8 of
+`docs/specs/foxio/JA4X.md` holds the ruling of 2026-08-14.
 
 ## The raw forms
 
 JA4X writes the same value into both raw fields. **JA4X sorts no list**, so the sorted
 form and the original-order form are one string.
-`ja4plus/fingerprinters/ja4x.py:91` states the rule and names the FoxIO material that
+`ja4plus/fingerprinters/ja4x.py:90` states the rule and names the FoxIO material that
 carries it.
 
 ## An example
