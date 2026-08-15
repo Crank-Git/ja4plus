@@ -12,8 +12,8 @@ differently.
   `ja4.ja4l` values and on 9 of the 44 `ja4.ja4ls` values.
 - `zeek/ja4l/main.zeek:233` and `zeek/ja4l/main.zeek:252` append the literal `q`.
 
-`.claude/rules/external-apis.md:95` reads "Read no JA4L or JA4LS value of a Zeek baseline
-as a reference value", and `.claude/rules/external-apis.md:101` names the `q` marker as
+`.claude/rules/external-apis.md:124` reads "Read no JA4L or JA4LS value of a Zeek baseline
+as a reference value", and `.claude/rules/external-apis.md:130` names the `q` marker as
 one of the three Zeek divergences. The rule therefore declines the Zeek spelling, and the
 Wireshark spelling is the one published reading that remains.
 
