@@ -63,6 +63,41 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and the section `### The lookup reads both forms of an empty-list value`, and
   `docs/api_reference.md` states the same table for a caller.
 
+- **The divergence register records the JA4T emission model of the two libraries** (#667).
+  Round
+  TBD. **`ja4plus` emits one JA4T value for one connection, and `ja4plus-go` emits one for
+  each frame that carries a readable SYN header.** **The values agree and the emission
+  model differs.** #610 measured the divergence while it built the reader of the TCP header
+  an ICMP error message quotes, and no register row held it. **This round re-measured every
+  number against `tests/foxio_vectors/ssh2.pcapng`, which holds 1391 frames.**
+  `quoted_tcp_header` reads 31 frames whose quoted header is a SYN that carries no ACK, and
+  those 31 frames report 10 connections. One `JA4TFingerprinter` over the whole capture
+  produces 19 JA4T values, and 0 of them come from a quoted frame, because a captured SYN
+  of each of the 10 connections already produced the value. `generate_ja4t` with no
+  connection table produces 31 values, and all 31 hold `64240_2-1-3-1-1-4_1460_8`.
+  `ja4t_icmp_quoted_test.go:16` of the port states the same count and the same value.
+  **R9 of `docs/specs/foxio/JA4T.md` gives one value to one connection, and D4 of #215
+  built the connection table that holds it.** A value for each of the 31 frames repeats the
+  value that 10 captured SYN packets already produced, which `.claude/rules/conformance.md`
+  declines under its second shape. **Neither parity rule reaches this divergence.** No
+  FoxIO reference states how often one connection reports, so rule 1 settles nothing, and
+  both libraries shipped opposite readings, so rule 2 names no first mover. **This round
+  moves no fingerprint value and it edits no file under `ja4plus/`.** The unit suite
+  collected 5583 cases before the round and 5599 after, the conformance suite collects 1927
+  before and after, and `tests/foxio_deviations.json` holds 138 keys before and after.
+  **This branch then took `batch/686-lookup-and-guard` again, because #639 landed under
+  it**, and the unit suite reads 5653 cases on that base and 5669 with this round. **The
+  new file holds 13 of those 16 cases, and the other 3 are parameters rather than new
+  cases.** `tests/test_documented_method_count.py`, `tests/test_ruling_vocabulary.py`
+  and `tests/test_statistics_thread_term.py` each hold one case that runs over every Python
+  file of the tree, so a new file adds one parameter to each. **This round edits no line of
+  those three files.**
+  **The port holds no matching record**, because the `## Parity with ja4plus` register of
+  `Crank-Git/ja4plus-go` states no row for the emission model, and the project manager
+  files the port half there. `tests/test_ja4t_emission_model_ruling.py` holds the row and
+  both emission models. **A reversal of the connection gate at
+  `ja4plus/fingerprinters/ja4t.py:178` fails 3 cases of that file, and a deletion of the
+  row fails 5.** The ruling is reversible, and a reversal changes both repositories.
 - **Every repository-owned citation of the transcription pages reads the commit its
   section pins** (#668). Round
   TBD. **A `file:line` citation of a file this repository owns goes stale on every change
