@@ -12,7 +12,7 @@ outer header fails the port test and the method returns None. The QUIC branches 
 port test, so they decoded the tunnel bytes instead.
 
 No capture of the FoxIO corpus carries DHCP inside a tunnel, so no vector separates the
-two behaviours and every packet of this module is constructed. A replay of the 38
+two behaviours. Every packet of this module is therefore constructed. A replay of the 38
 committed captures produced 4 JA4D values and 6 JA4D6 values before the change and after
 it.
 
@@ -73,9 +73,9 @@ EXPECTED_JA4D6 = "solct0014id_1-4-39-6_23-24"
 def _dhcpv4_discover():
     """Return the UDP payload of one DHCPv4 Discover message.
 
-    The message carries option 53, option 57, option 50, option 81 and option 55, so
-    every one of the six JA4D inputs reads a value the message states rather than a
-    default. `tests/test_ja4d.py` builds the same shape.
+    The message carries option 53, option 57, option 50, option 81 and option 55. Every
+    one of the six JA4D inputs therefore reads a value the message states, and none reads
+    a default. `tests/test_ja4d.py` builds the same shape.
 
     Returns:
         The UDP payload bytes, the BOOTP fixed header first.
@@ -95,9 +95,8 @@ def _dhcpv4_discover():
 def _dhcpv6_solicit():
     """Return the UDP payload of one DHCPv6 Solicit message.
 
-    Option 4 carries its 4-byte identifier and no sub-option, because `_walk_options`
-    reads a sub-option field and a zero byte there would reach the option list as
-    option 0.
+    Option 4 carries its 4-byte identifier and no sub-option. `_walk_options` reads a
+    sub-option field there, and a zero byte would reach the option list as option 0.
 
     Returns:
         The UDP payload bytes, the message type first.
@@ -170,8 +169,8 @@ def test_the_builder_puts_two_udp_layers_in_a_tunneled_dhcp_packet():
 
     Every other case of this module rests on that shape. A packet whose outer header
     already names port 67 measures nothing. The case reads the six layers of the tunnel
-    and it names no layer after them, because scapy dissects the DHCP message itself and
-    the layer count of that dissection is no statement of this issue.
+    and it names no layer after them. Scapy dissects the DHCP message itself, so the
+    layer count of that dissection states nothing about this issue.
     """
     packet = _dhcpv4_packet(_tunneled)
 
