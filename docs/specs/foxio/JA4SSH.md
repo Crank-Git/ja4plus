@@ -279,9 +279,23 @@ fallback under `.claude/rules/conformance.md`.
 
 ## The three declined reference behaviours
 
-`tests/foxio_deviations.json` holds ten JA4SSH entries under three issues. The plan asked
+`tests/foxio_deviations.json` holds 14 JA4SSH entries under four issues, and this section
+reads three of the four. #96 holds 4 entries, #97 holds 2 entries and #105 holds 3
+entries. The plan asked
 whether the specification explains each behaviour or contradicts it. **The specification
 explains none of the three, and it contradicts two.** No decline reopens.
+
+**#611 corrected the entry count of this section on 2026-08-15, and this record supersedes
+the earlier wording.** #214 registered 5 occurrence-form entries after the section was
+written, and the three issues of the section hold 9 entries today against the ten the
+sentence states. The sentence below is the superseded wording, quoted rather than
+rewritten.
+
+> `tests/foxio_deviations.json` holds ten JA4SSH entries under three issues.
+
+**The correction reopens no decline.** #611 read the count alone, and the three subsections
+below hold the same three reference behaviours they held before. The 5 entries of #214 are
+a separate register family, and this section reads none of them.
 
 ### #96 — the reference mode reads the packet lengths of the whole capture
 
