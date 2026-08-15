@@ -48,6 +48,14 @@ A structurally valid ClientHello produces a fingerprint, whatever its body holds
 the handshake header and the two length fields separate the two input sets. #343 holds
 the ruling, and `tests/measure_random_client_hello.py` reproduces the measurement.
 
+`test_icmp_quoted_header.py` reads no capture either. It builds each ICMP error message
+in the case, because #610 reads the TCP header that such a message quotes. The quoted
+bytes carry four length fields, and the file moves each one: the IP header length, the IP
+total length, the TCP data offset and the TCP option list. It also reads 512 random
+payloads, every truncation of one whole quote, and one measured option region that
+`TCP(bytes)` refuses. `ja4plus/utils/icmp_quoted.py` calls no `scapy` dissector for that
+last reason.
+
 ## The rule that governs every case
 
 A case that asserts "no exception" passes when no parser runs. A truncated capture that
