@@ -275,7 +275,11 @@ def _parse_server_hello(raw_data: bytes) -> dict[str, Any] | None:
 
             # Parse supported_versions (0x002b) - server selects one version
             elif ext_type == 0x002B:
-                if ext_len >= 2:
+                # `ext_len` is the length the packet declares, and `ext_data_end` is the
+                # clamp that bounds the bytes the record holds. #617 records that a
+                # record which declares two bytes and supplies none raised `IndexError`
+                # here.
+                if ext_data_end - ext_data_start >= 2:
                     sv = (raw_data[ext_data_start] << 8) | raw_data[ext_data_start + 1]
                     supported_versions = [sv]
 
