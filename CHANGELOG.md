@@ -6,6 +6,39 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The JA4 and JA4S QUIC branches read the innermost UDP layer of a packet** (#594).
+  Round
+  TBD. **`ja4plus/fingerprinters/ja4.py:422` and `ja4plus/fingerprinters/ja4s.py:83` each
+  read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` defaults to `nth=1`, so it
+  returns the first layer of the class counting from the outside, and on a tunneled packet
+  that layer is the UDP header of the tunnel. Both branches then passed the tunnel header
+  bytes to the QUIC decoder, which produced no value, and the port pair of any result named
+  the tunnel. **Both branches now read `innermost_layer(packet, (UDP,))`**, which
+  `ja4plus/utils/tunnels.py:50` publishes for this purpose and which
+  `ja4plus/utils/packet_utils.py:107` already reads for the reported port pair. **No
+  committed fingerprint moves.** A replay of the 38 captures of `tests/foxio_vectors/`
+  produced 219 JA4 values and 126 JA4S values before the change and after it, and the
+  SHA-256 of the whole record read
+  `9dc6aee6a2ae9d8aae274a70e5e847e2bd0851a03de4b8643197b730bd5c4519` on both runs. That
+  set holds `gre-sample.pcap`, `gre-erspan-vxlan.pcap` and `tcpdump-geneve.pcap`, which are
+  the three tunneled captures, and none of the three carries QUIC. **No capture of the
+  FoxIO corpus carries QUIC inside a tunnel**, so no vector separates the two behaviours
+  and the proving case is constructed. `tests/test_quic_tunnel_inner_udp.py` builds one
+  QUIC handshake inside a VXLAN tunnel, and it compares each value against the untunneled
+  packet that carries the same QUIC bytes. **The four tunneled cases failed against
+  `getlayer` and they pass against `innermost_layer`**, and the untunneled control of each
+  pair passed in both runs, so two absent values pass no case. **The JA4 case splits the
+  ClientHello across two datagrams**, because a ClientHello that one datagram carries
+  reaches `extract_tls_info`, which reads the innermost `Raw` layer and finds the QUIC
+  bytes whatever the tunnel does. `_try_quic_multi_packet` is the branch this change moves.
+  **The connection key keeps its form**, which is the outer address pair with the inner
+  port pair. #242 decided that form and this round moves the port half alone. **The change
+  adds no unbounded walk.** `innermost_layer` reads the layer chain scapy already built,
+  which `getlayer` reads too, and it holds no state across packets. **The port reached this
+  reading first.** `ja4.go:104` and `ja4s.go:103` of `Crank-Git/ja4plus-go` each call
+  `parser.GetUDPLayer`, which `internal/parser/packet.go:96` documents as the UDP layer of
+  the innermost packet. Issue #170 of that repository made the change and pull request #188
+  holds its constructed test.
 - **The ServerHello reader bounds the `supported_versions` read on the bytes the record
   holds** (#617). Round
   218. **`ja4plus/utils/tls_utils.py:278` tested `ext_len`, which is the length the packet

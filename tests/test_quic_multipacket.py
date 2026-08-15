@@ -57,12 +57,17 @@ def test_client_hello_from_crypto_fragments_returns_none_when_incomplete():
     assert client_hello_from_crypto_fragments(incomplete) is None
 
 
-def test_ja4_fingerprinter_buffers_quic_fragments():
+def test_ja4_fingerprinter_buffers_quic_fragments(monkeypatch):
     """JA4Fingerprinter should accumulate fragments across datagrams.
 
     We fake two QUIC Initial datagrams whose decryption yields fragments
     that, taken together, form a complete ClientHello. The first datagram
     alone yields no fingerprint; the second completes the handshake.
+
+    The `monkeypatch` fixture restores the stub at the end of this case.
+    `_try_quic_multi_packet` imports the function on each call, so a stub that
+    outlives the case reaches every later module that reads a QUIC datagram.
+    #594 measured that reach.
     """
     from ja4plus.fingerprinters.ja4 import JA4Fingerprinter
     from ja4plus.utils import quic_utils
@@ -99,7 +104,7 @@ def test_ja4_fingerprinter_buffers_quic_fragments():
         return None, None
 
     # Patch the decrypt helper used by JA4Fingerprinter._try_quic_multi_packet
-    quic_utils.decrypt_quic_initial_crypto = fake_decrypt
+    monkeypatch.setattr(quic_utils, "decrypt_quic_initial_crypto", fake_decrypt)
 
     # Drive process_packet with two synthetic UDP packets.
     from scapy.all import IP, UDP, Raw
