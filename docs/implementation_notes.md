@@ -1541,6 +1541,57 @@ request line.
 
 **Location:** `ja4plus/fingerprinters/ja4h.py` and `ja4plus/utils/http_utils.py`.
 
+### The request line carries a path that holds a space
+
+`REQUEST_LINE_PATTERN` read the path with the non-space group `(\S+)`, which matches no
+path that holds a space. Frame 4 of `gre-erspan-vxlan.pcap` holds
+`GET /Hello Arkime HTTP/1.0`, so the group read `/Hello` and the match then needed the
+version token where the line holds `Arkime`. The request reached no JA4H value. #612
+records the defect, and `Crank-Git/ja4plus-go#527` records the same defect in the port.
+
+The repaired pattern holds four readings, and each one has a case in
+`tests/test_ja4h_request_line_and_empty_header_list.py`.
+
+1. Each separator reads a space or a horizontal tab. `\s` matches a line feed, so the
+   earlier pattern crossed into the second line of a payload. The payload
+   `SSH-2.0-OpenSSH_9.6\r\n/a HTTP/1.1\r\n` reached a request line that no line holds, and
+   `is_http_request` gates a JA4L measurement point.
+2. The path group reads no carriage return and no line feed. A group of any character
+   matches a bare carriage return, so the path of `GET /a\rFAKE HTTP/1.1` would hold two
+   lines of the payload.
+3. The path group is lazy, so a first line that holds two version tokens reaches the
+   earlier one. The non-space group read the earlier token, and this reading keeps it.
+4. The first character of the path group is neither a space nor a horizontal tab. Two
+   adjacent quantifiers that both accept a space admit one split for each space of a run,
+   and the match then costs the square of the line length. This class admits one split for
+   each run, so the cost is the line length. The class moves no match, because the greedy
+   separator already consumed every space of the run.
+
+**Vector:** `gre-erspan-vxlan.pcap` frame 4. The FoxIO Wireshark dissector writes
+`ge10nn000000_e3b0c44298fc_000000000000_000000000000`, and
+`tests/foxio_vectors/wireshark_expected/gre-erspan-vxlan.pcap.json` holds that value. The
+empty-header ruling below closes the same comparison, and neither repair closes it alone.
+
+**Location:** `ja4plus/utils/http_utils.py`.
+
+### An empty header list hashes
+
+Part b of a request that carries no header reads `e3b0c44298fc`, which is the truncated
+SHA-256 of the empty string. **The zero sentinel `000000000000` reaches part c and part d
+alone.** The maintainer ruled on 2026-08-14, R19 of `docs/specs/foxio/JA4H.md` holds the
+ruling, and #612 is the reversal path.
+
+**The four FoxIO references split two against two**, and a rank 1 image rule breaks the
+split. R12 transcribes `Truncated SHA256 hash of Headers, in the order they appear`, which
+names no sentinel, and R17 confines the sentinel to part c and part d.
+
+**R8 of `docs/specs/foxio/JA4X.md` holds the same ruling for JA4X**, which #619 built on
+the same date. The two methods therefore read one ruling one way.
+
+**Vector:** `gre-erspan-vxlan.pcap` frame 4, as the section above states.
+
+**Location:** `ja4plus/fingerprinters/ja4h.py`.
+
 ### TCP reassembly
 
 **Fixed in v0.4.0:** HTTP parsing now accumulates TCP stream data

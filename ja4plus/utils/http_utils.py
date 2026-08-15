@@ -28,9 +28,32 @@ METHOD_TOKEN_CHARACTERS = r"!#$%&'*+\-.^_`|~0-9A-Za-z"
 # reads it as `HTTP/1` reports the version code of `HTTP/1.1`. The two requests then
 # carry one fingerprint. The lookahead ends the token for that reason. #35 records both
 # defects.
+# The path group reads a space, because a request line carries a path that holds one.
+# Frame 4 of `gre-erspan-vxlan.pcap` holds `GET /Hello Arkime HTTP/1.0`, and the non-space
+# group `(\S+)` read `/Hello` and then found `Arkime` where it needed the version token.
+# The request reached no JA4H value. #612 records the defect and the Go port holds the
+# same three readings below.
+#
+# Each separator reads a space or a horizontal tab, and never a line ending. `\s` matches
+# a line feed, so the earlier pattern crossed into the second line of a payload and read a
+# request line that no line holds. The payload `SSH-2.0-OpenSSH_9.6\r\n/a HTTP/1.1\r\n` is
+# such a payload, and `is_http_request` gates a JA4L measurement point.
+#
+# The path group reads no carriage return and no line feed, because a group of any
+# character matches a bare carriage return. The path of `GET /a\rFAKE HTTP/1.1` then holds
+# two lines of the payload, which the non-space group refused.
+#
+# The path group is lazy, so a first line that holds two version tokens reaches the
+# earlier one, as the non-space group did.
+#
+# The first character of the path group is neither a space nor a horizontal tab, which
+# bounds the work on hostile input. Two adjacent quantifiers that both accept a space
+# admit one split for each space of a run, and the match then costs the square of the line
+# length. This class admits one split for each run, so the cost is the line length. It
+# moves no match, because the greedy separator already consumed every space of the run.
 REQUEST_LINE_PATTERN = (
     r"^([" + METHOD_TOKEN_CHARACTERS + r"]+)"
-    r"\s+(\S+)\s+(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
+    r"[ \t]+([^ \t\r\n][^\r\n]*?)[ \t]+(HTTP/(?:\d+\.\d+|[23]))(?=[ \t\r\n]|$)"
 )
 
 # A sender may end a line with the two bytes `\r\n`, or with one line feed. A parser that

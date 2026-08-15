@@ -221,6 +221,12 @@
     "decided": true,
     "capability": false
   },
+  "gre-erspan-vxlan.pcap/JA4H": {
+    "cause": "The FoxIO Python expected-output file holds no JA4H value for this capture, and ja4plus produces one on frame 4. The FoxIO Wireshark dissector holds that exact value, `ge10nn000000_e3b0c44298fc_000000000000_000000000000`, and `tests/foxio_vectors/wireshark_expected/gre-erspan-vxlan.pcap.json` records it. The frame holds `GET /Hello Arkime HTTP/1.0` and it carries no header, so the value rests on two rulings the maintainer decided on 2026-08-14: the request-line path reads a space, and an empty header list hashes. R19 of `docs/specs/foxio/JA4H.md` holds the second one, #612 records the decision, and #612 is the reversal path.",
+    "issue": 612,
+    "decided": true,
+    "capability": false
+  },
   "gre-sample.pcap/JA4SSH": {
     "cause": "A FoxIO reference defect this project declines to reproduce, decided on #105. finalize_ja4ssh guards with `if stream:`, and the stream index 0 is false in Python, so the reference emits no trailing window for the connection it holds at index 0. ja4plus emits the window for every connection that closes.",
     "decided": true,

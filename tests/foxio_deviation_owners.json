@@ -75,6 +75,11 @@
       "state": "closed",
       "title": "Build both JA4H cookie hashes from one cookie list"
     },
+    "612": {
+      "epic": false,
+      "state": "open",
+      "title": "Read a JA4H request path that holds a space, and rule the empty header list"
+    },
     "96": {
       "epic": false,
       "state": "closed",
