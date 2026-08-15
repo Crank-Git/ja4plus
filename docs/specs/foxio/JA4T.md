@@ -140,8 +140,8 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
 - Corroboration 1: `technical_details/README.md` lines 12 and 13 name `JA4TCP` /
   `JA4T` as `TCP Client Fingerprinting` and `JA4TCPServer` / `JA4TS` as
   `TCP Server Response Fingerprinting`.
-- Corroboration 2: `wireshark/source/packet-ja4.c:1265` marks the SYN and the dissector
-  writes the `JA4T` field for it. Line 1278 marks the SYN-ACK and the dissector writes the
+- Corroboration 2: `wireshark/source/packet-ja4.c:1266` marks the SYN and the dissector
+  writes the `JA4T` field for it. Line 1279 marks the SYN-ACK and the dissector writes the
   `JA4TS` field for it.
 
 ### R9 — JA4T reads only the first SYN of a connection
@@ -159,7 +159,7 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
 - `rust/ja4/src/tcp.rs`, `is_initial_syn`, tests the flags as a mask: SYN set and ACK
   clear. Its own unit test asserts that `0xC2`, a SYN with the two ECN flags, produces a
   fingerprint.
-- `wireshark/source/packet-ja4.c:1265` tests `tcp_flags == 0x02` for equality, so a SYN
+- `wireshark/source/packet-ja4.c:1266` tests `tcp_flags == 0x02` for equality, so a SYN
   that carries an ECN flag produces no JA4T value in the dissector.
 
 ### R11 — The empty part b, the zero part c and the zero part d take the two-digit form
@@ -185,7 +185,7 @@ carries no option.
 
 **The prose and the two implementations part on one input, and `ja4plus` follows the
 implementations.** The prose reads `00` as the mark of an absent field. The two
-implementations read the value instead: `wireshark/source/packet-ja4.c:664` tests
+implementations read the value instead: `wireshark/source/packet-ja4.c:668` tests
 `data->window_scale == 0`, and `zeek/ja4t/main.zeek:206-210` tests
 `syn_opts$window_scale == 0`. Neither one records whether the packet carried the option,
 because each stores the scale as an integer that defaults to zero. A packet that carries
@@ -294,9 +294,9 @@ one case fewer. A RST that carries ACK is common on real traffic, and the narrow
 would drop it.
 
 **`ja4plus` emits no value for a RST on a connection with no delay, where the dissector
-emits the four parts again.** `wireshark/source/packet-ja4.c:1599` writes the `JA4TS`
-field whenever `syn == 3`, and `ja4t()` then omits part e. That second value repeats the
-value the SYN-ACK already produced and describes no packet of its own, which
+emits the four parts again.** `wireshark/source/packet-ja4.c:1599` tests `syn == 3`, and
+line 1608 writes the `JA4TS` field. `ja4t()` then omits part e. That second value repeats
+the value the SYN-ACK already produced and describes no packet of its own, which
 `.claude/rules/conformance.md` declines under its second shape. `zeek/ja4t/main.zeek`
 writes one JA4TS value for one connection and never a second, so the Zeek package
 corroborates the decline.
@@ -454,7 +454,7 @@ R12 states the rule and R2 names the three FoxIO sources.
 **D7 — measured. `ja4ts.py` writes no value on a RST, and the Wireshark dissector writes
 one.**
 
-`wireshark/source/packet-ja4.c:1295` marks a RST, and line 1608 writes a second `JA4TS`
+`wireshark/source/packet-ja4.c:1296` marks a RST, and line 1608 writes a second `JA4TS`
 value from the stored connection values, with the `-R<interval>` suffix. The image's
 example part e ends with `R6`, which corroborates the suffix shape. `ja4ts.py` reads the
 SYN-ACK alone and reaches no RST.

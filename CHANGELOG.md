@@ -6,6 +6,67 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **R10 of the JA4T transcription cites the line that holds the dissector flag test**
+  (#637). Round
+  TBD. **`wireshark/source/packet-ja4.c:1266` reads `if (tcp_flags == 0x02) {`**, and line
+  1265 above it holds the comment `// SYN for this stream - signal JA4T`. R10 cited that
+  comment, so a reader who followed the citation landed above the test it names.
+  **A citation that names a comment is a class of defect, and this round read the whole
+  page.** It read 42 citation sites of `docs/specs/foxio/JA4T.md` against the pinned commit
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved 6. **Four of the six named a
+  comment line.** R8 cited `wireshark/source/packet-ja4.c:1265` and the prose `Line 1278`,
+  R10 cited `wireshark/source/packet-ja4.c:1265`, and the D7 paragraph cited
+  `wireshark/source/packet-ja4.c:1295`. **Two of the six named a code line that carries no
+  fact the sentence states.** R11 cited `wireshark/source/packet-ja4.c:664` for the test
+  `data->window_scale == 0`, which stands at `wireshark/source/packet-ja4.c:668`, and an
+  R13 paragraph cited `wireshark/source/packet-ja4.c:1599` for the write of the `JA4TS`
+  field, which stands at `wireshark/source/packet-ja4.c:1608`. **The other 36 sites read
+  correct, and this round moved none of them.** The page cites `rust/ja4/src/tcp.rs` by
+  function name alone, so no citation of that file carries a line number. **The repair
+  agrees with the divergence register row of #603**, which cites
+  `wireshark/source/packet-ja4.c:1266`. That row stated the defect in the present tense, so
+  this round moved the sentence to the past. **The port carries the same shape at R29 of
+  its own `docs/specs/foxio/JA4T.md`.** It cites `rust/ja4/src/tcp.rs:153`, which holds the
+  comment `// SYN + ECN (ECE + CWR)`, and the assertion `assert!(is_initial_syn(0xC2));`
+  stands at `rust/ja4/src/tcp.rs:154`. **This repository edits no file of the port**, so
+  the port half needs its own issue there. **This round changes no line of `ja4plus`.** New
+  file `tests/test_ja4t_citation_lines.py` holds eight cases over the recorded citations,
+  and a restore of `wireshark/source/packet-ja4.c:1265` fails three of them. **The
+  in-repository citations of the same page reach no case here, and #658 holds them.**
+- **The JA4D and JA4D6 branches read the innermost UDP layer of a packet** (#646). Round
+  TBD. **`ja4plus/fingerprinters/ja4d.py:198` and `ja4plus/fingerprinters/ja4d6.py:267`
+  each read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` takes the layer count as its
+  second parameter `nb`, which defaults to 1, so it returns the first layer of the class
+  counting from the outside, and on a tunneled packet that layer is the UDP header of the
+  tunnel. **Both branches now read `innermost_layer(packet, (UDP,))`**, which
+  `ja4plus/utils/tunnels.py:50` publishes and which `ja4plus/utils/packet_utils.py:107`
+  already reads for the reported port pair. **The defect shape of these two methods is an
+  absent value, and it is not a wrong one.** Each method reads a port range before it reads
+  the payload, `ja4d.py` matches 67, 68 and 4011, and `ja4d6.py` matches 546 and 547. A
+  tunnel port is none of those five, so the outer header failed the port test and the
+  method returned None. **The QUIC branches that #594 repaired held no port test**, so they
+  decoded the tunnel header bytes instead, and #594 filed this issue rather than widen its
+  own scope. **No committed fingerprint moves.** A replay of the 38 captures of
+  `tests/foxio_vectors/` produced 4 JA4D values and 6 JA4D6 values before the change and
+  after it, and the SHA-256 of the whole record read
+  `c0f751b74793e997b8e184c4fed7b76374af71a0f349458b51571a02b0aa7e8b` on both runs. That set
+  holds `gre-sample.pcap`, `gre-erspan-vxlan.pcap` and `tcpdump-geneve.pcap`, which are the
+  three tunneled captures, and none of the three carries DHCP. **The corpus holds 4 DHCPv4
+  messages and 6 DHCPv6 messages**, each on the ports its method matches, and #615 measured
+  the first count. **No capture of the FoxIO corpus carries DHCP inside a tunnel**, so no
+  vector separates the two behaviours and the proving case is constructed. New file
+  `tests/test_dhcp_tunnel_inner_udp.py` holds six cases. It builds one DHCPv4 Discover and
+  one DHCPv6 Solicit inside a VXLAN tunnel, and it compares each value against the
+  untunneled packet that carries the same message bytes. **The four tunneled cases failed
+  against `getlayer` and they pass against `innermost_layer`**, and the untunneled control
+  of each pair passed in both runs, so two absent values pass no case. The two remaining
+  cases read the builder, and they hold the outer ports 40000 and 4789 against the inner
+  ports, so a packet whose outer header already names a DHCP port measures nothing.
+  **The result keeps its form**, which is the outer address pair with the inner port pair.
+  #242 decided that form and this round moves the port half alone. **The change adds no
+  unbounded walk.** `innermost_layer` walks `layer.payload` until `NoPayload`, it indexes
+  nothing and it reads no length field of the packet, so the chain is finite whenever the
+  dissection finished. #594 established that reading and this round checked it again.
 - **The JA4T reader reads the TCP header that an ICMP error message quotes** (#610).
   Round
   TBD. **`ja4plus/fingerprinters/ja4t.py:153` read `if not packet.haslayer(TCP): return
