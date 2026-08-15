@@ -42,6 +42,41 @@ connections for each method.
 
 **Eviction runs on packet arrival, and the library starts no thread.**
 
+## One packet dated in the future evicts every entry
+
+The age pass reads the timestamp of the packet that arrives, and it compares that one
+timestamp against the last-seen time of every entry. A packet dated far in the future
+therefore ages every entry at once, and the pass evicts all of them.
+`ja4plus/utils/state_table.py:414` holds the comparison, inside the loop at line 411.
+
+**Warning: a packet carries its own timestamp, so a sender influences this input.** A
+capture file that the operator did not produce is the reachable case. One packet of such
+a file removes every entry of the state table. A bounded table otherwise lets a sender
+remove one entry with one connection.
+
+**A live capture reaches this property much less often.** It takes the timestamp of each
+packet from the host clock rather than from the sender.
+
+**This project accepts the property, and it changes no line of the age pass.** The
+maintainer ruled it on 2026-08-14, on `Crank-Git/ja4plus-go#577` and on #618. Each
+declined answer invents a rule that no FoxIO source states. A monotonic clock diverges
+from the packet clock on a replayed capture. An offline run of an old capture then evicts
+nothing or everything. A bound on the jump needs a number that no source justifies.
+
+**An age against the highest timestamp seen bounds the forward jump alone.** It does
+nothing about a timestamp that moves backwards.
+
+**A repair in one implementation alone gives the two implementations two age clocks.**
+The Go port holds the same comparison, so a repair changes both repositories.
+
+**The eviction removes fingerprinting state, so a run answers with fewer fingerprints
+rather than with wrong ones.** A connection that sends a packet after the eviction is a
+returned connection, and the section above states that its fingerprint may be incomplete.
+
+**The entry count bound holds the memory, whatever timestamp a packet carries.** That
+bound reads the recency order of the entries, and it reads no timestamp. This property
+therefore grants a sender no memory growth.
+
 ## The default bounds
 
 | Bound | Default |

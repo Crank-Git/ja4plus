@@ -6,6 +6,41 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The concurrency page states that one packet dated in the future evicts every entry of
+  a state table** (#618). Round
+  TBD. **`ja4plus/utils/state_table.py:414` reads
+  `if now - entry[_LAST_SEEN] > self.max_connection_age:` inside the loop at line 411, and
+  `now` is the timestamp of the packet that arrives.** One packet dated far in the future
+  therefore ages every entry at once, and the age pass evicts all of them. **A packet
+  carries its own timestamp, so a sender influences that input**, and a capture file the
+  operator did not produce is the reachable case. **The maintainer ruled answer 1 on
+  2026-08-14**, on `Crank-Git/ja4plus-go#577` and on #618, so both projects accept the
+  property and document it and no line of the age pass changes. Each declined answer
+  invents a rule that no FoxIO source states. A monotonic clock diverges from the packet
+  clock on a replayed capture, a bound on the jump needs a number that no source justifies,
+  and an age against the highest timestamp seen bounds the forward jump alone. **A repair
+  in one implementation alone gives the two implementations two age clocks**, which the
+  parity rules of `CLAUDE.md` exist to prevent. **`docs/concurrency.md` gains the section
+  `## One packet dated in the future evicts every entry`.** It states the property, names
+  the reachable case, gives the reason this project accepts it, and states what the
+  property costs. **The eviction removes fingerprinting state, so a run answers with fewer
+  fingerprints rather than with wrong ones**, and the entry count bound holds the memory
+  whatever timestamp a packet carries, because that bound reads the recency order and no
+  timestamp. **No line of `ja4plus/` changes, and `git diff --stat ja4plus/` reports
+  nothing.** **New file `tests/test_future_dated_packet_eviction.py` holds four cases**,
+  and they read the behaviour rather than the sentence alone. **One reversal measures
+  them.** A bound of `now` to the newest last-seen time of the entries, written into
+  `evict_aged` before the loop, fails
+  `test_one_packet_dated_far_in_the_future_evicts_every_entry` and
+  `test_one_packet_dated_in_the_future_evicts_an_entry_the_next_packet_needs`, and it
+  leaves the control case and the documentation case green. Following #51,
+  `inspect.getsource` of the loaded method in a fresh interpreter reported the mutation
+  present before the run and absent after the restore, and `PYTHONDONTWRITEBYTECODE=1`
+  with a cleared `__pycache__` removed the stale bytecode. **No fingerprint moves.** The
+  conformance suite reports 1642 passed, 142 skipped and 138 xfailed before the change and
+  after it, and `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed
+  cases. **The unit suite rises from 5384 passed to 5388 passed**, and 8 skipped and 8
+  xfailed hold. `pytest --collect-only` reads 7369 cases against 7365 on the base commit.
 - **JA4H fills the sorted raw form, so the `raw` field carries the `JA4H_r` value** (#600).
   Round
   TBD. **`ja4plus/fingerprinters/ja4h.py:70` stated that FoxIO publishes no `JA4H_r` key,
