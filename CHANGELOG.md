@@ -35,8 +35,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   JA4H value or a JA4X value, which are the two methods that read the reassembler. **No
   file under `ja4plus/` changed, so no fingerprint moved and no output field moved.**
   `tests/test_tcp_byte_cap_admission_ruling.py` holds the row and the measurement, in 14
-  cases. The unit suite rises from 5583 collected to 5598, and it reports 5582 passed, 8
-  skipped, 8 xfailed and 114 subtests passed. The conformance suite reports 1676 passed,
+  cases. The unit suite rises from 5583 collected to 5600, which is 14 cases of the new
+  file and 3 cases that parametrize over the tracked Python files. It reports 5584
+  passed, 8 skipped, 8 xfailed and 114 subtests passed. The conformance suite reports 1676 passed,
   142 skipped and 138 xfailed against the 138 keys of `tests/foxio_deviations.json`.
   `ruff check ja4plus/ tests/`, `ruff format --check ja4plus/ tests/` and
   `mypy --strict ja4plus/` report no issue. **The red-to-green is the reversal.** Write
