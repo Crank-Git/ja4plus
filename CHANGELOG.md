@@ -6,8 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- **The FoxIO Rust parity module reads the `ja4ssh` block, and it compares both JA4SSH
-  values it holds** (#671). Round
+- **`tests/test_foxio_rust_parity.py` reads the `ja4ssh` block of a FoxIO Rust snapshot,
+  and it compares both JA4SSH values that block holds** (#671). Round
   TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
   block and the `http` block**, so the 2 `ja4ssh` values reached no case. #638 counted them
   in a sweep of all eleven local snapshots, and one snapshot holds such a block:

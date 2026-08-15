@@ -171,8 +171,8 @@ HTTP_BLOCK_OPENER = "http"
 
 # The method the JA4SSH cases below compare. The values sit in the `ja4ssh` block, which
 # `ja4ssh:` opens at the two-space level. That block writes each value as a bare list item
-# at the same level, so it names no field and the reader takes the value from the block it
-# stands in. #671 added the reading.
+# at the same level. It names no field, so the reader takes a value from the block the
+# line stands in. #671 added the reading.
 SNAPSHOT_SSH_METHOD = "JA4SSH"
 SSH_BLOCK_OPENER = "ja4ssh"
 
@@ -207,9 +207,9 @@ def read_rust_snapshot(path):
 
     The snapshot is a YAML list. Each stream opens with `- stream:` at column 0, and the
     fields of that stream follow at two spaces. A nested block indents further. The
-    reader takes the two-space level, and it enters three nested blocks: `tls_certs` holds
-    the JA4X values, `http` holds the JA4H values and `ja4ssh` holds the JA4SSH values. It
-    ignores `ssh_extras`.
+    reader takes the two-space level, and it enters three nested blocks. `tls_certs` holds
+    the JA4X values, `http` holds the JA4H values, and `ja4ssh` holds the JA4SSH values.
+    The reader ignores `ssh_extras`.
 
     Args:
         path: The path of the snapshot file.
@@ -285,8 +285,8 @@ def read_rust_snapshot(path):
         stripped = line.strip()
         name, separator, value = stripped.partition(": ")
         if not separator:
-            # The `ja4ssh` block writes each value as a bare list item, so the line
-            # carries no field name and the block it stands in is the whole reading.
+            # A value of the `ja4ssh` block carries no field name, so the block decides
+            # this reading. The comment above `SSH_BLOCK_OPENER` states the shape.
             if in_ssh and stripped.startswith("- "):
                 block["ssh"].append(stripped[2:].strip())
                 continue
@@ -748,11 +748,15 @@ def _ssh_value_params():
     """Return one parameter set for every JA4SSH value this module compares.
 
     The list carries no register mark, and each of the two values earns that for its own
-    reason. `tests/test_spec_validation.py` holds the key of the first value and compares
-    it against the FoxIO Python file, so a mark here would xfail two cases against one
-    entry. The register declines the FoxIO Python value of the second one under #97, and
-    the precedence exception of `.claude/rules/external-apis.md` gives that value to the
-    FoxIO Rust snapshot, so a mark here would xfail a case that passes.
+    reason.
+
+    `tests/test_spec_validation.py` holds the key of the first value. It compares that
+    value against the FoxIO Python file, so a mark here would xfail two cases against one
+    entry.
+
+    The register declines the FoxIO Python value of the second one under #97. The
+    precedence exception of `.claude/rules/external-apis.md` gives that value to the FoxIO
+    Rust snapshot, so a mark here would xfail a case that passes.
     """
     return [
         pytest.param(
@@ -1639,7 +1643,12 @@ class TestTheJa4sshValuesTheRustSnapshotHolds:
         `tests/test_spec_validation.py` carries the key of the second window and it
         xfails there against the FoxIO Python value. The same key here marks a case that
         passes, and `strict=True` then fails the suite on a match.
+
+        The check reads the parameter list of this module and the key list of this module,
+        because a mark reaches a case through either one.
         """
+        marked = [param.id for param in _ssh_value_params() if param.marks]
+        assert not marked, "\n".join(marked)
         keys = register_keys()
         assert not [key for key in keys if SNAPSHOT_SSH_METHOD in key]
 
