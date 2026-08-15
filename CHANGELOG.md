@@ -6,6 +6,48 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **`--types` accepts the token `ja4ls`, which selects the JA4LS values alone** (#605).
+  Round
+  TBD. **`VALID_TYPES` of `ja4plus/cli.py` moves from ten tokens to eleven**, and `ja4ls`
+  joins the list after `ja4l`. **`--types ja4l` keeps selecting both latency values**, so
+  no caller of version 1.1.1 sees a change and this round adds a filter rather than
+  narrowing one. **The filter reads the value prefix and never the result type.**
+  `ja4plus/processor.py` sets the type from `_SPEC`, so `JA4LFingerprinter` reports the
+  type `ja4l` for both methods and a filter keyed on the type cannot tell them apart. The
+  new `_selecting_token` of `ja4plus/cli.py` therefore tests
+  `fingerprint.startswith("JA4L-S=")`, which `ja4plus/fingerprinters/ja4l.py:446` writes.
+  **It reads `ja4l` before `ja4ls`**, so a JA4LS value that both tokens select reports at
+  the position of `ja4l`, and a run that names no `--types` option keeps the output order
+  of version 1.1.1. **Parity rule 2 decided the token**, because FoxIO specifies no
+  command-line interface and the Go port shipped one on 2026-08-13 under its issue #61.
+  `cmd/ja4plus/types.go:22` of `Crank-Git/ja4plus-go` holds the token, `:34` holds the
+  same `JA4L-S=` prefix constant, and `admitsResult` at `:85-86` returns
+  `filter["ja4l"] || filter["ja4ls"]`. **The port therefore keeps `ja4l` at both values
+  too**, so the token is additive in both implementations and neither command line breaks.
+  **The two token lists still order the methods differently**, because the port lists
+  `ja4t` and `ja4ts` before `ja4l` where this project lists `ja4l` first, and this round
+  moves no existing token. **Eight cases came first and five of the eight failed**, the
+  three that passed being the guards that `ja4l` selects both values, that a default run
+  selects every method, and that `_parse_types` declines an unknown token.
+  `tests/test_cli_types_ja4ls.py` holds eleven cases, and three of them run the committed
+  capture `tests/foxio_vectors/https-connect.pcap` through `main` and read the JSON lines.
+  **No fingerprint moves**, because this round changes selection and never production. The
+  unit suite reports 4740 passed, 8 skipped and 8 xfailed, and the conformance suite
+  reports 1642
+  passed, 143 skipped and 137 xfailed, against the 137 keys of
+  `tests/foxio_deviations.json`. **One case of `tests/test_method_pages.py` needed a
+  repair, and the repair is the finding of this round.**
+  `test_the_example_of_each_method_page_comes_from_the_capture_it_names` compared the
+  `--types` token of a method page against the `type` value of each result. **A token is
+  no longer a `type` value**, so `ja4ls` matched nothing and the case failed on
+  `tests/foxio_vectors/https-connect.pcap emitted no ja4ls fingerprint`. That case now
+  reads `_selecting_token`, so the token of a page means what it means on the command
+  line. **Six documents state the count, and each one moves from ten tokens to eleven.**
+  `docs/methods/ja4ls.md` states `ja4ls` as its token, `docs/methods/ja4l.md`,
+  `docs/methods/index.md`, `docs/output-schema.md`, `docs/api_reference.md` and
+  `README.md` each state the pair. **The `type` field still holds one of ten values**, and
+  the row of `docs/specs/spec.md` and the docstring of `ja4plus/types.py` now separate that
+  count from the eleven tokens `--types` accepts. Recorded by #605.
 - **The JA4 and JA4S QUIC branches read the innermost UDP layer of a packet** (#594).
   Round
   TBD. **`ja4plus/fingerprinters/ja4.py:422` and `ja4plus/fingerprinters/ja4s.py:83` each

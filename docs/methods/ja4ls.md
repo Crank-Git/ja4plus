@@ -5,14 +5,19 @@ handshake, or the QUIC Initial packet and Handshake packet, and it emits one fin
 for each connection.
 
 **JA4LS and [JA4L](ja4l.md) are two methods, and one fingerprinter writes both.** The
-`--types` option names the two together as `ja4l`, so the output line of a JA4LS value
-carries the type `ja4l`. Read the `JA4L-S=` prefix of the value to tell the two apart.
+output line of a JA4LS value carries the type `ja4l`, because one fingerprinter reports
+one type. Read the `JA4L-S=` prefix of the value to tell the two apart.
+
+**The `--types` option holds one token for each of the two methods.** `--types ja4ls`
+writes the JA4LS values alone. `--types ja4l` writes the JA4L values and the JA4LS values
+together, which is the behaviour of version 1.1.1. #605 added the `ja4ls` token under
+parity rule 2, and the Go port shipped it first.
 
 ## The facts
 
 | Item | Value |
 |---|---|
-| The `--types` token | `ja4l` |
+| The `--types` token | `ja4ls` |
 | The fingerprinter class | `JA4LFingerprinter` |
 | The one-shot function | `generate_ja4l` |
 | The `raw` field | Always `null` |
