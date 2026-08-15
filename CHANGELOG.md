@@ -6,6 +6,37 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the rule that reads a JA4TS delay in whole
+  seconds** (#602). Round
+  TBD. **`ja4plus/fingerprinters/ja4ts.py:63` reads
+  `int(math.copysign(math.floor(abs(delay) + 0.5), delay))`**, so each delay rounds to the
+  nearest second, half away from zero. `_delay_seconds` at
+  `ja4plus/fingerprinters/ja4ts.py:43` holds the rule, part e reads it at `:76`, and the
+  RST suffix reads it at `:189`. **Two FoxIO implementations split on that rounding, and
+  rule 1 settles neither.** `timediff` at `wireshark/source/packet-ja4.c:274` calls the C
+  `round` at `wireshark/source/packet-ja4.c:277`, and part e reads `timediff` at
+  `wireshark/source/packet-ja4.c:687` and the RST delay reads it at
+  `wireshark/source/packet-ja4.c:694`. `zeek/ja4t/main.zeek:180` divides an integer count
+  of microseconds and truncates, and `zeek/ja4t/main.zeek:233` truncates the RST delay the
+  same way. **The deleted `technical_details/JA4T.md` states this rule in prose**, so
+  the prose and the dissector agree and this project follows them. R12 rule 2 of
+  `docs/specs/foxio/JA4T.md` already stated that reading, and the register held no row for
+  it. **This round read all six lines at the pinned commit `27f0cbf9`, and it moved one
+  citation by three lines.** The issue body cites `wireshark/source/packet-ja4.c:684` for
+  the part e delay, and that line holds the guard
+  `if ((conn != NULL) && (conn->syn_ack_count > 1))` above it. **The self-review moved one
+  issue citation as well.** The issue body names `Crank-Git/ja4plus-go#126` for the
+  ruling, and `Crank-Git/ja4plus-go#56` carries the comment
+  `## Ruling: the part e delay rounds to the nearest second. The maintainer ruled on 2026-08-13.`
+  #126 rules on the SYN and the RST that JA4T reads, which is the ruling the row of #603
+  cites. **This round measured the
+  corpus, and the register row states the measurement.** The 38 captures of
+  `tests/foxio_vectors/` produce 54 JA4TS values, 1 of them carries part e, and its one
+  delay is 0.0058 seconds. `ssh2.pcapng` therefore gives `64240_2-1-1-4-1-3_1460_7_0`
+  under each reading, so no vector separates them and a replay under the truncation moves
+  0 of the 54 values. **This round changes no line of `ja4plus`.** New file
+  `tests/test_ja4ts_delay_rounding_ruling.py` holds fourteen cases, and a truncation of
+  `ja4plus/fingerprinters/ja4ts.py:63` fails six of them.
 - **The divergence register records the JA4T SYN selection** (#603). Round
   TBD. **`ja4plus/fingerprinters/ja4t.py:159` reads
   `if not (tcp.flags & TCP_SYN_FLAG) or (tcp.flags & TCP_ACK_FLAG)`**, and `:20-21` hold
