@@ -439,17 +439,33 @@ instead.
 
 ### JA4TS — the fields that agree
 
+The comparison below reads `ja4plus/fingerprinters/ja4ts.py` at commit `0d3480e`, and it
+reads no other commit. **`ja4ts.py` holds 95 lines at `3c01c94`, so eight of the nine line
+numbers this table carried named a line that commit does not hold.** #658 reported that
+state and #668 repaired it.
+
+**`0d3480e` is the last commit of `dev` at which `ja4ts.py` holds every field this table
+names.** #226 wrote part e before it, and #215 moved part a through part d into
+`ja4plus/utils/tcp_options.py` after it. The table above therefore cites `tcp_options.py`
+for those four parts and this one cites `ja4ts.py`, because the two tables read two
+commits.
+
+**Warning: read a pin against the branches of the remote before you write it.** The nine
+numbers this table carried describe `bec84dd4`, which is the commit #226 landed, and no
+remote branch reaches that commit. The clone of depth 1 on the runner cannot fetch it, so
+#668 re-read the nine at `0d3480e` and moved each number there.
+
 | Field | Rule | `ja4ts.py` | Reading |
 |---|---|---|---|
-| Part count and separator | R1 | `ja4ts.py:253` | Agrees. Part a through part d match JA4T, and part e follows them. |
-| Part a, raw window | R3 | `ja4ts.py:224` | Agrees. |
-| Part b order | R4 | `ja4ts.py:232` | Agrees. |
-| Part b separator | R4 | `ja4ts.py:250` | Agrees. |
-| Part c absent | R6 | `ja4ts.py:228` | Agrees. |
-| Part d absent | R7 | `ja4ts.py:229` | Agrees. |
-| Packet selection | R8 | `ja4ts.py:220` | Agrees. `tcp.flags & 0x12 == 0x12` selects the SYN-ACK. |
-| Part e, delay list | R12 | `ja4ts.py:169` | Agrees. `_part_e` writes the delay list and omits it when the server answers once. |
-| Part e, state bound | R12 | `ja4ts.py:18` | Agrees. Ten delays, and a timeout of two minutes. |
+| Part count and separator | R1 | `ja4ts.py:251` | Agrees. Part a through part d match JA4T, and part e follows them. |
+| Part a, raw window | R3 | `ja4ts.py:222` | Agrees. |
+| Part b order | R4 | `ja4ts.py:230` | Agrees. |
+| Part b separator | R4 | `ja4ts.py:248` | Agrees. |
+| Part c absent | R6 | `ja4ts.py:226` | Agrees. |
+| Part d absent | R7 | `ja4ts.py:227` | Agrees. |
+| Packet selection | R8 | `ja4ts.py:218` | Agrees. `tcp.flags & 0x12 == 0x12` selects the SYN-ACK. |
+| Part e, delay list | R12 | `ja4ts.py:167` | Agrees. `_part_e` writes the delay list and omits it when the server answers once. |
+| Part e, state bound | R12 | `ja4ts.py:19-20` | Agrees. Ten delays, and a timeout of two minutes. |
 | RST value | R13 | none | **Absent.** #246 owns it. |
 
 ### JA4TS — the disagreements

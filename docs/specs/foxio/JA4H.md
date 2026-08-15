@@ -397,10 +397,21 @@ This page raises no bound question.
 | d, the sort key | R16 | `ja4h.py:373` | Agrees. The sort reads the name alone and it is stable. |
 | d, no cookie | R17 | `ja4h.py:375` to `ja4h.py:379` | Agrees. `"000000000000"`. |
 | One value per request | R18 | `ja4h.py:116` to `ja4h.py:120` | Agrees for a request the parser reads once. D5 below reports the retransmission case. |
-| b, no header | R19 | `ja4h.py:484` | Agrees with `python/common.py:127` and with `wireshark/source/packet-ja4.c:641`, which hash the empty string. Disagrees with `rust/ja4/src/lib.rs:184` and `zeek/utils/common.zeek:64`, which write the sentinel. R19 holds the ruling of 2026-08-14. |
+| b, no header | R19 | `ja4h.py:484` at commit `dcb43fc` | Agrees with `python/common.py:127` and with `wireshark/source/packet-ja4.c:641`, which hash the empty string. Disagrees with `rust/ja4/src/lib.rs:184` and `zeek/utils/common.zeek:64`, which write the sentinel. R19 holds the ruling of 2026-08-14. |
 | b, `Cookie2` | R22 | `ja4h.py:324` | Agrees with the Rust reference and the dissector. Disagrees with `python/ja4h.py:49`, which R22 marks uncertain. |
 | d, a cookie with no equals sign | R20 | `http_utils.py:100` and `ja4h.py:231` | Agrees with `wireshark/source/packet-ja4.c:1177`. Disagrees with the other two references, which R20 marks uncertain. |
 | The language token end | R23 | `ja4h.py:301` | Agrees with the Python reference and the dissector. Disagrees with `rust/ja4/src/http.rs:293`, which R23 marks uncertain. |
+
+**One row of the table above names its own commit, and every other row reads `1a87f45`.**
+R19 holds the ruling of 2026-08-14, which `dcb43fc` landed after this page took its pin.
+`ja4h.py` writes the sentinel on an empty header list at `1a87f45`, and it hashes the
+empty string at `dcb43fc`, so the row states the later reading. The cited line holds
+`part_b = hashlib.sha256(headers_str.encode()).hexdigest()[:12]` at `dcb43fc`, and
+`ja4h.py` holds 436 lines at `1a87f45`. #668 measured both readings and it moved no line
+number.
+
+**A cell that names a commit overrides the pin of its section**, which is the rule
+`tests/foxio_citation_lines.py` reads. The override reaches that one cell.
 
 ### Two whole captures agree, value for value
 
