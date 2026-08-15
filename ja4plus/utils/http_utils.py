@@ -39,8 +39,15 @@ REQUEST_LINE_PATTERN = (
 # request, and the reference holds a JA4H value for it. #193 records the defect.
 LINE_ENDING_PATTERN = re.compile(r"\r\n|\n")
 
-# The byte groups that end the header block of an HTTP message.
-HEADER_BLOCK_TERMINATORS = (b"\r\n\r\n", b"\n\n")
+# The header block of an HTTP message ends with one line ending followed by another
+# line ending. A line ending is the two bytes `\r\n`, or one line feed. The maintainer
+# ruled the form on 2026-08-14, on `Crank-Git/ja4plus-go#298`.
+#
+# Two literals, `\r\n\r\n` and `\n\n`, held the rule before. Neither one matched
+# `\n\r\n`, so a header block that ends that way reached no value. #614 records the
+# defect. Each alternative starts with its own byte, so the pattern reads no ambiguous
+# match: `\r` starts `\r\n` alone, and a line feed starts itself.
+HEADER_BLOCK_TERMINATOR_PATTERN = re.compile(rb"(?:\r\n|\n)(?:\r\n|\n)")
 
 
 def split_http_lines(text: str) -> list[str]:
@@ -63,16 +70,13 @@ def header_block_end(data: bytes) -> int | None:
         data: The bytes the caller holds.
 
     Returns:
-        The offset, or None when the bytes hold no complete header block.
+        The offset past the first header block terminator, or None when the bytes hold
+        no complete header block.
     """
-    ends = []
-    for terminator in HEADER_BLOCK_TERMINATORS:
-        offset = data.find(terminator)
-        if offset != -1:
-            ends.append(offset + len(terminator))
-    if not ends:
+    match = HEADER_BLOCK_TERMINATOR_PATTERN.search(data)
+    if match is None:
         return None
-    return min(ends)
+    return match.end()
 
 
 def parse_http_request(data: bytes | str) -> dict[str, Any] | None:
