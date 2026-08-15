@@ -6,6 +6,38 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **JA4X hashes an empty object identifier list** (#619). Round
+  TBD. **`ja4plus/fingerprinters/ja4x.py:72` to `:78` substituted the zero sentinel
+  `000000000000` for each of the three parts whose joined list was empty.** The maintainer
+  ruled on 2026-08-14 that an empty list hashes, so each part now reads
+  `hashlib.sha256(part.encode()).hexdigest()[:12]` with no guard, and an empty part reads
+  `e3b0c44298fc`. **The deciding fact is a rank 1 image rule.** The JA4H image states
+  `Truncated SHA256 hash of Headers, in the order they appear` for the hashed part and it
+  names no sentinel there, which R12 of `docs/specs/foxio/JA4H.md` transcribes, and R17 of
+  that page confines the zero sentinel to part c and part d of JA4H. No rule of the JA4X
+  image gives a sentinel to any part. **The ruling reverses the ruling of 2026-08-08 that
+  #228 recorded**, and R8 of `docs/specs/foxio/JA4X.md` now quotes the superseded wording
+  rather than rewrite it. **`Crank-Git/ja4plus-go#582` is the other half**, and it writes
+  `parser.TruncatedHashNoSentinel` into each of the three parts at `ja4x.go:490` to `:492`,
+  so both ports produce `e3b0c44298fc` for an empty part. **Nine cases came first and six of
+  them failed against the committed guard**, among them
+  `test_an_empty_extension_list_hashes`, which read
+  `AssertionError: assert '000000000000' == 'e3b0c44298fc'`. All nine pass against the
+  hashed form. **No committed capture reaches the empty list, so the change moves no
+  fingerprint.** A replay of the 38 captures of `tests/foxio_vectors/` produces 60 JA4X
+  values before the change and 60 after, and the two records are byte identical at SHA-256
+  `07ee974800c623f79026695f37f3c9be380343e3cf394d0cf6266c52d427292f`. **The change removes
+  one relation defect beside the form.** `generate_ja4x_raw` writes an empty part for an
+  empty list, and the earlier form wrote a sentinel that hashes nothing into the same
+  position, so the raw form was not the preimage of the fingerprint on such a part.
+  `test_the_hashed_form_is_the_hash_of_each_part_of_the_raw_form` holds the repaired
+  relation. **`hash12` of `tests/test_foxio_rust_parity.py` keeps the sentinel**, because
+  that reader models the FoxIO Rust snapshot and the Rust implementation writes it. No
+  local snapshot holds an empty part, so the two forms meet no case there. **This round
+  rules nothing on JA4H**, and `Crank-Git/ja4plus#612` carries that half.
+  `tests/test_ja4x_empty_ext.py`, `tests/test_comprehensive.py`, `tests/test_edge_cases.py`
+  and `tests/test_ja4x_deep.py` hold the moved cases.
+
 - **The ServerHello reader bounds the `supported_versions` read on the bytes the record
   holds** (#617). Round
   218. **`ja4plus/utils/tls_utils.py:278` tested `ext_len`, which is the length the packet

@@ -291,16 +291,16 @@ class TestX509EdgeCases(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_generate_ja4x_empty_lists(self):
-        """An empty list writes the zero sentinel, and never the hash of the empty
-        string. The user decided it on 2026-08-08 and R8 of
-        `docs/specs/foxio/JA4X.md` holds the reading."""
+        """An empty list hashes, and it never writes the zero sentinel. The maintainer
+        ruled it on 2026-08-14 and R8 of `docs/specs/foxio/JA4X.md` holds the
+        reading."""
 
         cert_info = {"issuer_rdns": [], "subject_rdns": [], "extensions": []}
         result = generate_ja4x(cert_info)
         self.assertIsNotNone(result)
         parts = result.split("_")
         for part in parts:
-            self.assertEqual(part, "000000000000")
+            self.assertEqual(part, "e3b0c44298fc")
 
 
 # ===========================================================================
