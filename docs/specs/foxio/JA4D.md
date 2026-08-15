@@ -412,8 +412,8 @@ number of this section at that commit, and #668 resolved the issue to it.
 
 **#668 declined `6605a85`, which is the last commit of #231 itself.** No remote branch
 reaches that commit, so the clone of depth 1 on the runner cannot fetch it. `ce2fa544` is
-the first commit of `dev` that carries both files byte for byte as `6605a85` left them, so
-every line number below reads the same at either one.
+the first commit of `dev` that carries both files byte for byte as `6605a85` left them.
+Every line number below therefore reads the same at either commit.
 
 ```
 $ git rev-parse ce2fa544:ja4plus/fingerprinters/ja4d.py 6605a85:ja4plus/fingerprinters/ja4d.py

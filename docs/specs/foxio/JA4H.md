@@ -404,8 +404,8 @@ This page raises no bound question.
 
 **One row of the table above names its own commit, and every other row reads `1a87f45`.**
 R19 holds the ruling of 2026-08-14, which `dcb43fc` landed after this page took its pin.
-`ja4h.py` writes the sentinel on an empty header list at `1a87f45`, and it hashes the
-empty string at `dcb43fc`, so the row states the later reading. The cited line holds
+`ja4h.py` writes the sentinel on an empty header list at `1a87f45`. It hashes the empty
+string at `dcb43fc`, and the row states that later reading. The cited line holds
 `part_b = hashlib.sha256(headers_str.encode()).hexdigest()[:12]` at `dcb43fc`, and
 `ja4h.py` holds 436 lines at `1a87f45`. #668 measured both readings and it moved no line
 number.

@@ -83,9 +83,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   below reads`**, names one or more paths under `ja4plus/`, and names one commit. It governs
   every citation of those paths to the next declaration or to the next `## ` heading. **A
   table cell that names its own commit overrides the declaration above it**, because the
-  cell is the nearer statement. **That rule needs no list a person keeps by hand.** New file
+  cell is the nearer statement. **The override reaches that one cell and never the whole
+  row**, which the self-review of this round raised and two lenses found independently. A
+  Reading cell of the comparison tables narrates a FoxIO commit in prose, so a reader of the
+  whole row would take that commit for the pin of a citation the row carries in another
+  cell. `_cell_of` reads the text between the pipe characters that surround the citation,
+  and one case holds a row whose Reading cell names `dcb43fc` while the citation keeps
+  `1a87f45`. **That rule needs no list a person keeps by hand.** New file
   `tests/foxio_citation_lines.py` holds the reader and new file
-  `tests/test_foxio_citation_lines.py` holds fourteen cases against it. **The condition is
+  `tests/test_foxio_citation_lines.py` holds fifteen cases against it. **The condition is
   that the file holds the cited line at the read the citation declares**, and a range
   citation states two lines and both must exist. **The census reports every page, including
   the six that came back clean**, because a sweep that names what it found alone cannot be

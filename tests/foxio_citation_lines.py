@@ -138,6 +138,27 @@ def _declaration_blocks(lines: list[str]) -> list[tuple[int, list[str], str | No
     return blocks
 
 
+def _cell_of(line: str, position: int) -> str:
+    """Return the table cell of one line that holds the given position.
+
+    **An override reaches the cell that carries the citation, and it reaches no other
+    cell.** A row of the comparison tables holds four cells, and the Reading cell of one row
+    names a FoxIO commit while the citation cell names none. A reader of the whole line
+    would take that FoxIO commit for the pin of the citation.
+
+    Args:
+        line: One line of a page.
+        position: The offset of the citation inside that line.
+
+    Returns:
+        The text between the pipe characters that surround the position. A line that holds
+        no pipe character is one cell, so the whole line comes back.
+    """
+    start = line.rfind("|", 0, position) + 1
+    end = line.find("|", position)
+    return line[start:] if end == -1 else line[start:end]
+
+
 def _section_start(lines: list[str], index: int) -> int:
     """Return the line index of the `## ` heading that holds the given line."""
     for candidate in range(index, -1, -1):
@@ -194,13 +215,13 @@ def read_text(name: str, text: str) -> list[Citation]:
     by_basename = _basename_index(tracked)
     found: list[Citation] = []
     for index, line in enumerate(lines):
-        cell = PIN.search(line)
         for match in CITATION.finditer(line):
             path = resolve_path(match.group(1), tracked, by_basename)
             if path is None:
                 continue
             first = int(match.group(2))
             last = int(match.group(3)) if match.group(3) else first
+            cell = PIN.search(_cell_of(line, match.start()))
             pin = cell.group(1) if cell else None
             if pin is None:
                 section = _section_start(lines, index)

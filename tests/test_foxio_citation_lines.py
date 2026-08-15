@@ -211,6 +211,21 @@ def test_a_cell_that_names_a_commit_overrides_the_pin_of_its_section() -> None:
     )
 
 
+def test_a_commit_in_another_cell_of_the_row_overrides_nothing() -> None:
+    """A Reading cell names a FoxIO commit, and the citation of that row keeps its pin."""
+    row = (
+        "| A field | R1 | `ja4h.py:99999` | FoxIO corrected the value at commit `dcb43fc`, "
+        "and this cell pins no citation. |"
+    )
+    citations = reader.read_text("neighbour.md", f"{REVERSAL_PINNED}{row}\n")
+    neighbour = [citation for citation in citations if citation.page_line == 8]
+    assert len(neighbour) == 1, "the reader read no citation of the added row"
+    assert neighbour[0].pin == "1a87f45", (
+        "the citation cell names no commit, so the declaration of the section decides, and "
+        f"the reader read {neighbour[0].read_against}"
+    )
+
+
 def test_the_census_reports_one_row_for_every_page() -> None:
     """A sweep that names what it found alone cannot be told from one that never ran."""
     census = reader.census()
