@@ -205,6 +205,178 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   skipped and 138 xfailed after it. `tests/foxio_deviations.json` holds 138 keys against
   138 xfailed cases. #671 reads the JA4SSH values of the same file and it follows this
   round.
+- **The lookup reads both forms of an empty-list value** (#639). Round
+  TBD. **FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one
+  writes `000000000000` for an empty list.** This project hashes an empty list instead,
+  under the ruling of 2026-08-14, so it writes `e3b0c44298fc` where a row of that file
+  holds the zero sentinel. Three rows of the bundled file therefore reached no value this
+  library produces: `ja4plus/data/ja4plus-mapping.csv:26` and `:27` for Sliver/Havoc C2
+  Server, and `:35` for Qakbot C2. **All three name malicious tooling, so the loss was a
+  detection loss.** **The mapping file is FoxIO published data, so this round corrects no
+  row of it and forks no upstream file.** The maintainer ruled on 2026-08-15: the lookup
+  reads the two forms as one value. **`000000000000` does not name one thing across JA4+,
+  and that constraint decides the whole shape of the change.** It names an empty object
+  identifier list in every JA4X part, and it names an empty header list in part b of JA4H,
+  which the ruling of 2026-08-14 moved. **It names `no cookie` in part c and part d of
+  JA4H, which R17 and R27 of `docs/specs/foxio/JA4H.md` rule a value in its own right.**
+  R18 is a rank 1 rule and it names no sentinel for the hashed part, so the two forms were
+  never synonyms in those two parts and a blanket fallback would map a real value onto an
+  unrelated one. **The fallback therefore reaches the parts the ruling of 2026-08-14
+  moved, and no other part.** New table `_EMPTY_LIST_PARTS` of `ja4plus/ja4db.py` holds
+  the part count and the part indices of `ja4x` and `ja4h`, and it holds no other method.
+  **The code refuses part c and part d by construction and not by a comment**, because the
+  key of that table is the column name the mapping file gives each row, and the index
+  tuple for `ja4h` names index 1 alone. No reading of a fingerprint string decides which
+  part the ruling reaches, so a JA4 value and a JA4S value gain no alias either, and each
+  of those two still writes the zero sentinel for an empty list. **New function
+  `_empty_list_aliases` builds one alias mapping when the client reads the mapping file**,
+  and `_do_lookup` reads that mapping after the mapping file and before the lookup
+  service. **Every public lookup path reads `_do_lookup`**, so `JA4DBClient.lookup`,
+  `JA4DBClient.lookup_many` and the module-level `lookup` all reach the alias, and a
+  caller cannot tell which path it took. **The alias mapping stands apart from the entries
+  of the file**, because `db info` reports `len(db)` under FR-db-enrichment-11 and an
+  alias inside that mapping would report an entry count the file does not hold. **The
+  remote lookup reads no alias**, because `ja4db.com` holds its own database and a second
+  request would double the disclosure that #57 exists to bound. **A value that holds an
+  empty list at two parts reads both of them**, so `_empty_list_alias_forms` writes every
+  combination of the open parts and not one part at a time. **A read of 2026-08-15
+  measured the reach.** The bundled mapping file holds 70 entries and exactly three gain
+  an alias, which are the three rows above. **Seven JA4H rows of that file hold the
+  sentinel, every one of them in part c or part d, and none of the seven gains an alias.**
+  **The corpus measurement reports that no lookup of a committed capture changes.** The 31
+  distinct JA4X values of `tests/foxio_vectors/*.json` carry the sentinel 0 times and the
+  empty-list hash 0 times, which agrees with the 0 of 120 that #619 measured. **114 of the
+  151 JA4H values of the committed corpus carry the sentinel in part c or part d**, and
+  every one of them is a value that a blanket fallback would have moved; 0 of the 151 gain
+  a match. One value carries the empty-list hash in part b, which agrees with the 1 of 215
+  that #612 measured, and it gains no match because no row of the mapping file holds the
+  sentinel in part b. **This round moves no fingerprint**, and `git diff --stat ja4plus/`
+  names `ja4plus/ja4db.py` alone. The conformance suite reports the counts of its base, and
+  `tests/foxio_deviations.json` holds 138 keys against 138 xfailed cases on both sides.
+  **New file `tests/test_ja4db_empty_list_alias.py` holds 33 cases**, and the failing case
+  came first: on the base commit `test_an_empty_issuer_list_matches_the_first_sliver_row`
+  and `test_an_empty_extension_list_matches_the_qakbot_row` each reported
+  `AssertionError: assert None is not None`, while
+  `test_a_sentinel_in_part_c_of_ja4h_gains_no_match` already passed and it passes still.
+  `docs/specs/features/07-db-enrichment.md` gains FR-db-enrichment-18, FR-db-enrichment-19
+  and the section `### The lookup reads both forms of an empty-list value`, and
+  `docs/api_reference.md` states the same table for a caller.
+
+- **The divergence register records the JA4T emission model of the two libraries** (#667).
+  Round
+  TBD. **`ja4plus` emits one JA4T value for one connection, and `ja4plus-go` emits one for
+  each frame that carries a readable SYN header.** **The values agree and the emission
+  model differs.** #610 measured the divergence while it built the reader of the TCP header
+  an ICMP error message quotes, and no register row held it. **This round re-measured every
+  number against `tests/foxio_vectors/ssh2.pcapng`, which holds 1391 frames.**
+  `quoted_tcp_header` reads 31 frames whose quoted header is a SYN that carries no ACK, and
+  those 31 frames report 10 connections. One `JA4TFingerprinter` over the whole capture
+  produces 19 JA4T values, and 0 of them come from a quoted frame, because a captured SYN
+  of each of the 10 connections already produced the value. `generate_ja4t` with no
+  connection table produces 31 values, and all 31 hold `64240_2-1-3-1-1-4_1460_8`.
+  `ja4t_icmp_quoted_test.go:16` of the port states the same count and the same value.
+  **R9 of `docs/specs/foxio/JA4T.md` gives one value to one connection, and D4 of #215
+  built the connection table that holds it.** A value for each of the 31 frames repeats the
+  value that 10 captured SYN packets already produced, which `.claude/rules/conformance.md`
+  declines under its second shape. **Neither parity rule reaches this divergence.** No
+  FoxIO reference states how often one connection reports, so rule 1 settles nothing, and
+  both libraries shipped opposite readings, so rule 2 names no first mover. **This round
+  moves no fingerprint value and it edits no file under `ja4plus/`.** The unit suite
+  collected 5583 cases before the round and 5599 after, the conformance suite collects 1927
+  before and after, and `tests/foxio_deviations.json` holds 138 keys before and after.
+  **This branch then took `batch/686-lookup-and-guard` again, because #639 landed under
+  it**, and the unit suite reads 5653 cases on that base and 5669 with this round. **The
+  new file holds 13 of those 16 cases, and the other 3 are parameters rather than new
+  cases.** `tests/test_documented_method_count.py`, `tests/test_ruling_vocabulary.py`
+  and `tests/test_statistics_thread_term.py` each hold one case that runs over every Python
+  file of the tree, so a new file adds one parameter to each. **This round edits no line of
+  those three files.**
+  **The port holds no matching record**, because the `## Parity with ja4plus` register of
+  `Crank-Git/ja4plus-go` states no row for the emission model, and the project manager
+  files the port half there. `tests/test_ja4t_emission_model_ruling.py` holds the row and
+  both emission models. **A reversal of the connection gate at
+  `ja4plus/fingerprinters/ja4t.py:178` fails 3 cases of that file, and a deletion of the
+  row fails 5.** The ruling is reversible, and a reversal changes both repositories.
+- **Every repository-owned citation of the transcription pages reads the commit its
+  section pins** (#668). Round
+  TBD. **A `file:line` citation of a file this repository owns goes stale on every change
+  above the cited line, and nothing reported it.** #600 moved one line of `ja4h.py` and its
+  review lens found one falsified citation of `docs/implementation_notes.md`, because the
+  lens read the diff. **The title and the body of #668 state 37 stale citations of
+  `docs/specs/foxio/JA4H.md`, and that is false.** `docs/specs/foxio/JA4H.md:358` declares
+  that its comparison reads the source at commit `1a87f45`, and 50 of the 52
+  repository-owned citations of that page are correct there. **Zero agree with the working
+  tree, which is the correct state of a pinned citation rather than a defect.** A reader
+  that held all 282 citations against the tree would have failed 253 true ones. **The
+  maintainer ruled answer A on 2026-08-15: the pins stand and the guard reads each citation
+  at the commit its section declares.** The ruling also settled the two pin forms answer A
+  left open. **The guard therefore reads two classes, and the section a citation stands in
+  decides the class, never the file it names.** A citation under a pin declaration reads
+  that commit through `git show <commit>:<path>`, and a citation under no pin declaration
+  reads the working tree. **A pin declaration is a sentence that opens with `The comparison
+  below reads`**, names one or more paths under `ja4plus/`, and names one commit. It governs
+  every citation of those paths to the next declaration or to the next `## ` heading. **A
+  table cell that names its own commit overrides the declaration above it**, because the
+  cell is the nearer statement. **The override reaches that one cell and never the whole
+  row**, which the self-review of this round raised and two lenses found independently. A
+  Reading cell of the comparison tables narrates a FoxIO commit in prose, so a reader of the
+  whole row would take that commit for the pin of a citation the row carries in another
+  cell. `_cell_of` reads the text between the pipe characters that surround the citation,
+  and one case holds a row whose Reading cell names `dcb43fc` while the citation keeps
+  `1a87f45`. **That rule needs no list a person keeps by hand.** New file
+  `tests/foxio_citation_lines.py` holds the reader and new file
+  `tests/test_foxio_citation_lines.py` holds fifteen cases against it. **The condition is
+  that the file holds the cited line at the read the citation declares**, and a range
+  citation states two lines and both must exist. **The census reports every page, including
+  the six that came back clean**, because a sweep that names what it found alone cannot be
+  told from one that never ran: `JA4D.md` 63 pinned and 1 unpinned, `JA4H.md` 50 and 2,
+  `JA4L.md` 40 and 1, `JA4S.md` 29 and 5, `JA4SSH.md` 31 and 5, `JA4T.md` 9 and 1,
+  `JA4X.md` 31 and 6, `README.md` 0 and 0, `deleted-text-specifications.md` 0 and 7, and
+  `zeek.md` 0 and 1. **282 citations, 253 pinned and 29 unpinned.** **Ten citations were
+  wrong, and every one of them was right at a commit the page did not name.** The maintainer
+  named nine and the range check found the tenth. `docs/specs/foxio/JA4H.md:400` cites
+  `ja4h.py:484` where `ja4h.py` holds 436 lines at `1a87f45`, and that line holds
+  `part_b = hashlib.sha256(headers_str.encode()).hexdigest()[:12]` at `dcb43fc`, which
+  landed the R19 ruling of 2026-08-14 after the page took its pin. The cell now names
+  `dcb43fc` and the line number did not move. **The nine numbers of the `JA4TS — the fields
+  that agree` table describe `bec84dd4`, and `ja4ts.py` holds 95 lines at the declared
+  `3c01c94`**, which corroborates #658. **No remote branch reaches `bec84dd4`, so the clone
+  of depth 1 on the runner cannot fetch it**, and this round re-read the nine at `0d3480e`
+  instead, which is the last commit of `dev` at which `ja4ts.py` holds every field that
+  table names. **`docs/specs/foxio/JA4D.md` pinned by issue as `after #231`, which no case
+  can resolve.** `6605a85` is the last commit of #231 and no remote branch reaches it
+  either, so the page names `ce2fa544`, which is the first commit of `dev` that carries both
+  files byte for byte as `6605a85` left them. `git rev-parse` reports the same blob
+  identifier `255dbfcc4e131aceeac77e7e43036bab3268d5ed` at both commits, so every line
+  number of that section reads the same at either one. **The tenth defect is
+  `ja4d6.py:298-304`, a range whose last line overran a file of 300 lines**, and it now
+  reads `ja4d6.py:293-300`, which holds `process_packet` and `cleanup_connection`. **A
+  first-line check would have passed it, and the range check refused it.**
+  `.github/workflows/test.yml` gains the step `Fetch the commits the transcription pages
+  pin`, which carries the seven pins to the runner, because the clone of depth 1 reaches
+  none of them. **The step runs one `git fetch` command with seven refspecs**, under the
+  rule #586 measured: each fetch of a shallow clone rewrites `.git/shallow` and a second one
+  then fails. **It names the whole identifier of each commit**, because #528 measured that
+  git resolves no abbreviation at the remote. **Every one of the seven is reachable from
+  `dev`, so no tag has to hold one**, and one case reads the list of the workflow against
+  the pins the pages declare. `tests/test_round_entry_existence.py` gains the fourth step to
+  `FETCH_STEPS`. **Two reversals prove the guard discriminates in both classes.** A citation
+  of line 99999 under the pin of `docs/specs/foxio/JA4H.md` reported
+  `ja4plus/fingerprinters/ja4h.py holds 436 lines at commit 1a87f45`, and one under no pin
+  on `docs/specs/foxio/zeek.md` reported
+  `ja4plus/fingerprinters/ja4l.py holds 658 lines at the working tree`. **Each class also
+  carries a control**, because a guard that refuses everything proves nothing. **This reader
+  stands beside `tests/test_ja4t_citation_lines.py` and it replaces nothing.** That file
+  reads a FoxIO citation at the FoxIO pin against a recorded source line, because this
+  repository holds no copy of `wireshark/source/packet-ja4.c`. **A reader that merged the
+  two would read a FoxIO path against a commit of this repository and a path of this
+  repository against the FoxIO pin, and neither one resolves.** **This round changes no file
+  under `ja4plus/`**, and `git diff --stat ja4plus/` reports nothing. **`docs/implementation_notes.md`
+  stays uncovered**, because the reader reads `docs/specs/foxio/` alone and #600 falsified a
+  citation of that file. **A read of 2026-08-15 measures 19 repository-owned citations
+  there, 0 past the end of their file and 5 naming a blank line or a comment line**, and
+  #690 holds them.
+
 - **The interface table names the Wireshark version and the Zeek version that the FoxIO
   pin records** (#616). Round
   235. **The Wireshark row read `Release 4.4.2`, and no file of the pin

@@ -234,17 +234,22 @@ RECORDED_FETCH = (
 # The step that runs `RECORDED_FETCH`.
 RECORDED_FETCH_STEP = "Fetch the two recorded change sets"
 
+# The step that carries the pins of `docs/specs/foxio/` to the runner. #668 added it, and
+# `tests/foxio_citation_lines.py` reads the reference it writes.
+CITATION_PIN_STEP = "Fetch the commits the transcription pages pin"
+
 # Every step of the `test` job that runs `git fetch`. The first two carry an `if` condition
-# and no event selects both, so the job runs two of these three steps.
+# and no event selects both, so the job runs three of these four steps.
 #
 # **A step that runs one fetch writes `.git/shallow` once, so it needs no repair.**
-# `test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command` holds each of the three
+# `test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command` holds each of the four
 # against that count, and `test_the_workflow_holds_no_fetch_step_this_list_omits` refuses a
-# fourth fetch that reaches no case here.
+# fifth fetch that reaches no case here.
 FETCH_STEPS = (
     "Fetch the base commit of the pull request",
     NO_PULL_REQUEST_STEP,
     RECORDED_FETCH_STEP,
+    CITATION_PIN_STEP,
 )
 
 # The opener of a step of a job of the workflow. A step of `.github/workflows/test.yml`
