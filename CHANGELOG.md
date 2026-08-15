@@ -6,6 +6,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The parity rules now state that a pattern this project takes from the port carries no
+  statement of its cost** (#650). Round
+  TBD. **Parity rule 2 of `CLAUDE.md` adopts the interface the port ships, and it adopts
+  no statement of cost.** Go runs a finite automaton and it backtracks nowhere, Python
+  `re` backtracks, and one pattern therefore costs two amounts. **#612 followed parity rule 2 literally and it shipped a
+  backtracking defect to a branch.** Its own self-review measured `GET a` plus 32000
+  spaces plus `HTTPX` at **3017.9 milliseconds** under the ported form and at **0.630
+  milliseconds** under the repaired one. `is_http_request` reads 8192 bytes of every TCP
+  payload, so one crafted packet bought about 200 milliseconds of processor time.
+  **`.claude/rules/conformance.md` holds the new subsection `### A pattern the port ships
+  carries no statement of its cost`**, under the `## Parity` heading where parity rule 2
+  already stood. It requires a measurement against hostile input before a regular
+  expression from the port lands, and it quotes the two readings of #612. **The `## Parity
+  with ja4plus-go` section of `CLAUDE.md` names the rule file in one sentence**, so a
+  reader of the parity rules reaches the rule and its cause without opening #612. **The
+  subsection also records the repair this project cannot write.** Python accepts the
+  atomic group `(?>...)` from release 3.11, `pyproject.toml:24` reads
+  `requires-python = ">=3.10"`, and a repair that raises that floor is a ruling for the
+  user. **This round changes no file under `ja4plus/` and it moves no fingerprint.** The
+  conformance suite reports 1676 passed, 142 skipped and 138 xfailed on the base commit
+  `dda5ae7` and the same three counts after the change, and
+  `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases. **New file
+  `tests/test_ported_pattern_cost.py` holds ten cases, and five of them failed on that
+  base commit.** The other five drive the two readers of the file in both directions, so
+  a reader that reports nothing fails a case rather than passing every other one. **This
+  round sweeps no regular expression the tree already holds**, and #650 records that
+  boundary.
 - **Nine citations of `.claude/rules/external-apis.md` name a line that file no longer
   holds, and each one now names the line the sentence stands on** (#679). Round
   246. **Line 95 of that file holds the fragment `reaches it.`**, which is the tail of the

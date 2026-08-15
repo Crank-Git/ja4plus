@@ -350,6 +350,32 @@ Where FoxIO specifies nothing — a field name, a default, a subcommand — the 
 `Crank-Git/ja4plus-go` has already shipped a choice. Adopt it. Where FoxIO does specify,
 FoxIO wins, even against the port. `docs/specs/spec.md` holds the divergence register.
 
+### A pattern the port ships carries no statement of its cost
+
+**Parity rule 2 adopts the interface the port ships. It adopts no statement of cost.** Go
+runs a finite automaton, and it backtracks nowhere. Python `re` backtracks. The two
+languages therefore read one pattern at two costs. The rule that carries the shape carries
+no proof that the shape is safe against hostile input.
+
+**Warning: a pattern that is safe in the port is a pattern this project has not
+measured.** Measure a regular expression this project takes from the port against hostile
+input before it lands. State the measurement where the change records its evidence.
+
+**#612 followed parity rule 2 literally, and it shipped a backtracking defect to a
+branch.** Its own self-review found the defect and measured it. `GET a` plus 32000 spaces
+plus `HTTPX` cost **3017.9 milliseconds** under the ported form. The repaired form reads
+the same payload at **0.630 milliseconds**. `is_http_request` reads 8192 bytes of every
+TCP payload, so one crafted packet bought about 200 milliseconds of processor time.
+
+**The rule reaches every construct whose cost differs between a finite automaton and a
+backtracking engine.** A regular expression is the case this project has met.
+
+**Warning: an atomic group states the bound directly, and this project cannot write
+one.** Python accepts `(?>...)` from release 3.11, and `pyproject.toml:24` reads
+`requires-python = ">=3.10"`. A repair that raises the floor of the package is a ruling
+for the user. Verified against https://docs.python.org/3/library/re.html (retrieved
+2026-08-15).
+
 ## Measuring coverage
 
 Use the **directory** form, `--cov=ja4plus`. For one file, use the **path** form,
