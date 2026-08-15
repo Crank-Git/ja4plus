@@ -6,6 +6,40 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The JA4D and JA4D6 branches read the innermost UDP layer of a packet** (#646). Round
+  TBD. **`ja4plus/fingerprinters/ja4d.py:198` and `ja4plus/fingerprinters/ja4d6.py:267`
+  each read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` takes the layer count as its
+  second parameter `nb`, which defaults to 1, so it returns the first layer of the class
+  counting from the outside, and on a tunneled packet that layer is the UDP header of the
+  tunnel. **Both branches now read `innermost_layer(packet, (UDP,))`**, which
+  `ja4plus/utils/tunnels.py:50` publishes and which `ja4plus/utils/packet_utils.py:107`
+  already reads for the reported port pair. **The defect shape of these two methods is an
+  absent value, and it is not a wrong one.** Each method reads a port range before it reads
+  the payload, `ja4d.py` matches 67, 68 and 4011, and `ja4d6.py` matches 546 and 547. A
+  tunnel port is none of those five, so the outer header failed the port test and the
+  method returned None. **The QUIC branches that #594 repaired held no port test**, so they
+  decoded the tunnel header bytes instead, and #594 filed this issue rather than widen its
+  own scope. **No committed fingerprint moves.** A replay of the 38 captures of
+  `tests/foxio_vectors/` produced 4 JA4D values and 6 JA4D6 values before the change and
+  after it, and the SHA-256 of the whole record read
+  `c0f751b74793e997b8e184c4fed7b76374af71a0f349458b51571a02b0aa7e8b` on both runs. That set
+  holds `gre-sample.pcap`, `gre-erspan-vxlan.pcap` and `tcpdump-geneve.pcap`, which are the
+  three tunneled captures, and none of the three carries DHCP. **The corpus holds 4 DHCPv4
+  messages and 6 DHCPv6 messages**, each on the ports its method matches, and #615 measured
+  the first count. **No capture of the FoxIO corpus carries DHCP inside a tunnel**, so no
+  vector separates the two behaviours and the proving case is constructed. New file
+  `tests/test_dhcp_tunnel_inner_udp.py` holds six cases. It builds one DHCPv4 Discover and
+  one DHCPv6 Solicit inside a VXLAN tunnel, and it compares each value against the
+  untunneled packet that carries the same message bytes. **The four tunneled cases failed
+  against `getlayer` and they pass against `innermost_layer`**, and the untunneled control
+  of each pair passed in both runs, so two absent values pass no case. The two remaining
+  cases read the builder, and they hold the outer ports 40000 and 4789 against the inner
+  ports, so a packet whose outer header already names a DHCP port measures nothing.
+  **The result keeps its form**, which is the outer address pair with the inner port pair.
+  #242 decided that form and this round moves the port half alone. **The change adds no
+  unbounded walk.** `innermost_layer` walks `layer.payload` until `NoPayload`, it indexes
+  nothing and it reads no length field of the packet, so the chain is finite whenever the
+  dissection finished. #594 established that reading and this round checked it again.
 - **The divergence register records the segment count bound of one TCP stream, and the
   bound keeps a corrected attribution** (#620). Round
   TBD. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
