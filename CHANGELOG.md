@@ -6,6 +6,29 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **Two JA4D comments name the Wireshark version the pin file records** (#665). Round
+  TBD. **`ja4plus/fingerprinters/ja4d.py:58` and `ja4plus/fingerprinters/ja4d6.py:273`
+  each read `at Wireshark 4.4.2, which .claude/rules/external-apis.md pins`**, and each
+  now reads `v4.6.0`. #616 moved the Wireshark row of that pin file, and the FoxIO pin
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` records the newer release. **The `#define`
+  each comment quotes stays correct.** `epan/dissectors/packet-dhcp.c:1047` holds
+  `#define DHCP_UDP_PORT_RANGE  "67-68,4011"` and `epan/dissectors/packet-dhcpv6.c:396`
+  holds `#define UDP_PORT_DHCPV6_RANGE      "546-547"`, and each statement is
+  byte-identical at release 4.4.2 and at `v4.6.0`. **No port set moves and no fingerprint
+  moves.** The change reaches comment lines alone. A filter that drops every comment line
+  from `git diff -U0` reads empty, and `ast.dump` of each module, with the docstrings
+  stripped, is equal before the change and after it. **The unit suite reports 5357 passed,
+  8 skipped and 8 xfailed**, and the conformance suite reports 1642 passed, 142 skipped
+  and 138 xfailed, which are the counts of the base. `tests/foxio_deviations.json` holds
+  138 keys against 138 xfailed cases. **A sweep of `ja4plus/` read 33 comment lines that
+  name Wireshark, Zeek or the pin file.** The two lines above were false and 31 were
+  clean. **The pin move of #616 stands on `batch/657-tunnel-icmp-citations` and it reaches
+  neither `dev` nor this branch**, so batch #676 merges after batch #657 and never before
+  it. **One further stale citation reaches three files, and this round records it rather
+  than repairs it.** `ja4plus/fingerprinters/ja4l.py:60` names line 95 of the pin file,
+  the sentence it quotes stands at line 123, and `tests/test_ja4l_quic_marker.py:15` and
+  `docs/specs/foxio/JA4L.md:225` each name the same two lines.
+
 - **The divergence register records the segment count bound of one TCP stream, and the
   bound keeps a corrected attribution** (#620). Round
   222. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
