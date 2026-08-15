@@ -9,8 +9,8 @@ The form is `<part a>_<header names>_<sorted cookie names>_<sorted cookie pairs>
 header names hold the wire order in both raw forms, and the cookie order is the one thing
 that separates the two. Both cookie lists sort by the cookie name.
 
-The base value hashes the sorted cookie name string and the sorted cookie pair string, so
-the three fields of a `JA4H_r` value are the pre-image of part b, part c and part d.
+The base value hashes the sorted cookie name string and the sorted cookie pair string. The
+three fields of a `JA4H_r` value are therefore the pre-image of part b, part c and part d.
 
 A request that carries no cookie ends after the header names and one underscore, which is
 the shape `JA4H_ro` already carries. The Wireshark dissector writes two trailing

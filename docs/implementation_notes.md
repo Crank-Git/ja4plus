@@ -1607,7 +1607,7 @@ and it costs 0.630 milliseconds under rule 4. A read of 2026-08-15 measured both
 
 **`is_http_request` reads 8192 bytes of every TCP payload**, so one packet paid about 200
 milliseconds of processor time under the form that rule 4 replaces. `ja4l.py:406` and
-`ja4h.py:137` each call that reader.
+`ja4h.py:142` each call that reader.
 
 **A path that ends with a character other than a space admits one split for each such
 character.** Each split reads the run of spaces after it once, so the cost is the line
