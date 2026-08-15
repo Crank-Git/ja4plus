@@ -6,6 +6,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the segment count bound of one TCP stream, and the
+  bound keeps a corrected attribution** (#620). Round
+  TBD. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
+  one stream stores 4096 segments at most beside its byte bound of 1048576.
+  **FoxIO specifies no resource bound, so rule 1 settles nothing here and no vector decides
+  the value.** The bound is a resource rule that this project shipped first, and rule 2
+  gives the port that interface. `internal/parser/tcp_stream.go:68` holds
+  `DefaultMaxSegments = 4096`, and `Crank-Git/ja4plus-go#596` adopted the value on
+  2026-08-14. **The comment above the constant carried a wrong attribution, and this round
+  measured the corpus again.** The earlier comment gave both the 1336 reading and the 788
+  reading to `http2-with-cookies.pcapng`. A replay of every capture of
+  `tests/foxio_vectors/` through `TCPStreamReassembler` reads 1336 as the largest count
+  without a byte cap, in `http2-with-cookies.pcapng` on the connection
+  `142.250.187.206:443->192.168.2.200:58847`. **It reads 788 as the largest count under the
+  byte cap of 1048576, in `ssh-scp-1050.pcap` on the connection
+  `192.168.1.197:22->192.168.1.169:49237`, which carries port 22.**
+  `http2-with-cookies.pcapng` reads 757 under that byte cap, so the 788 belongs to an SSH
+  stream. **Two readings measured that count, and they agree.** One replays the
+  reassembler, and the other counts each distinct pair of a sequence number and a length
+  with no reassembler at all. `internal/parser/tcp_stream.go:62-65` asked this project to
+  read the attribution again, and the port measures its own 788 on the same connection.
+  **The reassembler holds a byte cap, so 788 is the reading that binds, and 4096 sits above
+  five times it.** Against the 1336 reading 4096 sits above three times it, which is the
+  margin the earlier comment claimed. **This round moves no fingerprint value.** No stream
+  of the 38 captures reaches 4096, and the round changes no executable line of `ja4plus`.
+  New file `tests/test_tcp_segment_bound_ruling.py` holds twenty-two cases. A restore of
+  the earlier comment fails three of them, and a bound of 3072 fails two more.
 - **The divergence register records the rule that reads the JA4D domain character from a
   name** (#615). Round
   TBD. **`ja4plus/fingerprinters/ja4d.py:165` reads
