@@ -28,15 +28,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   carried either wrong citation.** **The corpus cost is eight conformance cases and not
   four, and this round measured it live.** A hash in place of the three sentinel lines
   fails 8 cases of `tests/test_spec_validation.py` over the same four streams, because the
-  `JA4_o` value of each stream carries the sentinel too, and it fails 5 of the 19 new
+  `JA4_o` value of each stream carries the sentinel too, and it fails 5 of the 21 new
   cases. A restore returns both suites to the counts of the base. **No file under
   `ja4plus/` changes and no fingerprint moves.** New file
-  `tests/test_empty_list_sentinel_ruling.py` holds nineteen cases over the row, the three
-  code lines and the four vectors. The unit suite reports 5587 passed, 8 skipped and 8
+  `tests/test_empty_list_sentinel_ruling.py` holds twenty-one cases over the row, the three
+  code lines and the four vectors. The unit suite reports 5591 passed, 8 skipped and 8
   xfailed against a base of 5567 passed, and the conformance suite reports the counts of
-  the base with `tests/foxio_deviations.json` at 138 keys. **The count rises by 20 and the
-  new file holds 19 of them**, because `tests/test_ruling_vocabulary.py` parametrizes over
-  each tracked Python source and a new test file adds one case there.
+  the base with `tests/foxio_deviations.json` at 138 keys. **The passing count rises by 24
+  while the new file holds 21 cases**, because several modules of this suite parametrize
+  over the tracked corpus rather than over a fixed list. `tests/test_ruling_vocabulary.py`
+  is one of them, and it reads every tracked Python source and the prose of every tracked
+  page. **This round states the two measured totals and it attributes no case beyond the
+  new file.**
 - **`tests/test_foxio_rust_parity.py` reads the `ja4ssh` block of a FoxIO Rust snapshot,
   and it compares both JA4SSH values that block holds** (#671). Round
   TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`

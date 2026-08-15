@@ -233,6 +233,24 @@ def test_the_register_names_the_text_specification_of_ja4_and_its_two_rule_lines
     assert "line 176" in row
 
 
+def test_the_register_names_the_transcription_that_holds_the_ja4s_image_rule() -> None:
+    """The row rests the JA4S image quotation on the transcription of this repository."""
+    row = _register_row()
+    assert "`docs/specs/foxio/JA4S.md:49`" in row
+    quoted = "Truncated SHA256 hash of the Extensions, in the order they appear"
+    assert quoted in row
+    assert quoted in _source_line("docs/specs/foxio/JA4S.md", 49)
+
+
+def test_the_register_attributes_the_ja4_image_reading_to_the_issue() -> None:
+    """The row names the source of the one quotation this round did not re-take.
+
+    This repository holds no JA4 transcription, so a reader must know that the
+    `JA4.png` reading rests on #653 and not on a read of this round.
+    """
+    assert "The `JA4.png` reading rests on #653 alone" in _register_row()
+
+
 def test_the_register_states_the_reason_the_specification_gives() -> None:
     """The row quotes the reason FoxIO states beside the rule."""
     quoted = (
