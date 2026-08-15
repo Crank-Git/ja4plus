@@ -33,7 +33,7 @@ import pytest
 
 import ja4plus
 from ja4plus import __all__ as PUBLIC_NAMES
-from ja4plus.cli import VALID_TYPES
+from ja4plus.cli import VALID_TYPES, _selecting_token
 
 from tests.test_documentation_image_count import FOXIO_METHODS
 
@@ -505,10 +505,14 @@ def test_the_example_of_each_method_page_comes_from_the_capture_it_names(method:
     assert examples, f"{method} holds no example"
     token = _fact(method, "The `--types` token")
     for capture, value in examples:
+        # A token is not a `type` value. One fingerprinter writes JA4L and JA4LS, and both
+        # values carry the type `ja4l`, so the token `ja4ls` matches no `type` value at
+        # all. The case therefore reads the selection rule of the command, and the token
+        # of a page then means what it means on the command line.
         produced = {
             fingerprint
             for fingerprint_type, fingerprint in _pairs(capture)
-            if fingerprint_type == token
+            if _selecting_token(fingerprint_type, fingerprint, {token: 0}) == token
         }
         # A capture that emits nothing for the token would make the comparison below
         # vacuous, so this case names that state rather than pass through it.
