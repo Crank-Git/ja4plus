@@ -143,7 +143,7 @@ def _generate_from_quoted_header(
 ) -> str | None:
     """Return the JA4T value of the connection an ICMP error message reports.
 
-    The maintainer ruled split T1 on 2026-08-14, under `Crank-Git/ja4plus-go#484`, and the
+    The maintainer ruled on 2026-08-14, under `Crank-Git/ja4plus-go#484`, and the
     library reads the TCP header that an ICMP error message quotes.
     `wireshark/source/packet-ja4.c:1261` matches the field abbreviation `tcp.flags`
     anywhere in the protocol tree, so the dissector writes a value for such a frame.

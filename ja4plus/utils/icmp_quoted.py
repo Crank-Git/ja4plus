@@ -1,17 +1,17 @@
 """Read the TCP header that an ICMP error message quotes.
 
-The maintainer ruled split T1 on 2026-08-14, under `Crank-Git/ja4plus-go#484`, and the
-library reads that header. `wireshark/source/packet-ja4.c:1261` matches the field
-abbreviation `tcp.flags` anywhere in the protocol tree, so the dissector writes a JA4T
-value for such a frame. `internal/parser/icmp_quoted.go` of `Crank-Git/ja4plus-go` holds
-the same reading, and #610 carries this half.
+The maintainer ruled on 2026-08-14, under `Crank-Git/ja4plus-go#484`, and the library
+reads that header. `wireshark/source/packet-ja4.c:1261` matches the field abbreviation
+`tcp.flags` anywhere in the protocol tree, so the dissector writes a JA4T value for such a
+frame. `internal/parser/icmp_quoted.go` of `Crank-Git/ja4plus-go` holds the same reading,
+and #610 carries this half.
 
-**The quoted bytes are hostile input.** They carry four length fields, and each one names
-bytes the message need not hold. The reader bounds the IP header length, the IP total
-length, the TCP data offset and the TCP option list before it slices. A reader that
+**The quoted datagram is hostile input.** It carries four length fields, and each one
+names bytes the message need not hold. The reader bounds the IP header length, the IP
+total length, the TCP data offset and the TCP option list before it slices. A reader that
 cannot read the quoted header returns nothing, and it raises nothing.
 
-**The reader calls no `scapy` dissector on the quoted bytes.** `TCP(bytes)` raises
+**The reader calls no `scapy` dissector on the quoted datagram.** `TCP(bytes)` raises
 `struct.error` on a truncated option, which `generate_ja4t` catches nowhere. A run of
 200000 random 20-byte to 60-byte headers raised it 9 times, and #610 records that
 measurement. `readQuotedTCPFields` of the Go port declines `DecodeFromBytes` for the
@@ -98,7 +98,7 @@ class QuotedHeader(NamedTuple):
 
 
 def _address(quoted: bytes, offset: int) -> str:
-    """Return one IPv4 address of the quoted header in dotted form.
+    """Return one IPv4 address of the quoted datagram in dotted form.
 
     Args:
         quoted: The quoted IPv4 datagram.
@@ -171,7 +171,7 @@ def quoted_tcp_header(packet: Packet) -> QuotedHeader | None:
 
     Returns:
         The quoted header, or None when the packet carries no ICMP error message and None
-        when the quoted bytes hold no whole TCP header.
+        when the quoted datagram holds no whole TCP header.
     """
     if not packet.haslayer(ICMP):
         return None
@@ -180,8 +180,8 @@ def quoted_tcp_header(packet: Packet) -> QuotedHeader | None:
     if icmp.type not in ICMP_ERROR_TYPES:
         return None
 
-    # `scapy` dissects the quoted bytes as `IPerror`, and `original` holds the bytes that
-    # dissection read. A rebuild from the dissected layers writes its own checksum, so
-    # the reader reads the captured bytes instead.
+    # `scapy` dissects the quoted datagram as `IPerror`, and `original` holds the bytes
+    # that dissection read. A rebuild from the dissected layers writes its own checksum,
+    # so the reader reads the captured bytes instead.
     quoted = getattr(icmp.payload, "original", b"") or b""
     return read_quoted_header(bytes(quoted))

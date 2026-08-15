@@ -1,6 +1,6 @@
 """The JA4T reader reads the TCP header that an ICMP error message quotes.
 
-The maintainer ruled split T1 on 2026-08-14, under `Crank-Git/ja4plus-go#484`, and
+The maintainer ruled on 2026-08-14, under `Crank-Git/ja4plus-go#484`, and
 `Crank-Git/ja4plus-go#494` built the Go half. #610 carries this half.
 `wireshark/source/packet-ja4.c:1261` matches the field abbreviation `tcp.flags` anywhere
 in the protocol tree, so the dissector writes a JA4T value for such a frame.
@@ -8,7 +8,7 @@ in the protocol tree, so the dissector writes a JA4T value for such a frame.
 `scapy` decodes the quoted header as `IPerror` and `TCPerror`, so `haslayer(TCP)` reports
 false and the reader before #610 produced nothing.
 
-Every packet is hostile input. The quoted bytes carry four length fields, and each case
+Every packet is hostile input. The quoted datagram carries four length fields, and each case
 below states which one it moves.
 """
 

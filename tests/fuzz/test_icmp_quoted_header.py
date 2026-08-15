@@ -1,8 +1,8 @@
 """The quoted-header reader raises no exception on a crafted ICMP error message.
 
-#610 reads the TCP header that an ICMP error message quotes. The quoted bytes carry four
-length fields, and each one names bytes the message need not hold: the IP header length,
-the IP total length, the TCP data offset and the TCP option list.
+#610 reads the TCP header that an ICMP error message quotes. The quoted datagram carries
+four length fields, and each one names bytes the message need not hold: the IP header
+length, the IP total length, the TCP data offset and the TCP option list.
 
 Every case reads what the reader produced, because a case that asserts "no exception"
 alone passes where no parser runs. `tests/fuzz/README.md` states that rule, and `spy_on`
@@ -34,9 +34,57 @@ IP_FRAGMENT_OFFSET = 6
 IP_PROTOCOL_OFFSET = 9
 TCP_DATA_OFFSET_BYTE = 32
 
-DECLARED_LENGTHS = (0, 1, 2, 19, 20, 21, 51, 52, 53, 1500, 65535)
-VERSION_BYTES = (0x00, 0x40, 0x44, 0x45, 0x4F, 0x54, 0x65, 0xFF)
-DATA_OFFSET_BYTES = (0x00, 0x40, 0x50, 0x60, 0x80, 0x90, 0xF0)
+# The value the well-formed quote produces, and the two values a cut option list gives.
+WHOLE = "64240_2-1-3-1-1-4_1460_8"
+NO_OPTION = "64240_00_00_00"
+MSS_ALONE = "64240_2_1460_00"
+MSS_KIND_ALONE = "64240_2_00_00"
+
+# The offset of the length byte of the first option, which is the maximum segment size.
+MSS_LENGTH_BYTE = 41
+
+# Each row pairs one crafted field value with the value the reader then produces.
+DECLARED_LENGTHS = (
+    (0, None),
+    (1, None),
+    (2, None),
+    (19, None),
+    (20, None),
+    (21, None),
+    (51, None),
+    (52, WHOLE),
+    (53, WHOLE),
+    (1500, WHOLE),
+    (65535, WHOLE),
+)
+VERSION_BYTES = (
+    (0x00, None),
+    (0x40, None),
+    (0x44, None),
+    (0x45, WHOLE),
+    (0x4F, None),
+    (0x54, None),
+    (0x65, None),
+    (0xFF, None),
+)
+DATA_OFFSET_BYTES = (
+    (0x00, None),
+    (0x40, None),
+    (0x50, NO_OPTION),
+    (0x60, MSS_ALONE),
+    (0x80, WHOLE),
+    (0x90, None),
+    (0xF0, None),
+)
+OPTION_LENGTHS = (
+    (0, NO_OPTION),
+    (1, NO_OPTION),
+    (2, MSS_KIND_ALONE),
+    (3, MSS_KIND_ALONE),
+    (40, NO_OPTION),
+    (200, NO_OPTION),
+    (255, NO_OPTION),
+)
 
 
 def well_formed_quote() -> bytes:
@@ -96,35 +144,54 @@ def read(frame: Ether) -> str | None:
 class TestTheReaderStopsOnADeclaredLength:
     """A declared length that the message does not hold produces no value and no error."""
 
-    @pytest.mark.parametrize("declared", DECLARED_LENGTHS)
-    def test_reads_a_crafted_ip_total_length(self, declared: int, monkeypatch) -> None:
-        """The IP total length names the end of the quoted datagram."""
+    @pytest.mark.parametrize(("declared", "expected"), DECLARED_LENGTHS)
+    def test_reads_a_crafted_ip_total_length(
+        self, declared: int, expected: str | None, monkeypatch
+    ) -> None:
+        """The IP total length names the end of the quoted datagram.
+
+        A value below 52 ends the datagram before the option list, which leaves the
+        reader fewer than 32 transport bytes for a data offset of 8 words.
+        """
         counter = spy_on(monkeypatch, icmp_quoted, "read_quoted_header")
         quoted = bytearray(well_formed_quote())
         quoted[IP_TOTAL_LENGTH_OFFSET : IP_TOTAL_LENGTH_OFFSET + 2] = declared.to_bytes(2, "big")
         result = read(message(bytes(quoted)))
         assert counter.calls == 1
-        assert result is None or isinstance(result, str)
+        assert result == expected
 
-    @pytest.mark.parametrize("version", VERSION_BYTES)
-    def test_reads_a_crafted_version_and_header_length(self, version: int, monkeypatch) -> None:
-        """The low half of byte 0 names the IP header length, in 32-bit words."""
+    @pytest.mark.parametrize(("version", "expected"), VERSION_BYTES)
+    def test_reads_a_crafted_version_and_header_length(
+        self, version: int, expected: str | None, monkeypatch
+    ) -> None:
+        """The low half of byte 0 names the IP header length, in 32-bit words.
+
+        `0x45` is the one value of this list that names version 4 and 20 bytes together.
+        `0x40` names 0 bytes, `0x44` names 16, and `0x4F` names 60 over a 52-byte
+        datagram.
+        """
         counter = spy_on(monkeypatch, icmp_quoted, "read_quoted_header")
         quoted = bytearray(well_formed_quote())
         quoted[IP_VERSION_BYTE] = version
         result = read(message(bytes(quoted)))
         assert counter.calls == 1
-        assert result is None or isinstance(result, str)
+        assert result == expected
 
-    @pytest.mark.parametrize("data_offset", DATA_OFFSET_BYTES)
-    def test_reads_a_crafted_tcp_data_offset(self, data_offset: int, monkeypatch) -> None:
-        """The high half of byte 12 of the TCP header names the data offset."""
+    @pytest.mark.parametrize(("data_offset", "expected"), DATA_OFFSET_BYTES)
+    def test_reads_a_crafted_tcp_data_offset(
+        self, data_offset: int, expected: str | None, monkeypatch
+    ) -> None:
+        """The high half of byte 12 of the TCP header names the data offset.
+
+        A shorter data offset cuts the option list, so part b and part c fall away one
+        option at a time.
+        """
         counter = spy_on(monkeypatch, icmp_quoted, "read_quoted_header")
         quoted = bytearray(well_formed_quote())
         quoted[TCP_DATA_OFFSET_BYTE] = data_offset
         result = read(message(bytes(quoted)))
         assert counter.calls == 1
-        assert result is None or isinstance(result, str)
+        assert result == expected
 
     @pytest.mark.parametrize("protocol", [0, 1, 6, 17, 47, 132, 255])
     def test_reads_a_crafted_ip_protocol(self, protocol: int, monkeypatch) -> None:
@@ -134,7 +201,7 @@ class TestTheReaderStopsOnADeclaredLength:
         quoted[IP_PROTOCOL_OFFSET] = protocol
         result = read(message(bytes(quoted)))
         assert counter.calls == 1
-        assert result == ("64240_2-1-3-1-1-4_1460_8" if protocol == 6 else None)
+        assert result == (WHOLE if protocol == 6 else None)
 
     @pytest.mark.parametrize("flags", [0x0000, 0x2000, 0x4000, 0x0001, 0x1FFF, 0xFFFF])
     def test_reads_a_crafted_fragment_offset(self, flags: int, monkeypatch) -> None:
@@ -145,17 +212,24 @@ class TestTheReaderStopsOnADeclaredLength:
         result = read(message(bytes(quoted)))
         assert counter.calls == 1
         later_fragment = flags & 0x1FFF != 0
-        assert result == (None if later_fragment else "64240_2-1-3-1-1-4_1460_8")
+        assert result == (None if later_fragment else WHOLE)
 
-    @pytest.mark.parametrize("length", [0, 1, 2, 3, 40, 200, 255])
-    def test_reads_a_crafted_option_length(self, length: int, monkeypatch) -> None:
-        """An option length byte names the byte count of that one option."""
+    @pytest.mark.parametrize(("length", "expected"), OPTION_LENGTHS)
+    def test_reads_a_crafted_option_length(self, length: int, expected: str, monkeypatch) -> None:
+        """An option length byte names the byte count of that one option.
+
+        The case moves the length byte of the first option, which is the maximum segment
+        size. A length below 2 and a length past the option field each stop the reader
+        before it records the kind, so part b writes `00`. A length of 2 or 3 records the
+        kind and it reads no value, and the reader then stops inside the option that
+        follows.
+        """
         counter = spy_on(monkeypatch, icmp_quoted, "read_quoted_header")
         quoted = bytearray(well_formed_quote())
-        quoted[20 + 20 + 1] = length
+        quoted[MSS_LENGTH_BYTE] = length
         result = read(message(bytes(quoted)))
         assert counter.calls == 1
-        assert result is None or isinstance(result, str)
+        assert result == expected
 
 
 class TestTheReaderReadsEveryTruncation:
@@ -168,7 +242,7 @@ class TestTheReaderReadsEveryTruncation:
         if keep < 52:
             assert result is None
         else:
-            assert result == "64240_2-1-3-1-1-4_1460_8"
+            assert result == WHOLE
 
 
 class TestTheReaderReadsRandomBytes:
