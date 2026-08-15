@@ -523,8 +523,15 @@ class TestTheOpenRegisterEntries:
             assert deviation.capability is False, key
 
     def test_every_method_filter_entry_names_the_reference_line_that_deletes_the_key(self):
+        """#611 corrected the citation from 339 to 340.
+
+        Line 339 holds the `if` and line 340 holds the `delete_keys` call. The call is
+        the line that deletes the key, so the cause names 340.
+        """
         for key in METHOD_FILTER_KEYS:
-            assert "python/ja4.py:339" in load_register()[key].cause, key
+            cause = load_register()[key].cause
+            assert "python/ja4.py:340" in cause, key
+            assert "python/ja4.py:339" not in cause, key
 
     def test_every_method_filter_entry_states_that_the_comparison_is_unreachable(self):
         """The cause states the reading in exact words, because wrong words read as a pass.

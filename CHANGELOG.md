@@ -6,6 +6,46 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **Two falsified sentences now state the measurement, and a sweep found three more**
+  (#611). Round
+  TBD. **A worker of `Crank-Git/ja4plus-go` read this repository at tag `v1.1.0` and it
+  found both**, and its issue is `Crank-Git/ja4plus-go#376`. **The first sentence names the
+  wrong line of the FoxIO reference.** The cause text of the five JA4L method-filter
+  entries of `tests/foxio_deviations.json` read `python/ja4.py:339` runs
+  `delete_keys(['JA4L-S','JA4L-C'], final)`. This round fetched `python/ja4.py` at the
+  pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` and read the two lines: line 339
+  holds `if 'ja4l' not in output_types:` and line 340 holds the call. **The call is the
+  line that deletes the key, so every live citation now reads 340.** The round moved ten
+  occurrences in the register, one live row of the `Divergence register` table of
+  `docs/specs/spec.md`, and two citations of `docs/specs/foxio/JA4L.md`. **The register
+  holds 138 keys before the change and 138 after it**, and the conformance suite reports
+  138 `xfailed` on both sides. **The round rewrote no dated record**, so `CHANGELOG.md` and
+  the `## Changelog` table keep the line number each past round wrote. **The second
+  sentence states a count that the corpus outgrew.** `docs/specs/foxio/JA4L.md` stated
+  twice that `tests/foxio_vectors/wireshark_expected/` holds two files and that neither
+  carries a JA4L key. #116 added those two files, and #531 raised the directory to 26
+  files. **A read of 2026-08-15 measures 26 files, 15 of them carrying a `ja4.ja4l` key,
+  and 44 `ja4.ja4l` values of which every one carries three parts.** The round corrected
+  both sentences in place, and it quoted each superseded wording under a block quote rather
+  than erase it. **The correction moves no ruling.** D1 rests on the count of the 114 JA4L
+  values of `tests/foxio_vectors/*.json`, this round re-measured that count at 114, and
+  every one of them holds two parts. **A count stated as a standing fact goes stale on the
+  day the corpus grows, so the round swept the class rather than repair two instances.**
+  The sweep read 21 count claims of `docs/specs/foxio/` against the tree, and it found 3
+  more false. `docs/specs/foxio/JA4X.md` states `tests/foxio_vectors/rust_expected/` at ten
+  snapshots on two sentences, and the directory holds 11 since #242 added
+  `ja4__insta@gre-erspan-vxlan.pcap.snap`. That snapshot holds no JA4X value, so the other
+  four rows of the same table stand. `docs/specs/foxio/JA4SSH.md` states ten JA4SSH
+  register entries under three issues, and the register holds 14 under four, because #214
+  registered 5 after the section was written. **The round corrected all three and it
+  reopened no decline.** The 18 clean negatives include the 89 JA4H values across 11
+  captures, the 114 JA4L values across 24 captures, the 194 JA4S values, the 58 JA4TS
+  values of 24 Wireshark files, the 60 JA4X values across 11 files, and the zero JA4D
+  entries of the register. New file `tests/test_wireshark_expected_counts.py` holds twelve
+  cases, and each one measures the tree and requires the document to state the measured
+  number, so the next growth of the corpus fails a run. **This round changes no file under
+  `ja4plus/`.**
+
 - **The concurrency page states that one packet dated in the future evicts every entry of
   a state table** (#618). Round
   TBD. **`ja4plus/utils/state_table.py:414` reads
