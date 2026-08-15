@@ -183,8 +183,8 @@ heading above is the date this release reaches `master`.
 **Version 1.1.1 repairs one crash and it carries no other change.** `_parse_server_hello`
 raised `IndexError` on a crafted ServerHello, and #617 records the whole reading. A record
 that declares two bytes of the `supported_versions` extension and supplies none reached the
-defect, so a crafted packet stopped a caller of the library. The entry of #617 above states
-the repair, the cases and the counts.
+defect. A crafted packet therefore stopped a caller of the library. The entry of #617 above
+states the repair, the cases and the counts.
 
 **The bump is patch and never minor.** The repair moves no published name, it moves no
 output field, and it moves no fingerprint. `requires-python` reads `>=3.10` here, as it

@@ -34,7 +34,7 @@ def _server_hello_record(extension_body: bytes, declared_extension_length: int) 
     body += b"\x00"  # Session identifier length
     body += b"\x13\x01"  # Cipher suite
     body += b"\x00"  # Compression method
-    body += (len(extension) + 2).to_bytes(2, "big")
+    body += len(extension).to_bytes(2, "big")
     body += extension
     handshake = b"\x02" + len(body).to_bytes(3, "big") + bytes(body)
     return b"\x16\x03\x03" + len(handshake).to_bytes(2, "big") + handshake
