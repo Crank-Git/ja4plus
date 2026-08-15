@@ -62,7 +62,9 @@ class TestOnePacketDatedInTheFuture:
         text = (DOCS_DIR / "concurrency.md").read_text(encoding="utf-8")
         for stated in (
             "## One packet dated in the future evicts every entry",
-            "A packet dated far in the future\ntherefore ages every entry at once",
+            # Each phrase below sits on one line of the page, because a phrase that
+            # spans a line break fails this case on a reflow of the paragraph.
+            "therefore ages every entry at once, and the pass evicts all of them.",
             "a sender influences this input",
             "This project accepts the property, and it changes no line of the age pass.",
         ):
