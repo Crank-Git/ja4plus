@@ -117,18 +117,19 @@ offset += 1
 Each rule below carries two corroborations. Neither corroboration is the image. The
 in-repository corroborations read the FoxIO material at the pinned commit.
 
-**Eleven rules reach two corroborations each. The user decided R8, which the image
+**Eleven rules reach two corroborations each. The maintainer ruled R8, which the image
 contradicts.**
 
 | State | Rules |
 |---|---|
 | Two corroborations, and the image agrees | R1, R2, R3, R4, R5, R6, R7, R10 |
 | Two corroborations, and the image states nothing | R9, R11 |
-| Two corroborations, and the image contradicts them | **R8. The user decided it on 2026-08-08, and the ruling is reversible.** |
+| Two corroborations, and the image contradicts one form of them | **R8. The maintainer ruled it on 2026-08-14, and the ruling is reversible.** |
 
 **No rule on this page holds fewer than two corroborations.** R8 was uncertain for the
 opposite reason: the image draws both forms, so the image contradicts its own example.
-**The user settled it, and Changelog round 77 records the ruling.**
+**The maintainer settled it on 2026-08-14, and #619 records the ruling.** A ruling of
+2026-08-08 named the other form, and Changelog round 77 records that one.
 
 ### R1 — JA4X holds three parts, joined with `_`
 
