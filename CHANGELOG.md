@@ -6,6 +6,39 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The interface table names the Wireshark version and the Zeek version that the FoxIO
+  pin records** (#616). Round
+  TBD. **The Wireshark row read `Release 4.4.2`, and no file of the pin
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` records that version.**
+  `.github/workflows/wireshark-release.yml:15`, `:30` and `:55` build the FoxIO plugin at
+  `v4.6.0`, and the row now reads `v4.6.0`. **The table held no row for the Zeek analyzer
+  at all**, because `FoxIO Zeek package` names the FoxIO package and not the host that
+  runs it. `.github/workflows/zeek-test.yml:21` reads `image: zeek/zeek:8.0.0`, and a new
+  row names `8.0.0`. `Crank-Git/ja4plus-go#537` took the same two readings, so the two
+  repositories name one Wireshark version and one Zeek version again. **This round
+  measured whether the move of a version pin moves a line citation, and it moves none.**
+  A `file:line` citation is meaningless without the version it was read at, so the round
+  read every citation of a Wireshark file in this repository before it moved the row.
+  **The FoxIO pin and the Wireshark row pin two different repositories, and 156 of the 161
+  citations belong to the first one.** `wireshark/source/packet-ja4.c` is a file of the
+  FoxIO repository, so the FoxIO pin decides its lines and the Wireshark row reaches
+  `epan/dissectors/` alone. The 26 entries of `RECORDED_CITATIONS` in
+  `tests/test_ja4t_citation_lines.py` therefore stand unmoved, and so does the
+  `packet-ja4.c:1266` citation of the #603 divergence register row. **Five sites cite a
+  core dissector, and no one of the five carries a line number.** Each names a `#define`
+  instead: `epan/dissectors/packet-dhcp.c` states
+  `#define DHCP_UDP_PORT_RANGE  "67-68,4011"` and `epan/dissectors/packet-dhcpv6.c`
+  states `#define UDP_PORT_DHCPV6_RANGE      "546-547"`. **Both statements are
+  byte-identical at release 4.4.2 and at `v4.6.0`**, read at `:1047` and at `:396` of the
+  second version, so D1 and D7 of `docs/specs/foxio/JA4D.md` stand and no ruling of that
+  page moves. `docs/specs/foxio/JA4D.md` keeps its two 2026-08-08 evidence lines and it
+  gains one read of each file at `v4.6.0`. **The round moved no file under `ja4plus/` and
+  no fingerprint.** **Two code comments state a version this round leaves behind, and #665
+  holds them.** `ja4plus/fingerprinters/ja4d.py:58` and
+  `ja4plus/fingerprinters/ja4d6.py:279` each read
+  `at Wireshark 4.4.2, which .claude/rules/external-apis.md pins`, and the second clause of
+  that sentence is now false.
+
 - **R10 of the JA4T transcription cites the line that holds the dissector flag test**
   (#637). Round
   TBD. **`wireshark/source/packet-ja4.c:1266` reads `if (tcp_flags == 0x02) {`**, and line
