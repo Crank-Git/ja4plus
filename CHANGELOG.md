@@ -32,9 +32,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_cli_types_ja4ls.py` holds eleven cases, and three of them run the committed
   capture `tests/foxio_vectors/https-connect.pcap` through `main` and read the JSON lines.
   **No fingerprint moves**, because this round changes selection and never production. The
-  unit suite reports 4740 passed, 8 skipped and 8 xfailed, and the conformance suite
-  reports 1642
-  passed, 143 skipped and 137 xfailed, against the 137 keys of
+  unit suite reports 4740 passed, 8 skipped and 8 xfailed at commit `93a540d`, which is
+  this branch before it took the integration branch again. **It reports 5235 passed on the
+  merged result**, because #628 landed 490 fuzz cases between the two runs. The
+  conformance suite reports 1642
+  passed, 143 skipped and 137 xfailed on both runs, against the 137 keys of
   `tests/foxio_deviations.json`. **One case of `tests/test_method_pages.py` needed a
   repair, and the repair is the finding of this round.**
   `test_the_example_of_each_method_page_comes_from_the_capture_it_names` compared the
