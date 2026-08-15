@@ -69,6 +69,48 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `parser.GetUDPLayer`, which `internal/parser/packet.go:96` documents as the UDP layer of
   the innermost packet. Issue #170 of that repository made the change and pull request #188
   holds its constructed test.
+- **JA4TS publishes the stored four-part value on a reset of a one-SYN-ACK connection**
+  (#609). Round
+  TBD. **The maintainer ruled the question on 2026-08-14, at `Crank-Git/ja4plus-go#484`,
+  and `Crank-Git/ja4plus-go#495` landed the port half.** `SynAckTracker.reset_value` of
+  `ja4plus/fingerprinters/ja4ts.py` returned None until the connection held two SYN-ACK
+  times, so a reset of a connection the server answered once produced no value at all.
+  **The dissector writes the four parts outside the delay guard.**
+  `wireshark/source/packet-ja4.c:1599-1608` copies the window size, the maximum segment
+  size, the window scale and the option list from the stored connection, and
+  `wireshark/source/packet-ja4.c:684` guards the delay list and the reset letter on
+  `conn->syn_ack_count > 1`. **The delay list and the reset letter stay behind that
+  guard**, so a connection that holds two SYN-ACK times keeps the five-part value it
+  produced before, and `MAX_SYN_ACK_DELAYS` holds without a change. **Four cases came
+  first and all four failed against the committed reader**, reading
+  `AttributeError: 'NoneType' object has no attribute 'split'` from
+  `test_that_value_carries_no_delay_and_no_reset_letter` and
+  `AssertionError: None != '65535_2-1-3-1-1-4_65495_8'` from
+  `test_a_reset_on_a_connection_the_server_answered_once_produces_the_stored_parts`.
+  **A replay of the 38 committed captures produces 777 values before and 781 after, and
+  no value of the 777 moved.** All 4 new values are JA4TS values. `ssh2.pcapng` frame 849
+  and frame 850 each write `42600_2-1-1-4-1-3_1300_9`, `browsers-x509.pcapng` frame 174
+  writes `64400_2-1-3-4-0-0_1400_2`, and `browsers-x509.pcapng` frame 119 writes
+  `64240_2-1-3-4-0-0_1460_2`. **The register falls from 140 keys to 137**, against 137
+  `xfailed` cases, so the invariant holds at the new number. The three keys it loses are
+  `ssh2.pcapng/5:57368/JA4TS.2`, `ssh2.pcapng/5:57368/JA4TS.3` and
+  `browsers-x509.pcapng/2:54603/JA4TS.2`, and each one now compares as a pass. **The
+  three keys it keeps carry a client RST, and their cause changes.** The dissector keys
+  the connection by the stream at `wireshark/source/packet-ja4.c:1600`, and
+  `_connection_key` keys it by the server endpoint, so a client RST reaches no stored
+  connection. `Crank-Git/ja4plus-go#502` holds that question. **Frame 119 of
+  `browsers-x509.pcapng` opens one divergence that no register row reaches**, because it
+  is a server RST that carries ACK and `wireshark/source/packet-ja4.c:1296` tests the flag
+  byte for equality. #246 adopted the Zeek reading at `zeek/ja4t/main.zeek:167`, which
+  tests the RST bit alone, so `ja4plus` publishes a value there.
+  `TestTheAckResetDivergence` of `tests/test_foxio_wireshark_ja4ts.py` holds that
+  divergence as a comparison that runs, and `Crank-Git/ja4plus-go#503` holds the
+  consequence. **The conformance suite reports 1635 passed, 143 skipped and 140 xfailed
+  before this round, and 1642 passed, 143 skipped and 137 xfailed after it.** The Wireshark
+  comparison moves from 52 matches and 6 register rows to 55 and 3.
+  `docs/specs/foxio/JA4T.md` states the rule as R13, and the `Divergence register` of
+  `docs/specs/spec.md` names `Crank-Git/ja4plus-go#484` as the reversal path. **This round
+  changes no rounding line**, and #602 owns the rounding of part e.
 - **The ServerHello reader bounds the `supported_versions` read on the bytes the record
   holds** (#617). Round
   218. **`ja4plus/utils/tls_utils.py:278` tested `ext_len`, which is the length the packet
