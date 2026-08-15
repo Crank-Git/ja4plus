@@ -6,6 +6,41 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The JA4T reader reads the TCP header that an ICMP error message quotes** (#610).
+  Round
+  TBD. **`ja4plus/fingerprinters/ja4t.py:153` read `if not packet.haslayer(TCP): return
+  None`**, and `scapy` decodes a quoted header as `IPerror` and `TCPerror`, so that test
+  reported false and the reader produced nothing. New file
+  `ja4plus/utils/icmp_quoted.py` reads the quoted bytes, and
+  `_generate_from_quoted_header` of `ja4plus/fingerprinters/ja4t.py` calls it. **The
+  maintainer ruled split T1 on 2026-08-14, under `Crank-Git/ja4plus-go#484`**, and
+  `Crank-Git/ja4plus-go#494` built the Go half in `internal/parser/icmp_quoted.go`.
+  `wireshark/source/packet-ja4.c:1261` matches the field abbreviation `tcp.flags`
+  anywhere in the protocol tree, so the dissector writes a JA4T value for such a frame.
+  **The reader reads five ICMP types, and RFC 792 names them.** They are `3` destination
+  unreachable, `4` source quench, `5` redirect, `11` time exceeded and `12` parameter
+  problem. The Go half reads the same five. **The quoted bytes are hostile input, and the
+  reader bounds four length fields before every slice.** `read_quoted_header` bounds the
+  IP header length, it keeps the carried length where the IP total length declares more,
+  it bounds the TCP data offset, and `read_options` of `ja4plus/utils/tcp_options.py`
+  bounds the option list. It returns nothing for an IP version other than 4, for a
+  protocol other than TCP and for a later fragment. **The reader calls no `scapy`
+  dissector on the quoted bytes.** `TCP(bytes)` raises `struct.error`, which
+  `generate_ja4t` catches nowhere, and a run of 200000 random 20-byte to 60-byte headers
+  raised it 9 times. **R9 gives one value to one connection, and the key reads the quoted
+  header.** The outer address pair of the message names a router and the client, so it
+  names no endpoint of the connection the value describes. **This round measured the
+  corpus, and it moves no fingerprint value.** `ssh2.pcapng` carries 32 ICMP messages, 31
+  of them quote a SYN and frame 197 quotes an ACK, and those 31 messages report 11
+  connections. A captured SYN of every one of the 11 already reached the reader, so R9
+  suppresses all 31 and a replay of the 38 captures of `tests/foxio_vectors/` reads the
+  same 64 JA4T values before and after. **The dissector writes one value for each frame
+  and this project writes one for each connection, and this round records that
+  difference.** `tests/foxio_vectors/wireshark_expected/ssh2.pcapng.json` holds 75
+  `ja4.ja4t` values over 136 frames, and `ja4plus` writes 19 for that capture. New file
+  `tests/test_ja4t_icmp_quoted.py` holds thirty cases and new file
+  `tests/fuzz/test_icmp_quoted_header.py` holds one hundred and two cases. A restore of the
+  `haslayer(TCP)` guard fails eleven of the thirty.
 - **The divergence register records the segment count bound of one TCP stream, and the
   bound keeps a corrected attribution** (#620). Round
   TBD. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
