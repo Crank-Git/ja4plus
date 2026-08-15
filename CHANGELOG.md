@@ -6,6 +6,63 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The lookup reads both forms of an empty-list value** (#639). Round
+  TBD. **FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one
+  writes `000000000000` for an empty list.** This project hashes an empty list instead,
+  under the ruling of 2026-08-14, so it writes `e3b0c44298fc` where a row of that file
+  holds the zero sentinel. Three rows of the bundled file therefore reached no value this
+  library produces: `ja4plus/data/ja4plus-mapping.csv:26` and `:27` for Sliver/Havoc C2
+  Server, and `:35` for Qakbot C2. **All three name malicious tooling, so the loss was a
+  detection loss.** **The mapping file is FoxIO published data, so this round corrects no
+  row of it and forks no upstream file.** The maintainer ruled on 2026-08-15: the lookup
+  reads the two forms as one value. **`000000000000` does not name one thing across JA4+,
+  and that constraint decides the whole shape of the change.** It names an empty object
+  identifier list in every JA4X part, and it names an empty header list in part b of JA4H,
+  which the ruling of 2026-08-14 moved. **It names `no cookie` in part c and part d of
+  JA4H, which R17 and R27 of `docs/specs/foxio/JA4H.md` rule a value in its own right.**
+  R18 is a rank 1 rule and it names no sentinel for the hashed part, so the two forms were
+  never synonyms in those two parts and a blanket fallback would map a real value onto an
+  unrelated one. **The fallback therefore reaches the parts the ruling of 2026-08-14
+  moved, and no other part.** New table `_EMPTY_LIST_PARTS` of `ja4plus/ja4db.py` holds
+  the part count and the part indices of `ja4x` and `ja4h`, and it holds no other method.
+  **The code refuses part c and part d by construction and not by a comment**, because the
+  key of that table is the column name the mapping file gives each row, and the index
+  tuple for `ja4h` names index 1 alone. No reading of a fingerprint string decides which
+  part the ruling reaches, so a JA4 value and a JA4S value gain no alias either, and each
+  of those two still writes the zero sentinel for an empty list. **New function
+  `_empty_list_aliases` builds one alias mapping when the client reads the mapping file**,
+  and `_do_lookup` reads that mapping after the mapping file and before the lookup
+  service. **Every public lookup path reads `_do_lookup`**, so `JA4DBClient.lookup`,
+  `JA4DBClient.lookup_many` and the module-level `lookup` all reach the alias, and a
+  caller cannot tell which path it took. **The alias mapping stands apart from the entries
+  of the file**, because `db info` reports `len(db)` under FR-db-enrichment-11 and an
+  alias inside that mapping would report an entry count the file does not hold. **The
+  remote lookup reads no alias**, because `ja4db.com` holds its own database and a second
+  request would double the disclosure that #57 exists to bound. **A value that holds an
+  empty list at two parts reads both of them**, so `_empty_list_alias_forms` writes every
+  combination of the open parts and not one part at a time. **A read of 2026-08-15
+  measured the reach.** The bundled mapping file holds 70 entries and exactly three gain
+  an alias, which are the three rows above. **Seven JA4H rows of that file hold the
+  sentinel, every one of them in part c or part d, and none of the seven gains an alias.**
+  **The corpus measurement reports that no lookup of a committed capture changes.** The 31
+  distinct JA4X values of `tests/foxio_vectors/*.json` carry the sentinel 0 times and the
+  empty-list hash 0 times, which agrees with the 0 of 120 that #619 measured. **114 of the
+  151 JA4H values of the committed corpus carry the sentinel in part c or part d**, and
+  every one of them is a value that a blanket fallback would have moved; 0 of the 151 gain
+  a match. One value carries the empty-list hash in part b, which agrees with the 1 of 215
+  that #612 measured, and it gains no match because no row of the mapping file holds the
+  sentinel in part b. **This round moves no fingerprint**, and `git diff --stat ja4plus/`
+  names `ja4plus/ja4db.py` alone. The conformance suite reports the counts of its base, and
+  `tests/foxio_deviations.json` holds 138 keys against 138 xfailed cases on both sides.
+  **New file `tests/test_ja4db_empty_list_alias.py` holds 33 cases**, and the failing case
+  came first: on the base commit `test_an_empty_issuer_list_matches_the_first_sliver_row`
+  and `test_an_empty_extension_list_matches_the_qakbot_row` each reported
+  `AssertionError: assert None is not None`, while
+  `test_a_sentinel_in_part_c_of_ja4h_gains_no_match` already passed and it passes still.
+  `docs/specs/features/07-db-enrichment.md` gains FR-db-enrichment-18, FR-db-enrichment-19
+  and the section `### The lookup reads both forms of an empty-list value`, and
+  `docs/api_reference.md` states the same table for a caller.
+
 - **The interface table names the Wireshark version and the Zeek version that the FoxIO
   pin records** (#616). Round
   235. **The Wireshark row read `Release 4.4.2`, and no file of the pin
