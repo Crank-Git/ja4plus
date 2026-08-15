@@ -6,6 +6,43 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the segment one TCP stream refuses at its byte cap**
+  (#654). Round
+  TBD. **#620 measured 757 segments here and 750 in the port, on the stream
+  `142.250.187.206:443->192.168.2.200:58847` of `http2-with-cookies.pcapng`, and it found
+  no cause.** This round found the cause, and the cause is the byte cap alone. **The two
+  ports read one feed.** A replay of that capture offers 1336 segments in one order to
+  each port, and a replay under a byte cap of 1000000000000 stores all 1336 segments and
+  1853328 bytes in each. **One segment separates the two ports, and eight more follow from
+  it.** The 750th segment of the feed carries the sequence number 741489929 and 1412
+  bytes. `ja4plus/utils/tcp_stream.py:151` reads
+  `if stream["bytes"] + len(data) > self.max_stream_bytes`, so this project refuses that
+  segment and then admits eight later segments that still fit, which carry 1140 bytes.
+  `internal/parser/tcp_stream.go:170` reads `if stream.storedBytes >= r.storedByteBound()`
+  and adds the length of no segment, so the port admits that segment and refuses every
+  segment after it. **Eight against one is the seven.** **Each port holds a rule the other
+  breaks.** This project stores 1048554 bytes, which holds acceptance criterion 1 of #33:
+  `One stream holds no more than the configured byte cap, whatever the segment count.` The
+  port stores 1048826 bytes, which crosses the cap by 250, and it keeps the contiguous run
+  whole. `get_stream` returns 1047414 bytes on this stream and `GetStream` returns
+  1048576, so the refusal opens a gap and 1140 stored bytes stand past it. **Rule 2 and
+  #33 collide, so this round adopts neither form and the user decides.** FoxIO specifies
+  no resource bound, so rule 1 settles nothing, and `Crank-Git/ja4plus-go#567` shipped the
+  form of the port. **This divergence moves no fingerprint value.** A replay of all 38
+  captures of `tests/foxio_vectors/` through each port reports one stream where the stored
+  count differs, and it is the stream above. Both command-line programs read
+  `http2-with-cookies.pcapng` and each writes the same seven values, and neither writes a
+  JA4H value or a JA4X value, which are the two methods that read the reassembler. **No
+  file under `ja4plus/` changed, so no fingerprint moved and no output field moved.**
+  `tests/test_tcp_byte_cap_admission_ruling.py` holds the row and the measurement, in 14
+  cases. The unit suite rises from 5583 collected to 5598, and it reports 5582 passed, 8
+  skipped, 8 xfailed and 114 subtests passed. The conformance suite reports 1676 passed,
+  142 skipped and 138 xfailed against the 138 keys of `tests/foxio_deviations.json`.
+  `ruff check ja4plus/ tests/`, `ruff format --check ja4plus/ tests/` and
+  `mypy --strict ja4plus/` report no issue. **The red-to-green is the reversal.** Write
+  `if stream["bytes"] >= self.max_stream_bytes` on line 151 and 6 cases fail, and this
+  project then reads 750 segments and 1048826 stored bytes, which is the reading of the
+  port. Restore the line and all 14 cases pass.
 - **`tests/test_foxio_rust_parity.py` reads the `ja4ssh` block of a FoxIO Rust snapshot,
   and it compares both JA4SSH values that block holds** (#671). Round
   TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
