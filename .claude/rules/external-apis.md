@@ -245,7 +245,7 @@ ports where `packet-ja4.c` names none.
 `.github/workflows/wireshark-release.yml:15`, `:30` and `:55` build the FoxIO plugin at
 `v4.6.0`. `.github/workflows/zeek-test.yml:21` runs the FoxIO Zeek tests at
 `image: zeek/zeek:8.0.0`. This project picks neither version. #616 moved the Wireshark row
-from release 4.4.2, which no file of the pin records, and it added the Zeek analyzer row.
+from release 4.4.2, which no file of the pin records. #616 added the Zeek analyzer row.
 
 **Warning: read a citation of a FoxIO file at the FoxIO pin, and never at either core
 row.** `wireshark/source/packet-ja4.c` and `zeek/ja4t/main.zeek` belong to the FoxIO
@@ -256,8 +256,8 @@ rows therefore move no citation of a FoxIO file.
 **No core dissector citation of this repository carries a line number, and #616 measured
 that.** Five sites cite a core dissector, and each one names a `#define` rather than a
 line. `epan/dissectors/packet-dhcp.c` and `epan/dissectors/packet-dhcpv6.c` each hold that
-statement byte-identical at release 4.4.2 and at `v4.6.0`, so this move leaves every
-ruling of `docs/specs/foxio/JA4D.md` in place.
+statement byte-identical at release 4.4.2 and at `v4.6.0`. This move therefore leaves
+every ruling of `docs/specs/foxio/JA4D.md` in place.
 
 Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.6.0/epan/dissectors/packet-dhcp.c (Wireshark 4.6.0, retrieved 2026-08-15)
 Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.6.0/epan/dissectors/packet-dhcpv6.c (Wireshark 4.6.0, retrieved 2026-08-15)
