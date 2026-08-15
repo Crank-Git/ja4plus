@@ -6,6 +6,46 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The FoxIO Rust parity module reads the `http` block, and it compares five of the six
+  JA4H values it holds** (#670). Round
+  TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
+  block alone**, so the 6 `ja4h` values of the `http` block reached no case. #638 counted
+  them in a sweep of all eleven local snapshots. The reader now enters both nested blocks,
+  and `RustStream` carries the JA4H values of a stream beside its JA4X values. **The six
+  values sit in five snapshots**: `chrome-cloudflare-quic-with-secrets.pcapng` holds 1,
+  `https-connect.pcap` holds 1, `latest.pcapng` holds 1, `ssh2.pcapng` holds 2 and
+  `tls3.pcapng` holds 1. **Five of the six agree across all three producers.** The FoxIO
+  Rust snapshot, the FoxIO Python expected-output file and `ja4plus` each hold
+  `co10nn010000_b8bcd45ac095_000000000000_000000000000` on `https-connect.pcap`,
+  `ge11nn07enus_3e3b55d61660_000000000000_000000000000` on `latest.pcapng` and on
+  `tls3.pcapng`, and `ge11nn030000_9ab90a797ba7_000000000000_000000000000` on both streams
+  of `ssh2.pcapng`. **The sixth value reaches no comparison, and the register already
+  declines it.** `chrome-cloudflare-quic-with-secrets.pcapng` stream 0 on port 57098 reads
+  `ge20nn16enus_0f5a7a41a252_000000000000_000000000000` in the Rust snapshot and
+  `ge20nn12enus_60f823d07c94_000000000000_000000000000` in the Python file, and `ja4plus`
+  produces no JA4H value there. The capture carries the TLS secrets, both references
+  decrypt the QUIC traffic, and `ja4plus` reads no encrypted request under the ruling
+  Changelog round 26 settled. `tests/foxio_deviations.json` holds
+  `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1` against #129 with
+  `"capability": true`, and `http_capability_decline` reads that field rather than the
+  prose of the cause. **The two FoxIO references disagree on that one value as well**, and
+  `.claude/rules/external-apis.md` gives such a stream to `python/test/testdata/`, so the
+  Rust value decides nothing there. **The #138 omission rule reaches none of the six**,
+  because the Python file publishes a JA4H value on every one of the six streams. This
+  module is therefore a second reference on a value `tests/test_spec_validation.py`
+  already compares, and it adds no register key, so no case here carries a mark. **No
+  snapshot writes a `ja4h_r` field**, so the comparison reaches no raw form. `ja4plus`
+  publishes the original-order raw form as `JA4H_ro`, `tests/conformance_index.py` indexes
+  it, and the five comparable streams produce the `JA4H_ro` value the Python file holds.
+  New classes `TestTheJa4hValuesTheRustSnapshotHolds` and
+  `TestTheQuicStreamTheRegisterDeclines` hold ten cases and five JA4H comparisons. **The
+  comparison discriminates**: a snapshot value of `ge11nn07enus_3e3b55d61661` on
+  `latest.pcapng` reads 1 failed and 15 passed, and the restored value reads 16 passed.
+  **No file under `ja4plus/` changes and no fingerprint moves.** The conformance suite
+  reports 1642 passed, 142 skipped and 138 xfailed before the change, and 1660 passed, 142
+  skipped and 138 xfailed after it. `tests/foxio_deviations.json` holds 138 keys against
+  138 xfailed cases. #671 reads the JA4SSH values of the same file and it follows this
+  round.
 - **The interface table names the Wireshark version and the Zeek version that the FoxIO
   pin records** (#616). Round
   TBD. **The Wireshark row read `Release 4.4.2`, and no file of the pin

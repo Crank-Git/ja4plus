@@ -161,6 +161,14 @@ ZERO_SENTINEL = "000000000000"
 # other two-space line closes the block, because it names a field of the stream itself.
 CERTIFICATE_BLOCK_OPENERS = ("tls_certs", "- x509")
 
+# The method the JA4H cases below compare, and the field name the snapshot writes for it.
+# The value sits in the `http` block, which `http:` opens at the two-space level. Its one
+# list writes `- ja4h: <value>` at that same level, so the reader tells the value from a
+# field of the stream by the block it stands in. #670 added the reading.
+SNAPSHOT_HTTP_METHOD = "JA4H"
+SNAPSHOT_HTTP_FIELD = "ja4h"
+HTTP_BLOCK_OPENER = "http"
+
 # The address fields the Rust snapshot writes for each stream.
 SNAPSHOT_ADDRESS_FIELDS = ("src", "dst", "src_port", "dst_port")
 
@@ -174,6 +182,7 @@ class RustStream(NamedTuple):
         src_port: The source port the snapshot gives.
         values: A map of method name to value.
         certs: The JA4X values of the stream, in the order the snapshot writes them.
+        http: The JA4H values of the stream, in the order the snapshot writes them.
     """
 
     identity: tuple
@@ -181,6 +190,7 @@ class RustStream(NamedTuple):
     src_port: str
     values: dict
     certs: list
+    http: list
 
 
 def read_rust_snapshot(path):
@@ -188,8 +198,8 @@ def read_rust_snapshot(path):
 
     The snapshot is a YAML list. Each stream opens with `- stream:` at column 0, and the
     fields of that stream follow at two spaces. A nested block indents further. The
-    reader takes the two-space level, and it enters the `tls_certs` block alone, because
-    that block holds the JA4X values. It ignores `http` and `ssh_extras`.
+    reader takes the two-space level, and it enters two nested blocks: `tls_certs` holds
+    the JA4X values and `http` holds the JA4H values. It ignores `ssh_extras`.
 
     Args:
         path: The path of the snapshot file.
@@ -208,6 +218,7 @@ def read_rust_snapshot(path):
     streams = {}
     block = None
     in_certificates = False
+    in_http = False
 
     def close(block):
         if block is None:
@@ -226,16 +237,24 @@ def read_rust_snapshot(path):
                 src_port=block["src_port"],
                 values=dict(block["values"]),
                 certs=list(block["certs"]),
+                http=list(block["http"]),
             )
             return
         held.values.update(block["values"])
         held.certs.extend(block["certs"])
+        held.http.extend(block["http"])
 
     for line in path.read_text().splitlines():
         if line.startswith("- stream:"):
             close(block)
-            block = {"index": line.partition(": ")[2].strip(), "values": {}, "certs": []}
+            block = {
+                "index": line.partition(": ")[2].strip(),
+                "values": {},
+                "certs": [],
+                "http": [],
+            }
             in_certificates = False
+            in_http = False
             continue
         if block is None:
             continue
@@ -251,11 +270,20 @@ def read_rust_snapshot(path):
         stripped = line.strip()
         name, separator, value = stripped.partition(": ")
         if not separator:
-            # A two-space line that carries no value opens the certificate block or
-            # closes it. `ja4ssh:`, `http:` and `ssh_extras:` each close it.
-            in_certificates = stripped.rstrip(":") in CERTIFICATE_BLOCK_OPENERS
+            # A two-space line that carries no value opens one nested block and closes
+            # every other one. `ja4ssh:` and `ssh_extras:` open neither block this
+            # reader enters, so each one closes both.
+            opener = stripped.rstrip(":")
+            in_certificates = opener in CERTIFICATE_BLOCK_OPENERS
+            in_http = opener == HTTP_BLOCK_OPENER
+            continue
+        # The `http` block writes its one list at the two-space level, so the block the
+        # line stands in tells a JA4H value from a field of the stream.
+        if in_http and name == "- {}".format(SNAPSHOT_HTTP_FIELD):
+            block["http"].append(value.strip())
             continue
         in_certificates = False
+        in_http = False
         if name in SNAPSHOT_ADDRESS_FIELDS:
             block[name] = value.strip()
         for method, field in SNAPSHOT_METHODS:
@@ -265,7 +293,7 @@ def read_rust_snapshot(path):
 
     # `gre-erspan-vxlan.pcap` holds a JA4T value and no handshake value, so a check for
     # the `JA4` name alone rejects it. Every method this module compares counts here.
-    assert any(stream.values or stream.certs for stream in streams.values()), (
+    assert any(stream.values or stream.certs or stream.http for stream in streams.values()), (
         "{} holds no value this module compares".format(path)
     )
     return streams
@@ -530,6 +558,112 @@ def _certificate_raw_params():
         )
         for capture in certificate_captures()
         for case in certificate_cases(capture)
+    ]
+
+
+class HttpCase(NamedTuple):
+    """One JA4H value that the FoxIO Rust snapshot of one stream holds.
+
+    Attributes:
+        identity: The direction-free stream identity.
+        index: The stream index the snapshot gives.
+        src_port: The source port the snapshot gives.
+        occurrence: The position of the value in the `http` block, counted from 1.
+        value: The value the snapshot holds.
+    """
+
+    identity: tuple
+    index: str
+    src_port: str
+    occurrence: int
+    value: str
+
+
+def http_cases(capture):
+    """Return every JA4H value the FoxIO Rust snapshot of one capture holds.
+
+    Args:
+        capture: The capture file name.
+
+    Returns:
+        A list of HttpCase entries, sorted by stream index and source port.
+    """
+    rust = read_rust_snapshot(RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=capture))
+    cases = []
+    for identity, stream in rust.items():
+        for position, value in enumerate(stream.http, start=1):
+            cases.append(
+                HttpCase(
+                    identity=identity,
+                    index=stream.index,
+                    src_port=stream.src_port,
+                    occurrence=position,
+                    value=value,
+                )
+            )
+    return sorted(cases, key=lambda case: (case.index, case.src_port, case.occurrence))
+
+
+def http_captures():
+    """Return every capture whose local Rust snapshot holds a JA4H value."""
+    return tuple(capture for capture in SNAPSHOT_CAPTURES if http_cases(capture))
+
+
+def http_capability_decline(capture, case):
+    """Return the capability decline that covers one JA4H case, or None.
+
+    A capability decline records a capability this project chose not to build, so no
+    implementation change closes the difference and no reference value decides the
+    stream. `tests/foxio_deviations.py` states the two kinds, and a reader takes the kind
+    from the field rather than from the prose of the cause.
+
+    Args:
+        capture: The capture file name.
+        case: One HttpCase entry.
+
+    Returns:
+        The Deviation, or None when the register declines no capability on the case.
+    """
+    key = value_key(capture, case.index, case.src_port, SNAPSHOT_HTTP_METHOD, case.occurrence)
+    deviation = lookup(DEVIATIONS, key)
+    if deviation is None or not deviation.capability:
+        return None
+    return deviation
+
+
+def comparable_http_cases(capture):
+    """Return every JA4H value of one capture that a comparison here reads.
+
+    Args:
+        capture: The capture file name.
+
+    Returns:
+        A list of HttpCase entries that carry no capability decline.
+    """
+    return [case for case in http_cases(capture) if not http_capability_decline(capture, case)]
+
+
+def _http_value_params():
+    """Return one parameter set for every JA4H value this module compares.
+
+    The list carries no register mark. `tests/test_spec_validation.py` holds the key of
+    every JA4H value the FoxIO Python file publishes, and that file publishes one for
+    each of these streams, so a mark here would xfail two cases against one entry.
+    """
+    return [
+        pytest.param(
+            capture,
+            case,
+            id="{}-stream{}:{}-{}.{}".format(
+                capture,
+                case.index,
+                case.src_port,
+                SNAPSHOT_HTTP_METHOD,
+                case.occurrence,
+            ),
+        )
+        for capture in http_captures()
+        for case in comparable_http_cases(capture)
     ]
 
 
@@ -1089,6 +1223,206 @@ class TestTheJa4xRawFormTheRustSnapshotImplies:
                 assert hashed_form(raw.replace(",", ";")) != case.value
                 moved += 1
         assert moved == 43
+
+
+@pytest.mark.spec_validation
+class TestTheJa4hValuesTheRustSnapshotHolds:
+    """Compare JA4H against every JA4H value the local Rust snapshots hold.
+
+    Before #670 `read_rust_snapshot` entered the `tls_certs` block alone, and every
+    `ja4h` value sits in the `http` block. The five local snapshots that hold an HTTP
+    request carried 6 JA4H values that no case here compared.
+
+    The FoxIO Python expected-output file holds a JA4H value on every one of those six
+    streams. `omitted_cases` therefore reaches none of them, and the #138 rule owns none
+    of them. This class is a second reference on a value `tests/test_spec_validation.py`
+    already compares against the FoxIO Python file, and it holds no register key of its
+    own.
+
+    Five of the six values reach the comparison. The sixth is a QUIC stream that the
+    register declines under #129, and `TestTheQuicStreamTheRegisterDeclines` below holds
+    the whole reading of it.
+    """
+
+    def test_the_local_snapshots_hold_the_six_values_the_reading_counts(self):
+        """A sweep under #638 counts 6 JA4H values in the eleven local snapshots.
+
+        A snapshot that leaves the repository takes its cases away, and the suite still
+        reports green. This check makes that loss as loud as a mismatch.
+        """
+        counts = {capture: len(http_cases(capture)) for capture in http_captures()}
+        assert counts == {
+            "chrome-cloudflare-quic-with-secrets.pcapng": 1,
+            "https-connect.pcap": 1,
+            "latest.pcapng": 1,
+            "ssh2.pcapng": 2,
+            "tls3.pcapng": 1,
+        }
+        assert sum(counts.values()) == 6
+
+    def test_the_suite_collects_one_case_for_every_value_it_compares(self):
+        """Fail when a snapshot value carries no case.
+
+        The parameter list is the comparison. A reader who drops the `http` branch of
+        `read_rust_snapshot` empties the list, and this check names the loss. One value
+        of the six carries a capability decline, so the list holds five.
+        """
+        assert len(_http_value_params()) == 5
+        declined = [
+            (capture, case.index, case.src_port)
+            for capture in http_captures()
+            for case in http_cases(capture)
+            if http_capability_decline(capture, case)
+        ]
+        assert declined == [("chrome-cloudflare-quic-with-secrets.pcapng", "0", "57098")]
+
+    def test_the_python_file_holds_a_ja4h_value_on_every_stream_a_snapshot_names(self):
+        """The #138 rule reaches no JA4H value, because that rule reads an omission.
+
+        `omitted_cases` returns a case only where the FoxIO Python file omits the method
+        on the stream. That file publishes a JA4H value on all six streams, so this class
+        compares what no omission would ever reach. A vector refresh that drops one of
+        the six moves the value under the #138 rule, and this check names the stream.
+        """
+        missing = []
+        for capture in http_captures():
+            python = read_python_methods(VECTORS_DIR / "{}.json".format(capture))
+            for case in http_cases(capture):
+                if SNAPSHOT_HTTP_METHOD not in python.get(case.identity, set()):
+                    missing.append("{} {}".format(capture, label(case.identity)))
+        assert not missing, "\n".join(missing)
+
+    @pytest.mark.parametrize("capture,case", _http_value_params())
+    def test_the_produced_ja4h_equals_the_rust_snapshot_value(self, capture, case):
+        """ja4plus produces the JA4H value the FoxIO Rust snapshot holds for the stream."""
+        produced = (
+            index_produced(VECTORS_DIR / capture)
+            .get(case.identity, {})
+            .get(SNAPSHOT_HTTP_METHOD, ())
+        )
+        if len(produced) < case.occurrence:
+            pytest.fail(
+                "{} {} {}.{}: rust={} ja4plus=<none>".format(
+                    capture,
+                    label(case.identity),
+                    SNAPSHOT_HTTP_METHOD,
+                    case.occurrence,
+                    case.value,
+                )
+            )
+        ours = produced[case.occurrence - 1]
+        if ours != case.value:
+            pytest.fail(
+                "{} {} {}.{}: rust={} ja4plus={}".format(
+                    capture,
+                    label(case.identity),
+                    SNAPSHOT_HTTP_METHOD,
+                    case.occurrence,
+                    case.value,
+                    ours,
+                )
+            )
+
+    @pytest.mark.parametrize("capture", http_captures())
+    def test_the_produced_ja4h_count_equals_the_rust_snapshot_count(self, capture):
+        """ja4plus produces one JA4H value for each request the snapshot names.
+
+        The value comparison above reads one position at a time, so a value ja4plus adds
+        after the last position reaches no case. This check reports that direction, and
+        it reads the streams the comparison reads.
+        """
+        produced = index_produced(VECTORS_DIR / capture)
+        expected = Counter(case.identity for case in comparable_http_cases(capture))
+        differences = []
+        for identity, count in expected.items():
+            ours = produced.get(identity, {}).get(SNAPSHOT_HTTP_METHOD, ())
+            if len(ours) != count:
+                differences.append(
+                    "{} {}: rust={} value(s) ja4plus={} value(s)".format(
+                        label(identity), SNAPSHOT_HTTP_METHOD, count, len(ours)
+                    )
+                )
+        assert not differences, "{}: {} stream(s) differ\n{}".format(
+            capture, len(differences), "\n".join(differences)
+        )
+
+    def test_no_local_rust_snapshot_writes_a_ja4h_raw_field(self):
+        """The raw form of JA4H reaches no comparison here, because no snapshot holds one.
+
+        `ja4plus` publishes the original-order raw form as `JA4H_ro`, and
+        `tests/conformance_index.py` compares it against the FoxIO Python file. The
+        `http` block of a snapshot writes the hashed value alone, so this module compares
+        no raw form. A snapshot refresh that adds a raw field fails this check.
+        """
+        holders = [
+            path.name
+            for path in sorted(RUST_DIR.glob("*.snap"))
+            if any(line.strip().startswith("ja4h_r") for line in path.read_text().splitlines())
+        ]
+        assert not holders, "\n".join(holders)
+        # Without this check, an empty snapshot directory would pass the check above.
+        assert len(list(RUST_DIR.glob("*.snap"))) == 11
+
+
+@pytest.mark.spec_validation
+class TestTheQuicStreamTheRegisterDeclines:
+    """Measure the one JA4H stream that this project declines and both references hold.
+
+    `chrome-cloudflare-quic-with-secrets.pcapng` carries the TLS secrets, so the two
+    FoxIO references decrypt the QUIC traffic and read the HTTP request inside it.
+    `ja4plus` reads no encrypted request, which Changelog round 26 settled and #129
+    records. The register therefore carries a capability decline on the value, and
+    `.claude/rules/external-apis.md` states that no implementation change closes such a
+    difference.
+
+    The two FoxIO references disagree on the value as well, and
+    `.claude/rules/external-apis.md` gives the stream to `python/test/testdata/` where
+    both hold one. The Rust value is therefore no reference value here. This class
+    records all three readings as measurements, so a reader takes none of them from
+    prose.
+    """
+
+    QUIC_CAPTURE = "chrome-cloudflare-quic-with-secrets.pcapng"
+
+    def test_the_two_foxio_references_hold_different_ja4h_values(self):
+        """The disagreement is a measurement, and a vector refresh that ends it fails here.
+
+        The Rust value reads 16 headers and the Python value reads 12, in part a of the
+        fingerprint. Both hold the zero sentinel in part c and in part d.
+        """
+        [case] = http_cases(self.QUIC_CAPTURE)
+        assert case.value == "ge20nn16enus_0f5a7a41a252_000000000000_000000000000"
+        records = json.loads((VECTORS_DIR / "{}.json".format(self.QUIC_CAPTURE)).read_text())
+        python_values = [record["JA4H"] for record in records if "JA4H" in record]
+        assert python_values == ["ge20nn12enus_60f823d07c94_000000000000_000000000000"]
+
+    def test_ja4plus_produces_no_ja4h_value_on_the_stream(self):
+        """The decline states the whole difference, and this check measures it."""
+        [case] = http_cases(self.QUIC_CAPTURE)
+        produced = index_produced(VECTORS_DIR / self.QUIC_CAPTURE).get(case.identity, {})
+        assert produced.get(SNAPSHOT_HTTP_METHOD, ()) == ()
+
+    def test_the_register_declines_the_value_as_a_capability(self):
+        """#129 owns the decline, and the field states the kind rather than the cause.
+
+        A capability decline bars the precedence exception of
+        `.claude/rules/external-apis.md`, so no other FoxIO source holds the reference
+        value for this stream.
+        """
+        [case] = http_cases(self.QUIC_CAPTURE)
+        deviation = http_capability_decline(self.QUIC_CAPTURE, case)
+        assert deviation is not None
+        assert deviation.issue == 129
+        assert deviation.decided
+        assert deviation.capability
+
+    def test_the_declined_value_reaches_no_comparison_of_this_module(self):
+        """The one declined value stands outside the parameter list.
+
+        A reader who removes `http_capability_decline` puts the value back, and the
+        comparison then fails on a difference this project decided.
+        """
+        assert comparable_http_cases(self.QUIC_CAPTURE) == []
 
 
 @pytest.mark.spec_validation
