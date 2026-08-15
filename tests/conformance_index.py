@@ -35,7 +35,9 @@ logger = logging.getLogger(__name__)
 # form. `JA4_o` holds a hash of the original-order fields rather than a raw form, and the
 # reference publishes it beside `JA4_ro`, so the index treats the two the same way.
 #
-# JA4H names only `JA4H_ro`, because the reference publishes no `JA4H_r` key.
+# JA4H names only `JA4H_ro`, because the per-stream expected-output file this module reads
+# publishes no `JA4H_r` key. The per-packet files of the Wireshark dissector publish 62 of
+# them, and `tests/test_ja4h_raw_sorted.py` compares the produced value against those.
 RAW_METHODS = {
     "JA4": (
         ("JA4_r", "raw"),

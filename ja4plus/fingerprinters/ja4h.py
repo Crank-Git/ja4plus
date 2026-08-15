@@ -65,15 +65,20 @@ class JA4HFingerprinter(BaseFingerprinter):
     Supports HTTP requests spanning multiple TCP segments via
     stream reassembly.
 
-    Every entry of ``get_fingerprints()`` carries ``raw_original_order``, the FoxIO
-    `JA4H_ro` value, and ``last_raw_original_order`` holds the value of the most recent
-    request. FoxIO publishes no `JA4H_r` key, so this fingerprinter computes no sorted
-    raw form: a sorted value matches no reference value and no other implementation.
+    Every entry of ``get_fingerprints()`` carries ``raw``, the FoxIO `JA4H_r` value, and
+    ``raw_original_order``, the FoxIO `JA4H_ro` value. ``last_raw`` and
+    ``last_raw_original_order`` hold the two values of the most recent request.
+
+    The FoxIO per-stream expected-output files publish `JA4H_ro` alone. The per-packet
+    files of the Wireshark dissector publish both keys, and
+    `tests/foxio_vectors/wireshark_expected/` holds 62 of each. #600 records the
+    measurement that removed the earlier claim that FoxIO publishes no `JA4H_r` key.
     """
 
     def __init__(self, thread_safe: bool = True) -> None:
         super().__init__(thread_safe=thread_safe)
         self.reassembler = TCPStreamReassembler(max_streams=100)
+        self.last_raw: str | None = None
         self.last_raw_original_order: str | None = None
         self.unusable_base = self._stream_shadow_table()
         # The base code ran the age pass of this one table on each packet, and the
@@ -269,11 +274,14 @@ class JA4HFingerprinter(BaseFingerprinter):
         self.unusable_base[stream_key] = base
 
     def _record(self, fingerprint: str, http_info: dict[str, Any], packet: Packet) -> None:
-        """Append one JA4H result, with the raw original-order form beside the hash."""
+        """Append one JA4H result, with the two raw forms beside the hash."""
+        raw = _generate_ja4h_raw_sorted_from_info(http_info)
         raw_original_order = _generate_ja4h_raw_from_info(http_info)
+        self.last_raw = raw
         self.last_raw_original_order = raw_original_order
         entry: dict[str, Any] = {
             "fingerprint": fingerprint,
+            "raw": raw,
             "raw_original_order": raw_original_order,
         }
         entry.update(packet_endpoints(packet))
@@ -283,6 +291,7 @@ class JA4HFingerprinter(BaseFingerprinter):
         with self._lock:
             super().reset()
             self.reassembler = TCPStreamReassembler(max_streams=100)
+            self.last_raw = None
             self.last_raw_original_order = None
             self.unusable_base = self._stream_shadow_table()
             # The base code ran the age pass of this one table on each packet, and the
@@ -467,6 +476,47 @@ def _ja4h_cookie_pairs(http_info: dict[str, Any]) -> list[tuple[str, str]]:
     return list(zip(names, values))
 
 
+def _ja4h_sorted_cookie_strings(http_info: dict[str, Any]) -> tuple[str, str]:
+    """Return the sorted cookie name list and the sorted cookie pair list of a request.
+
+    The base value hashes both strings, and the sorted raw form writes both strings. One
+    function builds them, so no second copy of this order lets the two forms disagree.
+
+    Both lists sort by the cookie name. The FoxIO Python reference sorts the pair list by
+    the name alone, and the Wireshark dissector writes the pair list in the name order too.
+    The sort is stable, so two cookies that carry one name keep their wire order.
+
+    Args:
+        http_info: A parsed HTTP request.
+
+    Returns:
+        The comma-separated name list and the comma-separated `name=value` list, each in
+        the cookie-name order. Each one is empty when the request holds no cookie.
+    """
+    # A dictionary drops a repeated cookie name, which HTTP permits, and the two strings
+    # then describe different cookie sets. #35 records the defect.
+    cookie_pairs = _ja4h_cookie_pairs(http_info)
+    names = ",".join(sorted(name for name, _ in cookie_pairs))
+    ordered = sorted(cookie_pairs, key=lambda pair: pair[0])
+    pairs = ",".join(f"{name}={value}" for name, value in ordered)
+    return names, pairs
+
+
+def _ja4h_raw_prefix(http_info: dict[str, Any]) -> str:
+    """Return the part of a JA4H raw form that the two raw forms share.
+
+    The form is `<part a>_<header names>_`. The cookie order is the one thing that
+    separates `JA4H_r` from `JA4H_ro`, so one function builds everything before it.
+
+    Args:
+        http_info: A parsed HTTP request.
+
+    Returns:
+        The first section, the header names in wire order, and one underscore.
+    """
+    return f"{_ja4h_part_a(http_info)}_{','.join(_ja4h_header_names(http_info))}_"
+
+
 def _generate_ja4h_from_info(http_info: dict[str, Any] | None) -> str | None:
     """Generate JA4H from an http_info dict."""
     if not http_info:
@@ -483,22 +533,14 @@ def _generate_ja4h_from_info(http_info: dict[str, Any] | None) -> str | None:
         headers_str = ",".join(_ja4h_header_names(http_info))
         part_b = hashlib.sha256(headers_str.encode()).hexdigest()[:12]
 
-        # Part c and part d read one list of pairs. A dictionary drops a repeated cookie
-        # name, which HTTP permits, and the two hashes then describe different cookie
-        # sets. #35 records the defect.
-        cookie_pairs = _ja4h_cookie_pairs(http_info)
-
-        cookie_fields_str = ",".join(sorted(name for name, _ in cookie_pairs))
+        # Part c and part d hash the two strings the sorted raw form writes, so the raw
+        # form is the pre-image of the hash.
+        cookie_fields_str, cookie_values_str = _ja4h_sorted_cookie_strings(http_info)
         part_c = (
             hashlib.sha256(cookie_fields_str.encode()).hexdigest()[:12]
             if cookie_fields_str
             else "000000000000"
         )
-
-        # Cookie-VALUES hash: pairs sorted by NAME only (FoxIO PR #288). The sort is
-        # stable, so two cookies that carry one name keep their wire order.
-        sorted_cookie_pairs = sorted(cookie_pairs, key=lambda pair: pair[0])
-        cookie_values_str = ",".join(f"{k}={v}" for k, v in sorted_cookie_pairs)
         part_d = (
             hashlib.sha256(cookie_values_str.encode()).hexdigest()[:12]
             if cookie_values_str
@@ -530,14 +572,55 @@ def _generate_ja4h_raw_from_info(http_info: dict[str, Any] | None) -> str | None
         return None
 
     try:
-        part_a = _ja4h_part_a(http_info)
-        headers_str = ",".join(_ja4h_header_names(http_info))
-        raw = f"{part_a}_{headers_str}_"
+        raw = _ja4h_raw_prefix(http_info)
 
         cookie_pairs = _ja4h_cookie_pairs(http_info)
         if cookie_pairs:
             names_str = ",".join(name for name, _ in cookie_pairs)
             pairs_str = ",".join(f"{k}={v}" for k, v in cookie_pairs)
+            raw += f"{names_str}_{pairs_str}"
+
+        return raw
+
+    except (ValueError, TypeError, IndexError, KeyError, AttributeError) as e:
+        logger.debug(f"Packet does not contain JA4H data: {e}")
+        return None
+
+
+def _generate_ja4h_raw_sorted_from_info(http_info: dict[str, Any] | None) -> str | None:
+    """Return the JA4H sorted raw form of an http_info dict.
+
+    The form is `<part a>_<header names>_<sorted cookie names>_<sorted cookie pairs>`. The
+    header names hold the wire order, and both cookie lists sort by the cookie name. That
+    cookie order is the one thing that separates this value from `raw_original_order`.
+
+    The base value hashes the same two cookie strings, so this form is the pre-image of
+    part c and of part d.
+
+    A request that carries no cookie ends after the header names and one underscore, which
+    is the shape `_generate_ja4h_raw_from_info` carries. The FoxIO Python reference appends
+    the two cookie fields only when the request holds a cookie, and the Wireshark dissector
+    writes two trailing underscores. `Crank-Git/ja4plus-go#285` holds that reference split,
+    and the maintainer rules it. This function follows the wire-order form, so one ruling
+    moves both.
+
+    Args:
+        http_info: A parsed HTTP request.
+
+    Returns:
+        The FoxIO `JA4H_r` value, or None when the request is unreadable.
+    """
+    if not http_info:
+        return None
+
+    try:
+        raw = _ja4h_raw_prefix(http_info)
+
+        # The condition reads the pair list, and it reads neither string. A cookie whose
+        # name is empty builds an empty name string, and the two raw forms must still end
+        # the same way.
+        if _ja4h_cookie_pairs(http_info):
+            names_str, pairs_str = _ja4h_sorted_cookie_strings(http_info)
             raw += f"{names_str}_{pairs_str}"
 
         return raw
