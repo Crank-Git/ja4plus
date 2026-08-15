@@ -162,10 +162,11 @@ class TestTheResetOfAOneSynAckConnection(unittest.TestCase):
     """A RST on a connection that holds one SYN-ACK produces the stored four-part value.
 
     The maintainer ruled the question on 2026-08-14, at `Crank-Git/ja4plus-go#484`.
-    `wireshark/source/packet-ja4.c:1599-1608` copies the window size, the maximum segment
-    size, the window scale and the option list from the stored connection, and it writes
-    `hf_ja4ts` outside the delay guard. `wireshark/source/packet-ja4.c:684` guards the
-    delay list and the reset letter on `conn->syn_ack_count > 1`.
+    `wireshark/source/packet-ja4.c:1599-1608` writes `hf_ja4ts` outside the delay guard.
+    It copies four fields from the stored connection: the window size, the maximum
+    segment size, the window scale and the option list.
+    `wireshark/source/packet-ja4.c:684` guards the delay list and the reset letter alone,
+    on `conn->syn_ack_count > 1`.
     """
 
     def test_a_reset_on_a_connection_the_server_answered_once_produces_the_stored_parts(self):
@@ -201,9 +202,8 @@ class TestTheResetOfAOneSynAckConnection(unittest.TestCase):
 class TestTheResetWithoutADelay(unittest.TestCase):
     """A RST that reaches no stored connection produces no value.
 
-    Both implementations nest the delay list inside the delay branch.
-    `wireshark/source/packet-ja4.c:693` reads `rst_time` only when `syn_ack_count > 1`,
-    and `zeek/ja4t/main.zeek:233` reads `rst_ts` only when the delay list holds a value.
+    The connection table holds the parts that such a value needs, and a RST packet
+    carries none of them. A key the table does not hold therefore produces nothing.
     """
 
     def test_a_reset_on_a_connection_with_no_syn_ack_produces_no_value(self):

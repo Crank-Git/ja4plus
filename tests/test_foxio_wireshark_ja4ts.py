@@ -87,9 +87,9 @@ JA4TS_VALUE_COUNT = 58
 
 # The count of values ja4plus matches, and the count the register owns. #246 owns every
 # difference, and `TestTheDifferencesAreTheRecordedResetDecline` measures the cause. #609
-# published the four-part value on a server RST of a one-SYN-ACK connection, and the
-# register lost three rows: `ssh2.pcapng` frames 849 and 850, and `browsers-x509.pcapng`
-# frame 174.
+# published the four parts on a server RST of a one-SYN-ACK connection. The register lost
+# three rows on that change. They are `ssh2.pcapng` frame 849, `ssh2.pcapng` frame 850 and
+# `browsers-x509.pcapng` frame 174.
 MATCHING_VALUE_COUNT = 55
 RESET_VALUE_COUNT = 3
 
@@ -339,7 +339,7 @@ class TestTheDifferencesAreTheRecordedResetDecline:
         assert readings, "no case reaches the register"
         assert all(reading[2] == "R" for reading in readings), readings
 
-    def test_the_client_sent_every_registered_reset(self):
+    def test_the_client_sends_every_registered_reset(self):
         """The client port of the stream is the source port of each declined frame."""
         from scapy.all import TCP, rdpcap
 
@@ -407,6 +407,6 @@ class TestTheAckResetDivergence:
         identity = stream_identity(*endpoints)
         produced = index_produced(VECTORS_DIR / ACK_RESET_CAPTURE).get(identity, {})
         assert ACK_RESET_VALUE in produced.get(METHOD, ())
-        # The frame carries no TCP option, so part b, part c and part d of the value come
-        # from the stored connection and from no field of this packet.
+        # The frame carries no TCP option. Part b, part c and part d therefore come from
+        # the stored connection, and from no field of this packet.
         assert packets[ACK_RESET_FRAME - 1][TCP].options == []

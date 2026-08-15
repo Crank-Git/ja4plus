@@ -271,7 +271,7 @@ This project adopts four rules.
    the delay list and the reset letter on `conn->syn_ack_count > 1`.
    `zeek/ja4t/main.zeek:232` reads `rst_ts` only when the delay list holds a value, so the
    Zeek package guards the suffix the same way. A delay list is therefore complete and
-   correct with no RST, which the deleted file's own second example shows: it ends at
+   correct with no RST. The deleted file's own second example shows that: it ends at
    `62727_2_8961_00_1-2-4-8-16` and carries no RST. **The maintainer ruled this reading on
    2026-08-14, at `Crank-Git/ja4plus-go#484`, and #609 ported it.** The earlier reading
    emitted no value at all, and the paragraph below records what the reversal moved.
@@ -501,9 +501,12 @@ keys under #246, each marked decided.
 | `ssh2.pcapng/5:57368/JA4TS.3` | 850 | The server sent it. | **Closed.** `ja4plus` writes `42600_2-1-1-4-1-3_1300_9`. |
 
 `TestTheDifferencesAreTheRecordedResetDecline` measures four facts of each row that stays,
-so the decline stays proven rather than asserted. Each frame carries the RST flag alone,
-the client sent each frame, each value equals the value the first SYN-ACK of that stream
-produced, and `ja4plus` writes one value for the stream.
+so the decline stays proven rather than asserted.
+
+1. Each frame carries the RST flag alone.
+2. The client sent each frame.
+3. Each value equals the value the first SYN-ACK of that stream produced.
+4. `ja4plus` writes one value for the stream.
 
 ## The search for a reference value
 

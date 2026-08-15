@@ -654,9 +654,15 @@ The first prints `58` and the second prints `10`.
 earlier search read the key `ja4t`, and the dissector writes the key `ja4.ja4t`. The
 correction is the reason this issue closes with a vector rather than with a finding.
 
-**JA4TS now reaches two FoxIO implementations, and 61 of its 68 reference values compare
-as a pass.** 52 of the 58 Wireshark values match, 9 of the 10 Zeek values match, 6 reach
-`tests/foxio_deviations.json` under #246, and 1 falls under the `DLT_NULL` bar.
+**JA4TS now reaches two FoxIO implementations, and 64 of its 68 reference values compare
+as a pass.** The reading was 61 until #609, which published the four parts on a server
+RST of a connection that holds one SYN-ACK. Four counts make the 68.
+
+- 55 of the 58 Wireshark values match.
+- 9 of the 10 Zeek values match.
+- 3 reach `tests/foxio_deviations.json` under #246.
+- 1 falls under the `DLT_NULL` bar.
+
 `docs/specs/foxio/JA4T.md` and `docs/specs/foxio/zeek.md` hold each reading.
 
 ## Changelog

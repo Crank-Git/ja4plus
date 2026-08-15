@@ -173,9 +173,11 @@ class SynAckTracker:
             now: The capture timestamp of the RST packet, in seconds.
 
         Returns:
-            The four-part value when the connection holds one SYN-ACK, the five-part
-            value with the RST suffix when it holds two SYN-ACK times, or None when the
-            table holds no such connection.
+            One of three results.
+
+            - The four-part value, when the connection holds one SYN-ACK.
+            - The five-part value with the RST suffix, when it holds two SYN-ACK times.
+            - None, when the table holds no such connection.
         """
         # A RST packet is a packet, and the announcement runs the age pass on it too.
         self.times.on_packet(now)
@@ -186,10 +188,10 @@ class SynAckTracker:
         # does not is a broken lockstep, and #285 states that no path produces one. A
         # fallback here would hide that state rather than report it.
         prefix: str = self.prefixes[key]
-        # The dissector writes the four parts outside the delay guard, at
-        # `wireshark/source/packet-ja4.c:1599-1608`, and it guards the delay list and the
-        # reset letter on `conn->syn_ack_count > 1` at `wireshark/source/packet-ja4.c:684`.
-        # The maintainer ruled the case at `Crank-Git/ja4plus-go#484`, and #609 ported it.
+        # `wireshark/source/packet-ja4.c:1599-1608` writes the four parts outside the
+        # delay guard. `wireshark/source/packet-ja4.c:684` guards the delay list and the
+        # reset letter alone, on `conn->syn_ack_count > 1`. The maintainer ruled the case
+        # at `Crank-Git/ja4plus-go#484`, and #609 ported the ruling.
         if len(stamps) < 2:
             return prefix
         delays = "-".join(str(delay) for delay in _delay_list(stamps))
