@@ -48,6 +48,32 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `README.md` each state the pair. **The `type` field still holds one of ten values**, and
   the row of `docs/specs/spec.md` and the docstring of `ja4plus/types.py` now separate that
   count from the eleven tokens `--types` accepts. Recorded by #605.
+- **The malformed-input suite holds a fuzz target for the ServerHello reader** (#628).
+  Round
+  TBD. **`tests/fuzz/` named no ServerHello entry point**, and a grep for `server_hello`
+  across its five case files returned nothing. #617 records that a fuzz target found the
+  identical defect of the Go library in 1.14 seconds, and that this project found its own
+  half by reading the port. **A read is not a standing proof**, so this round writes the
+  proof rather than repeats the read. `tests/fuzz/test_server_hello_extensions.py` holds
+  490 cases and it runs in 0.16 seconds. **The target measures the class of defect and not
+  the one instance**: a record declares one length in an extension header, and it supplies
+  another count of bytes. The corpus holds five parts. A grid of 240 records stands over
+  six extension types, eight declared lengths and five supplied counts. 512 records carry
+  a random extension block, and 512 draws carry random bytes. A byte-flip sweep turns each
+  of three bit groups over each of the 55 bytes of a well-formed record. The two seeds of
+  #617 stand beside them: the 53-byte record, and the 64-byte input the Go fuzzer wrote.
+  **Each part drives `_parse_server_hello`, and the grid drives `parse_tls_handshake` as
+  well**, because #617 records that the exception reached the caller of the library.
+  **Every case states what the reader produced**, because `tests/fuzz/README.md` records
+  that a case which asserts "no exception" passes where no parser runs. **The target
+  discriminates, and this round measured that.** A reversal of the `4497e9f` guard at
+  `ja4plus/utils/tls_utils.py:282`, back to `if ext_len >= 2:`, reads 27 failed and 463
+  passed, and the seed case of the 53-byte record reports
+  `IndexError: index out of range` at `ja4plus/utils/tls_utils.py:283`. The restored file
+  reads 490 passed. **The suite imports no new tool.** The five existing files of
+  `tests/fuzz/` each draw from `random.Random` under a fixed seed, and this file follows
+  that shape, so the case count is fixed and the `fuzz` job stays predictable. **This
+  round edits no file under `ja4plus/`**, so no fingerprint moves.
 - **The JA4 and JA4S QUIC branches read the innermost UDP layer of a packet** (#594).
   Round
   TBD. **`ja4plus/fingerprinters/ja4.py:422` and `ja4plus/fingerprinters/ja4s.py:83` each
