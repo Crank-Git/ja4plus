@@ -158,18 +158,53 @@ class TestTheResetReadsTheStoredConnection(unittest.TestCase):
         self.assertEqual(value.split("_")[0], "65535")
 
 
-class TestTheResetWithoutADelay(unittest.TestCase):
-    """A RST on a connection with no delay produces no part e.
+class TestTheResetOfAOneSynAckConnection(unittest.TestCase):
+    """A RST on a connection that holds one SYN-ACK produces the stored four-part value.
 
-    Both implementations nest the RST branch inside the delay branch.
+    The maintainer ruled the question on 2026-08-14, at `Crank-Git/ja4plus-go#484`.
+    `wireshark/source/packet-ja4.c:1599-1608` copies the window size, the maximum segment
+    size, the window scale and the option list from the stored connection, and it writes
+    `hf_ja4ts` outside the delay guard. `wireshark/source/packet-ja4.c:684` guards the
+    delay list and the reset letter on `conn->syn_ack_count > 1`.
+    """
+
+    def test_a_reset_on_a_connection_the_server_answered_once_produces_the_stored_parts(self):
+        fingerprinter = JA4TSFingerprinter()
+        fingerprinter.process_packet(syn_ack(1000.0))
+        self.assertEqual(fingerprinter.process_packet(reset(1004.0)), PARTS_A_TO_D)
+
+    def test_that_value_carries_no_delay_and_no_reset_letter(self):
+        """The delay list and the reset letter stay behind the two-SYN-ACK guard."""
+        fingerprinter = JA4TSFingerprinter()
+        fingerprinter.process_packet(syn_ack(1000.0))
+        value = fingerprinter.process_packet(reset(1004.0))
+        self.assertEqual(len(value.split("_")), 4)
+        self.assertNotIn("R", value)
+
+    def test_that_value_reads_the_window_size_of_the_syn_ack_and_not_of_the_reset(self):
+        """The RST packet holds a window of 0, and the value holds 65535."""
+        fingerprinter = JA4TSFingerprinter()
+        fingerprinter.process_packet(syn_ack(1000.0))
+        value = fingerprinter.process_packet(reset(1004.0))
+        self.assertEqual(value.split("_")[0], "65535")
+
+    def test_a_second_reset_of_that_connection_produces_the_same_value(self):
+        """The RST packet records no time, so two RST packets read one connection."""
+        fingerprinter = JA4TSFingerprinter()
+        fingerprinter.process_packet(syn_ack(1000.0))
+        first = fingerprinter.process_packet(reset(1004.0))
+        second = fingerprinter.process_packet(reset(1005.0))
+        self.assertEqual(first, PARTS_A_TO_D)
+        self.assertEqual(second, PARTS_A_TO_D)
+
+
+class TestTheResetWithoutADelay(unittest.TestCase):
+    """A RST that reaches no stored connection produces no value.
+
+    Both implementations nest the delay list inside the delay branch.
     `wireshark/source/packet-ja4.c:693` reads `rst_time` only when `syn_ack_count > 1`,
     and `zeek/ja4t/main.zeek:233` reads `rst_ts` only when the delay list holds a value.
     """
-
-    def test_a_reset_on_a_connection_the_server_answered_once_produces_no_value(self):
-        fingerprinter = JA4TSFingerprinter()
-        fingerprinter.process_packet(syn_ack(1000.0))
-        self.assertIsNone(fingerprinter.process_packet(reset(1004.0)))
 
     def test_a_reset_on_a_connection_with_no_syn_ack_produces_no_value(self):
         """The case reads the tracker too, because `generate_ja4ts` catches a crash.

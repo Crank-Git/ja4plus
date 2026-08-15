@@ -173,20 +173,27 @@ class SynAckTracker:
             now: The capture timestamp of the RST packet, in seconds.
 
         Returns:
-            The value, or None when the connection holds no delay. Both implementations
-            nest the RST branch inside the delay branch, so a connection the server
-            answered once carries no RST suffix.
+            The four-part value when the connection holds one SYN-ACK, the five-part
+            value with the RST suffix when it holds two SYN-ACK times, or None when the
+            table holds no such connection.
         """
         # A RST packet is a packet, and the announcement runs the age pass on it too.
         self.times.on_packet(now)
         stamps = self.times.get(key)
-        if stamps is None or len(stamps) < 2:
+        if stamps is None:
             return None
-        delays = "-".join(str(delay) for delay in _delay_list(stamps))
         # The read holds no fallback on purpose. A key that `times` holds and `prefixes`
         # does not is a broken lockstep, and #285 states that no path produces one. A
         # fallback here would hide that state rather than report it.
-        return f"{self.prefixes[key]}_{delays}-R{_delay_seconds(now, stamps[-1])}"
+        prefix: str = self.prefixes[key]
+        # The dissector writes the four parts outside the delay guard, at
+        # `wireshark/source/packet-ja4.c:1599-1608`, and it guards the delay list and the
+        # reset letter on `conn->syn_ack_count > 1` at `wireshark/source/packet-ja4.c:684`.
+        # The maintainer ruled the case at `Crank-Git/ja4plus-go#484`, and #609 ported it.
+        if len(stamps) < 2:
+            return prefix
+        delays = "-".join(str(delay) for delay in _delay_list(stamps))
+        return f"{prefix}_{delays}-R{_delay_seconds(now, stamps[-1])}"
 
 
 class JA4TSFingerprinter(BaseFingerprinter):
@@ -203,6 +210,9 @@ class JA4TSFingerprinter(BaseFingerprinter):
     A RST that the server sends on a connection that already holds a delay appends `R`
     and its own delay to part e. That value reads part a through part d from the stored
     connection, because a RST packet carries neither a window size nor an option.
+
+    A RST on a connection that holds one SYN-ACK publishes those four parts alone. The
+    maintainer ruled that case at `Crank-Git/ja4plus-go#484`, and #609 ported the ruling.
     """
 
     def __init__(self, thread_safe: bool = True) -> None:
