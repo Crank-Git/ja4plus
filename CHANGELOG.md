@@ -6,6 +6,53 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the JA4L measurement points a QUIC connection holds
+  at point D** (#595). Round
+  TBD. **The QUIC path evicts no measurement point, and both libraries hold that
+  behaviour.** `_restart_connection` at `ja4plus/fingerprinters/ja4l.py:411` drops every
+  measurement point of one connection, and `ja4plus/fingerprinters/ja4l.py:441` is its one
+  call site, inside the branch that `ja4plus/fingerprinters/ja4l.py:437` opens on a SYN
+  that carries no ACK. `_quic_ja4l` at `ja4plus/fingerprinters/ja4l.py:559-609` calls it
+  nowhere. `conn.restart()` of the port sits at `ja4l.go:180` under the same guard, and the
+  QUIC path of the port calls it nowhere. **A four-tuple that two QUIC connections reuse
+  therefore reports one server value and one client value, and the later connection reports
+  none.** **The four FoxIO references split two against two, so rule 1 settles nothing and
+  a person decided it.** `wireshark/source/packet-ja4.c:1409` reads the state by the
+  `udp.stream` number, `wireshark/source/packet-ja4.c:450-455` zeroes each timestamp on the
+  first allocation alone, and `wireshark/source/packet-ja4.c:1412-1434` guards every write
+  with `nstime_is_zero`. `rust/ja4/src/stream.rs:206-211` reuses the entry of the same
+  number. `python/ja4.py:585-588` completes the client value at point `D` and calls
+  `display`, `python/ja4.py:310` calls `clean_cache`, and `python/common.py:85-88` deletes
+  the entry. `zeek/ja4l/main.zeek:198` hooks `QUIC::initial_packet`, and the Zeek core
+  supplies a new connection record. **This round read all eleven cited lines at the pinned
+  commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved none of them.** **It did
+  move two citations of this repository.** The body of #595 names
+  `ja4plus/fingerprinters/ja4l.py:436` for the call site and `:554-604` for `_quic_ja4l`,
+  and the tip holds 441 and 559-609. The row states the lines this round measured.
+  **Eviction would break parity in one repository alone**, and it also drops a connection
+  that the caller never named, which reaches the exported surface of the port. **No vector
+  reaches the rule**, because no capture of `tests/foxio_vectors/` reuses a QUIC
+  four-tuple. **Warning: #623 asks what a second QUIC connection over one four-tuple
+  reports, and this row decides nothing about it.** #623 stays with the maintainer, because
+  an answer that emits a second value moves a fingerprint. **The trigger of the two
+  references that evict is the completion of the first connection, and never a
+  new-connection signal**, so a reversal states that trigger and it needs a FoxIO source.
+  **No file under `ja4plus/` changed, so no fingerprint moved and no output field moved.**
+  New file `tests/test_ja4l_quic_eviction_ruling.py` holds 13 cases. Five read the row,
+  three read the call sites out of the syntax tree of the module, and five drive the
+  fingerprinter. The unit suite rises from 5698 collected to 5712, which is 13 cases of the
+  new file and 1 case that parametrizes over the tracked Python files. It reports 5696
+  passed, 8 skipped, 8 xfailed and 114 subtests passed. The conformance suite reports 1676
+  passed, 142 skipped and 138 xfailed against the 138 keys of
+  `tests/foxio_deviations.json`, which are the counts of round 247.
+  `ruff check ja4plus/ tests/`, `ruff format --check ja4plus/ tests/` and
+  `mypy --strict ja4plus/` report no issue. **The cases came first and they bite**: against
+  the register with no row they failed 5 of 13, and each failure read
+  `the divergence register holds no row named 'The JA4L measurement points a QUIC connection holds at point D'`.
+  **The red-to-green is the reversal.** A call to `_restart_connection` after the point `D`
+  branch of `_quic_ja4l` fails 4 cases, among them
+  `test_a_second_quic_connection_on_one_four_tuple_reports_no_value`. Restore the module
+  and all 13 cases pass.
 - **Nine citations of `.claude/rules/external-apis.md` name a line that file no longer
   holds, and each one now names the line the sentence stands on** (#679). Round
   246. **Line 95 of that file holds the fragment `reaches it.`**, which is the tail of the
