@@ -140,7 +140,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   message`, `quoted datagram` and `quoted header`.
 - **The divergence register records the segment count bound of one TCP stream, and the
   bound keeps a corrected attribution** (#620). Round
-  TBD. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
+  222. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
   one stream stores 4096 segments at most beside its byte cap of 1048576.
   **FoxIO specifies no resource bound, so rule 1 settles nothing here and no vector decides
   the value.** The bound is a resource rule that this project shipped first, and rule 2
@@ -169,7 +169,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `git checkout`, and the file then read twenty-three passed.
 - **The divergence register records the rule that reads the JA4D domain character from a
   name** (#615). Round
-  TBD. **`ja4plus/fingerprinters/ja4d.py:165` reads
+  221. **`ja4plus/fingerprinters/ja4d.py:165` reads
   `has_fqdn = has_fqdn or len(opt_data) > _DHCP_FQDN_NAME_OFFSET`**, and
   `ja4plus/fingerprinters/ja4d.py:64` holds `_DHCP_FQDN_NAME_OFFSET = 3`. An option 81 of
   three bytes or fewer therefore gives `n`, and an option 81 of four bytes or more gives
@@ -194,7 +194,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4plus/fingerprinters/ja4d.py:165` fails two of them.
 - **The divergence register records the rule that reads a JA4TS delay in whole
   seconds** (#602). Round
-  TBD. **`ja4plus/fingerprinters/ja4ts.py:63` reads
+  220. **`ja4plus/fingerprinters/ja4ts.py:63` reads
   `int(math.copysign(math.floor(abs(delay) + 0.5), delay))`**, so each delay rounds to the
   nearest second, half away from zero. `_delay_seconds` at
   `ja4plus/fingerprinters/ja4ts.py:43` holds the rule, part e reads it at `:76`, and the
@@ -224,7 +224,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_ja4ts_delay_rounding_ruling.py` holds fourteen cases, and a truncation of
   `ja4plus/fingerprinters/ja4ts.py:63` fails six of them.
 - **The divergence register records the JA4T SYN selection** (#603). Round
-  TBD. **`ja4plus/fingerprinters/ja4t.py:159` reads
+  219. **`ja4plus/fingerprinters/ja4t.py:159` reads
   `if not (tcp.flags & TCP_SYN_FLAG) or (tcp.flags & TCP_ACK_FLAG)`**, and `:20-21` hold
   `TCP_SYN_FLAG = 0x02` and `TCP_ACK_FLAG = 0x10`. That line is a bit test, so a SYN whose
   flag byte is `0xC2` produces a JA4T value and a SYN-ACK produces none. **Three FoxIO
@@ -252,6 +252,345 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   read the register row and six read the code. **A reversal to the equality test fails
   three of them**, measured by an edit of line 159 to `if int(tcp.flags) != TCP_SYN_FLAG:`
   and a restore of the file afterwards.
+- **`--types` accepts the token `ja4ls`, which selects the JA4LS values alone** (#605).
+  Round
+  226. **`VALID_TYPES` of `ja4plus/cli.py` moves from ten tokens to eleven**, and `ja4ls`
+  joins the list after `ja4l`. **`--types ja4l` keeps selecting both latency values**, so
+  no caller of version 1.1.1 sees a change and this round adds a filter rather than
+  narrowing one. **The filter reads the value prefix and never the result type.**
+  `ja4plus/processor.py` sets the type from `_SPEC`, so `JA4LFingerprinter` reports the
+  type `ja4l` for both methods and a filter keyed on the type cannot tell them apart. The
+  new `_selecting_token` of `ja4plus/cli.py` therefore tests
+  `fingerprint.startswith("JA4L-S=")`, which `ja4plus/fingerprinters/ja4l.py:446` writes.
+  **It reads `ja4l` before `ja4ls`**, so a JA4LS value that both tokens select reports at
+  the position of `ja4l`, and a run that names no `--types` option keeps the output order
+  of version 1.1.1. **Parity rule 2 decided the token**, because FoxIO specifies no
+  command-line interface and the Go port shipped one on 2026-08-13 under its issue #61.
+  `cmd/ja4plus/types.go:22` of `Crank-Git/ja4plus-go` holds the token, `:34` holds the
+  same `JA4L-S=` prefix constant, and `admitsResult` at `:85-86` returns
+  `filter["ja4l"] || filter["ja4ls"]`. **The port therefore keeps `ja4l` at both values
+  too**, so the token is additive in both implementations and neither command line breaks.
+  **The two token lists still order the methods differently**, because the port lists
+  `ja4t` and `ja4ts` before `ja4l` where this project lists `ja4l` first, and this round
+  moves no existing token. **Eight cases came first and five of the eight failed.** The
+  three that passed are the guards this change must not break. `ja4l` selects both values,
+  a default run selects every method, and `_parse_types` declines an unknown token.
+  `tests/test_cli_types_ja4ls.py` holds eleven cases, and three of them run the committed
+  capture `tests/foxio_vectors/https-connect.pcap` through `main` and read the JSON lines.
+  **No fingerprint moves**, because this round changes selection and never production. The
+  unit suite reports 4740 passed, 8 skipped and 8 xfailed at commit `93a540d`, which is
+  this branch before it took the integration branch again. **It reports 5235 passed on the
+  merged result**, because #628 landed 490 fuzz cases between the two runs. The
+  conformance suite reports 1642
+  passed, 143 skipped and 137 xfailed on both runs, against the 137 keys of
+  `tests/foxio_deviations.json`. **One case of `tests/test_method_pages.py` needed a
+  repair, and the repair is the finding of this round.**
+  `test_the_example_of_each_method_page_comes_from_the_capture_it_names` compared the
+  `--types` token of a method page against the `type` value of each result. **A token is
+  no longer a `type` value**, so `ja4ls` matched nothing and the case failed on
+  `tests/foxio_vectors/https-connect.pcap emitted no ja4ls fingerprint`. That case now
+  reads `_selecting_token`, so the token of a page means what it means on the command
+  line. **Six documents state the count, and each one moves from ten tokens to eleven.**
+  `docs/methods/ja4ls.md` states `ja4ls` as its token, `docs/methods/ja4l.md`,
+  `docs/methods/index.md`, `docs/output-schema.md`, `docs/api_reference.md` and
+  `README.md` each state the pair. **The `type` field still holds one of ten values**, and
+  the row of `docs/specs/spec.md` and the docstring of `ja4plus/types.py` now separate that
+  count from the eleven tokens `--types` accepts. **The `## Terms` table gains the term
+  `types token`.** `ja4ls` is a value `--types` accepts and it is no method name, and the
+  `method name` row barred the word `token` as a synonym of itself. Recorded by #605.
+- **The malformed-input suite holds a fuzz target for the ServerHello reader** (#628).
+  Round
+  225. **`tests/fuzz/` named no ServerHello entry point**, and a grep for `server_hello`
+  across its five case files returned nothing. #617 records that a fuzz target found the
+  identical defect of the Go library in 1.14 seconds, and that this project found its own
+  half by reading the port. **A read is not a standing proof**, so this round writes the
+  proof rather than repeats the read. `tests/fuzz/test_server_hello_extensions.py` holds
+  490 cases and it runs in 0.16 seconds. **The target measures the class of defect and not
+  the one instance**: a record declares one length in an extension header, and it supplies
+  another count of bytes. The corpus holds five parts. A grid of 240 records stands over
+  six extension types, eight declared lengths and five supplied counts. 512 records carry
+  a random extension block, and 512 draws carry random bytes. A byte-flip sweep turns each
+  of three bit groups over each of the 55 bytes of a well-formed record. The two seeds of
+  #617 stand beside them: the 53-byte record, and the 64-byte input the Go fuzzer wrote.
+  **Each part drives `_parse_server_hello`, and the grid drives `parse_tls_handshake` as
+  well**, because #617 records that the exception reached the caller of the library.
+  **Every case states what the reader produced**, because `tests/fuzz/README.md` records
+  that a case which asserts "no exception" passes where no parser runs. **The target
+  discriminates, and this round measured that.** A reversal of the `4497e9f` guard at
+  `ja4plus/utils/tls_utils.py:282`, back to `if ext_len >= 2:`, reads 27 failed and 463
+  passed, and the seed case of the 53-byte record reports
+  `IndexError: index out of range` at `ja4plus/utils/tls_utils.py:283`. The restored file
+  reads 490 passed. **The suite imports no new tool.** The five existing files of
+  `tests/fuzz/` each draw from `random.Random` under a fixed seed, and this file follows
+  that shape, so the case count is fixed and the `fuzz` job stays predictable. **This
+  round edits no file under `ja4plus/`**, so no fingerprint moves.
+- **The JA4 and JA4S QUIC branches read the innermost UDP layer of a packet** (#594).
+  Round
+  223. **`ja4plus/fingerprinters/ja4.py:422` and `ja4plus/fingerprinters/ja4s.py:83` each
+  read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` takes the layer count as its
+  second parameter `nb`, which defaults to 1, so it returns the first layer of the class
+  counting from the outside, and on a tunneled packet that layer is the UDP header of the
+  tunnel. **#594 names that parameter `nth`, and the installed scapy names it `nb`.**
+  `scapy/packet.py:1317-1327` at scapy 2.7.0 holds the signature and the docstring `Return
+  the nb^th layer that is an instance of cls, matching flt values.`, and this round writes
+  the measured name. Both branches then passed the tunnel header
+  bytes to the QUIC decoder, which produced no value, and the port pair of any result named
+  the tunnel. **Both branches now read `innermost_layer(packet, (UDP,))`**, which
+  `ja4plus/utils/tunnels.py:50` publishes for this purpose and which
+  `ja4plus/utils/packet_utils.py:107` already reads for the reported port pair. **No
+  committed fingerprint moves.** A replay of the 38 captures of `tests/foxio_vectors/`
+  produced 219 JA4 values and 126 JA4S values before the change and after it, and the
+  SHA-256 of the whole record read
+  `9dc6aee6a2ae9d8aae274a70e5e847e2bd0851a03de4b8643197b730bd5c4519` on both runs. That
+  set holds `gre-sample.pcap`, `gre-erspan-vxlan.pcap` and `tcpdump-geneve.pcap`, which are
+  the three tunneled captures, and none of the three carries QUIC. **No capture of the
+  FoxIO corpus carries QUIC inside a tunnel**, so no vector separates the two behaviours
+  and the proving case is constructed. `tests/test_quic_tunnel_inner_udp.py` builds one
+  QUIC handshake inside a VXLAN tunnel, and it compares each value against the untunneled
+  packet that carries the same QUIC bytes. **The four tunneled cases failed against
+  `getlayer` and they pass against `innermost_layer`**, and the untunneled control of each
+  pair passed in both runs, so two absent values pass no case. **The JA4 case splits the
+  ClientHello across two datagrams**, because a ClientHello that one datagram carries
+  reaches `extract_tls_info`, which reads the innermost `Raw` layer and finds the QUIC
+  bytes whatever the tunnel does. `_try_quic_multi_packet` is the branch this change moves.
+  **The connection key keeps its form**, which is the outer address pair with the inner
+  port pair. #242 decided that form and this round moves the port half alone. **The change
+  adds no unbounded walk.** `innermost_layer` reads the layer chain scapy already built,
+  which `getlayer` reads too, and it holds no state across packets. **The port reached this
+  reading first.** `ja4.go:104` and `ja4s.go:103` of `Crank-Git/ja4plus-go` each call
+  `parser.GetUDPLayer`, which `internal/parser/packet.go:96` documents as the UDP layer of
+  the innermost packet. Issue #170 of that repository made the change and pull request #188
+  holds its constructed test.
+- **JA4TS publishes the stored four-part value on a reset of a one-SYN-ACK connection**
+  (#609). Round
+  224. **The maintainer ruled the question on 2026-08-14, at `Crank-Git/ja4plus-go#484`,
+  and `Crank-Git/ja4plus-go#495` landed the port half.** `SynAckTracker.reset_value` of
+  `ja4plus/fingerprinters/ja4ts.py` returned None until the connection held two SYN-ACK
+  times, so a reset of a connection the server answered once produced no value at all.
+  **The dissector writes the four parts outside the delay guard.**
+  `wireshark/source/packet-ja4.c:1599-1608` copies the window size, the maximum segment
+  size, the window scale and the option list from the stored connection, and
+  `wireshark/source/packet-ja4.c:684` guards the delay list and the reset letter on
+  `conn->syn_ack_count > 1`. **The delay list and the reset letter stay behind that
+  guard**, so a connection that holds two SYN-ACK times keeps the five-part value it
+  produced before, and `MAX_SYN_ACK_DELAYS` holds without a change. **Four cases came
+  first and all four failed against the committed reader**, reading
+  `AttributeError: 'NoneType' object has no attribute 'split'` from
+  `test_that_value_carries_no_delay_and_no_reset_letter` and
+  `AssertionError: None != '65535_2-1-3-1-1-4_65495_8'` from
+  `test_a_reset_on_a_connection_the_server_answered_once_produces_the_stored_parts`.
+  **A replay of the 38 committed captures produces 777 values before and 781 after, and
+  no value of the 777 moved.** All 4 new values are JA4TS values. `ssh2.pcapng` frame 849
+  and frame 850 each write `42600_2-1-1-4-1-3_1300_9`, `browsers-x509.pcapng` frame 174
+  writes `64400_2-1-3-4-0-0_1400_2`, and `browsers-x509.pcapng` frame 119 writes
+  `64240_2-1-3-4-0-0_1460_2`. **The register falls from 140 keys to 137**, against 137
+  `xfailed` cases, so the invariant holds at the new number. The three keys it loses are
+  `ssh2.pcapng/5:57368/JA4TS.2`, `ssh2.pcapng/5:57368/JA4TS.3` and
+  `browsers-x509.pcapng/2:54603/JA4TS.2`, and each one now compares as a pass. **The
+  three keys it keeps carry a client RST, and their cause changes.** The dissector keys
+  the connection by the stream at `wireshark/source/packet-ja4.c:1600`, and
+  `_connection_key` keys it by the server endpoint, so a client RST reaches no stored
+  connection. `Crank-Git/ja4plus-go#502` holds that question. **Frame 119 of
+  `browsers-x509.pcapng` opens one divergence that no register row reaches**, because it
+  is a server RST that carries ACK and `wireshark/source/packet-ja4.c:1296` tests the flag
+  byte for equality. #246 adopted the Zeek reading at `zeek/ja4t/main.zeek:167`, which
+  tests the RST bit alone, so `ja4plus` publishes a value there.
+  `TestTheAckResetDivergence` of `tests/test_foxio_wireshark_ja4ts.py` holds that
+  divergence as a comparison that runs, and `Crank-Git/ja4plus-go#503` holds the
+  consequence. **The conformance suite reports 1635 passed, 143 skipped and 140 xfailed
+  before this round, and 1642 passed, 143 skipped and 137 xfailed after it.** The Wireshark
+  comparison moves from 52 matches and 6 register rows to 55 and 3.
+  `docs/specs/foxio/JA4T.md` states the rule as R13, and the `Divergence register` of
+  `docs/specs/spec.md` names `Crank-Git/ja4plus-go#484` as the reversal path. **This round
+  changes no rounding line**, and #602 owns the rounding of part e.
+- **JA4H reads a request path that holds a space, and an empty header list hashes**
+  (#612). Round
+  231. **The two rules land together, and neither one closes a comparison alone.**
+  **Rule 1 repairs `REQUEST_LINE_PATTERN` of `ja4plus/utils/http_utils.py:31` to `:34`.**
+  The path group read `(\S+)`, which matches no path that holds a space, so frame 4 of
+  `gre-erspan-vxlan.pcap` reached no JA4H value. That frame holds
+  `GET /Hello Arkime HTTP/1.0`, the group read `/Hello`, and the match then needed the
+  version token where the line holds `Arkime`. **The repaired pattern holds four
+  readings**, and the Go half `Crank-Git/ja4plus-go#527` landed the same three that FoxIO
+  leaves open. Each separator reads `[ \t]+` and never `\s`, because `\s` matches a line
+  feed and the payload `SSH-2.0-OpenSSH_9.6\r\n/a HTTP/1.1\r\n` then reached a request
+  line that no line holds. The path group reads `[^\r\n]` and never any character,
+  because `.` matches a bare carriage return and the path of `GET /a\rFAKE HTTP/1.1`
+  would then hold two lines. The group is lazy, so a first line that holds two version
+  tokens reaches the earlier one. **The fourth rule is this project's own, and the
+  self-review found it after the first three had shipped to a branch.** The path group
+  reads neither a space nor a horizontal tab as its first character or as its last one.
+  **Rules 1 to 3 alone leave a payload that costs the square of its line length**, because
+  the lazy path body accepts a space and the greedy separator after it accepts a space
+  too. A run of spaces then admits one split for each space, and a version token that the
+  line almost holds makes the match retry every one of them. `GET a` plus 32000 spaces
+  plus `HTTPX` cost **3017.9 milliseconds** under a path group of `[^ \t\r\n][^\r\n]*?`
+  and **0.630 milliseconds** under rule 4, and a mixed run of spaces and tabs cost
+  3320.0 milliseconds against 0.593 milliseconds. **`is_http_request` reads 8192 bytes of
+  every TCP payload**, so one packet paid about 200 milliseconds of processor time under
+  the form rule 4 replaces. A path that ends with a character other than a space admits
+  one split for each such character, each split reads the run after it once, and the cost
+  is the line length. **Rule 4 moves no match**, because the greedy separator already
+  consumes every space of a run, so no match ever ended the path on a space, and a
+  differential run over 400000 random request lines reported no disagreement between the
+  two forms. **The Go half needs no rule 4**, because `regexp` of Go runs a finite
+  automaton and it backtracks nowhere, and an atomic group needs Python 3.11 while
+  `pyproject.toml` reads `requires-python = ">=3.10"`. **One further difference follows
+  from rule 1, and no vector reaches it.** Python `\s` matches the vertical tab and the
+  form feed and `[ \t]` matches neither, so those two bytes separate no field now and the
+  path group reads each one as an ordinary character. RFC 9112 names the space and it
+  names neither byte. **The port keeps its own version token**
+  `HTTP/(?:\d+\.\d+|[23])` with the lookahead, which #35 records, and the Go half holds
+  `HTTP/\d+\.\d+`. **Rule 2 removes the zero sentinel from part b of JA4H.**
+  `ja4plus/fingerprinters/ja4h.py:479` to `:481` wrote `000000000000` where the joined
+  header names were empty, and part b now reads
+  `hashlib.sha256(headers_str.encode()).hexdigest()[:12]` with no guard, so an empty
+  header list reads `e3b0c44298fc`. **The maintainer ruled on 2026-08-14, and the
+  deciding fact is a rank 1 image rule.** R12 of `docs/specs/foxio/JA4H.md` transcribes
+  `Truncated SHA256 hash of Headers, in the order they appear` and it names no sentinel,
+  and R17 confines the sentinel to part c and part d. The four FoxIO references split two
+  against two, and R19 of that page now holds the ruling and quotes the superseded
+  wording rather than rewrite it. **#619 landed the identical ruling on JA4X on
+  2026-08-14**, and `Crank-Git/ja4plus-go#527` holds the Go half of this one. **The two
+  rules close one comparison of the shared FoxIO vector set.** Frame 4 of
+  `gre-erspan-vxlan.pcap` now reads
+  `ge10nn000000_e3b0c44298fc_000000000000_000000000000`, which is the value
+  `tests/foxio_vectors/wireshark_expected/gre-erspan-vxlan.pcap.json` holds. **Rule 1
+  alone produces `ge10nn000000_000000000000_000000000000_000000000000` against that
+  value**, which is the measurement the Go half reported and this round reproduced.
+  **A replay of the 38 committed captures produces 73 JA4H values before the change and
+  74 after**, and the one new value is that frame. Every other JA4H value is unchanged,
+  capture by capture and frame by frame. **New file
+  `tests/test_ja4h_request_line_and_empty_header_list.py` holds eleven cases, and six of
+  the first eight failed on the base commit `07d906d`.** Five reversals measure the rules
+  apart. Rule 1 alone fails 3, rule 2 alone fails 3, the base fails 5, the lazy group
+  `(.+?)` fails the carriage-return case and one timing case, and a path group that ends
+  on a space fails the two timing cases and runs the file in 6.87 seconds against 0.29. **The conformance
+  suite moves one skip to one xfail.** It reports 1635 passed, 143 skipped and 140 xfailed
+  before the change, and 1635 passed, 142 skipped and 141 xfailed after it. The new key
+  is `gre-erspan-vxlan.pcap/JA4H`, and `tests/foxio_deviations.json` holds 141 keys
+  against 141 xfailed cases. **The FoxIO Python expected-output file names no JA4H key on
+  that capture**, so the value this project produces has nothing there to compare
+  against, and the FoxIO Wireshark dissector holds it exactly. The Go half predicted that
+  result and measured three of them. `## The marker rule` of `tests/foxio_deviations.py`
+  and the precedence-exception sentence of `.claude/rules/external-apis.md` each move
+  their denominator from 140 to 141.
+
+- **The JA4L request completeness gate reads the header block terminator of
+  `ja4plus/utils/http_utils.py`** (#630). Round
+  230. **`ja4plus/fingerprinters/ja4l.py:402-403` held a second copy of the terminator
+  rule**, as `return b"\r\n\r\n" in payload or b"\n\n" in payload` inside
+  `_holds_a_complete_http_request`. That pair called no reader of `http_utils`, so #614
+  moved the rule in one file and left the copy in the other. **The pair declined the
+  terminator `\n\r\n`.** The reference routes a packet that holds a whole HTTP request to
+  a cache that holds no measurement point, so such a packet completes no client value. A
+  request whose header block ends `\n\r\n` therefore moved the JA4L client measurement
+  point, where a request with any other terminator moved it nowhere. `_holds_a_complete_http_request`
+  now calls `header_block_end`, and one reader answers the question for every caller.
+  **The deciding source is the Wireshark HTTP dissector and not #614**, because the gate
+  answers which cache the reference gives the packet: `epan/tvbuff.c:4203` of Wireshark
+  v4.6.0 compiles the line-end pattern with `ws_mempbrk_compile(&pbrk_crlf, "\r\n")`, so a
+  bare line feed ends a line, and `epan/req_resp_hdrs.c:143` leaves the header loop on the
+  first line of length 0. **The separating packet is built, because no FoxIO capture holds
+  a mixed line ending.** Three packets carry a SYN at 0.000 seconds, a SYN-ACK at 0.001
+  seconds and a request at 0.051 seconds, and that request holds the head
+  `GET / HTTP/1.1\r\nHost: example.com`, the terminator `\n\r\n` and the body `BODY`. It
+  read `JA4L-C=25000_128` on the base commit and it reads no client value here, which
+  agrees with the `JA4L-C=25000_64` the Go half measured on its own packet. New file
+  `tests/test_ja4l_header_block_terminator.py` holds seven cases, and five of them failed
+  on the base commit `727a10f`. **No conformance value moves**, because no FoxIO vector
+  carries a mixed line ending: the conformance suite reports 1635 passed, 143 skipped and
+  140 xfailed before the change and the same three counts after it, and
+  `tests/foxio_deviations.json` holds 140 keys. **The unit suite reports 4734 passed, 8
+  skipped and 8 xfailed**, and `pytest --collect-only` reads 6668 cases against 6659 on
+  the base commit. `Crank-Git/ja4plus-go#685` holds the Go half.
+
+- **The HTTP header block terminator matches either line ending** (#614). Round
+  227. **`ja4plus/utils/http_utils.py:43` held the two literals `\r\n\r\n` and `\n\n`.** The
+  maintainer ruled on 2026-08-14, on `Crank-Git/ja4plus-go#298`, that the terminator is one
+  line ending followed by another line ending, and `LINE_ENDING_PATTERN` already states
+  that a line ending is the two bytes `\r\n` or one line feed. `HEADER_BLOCK_TERMINATOR_PATTERN`
+  now holds `(?:\r\n|\n)(?:\r\n|\n)`, and `header_block_end` returns the end of the first
+  match. **A measurement on the base commit read all four terminators against the head
+  `GET / HTTP/1.1\r\nHost: example.com`, which is 33 bytes.** `\r\n\r\n` read 37, `\n\n`
+  read 35, `\r\n\n` read 36, and every one of those three is the offset past the whole
+  terminator. **`\n\r\n` read None, where 36 is the offset past it**, so a header block
+  that ends that way reached no JA4H value at all. **A second reading measured a body that
+  holds a later `\r\n\r\n`**: the bytes `GET / HTTP/1.1\r\nHost: example.com\n\r\nBODY\r\n\r\n`
+  read 44, where 36 ends the first terminator, so the reader reported the end of a
+  terminator inside the body. **The issue states that `\r\n\n` matched one byte early, and
+  the measurement above agrees with the reading that the end offset stayed right.** The
+  `\n\n` literal matches the last two bytes of `\r\n\n`, which starts one byte into the
+  terminator, and that match ends where the whole terminator ends.
+  `tests/test_http_header_block_terminator.py` holds all four terminators, the body case,
+  the bytes that hold no terminator, and one JA4H request that ends `\n\r\n`. Three of its
+  seven cases failed on the base commit. **No conformance value moves**, because no FoxIO
+  vector carries a mixed line ending: the conformance suite reports 1635 passed, 143
+  skipped and 140 xfailed before the change and the same three counts after it, and
+  `tests/foxio_deviations.json` holds 140 keys. **The second copy of this check, at
+  `ja4plus/fingerprinters/ja4l.py:402-403`, stays as it is**, and #630 adopts this reader.
+- **JA4X hashes an empty object identifier list** (#619). Round
+  228. **`ja4plus/fingerprinters/ja4x.py:72` to `:78` substituted the zero sentinel
+  `000000000000` for each of the three parts whose joined list was empty.** The maintainer
+  ruled on 2026-08-14 that an empty list hashes, so each part now reads
+  `hashlib.sha256(part.encode()).hexdigest()[:12]` with no guard, and an empty part reads
+  `e3b0c44298fc`. **The deciding fact is a rank 1 image rule.** The JA4H image states
+  `Truncated SHA256 hash of Headers, in the order they appear` for the hashed part and it
+  names no sentinel there, which R12 of `docs/specs/foxio/JA4H.md` transcribes, and R17 of
+  that page confines the zero sentinel to part c and part d of JA4H. No rule of the JA4X
+  image gives a sentinel to any part. **The ruling reverses the ruling of 2026-08-08 that
+  #228 recorded**, and R8 of `docs/specs/foxio/JA4X.md` now quotes the superseded wording
+  rather than rewrite it. **`Crank-Git/ja4plus-go#582` is the other half**, and it writes
+  `parser.TruncatedHashNoSentinel` into each of the three parts at `ja4x.go:490` to `:492`,
+  so both ports produce `e3b0c44298fc` for an empty part. **Nine cases came first and six of
+  them failed against the committed guard**, among them
+  `test_an_empty_extension_list_hashes`, which read
+  `AssertionError: assert '000000000000' == 'e3b0c44298fc'`. All nine pass against the
+  hashed form. **No committed capture reaches the empty list, so the change moves no
+  fingerprint.** A replay of the 38 captures of `tests/foxio_vectors/` produces 60 JA4X
+  values before the change and 60 after, and the two records are byte identical at SHA-256
+  `07ee974800c623f79026695f37f3c9be380343e3cf394d0cf6266c52d427292f`. **The change removes
+  one relation defect beside the form.** `generate_ja4x_raw` writes an empty part for an
+  empty list, and the earlier form wrote a sentinel that hashes nothing into the same
+  position, so the raw form was not the preimage of the fingerprint on such a part.
+  `test_the_hashed_form_is_the_hash_of_each_part_of_the_raw_form` holds the repaired
+  relation. **`hash12` of `tests/test_foxio_rust_parity.py` keeps the sentinel**, because
+  that reader models the FoxIO Rust snapshot and the Rust implementation writes it. No
+  local snapshot holds an empty part, so the two forms meet no case there. **This round
+  rules nothing on JA4H**, and `Crank-Git/ja4plus#612` carries that half.
+  `tests/test_ja4x_empty_ext.py`, `tests/test_comprehensive.py`, `tests/test_edge_cases.py`
+  and `tests/test_ja4x_deep.py` hold the moved cases.
+
+- **`JA4SSHFingerprinter` publishes `close_connection_window`, which emits the window one
+  connection holds open and then removes that connection** (#598). Round
+  229. **`cleanup_connection` removes a connection and it emits nothing**, so a caller that
+  evicts a connection loses the window that connection holds open. `_close_window` does
+  the whole job for one connection, and its leading underscore keeps every caller away
+  from it. `close_open_windows` reaches every connection at once, and it serves no single
+  connection that just ended. **A long-running monitor is the caller that evicts**, and
+  the reference publishes the final window at that moment: `rust/ja4/src/ssh.rs:45-55` and
+  `zeek/ja4ssh/main.zeek:160-164` both emit at teardown. **The maintainer ruled the method
+  on `Crank-Git/ja4plus-go` issue #216, on 2026-08-12**, and parity rule 2 gives the
+  interface to the side that names it first. `Crank-Git/ja4plus-go` pull request #263
+  shipped `CloseConnectionWindow(srcIP string, srcPort uint16, dstIP string, dstPort
+  uint16, proto string)`, so this round adopts that parameter order under the Python name
+  `close_connection_window(src_ip, src_port, dst_ip, dst_port, proto)`. **The method names
+  the connection by the same key `cleanup_connection` accepts**, so a caller names the two
+  endpoints in either order, and the method removes the handshake entry of the pair before
+  it reads the state table. **It returns an empty list for a connection the state table
+  does not hold, and an empty list for a window that holds no SSH packet**, because #97
+  declines a fingerprint of an empty window. It removes the connection in both cases, so a
+  second call returns an empty list. **The method takes the lock for the whole call**, as
+  every other public method of the fingerprinter does. **`cleanup_connection` keeps its
+  signature and its behaviour**, so a caller that only reclaims memory receives no
+  fingerprint it did not ask for. **Nine cases came first and all nine failed**:
+  `AttributeError: 'JA4SSHFingerprinter' object has no attribute
+  'close_connection_window'`. **No FoxIO vector separates the two answers**, because the
+  conformance suite reads each capture to its end and calls no eviction, so
+  `tests/test_ja4ssh_close_connection_window.py` is the record of the ruling. **No
+  fingerprint moves**, and the conformance suite reports the same counts before this round
+  and after it. `docs/api_reference.md` gains the section `When to call
+  close_connection_window`.
 - **The ServerHello reader bounds the `supported_versions` read on the bytes the record
   holds** (#617). Round
   218. **`ja4plus/utils/tls_utils.py:278` tested `ext_len`, which is the length the packet

@@ -261,7 +261,7 @@ result = fp.fingerprint_certificate(cert_der_bytes)
 - Extracts OID dotted strings from issuer, subject, and extensions
 - Converts OIDs to ASN.1 hex encoding
 - Hashes each section with SHA-256, truncated to 12 hex chars
-- Empty sections produce `000000000000`
+- Empty sections hash, and produce `e3b0c44298fc`
 
 **Self-signed certificates** have matching issuer and subject hashes.
 

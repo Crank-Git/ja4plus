@@ -16,6 +16,7 @@ from scapy.all import UDP, Packet
 from ja4plus.utils.tls_utils import extract_tls_info, is_grease_value
 from ja4plus.utils.packet_utils import packet_endpoints
 from ja4plus.utils.state_table import BoundedStateTable
+from ja4plus.utils.tunnels import innermost_layer
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -419,7 +420,11 @@ class JA4Fingerprinter(BaseFingerprinter):
             collect_crypto_fragments,
         )
 
-        udp = packet.getlayer(UDP)
+        # A tunnel carries its own UDP header, and `getlayer` counts from the outside. The
+        # QUIC layer is the innermost one, so a reader that takes the outer header decodes
+        # the tunnel bytes and produces no value. `packet_utils.packet_endpoints` reads the
+        # same layer, so one result names one port pair.
+        udp = innermost_layer(packet, (UDP,))
         if udp is None:
             return None
         udp_payload = bytes(udp.payload)

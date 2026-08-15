@@ -405,6 +405,62 @@ class JA4SSHFingerprinter(BaseFingerprinter):
                     emitted.append(self.fingerprints[-1])
             return emitted
 
+    def close_connection_window(
+        self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
+    ) -> list[dict[str, Any]]:
+        """Emit the open window of one connection, and then remove that connection.
+
+        The caller runs this method when it evicts one connection, which is the moment
+        the reference publishes the final window. `rust/ja4/src/ssh.rs:45-55` and
+        `zeek/ja4ssh/main.zeek:160-164` both emit at teardown. `close_open_windows`
+        reaches every connection at once, and it serves no single connection that just
+        ended.
+
+        The method is opt-in. `cleanup_connection` emits nothing, so a caller that only
+        reclaims memory receives no fingerprint it did not ask for. The maintainer ruled
+        the method on `Crank-Git/ja4plus-go` issue #216, on 2026-08-12.
+
+        Args:
+            src_ip: The address of one endpoint of the connection.
+            src_port: The port of one endpoint of the connection.
+            dst_ip: The address of the other endpoint of the connection.
+            dst_port: The port of the other endpoint of the connection.
+            proto: The transport protocol name. JA4SSH reads TCP alone, so this
+                fingerprinter reads no other value.
+
+        Returns:
+            A list of the fingerprint entries the call appended to `self.fingerprints`.
+            The list is empty for a connection the state table does not hold, and it is
+            empty for a window that holds no SSH packet. The method removes the
+            connection in both cases, so a second call returns an empty list.
+        """
+        with self._lock:
+            # The caller states that the connection ended, so the handshake entry of the
+            # endpoint pair goes with it. The removal precedes the return below, because
+            # a connection the state table does not hold still carries an entry that a
+            # SYN wrote.
+            self._handshake_clients.pop(
+                self._endpoint_pair_key(src_ip, src_port, dst_ip, dst_port), None
+            )
+
+            fwd = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+            rev = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
+            conn_key = fwd if fwd in self.connections else rev
+            if conn_key not in self.connections:
+                return []
+
+            fingerprint = self._close_window(conn_key)
+
+            # The eviction follows the emission, which is the order the ruling of #216
+            # states. A window that holds no SSH packet reaches this line too, because
+            # `cleanup_connection` evicts such a connection and this method leaves no
+            # connection behind either.
+            self.connections.pop(conn_key, None)
+
+            if fingerprint is None:
+                return []
+            return [self.fingerprints[-1]]
+
     def _close_window(self, conn_key: str) -> str | None:
         """Emit the open window of one connection, and start a new window.
 
