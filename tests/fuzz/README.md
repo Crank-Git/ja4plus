@@ -42,6 +42,13 @@ an empty payload, a truncated TLS record, a record that declares more bytes than
 packet holds, a long run of `0x00`, a long run of `0xff`, and a ClientHello with one
 corrupted byte. Its ClientHello comes from the `client_hello_packet` fixture.
 
+`test_server_hello_extensions.py` reads no capture, and it builds every record it reads.
+The ServerHello reader is the entry point #617 names, and `tests/fuzz/` held no target for
+it. The file measures one class of defect: a record declares one length in an extension
+header, and it supplies another count of bytes. The corpus holds a grid of 240 crafted
+records, 512 records that carry a random extension block, 512 draws of random bytes, a
+byte-flip sweep over a well-formed record, and the two seeds of #617.
+
 `test_structural_validity.py` reads no capture either, and it asserts the other outcome.
 A structurally valid ClientHello produces a fingerprint, whatever its body holds, because
 `ja4plus` adds no plausibility guard. The two files agree, because the TLS record header,
