@@ -295,7 +295,7 @@ implementations.
 named.** `ja4plus/fingerprinters/ja4x.py:65` to `:71` held the guard, one for each of the
 three parts. `tests/test_ja4x_empty_ext.py` pinned the sentinel and named this rule.
 
-**The gate of that ruling was proven by its reversal.** Remove the three guards, so that
+**The reversal of the three guards proves the gate of that ruling.** Remove them, so that
 each part hashes the empty join, and 7 unit cases fail: 4 of
 `tests/test_ja4x_empty_ext.py`,
 `tests/test_comprehensive.py::TestJA4XComprehensive::test_no_extensions_cert`,

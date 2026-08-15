@@ -534,7 +534,7 @@ def _certificate_raw_params():
 
 
 def hash12(part):
-    """Return the JA4X hash one unhashed list produces in the FoxIO Rust snapshot.
+    """Return the hash that one unhashed list produces in the FoxIO Rust snapshot.
 
     Args:
         part: One comma-separated list of hex object identifiers.
