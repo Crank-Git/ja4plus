@@ -35,7 +35,7 @@ REGISTER_SEPARATOR = re.compile(r"^\|[\s\-|]+\|$")
 # The first cell of the row this issue writes.
 RULING_ITEM = "The flag test that selects the SYN of a JA4T value"
 
-# The flag byte of a SYN that also sets `CWR` and `ECE`. `rust/ja4/src/tcp.rs:153` asserts
+# The flag byte of a SYN that also sets `CWR` and `ECE`. `rust/ja4/src/tcp.rs:154` asserts
 # `is_initial_syn(0xC2)`, and the two references that test for equality decline it.
 ECN_SYN = 0xC2
 
@@ -99,6 +99,7 @@ def test_the_register_cites_each_of_the_three_references() -> None:
         citation
         for citation in (
             "`rust/ja4/src/tcp.rs:146`",
+            "`rust/ja4/src/tcp.rs:154`",
             "`zeek/ja4t/main.zeek:126`",
             "`wireshark/source/packet-ja4.c:1266`",
         )

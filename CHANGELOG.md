@@ -13,9 +13,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   flag byte is `0xC2` produces a JA4T value and a SYN-ACK produces none. **Three FoxIO
   references split on that selection, and rule 1 settles none of them.**
   `rust/ja4/src/tcp.rs:146` tests the same two bits, and its own test asserts
-  `is_initial_syn(0xC2)` at `rust/ja4/src/tcp.rs:153`. `zeek/ja4t/main.zeek:126` requires
+  `is_initial_syn(0xC2)` at `rust/ja4/src/tcp.rs:154`. `zeek/ja4t/main.zeek:126` requires
   `rph$tcp$flags != TH_SYN` to be false, and `wireshark/source/packet-ja4.c:1266` requires
-  `tcp_flags == 0x02`. `JA4T.png` states no flag rule, so the image settles nothing. **The
+  `tcp_flags == 0x02`. `JA4T.png` states no flag rule, so the image settles nothing.
+  **This round read all four lines at the pinned commit `27f0cbf9`, and it moved two
+  citations by one line.** R29 of `docs/specs/foxio/JA4T.md` in `Crank-Git/ja4plus-go`
+  cites `rust/ja4/src/tcp.rs:153`, which holds the comment above the assertion, and R10 of
+  the same page here cites `wireshark/source/packet-ja4.c:1265`, which holds the comment
+  above the test. **The two stale citations stay where they are**, because #603 writes one
+  register row and edits no other page. **The
   reference count is two against one, and this project follows the one.** The maintainer
   ruled that selection on 2026-08-13 under `Crank-Git/ja4plus-go#126`, and the port holds
   the same bit test at `ja4t.go`. **This round measured the corpus, and the register row
