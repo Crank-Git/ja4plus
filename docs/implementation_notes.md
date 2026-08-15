@@ -28,7 +28,7 @@ about another method, so each row below names its own evidence. The counts come 
 |---|---|---|---|
 | JA4 | `JA4_r`, `JA4_ro` | `JA4_r` sorts the ciphers and the extensions. It holds the signature algorithms in wire order. `JA4_ro` holds every list in wire order. | 160 `JA4_r` values. 156 of them carry a signature-algorithm section, and all 156 hold the ciphers and the extensions in numeric order and the signature algorithms in an order that is not numeric. The other four carry no extension and no signature algorithm. No `JA4_ro` value equals its `JA4_r` value. |
 | JA4S | `JA4S_r` | The extensions stay in wire order. JA4S sorts no list. | 84 `JA4S_r` values. 35 of them hold the extensions in an order that is not numeric order, and `badcurveball.pcap.json` gives `t1205h1_c02b_0000,ff01,000b,0023,0010`. No file carries a `JA4S_ro` key. |
-| JA4H | `JA4H_ro` | Every list holds the wire order. `JA4H_ro` holds the header names, the cookie names and the cookie name-and-value pairs as the request carries them. | 89 `JA4H_ro` values, and no `JA4H_r` value. `http1-with-cookies.pcapng.json` gives `yummy_cookie,tasty_cookie`, which is not sorted order, and the hashed form of the same request sorts the two names. 79 of the 89 values match after #131. |
+| JA4H | `JA4H_ro`, `JA4H_r` | `JA4H_ro` holds every list in wire order. `JA4H_r` holds the header names in wire order, and it sorts the cookie names and the cookie name-and-value pairs by the cookie name. | 89 `JA4H_ro` values, and no `JA4H_r` value, in these 37 files. `http1-with-cookies.pcapng.json` gives `yummy_cookie,tasty_cookie`, which is not sorted order, and the hashed form of the same request sorts the two names. 79 of the 89 values match after #131. `tests/foxio_vectors/wireshark_expected/` holds 62 `ja4.ja4h_r` values, and #600 measured them. |
 | JA4X | `JA4X_r` | Every list holds the wire order. JA4X sorts no list. | 0 `JA4X_r` values in the expected-output files, because the FoxIO Python implementation writes none. `rust/ja4x/src/lib.rs` writes `let ja4x_r = with_raw.then(\|\| parts.join("_"));`, and `wireshark/source/packet-ja4.c:1726` registers `ja4.ja4x_r`. R10 of `docs/specs/foxio/JA4X.md` states the order rule. #267 decided the form. |
 | JA4SSH, JA4L, JA4T, JA4TS, JA4D, JA4D6 | None | Not applicable. | No expected-output file carries a raw key for these methods. |
 
@@ -1488,11 +1488,21 @@ it.
 
 ## JA4H - HTTP
 
-### The raw form holds the wire order
+### JA4H holds two raw forms
 
-FoxIO publishes one raw key for JA4H, `JA4H_ro`, and no `JA4H_r` key. `ja4plus` therefore
-computes one JA4H raw form. A sorted raw form matches no reference value and no other
-implementation, so the fingerprinter emits none.
+**The per-stream expected-output files publish `JA4H_ro` alone, and the per-packet files of
+the Wireshark dissector publish `JA4H_r` beside it.** `ja4plus` therefore computes two JA4H
+raw forms. `raw_original_order` holds the wire order, and `raw` sorts both cookie lists by
+the cookie name. #600 filled the second one on 2026-08-15, and it moved no fingerprint.
+
+**The base value hashes the two sorted cookie strings**, so `raw` is the pre-image of part c
+and of part d. `tests/foxio_vectors/wireshark_expected/http1-with-cookies.pcapng.json`
+holds `ja4.ja4h_r` and `ja4.ja4h`, and the three fields of the first hash to the last three
+parts of the second.
+
+**A request that carries no cookie ends after the header names and one underscore, in both
+forms.** The Wireshark dissector writes two trailing underscores for that request.
+`Crank-Git/ja4plus-go#285` holds that reference split, and the maintainer rules it.
 
 The form is `<part a>_<header names>_<cookie names>_<cookie pairs>`. A request that
 carries no cookie ends after the header names and one underscore, as
@@ -1597,7 +1607,7 @@ and it costs 0.630 milliseconds under rule 4. A read of 2026-08-15 measured both
 
 **`is_http_request` reads 8192 bytes of every TCP payload**, so one packet paid about 200
 milliseconds of processor time under the form that rule 4 replaces. `ja4l.py:406` and
-`ja4h.py:137` each call that reader.
+`ja4h.py:142` each call that reader.
 
 **A path that ends with a character other than a space admits one split for each such
 character.** Each split reads the run of spaces after it once, so the cost is the line
