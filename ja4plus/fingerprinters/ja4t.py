@@ -11,9 +11,10 @@ import logging
 from scapy.all import TCP, Packet
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
+from ja4plus.utils.icmp_quoted import quoted_tcp_header
 from ja4plus.utils.packet_utils import packet_endpoints, packet_seconds
 from ja4plus.utils.state_table import BoundedStateTable
-from ja4plus.utils.tcp_options import tcp_prefix
+from ja4plus.utils.tcp_options import tcp_prefix, tcp_prefix_from_header
 
 logger = logging.getLogger(__name__)
 
@@ -102,13 +103,19 @@ def _connection_key(packet: Packet) -> ConnectionKey | None:
     return (endpoints["src"], endpoints["srcport"], endpoints["dst"], endpoints["dstport"])
 
 
-def _first_syn_of_connection(packet: Packet, connections: BoundedStateTable | None) -> bool:
+def _first_syn_of_connection(
+    packet: Packet,
+    connections: BoundedStateTable | None,
+    key: ConnectionKey | None = None,
+) -> bool:
     """Report whether this SYN is the first SYN of its connection.
 
     Args:
-        packet: The SYN packet.
+        packet: The packet that announces the SYN. It is the SYN itself, or an ICMP error
+            message that quotes it.
         connections: A `BoundedStateTable` that names the connections that already
             produced a value, or None when the caller holds no connection state.
+        key: The connection key, or None when the packet itself names the connection.
 
     Returns:
         True when the connection produces a value. A caller that holds no table reads
@@ -116,7 +123,8 @@ def _first_syn_of_connection(packet: Packet, connections: BoundedStateTable | No
     """
     if connections is None:
         return True
-    key = _connection_key(packet)
+    if key is None:
+        key = _connection_key(packet)
     if key is None:
         return True
     now = packet_seconds(packet)
@@ -128,6 +136,49 @@ def _first_syn_of_connection(packet: Packet, connections: BoundedStateTable | No
         return False
     connections[key] = True
     return True
+
+
+def _generate_from_quoted_header(
+    packet: Packet, connections: BoundedStateTable | None
+) -> str | None:
+    """Return the JA4T value of the connection an ICMP error message reports.
+
+    The maintainer ruled on 2026-08-14, under `Crank-Git/ja4plus-go#484`, and the
+    library reads the TCP header that an ICMP error message quotes.
+    `wireshark/source/packet-ja4.c:1261` matches the field abbreviation `tcp.flags`
+    anywhere in the protocol tree, so the dissector writes a value for such a frame.
+    `scapy` decodes that header as `TCPerror`, so `haslayer(TCP)` reports false and the
+    reader before #610 produced nothing. #484 is the reversal path, and a reversal changes
+    both repositories.
+
+    The quoted header names the connection, and the outer address pair of the message
+    names a router and the client. R9 gives one value to one connection, so the key reads
+    the quoted header. A monitor that reads the SYN itself therefore produces one value,
+    and the message that reports that same SYN produces no second one.
+
+    Args:
+        packet: A network packet that carries no TCP layer.
+        connections: A `BoundedStateTable` that names the connections that already
+            produced a value, or None when the caller holds no connection state.
+
+    Returns:
+        The fingerprint, or None when the packet carries no ICMP error message that quotes
+        a SYN.
+    """
+    quoted = quoted_tcp_header(packet)
+    if quoted is None:
+        return None
+
+    if not (quoted.flags & TCP_SYN_FLAG) or (quoted.flags & TCP_ACK_FLAG):
+        return None
+
+    value = tcp_prefix_from_header(quoted.header)
+
+    key = (quoted.src, quoted.sport, quoted.dst, quoted.dport)
+    if not _first_syn_of_connection(packet, connections, key):
+        return None
+
+    return value
 
 
 def generate_ja4t(packet: Packet, connections: BoundedStateTable | None = None) -> str | None:
@@ -151,7 +202,7 @@ def generate_ja4t(packet: Packet, connections: BoundedStateTable | None = None) 
     """
     try:
         if not packet.haslayer(TCP):
-            return None
+            return _generate_from_quoted_header(packet, connections)
 
         tcp = packet[TCP]
 

@@ -38,6 +38,7 @@ from typing import Any
 
 from scapy.all import UDP, Packet
 
+from ja4plus.utils.tunnels import innermost_layer
 from ja4plus.fingerprinters.base import BaseFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -264,13 +265,19 @@ def generate_ja4d6(packet: Packet) -> str | None:
     Returns:
         A JA4D6 fingerprint string or None if the packet is not applicable
     """
-    udp = packet.getlayer(UDP)
+    # A tunnel carries its own UDP header, and `getlayer` counts from the outside. The
+    # DHCPv6 message is the innermost one, so a reader that takes the outer header reads
+    # a tunnel port. The port test below then refuses the packet. The defect shape of
+    # this method is therefore an absent value and never a wrong one.
+    # `packet_utils.packet_endpoints` reads the same layer, so one result names one port
+    # pair.
+    udp = innermost_layer(packet, (UDP,))
     if udp is None:
         return None
 
     # Wireshark hands the JA4 dissector a DHCPv6 message only on the ports its DHCPv6
     # dissector claims. epan/dissectors/packet-dhcpv6.c sets
-    # UDP_PORT_DHCPV6_RANGE "546-547" at Wireshark 4.4.2, which
+    # UDP_PORT_DHCPV6_RANGE "546-547" at Wireshark v4.6.0, which
     # .claude/rules/external-apis.md pins. D7 of docs/specs/foxio/JA4D.md rules that this
     # project reads the same two ports.
     if 546 not in (int(udp.sport), int(udp.dport)) and 547 not in (int(udp.sport), int(udp.dport)):

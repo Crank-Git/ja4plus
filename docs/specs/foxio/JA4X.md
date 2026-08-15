@@ -117,18 +117,19 @@ offset += 1
 Each rule below carries two corroborations. Neither corroboration is the image. The
 in-repository corroborations read the FoxIO material at the pinned commit.
 
-**Eleven rules reach two corroborations each. The user decided R8, which the image
+**Eleven rules reach two corroborations each. The maintainer ruled R8, which the image
 contradicts.**
 
 | State | Rules |
 |---|---|
 | Two corroborations, and the image agrees | R1, R2, R3, R4, R5, R6, R7, R10 |
 | Two corroborations, and the image states nothing | R9, R11 |
-| Two corroborations, and the image contradicts them | **R8. The user decided it on 2026-08-08, and the ruling is reversible.** |
+| Two corroborations, and the image contradicts one form of them | **R8. The maintainer ruled it on 2026-08-14, and the ruling is reversible.** |
 
 **No rule on this page holds fewer than two corroborations.** R8 was uncertain for the
 opposite reason: the image draws both forms, so the image contradicts its own example.
-**The user settled it, and Changelog round 77 records the ruling.**
+**The maintainer settled it on 2026-08-14, and #619 records the ruling.** A ruling of
+2026-08-08 named the other form, and Changelog round 77 records that one.
 
 ### R1 — JA4X holds three parts, joined with `_`
 
@@ -206,11 +207,21 @@ The image's caption states this rule in words: `(does not include values)`.
 - Corroboration 2: `wireshark/source/packet-ja4.c:1053` matches the field `x509if.oid`. The
   dissector names the attribute value with a different field, and `ja4x()` never reads it.
 
-### R8 — An empty list writes the zero sentinel, and the image contradicts itself
+### R8 — An empty list hashes, and the image contradicts itself
 
-**The user decided this rule on 2026-08-08, and the ruling is reversible.** An empty
-list writes `000000000000`. The section below records the contradiction the image
-carries, so that a later reader does not derive it again.
+**The maintainer ruled this rule on 2026-08-14, and the ruling is reversible.** An empty
+list writes `e3b0c44298fc`, which is the truncated SHA-256 of the empty string. It writes
+no zero sentinel. `#### The ruling of 2026-08-14, and the reversal it makes` below holds
+that ruling, and #619 is the reversal path.
+
+**A ruling of 2026-08-08 stands above it in this section, and this record supersedes
+it.** The sentence below is the superseded wording, quoted rather than rewritten.
+
+> **The user decided this rule on 2026-08-08, and the ruling is reversible.** An empty
+> list writes `000000000000`.
+
+The section below records the contradiction the image carries, so that a later reader
+does not derive it again.
 
 The zero sentinel is the literal value `000000000000`.
 
@@ -253,6 +264,11 @@ matched no file.
 
 #### The ruling of 2026-08-08, and the contradiction it records
 
+**Warning: the ruling of 2026-08-14 reverses the form this subsection names, and the
+contradiction it records still stands.** Read the form from
+`#### The ruling of 2026-08-14, and the reversal it makes` below, and read the two source
+sets and the arithmetic from here.
+
 **The user decided the zero sentinel.** #228 holds the ruling comment, and Changelog
 round 77 of `docs/specs/spec.md` records it. The ruling is reversible.
 
@@ -275,17 +291,51 @@ e3b0c44298fc
 third part does not match. The two sources therefore describe one certificate and two
 implementations.
 
-**#228 changed no fingerprinter, because `ja4plus` already wrote the decided form.**
-`ja4plus/fingerprinters/ja4x.py:65` to `:71` hold the guard, one for each of the three
-parts. `tests/test_ja4x_empty_ext.py` pins the sentinel and names this rule.
+**#228 changed no fingerprinter, because `ja4plus` already wrote the form that ruling
+named.** `ja4plus/fingerprinters/ja4x.py:65` to `:71` held the guard, one for each of the
+three parts. `tests/test_ja4x_empty_ext.py` pinned the sentinel and named this rule.
 
-**The gate is proven by its reversal.** Remove the three guards, so that each part hashes
-the empty join, and 7 unit cases fail: 4 of `tests/test_ja4x_empty_ext.py`,
+**The reversal of the three guards proves the gate of that ruling.** Remove them, so that
+each part hashes the empty join, and 7 unit cases fail: 4 of
+`tests/test_ja4x_empty_ext.py`,
 `tests/test_comprehensive.py::TestJA4XComprehensive::test_no_extensions_cert`,
 `tests/test_edge_cases.py::TestX509EdgeCases::test_generate_ja4x_empty_lists` and
 `tests/test_ja4x_deep.py::TestJA4XNoExtensions::test_no_extensions_hash_is_zero_sentinel`.
 **The conformance suite reports no failure under the same reversal**, which measures the
 statement that no local vector reaches the case.
+
+#### The ruling of 2026-08-14, and the reversal it makes
+
+**The maintainer ruled that an empty list hashes.** #619 holds the ruling for this
+repository, and `Crank-Git/ja4plus-go#582` holds the Go half. The ruling is reversible,
+and #619 is the reversal path.
+
+**The deciding fact is a rank 1 image rule.** The JA4H image states
+`Truncated SHA256 hash of Headers, in the order they appear` for the hashed part, and it
+names no sentinel there. R12 of `docs/specs/foxio/JA4H.md` transcribes that rule, and R17
+of the same page confines the zero sentinel to part c and part d of JA4H. No rule of the
+JA4X image gives a sentinel to any part, so the hash is the one form a rule states.
+**This ruling settles the JA4X form alone.** R19 of `docs/specs/foxio/JA4H.md` holds the
+JA4H form, and `Crank-Git/ja4plus#612` carries that half.
+
+**A ruling lands in this repository and in the port together, or in neither.** The Go
+half writes `parser.TruncatedHashNoSentinel` into each of the three parts, at
+`ja4x.go:490` to `:492` of `Crank-Git/ja4plus-go`. Both ports therefore write
+`e3b0c44298fc` for an empty part.
+
+**The change removes one relation defect beside the form.** `generate_ja4x_raw` writes an
+empty part for an empty list, and the earlier form wrote a sentinel that hashes nothing
+into the same position. The raw form is now the exact preimage of the fingerprint on
+every part.
+`tests/test_ja4x_empty_ext.py::test_the_hashed_form_is_the_hash_of_each_part_of_the_raw_form`
+holds that relation.
+
+**The gate is proven by its reversal, and both directions are measured.** Against the
+guarded form, 6 of the 9 cases of `tests/test_ja4x_empty_ext.py` fail and 3 pass, and one
+failure reads `AssertionError: assert '000000000000' == 'e3b0c44298fc'`. Against the
+hashed form, all 9 pass. **A replay of the 38 committed captures produces 60 JA4X values
+before the change and 60 after, and the two records are byte identical.** No local vector
+reaches the empty list, so this file stays the whole gate on the form.
 
 ### R9 — JA4X reads the certificates of the Certificate handshake message
 
@@ -372,11 +422,11 @@ this table does not name is a field nobody read.**
 | Part a source | R2 | `ja4x.py:367` to `ja4x.py:369` | Agrees. The loop reads `cert.issuer.rdns`. |
 | Part b source | R3 | `ja4x.py:372` to `ja4x.py:374` | Agrees. The loop reads `cert.subject.rdns`. |
 | Part c source | R4 | `ja4x.py:377` to `ja4x.py:378` | Agrees. The loop reads `cert.extensions`. |
-| The hash and the truncation | R5 | `ja4x.py:65` to `ja4x.py:71` | Agrees. Each part is `hashlib.sha256(...).hexdigest()[:12]`. |
+| The hash and the truncation | R5 | `ja4x.py:75` to `ja4x.py:77` | Agrees. Each part is `hashlib.sha256(...).hexdigest()[:12]`. |
 | The list separator | R6 | `ja4x.py:59` to `ja4x.py:61` | Agrees. `",".join(...)`. |
 | The hex form of an object identifier | R6 | `x509_utils.py:152` to `x509_utils.py:185` | Agrees. `oid_to_hex("2.5.4.3")` returns `550403`. |
 | No value in a list | R7 | `ja4x.py:369`, `ja4x.py:374`, `ja4x.py:378` | Agrees. Each line reads `attr.oid` or `ext.oid`, and none reads a value. |
-| The zero sentinel | R8 | `ja4x.py:65` to `ja4x.py:71` | Agrees with the FoxIO Rust implementation, the Wireshark dissector and the `README.md`. Disagrees with the image's Qakbot row and with `python/ja4x.py`. The user decided the sentinel on 2026-08-08 under Changelog round 77, so `ja4x.py` needed no change. |
+| The empty list | R8 | `ja4x.py:75` to `ja4x.py:77` | Agrees with the image's Qakbot row and with `python/ja4x.py`. Disagrees with the FoxIO Rust implementation, the Wireshark dissector and the `README.md`. The maintainer ruled the empty list on 2026-08-14, and #619 removed the three guards. |
 | The packet the reader selects | R9 | `ja4x.py:257` | Agrees. `message_type == TLS_CERTIFICATE_MESSAGE_TYPE` selects handshake type 11. |
 | Wire order, and no sort | R10 | `ja4x.py:367` to `ja4x.py:378` | Agrees. Each loop keeps the order the certificate holds, and nothing sorts a list. |
 | The direction the reader accepts | R9 | `ja4x.py:108` to `ja4x.py:135` | Agrees. `process_packet` tests no direction and no port, and the references test neither. |
@@ -522,7 +572,7 @@ now runs" below holds the result.
 | Source searched | Result |
 |---|---|
 | `tests/foxio_vectors/*.json` | **60 `JA4X.<n>` values in 11 files.** The conformance suite already compares every one. |
-| `rust/ja4/src/snapshots/` at the pinned commit | Many `ja4x` values, inside the `tls_certs` block of each stream. `tests/foxio_vectors/rust_expected/` holds ten of the snapshots. |
+| `rust/ja4/src/snapshots/` at the pinned commit | Many `ja4x` values, inside the `tls_certs` block of each stream. `tests/foxio_vectors/rust_expected/` holds 11 of the snapshots. |
 | `README.md` at the pinned commit | Six documented values, at lines 143 to 147. |
 | `zeek/` at the pinned commit | **None.** `zeek/ja4x/__load__.zeek` holds the single line `# empty`, and `zeek/config.zeek:24` sets `option JA4X_enabled:   bool = F;`. `docs/specs/foxio/zeek.md:39` records the reading, and #198 owns it. |
 | `python/test/testdata/` at the pinned commit | The local copies under `tests/foxio_vectors/` are the same files. |
@@ -564,7 +614,7 @@ hold. #229 changed no fingerprinter.
 
 | Measurement | Count |
 |---|---|
-| Local Rust snapshots | 10 |
+| Local Rust snapshots | 11 |
 | Snapshots that hold a JA4X value | 5 |
 | Streams that hold at least one | 19 |
 | JA4X values in those streams | 43 |
@@ -575,6 +625,19 @@ hold. #229 changed no fingerprinter.
 The five snapshots that hold a value are `browsers-x509.pcapng` with 7,
 `https-connect.pcap` with 2, `latest.pcapng` with 8, `ssh2.pcapng` with 12 and
 `tls-handshake.pcapng` with 14.
+
+**#611 corrected the snapshot count of this page on 2026-08-15, and this record supersedes
+the earlier wording.** #229 measured 10 snapshots, and #242 added
+`ja4__insta@gre-erspan-vxlan.pcap.snap`, which raises the directory to 11. The two
+sentences below are the superseded wording, quoted rather than rewritten.
+
+> `tests/foxio_vectors/rust_expected/` holds ten of the snapshots.
+
+> | Local Rust snapshots | 10 |
+
+**The correction moves no other row of the table.** A read of 2026-08-15 reports 11 files,
+5 of them holding a JA4X value, 19 streams and 43 values. The snapshot #242 added holds no
+JA4X value, so it changes the first row alone.
 
 **The revert proves the cases run.** Remove the `tls_certs` branch of the reader, and 48
 cases stop running: 43 value cases and 5 count cases. Three checks then fail and name the

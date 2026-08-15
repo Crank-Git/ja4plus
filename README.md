@@ -47,7 +47,7 @@ capability is larger than fingerprint production.
 ruling is reversible.
 
 `JA4LFingerprinter` builds both JA4L and JA4LS, so ten fingerprinters carry eleven
-methods. The `--types` option names the two together as `ja4l`.
+methods. `--types ja4l` names the two together, and `--types ja4ls` names JA4LS alone.
 
 QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS ClientHellos. IPv4 and IPv6 are both supported across all fingerprinters.
 

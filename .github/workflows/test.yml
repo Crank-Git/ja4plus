@@ -242,6 +242,54 @@ jobs:
         run: |
           git fetch --depth=2 origin "+$DEFECT_SHA:refs/ja4plus/recorded-defect" "+$CONTROL_SHA:refs/ja4plus/recorded-control"
 
+      - name: Fetch the commits the transcription pages pin
+        # `tests/foxio_citation_lines.py` reads each line citation of `docs/specs/foxio/`
+        # that stands under a pin declaration, and it reads it with
+        # `git show <commit>:<path>`. **The clone of depth 1 holds none of these commits**,
+        # so the reader would reach no blob and the case would fail on the runner while it
+        # passes on a full clone.
+        #
+        # **The reader falls back to `refs/ja4plus/citation-pin-<commit>`**, which is the
+        # reference this step writes. It reads the bare identifier first, so a full clone
+        # needs no reference at all.
+        #
+        # **Warning: run one `git fetch` here, and never two.** The step above states the
+        # measurement #586 took: each fetch of a shallow clone rewrites `.git/shallow`, and
+        # a second one then fails with `fatal: shallow file has changed since we read it`.
+        # One command that names every refspec writes that file once.
+        #
+        # **The fetch names the whole identifier, because git resolves no abbreviation at
+        # the remote.** #528 measured `+46aa502:refs/ja4plus/abbrev` on a clone of depth 1
+        # and git answered `fatal: couldn't find remote ref 46aa502`. The pages name seven
+        # commits by an abbreviation, and this list holds the whole identifier of each one.
+        #
+        # **Every commit below is reachable from `dev`, so no tag has to hold it.** #668
+        # declined `6605a85` and `bec84dd4` on that reading: each one is the commit of the
+        # issue that made the reading, no remote branch reaches either, and a fetch of an
+        # identifier no reference holds fails. The two pages name a commit of `dev` that
+        # carries the same file instead, and each page records that decline.
+        #
+        # `tests/test_foxio_citation_lines.py::test_the_workflow_fetches_every_commit_the_pages_pin`
+        # reads this list against the pages, so a new pin fails a case here rather than
+        # leaves the runner without the commit.
+        env:
+          # `docs/specs/foxio/JA4T.md`, the JA4TS table.
+          JA4TS_PIN: 0d3480e7ee6defcaa2b87db45933b28263d8b4b1
+          # `docs/specs/foxio/JA4H.md`, every row but R19.
+          JA4H_PIN: 1a87f45e39cba3d578207228989eae98f8c9cc85
+          # `docs/specs/foxio/JA4H.md`, the R19 row alone.
+          JA4H_R19_PIN: dcb43fc87538774d7735c97dc94fc1c5df00da90
+          # `docs/specs/foxio/JA4L.md`.
+          JA4L_PIN: 247275db148058a78fdb7553e97b6937a0c9e8bf
+          # `docs/specs/foxio/JA4D.md`, which #231 decided and #273 landed.
+          JA4D_PIN: ce2fa544a7502c7e164739a1c38ab6e836f03cd6
+          # `docs/specs/foxio/JA4SSH.md`.
+          JA4SSH_PIN: ec01cdcdbcca9cf6cf6c4c09efb3c39589ea32fa
+          # `docs/specs/foxio/JA4S.md` and `docs/specs/foxio/JA4X.md`, which share a commit.
+          JA4S_JA4X_PIN: edfc7b26c7d5c5ba2431b3cf61fc2d9ed9cb4123
+        run: |
+          git fetch --depth=1 origin "+$JA4TS_PIN:refs/ja4plus/citation-pin-0d3480e" "+$JA4H_PIN:refs/ja4plus/citation-pin-1a87f45" "+$JA4H_R19_PIN:refs/ja4plus/citation-pin-dcb43fc" "+$JA4L_PIN:refs/ja4plus/citation-pin-247275d" "+$JA4D_PIN:refs/ja4plus/citation-pin-ce2fa544" "+$JA4SSH_PIN:refs/ja4plus/citation-pin-ec01cdc" "+$JA4S_JA4X_PIN:refs/ja4plus/citation-pin-edfc7b2"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:

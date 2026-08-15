@@ -1,12 +1,12 @@
 {
   "CVE-2018-6794.pcap/JA4L-C": {
-    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:339` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:339` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
+    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:340` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:340` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
     "issue": 272,
     "decided": true,
     "capability": false
   },
   "CVE-2018-6794.pcap/JA4L-S": {
-    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:339` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:339` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
+    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:340` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:340` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
     "issue": 272,
     "decided": true,
     "capability": false
@@ -104,12 +104,6 @@
   "alpn-condition.pcap/6:44407/JA4_ro.1": {
     "issue": 162,
     "cause": "The first ALPN value is the single byte 0x68, and the two FoxIO implementations disagree on it. FoxIO Python writes the one character h, which cannot fill a two-character field. FoxIO Rust writes h0. ja4plus writes hh, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
-    "decided": true,
-    "capability": false
-  },
-  "browsers-x509.pcapng/2:54603/JA4TS.2": {
-    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
-    "issue": 246,
     "decided": true,
     "capability": false
   },
@@ -218,6 +212,12 @@
   "gre-erspan-vxlan.pcap/0:65174/JA4T.1": {
     "issue": 215,
     "cause": "The FoxIO Rust snapshot holds 8192__0_0 and ja4plus writes 8192_00_00_00. The SYN carries no TCP option, and the three FoxIO forms disagree: rust/ja4/src/tcp.rs writes one digit, wireshark/source/packet-ja4.c:664 and zeek/ja4t/main.zeek:195-211 write the two-digit form. The user chose the two-digit form on 2026-08-08, so this divergence is decided and it stays. #215 records the decision, D1 of docs/specs/foxio/JA4T.md states the reading, and the Divergence register in docs/specs/spec.md holds the cost.",
+    "decided": true,
+    "capability": false
+  },
+  "gre-erspan-vxlan.pcap/JA4H": {
+    "cause": "The FoxIO Python expected-output file holds no JA4H value for this capture, and ja4plus produces one on frame 4. The FoxIO Wireshark dissector holds that exact value, `ge10nn000000_e3b0c44298fc_000000000000_000000000000`, and `tests/foxio_vectors/wireshark_expected/gre-erspan-vxlan.pcap.json` records it. The frame holds `GET /Hello Arkime HTTP/1.0` and it carries no header. The value rests on two rulings the maintainer decided on 2026-08-14. The request-line path reads a space, and an empty header list hashes. R19 of `docs/specs/foxio/JA4H.md` holds the second rule. #612 records the decision, and #612 is the reversal path.",
+    "issue": 612,
     "decided": true,
     "capability": false
   },
@@ -450,13 +450,13 @@
     "capability": false
   },
   "https-connect.pcap/JA4L-C": {
-    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:339` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:339` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
+    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:340` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:340` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
     "issue": 272,
     "decided": true,
     "capability": false
   },
   "https-connect.pcap/JA4L-S": {
-    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:339` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:339` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
+    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:340` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:340` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
     "issue": 272,
     "decided": true,
     "capability": false
@@ -474,19 +474,19 @@
     "capability": false
   },
   "https3-301-get.pcap/0:62599/JA4TS.2": {
-    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "cause": "The client sent the RST of this frame, and ja4plus produces no JA4TS value for it. `wireshark/source/packet-ja4.c:1600` keys the connection by the stream, and `_connection_key` of ja4plus/fingerprinters/ja4ts.py keys it by the server endpoint, so a client RST reaches no stored connection. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it. #609 narrowed the earlier decline under the maintainer ruling Crank-Git/ja4plus-go#484, which publishes the four-part value on a server RST of a connection that holds one SYN-ACK. Crank-Git/ja4plus-go#502 holds the client RST question, and the maintainer rules it.",
     "issue": 246,
     "decided": true,
     "capability": false
   },
   "https3-301-get.pcap/0:62599/JA4TS.3": {
-    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "cause": "The client sent the RST of this frame, and ja4plus produces no JA4TS value for it. `wireshark/source/packet-ja4.c:1600` keys the connection by the stream, and `_connection_key` of ja4plus/fingerprinters/ja4ts.py keys it by the server endpoint, so a client RST reaches no stored connection. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it. #609 narrowed the earlier decline under the maintainer ruling Crank-Git/ja4plus-go#484, which publishes the four-part value on a server RST of a connection that holds one SYN-ACK. Crank-Git/ja4plus-go#502 holds the client RST question, and the maintainer rules it.",
     "issue": 246,
     "decided": true,
     "capability": false
   },
   "https3-301-get.pcap/0:62599/JA4TS.4": {
-    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
+    "cause": "The client sent the RST of this frame, and ja4plus produces no JA4TS value for it. `wireshark/source/packet-ja4.c:1600` keys the connection by the stream, and `_connection_key` of ja4plus/fingerprinters/ja4ts.py keys it by the server endpoint, so a client RST reaches no stored connection. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it. #609 narrowed the earlier decline under the maintainer ruling Crank-Git/ja4plus-go#484, which publishes the four-part value on a server RST of a connection that holds one SYN-ACK. Crank-Git/ja4plus-go#502 holds the client RST question, and the maintainer rules it.",
     "issue": 246,
     "decided": true,
     "capability": false
@@ -605,18 +605,6 @@
     "decided": true,
     "capability": false
   },
-  "ssh2.pcapng/5:57368/JA4TS.2": {
-    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
-    "issue": 246,
-    "decided": true,
-    "capability": false
-  },
-  "ssh2.pcapng/5:57368/JA4TS.3": {
-    "cause": "The FoxIO Wireshark dissector writes a second JA4TS value on a RST packet of a connection with no delay, and that value repeats the value the SYN-ACK produced. R13 of docs/specs/foxio/JA4T.md records the decline and #246 decided it.",
-    "issue": 246,
-    "decided": true,
-    "capability": false
-  },
   "ssh2.pcapng/JA4": {
     "cause": "The FoxIO Rust snapshot holds the exact JA4 value ja4plus produces. The FoxIO Python implementation reads no QUIC handshake, so its expected-output file omits the stream. tests/test_foxio_rust_parity.py measures the match.",
     "issue": 138,
@@ -672,7 +660,7 @@
     "capability": false
   },
   "tls-handshake.pcapng/JA4L-S": {
-    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:339` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:339` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
+    "cause": "ja4plus produces a JA4L value on this capture, and the expected-output file publishes no JA4L key at all. `python/ja4.py:340` runs `delete_keys(['JA4L-S','JA4L-C'], final)` when the generating run names another method, so the method filter removed the key from the file. Three reference files publish no JA4L key for that reason: `CVE-2018-6794.pcap`, `https-connect.pcap` and `tls-handshake.pcapng`. This project was never emitting more than the reference. The reference published nothing to compare, so the comparison is unreachable and not satisfied. The evidence is `python/ja4.py:340` at the pinned commit 27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8. #272 decided the decline on 2026-08-08, and the decision is reversible.",
     "issue": 272,
     "decided": true,
     "capability": false

@@ -242,6 +242,35 @@ hassh = fp.get_hassh_fingerprints()              # HASSH fingerprints
 lookup = fp.lookup_hassh(hassh_value)            # Known HASSH lookup
 ```
 
+#### When to call `close_connection_window`
+
+Call this method when the caller evicts one connection, which is the moment the reference
+publishes the final window. `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164`
+both emit at teardown. `close_open_windows` reaches every connection at once, and it
+serves no single connection that just ended.
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `close_connection_window(src_ip, src_port, dst_ip, dst_port, proto)` | `list[dict]` | Emits the window one connection holds open, and then removes that connection. |
+
+The method names the connection by the same key `cleanup_connection` accepts, so the
+caller names the two endpoints in either order. The list is empty for a connection the
+state table does not hold. The list is empty for a window that holds no SSH packet. The
+method removes the connection in both cases, so a second call returns an empty list.
+
+The method is opt-in. `cleanup_connection` still emits nothing, so a caller that only
+reclaims memory receives no fingerprint it did not ask for. The maintainer ruled the
+method on `Crank-Git/ja4plus-go` issue #216, on 2026-08-12, and `Crank-Git/ja4plus-go`
+pull request #263 names the interface.
+
+```python
+from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
+
+fp = JA4SSHFingerprinter()
+fp.process_packet(packet)
+final = fp.close_connection_window("10.0.0.1", 50000, "10.0.0.2", 22, "tcp")
+```
+
 ## Result type
 
 ### ja4plus.types
@@ -251,7 +280,7 @@ dataclass, because a result describes something that already happened.
 
 | Field | Type | Constraint |
 |---|---|---|
-| `type` | `str` | The method name, lowercase. One of the ten values `--types` accepts, and ten values carry eleven methods. |
+| `type` | `str` | The method name, lowercase. One of ten values, and ten values carry eleven methods. `--types` accepts these ten tokens and the token `ja4ls`. |
 | `fingerprint` | `str` | The fingerprint string. Never empty. |
 | `raw` | `str \| None` | The raw form, when the method defines one. |
 | `raw_original_order` | `str \| None` | The original-order raw form, when the method defines one. |
@@ -868,6 +897,38 @@ parity rule 2 adopts them.
 
 Version 0.6.0 returned a dict from `lookup`. Version 1.0.0 returns the frozen result, so
 a caller reads `result.application` where it read `result["application"]` before.
+
+#### The lookup reads both forms of an empty-list value
+
+FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one writes
+`000000000000` for an empty list. `ja4plus` hashes an empty list instead, so it writes
+`e3b0c44298fc` where a row of that file holds the zero sentinel. The lookup reads the two
+forms as one value, and #639 holds the ruling of 2026-08-15.
+
+```python
+client = JA4DBClient()
+
+# The mapping file holds `000000000000_4f24da86fad6_bf0f0589fc03`, and `ja4plus`
+# produces the hashed form for the same certificate. Both reach the row.
+client.lookup("e3b0c44298fc_4f24da86fad6_bf0f0589fc03").application  # Sliver/Havoc C2 Server
+client.lookup("000000000000_4f24da86fad6_bf0f0589fc03").application  # Sliver/Havoc C2 Server
+```
+
+**Warning: `000000000000` does not name one thing across JA4+.** The table states the parts
+where the lookup reads both forms.
+
+| Part | What the sentinel names there | Does the lookup read both forms |
+|---|---|---|
+| JA4X part a, part b and part c | an empty object identifier list | Yes |
+| JA4H part b | an empty header list | Yes |
+| JA4H part c and part d | `no cookie` | No |
+
+Part c and part d of JA4H hold `no cookie`, which is a value in its own right. A JA4H
+value whose part c or part d carries the sentinel therefore gains no match, and
+`client.lookup("ge11nn08enus_050dd5cfb971_e3b0c44298fc_000000000000")` returns None.
+
+`db info` reports the entry count of the mapping file. The lookup holds the alias values
+apart from that file, so no alias moves the count the command prints.
 
 #### The deprecated item access
 

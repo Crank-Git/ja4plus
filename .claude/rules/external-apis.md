@@ -32,7 +32,8 @@ Code inside this repository is different. Read the code.
 | `FoxIO-LLC/ja4tscan` | Commit `d01bfec4e64366d37ae95982a5068a5b41ca43b0`, dated 2024-08-29 | https://github.com/FoxIO-LLC/ja4tscan |
 | `FoxIO-LLC/ja4-nginx-module` | Commit `7eeee6202b9b65f5ccf85572957a816ade8cb0bc`, dated 2026-04-20 | https://github.com/FoxIO-LLC/ja4-nginx-module |
 | `ja4db.com` lookup | No published version | `https://ja4db.com/api/read/<fingerprint>` |
-| Wireshark core dissectors | Release 4.4.2 | https://gitlab.com/wireshark/wireshark/-/tree/v4.4.2/epan/dissectors |
+| Wireshark core dissectors | `v4.6.0`, which the FoxIO pin records | https://gitlab.com/wireshark/wireshark/-/tree/v4.6.0/epan/dissectors |
+| Zeek analyzer | `8.0.0`, which the FoxIO pin records | https://github.com/zeek/zeek/tree/v8.0.0/src/analyzer/protocol |
 | `scapy` | 2.4 or later | https://scapy.readthedocs.io/ |
 | `cryptography` | 42 or later | https://cryptography.io/en/latest/ |
 | PyPI trusted publishing | `pypa/gh-action-pypi-publish` release v1 | https://docs.pypi.org/trusted-publishers/ |
@@ -210,7 +211,7 @@ decides what the bar covers.
 reference value, and adoption is its own ruling. "Which baselines are usable as
 vectors" in `docs/specs/foxio/zeek.md` holds that ruling for the Zeek package.
 
-**The exception reaches 6 rows of the 140 the register holds.**
+**The exception reaches 6 rows of the 138 the register holds.**
 `tests/test_precedence_exception.py` measures the reach and both counts, and #334 records
 the search. A case reads this sentence, so a register move fails the gate here.
 
@@ -239,6 +240,29 @@ therefore a question for the Wireshark repository, and the table above pins it. 
 the first reading that needed it: `packet-dhcp.c` states
 `#define DHCP_UDP_PORT_RANGE  "67-68,4011"`, so the reference reads DHCP on three UDP
 ports where `packet-ja4.c` names none.
+
+**Two rows pin an upstream core, and the FoxIO pin records the version of each one.**
+`.github/workflows/wireshark-release.yml:15`, `:30` and `:55` build the FoxIO plugin at
+`v4.6.0`. `.github/workflows/zeek-test.yml:21` runs the FoxIO Zeek tests at
+`image: zeek/zeek:8.0.0`. This project picks neither version. #616 moved the Wireshark row
+from release 4.4.2, which no file of the pin records. #616 added the Zeek analyzer row.
+
+**Warning: read a citation of a FoxIO file at the FoxIO pin, and never at either core
+row.** `wireshark/source/packet-ja4.c` and `zeek/ja4t/main.zeek` belong to the FoxIO
+repository, so the FoxIO pin decides every line number they carry. The Wireshark core row
+reaches `epan/dissectors/` alone, and the Zeek analyzer row reaches `src/` alone. The two
+rows therefore move no citation of a FoxIO file.
+
+**No core dissector citation of this repository carries a line number, and #616 measured
+that.** Five sites cite a core dissector, and each one names a `#define` rather than a
+line. `epan/dissectors/packet-dhcp.c` and `epan/dissectors/packet-dhcpv6.c` each hold that
+statement byte-identical at release 4.4.2 and at `v4.6.0`. This move therefore leaves
+every ruling of `docs/specs/foxio/JA4D.md` in place.
+
+Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.6.0/epan/dissectors/packet-dhcp.c (Wireshark 4.6.0, retrieved 2026-08-15)
+Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.6.0/epan/dissectors/packet-dhcpv6.c (Wireshark 4.6.0, retrieved 2026-08-15)
+Verified against: https://www.wireshark.org/docs/relnotes/wireshark-4.6.0.html (Wireshark 4.6.0 release notes, retrieved 2026-08-15)
+Verified against: https://github.com/zeek/zeek/releases/tag/v8.0.0 (Zeek 8.0.0, published 2025-08-12, retrieved 2026-08-15)
 
 **JA4D6 rests on one source.** No FoxIO implementation other than the Wireshark
 dissector writes a JA4D6 value, so nothing corroborates its six values the way the

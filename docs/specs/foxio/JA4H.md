@@ -224,16 +224,61 @@ Part b joins the header names with `,`, in wire order, and it hashes the joined 
 - Corroboration 2: `rust/ja4/src/http.rs:18` holds a `Vec<HttpStats>` for a stream, and
   `rust/ja4/src/http.rs:37` writes one output value for each entry.
 
-### R19 — The references disagree on a request that carries no header
+### R19 — An empty header list hashes, and the references disagree
 
-**This rule is uncertain.** Keep the vector fallback.
+**The maintainer ruled this rule on 2026-08-14, and the ruling is reversible.** Part b of
+a request that carries no header reads `e3b0c44298fc`, which is the truncated SHA-256 of
+the empty string. It writes no zero sentinel. #612 is the reversal path.
 
-- `rust/ja4/src/lib.rs:184` returns `000000000000` for an empty string, under the doc
-  comment `Returns "000000000000" (12 zeros) if the input string is empty.`
-- `python/common.py:127` hashes the empty string. Measured at the pinned commit:
-  `sha_encode([])` returns `'e3b0c44298fc'`.
+**A ruling of 2026-08-08 left this rule uncertain, and this record supersedes it.** The
+sentence below is the superseded wording, quoted rather than rewritten.
 
-The image settles nothing here. Its example carries 13 headers.
+> **This rule is uncertain.** Keep the vector fallback.
+
+The four references split two against two, read at the pinned commit
+`27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`.
+
+| Implementation | Part b of an empty header list | Evidence |
+|---|---|---|
+| Python | `e3b0c44298fc` | `python/ja4h.py:72`, `python/common.py:127` |
+| Wireshark | `e3b0c44298fc` | `wireshark/source/packet-ja4.c:628`, `:641` |
+| Rust | `000000000000` | `rust/ja4/src/http.rs:202`, `rust/ja4/src/lib.rs:184` |
+| Zeek | `000000000000` | `zeek/ja4h/main.zeek:195`, `zeek/utils/common.zeek:64` |
+
+`rust/ja4/src/lib.rs:184` returns `000000000000` for an empty string, under the doc
+comment `Returns "000000000000" (12 zeros) if the input string is empty.`
+`python/common.py:127` hashes the empty string. Measured at the pinned commit:
+`sha_encode([])` returns `'e3b0c44298fc'`.
+
+**The deciding fact is a rank 1 image rule.** R12 above transcribes
+`Truncated SHA256 hash of Headers, in the order they appear`, and that caption names no
+sentinel. R17 above confines the zero sentinel to part c and part d. An image outranks
+every implementation, so the split breaks toward the hash.
+
+**The image example settles nothing on its own, and it carries 13 headers.** The rank 1
+caption of part b is the rule that decides, and not the example.
+
+**A ruling lands in this repository and in the port together, or in neither.**
+`Crank-Git/ja4plus-go#527` holds the Go half, and it writes
+`parser.TruncatedHashNoSentinel` into part b. **R8 of `docs/specs/foxio/JA4X.md` holds the
+same ruling for JA4X**, which #619 built on 2026-08-14.
+
+**The ruling moves one comparison of the shared FoxIO vector set.** Frame 4 of
+`gre-erspan-vxlan.pcap` holds `GET /Hello Arkime HTTP/1.0`, it carries no header, and the
+FoxIO Wireshark dissector writes
+`ge10nn000000_e3b0c44298fc_000000000000_000000000000` for it.
+`tests/foxio_vectors/wireshark_expected/gre-erspan-vxlan.pcap.json` holds that value.
+**`REQUEST_LINE_PATTERN` of `ja4plus/utils/http_utils.py` reads that request line only
+after the repair of #612**, because the path holds a space. Neither repair closes the
+comparison alone.
+
+**The reversal proves the gate, and the suite measures both directions.** Restore the
+guard `if headers_str else "000000000000"`, and
+`tests/test_ja4h_request_line_and_empty_header_list.py` fails three cases:
+`test_hashes_an_empty_header_list`, `test_writes_no_zero_sentinel_in_part_b` and
+`test_produces_the_reference_value_of_frame_4_of_the_gre_capture`. **A replay of the 38
+committed captures produces 73 JA4H values before the two repairs and 74 after.** The one
+new value is the frame 4 value above, and no other JA4H value moves.
 
 ### R20 — The references disagree on a cookie that carries no equals sign
 
@@ -352,10 +397,21 @@ This page raises no bound question.
 | d, the sort key | R16 | `ja4h.py:373` | Agrees. The sort reads the name alone and it is stable. |
 | d, no cookie | R17 | `ja4h.py:375` to `ja4h.py:379` | Agrees. `"000000000000"`. |
 | One value per request | R18 | `ja4h.py:116` to `ja4h.py:120` | Agrees for a request the parser reads once. D5 below reports the retransmission case. |
-| b, no header | R19 | `ja4h.py:356` | Agrees with `rust/ja4/src/lib.rs:184`. Disagrees with `python/common.py:127`, which R19 marks uncertain. |
+| b, no header | R19 | `ja4h.py:484` at commit `dcb43fc` | Agrees with `python/common.py:127` and with `wireshark/source/packet-ja4.c:641`, which hash the empty string. Disagrees with `rust/ja4/src/lib.rs:184` and `zeek/utils/common.zeek:64`, which write the sentinel. R19 holds the ruling of 2026-08-14. |
 | b, `Cookie2` | R22 | `ja4h.py:324` | Agrees with the Rust reference and the dissector. Disagrees with `python/ja4h.py:49`, which R22 marks uncertain. |
 | d, a cookie with no equals sign | R20 | `http_utils.py:100` and `ja4h.py:231` | Agrees with `wireshark/source/packet-ja4.c:1177`. Disagrees with the other two references, which R20 marks uncertain. |
 | The language token end | R23 | `ja4h.py:301` | Agrees with the Python reference and the dissector. Disagrees with `rust/ja4/src/http.rs:293`, which R23 marks uncertain. |
+
+**One row of the table above names its own commit, and every other row reads `1a87f45`.**
+R19 holds the ruling of 2026-08-14, which `dcb43fc` landed after this page took its pin.
+`ja4h.py` writes the sentinel on an empty header list at `1a87f45`. It hashes the empty
+string at `dcb43fc`, and the row states that later reading. The cited line holds
+`part_b = hashlib.sha256(headers_str.encode()).hexdigest()[:12]` at `dcb43fc`, and
+`ja4h.py` holds 436 lines at `1a87f45`. #668 measured both readings and it moved no line
+number.
+
+**A cell that names a commit overrides the pin of its section**, which is the rule
+`tests/foxio_citation_lines.py` reads. The override reaches that one cell.
 
 ### Two whole captures agree, value for value
 
@@ -480,6 +536,28 @@ publish no such key.
 The claim holds for `python/test/testdata/` and it does not hold for the Wireshark expected
 output. This changes no fingerprint. It changes what a person reading `ja4h.py` believes
 the reference publishes.
+
+**#600 repaired D6 on 2026-08-15, and the fingerprinter now fills the sorted raw form.**
+The docstring names the per-stream files and the per-packet files separately, so no reader
+takes the narrower claim for the wider one. `tests/foxio_vectors/wireshark_expected/` holds
+62 `ja4.ja4h_r` values, and `http1-with-cookies.pcapng` is the one cleartext record whose
+value carries a cookie. This project produces that value.
+
+```
+ge11cr04da00_Host,User-Agent,Accept,Accept-Language_tasty_cookie,yummy_cookie_tasty_cookie=strawberry,yummy_cookie=choco
+```
+
+**The three fields of that value hash to part b, part c and part d of `ja4.ja4h`**, which
+reads `ge11cr04da00_8ddaef5d77af_280f366eaa04_c2fb0fe53442`. The sorted raw form is
+therefore the pre-image of the base value, and it needs no arithmetic of its own.
+`tests/test_ja4h_raw_sorted.py` holds the comparison. **The repair moved no fingerprint and
+no `JA4H_ro` value.**
+
+**A request that carries no cookie ends after the header names and one underscore.** The
+Wireshark dissector writes two trailing underscores for that request, and
+`python/ja4h.py:82` appends the two cookie fields only when the request holds a cookie.
+`Crank-Git/ja4plus-go#285` holds that reference split, and the maintainer rules it. This
+project follows the wire-order form, so one ruling moves both raw forms.
 
 ### One more finding that changes no fingerprint
 

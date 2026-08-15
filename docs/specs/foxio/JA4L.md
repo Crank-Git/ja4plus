@@ -152,11 +152,22 @@ implementations write three parts and two write two parts.
 
 The user decided on the conformance evidence. Every one of the 114 JA4L values in
 `tests/foxio_vectors/*.json` holds two parts, and `tests/foxio_vectors/wireshark_expected/`
-holds two files that carry no JA4L key. A three-part form deviates from all 114
+holds 26 files, of which 15 carry a `ja4.ja4l` key. A three-part form deviates from all 114
 comparisons, which moves the register from 116 entries to 230 and leaves no case that
 measures any JA4L value. **20 of the 114 sit on 10 captures that the Wireshark dissector
 publishes no JA4L value for**, so those 20 would carry a third part that no reference
 verifies.
+
+**#611 corrected the file count of the paragraph above on 2026-08-15, and this record
+supersedes the earlier wording.** #116 added two files to
+`tests/foxio_vectors/wireshark_expected/`, and #531 raised the directory to 26 files. The
+sentence below is the superseded wording, quoted rather than rewritten.
+
+> `tests/foxio_vectors/wireshark_expected/` holds two files that carry no JA4L key.
+
+**The correction moves no reading of R4.** The paragraph above already counts the
+dissector values, and it names 10 captures that the dissector publishes no JA4L value for.
+The count of the 114 local values decided the rule, and that count stands.
 
 A second reading blocks the adoption, and it is a finding of #225. **The Wireshark part c
 is not computable where `ja4plus` writes a value.** `wireshark/source/packet-ja4.c:1370`
@@ -222,8 +233,8 @@ for a connection whose application handshake the reader cannot measure.
 
 **The marker spells `quic`, and the spelling follows Wireshark.** Two FoxIO
 implementations write a marker and they spell it differently.
-`.claude/rules/external-apis.md:95` reads "Read no JA4L or JA4LS value of a Zeek baseline
-as a reference value", and `.claude/rules/external-apis.md:101` names the `q` marker as one
+`.claude/rules/external-apis.md:124` reads "Read no JA4L or JA4LS value of a Zeek baseline
+as a reference value", and `.claude/rules/external-apis.md:130` names the `q` marker as one
 of three Zeek divergences. The rule declines the Zeek spelling, so the Wireshark spelling
 is the one published reading that remains.
 
@@ -471,8 +482,8 @@ value, and no rule about how many values a capture produces.
 | `tls-handshake.pcapng` | `JA4`, `JA4_o`, `JA4_r`, `JA4_ro`, `JA4S`, `JA4S_r`, `JA4X` | 0 | 20 `JA4L-S` |
 | `ssh2.pcapng` | twelve method keys, including `JA4L-C` and `JA4L-S` | 10 `JA4L-S`, 9 `JA4L-C` | 11 `JA4L-S`, 9 `JA4L-C` |
 
-`python/ja4.py:339` reads
-`if 'ja4l' not in output_types: delete_keys(['JA4L-S', 'JA4L-C'], final)`, and
+`python/ja4.py:339` reads `if 'ja4l' not in output_types:` and `python/ja4.py:340` reads
+`delete_keys(['JA4L-S', 'JA4L-C'], final)`, and
 `python/ja4.py:471` builds `output_types` from the command-line flags. **The reading is that
 the three files were produced with a method filter**, and the key lists support it: two files
 hold JA4H keys alone, and one holds JA4 keys, JA4S keys and JA4X keys alone. The upstream
@@ -574,8 +585,21 @@ PY
 3. **D1 needs no new vector either.** The 114 local values measure the part count on every
    run, and each one holds two parts.
 4. **The Wireshark expected-output files are the only local route to a three-part value.**
-   `tests/foxio_vectors/wireshark_expected/` holds two files today, and neither carries a
-   JA4L key.
+   `tests/foxio_vectors/wireshark_expected/` holds 26 files, and 15 of them carry a
+   `ja4.ja4l` key. Those 15 files hold 44 `ja4.ja4l` values, and every one of the 44
+   carries three parts.
+
+**#611 corrected the count of item 4 on 2026-08-15, and this record supersedes the earlier
+wording.** #116 added two files to `tests/foxio_vectors/wireshark_expected/`, and #531
+raised the directory to 26 files. The sentence below is the superseded wording, quoted
+rather than rewritten.
+
+> `tests/foxio_vectors/wireshark_expected/` holds two files today, and neither carries a
+> JA4L key.
+
+**The route item 4 names is therefore present in the tree, and no case reads it.** Whether
+this project builds that comparison is a ruling, and #611 makes none. D1 stands settled on
+the count of the 114 local values, which R4 above holds.
 
 ## The rulings this page raises
 
@@ -603,7 +627,7 @@ register entry.**
    JA4L value, because a method filter produced the file. **This project was never emitting
    more than the reference. The reference published nothing to compare.** The comparison is
    unreachable, not satisfied. #272 declined the five on 2026-08-08, each cause cites
-   `python/ja4.py:339`, and each entry carries `"decided": true` with `"capability": false`.
+   `python/ja4.py:340`, and each entry carries `"decided": true` with `"capability": false`.
 5. **R8 to R11 stay uncertain, and none of them builds a fingerprint.** The initial TTL
    table, the hop count formula, the distance formula and the propagation factor table rest
    on the image alone. `ja4l.py` follows the image on all four, and one dead FoxIO function

@@ -140,8 +140,8 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
 - Corroboration 1: `technical_details/README.md` lines 12 and 13 name `JA4TCP` /
   `JA4T` as `TCP Client Fingerprinting` and `JA4TCPServer` / `JA4TS` as
   `TCP Server Response Fingerprinting`.
-- Corroboration 2: `wireshark/source/packet-ja4.c:1265` marks the SYN and the dissector
-  writes the `JA4T` field for it. Line 1278 marks the SYN-ACK and the dissector writes the
+- Corroboration 2: `wireshark/source/packet-ja4.c:1266` marks the SYN and the dissector
+  writes the `JA4T` field for it. Line 1279 marks the SYN-ACK and the dissector writes the
   `JA4TS` field for it.
 
 ### R9 — JA4T reads only the first SYN of a connection
@@ -159,7 +159,7 @@ Kind 0 is End of Option List. Each such byte on the wire adds one `0` to part b.
 - `rust/ja4/src/tcp.rs`, `is_initial_syn`, tests the flags as a mask: SYN set and ACK
   clear. Its own unit test asserts that `0xC2`, a SYN with the two ECN flags, produces a
   fingerprint.
-- `wireshark/source/packet-ja4.c:1265` tests `tcp_flags == 0x02` for equality, so a SYN
+- `wireshark/source/packet-ja4.c:1266` tests `tcp_flags == 0x02` for equality, so a SYN
   that carries an ECN flag produces no JA4T value in the dissector.
 
 ### R11 — The empty part b, the zero part c and the zero part d take the two-digit form
@@ -185,7 +185,7 @@ carries no option.
 
 **The prose and the two implementations part on one input, and `ja4plus` follows the
 implementations.** The prose reads `00` as the mark of an absent field. The two
-implementations read the value instead: `wireshark/source/packet-ja4.c:664` tests
+implementations read the value instead: `wireshark/source/packet-ja4.c:668` tests
 `data->window_scale == 0`, and `zeek/ja4t/main.zeek:206-210` tests
 `syn_opts$window_scale == 0`. Neither one records whether the packet carried the option,
 because each stores the scale as an integer that defaults to zero. A packet that carries
@@ -265,12 +265,16 @@ This project adopts four rules.
    `conn->syn_ack_times[conn->syn_ack_count - 1]` from `conn->rst_time`, and
    `zeek/ja4t/main.zeek:233` subtracts `last_ts` from `rst_ts`. The delay rounds the way
    part e rounds, which R12 rule 2 states.
-2. **A RST on a connection with no delay produces no value.** Both implementations nest
-   the RST branch inside the delay branch. `wireshark/source/packet-ja4.c:693` reads
-   `rst_time` only when `syn_ack_count > 1`, and `zeek/ja4t/main.zeek:232` reads `rst_ts`
-   only when the delay list holds a value. A delay list is therefore complete and correct
-   with no RST, which the deleted file's own second example shows: it ends at
-   `62727_2_8961_00_1-2-4-8-16` and carries no RST.
+2. **A RST on a connection that holds one SYN-ACK produces the stored four parts.** It
+   carries no part e and no reset letter. `wireshark/source/packet-ja4.c:1599-1608` writes
+   the four parts outside the delay guard, and `wireshark/source/packet-ja4.c:684` guards
+   the delay list and the reset letter on `conn->syn_ack_count > 1`.
+   `zeek/ja4t/main.zeek:232` reads `rst_ts` only when the delay list holds a value, so the
+   Zeek package guards the suffix the same way. A delay list is therefore complete and
+   correct with no RST. The deleted file's own second example shows that: it ends at
+   `62727_2_8961_00_1-2-4-8-16` and carries no RST. **The maintainer ruled this reading on
+   2026-08-14, at `Crank-Git/ja4plus-go#484`, and #609 ported it.** The earlier reading
+   emitted no value at all, and the paragraph below records what the reversal moved.
 3. **The RST value reads part a through part d from the stored connection.** The file
    reads: "Note that RST packets do not contain TCP options or window sizes, as such the
    program will need to be aware of the previous JA4TS."
@@ -293,21 +297,38 @@ names no flag combination, so the prose and the Zeek script agree and the dissec
 one case fewer. A RST that carries ACK is common on real traffic, and the narrow reading
 would drop it.
 
-**`ja4plus` emits no value for a RST on a connection with no delay, where the dissector
-emits the four parts again.** `wireshark/source/packet-ja4.c:1599` writes the `JA4TS`
-field whenever `syn == 3`, and `ja4t()` then omits part e. That second value repeats the
-value the SYN-ACK already produced and describes no packet of its own, which
-`.claude/rules/conformance.md` declines under its second shape. `zeek/ja4t/main.zeek`
-writes one JA4TS value for one connection and never a second, so the Zeek package
-corroborates the decline.
+**`ja4plus` matched the dissector on the RST of a one-SYN-ACK connection after #609, and
+it emitted nothing before.** `wireshark/source/packet-ja4.c:1599` tests `syn == 3`, and
+line 1608 writes the `JA4TS` field. `ja4t()` then omits part e. The earlier reading of this
+project declined that value under the second shape of `.claude/rules/conformance.md`,
+because the value repeats the value the SYN-ACK already produced. The maintainer reversed
+the decline at `Crank-Git/ja4plus-go#484`, so the dissector decides this value and the two
+libraries publish it. `zeek/ja4t/main.zeek` writes one JA4TS value for one connection, and
+the Zeek package therefore publishes one value where the two libraries publish two.
 
-**A client RST produces no value.** Every SYN-ACK travels from the server, so the
-connection key names the server first and a client RST reverses it.
-`zeek/ja4t/main.zeek:189` sets the packet threshold with `F`, so the Zeek script reads
-responder packets alone. The dissector reads either direction, because
-`wireshark/source/packet-ja4.c:1296` holds no direction guard.
+**Three comparisons of the corpus closed on the reversal, and each one names a server
+RST.** `ssh2.pcapng` frame 849 and frame 850 each produce `42600_2-1-1-4-1-3_1300_9`, and
+`browsers-x509.pcapng` frame 174 produces `64400_2-1-3-4-0-0_1400_2`. The register held a
+row for each of the three under #246, and #609 removed all three.
 
-**No vector reaches this rule.** `tests/foxio_vectors/` holds 10 RST packets across its 38
+**One comparison opened on the reversal, and the flag reading above is its cause.**
+`browsers-x509.pcapng` frame 119 is a server RST that carries ACK, so
+`wireshark/source/packet-ja4.c:1296` rejects it and the dissector writes no value.
+`ja4plus` reads the RST bit alone, so it publishes `64240_2-1-3-4-0-0_1460_2` there.
+`Crank-Git/ja4plus-go#503` holds the consequence, and
+`TestTheAckResetDivergence` in `tests/test_foxio_wireshark_ja4ts.py` holds it as a
+comparison that runs.
+
+**A client RST produces no value, and three comparisons stay declined for that reason.**
+Every SYN-ACK travels from the server, so the connection key names the server first and a
+client RST reverses it. `zeek/ja4t/main.zeek:189` sets the packet threshold with `F`, so
+the Zeek script reads responder packets alone. The dissector reads either direction,
+because `wireshark/source/packet-ja4.c:1296` holds no direction guard, and
+`wireshark/source/packet-ja4.c:1600` keys the connection by the stream. The three are
+`https3-301-get.pcap` frames 20, 21 and 23. `Crank-Git/ja4plus-go#502` holds the question,
+and the maintainer rules it.
+
+**No vector reaches rule 1.** `tests/foxio_vectors/` holds 10 RST packets across its 38
 captures, and none of the 10 sits on a connection with more than one SYN-ACK.
 `ssh2.pcapng` holds the one connection of the set that the server answered twice, and the
 server sent no RST on it. `tests/build_ja4ts_rst.py` therefore writes the capture from the
@@ -418,17 +439,33 @@ instead.
 
 ### JA4TS — the fields that agree
 
+The comparison below reads `ja4plus/fingerprinters/ja4ts.py` at commit `0d3480e`, and it
+reads no other commit. **`ja4ts.py` holds 95 lines at `3c01c94`, so eight of the nine line
+numbers this table carried named a line that commit does not hold.** #658 reported that
+state and #668 repaired it.
+
+**`0d3480e` is the last commit of `dev` at which `ja4ts.py` holds every field this table
+names.** #226 wrote part e before it, and #215 moved part a through part d into
+`ja4plus/utils/tcp_options.py` after it. The table above therefore cites `tcp_options.py`
+for those four parts and this one cites `ja4ts.py`, because the two tables read two
+commits.
+
+**Warning: read a pin against the branches of the remote before you write it.** The nine
+numbers this table carried describe `bec84dd4`, which is the commit #226 landed, and no
+remote branch reaches that commit. The clone of depth 1 on the runner cannot fetch it, so
+#668 re-read the nine at `0d3480e` and moved each number there.
+
 | Field | Rule | `ja4ts.py` | Reading |
 |---|---|---|---|
-| Part count and separator | R1 | `ja4ts.py:253` | Agrees. Part a through part d match JA4T, and part e follows them. |
-| Part a, raw window | R3 | `ja4ts.py:224` | Agrees. |
-| Part b order | R4 | `ja4ts.py:232` | Agrees. |
-| Part b separator | R4 | `ja4ts.py:250` | Agrees. |
-| Part c absent | R6 | `ja4ts.py:228` | Agrees. |
-| Part d absent | R7 | `ja4ts.py:229` | Agrees. |
-| Packet selection | R8 | `ja4ts.py:220` | Agrees. `tcp.flags & 0x12 == 0x12` selects the SYN-ACK. |
-| Part e, delay list | R12 | `ja4ts.py:169` | Agrees. `_part_e` writes the delay list and omits it when the server answers once. |
-| Part e, state bound | R12 | `ja4ts.py:18` | Agrees. Ten delays, and a timeout of two minutes. |
+| Part count and separator | R1 | `ja4ts.py:251` | Agrees. Part a through part d match JA4T, and part e follows them. |
+| Part a, raw window | R3 | `ja4ts.py:222` | Agrees. |
+| Part b order | R4 | `ja4ts.py:230` | Agrees. |
+| Part b separator | R4 | `ja4ts.py:248` | Agrees. |
+| Part c absent | R6 | `ja4ts.py:226` | Agrees. |
+| Part d absent | R7 | `ja4ts.py:227` | Agrees. |
+| Packet selection | R8 | `ja4ts.py:218` | Agrees. `tcp.flags & 0x12 == 0x12` selects the SYN-ACK. |
+| Part e, delay list | R12 | `ja4ts.py:167` | Agrees. `_part_e` writes the delay list and omits it when the server answers once. |
+| Part e, state bound | R12 | `ja4ts.py:19-20` | Agrees. Ten delays, and a timeout of two minutes. |
 | RST value | R13 | none | **Absent.** #246 owns it. |
 
 ### JA4TS — the disagreements
@@ -454,33 +491,38 @@ R12 states the rule and R2 names the three FoxIO sources.
 **D7 — measured. `ja4ts.py` writes no value on a RST, and the Wireshark dissector writes
 one.**
 
-`wireshark/source/packet-ja4.c:1295` marks a RST, and line 1608 writes a second `JA4TS`
+`wireshark/source/packet-ja4.c:1296` marks a RST, and line 1608 writes a second `JA4TS`
 value from the stored connection values, with the `-R<interval>` suffix. The image's
 example part e ends with `R6`, which corroborates the suffix shape. `ja4ts.py` reads the
 SYN-ACK alone and reaches no RST.
 
 **#226 measured that D7 separates from D6, so #246 owns D7.** R13 states the measurement.
 
-**#515 brought D7 into the conformance suite, and it reaches 6 of the 58 Wireshark JA4TS
+**#515 brought D7 into the conformance suite, and it reached 6 of the 58 Wireshark JA4TS
 values.** Every one of the 6 sits on a connection the server answered once, so the
-dissector writes the four parts again with no part e. R13 rule 2 states that a RST on a
-connection with no delay produces no value in this project, and
-`.claude/rules/conformance.md` declines a value that describes no packet of its own.
-`tests/foxio_deviations.json` holds the 6 keys under #246, each marked decided.
+dissector writes the four parts again with no part e. **#609 closed 3 of the 6 and the
+register keeps the other 3.** R13 rule 2 now publishes the four parts on a server RST of
+such a connection, under the maintainer ruling `Crank-Git/ja4plus-go#484`. The three that
+stay carry a client RST, which reaches no stored connection, and
+`Crank-Git/ja4plus-go#502` holds that question. `tests/foxio_deviations.json` holds the 3
+keys under #246, each marked decided.
 
-| Register key | Frame | The value the dissector repeats |
-|---|---|---|
-| `browsers-x509.pcapng/2:54603/JA4TS.2` | 174 | `64400_2-1-3-4-0-0_1400_2` |
-| `https3-301-get.pcap/0:62599/JA4TS.2` | 20 | `14240_2-4-8-1-3_1436_10` |
-| `https3-301-get.pcap/0:62599/JA4TS.3` | 21 | `14240_2-4-8-1-3_1436_10` |
-| `https3-301-get.pcap/0:62599/JA4TS.4` | 23 | `14240_2-4-8-1-3_1436_10` |
-| `ssh2.pcapng/5:57368/JA4TS.2` | 849 | `42600_2-1-1-4-1-3_1300_9` |
-| `ssh2.pcapng/5:57368/JA4TS.3` | 850 | `42600_2-1-1-4-1-3_1300_9` |
+| Register key | Frame | Direction | The reading after #609 |
+|---|---|---|---|
+| `browsers-x509.pcapng/2:54603/JA4TS.2` | 174 | The server sent it. | **Closed.** `ja4plus` writes `64400_2-1-3-4-0-0_1400_2`. |
+| `https3-301-get.pcap/0:62599/JA4TS.2` | 20 | The client sent it. | Declined. The dissector writes `14240_2-4-8-1-3_1436_10`. |
+| `https3-301-get.pcap/0:62599/JA4TS.3` | 21 | The client sent it. | Declined. The dissector writes `14240_2-4-8-1-3_1436_10`. |
+| `https3-301-get.pcap/0:62599/JA4TS.4` | 23 | The client sent it. | Declined. The dissector writes `14240_2-4-8-1-3_1436_10`. |
+| `ssh2.pcapng/5:57368/JA4TS.2` | 849 | The server sent it. | **Closed.** `ja4plus` writes `42600_2-1-1-4-1-3_1300_9`. |
+| `ssh2.pcapng/5:57368/JA4TS.3` | 850 | The server sent it. | **Closed.** `ja4plus` writes `42600_2-1-1-4-1-3_1300_9`. |
 
-`TestTheDifferencesAreTheRecordedResetDecline` measures three facts of each row, so the
-decline stays proven rather than asserted. Each frame carries the RST flag alone, each
-value equals the value the first SYN-ACK of that stream produced, and `ja4plus` writes one
-value for the stream.
+`TestTheDifferencesAreTheRecordedResetDecline` measures four facts of each row that stays,
+so the decline stays proven rather than asserted.
+
+1. Each frame carries the RST flag alone.
+2. The client sent each frame.
+3. Each value equals the value the first SYN-ACK of that stream produced.
+4. `ja4plus` writes one value for the stream.
 
 ## The search for a reference value
 
@@ -613,8 +655,10 @@ grep -c '"ja4.ja4ts"' wireshark/test/testdata/*.json
 ```
 
 `tests/foxio_vectors/wireshark_expected/` now holds the 24 files that carry a value, and
-`tests/test_foxio_wireshark_ja4ts.py` compares all 58 against `ja4plus`. **52 values match
-byte for byte and 6 reach the register**, and all 6 are the RST decline that R13 records.
+`tests/test_foxio_wireshark_ja4ts.py` compares all 58 against `ja4plus`. **55 values match
+byte for byte and 3 reach the register**, and all 3 are the client RST decline that R13
+records. The reading was 52 and 6 until #609, which published the four parts on a server
+RST of a connection that holds one SYN-ACK.
 `tests/foxio_vectors/zeek_expected/` holds the seven Zeek baselines beside them, and
 `tests/test_foxio_zeek_ja4ts.py` compares 9 of their 10 JA4TS values.
 

@@ -401,9 +401,25 @@ against the images.
 ## The comparison against this project
 
 The comparison below reads `ja4plus/fingerprinters/ja4d.py` and
-`ja4plus/fingerprinters/ja4d6.py` after #231. **Every field is named. A field this table
-does not name is a field nobody read.** Changelog round 78 records the eleven rulings, and
-every line number below is re-measured against the code #231 landed.
+`ja4plus/fingerprinters/ja4d6.py` after #231, at commit `ce2fa544`. **Every field is
+named. A field this table does not name is a field nobody read.** Changelog round 78
+records the eleven rulings, and every line number below is re-measured against the code
+#231 landed.
+
+**An issue is not a tree state, so the sentence above names both.** #231 carries the
+reason and `ce2fa544` carries the state. `tests/foxio_citation_lines.py` reads every line
+number of this section at that commit, and #668 resolved the issue to it.
+
+**#668 declined `6605a85`, which is the last commit of #231 itself.** No remote branch
+reaches that commit, so the clone of depth 1 on the runner cannot fetch it. `ce2fa544` is
+the first commit of `dev` that carries both files byte for byte as `6605a85` left them.
+Every line number below therefore reads the same at either commit.
+
+```
+$ git rev-parse ce2fa544:ja4plus/fingerprinters/ja4d.py 6605a85:ja4plus/fingerprinters/ja4d.py
+255dbfcc4e131aceeac77e7e43036bab3268d5ed
+255dbfcc4e131aceeac77e7e43036bab3268d5ed
+```
 
 ### JA4D — the fields that agree
 
@@ -474,6 +490,13 @@ Wireshark repository, and it names a release tag.
 
 Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.4.2/epan/dissectors/packet-dhcp.c (Wireshark 4.4.2, retrieved 2026-08-08)
 
+**#616 moved the Wireshark row of `.claude/rules/external-apis.md` to `v4.6.0`, and the
+statement is byte-identical there.** The read below holds
+`#define DHCP_UDP_PORT_RANGE  "67-68,4011"` at `:1047`, so D1 stands at the version the
+table now pins.
+
+Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.6.0/epan/dissectors/packet-dhcp.c (Wireshark 4.6.0, retrieved 2026-08-15)
+
 **D2 — a BOOTP message that carries no option 53. Ruling: emit nothing. No change.**
 
 `ja4d.py:170-171` holds `if msg_type == 0:` and `return None`.
@@ -539,7 +562,7 @@ instead, and both fail against the base.
 | Part c source | R18 | `ja4d6.py:194-199` | Agrees. Option 6, read as two-byte codes, at any nesting depth after D2 of #271. D10 rules that every occurrence reaches part c. |
 | Part c order and separator | R18 | `ja4d6.py:247` | Agrees. Wire order, joined with `-`. |
 | Field name of the reference | R22 | `tests/test_ja4d6_foxio.py:39` | Agrees. The test reads the key `ja4.ja4d`. |
-| State | R14 | `ja4d6.py:298-304` | Agrees. `process_packet` reads one packet and `cleanup_connection` is a no-op. |
+| State | R14 | `ja4d6.py:293-300` | Agrees. `process_packet` reads one packet and `cleanup_connection` is a no-op. |
 | Port set | — | `ja4d6.py:269` | Agrees with the dissector after D7. The two ports are 546 and 547. |
 | Nesting bound | — | `ja4d6.py:110`, `ja4d6.py:144-145` | The walk stops at 32 containers, because a crafted chain would raise `RecursionError`. No vector nests a container. |
 
@@ -572,6 +595,13 @@ registers TCP port 547 for DHCPv6 over TCP, which RFC 7653 defines; this project
 UDP alone, and no vector carries DHCPv6 over TCP.
 
 Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.4.2/epan/dissectors/packet-dhcpv6.c (Wireshark 4.4.2, retrieved 2026-08-08)
+
+**#616 moved the Wireshark row of `.claude/rules/external-apis.md` to `v4.6.0`, and the
+statement is byte-identical there.** The read below holds
+`#define UDP_PORT_DHCPV6_RANGE      "546-547" /* Downstream + Upstream */` at `:396`, so
+D7 stands at the version the table now pins.
+
+Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.6.0/epan/dissectors/packet-dhcpv6.c (Wireshark 4.6.0, retrieved 2026-08-15)
 
 **D8 — the containers part b recurses into. Ruling: add option 9, Relay Message.**
 

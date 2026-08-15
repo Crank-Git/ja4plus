@@ -67,15 +67,14 @@ def generate_ja4x(cert_info: dict[str, Any] | None) -> str | None:
         subject_str = ",".join(subject_rdns)
         ext_str = ",".join(extensions)
 
-        # Hash these elements - SHA256 truncated to 12 hex chars
-        # Use '000000000000' sentinel for empty values (consistent with other fingerprinters)
-        issuer_hash = (
-            hashlib.sha256(issuer_str.encode()).hexdigest()[:12] if issuer_str else "000000000000"
-        )
-        subject_hash = (
-            hashlib.sha256(subject_str.encode()).hexdigest()[:12] if subject_str else "000000000000"
-        )
-        ext_hash = hashlib.sha256(ext_str.encode()).hexdigest()[:12] if ext_str else "000000000000"
+        # Each part is the SHA-256 of the joined list, truncated to 12 hexadecimal
+        # characters. An empty list hashes, so an empty part reads `e3b0c44298fc` and no
+        # part writes the zero sentinel `000000000000`. R8 of `docs/specs/foxio/JA4X.md`
+        # records the reference split and the ruling of 2026-08-14 that ends it, and #619
+        # is the reversal path.
+        issuer_hash = hashlib.sha256(issuer_str.encode()).hexdigest()[:12]
+        subject_hash = hashlib.sha256(subject_str.encode()).hexdigest()[:12]
+        ext_hash = hashlib.sha256(ext_str.encode()).hexdigest()[:12]
 
         # Form the complete JA4X fingerprint
         ja4x = f"{issuer_hash}_{subject_hash}_{ext_hash}"
@@ -95,9 +94,10 @@ def generate_ja4x_raw(cert_info: dict[str, Any] | None) -> str | None:
     publishes the value. `rust/ja4x/src/lib.rs` writes the same form as
     `let ja4x_r = with_raw.then(|| parts.join("_"));`.
 
-    An empty list reaches the raw form as an empty part. The zero sentinel of R8 belongs
-    to the hashed form, because the FoxIO Rust implementation runs `hash12` on the hashed
-    form alone.
+    An empty list reaches the raw form as an empty part, and `generate_ja4x` hashes that
+    same empty part. The raw form is therefore the exact preimage of the fingerprint on
+    every part. R8 of `docs/specs/foxio/JA4X.md` holds the ruling of 2026-08-14 that
+    removed the zero sentinel from the hashed form, and #619 is the reversal path.
 
     Args:
         cert_info: A dictionary with certificate information.

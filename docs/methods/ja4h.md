@@ -10,7 +10,7 @@ fingerprint.
 | The `--types` token | `ja4h` |
 | The fingerprinter class | `JA4HFingerprinter` |
 | The one-shot function | `generate_ja4h` |
-| The `raw` field | Always `null` |
+| The `raw` field | A value |
 | The `raw_original_order` field | A value |
 | The hash rule | SHA-256, truncated to 12 characters |
 | The FoxIO source | `technical_details/JA4H.md`, `technical_details/JA4H.png` |
@@ -21,8 +21,8 @@ fingerprint.
 <part a>_<header hash>_<cookie name hash>_<cookie value hash>
 ```
 
-`ja4plus/fingerprinters/ja4h.py:429` builds part a, and
-`ja4plus/fingerprinters/ja4h.py:505` joins the four parts.
+`ja4plus/fingerprinters/ja4h.py:438` builds part a, and
+`ja4plus/fingerprinters/ja4h.py:550` joins the four parts.
 
 ## The parts
 
@@ -46,16 +46,36 @@ where the count read one list and the hash read another.
 The fingerprinter joins each list with a comma and hashes the result with SHA-256. It
 keeps the first 12 characters of the hexadecimal digest.
 
-**An empty list writes the zero sentinel `000000000000` and no hash.** A request that
-carries no cookie therefore writes the sentinel into the third part and the fourth part.
-`ja4plus/fingerprinters/ja4h.py:480` holds the header hash, and
-`ja4plus/fingerprinters/ja4h.py:490` holds the cookie name hash.
+**An empty header list hashes, and part b writes `e3b0c44298fc`.** That value is the
+truncated SHA-256 of the empty string. **The zero sentinel `000000000000` reaches part c
+and part d alone.** A request that carries no cookie therefore writes the sentinel into
+the third part and the fourth part. `ja4plus/fingerprinters/ja4h.py:534` holds the header hash, and
+`ja4plus/fingerprinters/ja4h.py:540` holds the cookie name hash. R19 of
+`docs/specs/foxio/JA4H.md` holds the ruling of 2026-08-14.
 
 ## The raw forms
 
-**JA4H writes one raw form and not two.** The `raw_original_order` field carries the
-`JA4H_ro` value. The `raw` field is always `null`, because FoxIO publishes no `JA4H_r`
-value.
+**JA4H writes two raw forms.** The `raw` field carries the `JA4H_r` value, and the
+`raw_original_order` field carries the `JA4H_ro` value.
+
+```
+<part a>_<header names>_<cookie names>_<cookie pairs>
+```
+
+**Both forms hold the header names in wire order, and the cookie order separates them.**
+The `raw` field sorts both cookie lists by the cookie name, and the `raw_original_order`
+field holds the wire order of both. The base value hashes the two sorted strings, so the
+`raw` field is the pre-image of part c and of part d.
+
+**A request that carries no cookie ends after the header names and one underscore.** Both
+forms end that way. The FoxIO Python reference appends the two cookie fields only when the
+request holds a cookie, and the Wireshark dissector writes two trailing underscores.
+`Crank-Git/ja4plus-go#285` holds that reference split, and the maintainer rules it.
+
+**The FoxIO per-stream expected-output files publish `JA4H_ro` alone.** The per-packet
+files of the Wireshark dissector publish both keys, and
+`tests/foxio_vectors/wireshark_expected/` holds 62 of each. #600 records the measurement
+and the change that filled the `raw` field.
 
 [The output schema](../output-schema.md#the-raw-forms) states the same fact for the
 output line.
