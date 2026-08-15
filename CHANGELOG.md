@@ -6,6 +6,35 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The JA4L request completeness gate reads the header block terminator of
+  `ja4plus/utils/http_utils.py`** (#630). Round
+  TBD. **`ja4plus/fingerprinters/ja4l.py:402-403` held a second copy of the terminator
+  rule**, as `return b"\r\n\r\n" in payload or b"\n\n" in payload` inside
+  `_holds_a_complete_http_request`. That pair called no reader of `http_utils`, so #614
+  moved the rule in one file and left the copy in the other. **The pair declined the
+  terminator `\n\r\n`.** The reference routes a packet that holds a whole HTTP request to
+  a cache that holds no measurement point, so such a packet completes no client value. A
+  request whose header block ends `\n\r\n` therefore moved the JA4L client measurement
+  point, where a request with any other terminator moved it nowhere. `_holds_a_complete_http_request`
+  now calls `header_block_end`, and one reader answers the question for every caller.
+  **The deciding source is the Wireshark HTTP dissector and not #614**, because the gate
+  answers which cache the reference gives the packet: `epan/tvbuff.c:4203` of Wireshark
+  v4.6.0 compiles the line-end pattern with `ws_mempbrk_compile(&pbrk_crlf, "\r\n")`, so a
+  bare line feed ends a line, and `epan/req_resp_hdrs.c:143` leaves the header loop on the
+  first line of length 0. **The separating packet is built, because no FoxIO capture holds
+  a mixed line ending.** Three packets carry a SYN at 0.000 seconds, a SYN-ACK at 0.001
+  seconds and a request at 0.051 seconds, and that request holds the head
+  `GET / HTTP/1.1\r\nHost: example.com`, the terminator `\n\r\n` and the body `BODY`. It
+  read `JA4L-C=25000_128` on the base commit and it reads no client value here, which
+  agrees with the `JA4L-C=25000_64` the Go half measured on its own packet. New file
+  `tests/test_ja4l_header_block_terminator.py` holds seven cases, and five of them failed
+  on the base commit `727a10f`. **No conformance value moves**, because no FoxIO vector
+  carries a mixed line ending: the conformance suite reports 1635 passed, 143 skipped and
+  140 xfailed before the change and the same three counts after it, and
+  `tests/foxio_deviations.json` holds 140 keys. **The unit suite reports 4732 passed, 8
+  skipped and 8 xfailed**, and `pytest --collect-only` reads 6666 cases against 6659 on
+  the base commit. `Crank-Git/ja4plus-go#685` holds the Go half.
+
 - **The HTTP header block terminator matches either line ending** (#614). Round
   TBD. **`ja4plus/utils/http_utils.py:43` held the two literals `\r\n\r\n` and `\n\n`.** The
   maintainer ruled on 2026-08-14, on `Crank-Git/ja4plus-go#298`, that the terminator is one

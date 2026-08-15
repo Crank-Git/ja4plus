@@ -26,7 +26,7 @@ from typing import Any
 from scapy.all import IP, IPv6, TCP, UDP, Packet
 
 from ja4plus.fingerprinters.base import BaseFingerprinter
-from ja4plus.utils.http_utils import is_http_request
+from ja4plus.utils.http_utils import header_block_end, is_http_request
 from ja4plus.utils.packet_utils import opens_a_connection, packet_endpoints, packet_seconds
 from ja4plus.utils.state_table import BoundedStateTable
 from ja4plus.utils.quic_utils import (
@@ -391,16 +391,21 @@ def _holds_a_complete_http_request(payload: bytes) -> bool:
     request reaches the same cache as any other TCP packet, and it does move the
     point. `http-empty-useragent.pcap` and `latest.pcapng` prove both halves.
 
+    The reader of `ja4plus.utils.http_utils` answers where a header block ends, and this
+    gate calls it rather than holding a second copy of the rule. Two fixed byte groups
+    stood here before, and they declined a header block that ends with one line feed
+    followed by a carriage return and a line feed. Such a request then completed a client
+    value that the reference does not publish. #630 records the defect.
+
     Args:
         payload: The TCP payload bytes.
 
     Returns:
-        True when the payload starts an HTTP request and holds the blank line that
-        ends the header block.
+        True when the payload starts an HTTP request and holds the whole header block.
     """
     if not is_http_request(payload):
         return False
-    return b"\r\n\r\n" in payload or b"\n\n" in payload
+    return header_block_end(payload) is not None
 
 
 def _restart_connection(conn: dict[str, Any]) -> None:
