@@ -5,10 +5,10 @@ line, and nothing reported it before #668.** #600 moved one line of `ja4h.py` an
 review lens found one falsified citation, because the lens read the diff. The other 281
 reached no reader at all.
 
-**The maintainer ruled on 2026-08-15 that the pins of these pages stand.** 250 of the 282
-citations are true at the commit their own section declares, and zero agree with the
-working tree, which is the correct state of a pinned citation. A reader that held every
-citation against the tree would fail all 250.
+**The maintainer ruled on 2026-08-15 that the pins of these pages stand.** 272 of the 282
+citations are true at the commit their own section declares, and zero of the 253 pinned
+ones agree with the working tree, which is the correct state of a pinned citation. A reader
+that held every citation against the tree would fail all 253.
 
 `tests/foxio_citation_lines.py` holds the reader and this file holds the cases.
 `docs/specs/spec.md` records the round.
@@ -83,14 +83,10 @@ def test_every_pin_the_pages_declare_resolves_to_one_commit() -> None:
         pin
         for pin in reader.declared_pins()
         if reader._git("rev-parse", "--verify", f"{pin}^{{commit}}").returncode != 0
-        and reader._git(
-            "rev-parse", "--verify", reader.PIN_REFERENCE.format(pin=pin)
-        ).returncode
+        and reader._git("rev-parse", "--verify", reader.PIN_REFERENCE.format(pin=pin)).returncode
         != 0
     ]
-    assert unresolved == [], (
-        f"a page names a pin no commit of this repository holds: {unresolved}"
-    )
+    assert unresolved == [], f"a page names a pin no commit of this repository holds: {unresolved}"
 
 
 def test_the_workflow_fetches_every_commit_the_pages_pin() -> None:
@@ -121,7 +117,9 @@ def test_the_workflow_fetches_the_whole_identifier_of_every_pin_it_carries() -> 
 def test_the_reader_reads_no_foxio_citation() -> None:
     """A FoxIO path resolves against the FoxIO pin, which this reader never reads."""
     foreign = [
-        citation for citation in reader.all_citations() if citation.path.startswith(reader.FOXIO_PREFIXES)
+        citation
+        for citation in reader.all_citations()
+        if citation.path.startswith(reader.FOXIO_PREFIXES)
     ]
     assert foreign == [], (
         "this reader took a FoxIO path, and `tests/test_ja4t_citation_lines.py` holds that "
@@ -136,7 +134,9 @@ def test_a_declaration_names_a_path_this_repository_tracks() -> None:
     for page in sorted(reader.PAGE_DIRECTORY.glob("*.md")):
         for _, subjects, _ in reader.page_declarations(page.name):
             unknown.extend(f"{page.name}: {path}" for path in subjects if path not in tracked)
-    assert unknown == [], f"a pin declaration names a path this repository does not track: {unknown}"
+    assert unknown == [], (
+        f"a pin declaration names a path this repository does not track: {unknown}"
+    )
 
 
 # The two reversals below prove the guard discriminates, one in each class. A guard nobody
@@ -216,6 +216,5 @@ def test_the_census_reports_one_row_for_every_page() -> None:
     census = reader.census()
     for page in sorted(reader.PAGE_DIRECTORY.glob("*.md")):
         assert f"| `{page.name}` |" in census, (
-            f"the census omits {page.name}, so a reader cannot tell a clean page from an "
-            "unread one"
+            f"the census omits {page.name}, so a reader cannot tell a clean page from an unread one"
         )

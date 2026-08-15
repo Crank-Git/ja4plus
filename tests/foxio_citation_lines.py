@@ -1,8 +1,8 @@
 """Read every line citation of `docs/specs/foxio/` that names a file this repository owns.
 
 **A `file:line` citation of a repository-owned file goes stale on every change above the
-cited line, and nothing reported it before this reader.** #668 measured 291 citations over
-the ten pages and found nine wrong. The maintainer ruled on 2026-08-15 that the pins of
+cited line, and nothing reported it before this reader.** #668 measured 282 citations over
+the ten pages and found ten wrong. The maintainer ruled on 2026-08-15 that the pins of
 those pages stand, so this reader never repairs a citation to a working-tree line.
 
 ## The two classes
@@ -26,8 +26,8 @@ the nearer statement, so it wins. `docs/specs/foxio/JA4H.md` carries one such ce
 ## What this reader checks
 
 **The file holds the cited line at the read the citation declares.** That condition needs
-no table a person keeps, and #668 measured that it fails exactly the nine wrong citations
-and passes the 250 correct ones.
+no table a person keeps, and #668 measured that it fails exactly the ten wrong citations
+and passes the 272 correct ones.
 
 **Warning: this reader reads no FoxIO citation.** `tests/test_ja4t_citation_lines.py` reads
 those at the FoxIO pin, against a recorded source line. The two readers answer different
@@ -228,7 +228,9 @@ def wrong_citations(citations: list[Citation] | None = None) -> list[tuple[Citat
             blobs[key] = _blob(citation.pin, citation.path)
         source = blobs[key]
         if source is None:
-            wrong.append((citation, f"no reader reached {citation.path} at {citation.read_against}"))
+            wrong.append(
+                (citation, f"no reader reached {citation.path} at {citation.read_against}")
+            )
             continue
         if citation.last > len(source):
             wrong.append(
