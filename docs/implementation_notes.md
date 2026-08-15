@@ -1545,11 +1545,11 @@ request line.
 
 `REQUEST_LINE_PATTERN` read the path with the non-space group `(\S+)`, which matches no
 path that holds a space. Frame 4 of `gre-erspan-vxlan.pcap` holds
-`GET /Hello Arkime HTTP/1.0`, so the group read `/Hello` and the match then needed the
+`GET /Hello Arkime HTTP/1.0`. The group read `/Hello`, and the match then needed the
 version token where the line holds `Arkime`. The request reached no JA4H value. #612
 records the defect, and `Crank-Git/ja4plus-go#527` records the same defect in the port.
 
-The repaired pattern holds four readings, and each one has a case in
+The repaired pattern holds four rules, and each one has a case in
 `tests/test_ja4h_request_line_and_empty_header_list.py`.
 
 1. Each separator reads a space or a horizontal tab. `\s` matches a line feed, so the
@@ -1560,12 +1560,38 @@ The repaired pattern holds four readings, and each one has a case in
    matches a bare carriage return, so the path of `GET /a\rFAKE HTTP/1.1` would hold two
    lines of the payload.
 3. The path group is lazy, so a first line that holds two version tokens reaches the
-   earlier one. The non-space group read the earlier token, and this reading keeps it.
-4. The first character of the path group is neither a space nor a horizontal tab. Two
-   adjacent quantifiers that both accept a space admit one split for each space of a run,
-   and the match then costs the square of the line length. This class admits one split for
-   each run, so the cost is the line length. The class moves no match, because the greedy
-   separator already consumed every space of the run.
+   earlier one. The non-space group read the earlier token, and this rule keeps it.
+4. The path group reads neither a space nor a horizontal tab as its first character or as
+   its last one. The section below states that rule on its own, because it is this port's
+   and the Go port needs no such rule.
+
+**Warning: rules 1 to 3 alone leave a payload that costs the square of its line length.**
+The lazy path body accepts a space, and the greedy separator after it accepts a space, so
+the two overlap. A run of spaces then admits one split for each space, and a version token
+that the line almost holds makes the match retry every one of them. `GET a` plus 32000
+spaces plus `HTTPX` cost 3017.9 milliseconds under a path group of `[^ \t\r\n][^\r\n]*?`,
+and it costs 0.630 milliseconds under rule 4. A read of 2026-08-15 measured both.
+
+**`is_http_request` reads 8192 bytes of every TCP payload**, so one packet paid about 200
+milliseconds of processor time under the form that rule 4 replaces. `ja4l.py:406` and
+`ja4h.py:137` each call that reader.
+
+**A path that ends with a character other than a space admits one split for each such
+character.** Each split reads the run of spaces after it once, so the cost is the line
+length. **The rule moves no match**, because the greedy separator already consumed every
+space of a run, so no match ever ended the path on a space. A differential run over 400000
+random request lines reported no disagreement between the two forms.
+
+**The Go port holds `([^\r\n]+?)` and it needs no rule 4.** `regexp` of Go runs a finite
+automaton and it backtracks nowhere. Python `re` backtracks, so this port states the rule.
+An atomic group would state it directly, and `(?>...)` needs Python 3.11 while
+`pyproject.toml` reads `requires-python = ">=3.10"`.
+
+**One further difference follows from rule 1, and no vector reaches it.** Python `\s`
+matches the vertical tab and the form feed, and `[ \t]` matches neither. Those two bytes
+therefore separate no field now, and the path group reads each one as an ordinary
+character. RFC 9112 names the space as the separator of a request line, and it names
+neither byte, so the repaired pattern is the closer reading.
 
 **Vector:** `gre-erspan-vxlan.pcap` frame 4. The FoxIO Wireshark dissector writes
 `ge10nn000000_e3b0c44298fc_000000000000_000000000000`, and
@@ -1582,8 +1608,8 @@ alone.** The maintainer ruled on 2026-08-14, R19 of `docs/specs/foxio/JA4H.md` h
 ruling, and #612 is the reversal path.
 
 **The four FoxIO references split two against two**, and a rank 1 image rule breaks the
-split. R12 transcribes `Truncated SHA256 hash of Headers, in the order they appear`, which
-names no sentinel, and R17 confines the sentinel to part c and part d.
+split. R12 transcribes `Truncated SHA256 hash of Headers, in the order they appear`, and
+that caption names no sentinel. R17 confines the sentinel to part c and part d.
 
 **R8 of `docs/specs/foxio/JA4X.md` holds the same ruling for JA4X**, which #619 built on
 the same date. The two methods therefore read one ruling one way.

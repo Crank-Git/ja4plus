@@ -478,8 +478,8 @@ def _generate_ja4h_from_info(http_info: dict[str, Any] | None) -> str | None:
         # Part b is the SHA-256 of the joined header names, truncated to 12 hexadecimal
         # characters. An empty header list hashes, so part b reads `e3b0c44298fc` and it
         # writes no zero sentinel. R12 of `docs/specs/foxio/JA4H.md` is a rank 1 image
-        # rule and it names no sentinel, R17 of that page confines the sentinel to part c
-        # and part d, and R19 holds the ruling of 2026-08-14. #612 is the reversal path.
+        # rule, and it names no sentinel. R17 of that page confines the sentinel to part c
+        # and part d. R19 holds the ruling of 2026-08-14, and #612 is the reversal path.
         headers_str = ",".join(_ja4h_header_names(http_info))
         part_b = hashlib.sha256(headers_str.encode()).hexdigest()[:12]
 

@@ -20,15 +20,31 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   line that no line holds. The path group reads `[^\r\n]` and never any character,
   because `.` matches a bare carriage return and the path of `GET /a\rFAKE HTTP/1.1`
   would then hold two lines. The group is lazy, so a first line that holds two version
-  tokens reaches the earlier one. **The fourth reading is this project's own, and it
-  bounds the work on hostile input.** The first character of the path group is neither a
-  space nor a horizontal tab, so one run of spaces admits one split rather than one split
-  for each space. The lazy group `(.+?)` costs the square of the line length, and one
-  measurement puts the eight cases of the new file at 41.92 seconds under that form
-  against 0.44 seconds under this one. The class moves no match, because the greedy
-  separator already consumes every space of a run. **The port keeps its own version
-  token** `HTTP/(?:\d+\.\d+|[23])` with the lookahead, which #35 records, and the Go half
-  holds `HTTP/\d+\.\d+`. **Rule 2 removes the zero sentinel from part b of JA4H.**
+  tokens reaches the earlier one. **The fourth rule is this project's own, and the
+  self-review found it after the first three had shipped to a branch.** The path group
+  reads neither a space nor a horizontal tab as its first character or as its last one.
+  **Rules 1 to 3 alone leave a payload that costs the square of its line length**, because
+  the lazy path body accepts a space and the greedy separator after it accepts a space
+  too. A run of spaces then admits one split for each space, and a version token that the
+  line almost holds makes the match retry every one of them. `GET a` plus 32000 spaces
+  plus `HTTPX` cost **3017.9 milliseconds** under a path group of `[^ \t\r\n][^\r\n]*?`
+  and **0.630 milliseconds** under rule 4, and a mixed run of spaces and tabs cost
+  3320.0 milliseconds against 0.593 milliseconds. **`is_http_request` reads 8192 bytes of
+  every TCP payload**, so one packet paid about 200 milliseconds of processor time under
+  the form rule 4 replaces. A path that ends with a character other than a space admits
+  one split for each such character, each split reads the run after it once, and the cost
+  is the line length. **Rule 4 moves no match**, because the greedy separator already
+  consumes every space of a run, so no match ever ended the path on a space, and a
+  differential run over 400000 random request lines reported no disagreement between the
+  two forms. **The Go half needs no rule 4**, because `regexp` of Go runs a finite
+  automaton and it backtracks nowhere, and an atomic group needs Python 3.11 while
+  `pyproject.toml` reads `requires-python = ">=3.10"`. **One further difference follows
+  from rule 1, and no vector reaches it.** Python `\s` matches the vertical tab and the
+  form feed and `[ \t]` matches neither, so those two bytes separate no field now and the
+  path group reads each one as an ordinary character. RFC 9112 names the space and it
+  names neither byte. **The port keeps its own version token**
+  `HTTP/(?:\d+\.\d+|[23])` with the lookahead, which #35 records, and the Go half holds
+  `HTTP/\d+\.\d+`. **Rule 2 removes the zero sentinel from part b of JA4H.**
   `ja4plus/fingerprinters/ja4h.py:479` to `:481` wrote `000000000000` where the joined
   header names were empty, and part b now reads
   `hashlib.sha256(headers_str.encode()).hexdigest()[:12]` with no guard, so an empty
@@ -48,10 +64,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   **A replay of the 38 committed captures produces 73 JA4H values before the change and
   74 after**, and the one new value is that frame. Every other JA4H value is unchanged,
   capture by capture and frame by frame. **New file
-  `tests/test_ja4h_request_line_and_empty_header_list.py` holds eight cases, and six of
-  them failed on the base commit `07d906d`.** Four reversals measure the two rules apart.
-  Rule 1 alone fails 3, rule 2 alone fails 3, the base fails 5, and the lazy group
-  `(.+?)` fails the carriage-return case and the linear-time case. **The conformance
+  `tests/test_ja4h_request_line_and_empty_header_list.py` holds eleven cases, and six of
+  the first eight failed on the base commit `07d906d`.** Five reversals measure the rules
+  apart. Rule 1 alone fails 3, rule 2 alone fails 3, the base fails 5, the lazy group
+  `(.+?)` fails the carriage-return case and one timing case, and a path group that ends
+  on a space fails the two timing cases and runs the file in 6.87 seconds against 0.29. **The conformance
   suite moves one skip to one xfail.** It reports 1635 passed, 143 skipped and 140 xfailed
   before the change, and 1635 passed, 142 skipped and 141 xfailed after it. The new key
   is `gre-erspan-vxlan.pcap/JA4H`, and `tests/foxio_deviations.json` holds 141 keys

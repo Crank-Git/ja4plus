@@ -272,13 +272,13 @@ FoxIO Wireshark dissector writes
 after the repair of #612**, because the path holds a space. Neither repair closes the
 comparison alone.
 
-**The gate is proven by its reversal, and both directions are measured.** Restore the
+**The reversal proves the gate, and the suite measures both directions.** Restore the
 guard `if headers_str else "000000000000"`, and
 `tests/test_ja4h_request_line_and_empty_header_list.py` fails three cases:
 `test_hashes_an_empty_header_list`, `test_writes_no_zero_sentinel_in_part_b` and
 `test_produces_the_reference_value_of_frame_4_of_the_gre_capture`. **A replay of the 38
-committed captures produces 73 JA4H values before the two repairs and 74 after**, and the
-one new value is the frame 4 value above. No other JA4H value moves.
+committed captures produces 73 JA4H values before the two repairs and 74 after.** The one
+new value is the frame 4 value above, and no other JA4H value moves.
 
 ### R20 — The references disagree on a cookie that carries no equals sign
 

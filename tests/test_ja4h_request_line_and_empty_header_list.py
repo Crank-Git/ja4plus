@@ -8,9 +8,9 @@ matches no path that holds a space. Frame 4 of `gre-erspan-vxlan.pcap` holds
 found two further defects of that pattern, which the second comment of #612 records.
 
 Rule 2 is the empty header list. Part b substituted the zero sentinel `000000000000`
-where the header string is empty, and it hashes that string instead. R18 of the JA4H
-image is a rank 1 rule and it names no sentinel. R27 confines the sentinel to part c and
-part d.
+where the header string is empty, and it hashes that string instead. R12 of
+`docs/specs/foxio/JA4H.md` is a rank 1 image rule, and it names no sentinel. R17 of that
+page confines the sentinel to part c and part d. R19 holds the ruling of 2026-08-14.
 
 The two rules land together. A repair of rule 1 alone produces
 `ge10nn000000_000000000000_000000000000_000000000000` for frame 4, against the reference
@@ -71,13 +71,13 @@ def test_reads_no_request_line_that_spans_two_lines():
 
 
 def test_reads_no_path_that_holds_a_carriage_return():
-    """The path group reads no carriage return, so rule 1 opens no new hole.
+    """The path group reads no carriage return, so rule 1 admits no such path.
 
     A group of any character matches a bare carriage return, and the path then holds two
     lines of the payload. The non-space group read no such path, and this case keeps that
-    reading. `is_http_request` admits every payload that starts with one of the nine
-    method tokens, so it reads this payload whatever the pattern holds, and #219 records
-    that ruling.
+    read. `is_http_request` admits every payload that starts with one of the nine method
+    tokens. It reads this payload whatever the pattern holds, and #219 records that
+    ruling.
     """
     payload = b"GET /a\rFAKE HTTP/1.1\r\nReal: 1\r\n\r\n"
     assert parse_http_request(payload) is None
@@ -96,18 +96,63 @@ def test_reads_the_earlier_version_token_of_a_line_that_holds_two():
 
 
 def test_reads_a_line_of_spaces_that_holds_no_version_token_in_linear_time():
-    """The pattern holds no unbounded backtracking on hostile input.
+    """A run of spaces after the method costs the line length and not its square.
 
-    A path group that accepts a leading space makes the two adjacent quantifiers
-    ambiguous, and the match then costs the square of the line length. The path group
-    reads a first character that is neither a space nor a horizontal tab, so one run of
-    spaces admits one split. 3000 spaces cost about 9000000 steps under the ambiguous
-    form, and they cost about 3000 under this one.
+    The greedy separator reads the whole run, and the path group then reads no first
+    character. Each shorter separator fails at the same character.
     """
     payload = b"GET" + b" " * 3000
     start = time.monotonic()
     assert parse_http_request(payload) is None
     assert time.monotonic() - start < 2.0
+
+
+def test_reads_a_line_that_almost_holds_a_version_token_in_linear_time():
+    """A path, a run of spaces and a near version token cost the line length.
+
+    This is the shape that the case above does not reach, and it is the one that costs
+    the square of the line length under a path group that ends on a space. The lazy path
+    body accepts a space and the greedy separator accepts a space, so a run of spaces
+    admits one split for each space and `HTTPX` fails every one of them. A read of
+    2026-08-15 puts this payload at 3017.9 milliseconds under that form and at 0.630
+    milliseconds under this one, so the limit below separates the two by a factor above
+    1000 in each direction.
+    """
+    payload = b"GET a" + b" " * 32000 + b"HTTPX"
+    start = time.monotonic()
+    assert parse_http_request(payload) is None
+    assert time.monotonic() - start < 1.0
+
+
+def test_reads_a_line_of_spaces_and_tabs_that_almost_holds_a_version_token_in_linear_time():
+    """A separator of mixed spaces and tabs reaches the same bound.
+
+    A rule that names the space alone leaves the tab, and the two characters carry one
+    separator. A read of 2026-08-15 puts this payload at 3320.0 milliseconds under a path
+    group that ends on a space, and at 0.593 milliseconds under this one.
+    """
+    payload = b"GET a" + b" \t" * 16000 + b"HTTP/x"
+    start = time.monotonic()
+    assert parse_http_request(payload) is None
+    assert time.monotonic() - start < 1.0
+
+
+def test_reads_a_path_that_ends_with_no_space():
+    """The path holds every character between the two separators, and no separator.
+
+    The rule that bounds the work reads the last character of the path, so a path of one
+    character and a path that holds a space must both survive it.
+    """
+    for line, path in (
+        (b"GET / HTTP/1.1\r\n\r\n", "/"),
+        (b"GET /a b HTTP/1.1\r\n\r\n", "/a b"),
+        (b"GET  /a  HTTP/1.1\r\n\r\n", "/a"),
+        (b"GET /a\tb HTTP/1.1\r\n\r\n", "/a\tb"),
+        (b"CONNECT example.com:443 HTTP/1.1\r\n\r\n", "example.com:443"),
+    ):
+        parsed = parse_http_request(line)
+        assert parsed is not None, line
+        assert parsed["path"] == path, line
 
 
 def test_hashes_an_empty_header_list():

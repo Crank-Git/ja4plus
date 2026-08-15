@@ -48,8 +48,8 @@ keeps the first 12 characters of the hexadecimal digest.
 
 **An empty header list hashes, and part b writes `e3b0c44298fc`.** That value is the
 truncated SHA-256 of the empty string. **The zero sentinel `000000000000` reaches part c
-and part d alone**, so a request that carries no cookie writes the sentinel into the third
-part and the fourth part. `ja4plus/fingerprinters/ja4h.py:484` holds the header hash, and
+and part d alone.** A request that carries no cookie therefore writes the sentinel into
+the third part and the fourth part. `ja4plus/fingerprinters/ja4h.py:484` holds the header hash, and
 `ja4plus/fingerprinters/ja4h.py:493` holds the cookie name hash. R19 of
 `docs/specs/foxio/JA4H.md` holds the ruling of 2026-08-14.
 
