@@ -42,7 +42,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with a cleared `__pycache__` removed the stale bytecode. **No fingerprint moves.** The
   conformance suite reports 1642 passed, 142 skipped and 138 xfailed before the change and
   after it, and `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed
-  cases. **The unit suite rises from 5384 passed to 5391 passed**, and 8 skipped and 8
+  cases. **This branch then took `batch/664-raw-form-and-records` again, because #638
+  landed under it**, and the suite reports 1647 passed, 142 skipped and 138 xfailed on
+  both sides of that base. The five new cases belong to #638. **The unit suite rises from 5384 passed to 5391 passed**, and 8 skipped and 8
   xfailed hold. `pytest --collect-only` reads 7372 cases against 7365 on the base commit.
   **The rise of seven is the four new cases and three repository-wide checks**, because
   `tests/test_documented_method_count.py`, `tests/test_ruling_vocabulary.py` and
