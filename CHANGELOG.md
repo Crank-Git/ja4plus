@@ -6,6 +6,31 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the rule that reads the JA4D domain character from a
+  name** (#615). Round
+  TBD. **`ja4plus/fingerprinters/ja4d.py:165` reads
+  `has_fqdn = has_fqdn or len(opt_data) > _DHCP_FQDN_NAME_OFFSET`**, and
+  `ja4plus/fingerprinters/ja4d.py:64` holds `_DHCP_FQDN_NAME_OFFSET = 3`. An option 81 of
+  three bytes or fewer therefore gives `n`, and an option 81 of four bytes or more gives
+  `d`. **Two FoxIO implementations split on that rule, and rule 1 settles neither.**
+  `wireshark/source/packet-ja4.c:1521` tests the field `dhcp.fqdn.name` and
+  `wireshark/source/packet-ja4.c:1522` then writes `ja4d_data.fqdn = 'd'`, so the name
+  decides the character. `zeek/ja4d/main.zeek:73` tests `options?$client_fqdn` and
+  `zeek/ja4d/main.zeek:74` returns `"d"`, so the presence of the option decides it.
+  **The image outranks both implementations, and its caption sides with the dissector.**
+  The caption of subfield 4 reads `Has a Domain name (d) or No domain (n)`, which names
+  the domain name and never the option. R7 of `docs/specs/foxio/JA4D.md` already recorded
+  that split, and the register held no row for it. **This round read both cited lines at
+  the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved no
+  citation.** It also read `Crank-Git/ja4plus-go#371` at the port tracker, which carries
+  the maintainer ruling of 2026-08-14 and built the Go half. **This round measured the
+  corpus, and the register row states the measurement.** The 38 captures of
+  `tests/foxio_vectors/` hold 4 DHCPv4 messages and 0 occurrences of option 81, and
+  `tests/foxio_vectors/dhcp.pcapng` holds all four messages. A replay under the presence
+  reading therefore moves 0 of the 4 JA4D values, and it moves no entry of
+  `tests/foxio_deviations.json`. **This round changes no line of `ja4plus`.** New file
+  `tests/test_ja4d_fqdn_name_ruling.py` holds fifteen cases, and a presence test at
+  `ja4plus/fingerprinters/ja4d.py:165` fails two of them.
 - **The divergence register records the rule that reads a JA4TS delay in whole
   seconds** (#602). Round
   TBD. **`ja4plus/fingerprinters/ja4ts.py:63` reads
