@@ -26,10 +26,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   FoxIO reference states how often one connection reports, so rule 1 settles nothing, and
   both libraries shipped opposite readings, so rule 2 names no first mover. **This round
   moves no fingerprint value and it edits no file under `ja4plus/`.** The unit suite
-  collects 5583 cases before the round and 5596 after, the conformance suite collects 1927
+  collects 5583 cases before the round and 5599 after, the conformance suite collects 1927
   before and after, and `tests/foxio_deviations.json` holds 138 keys before and after.
-  **The new file holds 12 of those 13 cases, and one case of
-  `tests/test_documented_method_count.py` gains the parameter that names it.**
+  **The new file holds 13 of those 16 cases, and the other 3 are parameters rather than
+  new cases.** `tests/test_documented_method_count.py`, `tests/test_ruling_vocabulary.py`
+  and `tests/test_statistics_thread_term.py` each hold one case that runs over every Python
+  file of the tree, so a new file adds one parameter to each. **This round edits no line of
+  those three files.**
   **The port holds no matching record**, because the `## Parity with ja4plus` register of
   `Crank-Git/ja4plus-go` states no row for the emission model, and the project manager
   files the port half there. `tests/test_ja4t_emission_model_ruling.py` holds the row and

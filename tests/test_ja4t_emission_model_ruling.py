@@ -48,6 +48,17 @@ QUOTED_CONNECTIONS = 10
 VALUES_FROM_QUOTED_FRAMES = 0
 VALUES_OVER_THE_CAPTURE = 19
 
+# Each count reads as a phrase and never as a bare digit. A row that reads `5 values` in
+# place of `0 values` passes a search for the digit, because the row states a date, a line
+# number and the value `1460`. The self-review of #667 measured that pass.
+COUNT_PHRASES = (
+    "31 frames whose quoted header is a SYN that carries no ACK",
+    "those 31 frames report 10 connections",
+    "the 31 frames produce 0 values",
+    "produces 19 JA4T values, and 0 of them come from a quoted frame",
+    "produces 31 values",
+)
+
 
 def _register_row() -> str:
     """Return the register row that records the emission model.
@@ -128,17 +139,20 @@ def test_the_register_names_the_ruling_that_holds_the_reading() -> None:
 def test_the_register_states_every_count_of_the_measurement() -> None:
     """The row states the frame count, the connection count and both value counts."""
     row = _register_row()
-    absent = [
-        str(count)
-        for count in (
-            QUOTED_SYN_FRAMES,
-            QUOTED_CONNECTIONS,
-            VALUES_FROM_QUOTED_FRAMES,
-            VALUES_OVER_THE_CAPTURE,
-        )
-        if str(count) not in row
-    ]
+    absent = [phrase for phrase in COUNT_PHRASES if phrase not in row]
     assert absent == [], f"the row states none of these counts: {absent}"
+
+
+def test_each_count_phrase_holds_the_count_the_cases_measure() -> None:
+    """Each phrase of the row carries the number the cases read from the vector."""
+    counts = (
+        QUOTED_SYN_FRAMES,
+        QUOTED_CONNECTIONS,
+        VALUES_FROM_QUOTED_FRAMES,
+        VALUES_OVER_THE_CAPTURE,
+    )
+    numbers = {int(number) for phrase in COUNT_PHRASES for number in re.findall(r"\d+", phrase)}
+    assert set(counts) <= numbers
 
 
 def test_the_register_states_the_value_the_two_libraries_agree_on() -> None:
