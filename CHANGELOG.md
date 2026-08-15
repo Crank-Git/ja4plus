@@ -23,7 +23,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   parity rules of `CLAUDE.md` exist to prevent. **`docs/concurrency.md` gains the section
   `## One packet dated in the future evicts every entry`.** It states the property, names
   the reachable case, gives the reason this project accepts it, and states what the
-  property costs. **The eviction removes fingerprinting state, so a run answers with fewer
+  property costs. **The section states the shard qualifier too.** `evict_aged` holds the
+  entries of another thread, at `ja4plus/utils/state_table.py:412`, so a sharded caller
+  loses the entries of the thread that reads the packet and every entry that the wall
+  clock dated, and a caller that runs one thread loses every entry. **The eviction removes fingerprinting state, so a run answers with fewer
   fingerprints rather than with wrong ones**, and the entry count bound holds the memory
   whatever timestamp a packet carries, because that bound reads the recency order and no
   timestamp. **No line of `ja4plus/` changes, and `git diff --stat ja4plus/` reports

@@ -54,6 +54,12 @@ capture file that the operator did not produce is the reachable case. One packet
 a file removes every entry of the state table. A bounded table otherwise lets a sender
 remove one entry with one connection.
 
+**A caller that runs one thread loses every entry, because that thread owns them all.**
+The age pass of one thread reads the entries of that thread, and it holds the entries of
+another thread. A sharded caller therefore loses the entries of the thread that reads the
+packet, and it loses every entry that the wall clock dated.
+`docs/specs/features/03-concurrency-safety.md` states that rule.
+
 **A live capture reaches this property much less often.** It takes the timestamp of each
 packet from the host clock rather than from the sender.
 
