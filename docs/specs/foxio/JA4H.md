@@ -526,6 +526,28 @@ The claim holds for `python/test/testdata/` and it does not hold for the Wiresha
 output. This changes no fingerprint. It changes what a person reading `ja4h.py` believes
 the reference publishes.
 
+**#600 repaired D6 on 2026-08-15, and the fingerprinter now fills the sorted raw form.**
+The docstring names the per-stream files and the per-packet files separately, so no reader
+takes the narrower claim for the wider one. `tests/foxio_vectors/wireshark_expected/` holds
+62 `ja4.ja4h_r` values, and `http1-with-cookies.pcapng` is the one cleartext record whose
+value carries a cookie. This project produces that value.
+
+```
+ge11cr04da00_Host,User-Agent,Accept,Accept-Language_tasty_cookie,yummy_cookie_tasty_cookie=strawberry,yummy_cookie=choco
+```
+
+**The three fields of that value hash to part b, part c and part d of `ja4.ja4h`**, which
+reads `ge11cr04da00_8ddaef5d77af_280f366eaa04_c2fb0fe53442`. The sorted raw form is
+therefore the pre-image of the base value, and it needs no arithmetic of its own.
+`tests/test_ja4h_raw_sorted.py` holds the comparison. **The repair moved no fingerprint and
+no `JA4H_ro` value.**
+
+**A request that carries no cookie ends after the header names and one underscore.** The
+Wireshark dissector writes two trailing underscores for that request, and
+`python/ja4h.py:82` appends the two cookie fields only when the request holds a cookie.
+`Crank-Git/ja4plus-go#285` holds that reference split, and the maintainer rules it. This
+project follows the wire-order form, so one ruling moves both raw forms.
+
 ### One more finding that changes no fingerprint
 
 `ja4h.py:20` imports `parse_http_request`, and no line of `ja4h.py` calls it.
