@@ -62,6 +62,36 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_ja4x_empty_ext.py`, `tests/test_comprehensive.py`, `tests/test_edge_cases.py`
   and `tests/test_ja4x_deep.py` hold the moved cases.
 
+- **`JA4SSHFingerprinter` publishes `close_connection_window`, which emits the window one
+  connection holds open and then removes that connection** (#598). Round
+  TBD. **`cleanup_connection` removes a connection and it emits nothing**, so a caller that
+  evicts a connection loses the window that connection holds open. `_close_window` does
+  the whole job for one connection, and its leading underscore keeps every caller away
+  from it. `close_open_windows` reaches every connection at once, and it serves no single
+  connection that just ended. **A long-running monitor is the caller that evicts**, and
+  the reference publishes the final window at that moment: `rust/ja4/src/ssh.rs:45-55` and
+  `zeek/ja4ssh/main.zeek:160-164` both emit at teardown. **The maintainer ruled the method
+  on `Crank-Git/ja4plus-go` issue #216, on 2026-08-12**, and parity rule 2 gives the
+  interface to the side that names it first. `Crank-Git/ja4plus-go` pull request #263
+  shipped `CloseConnectionWindow(srcIP string, srcPort uint16, dstIP string, dstPort
+  uint16, proto string)`, so this round adopts that parameter order under the Python name
+  `close_connection_window(src_ip, src_port, dst_ip, dst_port, proto)`. **The method names
+  the connection by the same key `cleanup_connection` accepts**, so a caller names the two
+  endpoints in either order, and the method removes the handshake entry of the pair before
+  it reads the state table. **It returns an empty list for a connection the state table
+  does not hold, and an empty list for a window that holds no SSH packet**, because #97
+  declines a fingerprint of an empty window. It removes the connection in both cases, so a
+  second call returns an empty list. **The method takes the lock for the whole call**, as
+  every other public method of the fingerprinter does. **`cleanup_connection` keeps its
+  signature and its behaviour**, so a caller that only reclaims memory receives no
+  fingerprint it did not ask for. **Nine cases came first and all nine failed**:
+  `AttributeError: 'JA4SSHFingerprinter' object has no attribute
+  'close_connection_window'`. **No FoxIO vector separates the two answers**, because the
+  conformance suite reads each capture to its end and calls no eviction, so
+  `tests/test_ja4ssh_close_connection_window.py` is the record of the ruling. **No
+  fingerprint moves**, and the conformance suite reports the same counts before this round
+  and after it. `docs/api_reference.md` gains the section `When to call
+  close_connection_window`.
 - **The ServerHello reader bounds the `supported_versions` read on the bytes the record
   holds** (#617). Round
   218. **`ja4plus/utils/tls_utils.py:278` tested `ext_len`, which is the length the packet
