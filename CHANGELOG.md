@@ -6,6 +6,42 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The FoxIO Rust parity module reads the `ja4ssh` block, and it compares both JA4SSH
+  values it holds** (#671). Round
+  TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
+  block and the `http` block**, so the 2 `ja4ssh` values reached no case. #638 counted them
+  in a sweep of all eleven local snapshots, and one snapshot holds such a block:
+  `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` writes them on
+  stream 14. **The `ja4ssh` block names no field**, because it writes each value as a bare
+  list item at the two-space level, so the reader takes a value from the block it stands
+  in. **JA4SSH emits one value for each window**, so one entry of the block is one window
+  and the occurrence is the position of that window. **The two values rest on different
+  references, and `ja4plus` matches the snapshot on both.** The FoxIO Python file publishes
+  `c36s36_c76s124_c74s5` for the first window, the snapshot holds that same value, and
+  `tests/test_spec_validation.py` already compares it. The FoxIO Python file publishes
+  `c36s36_c0s0_c2s0` for the second window, and #97 declines that value under
+  `"capability": false`, which is a value decline. **The precedence exception of
+  `.claude/rules/external-apis.md` therefore gives the second window to the FoxIO Rust
+  snapshot and the Zeek baseline**, which both hold `c36s52_c42s76_c51s2`.
+  `tests/test_precedence_exception.py` records that row as one of the 6 the exception
+  reaches. **`ja4plus` produces `c36s36_c76s124_c74s5` and `c36s52_c42s76_c51s2`, so
+  neither window deviates and the register moves nowhere.** **#214 made this project emit
+  the window a connection holds open when the capture ends, and it rested on an agreement
+  no case measured.** The new class holds that measurement, and
+  `docs/specs/foxio/JA4SSH.md` states the reading it now covers. **This module keys no
+  JA4SSH case against the register**, because a mark on the second window would xfail a
+  case that passes, and `strict=True` fails the suite on such a pass. **No file under
+  `ja4plus/` changed, so no fingerprint moved and no output field moved.** The conformance
+  suite rises from 1660 passed to 1671 passed, with 142 skipped and 138 xfailed against
+  the 138 keys of `tests/foxio_deviations.json`. The unit suite reports 5519 passed, 8
+  skipped, 8 xfailed and 114 subtests passed before and after, because the 11 new cases
+  carry the `spec_validation` marker. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
+  **The red-to-green is the value case.** Write `c36s52_c42s76_c51s3` in place of the
+  second snapshot value and 2 cases fail, one of them reporting
+  `rust=c36s52_c42s76_c51s3 ja4plus=c36s52_c42s76_c51s2`. Write
+  `c36s36_c76s124_c74s6` in place of the first one and 2 cases fail the same way. Restore
+  the snapshot and the module reports 230 passed and 1 xfailed.
 - **The FoxIO Rust parity module reads the `http` block, and it compares five of the six
   JA4H values it holds** (#670). Round
   TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
