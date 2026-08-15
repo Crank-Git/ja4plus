@@ -3,11 +3,19 @@
 Where `ja4plus --version` reports 0.6.0, read this page before you install version 1.0.0.
 That command names the version of the package your environment holds.
 
-This repository declares version 1.1.1, which is a patch release of version 1.1.0.
+This repository declares version 1.2.0, which is a minor release of version 1.1.1.
 **Python 3.9 leaves the supported set at version 1.1.0**, and version 1.0.1 is the release
-that still installs on it. Version 1.1.0 moves no other interface and no fingerprint.
-**Version 1.1.1 repairs one crash of the ServerHello reader.** It moves no interface and no
-fingerprint, so every row below reads the same at version 1.1.1.
+that still installs on it. Version 1.1.0 moves no other interface and no fingerprint, and
+version 1.1.1 repairs one crash of the ServerHello reader and moves neither.
+
+**Version 1.2.0 moves several fingerprint values, and it breaks no row of this page.** The
+rows below state what version 1.0.0 changed against version 0.6.0, and version 1.2.0
+changes none of them, so every row reads the same here. **A reader who moves from version
+1.1.1 rather than from version 0.6.0 reads the `## [1.2.0]` section of `CHANGELOG.md`
+instead**, which names each value that moves and the issue that carries it. Those values
+are JA4X and JA4H on an empty list, JA4TS on a reset of a one-SYN-ACK connection, JA4T on
+the header an ICMP error message quotes, and JA4, JA4S, JA4D and JA4D6 on a tunneled
+packet.
 
 This page states what a reader must change. It lists each breaking change with the old
 form, the new form and the reason. `CHANGELOG.md` and the `## Changelog` table of

@@ -1336,6 +1336,78 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
   reports 1635 passed, 143 skipped and 140 xfailed.
 
+## [1.2.0] - 2026-08-15
+
+Version 1.2.0 follows version 1.1.1, and no version stands between them. The date of the
+heading above is the date this release reaches `master`. It carries rounds 219 to 248.
+
+**The bump is minor and never patch**, because this release adds published names and it
+moves published values. It is never major, because it removes no name and it renames none.
+
+**Four published names arrive.** `JA4H` fills the sorted raw form, so the `raw` field of a
+JA4H result carries a value where it carried `null` (#600). `--types ja4ls` selects the
+JA4LS values alone, and `--types ja4l` still selects the client values and the server
+values, so no caller of version 1.1.1 sees a change (#605).
+`JA4SSHFingerprinter.close_connection_window` publishes the window that one connection
+holds open and then removes that connection (#598). The mapping lookup reads both forms of
+an empty-list value, so a certificate that carries an empty list matches the rows the
+bundled FoxIO file holds (#639).
+
+**Six readings move a value.** JA4X hashes an empty object identifier list and JA4H part b
+hashes an empty header list, each under the ruling of 2026-08-14 (#619, #612). JA4TS
+publishes the four-part value on a reset of a connection that holds one SYN-ACK (#609).
+JA4T reads the TCP header that an ICMP error message quotes (#610). JA4 and JA4S read the
+inner UDP layer of a tunneled packet, and JA4D and JA4D6 read it too (#594, #646). JA4H
+reads a request path that holds a space, and the header block terminator matches either
+line ending (#612, #614, #630).
+
+**The conformance suite moves from 1635 passed, 143 skipped and 140 xfailed at version
+1.1.1, to 1676 passed, 142 skipped and 138 xfailed here.** Three deviations closed and one
+opened. #609 closed frames 849 and 850 of `ssh2.pcapng` and frame 174 of
+`browsers-x509.pcapng`. #612 registered `gre-erspan-vxlan.pcap/JA4H`, where this port
+produces a value the FoxIO Python file holds no key for and the Wireshark dissector holds
+byte for byte. `tests/foxio_deviations.json` holds 138 keys against the 138 xfailed cases.
+
+**One repair of this release bounds a cost that a crafted packet reaches.** #612 widened
+the request line pattern and its own self-review measured a quadratic backtracking cost
+before the merge: a crafted request line of 32000 spaces cost 3017.9 milliseconds against
+0.630 milliseconds on the repaired form, and `is_http_request` reads 8192 bytes of every
+TCP payload. **The released form carries the repair**, and three timing cases hold the
+bound. #650 records the general rule that a regular expression taken from `ja4plus-go`
+carries no statement of its cost, because Go runs a finite automaton and Python `re`
+backtracks.
+
+**`requires-python` reads `>=3.10`, as it reads at version 1.1.1**, so every environment
+that installs version 1.1.1 installs this release. **The classifier holds at
+`Development Status :: 5 - Production/Stable`**, and `classifier_disagreement` of
+`tests/version_gate.py` agrees at 1.2.0. `ja4plus/__init__.py` declares the version as a
+plain string, and `pyproject.toml` moves no line, because it reads the value from the
+syntax tree of the package.
+
+**Five issues of this cycle closed with no code, because the defect each one describes
+does not exist in this port**: #596, #599, #604, #629 and #623.
+
+
+- **`ja4plus/__init__.py:101` declares version 1.2.0** (#700). Round
+  249. **Two records carry this release.** The declaration reads `1.2.0` as a plain
+  string, and `CHANGELOG.md` gains a dated `## [1.2.0] - 2026-08-15` section.
+  `pyproject.toml` moves no line, because it declares no version and reads the value from
+  the syntax tree of the package. **The bump is minor and never patch**, because this
+  release adds four published names and moves several fingerprint values. It is never
+  major, because it removes no name and it renames none. **`requires-python` reads
+  `>=3.10`, as it reads at version 1.1.1**, so every environment that installs version
+  1.1.1 installs this release. **The classifier holds at `Development Status :: 5 -
+  Production/Stable`**, which #69 ruled arrives at version 1.0.0 and holds from there.
+  **`docs/migration-0.6-to-1.0.md` names the declared version**, and
+  `test_the_migration_page_states_the_released_version_it_moves_from` reads that page
+  against `__version__`. The preamble of that page stated that the declared release moves
+  no fingerprint, and version 1.2.0 falsifies that sentence, so the preamble now states
+  which values move and names the `## [1.2.0]` section as the record a reader of version
+  1.1.1 reads. **No row of the breaking-change table moves**, because every row states
+  what version 1.0.0 changed against version 0.6.0. **The conformance suite reports 1676
+  passed, 142 skipped and 138 xfailed**, and `tests/foxio_deviations.json` holds 138 keys
+  against that count. **This round publishes nothing.** It creates no release, it writes
+  no tag, and it starts no workflow.
 ## [1.1.1] - 2026-08-15
 
 Version 1.1.1 follows version 1.1.0, and no version stands between them. The date of the
