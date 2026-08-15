@@ -6,6 +6,82 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **`tests/test_foxio_rust_parity.py` reads the `ja4ssh` block of a FoxIO Rust snapshot,
+  and it compares both JA4SSH values that block holds** (#671). Round
+  TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
+  block and the `http` block**, so the 2 `ja4ssh` values reached no case. #638 counted them
+  in a sweep of all eleven local snapshots, and one snapshot holds such a block:
+  `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` writes them on
+  stream 14. **The `ja4ssh` block names no field**, because it writes each value as a bare
+  list item at the two-space level, so the reader takes a value from the block it stands
+  in. **JA4SSH emits one value for each window**, so one entry of the block is one window
+  and the occurrence is the position of that window. **The two values rest on different
+  references, and `ja4plus` matches the snapshot on both.** The FoxIO Python file publishes
+  `c36s36_c76s124_c74s5` for the first window, the snapshot holds that same value, and
+  `tests/test_spec_validation.py` already compares it. The FoxIO Python file publishes
+  `c36s36_c0s0_c2s0` for the second window, and #97 declines that value under
+  `"capability": false`, which is a value decline. **The precedence exception of
+  `.claude/rules/external-apis.md` therefore gives the second window to the FoxIO Rust
+  snapshot and the Zeek baseline**, which both hold `c36s52_c42s76_c51s2`.
+  `tests/test_precedence_exception.py` records that row as one of the 6 the exception
+  reaches. **`ja4plus` produces `c36s36_c76s124_c74s5` and `c36s52_c42s76_c51s2`, so
+  neither window deviates and the register moves nowhere.** **#214 made this project emit
+  the window a connection holds open when the capture ends, and it rested on an agreement
+  no case measured.** The new class holds that measurement, and
+  `docs/specs/foxio/JA4SSH.md` states the reading it now covers. **This module keys no
+  JA4SSH case against the register**, because a mark on the second window would xfail a
+  case that passes, and `strict=True` fails the suite on such a pass. **No file under
+  `ja4plus/` changed, so no fingerprint moved and no output field moved.** The conformance
+  suite rises from 1660 passed to 1671 passed, with 142 skipped and 138 xfailed against
+  the 138 keys of `tests/foxio_deviations.json`. The unit suite reports 5519 passed, 8
+  skipped, 8 xfailed and 114 subtests passed before and after, because the 11 new cases
+  carry the `spec_validation` marker. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
+  **The red-to-green is the value case.** Write `c36s52_c42s76_c51s3` in place of the
+  second snapshot value and 2 cases fail, one of them reporting
+  `rust=c36s52_c42s76_c51s3 ja4plus=c36s52_c42s76_c51s2`. Write
+  `c36s36_c76s124_c74s6` in place of the first one and 2 cases fail the same way. Restore
+  the snapshot and the module reports 230 passed and 1 xfailed.
+- **The FoxIO Rust parity module reads the `http` block, and it compares five of the six
+  JA4H values it holds** (#670). Round
+  TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
+  block alone**, so the 6 `ja4h` values of the `http` block reached no case. #638 counted
+  them in a sweep of all eleven local snapshots. The reader now enters both nested blocks,
+  and `RustStream` carries the JA4H values of a stream beside its JA4X values. **The six
+  values sit in five snapshots**: `chrome-cloudflare-quic-with-secrets.pcapng` holds 1,
+  `https-connect.pcap` holds 1, `latest.pcapng` holds 1, `ssh2.pcapng` holds 2 and
+  `tls3.pcapng` holds 1. **Five of the six agree across all three producers.** The FoxIO
+  Rust snapshot, the FoxIO Python expected-output file and `ja4plus` each hold
+  `co10nn010000_b8bcd45ac095_000000000000_000000000000` on `https-connect.pcap`,
+  `ge11nn07enus_3e3b55d61660_000000000000_000000000000` on `latest.pcapng` and on
+  `tls3.pcapng`, and `ge11nn030000_9ab90a797ba7_000000000000_000000000000` on both streams
+  of `ssh2.pcapng`. **The sixth value reaches no comparison, and the register already
+  declines it.** `chrome-cloudflare-quic-with-secrets.pcapng` stream 0 on port 57098 reads
+  `ge20nn16enus_0f5a7a41a252_000000000000_000000000000` in the Rust snapshot and
+  `ge20nn12enus_60f823d07c94_000000000000_000000000000` in the Python file, and `ja4plus`
+  produces no JA4H value there. The capture carries the TLS secrets, both references
+  decrypt the QUIC traffic, and `ja4plus` reads no encrypted request under the ruling
+  Changelog round 26 settled. `tests/foxio_deviations.json` holds
+  `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1` against #129 with
+  `"capability": true`, and `http_capability_decline` reads that field rather than the
+  prose of the cause. **The two FoxIO references disagree on that one value as well**, and
+  `.claude/rules/external-apis.md` gives such a stream to `python/test/testdata/`, so the
+  Rust value decides nothing there. **The #138 omission rule reaches none of the six**,
+  because the Python file publishes a JA4H value on every one of the six streams. This
+  module is therefore a second reference on a value `tests/test_spec_validation.py`
+  already compares, and it adds no register key, so no case here carries a mark. **No
+  snapshot writes a `ja4h_r` field**, so the comparison reaches no raw form. `ja4plus`
+  publishes the original-order raw form as `JA4H_ro`, `tests/conformance_index.py` indexes
+  it, and the five comparable streams produce the `JA4H_ro` value the Python file holds.
+  New classes `TestTheJa4hValuesTheRustSnapshotHolds` and
+  `TestTheQuicStreamTheRegisterDeclines` hold ten cases and five JA4H comparisons. **The
+  comparison discriminates**: a snapshot value of `ge11nn07enus_3e3b55d61661` on
+  `latest.pcapng` reads 1 failed and 15 passed, and the restored value reads 16 passed.
+  **No file under `ja4plus/` changes and no fingerprint moves.** The conformance suite
+  reports 1642 passed, 142 skipped and 138 xfailed before the change, and 1660 passed, 142
+  skipped and 138 xfailed after it. `tests/foxio_deviations.json` holds 138 keys against
+  138 xfailed cases. #671 reads the JA4SSH values of the same file and it follows this
+  round.
 - **The lookup reads both forms of an empty-list value** (#639). Round
   TBD. **FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one
   writes `000000000000` for an empty list.** This project hashes an empty list instead,
@@ -489,6 +565,32 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `test_the_cookie_vector_produces_the_reference_sorted_raw_value`. A sort applied to
   `raw_original_order` fails four cases, among them
   `tests/test_ja4h_raw.py::test_the_cookie_vector_produces_the_reference_raw_value`.
+- **Two JA4D comments name the Wireshark version the pin file records** (#665). Round
+  TBD. **`ja4plus/fingerprinters/ja4d.py:58` and `ja4plus/fingerprinters/ja4d6.py:273`
+  each read `at Wireshark 4.4.2, which .claude/rules/external-apis.md pins`**, and each
+  now reads `v4.6.0`. #616 moved the Wireshark row of that pin file, and the FoxIO pin
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` records the newer version. **The `#define`
+  each comment quotes stays correct.** `epan/dissectors/packet-dhcp.c:1047` holds
+  `#define DHCP_UDP_PORT_RANGE  "67-68,4011"` and `epan/dissectors/packet-dhcpv6.c:396`
+  holds `#define UDP_PORT_DHCPV6_RANGE      "546-547"`, and each statement is
+  byte-identical at `4.4.2` and at `v4.6.0`. **No port set moves and no fingerprint
+  moves.** The change reaches comment lines alone. A filter that drops every comment line
+  from `git diff -U0` reads empty, and `ast.dump` of each module, with the docstrings
+  stripped, is equal before the change and after it. **The unit suite reports 5358 passed,
+  8 skipped and 8 xfailed.** The base reports 5357 passed beside one failure, which is
+  `tests/test_round_entry_existence.py::test_the_change_set_of_this_branch_records_a_round`,
+  and the round entry of this change set clears it. **The conformance suite reports 1642
+  passed, 142 skipped and 138 xfailed, which are the counts of the base.**
+  `tests/foxio_deviations.json` holds
+  138 keys against 138 xfailed cases. **A sweep of `ja4plus/` read 32 lines that name
+  Wireshark, Zeek or the pin file.** The two lines above were false and 30 were clean. **The pin move of #616 stands on `batch/657-tunnel-icmp-citations` and it reaches
+  neither `dev` nor this branch**, so batch #676 merges after batch #657 and never before
+  it. **One further stale citation reaches three files, and this round records it rather
+  than repairs it.** `ja4plus/fingerprinters/ja4l.py:60` names line 95 of the pin file,
+  and the sentence it quotes stands at line 123. The same pair of numbers reaches four
+  other places: `tests/test_ja4l_quic_marker.py:15`, `docs/specs/foxio/JA4L.md:225`,
+  `docs/specs/spec.md:300` and `docs/specs/spec.md:751`.
+
 - **The divergence register records the segment count bound of one TCP stream, and the
   bound keeps a corrected attribution** (#620). Round
   222. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
