@@ -6,6 +6,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **R10 of the JA4T transcription cites the line that holds the dissector flag test**
+  (#637). Round
+  TBD. **`wireshark/source/packet-ja4.c:1266` reads `if (tcp_flags == 0x02) {`**, and line
+  1265 above it holds the comment `// SYN for this stream - signal JA4T`. R10 cited that
+  comment, so a reader who followed the citation landed above the test it names.
+  **A citation that names a comment is a class of defect, and this round read the whole
+  page.** It read 42 citation sites of `docs/specs/foxio/JA4T.md` against the pinned commit
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved 6. **Four of the six named a
+  comment line.** R8 cited `wireshark/source/packet-ja4.c:1265` and the prose `Line 1278`,
+  R10 cited `wireshark/source/packet-ja4.c:1265`, and the D7 paragraph cited
+  `wireshark/source/packet-ja4.c:1295`. **Two of the six named a code line that carries no
+  fact the sentence states.** R11 cited `wireshark/source/packet-ja4.c:664` for the test
+  `data->window_scale == 0`, which stands at `wireshark/source/packet-ja4.c:668`, and an
+  R13 paragraph cited `wireshark/source/packet-ja4.c:1599` for the write of the `JA4TS`
+  field, which stands at `wireshark/source/packet-ja4.c:1608`. **The other 36 sites read
+  correct, and this round moved none of them.** The page cites `rust/ja4/src/tcp.rs` by
+  function name alone, so no citation of that file carries a line number. **The repair
+  agrees with the divergence register row of #603**, which cites
+  `wireshark/source/packet-ja4.c:1266`. That row stated the defect in the present tense, so
+  this round moved the sentence to the past. **The port carries the same shape at R29 of
+  its own `docs/specs/foxio/JA4T.md`.** It cites `rust/ja4/src/tcp.rs:153`, which holds the
+  comment `// SYN + ECN (ECE + CWR)`, and the assertion `assert!(is_initial_syn(0xC2));`
+  stands at `rust/ja4/src/tcp.rs:154`. **This repository edits no file of the port**, so
+  the port half needs its own issue there. **This round changes no line of `ja4plus`.** New
+  file `tests/test_ja4t_citation_lines.py` holds eight cases over the recorded citations,
+  and a restore of `wireshark/source/packet-ja4.c:1265` fails three of them. **The
+  in-repository citations of the same page reach no case here, and #658 holds them.**
 - **The JA4D and JA4D6 branches read the innermost UDP layer of a packet** (#646). Round
   TBD. **`ja4plus/fingerprinters/ja4d.py:198` and `ja4plus/fingerprinters/ja4d6.py:267`
   each read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` takes the layer count as its
