@@ -233,8 +233,8 @@ for a connection whose application handshake the reader cannot measure.
 
 **The marker spells `quic`, and the spelling follows Wireshark.** Two FoxIO
 implementations write a marker and they spell it differently.
-`.claude/rules/external-apis.md:95` reads "Read no JA4L or JA4LS value of a Zeek baseline
-as a reference value", and `.claude/rules/external-apis.md:101` names the `q` marker as one
+`.claude/rules/external-apis.md:124` reads "Read no JA4L or JA4LS value of a Zeek baseline
+as a reference value", and `.claude/rules/external-apis.md:130` names the `q` marker as one
 of three Zeek divergences. The rule declines the Zeek spelling, so the Wireshark spelling
 is the one published reading that remains.
 
