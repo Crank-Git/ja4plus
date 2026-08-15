@@ -75,10 +75,10 @@ DIVERGENT_CAPTURES = (
 TUNNELED_CAPTURE = "gre-erspan-vxlan.pcap"
 
 # The captures whose local Rust snapshot holds a JA4T value and no handshake value. The
-# snapshot names no JA4 value and no JA4S value, and the FoxIO Python file holds both JA4L
-# values of the one stream, so `handshake_cases` returns nothing for such a capture and
-# the #138 rule reaches none of it. `DIVERGENT_CAPTURES` therefore holds none of them, and
-# the JA4T cases below are the whole comparison.
+# snapshot names no JA4 value and no JA4S value. The FoxIO Python file holds both JA4L
+# values of the one stream. `handshake_cases` therefore returns nothing for such a
+# capture, and the #138 rule reaches none of it. `DIVERGENT_CAPTURES` holds none of them,
+# and the JA4T cases below are the whole comparison.
 TCP_ONLY_CAPTURES = (TUNNELED_CAPTURE,)
 
 # Every capture whose local Rust snapshot this module reads.
@@ -134,10 +134,10 @@ COALESCED_RECORD_STREAMS = (
 # compared. The omission was an oversight and no ruling made it. No comment, no issue and
 # no specification section recorded a reason to leave the two fields unread.
 #
-# The FoxIO Python expected-output file holds a JA4L value on 68 of the 70, so
-# `omitted_cases` returns the two of `https-connect.pcap` alone, and
-# `tests/test_spec_validation.py` owns the other 68 under the precedence rule of
-# `.claude/rules/external-apis.md`. `TestTheJa4lValuesTheRustSnapshotHolds` below measures
+# The FoxIO Python expected-output file holds a JA4L value on 68 of the 70. The precedence
+# rule of `.claude/rules/external-apis.md` gives those 68 to
+# `tests/test_spec_validation.py`. `omitted_cases` therefore returns the two of
+# `https-connect.pcap` alone, and `TestTheJa4lValuesTheRustSnapshotHolds` below measures
 # that split.
 SNAPSHOT_LATENCY_METHODS = (("JA4L-C", "ja4l_c"), ("JA4L-S", "ja4l_s"))
 
@@ -907,17 +907,17 @@ class TestTheJa4tValuesTheRustSnapshotHolds:
 class TestTheJa4lValuesTheRustSnapshotHolds:
     """Measure what the JA4L fields of the local Rust snapshots reach.
 
-    Before #638 `SNAPSHOT_METHODS` named JA4, JA4S and JA4T alone, so the reader read
-    neither `ja4l_c` nor `ja4l_s` and 70 committed values reached no case at all. A
-    committed value that no case reads moves with nothing to report the move. #638 read
-    the omission as an oversight, because no comment, no issue and no specification
-    section recorded a reason for it.
+    Before #638 `SNAPSHOT_METHODS` named JA4, JA4S and JA4T alone. The reader read neither
+    `ja4l_c` nor `ja4l_s`, so 70 committed values reached no case. A committed value that
+    no case reads moves with nothing to report the move. #638 read the omission as an
+    oversight, because no comment, no issue and no specification section recorded a reason
+    for it.
 
     The FoxIO Python expected-output file holds a JA4L value on 68 of the 70 streams.
     `.claude/rules/external-apis.md` makes `python/test/testdata/` decide where both
-    references hold a value, so `tests/test_spec_validation.py` owns those 68 and this
-    module compares none of them. The remaining two belong to `https-connect.pcap`, which
-    is the unknown-port gap #138 owns, and `handshake_cases` now carries them.
+    references hold a value. `tests/test_spec_validation.py` therefore owns those 68, and
+    this module compares none of them. The remaining two belong to `https-connect.pcap`,
+    which is the unknown-port gap #138 owns, and `handshake_cases` now carries them.
 
     One of the 68 is the value #622 rules on, and the last check names all four readings.
     """
@@ -982,7 +982,7 @@ class TestTheJa4lValuesTheRustSnapshotHolds:
         """The four JA4L-S readings #622 rules on each hold the value that issue records.
 
         #622 ruled on 2026-08-15 that this project declines to converge on JA4L timing.
-        The split is two against two, so no reference breaks the tie: FoxIO Python and
+        The split is two against two, so no reference breaks the tie. FoxIO Python and
         FoxIO Zeek read 10990, and Wireshark and FoxIO Rust read 9285. The Rust reading
         was committed and no case read it, which is the finding #638 holds.
 
