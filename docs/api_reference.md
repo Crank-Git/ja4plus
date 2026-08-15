@@ -898,6 +898,38 @@ parity rule 2 adopts them.
 Version 0.6.0 returned a dict from `lookup`. Version 1.0.0 returns the frozen result, so
 a caller reads `result.application` where it read `result["application"]` before.
 
+#### The lookup reads both forms of an empty-list value
+
+FoxIO builds `ja4plus-mapping.csv` from its own implementations, and the Rust one writes
+`000000000000` for an empty list. `ja4plus` hashes an empty list instead, so it writes
+`e3b0c44298fc` where a row of that file holds the zero sentinel. The lookup reads the two
+forms as one value, and #639 holds the ruling of 2026-08-15.
+
+```python
+client = JA4DBClient()
+
+# The mapping file holds `000000000000_4f24da86fad6_bf0f0589fc03`, and `ja4plus`
+# produces the hashed form for the same certificate. Both reach the row.
+client.lookup("e3b0c44298fc_4f24da86fad6_bf0f0589fc03").application  # Sliver/Havoc C2 Server
+client.lookup("000000000000_4f24da86fad6_bf0f0589fc03").application  # Sliver/Havoc C2 Server
+```
+
+**Warning: `000000000000` does not name one thing across JA4+.** The table states the parts
+where the lookup reads both forms.
+
+| Part | What the sentinel names there | Does the lookup read both forms |
+|---|---|---|
+| JA4X part a, part b and part c | an empty object identifier list | Yes |
+| JA4H part b | an empty header list | Yes |
+| JA4H part c and part d | `no cookie` | No |
+
+Part c and part d of JA4H hold `no cookie`, which is a value in its own right. A JA4H
+value whose part c or part d carries the sentinel therefore gains no match, and
+`client.lookup("ge11nn08enus_050dd5cfb971_e3b0c44298fc_000000000000")` returns None.
+
+`db info` reports the entry count of the mapping file. The lookup holds the alias values
+apart from that file, so no alias moves the count the command prints.
+
 #### The deprecated item access
 
 A result reads by field name too, so that code written against the dict of version 0.6.0
