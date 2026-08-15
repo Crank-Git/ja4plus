@@ -6,6 +6,37 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the zero sentinel that JA4 and JA4S write for an
+  empty list** (#653). Round
+  TBD. **JA4 and JA4S write `000000000000`, and JA4X and JA4H hash an empty list and
+  write `e3b0c44298fc`.** The maintainer ruled on 2026-08-15 that the split is correct.
+  **Neither image names the sentinel**, so the literal test of #653 settles nothing, and
+  two measurements outside the image decide it. **JA4 carries a text specification beside
+  its image.** `technical_details/JA4.md` stands at the pinned commit
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, line 121 states the rule for JA4_b, line 176
+  states it for JA4_c, and lines 122 and 177 state FoxIO's reason. **Four vectors measure
+  the JA4 rule.** 4 of the 167 JA4 values of the FoxIO Python expected-output files read
+  `t10d230100_6a57a6f57151_000000000000`, one in `https3-301-get.pcap.json` and three in
+  `socks-https-example.pcap.json`. **All four references write the sentinel for an empty
+  JA4S extension list, and none dissents**, which is the difference from JA4X and JA4H,
+  where the references split two against two. **This round read every citation at its
+  source, and it moved two.** Each move reaches the JA4H contrast and neither reaches a
+  JA4 or JA4S citation. `wireshark/source/packet-ja4.c:640` holds the version and referer
+  arguments, and `wireshark/source/packet-ja4.c:629-630` computes that hash.
+  `ja4plus/fingerprinters/ja4h.py:483` holds a docstring sentence, and
+  `ja4plus/fingerprinters/ja4h.py:534` holds the hash. **No file of this repository
+  carried either wrong citation.** **The corpus cost is eight conformance cases and not
+  four, and this round measured it live.** A hash in place of the three sentinel lines
+  fails 8 cases of `tests/test_spec_validation.py` over the same four streams, because the
+  `JA4_o` value of each stream carries the sentinel too, and it fails 5 of the 19 new
+  cases. A restore returns both suites to the counts of the base. **No file under
+  `ja4plus/` changes and no fingerprint moves.** New file
+  `tests/test_empty_list_sentinel_ruling.py` holds nineteen cases over the row, the three
+  code lines and the four vectors. The unit suite reports 5587 passed, 8 skipped and 8
+  xfailed against a base of 5567 passed, and the conformance suite reports the counts of
+  the base with `tests/foxio_deviations.json` at 138 keys. **The count rises by 20 and the
+  new file holds 19 of them**, because `tests/test_ruling_vocabulary.py` parametrizes over
+  each tracked Python source and a new test file adds one case there.
 - **`tests/test_foxio_rust_parity.py` reads the `ja4ssh` block of a FoxIO Rust snapshot,
   and it compares both JA4SSH values that block holds** (#671). Round
   TBD. **`read_rust_snapshot` of `tests/test_foxio_rust_parity.py` entered the `tls_certs`
