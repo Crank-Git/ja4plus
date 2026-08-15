@@ -6,6 +6,31 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The HTTP header block terminator matches either line ending** (#614). Round
+  TBD. **`ja4plus/utils/http_utils.py:43` held the two literals `\r\n\r\n` and `\n\n`.** The
+  maintainer ruled on 2026-08-14, on `Crank-Git/ja4plus-go#298`, that the terminator is one
+  line ending followed by another line ending, and `LINE_ENDING_PATTERN` already states
+  that a line ending is the two bytes `\r\n` or one line feed. `HEADER_BLOCK_TERMINATOR_PATTERN`
+  now holds `(?:\r\n|\n)(?:\r\n|\n)`, and `header_block_end` returns the end of the first
+  match. **A measurement on the base commit read all four terminators against the head
+  `GET / HTTP/1.1\r\nHost: example.com`, which is 33 bytes.** `\r\n\r\n` read 37, `\n\n`
+  read 35, `\r\n\n` read 36, and every one of those three is the offset past the whole
+  terminator. **`\n\r\n` read None, where 36 is the offset past it**, so a header block
+  that ends that way reached no JA4H value at all. **A second reading measured a body that
+  holds a later `\r\n\r\n`**: the bytes `GET / HTTP/1.1\r\nHost: example.com\n\r\nBODY\r\n\r\n`
+  read 44, where 36 ends the first terminator, so the reader reported the end of a
+  terminator inside the body. **The issue states that `\r\n\n` matched one byte early, and
+  the measurement above agrees with the reading that the end offset stayed right.** The
+  `\n\n` literal matches the last two bytes of `\r\n\n`, which starts one byte into the
+  terminator, and that match ends where the whole terminator ends.
+  `tests/test_http_header_block_terminator.py` holds all four terminators, the body case,
+  the bytes that hold no terminator, and one JA4H request that ends `\n\r\n`. Three of its
+  seven cases failed on the base commit. **No conformance value moves**, because no FoxIO
+  vector carries a mixed line ending: the conformance suite reports 1635 passed, 143
+  skipped and 140 xfailed before the change and the same three counts after it, and
+  `tests/foxio_deviations.json` holds 140 keys. **The second copy of this check, at
+  `ja4plus/fingerprinters/ja4l.py:402-403`, stays as it is**, and #630 adopts this reader.
+
 - **The ServerHello reader bounds the `supported_versions` read on the bytes the record
   holds** (#617). Round
   218. **`ja4plus/utils/tls_utils.py:278` tested `ext_len`, which is the length the packet
