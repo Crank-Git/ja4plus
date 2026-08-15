@@ -287,7 +287,7 @@ explains none of the three, and it contradicts two.** No decline reopens.
 
 **#611 corrected the entry count of this section on 2026-08-15, and this record supersedes
 the earlier wording.** #214 registered 5 occurrence-form entries after the section was
-written, and the three issues of the section hold 9 entries today against the ten the
+written. The three issues of the section hold 9 entries today, against the ten the earlier
 sentence states. The sentence below is the superseded wording, quoted rather than
 rewritten.
 

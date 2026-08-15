@@ -2,13 +2,13 @@
 
 #611 found two false sentences of `docs/specs/foxio/JA4L.md`. Each one states that the
 directory holds two files and that neither carries a JA4L key. #116 added the two files,
-and #531 raised the directory to 26 files, so the corpus grew under a sentence that stated
-its size as a standing fact.
+and #531 raised the directory to 26 files. The corpus therefore grew under a sentence that
+stated its size as a standing fact.
 
 **A count stated as a standing fact goes stale on the day the corpus grows, and no reader
 catches it.** A case that restated 26 would go stale the same way. Each case here therefore
-measures the tree and requires the document to state the measured number, so the next
-growth of the corpus fails a run.
+measures the tree, and it requires the document to state the measured number. The next
+growth of the corpus then fails a run.
 
 ## What a case here reads
 
@@ -20,9 +20,9 @@ the files that hold the key `ja4.ja4l`, which the Wireshark dissector writes.
 `tests/foxio_vectors/*.json`, which is the count R4 of the same document decided D1 on.
 
 **The sweep of #611 found the same class on two more pages, and cases here hold both.**
-`docs/specs/foxio/JA4X.md` stated 10 local Rust snapshots against 11 in the tree, and
-`docs/specs/foxio/JA4SSH.md` stated ten JA4SSH register entries under three issues against
-14 under four.
+`docs/specs/foxio/JA4X.md` stated 10 local Rust snapshots, and the tree holds 11.
+`docs/specs/foxio/JA4SSH.md` stated ten JA4SSH register entries under three issues, and
+the register holds 14 under four.
 
 ## What a case here does not read
 
@@ -144,6 +144,19 @@ def live_page_text() -> str:
     return live_text(JA4L_PAGE)
 
 
+def missing(page: Path, claim: str) -> str:
+    """Return the message a reader needs to repair the page.
+
+    Args:
+        page: The path of the document that states the count.
+        claim: The sentence the measurement requires.
+
+    Returns:
+        One line that names the file and the sentence it must state.
+    """
+    return "{} states no sentence that reads: {}".format(page.name, claim)
+
+
 class TestTheDocumentStatesTheMeasuredCounts:
     def test_the_page_states_the_file_count_the_directory_holds(self):
         count = len(expected_output_files())
@@ -154,13 +167,15 @@ class TestTheDocumentStatesTheMeasuredCounts:
     def test_the_page_states_how_many_files_carry_a_dissector_ja4l_key(self):
         count = len(files_that_carry_a_ja4l_key())
         text = live_page_text().replace("\n", " ")
-        assert "of which {} carry a `ja4.ja4l` key".format(count) in text, count
-        assert "{} of them carry a".format(count) in text, count
+        for claim in (
+            "of which {} carry a `ja4.ja4l` key".format(count),
+            "{} of them carry a".format(count),
+        ):
+            assert claim in text, missing(JA4L_PAGE, claim)
 
     def test_the_page_states_how_many_dissector_ja4l_values_the_directory_holds(self):
-        values = dissector_ja4l_values()
-        text = live_page_text().replace("\n", " ")
-        assert "hold {} `ja4.ja4l` values".format(len(values)) in text, len(values)
+        claim = "hold {} `ja4.ja4l` values".format(len(dissector_ja4l_values()))
+        assert claim in live_page_text().replace("\n", " "), missing(JA4L_PAGE, claim)
 
     def test_every_dissector_ja4l_value_carries_three_parts(self):
         """The page states that the directory is a local route to a three-part value."""
@@ -168,9 +183,8 @@ class TestTheDocumentStatesTheMeasuredCounts:
             assert len(value.split("_")) == 3, value
 
     def test_the_page_states_the_local_ja4l_value_count_that_decided_d1(self):
-        count = local_ja4l_value_count()
-        text = live_page_text().replace("\n", " ")
-        assert "Every one of the {} JA4L values in".format(count) in text, count
+        claim = "Every one of the {} JA4L values in".format(local_ja4l_value_count())
+        assert claim in live_page_text().replace("\n", " "), missing(JA4L_PAGE, claim)
 
 
 class TestTheDocumentRefusesTheSupersededCounts:
@@ -193,14 +207,18 @@ class TestTheOtherPagesStateTheMeasuredCounts:
     def test_the_ja4x_page_states_the_snapshot_count_the_directory_holds(self):
         count = len(list(RUST_EXPECTED.glob("*.snap")))
         text = live_text(JA4X_PAGE).replace("\n", " ")
-        assert "`tests/foxio_vectors/rust_expected/` holds {} of the".format(count) in text
-        assert "| Local Rust snapshots | {} |".format(count) in text
+        for claim in (
+            "`tests/foxio_vectors/rust_expected/` holds {} of the".format(count),
+            "| Local Rust snapshots | {} |".format(count),
+        ):
+            assert claim in text, missing(JA4X_PAGE, claim)
 
     def test_the_ja4ssh_page_states_the_register_family_it_reads(self):
         entries = ja4ssh_register_entries()
         issues = {entry["issue"] for entry in entries.values()}
         text = live_text(JA4SSH_PAGE).replace("\n", " ")
-        assert "holds {} JA4SSH entries under four issues".format(len(entries)) in text
+        claim = "holds {} JA4SSH entries under four issues".format(len(entries))
+        assert claim in text, missing(JA4SSH_PAGE, claim)
         assert len(issues) == 4, sorted(issues)
 
     def test_the_ja4ssh_page_states_the_entry_count_of_each_issue_it_reads(self):
@@ -208,7 +226,8 @@ class TestTheOtherPagesStateTheMeasuredCounts:
         text = live_text(JA4SSH_PAGE).replace("\n", " ")
         for issue in (96, 97, 105):
             count = len([e for e in entries.values() if e["issue"] == issue])
-            assert "#{} holds {} entries".format(issue, count) in text, issue
+            claim = "#{} holds {} entries".format(issue, count)
+            assert claim in text, missing(JA4SSH_PAGE, claim)
 
 
 class TestTheRegisterCitesTheLineThatDeletesTheKey:
