@@ -8,7 +8,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The interface table names the Wireshark version and the Zeek version that the FoxIO
   pin records** (#616). Round
-  TBD. **The Wireshark row read `Release 4.4.2`, and no file of the pin
+  235. **The Wireshark row read `Release 4.4.2`, and no file of the pin
   `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` records that version.**
   `.github/workflows/wireshark-release.yml:15`, `:30` and `:55` build the FoxIO plugin at
   `v4.6.0`, and the row now reads `v4.6.0`. **The table held no row for the Zeek analyzer
@@ -41,7 +41,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **R10 of the JA4T transcription cites the line that holds the dissector flag test**
   (#637). Round
-  TBD. **`wireshark/source/packet-ja4.c:1266` reads `if (tcp_flags == 0x02) {`**, and line
+  233. **`wireshark/source/packet-ja4.c:1266` reads `if (tcp_flags == 0x02) {`**, and line
   1265 above it holds the comment `// SYN for this stream - signal JA4T`. R10 cited that
   comment, so a reader who followed the citation landed above the test it names.
   **A citation that names a comment is a class of defect, and this round read the whole
@@ -67,7 +67,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and a restore of `wireshark/source/packet-ja4.c:1265` fails three of them. **The
   in-repository citations of the same page reach no case here, and #658 holds them.**
 - **The JA4D and JA4D6 branches read the innermost UDP layer of a packet** (#646). Round
-  TBD. **`ja4plus/fingerprinters/ja4d.py:198` and `ja4plus/fingerprinters/ja4d6.py:267`
+  232. **`ja4plus/fingerprinters/ja4d.py:198` and `ja4plus/fingerprinters/ja4d6.py:267`
   each read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` takes the layer count as its
   second parameter `nb`, which defaults to 1, so it returns the first layer of the class
   counting from the outside, and on a tunneled packet that layer is the UDP header of the
@@ -102,7 +102,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   dissection finished. #594 established that reading and this round checked it again.
 - **The JA4T reader reads the TCP header that an ICMP error message quotes** (#610).
   Round
-  TBD. **`ja4plus/fingerprinters/ja4t.py:153` read `if not packet.haslayer(TCP): return
+  234. **`ja4plus/fingerprinters/ja4t.py:153` read `if not packet.haslayer(TCP): return
   None`**, and `scapy` decodes a quoted header as `IPerror` and `TCPerror`, so that test
   reported false and the reader produced nothing. New file
   `ja4plus/utils/icmp_quoted.py` reads the quoted datagram, and
@@ -140,7 +140,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   message`, `quoted datagram` and `quoted header`.
 - **Two falsified sentences now state the measurement, and a sweep found three more**
   (#611). Round
-  TBD. **A worker of `Crank-Git/ja4plus-go` read this repository at tag `v1.1.0` and it
+  239. **A worker of `Crank-Git/ja4plus-go` read this repository at tag `v1.1.0` and it
   found both**, and its issue is `Crank-Git/ja4plus-go#376`. **The first sentence names the
   wrong line of the FoxIO reference.** The cause text of the five JA4L method-filter
   entries of `tests/foxio_deviations.json` read `python/ja4.py:339` runs
@@ -180,7 +180,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The concurrency page states that one packet dated in the future evicts every entry of
   a state table** (#618). Round
-  TBD. **`ja4plus/utils/state_table.py:414` reads
+  238. **`ja4plus/utils/state_table.py:414` reads
   `if now - entry[_LAST_SEEN] > self.max_connection_age:` inside the loop at line 411, and
   `now` is the timestamp of the packet that arrives.** One packet dated far in the future
   therefore ages every entry at once, and the age pass evicts all of them. **A packet
@@ -224,7 +224,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/`, and each one therefore gains one case for the new file.
 - **The FoxIO Rust JA4L values reach the parity module, and the reading names what each
   one settles** (#638). Round
-  TBD. **`SNAPSHOT_METHODS` of `tests/test_foxio_rust_parity.py` named JA4, JA4S and JA4T,
+  237. **`SNAPSHOT_METHODS` of `tests/test_foxio_rust_parity.py` named JA4, JA4S and JA4T,
   and the 11 snapshots under `tests/foxio_vectors/rust_expected/` hold 70 JA4L values that
   no case read.** **The omission was an oversight and no ruling made it**, because no comment,
   no issue and no specification section recorded a reason to leave the two fields unread.
@@ -270,7 +270,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fails five.
 - **JA4H fills the sorted raw form, so the `raw` field carries the `JA4H_r` value** (#600).
   Round
-  TBD. **`ja4plus/fingerprinters/ja4h.py:70` stated that FoxIO publishes no `JA4H_r` key,
+  236. **`ja4plus/fingerprinters/ja4h.py:70` stated that FoxIO publishes no `JA4H_r` key,
   and the per-packet expected-output files publish it.** That claim held for the per-stream
   files under `tests/foxio_vectors/`, which hold 89 `JA4H_ro` values and no `JA4H_r` value.
   It did not hold for `tests/foxio_vectors/wireshark_expected/`, which holds 62 `ja4.ja4h_r`
