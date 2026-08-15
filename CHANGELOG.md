@@ -6,6 +6,29 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the JA4T SYN selection** (#603). Round
+  TBD. **`ja4plus/fingerprinters/ja4t.py:159` reads
+  `if not (tcp.flags & TCP_SYN_FLAG) or (tcp.flags & TCP_ACK_FLAG)`**, and `:20-21` hold
+  `TCP_SYN_FLAG = 0x02` and `TCP_ACK_FLAG = 0x10`. That line is a bit test, so a SYN whose
+  flag byte is `0xC2` produces a JA4T value and a SYN-ACK produces none. **Three FoxIO
+  references split on that selection, and rule 1 settles none of them.**
+  `rust/ja4/src/tcp.rs:146` tests the same two bits, and its own test asserts
+  `is_initial_syn(0xC2)` at `rust/ja4/src/tcp.rs:153`. `zeek/ja4t/main.zeek:126` requires
+  `rph$tcp$flags != TH_SYN` to be false, and `wireshark/source/packet-ja4.c:1266` requires
+  `tcp_flags == 0x02`. `JA4T.png` states no flag rule, so the image settles nothing. **The
+  reference count is two against one, and this project follows the one.** The maintainer
+  ruled that selection on 2026-08-13 under `Crank-Git/ja4plus-go#126`, and the port holds
+  the same bit test at `ja4t.go`. **This round measured the corpus, and the register row
+  states the measurement.** The vector corpus holds 87 SYN packets that carry no ACK, and
+  2 of them carry the flag byte `0xC2`. `gre-sample.pcap` gives `5744_2-4-8-1-3_1436_00`
+  on the connection at port 40264, and `macos_tcp_flags.pcap` gives
+  `65535_2-1-3-1-1-8-4-0-0_1460_6` on the connection at port 61311. **No FoxIO reference
+  file holds a JA4T value for either capture**, so this reading costs zero unmatched cases
+  and it moves no entry of `tests/foxio_deviations.json`. **This round changes no line of
+  `ja4plus`.** New file `tests/test_ja4t_syn_selection_ruling.py` holds ten cases: four
+  read the register row and six read the code. **A reversal to the equality test fails
+  three of them**, measured by an edit of line 159 to `if int(tcp.flags) != TCP_SYN_FLAG:`
+  and a restore of the file afterwards.
 - **The ServerHello reader bounds the `supported_versions` read on the bytes the record
   holds** (#617). Round
   218. **`ja4plus/utils/tls_utils.py:278` tested `ext_len`, which is the length the packet
