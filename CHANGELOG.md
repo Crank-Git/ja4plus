@@ -9,10 +9,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`JA4SSHFingerprinter` publishes `close_connection_window`, which emits the window one
   connection holds open and then removes that connection** (#598). Round
   TBD. **`cleanup_connection` removes a connection and it emits nothing**, so a caller that
-  evicts a connection lost the window that connection held open. `_close_window` does the
-  whole job for one connection, and its leading underscore kept every caller away from it.
-  `close_open_windows` reaches every connection at once, which is the wrong instrument for
-  one connection that just ended. **A long-running monitor is the caller that evicts**, and
+  evicts a connection loses the window that connection holds open. `_close_window` does
+  the whole job for one connection, and its leading underscore keeps every caller away
+  from it. `close_open_windows` reaches every connection at once, and it serves no single
+  connection that just ended. **A long-running monitor is the caller that evicts**, and
   the reference publishes the final window at that moment: `rust/ja4/src/ssh.rs:45-55` and
   `zeek/ja4ssh/main.zeek:160-164` both emit at teardown. **The maintainer ruled the method
   on `Crank-Git/ja4plus-go` issue #216, on 2026-08-12**, and parity rule 2 gives the

@@ -244,19 +244,19 @@ lookup = fp.lookup_hassh(hassh_value)            # Known HASSH lookup
 
 #### When to call `close_connection_window`
 
-Call this method when you evict one connection, which is the moment the reference
+Call this method when the caller evicts one connection, which is the moment the reference
 publishes the final window. `rust/ja4/src/ssh.rs:45-55` and `zeek/ja4ssh/main.zeek:160-164`
-both emit at teardown. `close_open_windows` reaches every connection at once, which is the
-wrong instrument for one connection that just ended.
+both emit at teardown. `close_open_windows` reaches every connection at once, and it
+serves no single connection that just ended.
 
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `close_connection_window(src_ip, src_port, dst_ip, dst_port, proto)` | `list[dict]` | Emits the window one connection holds open, and then removes that connection. |
 
-The method names the connection by the same key `cleanup_connection` accepts, so you name
-the two endpoints in either order. It returns an empty list for a connection the state
-table does not hold, and an empty list for a window that holds no SSH packet. It removes
-the connection in both cases, so a second call returns an empty list.
+The method names the connection by the same key `cleanup_connection` accepts, so the
+caller names the two endpoints in either order. The list is empty for a connection the
+state table does not hold. The list is empty for a window that holds no SSH packet. The
+method removes the connection in both cases, so a second call returns an empty list.
 
 The method is opt-in. `cleanup_connection` still emits nothing, so a caller that only
 reclaims memory receives no fingerprint it did not ask for. The maintainer ruled the

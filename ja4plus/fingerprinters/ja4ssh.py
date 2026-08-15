@@ -413,8 +413,8 @@ class JA4SSHFingerprinter(BaseFingerprinter):
         The caller runs this method when it evicts one connection, which is the moment
         the reference publishes the final window. `rust/ja4/src/ssh.rs:45-55` and
         `zeek/ja4ssh/main.zeek:160-164` both emit at teardown. `close_open_windows`
-        reaches every connection at once, which is the wrong instrument for one
-        connection that just ended.
+        reaches every connection at once, and it serves no single connection that just
+        ended.
 
         The method is opt-in. `cleanup_connection` emits nothing, so a caller that only
         reclaims memory receives no fingerprint it did not ask for. The maintainer ruled
