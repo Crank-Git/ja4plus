@@ -474,6 +474,13 @@ Wireshark repository, and it names a release tag.
 
 Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.4.2/epan/dissectors/packet-dhcp.c (Wireshark 4.4.2, retrieved 2026-08-08)
 
+**#616 moved the Wireshark row of `.claude/rules/external-apis.md` to `v4.6.0`, and the
+statement is byte-identical there.** The read below holds
+`#define DHCP_UDP_PORT_RANGE  "67-68,4011"` at `:1047`, so D1 stands at the version the
+table now pins.
+
+Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.6.0/epan/dissectors/packet-dhcp.c (Wireshark 4.6.0, retrieved 2026-08-15)
+
 **D2 — a BOOTP message that carries no option 53. Ruling: emit nothing. No change.**
 
 `ja4d.py:170-171` holds `if msg_type == 0:` and `return None`.
@@ -572,6 +579,13 @@ registers TCP port 547 for DHCPv6 over TCP, which RFC 7653 defines; this project
 UDP alone, and no vector carries DHCPv6 over TCP.
 
 Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.4.2/epan/dissectors/packet-dhcpv6.c (Wireshark 4.4.2, retrieved 2026-08-08)
+
+**#616 moved the Wireshark row of `.claude/rules/external-apis.md` to `v4.6.0`, and the
+statement is byte-identical there.** The read below holds
+`#define UDP_PORT_DHCPV6_RANGE      "546-547" /* Downstream + Upstream */` at `:396`, so
+D7 stands at the version the table now pins.
+
+Verified against: https://gitlab.com/wireshark/wireshark/-/raw/v4.6.0/epan/dissectors/packet-dhcpv6.c (Wireshark 4.6.0, retrieved 2026-08-15)
 
 **D8 — the containers part b recurses into. Ruling: add option 9, Relay Message.**
 

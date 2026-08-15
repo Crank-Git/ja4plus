@@ -47,6 +47,9 @@ WINDOW_SCALE_LENGTH = 3
 # the kind byte, so it names no option and the reader stops.
 SHORTEST_OPTION_LENGTH = 2
 
+# The offset of the window field inside the TCP header.
+WINDOW_OFFSET = 14
+
 
 def option_bytes(tcp: Packet) -> bytes:
     """Return the raw TCP option bytes of one TCP layer.
@@ -133,7 +136,38 @@ def tcp_prefix(tcp: Packet) -> str:
     Returns:
         The four parts, joined with `_`.
     """
-    kinds, mss, window_scale = read_options(option_bytes(tcp))
+    return _prefix(tcp.window, option_bytes(tcp))
+
+
+def tcp_prefix_from_header(header: bytes) -> str:
+    """Return part a through part d of a JA4T value from raw TCP header bytes.
+
+    A TCP header that an ICMP error message quotes reaches no `scapy` layer, because
+    `TCP(bytes)` raises `struct.error` on a truncated option. `ja4plus/utils/icmp_quoted.py`
+    records that measurement, and it calls this function in place of `tcp_prefix`.
+
+    Args:
+        header: The TCP header, from the first byte to the end of the option list. The
+            caller bounds the argument on the data offset, and it holds 20 bytes or more.
+
+    Returns:
+        The four parts, joined with `_`.
+    """
+    window = int.from_bytes(header[WINDOW_OFFSET : WINDOW_OFFSET + 2], "big")
+    return _prefix(window, header[TCP_HEADER_BYTES:])
+
+
+def _prefix(window: int, options: bytes) -> str:
+    """Return part a through part d of a JA4T value or a JA4TS value.
+
+    Args:
+        window: The window field of the TCP header.
+        options: The raw TCP option bytes.
+
+    Returns:
+        The four parts, joined with `_`.
+    """
+    kinds, mss, window_scale = read_options(options)
     part_b = "-".join(str(kind) for kind in kinds) if kinds else "00"
     part_d = "00" if window_scale == 0 else str(window_scale)
-    return "{}_{}_{:02d}_{}".format(tcp.window, part_b, mss, part_d)
+    return "{}_{}_{:02d}_{}".format(window, part_b, mss, part_d)
