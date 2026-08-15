@@ -39,14 +39,14 @@ REQUEST_LINE_PATTERN = (
 # request, and the reference holds a JA4H value for it. #193 records the defect.
 LINE_ENDING_PATTERN = re.compile(r"\r\n|\n")
 
-# The header block of an HTTP message ends with one line ending followed by another line
-# ending, and each line ending is the two bytes `\r\n` or one line feed. The maintainer
+# The header block of an HTTP message ends with one line ending followed by another
+# line ending. A line ending is the two bytes `\r\n`, or one line feed. The maintainer
 # ruled the form on 2026-08-14, on `Crank-Git/ja4plus-go#298`.
 #
 # Two literals, `\r\n\r\n` and `\n\n`, held the rule before. Neither one matched
 # `\n\r\n`, so a header block that ends that way reached no value. #614 records the
-# defect. The pattern reads no line ending inside the alternation twice, because one
-# byte starts one alternative alone: `\r` starts `\r\n` and a line feed starts itself.
+# defect. Each alternative starts with its own byte, so the pattern reads no ambiguous
+# match: `\r` starts `\r\n` alone, and a line feed starts itself.
 HEADER_BLOCK_TERMINATOR_PATTERN = re.compile(rb"(?:\r\n|\n)(?:\r\n|\n)")
 
 
