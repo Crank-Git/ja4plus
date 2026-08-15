@@ -39,8 +39,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with a cleared `__pycache__` removed the stale bytecode. **No fingerprint moves.** The
   conformance suite reports 1642 passed, 142 skipped and 138 xfailed before the change and
   after it, and `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed
-  cases. **The unit suite rises from 5384 passed to 5388 passed**, and 8 skipped and 8
-  xfailed hold. `pytest --collect-only` reads 7369 cases against 7365 on the base commit.
+  cases. **The unit suite rises from 5384 passed to 5391 passed**, and 8 skipped and 8
+  xfailed hold. `pytest --collect-only` reads 7372 cases against 7365 on the base commit.
+  **The rise of seven is the four new cases and three repository-wide checks**, because
+  `tests/test_documented_method_count.py`, `tests/test_ruling_vocabulary.py` and
+  `tests/test_statistics_thread_term.py` each parametrize over every Python file of
+  `tests/`, and each one therefore gains one case for the new file.
 - **JA4H fills the sorted raw form, so the `raw` field carries the `JA4H_r` value** (#600).
   Round
   TBD. **`ja4plus/fingerprinters/ja4h.py:70` stated that FoxIO publishes no `JA4H_r` key,
