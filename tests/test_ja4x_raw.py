@@ -35,8 +35,8 @@ FIRST_RAW = (
     "_551d23,551d0e,551d11,551d0f,551d25,551d1f,551d20,2b06010505070101,551d13"
 )
 
-# The zero sentinel of R8. The hashed form writes it for an empty list, and the raw form
-# writes an empty part instead.
+# The zero sentinel the ruling of 2026-08-14 rejects. Neither form of JA4X writes it, and
+# the case below reads for its absence.
 ZERO_SENTINEL = "000000000000"
 
 
@@ -66,11 +66,9 @@ def hash12(part):
         part: One comma-separated list of hex object identifiers.
 
     Returns:
-        The first 12 characters of the SHA-256 of the list. R8 returns the zero sentinel
-        for an empty list.
+        The first 12 characters of the SHA-256 of the list. R8 hashes an empty list too,
+        under the ruling of 2026-08-14, so this reader holds no guard on it.
     """
-    if not part:
-        return ZERO_SENTINEL
     return hashlib.sha256(part.encode()).hexdigest()[:12]
 
 
@@ -85,11 +83,11 @@ def test_the_raw_form_joins_the_three_unhashed_lists_with_an_underscore():
 
 
 def test_the_raw_form_writes_an_empty_part_for_an_empty_list():
-    """R8 gives the zero sentinel to the hashed form alone.
+    """R8 gives no zero sentinel to either form, under the ruling of 2026-08-14.
 
-    `rust/ja4x/src/lib.rs` builds the raw form with `parts.join("_")`, and `hash12` runs
-    on the hashed form alone. An empty list therefore reaches the raw form as an empty
-    part, and the zero sentinel reaches no raw form.
+    `rust/ja4x/src/lib.rs` builds the raw form with `parts.join("_")`. An empty list
+    therefore reaches the raw form as an empty part, and `generate_ja4x` hashes that same
+    empty part. #619 holds the ruling and the reversal path.
     """
     cert_info = {
         "issuer_rdns": [],
@@ -99,7 +97,9 @@ def test_the_raw_form_writes_an_empty_part_for_an_empty_list():
     raw = generate_ja4x_raw(cert_info)
     assert raw == "_55040a_"
     assert ZERO_SENTINEL not in raw
-    assert generate_ja4x(cert_info) == "{}_b757977db3a9_{}".format(ZERO_SENTINEL, ZERO_SENTINEL)
+    empty_hash = hashlib.sha256(b"").hexdigest()[:12]
+    assert generate_ja4x(cert_info) == "{}_b757977db3a9_{}".format(empty_hash, empty_hash)
+    assert ZERO_SENTINEL not in generate_ja4x(cert_info)
 
 
 def test_the_raw_form_reports_nothing_for_a_certificate_it_cannot_read():

@@ -150,8 +150,10 @@ SNAPSHOT_CERT_FIELD = "ja4x"
 # it against the snapshot through the hash.
 SNAPSHOT_CERT_RAW_METHOD = "JA4X_r"
 
-# The value R8 gives to a part whose list is empty. The hashed form writes it, and the
-# raw form writes an empty part instead.
+# The value `hash12` of the FoxIO Rust implementation writes for a part whose list is
+# empty. This module models the Rust snapshot, so it keeps that value. R8 of
+# `docs/specs/foxio/JA4X.md` ruled on 2026-08-14 that `ja4plus` hashes such a part
+# instead, and no local snapshot holds an empty part, so the two forms meet no case here.
 ZERO_SENTINEL = "000000000000"
 
 # The two lines that open the nested block the JA4X values sit in. `tls_certs:` opens the
@@ -532,14 +534,16 @@ def _certificate_raw_params():
 
 
 def hash12(part):
-    """Return the JA4X hash of one unhashed list.
+    """Return the hash that one unhashed list produces in the FoxIO Rust snapshot.
 
     Args:
         part: One comma-separated list of hex object identifiers.
 
     Returns:
-        The first 12 characters of the SHA-256 of the list. R8 of
-        `docs/specs/foxio/JA4X.md` gives the zero sentinel to an empty list.
+        The first 12 characters of the SHA-256 of the list. `hash12` of the FoxIO Rust
+        implementation returns the zero sentinel for an empty list, so this reader
+        returns it too. R8 of `docs/specs/foxio/JA4X.md` gives the hash of the empty
+        string to `ja4plus`, and no local snapshot reaches that difference.
     """
     if not part:
         return ZERO_SENTINEL

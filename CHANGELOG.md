@@ -6,6 +6,62 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The HTTP header block terminator matches either line ending** (#614). Round
+  TBD. **`ja4plus/utils/http_utils.py:43` held the two literals `\r\n\r\n` and `\n\n`.** The
+  maintainer ruled on 2026-08-14, on `Crank-Git/ja4plus-go#298`, that the terminator is one
+  line ending followed by another line ending, and `LINE_ENDING_PATTERN` already states
+  that a line ending is the two bytes `\r\n` or one line feed. `HEADER_BLOCK_TERMINATOR_PATTERN`
+  now holds `(?:\r\n|\n)(?:\r\n|\n)`, and `header_block_end` returns the end of the first
+  match. **A measurement on the base commit read all four terminators against the head
+  `GET / HTTP/1.1\r\nHost: example.com`, which is 33 bytes.** `\r\n\r\n` read 37, `\n\n`
+  read 35, `\r\n\n` read 36, and every one of those three is the offset past the whole
+  terminator. **`\n\r\n` read None, where 36 is the offset past it**, so a header block
+  that ends that way reached no JA4H value at all. **A second reading measured a body that
+  holds a later `\r\n\r\n`**: the bytes `GET / HTTP/1.1\r\nHost: example.com\n\r\nBODY\r\n\r\n`
+  read 44, where 36 ends the first terminator, so the reader reported the end of a
+  terminator inside the body. **The issue states that `\r\n\n` matched one byte early, and
+  the measurement above agrees with the reading that the end offset stayed right.** The
+  `\n\n` literal matches the last two bytes of `\r\n\n`, which starts one byte into the
+  terminator, and that match ends where the whole terminator ends.
+  `tests/test_http_header_block_terminator.py` holds all four terminators, the body case,
+  the bytes that hold no terminator, and one JA4H request that ends `\n\r\n`. Three of its
+  seven cases failed on the base commit. **No conformance value moves**, because no FoxIO
+  vector carries a mixed line ending: the conformance suite reports 1635 passed, 143
+  skipped and 140 xfailed before the change and the same three counts after it, and
+  `tests/foxio_deviations.json` holds 140 keys. **The second copy of this check, at
+  `ja4plus/fingerprinters/ja4l.py:402-403`, stays as it is**, and #630 adopts this reader.
+- **JA4X hashes an empty object identifier list** (#619). Round
+  TBD. **`ja4plus/fingerprinters/ja4x.py:72` to `:78` substituted the zero sentinel
+  `000000000000` for each of the three parts whose joined list was empty.** The maintainer
+  ruled on 2026-08-14 that an empty list hashes, so each part now reads
+  `hashlib.sha256(part.encode()).hexdigest()[:12]` with no guard, and an empty part reads
+  `e3b0c44298fc`. **The deciding fact is a rank 1 image rule.** The JA4H image states
+  `Truncated SHA256 hash of Headers, in the order they appear` for the hashed part and it
+  names no sentinel there, which R12 of `docs/specs/foxio/JA4H.md` transcribes, and R17 of
+  that page confines the zero sentinel to part c and part d of JA4H. No rule of the JA4X
+  image gives a sentinel to any part. **The ruling reverses the ruling of 2026-08-08 that
+  #228 recorded**, and R8 of `docs/specs/foxio/JA4X.md` now quotes the superseded wording
+  rather than rewrite it. **`Crank-Git/ja4plus-go#582` is the other half**, and it writes
+  `parser.TruncatedHashNoSentinel` into each of the three parts at `ja4x.go:490` to `:492`,
+  so both ports produce `e3b0c44298fc` for an empty part. **Nine cases came first and six of
+  them failed against the committed guard**, among them
+  `test_an_empty_extension_list_hashes`, which read
+  `AssertionError: assert '000000000000' == 'e3b0c44298fc'`. All nine pass against the
+  hashed form. **No committed capture reaches the empty list, so the change moves no
+  fingerprint.** A replay of the 38 captures of `tests/foxio_vectors/` produces 60 JA4X
+  values before the change and 60 after, and the two records are byte identical at SHA-256
+  `07ee974800c623f79026695f37f3c9be380343e3cf394d0cf6266c52d427292f`. **The change removes
+  one relation defect beside the form.** `generate_ja4x_raw` writes an empty part for an
+  empty list, and the earlier form wrote a sentinel that hashes nothing into the same
+  position, so the raw form was not the preimage of the fingerprint on such a part.
+  `test_the_hashed_form_is_the_hash_of_each_part_of_the_raw_form` holds the repaired
+  relation. **`hash12` of `tests/test_foxio_rust_parity.py` keeps the sentinel**, because
+  that reader models the FoxIO Rust snapshot and the Rust implementation writes it. No
+  local snapshot holds an empty part, so the two forms meet no case there. **This round
+  rules nothing on JA4H**, and `Crank-Git/ja4plus#612` carries that half.
+  `tests/test_ja4x_empty_ext.py`, `tests/test_comprehensive.py`, `tests/test_edge_cases.py`
+  and `tests/test_ja4x_deep.py` hold the moved cases.
+
 - **`JA4SSHFingerprinter` publishes `close_connection_window`, which emits the window one
   connection holds open and then removes that connection** (#598). Round
   TBD. **`cleanup_connection` removes a connection and it emits nothing**, so a caller that
