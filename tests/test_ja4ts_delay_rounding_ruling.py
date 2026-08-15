@@ -1,4 +1,4 @@
-"""The JA4TS delay rounding the divergence register records under #602.
+"""The rule that reads a JA4TS delay in whole seconds, which #602 records.
 
 `ja4plus/fingerprinters/ja4ts.py:63` rounds each delay to the nearest second, half away
 from zero. Two FoxIO implementations split on that reading. The Wireshark dissector calls
@@ -8,8 +8,11 @@ the C `round`, and the Zeek script truncates an integer count of microseconds.
 accident.** These cases hold the register row against the code it describes. A change of
 line 63 to a truncation fails a case here, and so does a deletion of the row.
 
-`Crank-Git/ja4plus-go#126` holds the ruling of 2026-08-13, and the port rounds the same
+`Crank-Git/ja4plus-go#56` holds the ruling of 2026-08-13, and the port rounds the same
 way. A reversal therefore changes both repositories.
+
+The body of #602 names `Crank-Git/ja4plus-go#126` for that ruling. #126 rules on the SYN
+and the RST that JA4T reads, so the case below reads #56 and refuses #126.
 """
 
 from pathlib import Path
@@ -33,7 +36,7 @@ REGISTER_END = "Verified against: https://github.com/Crank-Git/ja4plus-go"
 REGISTER_SEPARATOR = re.compile(r"^\|[\s\-|]+\|$")
 
 # The first cell of the row this issue writes.
-RULING_ITEM = "The rounding of a JA4TS delay"
+RULING_ITEM = "The rule that reads a JA4TS delay in whole seconds"
 
 # The delay that separates the two readings, and the value each one writes. A truncation
 # writes the second number.
@@ -62,7 +65,7 @@ SERVER_OPTIONS = [
 
 
 def _register_row() -> str:
-    """Return the register row that records the delay rounding.
+    """Return the register row that records the rule.
 
     Returns:
         The whole text of the row.
@@ -112,12 +115,12 @@ def _reset(time: float) -> object:
     return packet
 
 
-def test_the_register_holds_a_row_for_the_delay_rounding() -> None:
-    """The divergence register holds the row that records the rounding."""
+def test_the_register_holds_a_row_for_the_rule() -> None:
+    """The divergence register holds the row that records the rule."""
     assert RULING_ITEM in _register_row()
 
 
-def test_the_register_states_the_line_that_holds_the_rounding() -> None:
+def test_the_register_states_the_line_that_rounds_the_delay() -> None:
     """The row names the line of `ja4plus` that rounds the delay."""
     assert "`ja4plus/fingerprinters/ja4ts.py:63`" in _register_row()
 
@@ -143,8 +146,16 @@ def test_the_register_cites_each_of_the_two_references() -> None:
 def test_the_register_names_the_issue_that_holds_the_ruling() -> None:
     """The row names the issue of the port that holds the ruling of 2026-08-13."""
     row = _register_row()
-    assert "`Crank-Git/ja4plus-go#126`" in row
+    assert "`Crank-Git/ja4plus-go#56`" in row
     assert "2026-08-13" in row
+
+
+def test_the_register_states_which_issue_of_the_port_holds_the_ruling() -> None:
+    """The row reads the ruling out of #56, and it names #126 as another ruling."""
+    row = _register_row()
+    ruling = row.index("`Crank-Git/ja4plus-go#56`")
+    assert "the same issue built it" in row[ruling : ruling + 120]
+    assert "#126 rules on the SYN and the RST that JA4T reads" in row
 
 
 def test_the_register_states_the_delay_that_separates_the_two_readings() -> None:
