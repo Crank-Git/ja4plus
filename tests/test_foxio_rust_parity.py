@@ -1234,8 +1234,8 @@ class TestTheJa4hValuesTheRustSnapshotHolds:
     request carried 6 JA4H values that no case here compared.
 
     The FoxIO Python expected-output file holds a JA4H value on every one of those six
-    streams, so `omitted_cases` reaches none of them and the #138 rule owns none of them.
-    This class is therefore a second reference on a value `tests/test_spec_validation.py`
+    streams. `omitted_cases` therefore reaches none of them, and the #138 rule owns none
+    of them. This class is a second reference on a value `tests/test_spec_validation.py`
     already compares against the FoxIO Python file, and it holds no register key of its
     own.
 
