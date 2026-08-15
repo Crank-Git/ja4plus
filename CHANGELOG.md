@@ -31,8 +31,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   five times it.** Against the 1336 reading 4096 sits above three times it, which is the
   margin the earlier comment claimed. **This round moves no fingerprint value.** No stream
   of the 38 captures reaches 4096, and the round changes no executable line of `ja4plus`.
-  New file `tests/test_tcp_segment_bound_ruling.py` holds twenty-two cases. A restore of
-  the earlier comment fails three of them, and a bound of 3072 fails two more.
+  New file `tests/test_tcp_segment_bound_ruling.py` holds twenty-three cases, and this
+  round reversed the two lines it documents. A restore of the earlier comment fails three
+  cases, and a bound of 3072 fails three cases. Each reversal restored the line with
+  `git checkout`, and the file then read twenty-three passed.
 - **The divergence register records the rule that reads the JA4D domain character from a
   name** (#615). Round
   TBD. **`ja4plus/fingerprinters/ja4d.py:165` reads

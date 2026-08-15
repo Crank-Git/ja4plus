@@ -107,6 +107,27 @@ def _captures() -> list[Path]:
     return sorted(path for path in VECTORS.glob("*.pcap*") if path.suffix in (".pcap", ".pcapng"))
 
 
+def _bound_comment() -> str:
+    """Return the comment that stands above the segment bound.
+
+    The reader stops at the name of the constant and never at its value, so a change of
+    the value leaves these cases measuring the comment alone.
+
+    Returns:
+        The comment text, from its first line to the line the constant stands on.
+
+    Raises:
+        AssertionError: The module holds no such comment.
+    """
+    source = MODULE.read_text(encoding="utf-8")
+    marker = "DEFAULT_MAX_STREAM_SEGMENTS = "
+    opener = "# The largest stream of the FoxIO vectors"
+    assert marker in source, f"the module holds no {marker!r}"
+    comment = source[: source.index(marker)]
+    assert opener in comment, f"no comment above the bound opens {opener!r}"
+    return comment[comment.index(opener) :]
+
+
 @lru_cache(maxsize=2)
 def _peak_segment_counts(byte_cap: int) -> tuple[tuple[int, str, str], ...]:
     """Return the largest segment count of every stream of the corpus, largest first.
@@ -160,6 +181,22 @@ def test_the_register_states_the_line_that_holds_the_bound() -> None:
     assert "`DEFAULT_MAX_STREAM_SEGMENTS = 4096`" in row
 
 
+def test_the_module_holds_the_constant_on_the_line_the_register_cites() -> None:
+    """The constant stands on line 48, which is the line the register row names.
+
+    A comment that grows above the constant moves that line, so this case holds the
+    citation of the row against the module rather than against a reader.
+    """
+    lines = MODULE.read_text(encoding="utf-8").splitlines()
+    numbers = [
+        index + 1
+        for index, line in enumerate(lines)
+        if line.startswith("DEFAULT_MAX_STREAM_SEGMENTS = ")
+    ]
+    assert numbers == [48]
+    assert lines[47] == "DEFAULT_MAX_STREAM_SEGMENTS = 4096"
+
+
 def test_the_register_names_the_constant_of_the_port() -> None:
     """The row names the constant of the port and the issue that adopted it."""
     row = _register_row()
@@ -207,9 +244,7 @@ def test_the_register_records_the_stream_age_difference() -> None:
 
 def test_the_comment_gives_the_binding_reading_to_the_ssh_capture() -> None:
     """The comment above the constant names the capture the measurement found."""
-    source = MODULE.read_text(encoding="utf-8")
-    comment = source[: source.index("DEFAULT_MAX_STREAM_SEGMENTS = 4096")]
-    comment = comment[comment.index("# The largest stream of the FoxIO vectors") :]
+    comment = _bound_comment()
     assert f"{BINDING_COUNT} segments" in comment
     assert f"`{BINDING_VECTOR}`" in comment
     assert "`192.168.1.197:22->192.168.1.169:49237`" in comment
@@ -217,9 +252,7 @@ def test_the_comment_gives_the_binding_reading_to_the_ssh_capture() -> None:
 
 def test_the_comment_gives_the_uncapped_reading_to_the_http2_capture() -> None:
     """The comment names `http2-with-cookies.pcapng` for the 1336 reading alone."""
-    source = MODULE.read_text(encoding="utf-8")
-    comment = source[: source.index("DEFAULT_MAX_STREAM_SEGMENTS = 4096")]
-    comment = comment[comment.index("# The largest stream of the FoxIO vectors") :]
+    comment = _bound_comment()
     uncapped = comment[: comment.index(f"{BINDING_COUNT} segments")]
     assert f"{UNCAPPED_COUNT} segments without a byte cap" in uncapped
     assert f"`{UNCAPPED_VECTOR}`" in uncapped
