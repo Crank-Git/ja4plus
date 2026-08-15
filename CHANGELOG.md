@@ -8,7 +8,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The divergence register records the segment count bound of one TCP stream, and the
   bound keeps a corrected attribution** (#620). Round
-  TBD. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
+  222. **`ja4plus/utils/tcp_stream.py:48` holds `DEFAULT_MAX_STREAM_SEGMENTS = 4096`**, so
   one stream stores 4096 segments at most beside its byte cap of 1048576.
   **FoxIO specifies no resource bound, so rule 1 settles nothing here and no vector decides
   the value.** The bound is a resource rule that this project shipped first, and rule 2
@@ -37,7 +37,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `git checkout`, and the file then read twenty-three passed.
 - **The divergence register records the rule that reads the JA4D domain character from a
   name** (#615). Round
-  TBD. **`ja4plus/fingerprinters/ja4d.py:165` reads
+  221. **`ja4plus/fingerprinters/ja4d.py:165` reads
   `has_fqdn = has_fqdn or len(opt_data) > _DHCP_FQDN_NAME_OFFSET`**, and
   `ja4plus/fingerprinters/ja4d.py:64` holds `_DHCP_FQDN_NAME_OFFSET = 3`. An option 81 of
   three bytes or fewer therefore gives `n`, and an option 81 of four bytes or more gives
@@ -62,7 +62,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ja4plus/fingerprinters/ja4d.py:165` fails two of them.
 - **The divergence register records the rule that reads a JA4TS delay in whole
   seconds** (#602). Round
-  TBD. **`ja4plus/fingerprinters/ja4ts.py:63` reads
+  220. **`ja4plus/fingerprinters/ja4ts.py:63` reads
   `int(math.copysign(math.floor(abs(delay) + 0.5), delay))`**, so each delay rounds to the
   nearest second, half away from zero. `_delay_seconds` at
   `ja4plus/fingerprinters/ja4ts.py:43` holds the rule, part e reads it at `:76`, and the
@@ -92,7 +92,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/test_ja4ts_delay_rounding_ruling.py` holds fourteen cases, and a truncation of
   `ja4plus/fingerprinters/ja4ts.py:63` fails six of them.
 - **The divergence register records the JA4T SYN selection** (#603). Round
-  TBD. **`ja4plus/fingerprinters/ja4t.py:159` reads
+  219. **`ja4plus/fingerprinters/ja4t.py:159` reads
   `if not (tcp.flags & TCP_SYN_FLAG) or (tcp.flags & TCP_ACK_FLAG)`**, and `:20-21` hold
   `TCP_SYN_FLAG = 0x02` and `TCP_ACK_FLAG = 0x10`. That line is a bit test, so a SYN whose
   flag byte is `0xC2` produces a JA4T value and a SYN-ACK produces none. **Three FoxIO
@@ -122,7 +122,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and a restore of the file afterwards.
 - **`--types` accepts the token `ja4ls`, which selects the JA4LS values alone** (#605).
   Round
-  TBD. **`VALID_TYPES` of `ja4plus/cli.py` moves from ten tokens to eleven**, and `ja4ls`
+  226. **`VALID_TYPES` of `ja4plus/cli.py` moves from ten tokens to eleven**, and `ja4ls`
   joins the list after `ja4l`. **`--types ja4l` keeps selecting both latency values**, so
   no caller of version 1.1.1 sees a change and this round adds a filter rather than
   narrowing one. **The filter reads the value prefix and never the result type.**
@@ -168,7 +168,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `method name` row barred the word `token` as a synonym of itself. Recorded by #605.
 - **The malformed-input suite holds a fuzz target for the ServerHello reader** (#628).
   Round
-  TBD. **`tests/fuzz/` named no ServerHello entry point**, and a grep for `server_hello`
+  225. **`tests/fuzz/` named no ServerHello entry point**, and a grep for `server_hello`
   across its five case files returned nothing. #617 records that a fuzz target found the
   identical defect of the Go library in 1.14 seconds, and that this project found its own
   half by reading the port. **A read is not a standing proof**, so this round writes the
@@ -194,7 +194,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   round edits no file under `ja4plus/`**, so no fingerprint moves.
 - **The JA4 and JA4S QUIC branches read the innermost UDP layer of a packet** (#594).
   Round
-  TBD. **`ja4plus/fingerprinters/ja4.py:422` and `ja4plus/fingerprinters/ja4s.py:83` each
+  223. **`ja4plus/fingerprinters/ja4.py:422` and `ja4plus/fingerprinters/ja4s.py:83` each
   read `udp = packet.getlayer(UDP)`.** `Packet.getlayer` takes the layer count as its
   second parameter `nb`, which defaults to 1, so it returns the first layer of the class
   counting from the outside, and on a tunneled packet that layer is the UDP header of the
@@ -231,7 +231,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   holds its constructed test.
 - **JA4TS publishes the stored four-part value on a reset of a one-SYN-ACK connection**
   (#609). Round
-  TBD. **The maintainer ruled the question on 2026-08-14, at `Crank-Git/ja4plus-go#484`,
+  224. **The maintainer ruled the question on 2026-08-14, at `Crank-Git/ja4plus-go#484`,
   and `Crank-Git/ja4plus-go#495` landed the port half.** `SynAckTracker.reset_value` of
   `ja4plus/fingerprinters/ja4ts.py` returned None until the connection held two SYN-ACK
   times, so a reset of a connection the server answered once produced no value at all.
@@ -273,7 +273,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   changes no rounding line**, and #602 owns the rounding of part e.
 - **JA4H reads a request path that holds a space, and an empty header list hashes**
   (#612). Round
-  TBD. **The two rules land together, and neither one closes a comparison alone.**
+  231. **The two rules land together, and neither one closes a comparison alone.**
   **Rule 1 repairs `REQUEST_LINE_PATTERN` of `ja4plus/utils/http_utils.py:31` to `:34`.**
   The path group read `(\S+)`, which matches no path that holds a space, so frame 4 of
   `gre-erspan-vxlan.pcap` reached no JA4H value. That frame holds
@@ -346,7 +346,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The JA4L request completeness gate reads the header block terminator of
   `ja4plus/utils/http_utils.py`** (#630). Round
-  TBD. **`ja4plus/fingerprinters/ja4l.py:402-403` held a second copy of the terminator
+  230. **`ja4plus/fingerprinters/ja4l.py:402-403` held a second copy of the terminator
   rule**, as `return b"\r\n\r\n" in payload or b"\n\n" in payload` inside
   `_holds_a_complete_http_request`. That pair called no reader of `http_utils`, so #614
   moved the rule in one file and left the copy in the other. **The pair declined the
@@ -374,7 +374,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the base commit. `Crank-Git/ja4plus-go#685` holds the Go half.
 
 - **The HTTP header block terminator matches either line ending** (#614). Round
-  TBD. **`ja4plus/utils/http_utils.py:43` held the two literals `\r\n\r\n` and `\n\n`.** The
+  227. **`ja4plus/utils/http_utils.py:43` held the two literals `\r\n\r\n` and `\n\n`.** The
   maintainer ruled on 2026-08-14, on `Crank-Git/ja4plus-go#298`, that the terminator is one
   line ending followed by another line ending, and `LINE_ENDING_PATTERN` already states
   that a line ending is the two bytes `\r\n` or one line feed. `HEADER_BLOCK_TERMINATOR_PATTERN`
@@ -398,7 +398,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/foxio_deviations.json` holds 140 keys. **The second copy of this check, at
   `ja4plus/fingerprinters/ja4l.py:402-403`, stays as it is**, and #630 adopts this reader.
 - **JA4X hashes an empty object identifier list** (#619). Round
-  TBD. **`ja4plus/fingerprinters/ja4x.py:72` to `:78` substituted the zero sentinel
+  228. **`ja4plus/fingerprinters/ja4x.py:72` to `:78` substituted the zero sentinel
   `000000000000` for each of the three parts whose joined list was empty.** The maintainer
   ruled on 2026-08-14 that an empty list hashes, so each part now reads
   `hashlib.sha256(part.encode()).hexdigest()[:12]` with no guard, and an empty part reads
@@ -431,7 +431,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **`JA4SSHFingerprinter` publishes `close_connection_window`, which emits the window one
   connection holds open and then removes that connection** (#598). Round
-  TBD. **`cleanup_connection` removes a connection and it emits nothing**, so a caller that
+  229. **`cleanup_connection` removes a connection and it emits nothing**, so a caller that
   evicts a connection loses the window that connection holds open. `_close_window` does
   the whole job for one connection, and its leading underscore keeps every caller away
   from it. `close_open_windows` reaches every connection at once, and it serves no single
