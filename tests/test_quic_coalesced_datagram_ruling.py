@@ -51,7 +51,7 @@ FIRST_BYTE_LINE = 65
 FIRST_BYTE_TEXT = "first_byte = udp_payload[0]"
 
 # The line of the fingerprinter that reads the packet type, and the text it holds.
-PACKET_TYPE_LINE = 563
+PACKET_TYPE_LINE = 600
 PACKET_TYPE_TEXT = "packet_type = long_header_packet_type(udp_payload)"
 
 # The addresses and the ports of the one QUIC connection the synthetic cases read.
@@ -181,16 +181,18 @@ def _coalesced_connection() -> list[str | None]:
     ]
 
 
-def _separate_connection() -> list[str | None]:
+def _separate_connection(fingerprinter: JA4LFingerprinter) -> list[str | None]:
     """Return the value each packet gives where two datagrams carry the server packets.
 
     This connection is the control of `_coalesced_connection`. It carries the same four
     QUIC packets, and it puts the server Handshake packet in a datagram of its own.
 
+    Args:
+        fingerprinter: The fingerprinter that reads the packets.
+
     Returns:
         The four results, in packet order.
     """
-    fingerprinter = JA4LFingerprinter()
     return [
         fingerprinter.process_packet(
             _to_server(client_initial(CLIENT_DCID), CLIENT_INITIAL_MOMENT)
@@ -213,7 +215,7 @@ def test_the_register_names_the_two_lines_that_read_the_first_packet() -> None:
         citation
         for citation in (
             "`ja4plus/utils/quic_utils.py:65`",
-            "`ja4plus/fingerprinters/ja4l.py:563`",
+            "`ja4plus/fingerprinters/ja4l.py:600`",
         )
         if citation not in row
     ]
@@ -298,20 +300,34 @@ def test_the_parser_reads_the_type_of_the_first_packet_of_a_coalesced_datagram()
 
 
 def test_a_coalesced_server_datagram_fills_point_b() -> None:
-    """The coalesced datagram gives the server value, because its first packet is Initial."""
-    assert _coalesced_connection()[1] == SERVER_VALUE
+    """The coalesced datagram fills point B, because its first packet is Initial.
+
+    The reference publishes the server value on the packet that fills point `D`. A
+    later server Handshake packet and client Handshake packet, each in its own
+    datagram, complete the connection and prove the value the coalesced datagram gave
+    point `B`.
+    """
+    fingerprinter = JA4LFingerprinter()
+    fingerprinter.process_packet(_to_server(client_initial(CLIENT_DCID), CLIENT_INITIAL_MOMENT))
+    fingerprinter.process_packet(
+        _from_server(_server_initial() + handshake_packet(), SERVER_MOMENT)
+    )
+    fingerprinter.process_packet(_from_server(handshake_packet(), SERVER_HANDSHAKE_MOMENT))
+    result = fingerprinter.process_packet(_to_server(handshake_packet(), CLIENT_HANDSHAKE_MOMENT))
+    assert result == SERVER_VALUE
 
 
 def test_a_coalesced_server_datagram_fills_no_point_c() -> None:
-    """The client Handshake packet gives no client value after a coalesced datagram."""
+    """The client Handshake packet gives no value after a coalesced datagram alone."""
     assert _coalesced_connection()[2] is None
 
 
 def test_two_server_datagrams_fill_point_c() -> None:
     """A server Handshake packet in a datagram of its own gives the client value."""
-    results = _separate_connection()
-    assert results[1] == SERVER_VALUE
-    assert results[3] == CLIENT_VALUE
+    fingerprinter = JA4LFingerprinter()
+    results = _separate_connection(fingerprinter)
+    assert results[3] == SERVER_VALUE
+    assert fingerprinter.last_extra_fingerprints == [CLIENT_VALUE]
 
 
 def test_the_dissector_writes_a_value_on_the_frame_that_answers_each_datagram() -> None:

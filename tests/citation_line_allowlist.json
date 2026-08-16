@@ -37,12 +37,6 @@
   },
   {
     "page": "JA4H.md",
-    "citation": "`ja4l.py:365`",
-    "reason": "The citation names a blank line at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
-    "issue": 709
-  },
-  {
-    "page": "JA4H.md",
     "citation": "`tests/test_foxio_rust_parity.py:72`",
     "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
     "issue": 709
@@ -111,12 +105,6 @@
     "page": "JA4X.md",
     "citation": "`tests/test_foxio_rust_parity.py:72`",
     "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
-    "issue": 709
-  },
-  {
-    "page": "deleted-text-specifications.md",
-    "citation": "`ja4l.py:260`",
-    "reason": "The citation names a blank line at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
     "issue": 709
   },
   {

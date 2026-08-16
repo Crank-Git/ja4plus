@@ -102,6 +102,10 @@ class JA4LFingerprinter(BaseFingerprinter):
         # reports, and a tunnelled connection groups under its inner address pair. This
         # map reads the grouping key from the reported key.
         self.grouping_keys = BoundedStateTable()
+        # The QUIC packet that fills point `D` gives two values, and `process_packet`
+        # returns one. The processor reads this list for the values the return leaves,
+        # exactly as it reads `last_raw`. #606 holds the reading.
+        self.last_extra_fingerprints: list[str] = []
 
     def process_packet(self, packet: Packet) -> str | None:
         """
@@ -111,9 +115,14 @@ class JA4LFingerprinter(BaseFingerprinter):
             packet: A network packet to analyze
 
         Returns:
-            The extracted fingerprint if successful, None otherwise
+            The first fingerprint the packet gives, or None. The packet that fills
+            point `D` of a QUIC connection gives the server value here, and it gives
+            the client value in `last_extra_fingerprints`.
         """
         with self._lock:
+            # A caller reads this list after every call, so a packet that gives no value
+            # clears the list of the packet before it.
+            self.last_extra_fingerprints = []
             if (IP not in packet and IPv6 not in packet) or (
                 TCP not in packet and UDP not in packet
             ):
@@ -170,30 +179,48 @@ class JA4LFingerprinter(BaseFingerprinter):
                 self.grouping_keys.pop(conn.get("reported_key"), None)
                 conn["reported_key"] = _reported_key(proto, outer_layer, sport, dport)
                 self.grouping_keys[conn["reported_key"]] = conn_key
-            fingerprint = generate_ja4l(packet, conn)
+            values = _ja4l_values(packet, conn)
 
-            if not fingerprint:
+            if not values:
                 return None
 
-            # The reference holds one client value for one connection and overwrites it
-            # while the measurement point moves. A later packet therefore replaces the
-            # value this fingerprinter already reported, and it adds no second value.
             endpoints = packet_endpoints(packet)
-            if fingerprint.startswith("JA4L-C="):
-                index = conn.get("client_entry")
-                if index is not None:
-                    self.fingerprints[index]["fingerprint"] = fingerprint
-                    self.fingerprints[index].update(endpoints)
-                    return fingerprint
-                # The stored index names a position in `self.fingerprints`, so the read
-                # of the length and the append that follows form one operation. A second
-                # thread that appends between the two gives two connections one entry.
-                conn["client_entry"] = len(self.fingerprints)
+            for value in values:
+                self._store_value(value, conn, endpoints)
+            self.last_extra_fingerprints = list(values[1:])
+            return values[0]
 
-            entry = {"fingerprint": fingerprint, "connection": conn["reported_key"]}
-            entry.update(endpoints)
-            self.fingerprints.append(entry)
-            return fingerprint
+    def _store_value(
+        self, fingerprint: str, conn: dict[str, Any], endpoints: dict[str, Any]
+    ) -> None:
+        """Put one value into the stored list of this fingerprinter.
+
+        The reference holds one client value for one connection and overwrites it while
+        the measurement point moves. A later packet therefore replaces the value this
+        fingerprinter already reported, and it adds no second value.
+
+        Args:
+            fingerprint: The value the packet gave.
+            conn: The connection state.
+            endpoints: The address pair and the port pair of the packet.
+
+        Returns:
+            None.
+        """
+        if fingerprint.startswith("JA4L-C="):
+            index = conn.get("client_entry")
+            if index is not None:
+                self.fingerprints[index]["fingerprint"] = fingerprint
+                self.fingerprints[index].update(endpoints)
+                return
+            # The stored index names a position in `self.fingerprints`, so the read
+            # of the length and the append that follows form one operation. A second
+            # thread that appends between the two gives two connections one entry.
+            conn["client_entry"] = len(self.fingerprints)
+
+        entry = {"fingerprint": fingerprint, "connection": conn["reported_key"]}
+        entry.update(endpoints)
+        self.fingerprints.append(entry)
 
     def reset(self) -> None:
         """Reset all fingerprints and connection tracking."""
@@ -201,6 +228,7 @@ class JA4LFingerprinter(BaseFingerprinter):
             super().reset()
             self.connections = BoundedStateTable()
             self.grouping_keys = BoundedStateTable()
+            self.last_extra_fingerprints = []
 
     def cleanup_connection(
         self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
@@ -513,10 +541,8 @@ def _quic_client_initial(conn: dict[str, Any], udp_payload: bytes, ttl: int, now
     return None
 
 
-def _quic_server_initial(
-    conn: dict[str, Any], udp_payload: bytes, ttl: int, now: int
-) -> str | None:
-    """Return the JA4L server value this QUIC server Initial packet gives, or None.
+def _quic_server_initial(conn: dict[str, Any], udp_payload: bytes, ttl: int, now: int) -> None:
+    """Record the server measurement point of a QUIC connection.
 
     The reference records the server measurement point on the Initial packet that
     completes the ServerHello. A server that splits the ServerHello across two Initial
@@ -530,9 +556,11 @@ def _quic_server_initial(
         now: The timestamp of the packet, in microseconds.
 
     Returns:
-        A `JA4L-S=` value, or None while the ServerHello is incomplete. Returns None
-        when the packet does not decrypt, because the fingerprinter then cannot tell
-        which Initial packet carries the ServerHello.
+        None. The reference publishes the server value on the frame that fills point
+        `D`, and `_quic_ja4l` returns it there. The function records no point while the
+        ServerHello is incomplete, and it records none when the packet does not
+        decrypt, because the fingerprinter then cannot tell which Initial packet
+        carries the ServerHello.
     """
     timestamps = conn["timestamps"]
     if "A" not in timestamps or "B" in timestamps:
@@ -551,39 +579,46 @@ def _quic_server_initial(
     conn.pop("server_crypto", None)
     timestamps["B"] = now
     conn["ttls"]["server"] = ttl
-    return "JA4L-S={}_{}_{}".format(
-        _one_way_latency(timestamps["A"], timestamps["B"]), ttl, QUIC_MARKER
-    )
+    return None
 
 
-def _quic_ja4l(packet: Packet, conn: dict[str, Any], ttl: int, now: int) -> str | None:
-    """Return the JA4L value this QUIC packet gives, or None."""
+def _quic_ja4l(packet: Packet, conn: dict[str, Any], ttl: int, now: int) -> list[str]:
+    """Return every JA4L value this QUIC packet gives.
+
+    Args:
+        packet: A network packet.
+        conn: The connection state.
+        ttl: The TTL of the packet.
+        now: The timestamp of the packet, in microseconds.
+
+    Returns:
+        The two values of the packet that fills point `D`, the server value first. Every
+        other packet gives an empty list.
+    """
     udp_layer = packet[UDP]
     udp_payload = bytes(udp_layer.payload)
     packet_type = long_header_packet_type(udp_payload)
     if packet_type is None:
-        return None
+        return []
     to_server = int(udp_layer.dport) == QUIC_PORT
     from_server = int(udp_layer.sport) == QUIC_PORT
     # A flow whose two ports are 443 names no server, so the direction of a packet is
     # unknown and every value it gives is a guess.
     if to_server and from_server:
-        return None
+        return []
     timestamps = conn["timestamps"]
     ttls = conn["ttls"]
 
     if packet_type == QUIC_INITIAL:
         if to_server:
-            # `_quic_client_initial` returns None on every path, so this call and the
-            # return below match the call the code made before annotation.
             _quic_client_initial(conn, udp_payload, ttl, now)
-            return None
+            return []
         if from_server:
-            return _quic_server_initial(conn, udp_payload, ttl, now)
-        return None
+            _quic_server_initial(conn, udp_payload, ttl, now)
+        return []
 
     if packet_type != QUIC_HANDSHAKE:
-        return None
+        return []
 
     # The client value needs the server Initial point, exactly as the TCP client value
     # needs the SYN-ACK. The reference discards a server Initial packet that leads its
@@ -591,26 +626,38 @@ def _quic_ja4l(packet: Packet, conn: dict[str, Any], ttl: int, now: int) -> str 
     # reads a Handshake packet. `quic_mirrored.pcap` measures it, and #156 holds the
     # reading.
     if "B" not in timestamps:
-        return None
+        return []
 
     # The server sends one to five Handshake packets. The client measurement starts
     # at the last of them, so this point moves until the client answers.
     if from_server and "D" not in timestamps:
         timestamps["C"] = now
-        return None
+        return []
 
     if to_server and "C" in timestamps and "D" not in timestamps:
         timestamps["D"] = now
-        return "JA4L-C={}_{}_{}".format(
-            _one_way_latency(timestamps["C"], timestamps["D"]),
-            ttls.get("client", ttl),
-            QUIC_MARKER,
-        )
-    return None
+        # The reference writes the server value before the client value on this frame.
+        # `wireshark/source/packet-ja4.c:1443` updates `hf_ja4ls`, and
+        # `wireshark/source/packet-ja4.c:1449` updates `hf_ja4l` after it. A QUIC
+        # connection that never reaches this point therefore publishes no server value,
+        # and #606 holds that reading.
+        return [
+            "JA4L-S={}_{}_{}".format(
+                _one_way_latency(timestamps["A"], timestamps["B"]),
+                ttls["server"],
+                QUIC_MARKER,
+            ),
+            "JA4L-C={}_{}_{}".format(
+                _one_way_latency(timestamps["C"], timestamps["D"]),
+                ttls.get("client", ttl),
+                QUIC_MARKER,
+            ),
+        ]
+    return []
 
 
-def generate_ja4l(packet: Packet, conn: dict[str, Any] | None = None) -> str | None:
-    """Return the JA4L value this packet gives, or None.
+def _ja4l_values(packet: Packet, conn: dict[str, Any] | None = None) -> list[str]:
+    """Return every JA4L value this packet gives.
 
     The function reads the measurement points of the connection from `conn` and
     writes the point this packet supplies back into it.
@@ -620,11 +667,13 @@ def generate_ja4l(packet: Packet, conn: dict[str, Any] | None = None) -> str | N
         conn: The connection state, which holds `timestamps`, `ttls` and `isns`.
 
     Returns:
-        A `JA4L-S=` value, a `JA4L-C=` value, or None when the packet supplies no
-        value. Returns None for a packet this fingerprinter cannot read.
+        A list of values, in the order the reference writes them. The list holds two
+        values for the QUIC packet that fills point `D`, and one value or none for
+        every other packet. The list is empty for a packet this fingerprinter cannot
+        read.
     """
     if not conn:
-        return None
+        return []
 
     from ja4plus.utils.packet_utils import get_ip_layer, get_ttl
     from ja4plus.utils.tunnels import innermost_layer
@@ -635,7 +684,7 @@ def generate_ja4l(packet: Packet, conn: dict[str, Any] | None = None) -> str | N
     # reference reports that value.
     ip_layer = innermost_layer(packet, (IP, IPv6)) or get_ip_layer(packet)
     if ip_layer is None:
-        return None
+        return []
 
     try:
         conn.setdefault("timestamps", {})
@@ -644,15 +693,37 @@ def generate_ja4l(packet: Packet, conn: dict[str, Any] | None = None) -> str | N
 
         ttl = get_ttl(packet)
         if ttl is None:
-            return None
+            return []
 
         now = _packet_microseconds(packet)
 
         if packet.haslayer(TCP):
-            return _tcp_ja4l(packet, conn, ip_layer, ttl, now)
+            tcp_value = _tcp_ja4l(packet, conn, ip_layer, ttl, now)
+            return [tcp_value] if tcp_value else []
         if packet.haslayer(UDP) and conn.get("proto") == "udp":
             return _quic_ja4l(packet, conn, ttl, now)
-        return None
+        return []
     except (ValueError, TypeError, IndexError, AttributeError) as e:
         logger.debug(f"Packet does not contain JA4L data: {e}")
-        return None
+        return []
+
+
+def generate_ja4l(packet: Packet, conn: dict[str, Any] | None = None) -> str | None:
+    """Return the first JA4L value this packet gives, or None.
+
+    The function reads the measurement points of the connection from `conn` and
+    writes the point this packet supplies back into it.
+
+    Args:
+        packet: A network packet.
+        conn: The connection state, which holds `timestamps`, `ttls` and `isns`.
+
+    Returns:
+        A `JA4L-S=` value, a `JA4L-C=` value, or None when the packet supplies no
+        value. Returns None for a packet this fingerprinter cannot read. The QUIC
+        packet that fills point `D` gives two values, and this function returns the
+        server value. `JA4LFingerprinter.process_packet` stores both of them, and it
+        holds the client value in `last_extra_fingerprints`.
+    """
+    values = _ja4l_values(packet, conn)
+    return values[0] if values else None
