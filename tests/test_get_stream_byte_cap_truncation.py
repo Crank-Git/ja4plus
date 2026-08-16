@@ -7,10 +7,9 @@ so the port holds the interface and this project adopts it.
 
 **The truncation removes no byte today.** `add_segment` refuses the segment that would
 cross the byte cap, so one stream stores no more bytes than the cap. A case therefore
-reaches the truncation through a stream that stores its segments under a cap that admits
-every one of them, and then reads that stream under a lower cap. The state reaches
-`get_stream` through the public writer alone, and no case of this file writes
-`reassembler.streams` and no case reverses the admission rule.
+stores its segments under a cap that admits every one of them. It then reads that stream
+under a lower cap. The state reaches `get_stream` through the public writer alone. No case
+of this file writes `reassembler.streams`, and no case reverses the admission rule.
 
 **No case of this file builds, runs or imports the port.** Parity rule 3 bars that.
 """
@@ -22,7 +21,6 @@ from ja4plus.utils.tcp_stream import TCPStreamReassembler
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MODULE = REPO_ROOT / "ja4plus" / "utils" / "tcp_stream.py"
 
-# The key of the one stream every case of this file builds.
 STREAM = "192.0.2.1:443->192.0.2.2:50000"
 
 # The three segments of the run, each 50 bytes, and each of one repeated byte. A reader
@@ -33,15 +31,15 @@ SECOND = b"b" * SEGMENT_LENGTH
 THIRD = b"c" * SEGMENT_LENGTH
 RUN_LENGTH = 3 * SEGMENT_LENGTH
 
-# The cap the reader reads, which stands below the run.
+# This cap stands below the run, so the truncation drops the third segment.
 LOW_CAP = 100
 
 
 def _stream_past_the_byte_cap(cap: int) -> TCPStreamReassembler:
     """Return a reassembler whose one stream stores a run longer than the byte cap.
 
-    The stream stores its three segments under a cap that admits every one of them, and
-    this function then lowers the cap to the value the reader reads.
+    The stream stores its three segments under a cap that admits every one of them. This
+    function then lowers the cap to the value the reader reads.
 
     Args:
         cap: The byte cap `get_stream` reads.
@@ -77,7 +75,7 @@ def test_get_stream_returns_the_earliest_bytes_of_the_run() -> None:
 def test_get_stream_returns_no_byte_where_the_byte_cap_stands_below_zero() -> None:
     """A byte cap below zero holds no byte, and the port states the same rule.
 
-    A plain slice would read the cap as an offset from the end of the run, so it would
+    A plain slice would read the cap as an offset from the end of the run. It would then
     return 145 bytes for a cap of -5.
     """
     reassembler = _stream_past_the_byte_cap(-5)

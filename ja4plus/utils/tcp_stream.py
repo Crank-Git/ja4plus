@@ -223,8 +223,8 @@ class TCPStreamReassembler(StateTable):
                 break
 
         # This truncation removes no byte today. `add_segment` refuses the segment that
-        # would cross the byte cap, so one stream stores no more bytes than the cap and
-        # the run this method builds never reaches it. #697 records that reading.
+        # would cross the byte cap. One stream therefore stores no more bytes than the
+        # cap, and the run this method builds never reaches it. #697 records the reading.
         #
         # The truncation stands here because `GetStream` of `Crank-Git/ja4plus-go`
         # truncates. FoxIO states no byte cap on a stream reader, so parity rule 2 of
