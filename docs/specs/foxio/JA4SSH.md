@@ -444,6 +444,11 @@ ja4plus holds open         : 42 client SSH packets, 76 server SSH packets, 51 cl
 the held window would give : c36s52_c42s76_c51s2
 ```
 
+**The table below records the measurement of 2026-08-08, and #214 landed after it.** The
+`ja4plus` row reads `none` for the second value, because this project emitted no trailing
+window on that date. `ja4plus` produces `c36s52_c42s76_c51s2` today, and the section
+`What the parity harness compares today` names the case that measures it.
+
 | Source | First value | Second value |
 |---|---|---|
 | `tests/foxio_vectors/ssh2.pcapng.json` | `c36s36_c76s124_c74s5` | `c36s36_c0s0_c2s0` |
@@ -461,13 +466,33 @@ the content of the last window, and they disagree only about whether to emit it.
 window. It is the extra occurrence a bare ACK writes at a window boundary, and its mode
 comes from the shared list of #96.
 
-### Why the parity harness never compared this value
+### What the parity harness compares today
 
-`tests/test_foxio_rust_parity.py:72` reads
-`SNAPSHOT_METHODS = (("JA4", "ja4"), ("JA4S", "ja4s"))`. **The harness parses the snapshot
-that holds the two `ja4ssh` values and never reads the field.** This is the same shape
-`docs/specs/foxio/JA4T.md` reports for `ja4t`, and `.claude/rules/conformance.md` names it
-under "Ask whether a case can fail".
+**The parity harness compares both JA4SSH values of the FoxIO Rust snapshot.**
+`tests/test_foxio_rust_parity.py:1717` opens `TestTheJa4sshValuesTheRustSnapshotHolds`.
+That class reads the `ja4ssh` block of
+`tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217`, which holds
+`c36s36_c76s124_c74s5` and `c36s52_c42s76_c51s2`. It measures `ja4plus` against each one.
+#671 built the comparison and round 242 records it.
+
+**The class reads the `ja4ssh` block with its own reader, and `SNAPSHOT_METHODS` names no
+JA4SSH field.** `tests/test_foxio_rust_parity.py:148` holds that tuple, and it names JA4,
+JA4S, JA4T, JA4L-C and JA4L-S. The `ja4ssh` block writes each value as a bare list item,
+so the block names no field for a tuple to read.
+
+**This page recorded an absence before round 242, and #683 retired that record on
+2026-08-15.** The retired section was named `Why the parity harness never compared this
+value`. It stated that the harness parses the snapshot and reads no `ja4ssh` field, which
+is the measurement of 2026-08-08. That measurement is correct at its date, and #671 ended
+the state it describes.
+
+**The retired section carried a stale citation, so this page states the defect and repeats
+the citation nowhere.** The section named line 72 of `tests/test_foxio_rust_parity.py` for
+the `SNAPSHOT_METHODS` declaration. #216 added `JA4T` to that tuple and the declaration
+moved, so line 72 holds a comment about a capture today.
+`tests/test_ja4ssh_parity_record.py` reads the two citations above against the module. A
+second move of either declaration therefore fails a case here, and no reader of this page
+follows a wrong line.
 
 ### The ruling #214 made
 

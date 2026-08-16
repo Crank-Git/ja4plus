@@ -1,4 +1,10 @@
-"""The repository-owned line citations of `docs/specs/foxio/`, read in their two classes.
+"""The repository-owned line citations of the transcription pages, read in their two classes.
+
+**#690 widened this reader to `docs/implementation_notes.md` and it added a third
+condition.** The cited lines must hold a statement. A blank line holds none, and a line
+that holds a comment alone holds none either. #668 read the line count alone, so 27
+citations of `docs/specs/foxio/` and five of `docs/implementation_notes.md` passed it.
+`tests/citation_line_allowlist.json` records the 27 and #709 reads each one.
 
 **A citation of a file this repository owns goes stale on every change above the cited
 line, and nothing reported it before #668.** #600 moved one line of `ja4h.py` and its
@@ -51,9 +57,9 @@ def test_every_repository_owned_citation_names_a_line_its_file_holds() -> None:
         for citation, why in wrong[:NAMED_LIMIT]
     ]
     assert wrong == [], (
-        f"{len(wrong)} citations of docs/specs/foxio/ name a line the file does not hold. "
-        "Read each one at the commit its section declares, and never at the working tree: "
-        f"{named}"
+        f"{len(wrong)} citations name a line the file does not hold, or a line that holds no "
+        "statement. Read each one at the commit its section declares, and never at the "
+        f"working tree: {named}"
     )
 
 
@@ -131,7 +137,7 @@ def test_a_declaration_names_a_path_this_repository_tracks() -> None:
     """A declaration that names an untracked path pins nothing, and it reads as a pin."""
     tracked = set(reader.tracked_python_files())
     unknown: list[str] = []
-    for page in sorted(reader.PAGE_DIRECTORY.glob("*.md")):
+    for page in reader.pages():
         for _, subjects, _ in reader.page_declarations(page.name):
             unknown.extend(f"{page.name}: {path}" for path in subjects if path not in tracked)
     assert unknown == [], (
@@ -229,7 +235,101 @@ def test_a_commit_in_another_cell_of_the_row_overrides_nothing() -> None:
 def test_the_census_reports_one_row_for_every_page() -> None:
     """A sweep that names what it found alone cannot be told from one that never ran."""
     census = reader.census()
-    for page in sorted(reader.PAGE_DIRECTORY.glob("*.md")):
+    for page in reader.pages():
         assert f"| `{page.name}` |" in census, (
             f"the census omits {page.name}, so a reader cannot tell a clean page from an unread one"
         )
+
+
+# The third class, which #690 added. A citation whose lines hold no statement names nothing,
+# and #668 passed 27 such citations because its condition read the line count alone.
+
+
+def test_the_reader_holds_the_implementation_notes_page() -> None:
+    """#668 globbed one directory, so this page drifted while the ten pages stayed clean."""
+    pages = {citation.page for citation in reader.all_citations()}
+    assert "implementation_notes.md" in pages, (
+        "the reader found citations on "
+        f"{sorted(pages)}, and #690 measured 19 of them on docs/implementation_notes.md"
+    )
+
+
+def _first_line_of(path: str, holds: str) -> int:
+    """Return the first line of one tracked file that holds a blank line or a comment.
+
+    **A case that writes a fixed line number goes stale on the next edit of that file**,
+    which is the defect class this guard reports. This function reads the file instead.
+
+    Args:
+        path: A tracked path, read at the working tree.
+        holds: `blank` for a line that holds nothing, `comment` for a line that holds a
+            comment alone.
+
+    Returns:
+        The line number, counted from 1.
+    """
+    lines = (reader.REPO_ROOT / path).read_text(encoding="utf-8").splitlines()
+    for number, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if holds == "blank" and not stripped:
+            return number
+        if holds == "comment" and stripped.startswith("#"):
+            return number
+    raise AssertionError(f"{path} holds no {holds} line, so this case reads nothing")
+
+
+@pytest.mark.parametrize("holds", ["blank", "comment"])
+def test_the_guard_refuses_a_citation_whose_lines_hold_no_statement(holds: str) -> None:
+    """A blank line names nothing, and a line that holds a comment alone names nothing."""
+    path = "ja4plus/fingerprinters/ja4h.py"
+    line = _first_line_of(path, holds)
+    text = f"## A section that declares no pin\n\nThe reading names `{path}:{line}`.\n"
+    citations = reader.read_text(f"no-statement-{holds}.md", text)
+    assert len(citations) == 1, (
+        f"the reader read {len(citations)} citations of the {holds} reversal"
+    )
+    wrong = reader.wrong_citations(citations)
+    assert len(wrong) == 1, (
+        f"the guard passed a citation of {path}:{line}, which holds a {holds} line, so it "
+        "refuses nothing in the third class"
+    )
+
+
+def test_the_guard_names_the_class_of_a_citation_that_holds_no_statement() -> None:
+    """A message that reports a missing line sends a reader to the wrong repair."""
+    path = "ja4plus/fingerprinters/ja4h.py"
+    line = _first_line_of(path, "blank")
+    text = f"## A section that declares no pin\n\nThe reading names `{path}:{line}`.\n"
+    wrong = reader.wrong_citations(reader.read_text("class.md", text))
+    assert "no statement" in wrong[0][1], (
+        f"the guard reported `{wrong[0][1]}`, and a reader needs the class to repair it"
+    )
+
+
+def test_every_allowlist_entry_names_a_reason_and_the_issue_that_removes_it() -> None:
+    """An entry that names no issue records a defect nobody reads again."""
+    silent = [
+        entry
+        for entry in reader.allowlist()
+        if not entry.get("reason") or not isinstance(entry.get("issue"), int)
+    ]
+    assert silent == [], (
+        "every entry of tests/citation_line_allowlist.json records an open finding, so it "
+        f"names a reason and the issue that removes it: {silent}"
+    )
+
+
+def test_the_allowlist_holds_no_entry_the_corpus_no_longer_carries() -> None:
+    """A stale entry hides the next defect of the same citation, so this case names it."""
+    carried = {
+        (citation.page, citation.written)
+        for citation, why in reader.wrong_citations(reader.all_citations(), allow=False)
+        if "no statement" in why
+    }
+    stale = [
+        entry for entry in reader.allowlist() if (entry["page"], entry["citation"]) not in carried
+    ]
+    assert stale == [], (
+        "a repair removed the citation these entries excuse, so delete each one from "
+        f"tests/citation_line_allowlist.json: {stale}"
+    )

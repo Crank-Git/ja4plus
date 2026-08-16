@@ -287,8 +287,10 @@ jobs:
           JA4SSH_PIN: ec01cdcdbcca9cf6cf6c4c09efb3c39589ea32fa
           # `docs/specs/foxio/JA4S.md` and `docs/specs/foxio/JA4X.md`, which share a commit.
           JA4S_JA4X_PIN: edfc7b26c7d5c5ba2431b3cf61fc2d9ed9cb4123
+          # `docs/specs/foxio/JA4.md`, which #691 wrote against the base of its branch.
+          JA4_PIN: 47ad2163a15d93fed3864f4732e3f1e00b08d6b2
         run: |
-          git fetch --depth=1 origin "+$JA4TS_PIN:refs/ja4plus/citation-pin-0d3480e" "+$JA4H_PIN:refs/ja4plus/citation-pin-1a87f45" "+$JA4H_R19_PIN:refs/ja4plus/citation-pin-dcb43fc" "+$JA4L_PIN:refs/ja4plus/citation-pin-247275d" "+$JA4D_PIN:refs/ja4plus/citation-pin-ce2fa544" "+$JA4SSH_PIN:refs/ja4plus/citation-pin-ec01cdc" "+$JA4S_JA4X_PIN:refs/ja4plus/citation-pin-edfc7b2"
+          git fetch --depth=1 origin "+$JA4TS_PIN:refs/ja4plus/citation-pin-0d3480e" "+$JA4H_PIN:refs/ja4plus/citation-pin-1a87f45" "+$JA4H_R19_PIN:refs/ja4plus/citation-pin-dcb43fc" "+$JA4L_PIN:refs/ja4plus/citation-pin-247275d" "+$JA4D_PIN:refs/ja4plus/citation-pin-ce2fa544" "+$JA4SSH_PIN:refs/ja4plus/citation-pin-ec01cdc" "+$JA4S_JA4X_PIN:refs/ja4plus/citation-pin-edfc7b2" "+$JA4_PIN:refs/ja4plus/citation-pin-47ad216"
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
