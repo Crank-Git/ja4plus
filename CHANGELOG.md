@@ -6,6 +6,34 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **`docs/specs/foxio/JA4SSH.md` now states what the parity harness compares** (#683).
+  Round
+  TBD. **The page carried a section named `Why the parity harness never compared this
+  value`, and #671 built that comparison in round 242.**
+  `tests/test_foxio_rust_parity.py:1717` opens `TestTheJa4sshValuesTheRustSnapshotHolds`,
+  which reads the `ja4ssh` block of
+  `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` and measures
+  `ja4plus` against both values. The heading therefore claimed an absence the suite fills.
+  **The section also carried a stale citation.** It named line 72 of
+  `tests/test_foxio_rust_parity.py` for the `SNAPSHOT_METHODS` declaration. #216 added
+  `JA4T` to that tuple and the declaration moved. Line 72 holds a comment about a capture
+  today. The declaration stands at `tests/test_foxio_rust_parity.py:148`, and it names the
+  five methods JA4, JA4S, JA4T, JA4L-C and JA4L-S. **The new
+  section cites that line and the class line, and it repeats the stale citation nowhere.**
+  **`SNAPSHOT_METHODS` names no JA4SSH field at all**, because the `ja4ssh` block writes
+  each value as a bare list item, so the class reads that block with its own reader.
+  `tests/citation_line_allowlist.json` recorded the stale citation under #709, and this
+  round removes that entry, so the file keeps 24 of the 25 entries. **The measurement table
+  of the page stays as it stands**, because a record of a past measurement records a past
+  state, and the page now states the date of 2026-08-08 beside it and names the value
+  `ja4plus` produces today. **`tests/test_ja4ssh_parity_record.py` asks a question
+  `tests/foxio_citation_lines.py` does not.** That reader asks whether the cited lines hold
+  a statement, and this one asks whether the page cites the line that holds the named
+  statement, so a third move of either declaration fails a case here. **No file under
+  `ja4plus/` changed, so no fingerprint moved and no output field moved.** The conformance
+  suite reports 1676 passed, 142 skipped and 138 xfailed before and after, against the 138
+  keys of `tests/foxio_deviations.json`. **The red-to-green is the five new cases**, and
+  all five fail on the page as it stood.
 - **`docs/specs/foxio/JA4.md` now transcribes the JA4 image and the JA4 text
   specification** (#691). Round
   TBD. **JA4 is the one method of the twelve that carries a
