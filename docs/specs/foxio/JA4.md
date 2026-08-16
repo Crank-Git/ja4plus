@@ -514,11 +514,10 @@ fingerprinter.**
 
 ## One record this page falsifies
 
-**The divergence register of `docs/specs/spec.md` states that
+**The divergence register of `docs/specs/spec.md` stated that
 `docs/specs/foxio/` holds no `JA4.md` transcription.** #653 wrote that sentence on
-2026-08-15, and it was true then. **This page makes it false.** Batch #704 owns the
-divergence register, so this round edits no row of it, and #691 records the constraint on
-that batch instead.
+2026-08-15, and it was true then. **This page made it false.** #714 repaired the row in
+batch #731, and the row now cites R13 of this page and line 89 of it.
 
 **The Changelog row of round 248 states the same sentence, and it stays as written.** A
 Changelog row records a past measurement, and this project rewrites no such record.
