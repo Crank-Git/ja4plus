@@ -81,8 +81,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   round built no reversal of the reading, because a reversal is the code change the ruling
   declines.** `Crank-Git/ja4plus-go#449` records that a reading of every packet closes 4
   per-packet comparisons of the port and opens 2 per-stream comparisons there, and this
-  round re-measured no figure of that measurement. No file under `ja4plus/` changed, so no
-  fingerprint moved and no register entry moved.
+  round re-measured no figure of that measurement. **The self-review made four repairs.**
+  `test_the_register_names_the_two_frames_that_carry_a_coalesced_datagram` read the two
+  JA4L values alone, so it passed where the row named the wrong frame. It now reads each
+  frame number as well, and a row that states `frame 9999` in place of `frame 1042` fails
+  it. One sentence of the divergence register row ran 29 words, over the 25 that rule 1 of
+  `.claude/rules/ste.md` allows, and it is now two sentences. **The exemption of that
+  standard covers the `## Changelog` table and the entries of this file, and it reaches no
+  row of the divergence register.** The docstring of `_server_initial` held the four-word
+  noun cluster `QUIC server Initial packet`, which rule 8 refuses. `CLIENT_DCID` carried no
+  reason comment, and the sibling file gives every constant one. No file under `ja4plus/`
+  changed, so no fingerprint moved and no register entry moved.
 - **The divergence register records the packets a JA4SSH window counts** (#608). Round
   TBD. **This project counts the segment that completes an SSH message, and the
   `ssh.direction` label of the `tshark` SSH dissector counts fewer frames on two

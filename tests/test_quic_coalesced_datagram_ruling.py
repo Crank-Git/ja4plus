@@ -60,6 +60,9 @@ SERVER_IP = "10.0.0.1"
 CLIENT_PORT = 50000
 SERVER_PORT = 443
 
+# The destination connection identifier of the client. `tests/quic_builder.py` derives the
+# Initial secrets from it, so the server Initial packet decrypts only under this value.
+# `tests/test_ja4l_quic_eviction_ruling.py` reads the same eight bytes.
 CLIENT_DCID = bytes.fromhex("203f9e9f68698274")
 
 # The server value the synthetic connection gives, at the timestamps below.
@@ -147,7 +150,9 @@ def _from_server(payload: bytes, moment: float) -> Raw:
 
 
 def _server_initial() -> bytes:
-    """Return the UDP payload of one QUIC server Initial packet that completes point B.
+    """Return the UDP payload of one Initial packet that the server sends.
+
+    The packet carries the ServerHello, so it completes point `B`.
 
     Returns:
         The bytes of the payload.
@@ -231,10 +236,20 @@ def test_the_register_names_the_three_foxio_references_that_split() -> None:
 
 
 def test_the_register_names_the_two_frames_that_carry_a_coalesced_datagram() -> None:
-    """The row names each capture frame the dissector reads and this project does not."""
+    """The row names each frame of the split, and the value the dissector writes.
+
+    The check reads the frame numbers as well as the values. A check of the values alone
+    passes where the row names the wrong frame, and the self-review of #613 measured
+    that shape.
+    """
     row = _register_row()
-    absent = [statement for statement in DISSECTOR_VALUES.values() if statement not in row]
-    assert absent == [], f"the row states none of these values: {absent}"
+    expected = []
+    for capture, (coalesced, answer) in COALESCED_FRAMES.items():
+        expected.append(f"frame {coalesced}")
+        expected.append(f"frame {answer}")
+        expected.append(f"`{DISSECTOR_VALUES[capture]}` on frame {answer}")
+    absent = [statement for statement in expected if statement not in row]
+    assert absent == [], f"the row states none of these: {absent}"
 
 
 def test_the_register_names_the_records_that_hold_the_ruling() -> None:
