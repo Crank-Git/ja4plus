@@ -210,9 +210,21 @@ def test_the_register_names_the_two_captures_that_disagree() -> None:
 
 
 def test_the_register_names_the_counts_of_both_selections() -> None:
-    """The row states the frame count of each selection on the two captures."""
+    """The row states the frame count of each selection on the two captures.
+
+    The check reads each count inside its own sentence. `10` and `13` each occur
+    elsewhere in the row, inside `c10s1` and inside `#105`, so a check that reads one
+    count alone passes where the sentence that states it is gone.
+    """
     row = _register_row()
-    absent = [count for count in ("43", "39", "13", "10") if count not in row]
+    absent = [
+        statement
+        for statement in (
+            "each count 43 frames here and 39 there",
+            "each count 13 frames here and 10 there",
+        )
+        if statement not in row
+    ]
     assert absent == [], f"the row states none of these counts: {absent}"
 
 

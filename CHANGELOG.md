@@ -42,23 +42,28 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   leaves unlabeled; the measured relation runs the other way. New file
   `tests/test_ja4ssh_packet_selection_ruling.py` holds 15 cases. Nine read the row, one
   reads the module, and five drive the fingerprinter over two captures and one synthetic
-  connection. The unit suite rises from 5731 collected to 5747, which is 15 cases of the
-  new file and 1 case that parametrizes over the tracked Python files. **The register row
-  adds no case**, and #607 measured that a row of that table can add two.
-  It reports 5731 passed, 8 skipped,
+  connection. The unit suite rises from 5731 collected to 5749, which is 15 cases of the
+  new file and 3 cases that parametrize over the tracked Python files. **The register row
+  and the two round records add no case**, and #607 measured that a row of that table can
+  add two. It reports 5733 passed, 8 skipped,
   8 xfailed and 114 subtests passed. The conformance suite reports 1676 passed, 142
   skipped and 138 xfailed against the 138 keys of `tests/foxio_deviations.json`, which
   are the counts #607 recorded. `ruff check ja4plus/ tests/`,
   `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
-  **The cases came first and they bite**: against the register with no row they failed 9
-  of 15, and each failure read
+  **The cases came first, and each one can fail**: against the register with no row they
+  failed 9 of 15, and each failure read
   `the divergence register holds no row named 'The packets a JA4SSH window counts'`.
   **Two reversals of the selection each fail a case, and this round measured both.** A
-  selection that counts the segment where the tracker completes no message fails 2 of 15,
+  selection that counts a segment which completes no SSH message fails 2 of 15,
   among them `test_a_segment_that_holds_part_of_a_message_counts_no_packet`. A selection
   that drops the banner test fails 5 of 15, among them
-  `test_the_sshv1_capture_produces_the_value_of_the_present_selection`. No file under
-  `ja4plus/` changed, so no fingerprint moved and no register entry moved.
+  `test_the_sshv1_capture_produces_the_value_of_the_present_selection`. **The self-review
+  made two repairs.** The row cited `ja4ssh.go:359` for the port and named no branch, and
+  the `dev` branch of the port holds that same test at `ja4ssh.go:368`, so the row now
+  names the branch of each line. `test_the_register_names_the_counts_of_both_selections`
+  read each count as a bare number, and `10` occurs in `c10s1` and in `#105`, so that case
+  passed where the sentence it reads was gone; it now reads the whole sentence. No file
+  under `ja4plus/` changed, so no fingerprint moved and no register entry moved.
 - **The divergence register records the frame that emits a JA4H value** (#607). Round
   TBD. **This project emits at the end of the header block, and the port waits for the
   body**, so the row records a divergence from the port as well as one from FoxIO.
