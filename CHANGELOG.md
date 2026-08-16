@@ -6,6 +6,47 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **Five rows of the divergence register record the last of the ruled questions** (#731).
+  Round
+  264. **Batch #731 holds #714, #622, #625, #621 and #593, and no member of it moves
+  a fingerprint value.** The conformance suite reports 1676 passed, 142 skipped and 138
+  xfailed before the batch and after it, against the 138 keys of
+  `tests/foxio_deviations.json`. **#714 cites the JA4 transcription in the empty-list
+  sentinel row**, and it repaired the two sentences that the change of #691 falsified.
+  **#622 records the JA4L timing fork as permanent.** FoxIO publishes four readings that
+  split two against two, so rule 1 names no value and the maintainer ruled. This project
+  matches the FoxIO Python reading and the FoxIO Zeek reading, and `ja4plus-go` matches
+  the Wireshark reading and the FoxIO Rust reading. **#625 records that point `B` stays
+  the Initial packet that completes the ServerHello**, and the ruling of 2026-08-16
+  supersedes the reason of the 2026-08-15 ruling and keeps the outcome. That earlier
+  ruling read the FoxIO Rust reference and the FoxIO Zeek reference as silent, and a read
+  at the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` measured that sentence
+  false. **The four references state four mechanisms, which is a plurality and no
+  majority, and no plurality carries a fingerprint move.** **#621 keeps the decryption
+  non-goal of #129 and it replaces the reversal condition.** The condition of 2026-08-15
+  fired on 2026-08-16 in form and not in substance: the port closes 72 keys of its own
+  register against a weighing of about 90, `Crank-Git/ja4plus-go#164` shipped no line of
+  code, and no release of the port carries the capability. **The new condition holds two
+  parts.** The port cuts a release that carries the capability, and this project
+  re-measures the yield against its own corpus of 138 keys and 38 captures. **#593
+  declines the eight key-material names of the port** under the same reversal condition,
+  because an interface that carries key material has no consumer while the capability
+  stays declined. **The `gopacket` premise of #593 was stale and the row records the
+  correction.** The port pins `github.com/gopacket/gopacket v1.7.1`, which reads block
+  type 10 at `pcapgo/pcapng.go:43`, and the `v1.1.19` reading covers
+  `github.com/google/gopacket` alone. **`scapy` reads a Decryption Secrets Block at
+  `scapy/utils.py:1645`, so this project carries no reader gap and the decline rests on
+  the capability alone.** **The sub-merge of `dev` into this batch repaired six
+  citations that #606 moved, across two rows.** `_quic_server_initial` no longer emits the
+  QUIC `JA4L-S` value. The #625 row moved to `ja4plus/fingerprinters/ja4l.py:580-623`,
+  `:614-615`, `:618` and `:620-622`, and it names the new emission site at
+  `ja4plus/fingerprinters/ja4l.py:689`. The #622 row moved to
+  `ja4plus/fingerprinters/ja4l.py:580-623` and `:621`. **The batch review of this pull
+  request measured that count**, because the record first stated three and read the three
+  citations of `tests/test_ja4l_quic_point_b_ruling.py` rather than the repair.
+  **This batch is the first that records one round for a whole batch**, under the model
+  #727 built, and no member of it wrote a `CHANGELOG.md` entry or a `## Changelog` row.
+
 - **The QUIC `JA4L-S` value emits from the packet that fills point `D`** (#606).
   Round
   263. **The FoxIO Wireshark dissector writes `ja4.ja4ls` and `ja4.ja4l` inside the one
