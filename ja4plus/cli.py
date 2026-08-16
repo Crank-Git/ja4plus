@@ -123,14 +123,53 @@ def _packet_timestamp(packet: Packet) -> datetime | None:
         return None
 
 
+def _endpoints_of_entry(entry: dict[str, Any]) -> tuple[str, int, str, int]:
+    """Return the four endpoint values of one window the processor closed.
+
+    The entry of the fingerprinter is the first source, and the connection key is the
+    fallback. #742 records the reason for that order. The entry states the pair the
+    fingerprinter attributed the value to, and a key restates the same pair in a form
+    each fingerprinter picks for itself.
+
+    `JA4LFingerprinter` states all four fields on a closed window.
+    `JA4SSHFingerprinter` states none, so the fallback reads its key.
+
+    Args:
+        entry: One result dict of `Processor.close_open_windows`.
+
+    Returns:
+        A tuple of the source address, the source port, the destination address and the
+        destination port. An entry that states no address and carries a key this call
+        cannot read produces empty addresses and the port zero.
+    """
+    src_ip = entry.get("src")
+    dst_ip = entry.get("dst")
+    if src_ip or dst_ip:
+        return (
+            str(src_ip or ""),
+            int(entry.get("srcport") or 0),
+            str(dst_ip or ""),
+            int(entry.get("dstport") or 0),
+        )
+    return _endpoints_from_connection(str(entry.get("connection") or ""))
+
+
 def _endpoints_from_connection(connection: str) -> tuple[str, int, str, int]:
     """Return the four endpoint values that a connection key names.
 
-    A window that no packet closes carries the connection key and no packet, so the
-    command reads the endpoints back from the key. The key form is
-    `<address>:<port>-<address>:<port>`. An IPv6 address holds a colon and no hyphen, so
-    the first hyphen separates the two endpoints and the last colon of each half
-    separates the port.
+    This call is the fallback of `_close_open_windows`. It reads a window whose entry
+    states no endpoint, and `JA4SSHFingerprinter` writes every such entry today.
+
+    The two fingerprinters that hold a window write two key forms, and this call reads
+    both. #742 measured what one form costs: the call read the hyphen form alone, so it
+    returned nothing for the 22 JA4L values of the committed captures.
+
+    - `JA4SSHFingerprinter` writes `<address>:<port>-<address>:<port>`.
+    - `JA4LFingerprinter` writes `<protocol>_<address>:<port>_<address>:<port>`, which
+      `_reported_key` builds.
+
+    An IPv6 address holds a colon and neither separator, so the first hyphen or the two
+    underscores name the two halves. The last colon of each half separates the port.
 
     Args:
         connection: The connection key the fingerprinter reported.
@@ -142,7 +181,15 @@ def _endpoints_from_connection(connection: str) -> tuple[str, int, str, int]:
     """
     first, separator, second = connection.partition("-")
     if not separator:
-        return "", 0, "", 0
+        # The underscore form opens with the protocol name, and an address holds no
+        # underscore. The first underscore therefore ends the protocol and the next one
+        # separates the two halves.
+        _, separator, remainder = connection.partition("_")
+        if not separator:
+            return "", 0, "", 0
+        first, separator, second = remainder.partition("_")
+        if not separator:
+            return "", 0, "", 0
     src_ip, src_port = _split_endpoint(first)
     dst_ip, dst_port = _split_endpoint(second)
     return src_ip, src_port, dst_ip, dst_port
@@ -343,9 +390,10 @@ def _report_no_result(args: argparse.Namespace, count: int) -> None:
 def _close_open_windows(processor: Processor, order: dict[str, int]) -> list[FingerprintResult]:
     """Return one result for every window the processor holds open.
 
-    Run this function when the packet source ends without an error. JA4SSH is the only
-    method that holds a window, and #214 decided that it emits the window a connection
-    holds open.
+    Run this function when the packet source ends without an error. Two methods hold a
+    window. JA4SSH emits the window a connection holds open, which #214 decided. JA4L
+    emits the QUIC server value of a connection that never fills point `D`, which #606
+    added on 2026-08-16.
 
     A read error ends the command with a message and the status 1, and the command
     writes no trailing window then. A partial window that follows an error describes a
@@ -357,12 +405,13 @@ def _close_open_windows(processor: Processor, order: dict[str, int]) -> list[Fin
 
     Returns:
         A list of `FingerprintResult`, in the order the user wrote. The endpoints read
-        the connection key of the window, because no packet produces them. The timestamp
-        is None for the same reason.
+        the entry of the fingerprinter, and they read the connection key of the window
+        where the entry states none. The timestamp is None, because no packet produces
+        the value.
     """
     # The selection reads `_selecting_token`, so one rule covers the two paths that
-    # `--types` filters. JA4SSH is the one method that holds a window today, and that
-    # method reaches the same answer as the earlier `entry["type"] in order` test.
+    # `--types` filters. The rule reaches both methods that hold a window, and it
+    # reaches the same answer as the earlier `entry["type"] in order` test.
     positioned: list[tuple[int, dict[str, Any]]] = []
     for candidate in processor.close_open_windows():
         token = _selecting_token(str(candidate["type"]), str(candidate["fingerprint"]), order)
@@ -371,9 +420,10 @@ def _close_open_windows(processor: Processor, order: dict[str, int]) -> list[Fin
     positioned.sort(key=lambda pair: pair[0])
     results: list[FingerprintResult] = []
     for _, entry in positioned:
-        src_ip, src_port, dst_ip, dst_port = _endpoints_from_connection(
-            entry.get("connection") or ""
-        )
+        # The entry is the first source, because it states the pair the fingerprinter
+        # attributed the value to. A key is a second encoding of that pair, and the two
+        # forms drift: #742 measured a key form that the parse below could not read.
+        src_ip, src_port, dst_ip, dst_port = _endpoints_of_entry(entry)
         results.append(
             FingerprintResult(
                 type=str(entry["type"]),

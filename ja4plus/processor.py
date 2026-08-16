@@ -254,14 +254,16 @@ class Processor:
     def close_open_windows(self) -> list[dict[str, Any]]:
         """Emit every window the fingerprinters hold open, and return the results.
 
-        Run this method when the packet source ends. JA4SSH is the only method that
-        holds a window, and #214 decided that it emits the window a connection holds
-        open at the end of a capture.
+        Run this method when the packet source ends. Two methods hold a window. JA4SSH
+        emits the window a connection holds open, which #214 decided. JA4L emits the
+        QUIC server value of a connection that never fills point `D`, which #606 added
+        on 2026-08-16.
 
         Returns:
-            A list of result dicts. Each dict holds the method name, the fingerprint
-            and the connection key of the window. It holds no packet endpoint, because
-            no packet produces the value.
+            A list of result dicts. Each dict holds the method name, the fingerprint,
+            the connection key of the window and the four endpoint fields. An endpoint
+            field reads None where the fingerprinter entry states no endpoint, because
+            no packet produces the value. JA4L states all four and JA4SSH states none.
         """
         results: list[dict[str, Any]] = []
         for fp_type, fp in self.fingerprinters.items():
@@ -274,11 +276,19 @@ class Processor:
                 logger.debug(f"{fp_type} close_open_windows failed: {e}")
                 continue
             for entry in entries:
+                # The entry states the address pair the value belongs to, and the caller
+                # holds no packet to read it from. #742 measured what a dropped pair
+                # costs: the command printed `unknown` for 22 values of the committed
+                # captures, because the connection key was the one source it kept.
                 results.append(
                     {
                         "type": fp_type,
                         "fingerprint": entry["fingerprint"],
                         "connection": entry.get("connection"),
+                        "src": entry.get("src"),
+                        "srcport": entry.get("srcport"),
+                        "dst": entry.get("dst"),
+                        "dstport": entry.get("dstport"),
                     }
                 )
         return results
