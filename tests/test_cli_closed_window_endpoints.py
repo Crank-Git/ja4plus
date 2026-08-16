@@ -7,10 +7,11 @@ of the committed captures printed that word.
 **Every guard that stood when the defect shipped read a fingerprint entry, and no guard
 read a printed line.** The entry of `JA4LFingerprinter` carries the four endpoint fields,
 so a reader of the entry sees a correct address pair. The loss happens between the entry
-and the line: `Processor.close_open_windows` dropped the four fields, and the command then
+and the line. `Processor.close_open_windows` dropped the four fields, and the command then
 read the endpoints back from the connection key. The conformance suite compares the value
-at the key `tls3.pcapng/25:61884/JA4L-S.1` and it reads no line of the command, so it
-reported 1684 passed with the defect live. The cases below read the printed line.
+at the key `tls3.pcapng/25:61884/JA4L-S.1` and it reads no line of the command. It
+therefore reported 1684 passed with the defect live, and the cases below read the printed
+line.
 
 The captures of `CAPTURES_THAT_HOLD_A_WINDOW` are the committed captures that publish a
 value from `close_open_windows`. A census of 2026-08-16 read 28 such values: 22 from JA4L

@@ -278,7 +278,7 @@ class Processor:
             for entry in entries:
                 # The entry states the address pair the value belongs to, and the caller
                 # holds no packet to read it from. #742 measured what a dropped pair
-                # costs: the command printed `unknown` for 22 values of the committed
+                # costs. The command printed `unknown` for 22 values of the committed
                 # captures, because the connection key was the one source it kept.
                 results.append(
                     {

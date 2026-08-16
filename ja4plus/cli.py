@@ -128,8 +128,8 @@ def _endpoints_of_entry(entry: dict[str, Any]) -> tuple[str, int, str, int]:
 
     The entry of the fingerprinter is the first source, and the connection key is the
     fallback. #742 records the reason for that order. The entry states the pair the
-    fingerprinter attributed the value to, and a key restates the same pair in a form
-    each fingerprinter picks for itself.
+    fingerprinter attributed the value to. A key restates that same pair in a form each
+    fingerprinter picks for itself.
 
     `JA4LFingerprinter` states all four fields on a closed window.
     `JA4SSHFingerprinter` states none, so the fallback reads its key.
@@ -157,11 +157,11 @@ def _endpoints_of_entry(entry: dict[str, Any]) -> tuple[str, int, str, int]:
 def _endpoints_from_connection(connection: str) -> tuple[str, int, str, int]:
     """Return the four endpoint values that a connection key names.
 
-    This call is the fallback of `_close_open_windows`. It reads a window whose entry
+    This call is the fallback of `_endpoints_of_entry`. It reads a window whose entry
     states no endpoint, and `JA4SSHFingerprinter` writes every such entry today.
 
     The two fingerprinters that hold a window write two key forms, and this call reads
-    both. #742 measured what one form costs: the call read the hyphen form alone, so it
+    both. #742 measured what one form costs. The call read the hyphen form alone, so it
     returned nothing for the 22 JA4L values of the committed captures.
 
     - `JA4SSHFingerprinter` writes `<address>:<port>-<address>:<port>`.
