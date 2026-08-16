@@ -231,18 +231,24 @@ class Processor:
                     continue
                 if not fingerprint:
                     continue
-                results.append(
-                    FingerprintResult(
-                        type=fp_type,
-                        fingerprint=fingerprint,
-                        raw=getattr(fp, "last_raw", None),
-                        raw_original_order=getattr(fp, "last_raw_original_order", None),
-                        src_ip=src_ip,
-                        src_port=src_port,
-                        dst_ip=dst_ip,
-                        dst_port=dst_port,
+                # One packet gives one method more than one value where the reference
+                # publishes more than one on that frame. The QUIC packet that fills
+                # point `D` of JA4L is the one such packet, and #606 holds the reading.
+                # `last_extra_fingerprints` holds every value the return leaves, and the
+                # read of it pairs with the call above exactly as `last_raw` does.
+                for value in [fingerprint, *getattr(fp, "last_extra_fingerprints", ())]:
+                    results.append(
+                        FingerprintResult(
+                            type=fp_type,
+                            fingerprint=value,
+                            raw=getattr(fp, "last_raw", None),
+                            raw_original_order=getattr(fp, "last_raw_original_order", None),
+                            src_ip=src_ip,
+                            src_port=src_port,
+                            dst_ip=dst_ip,
+                            dst_port=dst_port,
+                        )
                     )
-                )
         return results, errors
 
     def close_open_windows(self) -> list[dict[str, Any]]:

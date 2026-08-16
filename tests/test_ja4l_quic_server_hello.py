@@ -18,6 +18,7 @@ from tests.quic_builder import (
     ACK_FRAME,
     client_initial,
     crypto_frame,
+    handshake_packet,
     server_hello,
     server_initial,
 )
@@ -52,7 +53,11 @@ def _from_server(payload, t):
 
 
 def test_the_server_point_skips_an_initial_packet_that_carries_no_server_hello():
-    """The fingerprinter reads the second Initial packet when the first holds an ACK."""
+    """The fingerprinter reads the second Initial packet when the first holds an ACK.
+
+    The reference publishes the server value on the packet that fills point `D`, so
+    neither Initial packet gives it. The client Handshake packet that follows gives it.
+    """
     fingerprinter = JA4LFingerprinter()
     fingerprinter.process_packet(_to_server(client_initial(CLIENT_DCID), 0.0))
     first = fingerprinter.process_packet(
@@ -63,13 +68,20 @@ def test_the_server_point_skips_an_initial_packet_that_carries_no_server_hello()
             server_initial(CLIENT_DCID, crypto_frame(0, server_hello()), packet_number=1), 0.020
         )
     )
+    fingerprinter.process_packet(_from_server(handshake_packet(), 0.025))
+    third = fingerprinter.process_packet(_to_server(handshake_packet(), 0.030))
 
     assert first is None
-    assert second == "JA4L-S=10000_64_quic"
+    assert second is None
+    assert third == "JA4L-S=10000_64_quic"
 
 
 def test_the_server_point_waits_for_the_fragment_that_completes_the_server_hello():
-    """The fingerprinter reads the Initial packet that carries the last fragment."""
+    """The fingerprinter reads the Initial packet that carries the last fragment.
+
+    The reference publishes the server value on the packet that fills point `D`, so
+    neither Initial packet gives it. The client Handshake packet that follows gives it.
+    """
     message = server_hello()
     fingerprinter = JA4LFingerprinter()
     fingerprinter.process_packet(_to_server(client_initial(CLIENT_DCID), 0.0))
@@ -81,9 +93,12 @@ def test_the_server_point_waits_for_the_fragment_that_completes_the_server_hello
             server_initial(CLIENT_DCID, crypto_frame(20, message[20:]), packet_number=1), 0.030
         )
     )
+    fingerprinter.process_packet(_from_server(handshake_packet(), 0.035))
+    third = fingerprinter.process_packet(_to_server(handshake_packet(), 0.040))
 
     assert first is None
-    assert second == "JA4L-S=15000_64_quic"
+    assert second is None
+    assert third == "JA4L-S=15000_64_quic"
 
 
 def test_the_server_point_reads_an_initial_packet_that_a_handshake_packet_follows():
@@ -101,8 +116,11 @@ def test_the_server_point_reads_an_initial_packet_that_a_handshake_packet_follow
             0.012,
         )
     )
+    fingerprinter.process_packet(_from_server(handshake_packet(), 0.018))
+    handshake_result = fingerprinter.process_packet(_to_server(handshake_packet(), 0.024))
 
-    assert result == "JA4L-S=6000_64_quic"
+    assert result is None
+    assert handshake_result == "JA4L-S=6000_64_quic"
 
 
 def test_the_fingerprinter_reports_no_server_value_when_the_initial_packet_does_not_decrypt():
@@ -162,7 +180,12 @@ def test_the_fingerprinter_drops_a_crypto_fragment_that_names_a_huge_offset():
 
 
 def test_the_fingerprinter_reads_the_server_hello_after_it_drops_a_huge_offset():
-    """The fingerprinter still reads a later Initial packet that carries the ServerHello."""
+    """The fingerprinter still reads a later Initial packet that carries the ServerHello.
+
+    The reference publishes the server value on the packet that fills point `D`, so the
+    Initial packet that carries the ServerHello gives it none. The client Handshake
+    packet that follows gives it.
+    """
     fingerprinter = JA4LFingerprinter()
     fingerprinter.process_packet(_to_server(client_initial(CLIENT_DCID), 0.0))
     fingerprinter.process_packet(
@@ -173,8 +196,11 @@ def test_the_fingerprinter_reads_the_server_hello_after_it_drops_a_huge_offset()
             server_initial(CLIENT_DCID, crypto_frame(0, server_hello()), packet_number=1), 0.020
         )
     )
+    fingerprinter.process_packet(_from_server(handshake_packet(), 0.025))
+    handshake_result = fingerprinter.process_packet(_to_server(handshake_packet(), 0.030))
 
-    assert result == "JA4L-S=10000_64_quic"
+    assert result is None
+    assert handshake_result == "JA4L-S=10000_64_quic"
 
 
 def test_the_fingerprinter_reports_no_server_value_when_the_client_sends_no_initial_packet():

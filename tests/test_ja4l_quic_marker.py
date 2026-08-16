@@ -24,15 +24,15 @@ verify a third part on a TCP connection.
 from pathlib import Path
 
 import pytest
-from scapy.all import rdpcap
+from scapy.all import IP, UDP, Raw, rdpcap
 
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
+from tests.quic_builder import handshake_packet
 
 VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 
 CLOUDFLARE_QUIC = "udp_2001:db8:1::1:50280_2606:4700:10::6816:826:443"
 TLS3_QUIC_CLIENT = "udp_172.253.122.95:443_192.168.1.169:62481"
-SSH2_QUIC_SERVER_ONLY = "udp_142.251.32.74:443_172.16.225.48:51810"
 BADCURVEBALL_TCP = "tcp_172.130.128.76:55318_54.226.182.138:443"
 
 
@@ -74,9 +74,45 @@ class TestTheQUICMarker:
             "chrome-cloudflare-quic-with-secrets.pcapng", CLOUDFLARE_QUIC
         )
 
-    def test_a_quic_connection_that_reports_the_server_value_alone_carries_the_marker(self):
-        # ssh2.pcapng stream 33 sends no Handshake packet, so it reports no client value.
-        assert values_on("ssh2.pcapng", SSH2_QUIC_SERVER_ONLY) == ["JA4L-S=16192_57_quic"]
+    def test_a_quic_connection_that_completes_the_handshake_after_the_capture_ends(self):
+        """The server value carries the marker on the packet that fills point `D`.
+
+        ssh2.pcapng stream 33 carries a client Initial packet and a server Initial
+        packet, and it ends before a Handshake packet moves. The reference publishes
+        the server value on the packet that fills point `D`, so the capture alone
+        gives no value. Two packets built here, past the end of the capture, complete
+        the handshake and prove the value the capture's two Initial packets gave.
+        """
+        connection_key = "udp_142.251.32.74:443_172.16.225.48:51810"
+        fingerprinter = JA4LFingerprinter()
+        last_moment = 0.0
+        for packet in rdpcap(str(VECTORS_DIR / "ssh2.pcapng")):
+            fingerprinter.process_packet(packet)
+            if hasattr(packet, "time"):
+                last_moment = max(last_moment, float(packet.time))
+        assert [
+            entry
+            for entry in fingerprinter.get_fingerprints()
+            if entry["connection"] == connection_key
+        ] == []
+
+        server_handshake = (
+            IP(src="142.251.32.74", dst="172.16.225.48")
+            / UDP(sport=443, dport=51810)
+            / Raw(load=handshake_packet())
+        )
+        server_handshake.time = last_moment + 0.001
+        fingerprinter.process_packet(server_handshake)
+
+        client_handshake = (
+            IP(src="172.16.225.48", dst="142.251.32.74")
+            / UDP(sport=51810, dport=443)
+            / Raw(load=handshake_packet())
+        )
+        client_handshake.time = last_moment + 0.002
+        result = fingerprinter.process_packet(client_handshake)
+
+        assert result == "JA4L-S=16192_57_quic"
 
     def test_both_values_of_one_quic_connection_carry_the_marker(self):
         assert values_on("tls3.pcapng", TLS3_QUIC_CLIENT) == [
