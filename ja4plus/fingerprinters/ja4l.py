@@ -231,6 +231,33 @@ class JA4LFingerprinter(BaseFingerprinter):
         entry.update(endpoints)
         self.fingerprints.append(entry)
 
+    def close_open_windows(self) -> list[dict[str, Any]]:
+        """Emit the server value every QUIC connection still holds, and return it.
+
+        The caller runs this method when the packet source ends. A QUIC connection
+        publishes its server value on the packet that fills point `D`, and a connection
+        that never reaches that point holds the value until here. The FoxIO references
+        split two against two on whether that value exists at all, so the maintainer
+        ruled on 2026-08-16 that this project publishes it. `docs/specs/spec.md` holds
+        the row, and #606 holds the ruling.
+
+        The method reads the connections in the order the capture opened them. It
+        removes the value it emits, so a repeated call emits nothing.
+
+        Returns:
+            A list of the entries the call appended to `self.fingerprints`.
+        """
+        with self._lock:
+            emitted: list[dict[str, Any]] = []
+            for conn in list(self.connections.values()):
+                value = conn.pop("pending_server_value", None)
+                if value is None:
+                    continue
+                endpoints = conn.get("server_endpoints") or {}
+                self._store_value(value, conn, endpoints)
+                emitted.append(self.fingerprints[-1])
+            return emitted
+
     def reset(self) -> None:
         """Reset all fingerprints and connection tracking."""
         with self._lock:
@@ -565,11 +592,13 @@ def _quic_server_initial(conn: dict[str, Any], udp_payload: bytes, ttl: int, now
         now: The timestamp of the packet, in microseconds.
 
     Returns:
-        None. The reference publishes the server value on the frame that fills point
-        `D`, and `_quic_ja4l` returns it there. The function records no point while the
-        ServerHello is incomplete. It records none where the packet does not decrypt,
-        because the fingerprinter then cannot tell which Initial packet carries the
-        ServerHello.
+        None. The function holds the server value under `pending_server_value`, and
+        `_quic_ja4l` returns it on the packet that fills point `D`. A connection that
+        never fills point `D` publishes the held value at the end of the capture, and
+        `JA4LFingerprinter.close_open_windows` reads it there. The function records no
+        point while the ServerHello is incomplete. It records none where the packet does
+        not decrypt, because the fingerprinter then cannot tell which Initial packet
+        carries the ServerHello.
     """
     timestamps = conn["timestamps"]
     if "A" not in timestamps or "B" in timestamps:
@@ -588,6 +617,9 @@ def _quic_server_initial(conn: dict[str, Any], udp_payload: bytes, ttl: int, now
     conn.pop("server_crypto", None)
     timestamps["B"] = now
     conn["ttls"]["server"] = ttl
+    conn["pending_server_value"] = "JA4L-S={}_{}_{}".format(
+        _one_way_latency(timestamps["A"], timestamps["B"]), ttl, QUIC_MARKER
+    )
     return None
 
 
@@ -645,23 +677,19 @@ def _quic_ja4l(packet: Packet, conn: dict[str, Any], ttl: int, now: int) -> list
 
     if to_server and "C" in timestamps and "D" not in timestamps:
         timestamps["D"] = now
+        client_value = "JA4L-C={}_{}_{}".format(
+            _one_way_latency(timestamps["C"], timestamps["D"]),
+            ttls.get("client", ttl),
+            QUIC_MARKER,
+        )
         # The reference writes the server value before the client value on this frame.
         # `wireshark/source/packet-ja4.c:1443` updates `hf_ja4ls`, and
-        # `wireshark/source/packet-ja4.c:1449` updates `hf_ja4l` after it. A QUIC
-        # connection that never reaches this point therefore publishes no server value,
-        # and #606 holds that reading.
-        return [
-            "JA4L-S={}_{}_{}".format(
-                _one_way_latency(timestamps["A"], timestamps["B"]),
-                ttls["server"],
-                QUIC_MARKER,
-            ),
-            "JA4L-C={}_{}_{}".format(
-                _one_way_latency(timestamps["C"], timestamps["D"]),
-                ttls.get("client", ttl),
-                QUIC_MARKER,
-            ),
-        ]
+        # `wireshark/source/packet-ja4.c:1449` updates `hf_ja4l` after it. #606 holds
+        # that reading of the frame.
+        server_value = conn.pop("pending_server_value", None)
+        if server_value is None:
+            return [client_value]
+        return [server_value, client_value]
     return []
 
 

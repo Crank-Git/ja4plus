@@ -195,7 +195,7 @@ The remaining eight JA4T rows and nine JA4TS rows match byte for byte.
 ### JA4L and JA4LS: Zeek rounds the halved latency and `ja4plus` truncates it
 
 Eight values differ by one microsecond. `zeek/ja4l/main.zeek:158` converts the halved
-interval with `double_to_count`, and `ja4plus/fingerprinters/ja4l.py:324` truncates it
+interval with `double_to_count`, and `ja4plus/fingerprinters/ja4l.py:422` truncates it
 toward zero.
 
 The eight values sit on five connections. `ipv6.pcapng` holds one, on `ja4ls`.

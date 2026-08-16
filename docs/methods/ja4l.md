@@ -28,7 +28,7 @@ JA4L-C=<latency>_<ttl>_quic
 ```
 
 `ja4plus/fingerprinters/ja4l.py:482` builds the TCP form, and
-`ja4plus/fingerprinters/ja4l.py:659` builds the QUIC form.
+`ja4plus/fingerprinters/ja4l.py:680` builds the QUIC form.
 
 ## The parts
 

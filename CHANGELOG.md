@@ -14,39 +14,42 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, `packet-ja4.c:1443` writes
   `hf_ja4ls`, and `packet-ja4.c:1449` writes `hf_ja4l` after it. **A reader who compares
   one frame of `tshark` against one frame of `ja4plus` therefore read the same value on
-  two frames.** `Crank-Git/ja4plus-go` landed the same move under its issue #447, so a
-  change here keeps the two libraries together. **`_quic_server_initial` now records point
-  `B` and returns nothing, and `_quic_ja4l` returns the server value and the client value
-  together on the packet that fills point `D`.** The server value comes first, which is
-  the order the dissector writes. **`JA4LFingerprinter.process_packet` returns one value
-  and it holds the second in `last_extra_fingerprints`**, and
-  `ja4plus/processor.py` reports one `FingerprintResult` for each of them, so the command
-  prints both values of that frame. **A replay of the 38 committed captures moved 7 values
-  and it removed 22.** The 7 each kept their text and reached the frame the dissector
-  names: frame 49 to 52 on `chrome-cloudflare-quic-with-secrets.pcapng`, 1140 to 1147 on
-  `ssh2.pcapng`, and 144 to 147, 149 to 153, 155 to 162, 159 to 167 and 303 to 312 on
-  `tls3.pcapng`. **The 22 belong to connections that never fill point `D` here**, and 20
-  of them sit on `tls-handshake.pcapng`, which no FoxIO reference publishes a JA4L value
-  for. The other two are `ssh2.pcapng` stream 33 and `tls3.pcapng` stream 25, where the
-  server datagram coalesces an Initial packet and a Handshake packet. **34 of the 38
-  captures replayed byte-identical, and no value of any other method moved.** **The
-  conformance suite moved from 1676 passed, 142 skipped and 138 xfailed to 1674 passed,
-  143 skipped and 139 xfailed.** `tests/foxio_deviations.json` lost
-  `tls-handshake.pcapng/JA4L-S`, because this project now produces no value there and the
-  case reports the comparison as not applicable. It gained `ssh2.pcapng/JA4L-S` and
-  `tls3.pcapng/JA4L-S`, which record the two connections the coalesced-datagram ruling of
-  #613 reaches. **The register holds 139 keys and the suite reports 139 `xfailed`.**
-  **The four FoxIO references answer two questions here, and they answer them
-  differently.** One reference names a frame at all, and it names the frame that fills
-  point `D`. On whether the server value exists at all without point `D`, they split two
-  against two: `wireshark/source/packet-ja4.c:1432` and `rust/ja4/src/time/udp.rs:185-241`
-  each need point `D`, and `python/ja4.py:154-157` and `zeek/ja4l/main.zeek:222-233` each
-  publish the value on point `B`. **`tests/foxio_vectors/rust_expected/` publishes no
-  `ja4l_s` value for `ssh2.pcapng` stream 33 and none for `tls3.pcapng` stream 25**, so
-  the FoxIO Rust reference agrees with this project on the two connections the register
-  now declines. `tests/test_ja4l_quic_point_d_emission.py` holds the emission frame
-  against `tests/foxio_vectors/wireshark_expected/`, and a return of the server value from
-  `_quic_server_initial` fails a case there.
+  two frames.** **The maintainer ruled #606 on 2026-08-16, and the ruling has two halves.**
+  **The frame moves**, because one reference names a frame at all and it names that one.
+  **The value still publishes where a connection never fills point `D`**, because the four
+  references split two against two on that question and no majority exists. **The round
+  therefore adopts the uncontested half and declines the contested half.**
+  **`_quic_server_initial` now records point `B` and holds the value under
+  `pending_server_value`**, and `_quic_ja4l` returns it beside the client value on the
+  packet that fills point `D`. The server value comes first, which is the order the
+  dissector writes. **`JA4LFingerprinter.close_open_windows` publishes every value point
+  `D` never released**, and the caller already runs that method when the packet source
+  ends. **`JA4LFingerprinter.process_packet` returns one value and it holds the second in
+  `last_extra_fingerprints`**, and `ja4plus/processor.py` reports one `FingerprintResult`
+  for each of them, so the command prints both values of that frame. **A replay of the 38
+  committed captures moved 29 values and it removed none.** Each of the 38 captures holds
+  the same value count before and after, and every value carries the same text. **7 values
+  moved to the frame the dissector names**: frame 49 to 52 on
+  `chrome-cloudflare-quic-with-secrets.pcapng`, 1140 to 1147 on `ssh2.pcapng`, and 144 to
+  147, 149 to 153, 155 to 162, 159 to 167 and 303 to 312 on `tls3.pcapng`. **22 values
+  moved to the end of the capture**, because their connections never fill point `D`. 20 of
+  them sit on `tls-handshake.pcapng`, and the other two sit on `ssh2.pcapng` stream 33 and
+  `tls3.pcapng` stream 25, where the server datagram coalesces an Initial packet and a
+  Handshake packet. **34 of the 38 captures replayed byte-identical, and no value of any
+  other method moved.** **The conformance suite reports 1676 passed, 142 skipped and 138
+  xfailed before the change and after it**, and `tests/foxio_deviations.json` holds 138
+  keys against 138 xfailed cases. **The divergence register gains one row.** It names all
+  four readings, it states that no majority exists, and it states that the decline is
+  permanent rather than provisional. `wireshark/source/packet-ja4.c:1432` and
+  `rust/ja4/src/time/udp.rs:185-241` each require point `D`, and `python/ja4.py:154-157`
+  and `zeek/ja4l/main.zeek:222-233` each publish the value on point `B`. **This project
+  follows the Python and Zeek reading on whether the value exists, and the Wireshark
+  reading on which frame carries it.** **`Crank-Git/ja4plus-go` adopted the reading that
+  requires point `D` under its issue #447, so the two libraries now disagree on this
+  question**, and this repository edits no file of that port. **The row states nothing
+  about which packet fills point `B`**, which is the open question of #625.
+  `tests/test_ja4l_quic_point_d_emission.py` holds both halves of the ruling, and a return
+  of the server value from `_quic_server_initial` fails a case there.
 
 - **The filing rule of the port lands here, and a round is a batch** (#727).
   Round

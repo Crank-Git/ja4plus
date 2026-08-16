@@ -211,7 +211,7 @@ decides what the bar covers.
 reference value, and adoption is its own ruling. "Which baselines are usable as
 vectors" in `docs/specs/foxio/zeek.md` holds that ruling for the Zeek package.
 
-**The exception reaches 6 rows of the 139 the register holds.**
+**The exception reaches 6 rows of the 138 the register holds.**
 `tests/test_precedence_exception.py` measures the reach and both counts, and #334 records
 the search. A case reads this sentence, so a register move fails the gate here.
 

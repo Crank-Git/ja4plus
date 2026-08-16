@@ -194,9 +194,9 @@ def test_the_register_names_the_one_call_site_of_the_restart() -> None:
     absent = [
         citation
         for citation in (
-            "`ja4plus/fingerprinters/ja4l.py:448`",
-            "`ja4plus/fingerprinters/ja4l.py:478`",
-            "`ja4plus/fingerprinters/ja4l.py:594-665`",
+            "`ja4plus/fingerprinters/ja4l.py:475`",
+            "`ja4plus/fingerprinters/ja4l.py:505`",
+            "`ja4plus/fingerprinters/ja4l.py:626-693`",
         )
         if citation not in row
     ]
@@ -239,12 +239,12 @@ def test_the_register_row_reads_parity_rule_one() -> None:
 def test_the_module_holds_one_call_site_of_the_restart() -> None:
     """`_restart_connection` holds one call site in the whole JA4L module."""
     tree = ast.parse(FINGERPRINTER.read_text(encoding="utf-8"))
-    assert _call_lines(tree, RESTART) == [478]
+    assert _call_lines(tree, RESTART) == [505]
 
 
 def test_the_tcp_path_holds_that_one_call_site() -> None:
     """`_tcp_ja4l` holds the one call that drops the points of a connection."""
-    assert _call_lines(_function("_tcp_ja4l"), RESTART) == [478]
+    assert _call_lines(_function("_tcp_ja4l"), RESTART) == [505]
 
 
 def test_the_quic_path_drops_the_points_of_a_connection_nowhere() -> None:

@@ -109,6 +109,12 @@
   },
   {
     "page": "deleted-text-specifications.md",
+    "citation": "`ja4l.py:260`",
+    "reason": "The citation names a blank line at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "deleted-text-specifications.md",
     "citation": "`ja4l.py:57`",
     "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
     "issue": 709

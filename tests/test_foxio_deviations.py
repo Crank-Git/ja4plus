@@ -456,22 +456,19 @@ class TestTheQuicMarkerDeviations:
             assert "the marker is the whole difference" in deviation.cause, key
 
 
-# The four entries whose expected-output file publishes no JA4L key. The FoxIO Python
+# The five entries whose expected-output file publishes no JA4L key. The FoxIO Python
 # implementation deletes both JA4L keys when the run names another method, so the count
-# ja4plus produces has nothing to compare against. #606 removed the fifth entry,
-# `tls-handshake.pcapng/JA4L-S`: this project now produces no JA4L-S value on that
-# capture either, so the case skips instead of comparing.
+# ja4plus produces has nothing to compare against.
 METHOD_FILTER_KEYS = (
     "CVE-2018-6794.pcap/JA4L-C",
     "CVE-2018-6794.pcap/JA4L-S",
     "https-connect.pcap/JA4L-C",
     "https-connect.pcap/JA4L-S",
+    "tls-handshake.pcapng/JA4L-S",
 )
 
 # The one entry of the six that compared two measured counts. #272 repaired the defect it
-# recorded, and no register entry describes a duplicate server value today. #606 later
-# added a register entry under the same key, for an unrelated reason: the point-D
-# reading publishes no server value on a different stream of the same capture.
+# recorded, so the case passes and the register holds the key no longer.
 DUPLICATE_SERVER_VALUE_KEY = "ssh2.pcapng/JA4L-S"
 
 # The three entries that awaited the #215 ruling on the JA4T form left the open set.
@@ -539,7 +536,7 @@ class TestTheOpenRegisterEntries:
     def test_every_method_filter_entry_states_that_the_comparison_is_unreachable(self):
         """The cause states the reading in exact words, because wrong words read as a pass.
 
-        This project was never emitting more than the reference on these four. The
+        This project was never emitting more than the reference on these five. The
         reference published nothing to compare, because the method filter deleted the key.
         """
         for key in METHOD_FILTER_KEYS:
@@ -548,20 +545,12 @@ class TestTheOpenRegisterEntries:
             assert "published nothing to compare" in cause, key
 
     def test_the_register_holds_no_duplicate_server_value_entry(self):
-        """#272 repaired the defect, so no cause describes a duplicate server value today.
+        """#272 repaired the defect, so the case passes and needs no register entry.
 
         `ssh2.pcapng` stream 15 produced `JA4L-S=6252_58` twice where the reference holds
-        it once. A retransmitted SYN-ACK now gives no value, so the counts agree. #606
-        later added a register entry under the same key, for the unrelated reason that
-        the point-D reading publishes no server value on a different stream.
+        it once. A retransmitted SYN-ACK now gives no value, so the counts agree.
         """
-        register = load_register()
-        for key, deviation in register.items():
-            assert "twice" not in deviation.cause, key
-        # A conditional read passes where the key leaves the register, so this case names
-        # the entry that holds the key today and it fails where that entry goes.
-        assert DUPLICATE_SERVER_VALUE_KEY in register
-        assert register[DUPLICATE_SERVER_VALUE_KEY].issue == 606
+        assert DUPLICATE_SERVER_VALUE_KEY not in load_register()
 
 
 class TestTheRegisterMarkerRule:

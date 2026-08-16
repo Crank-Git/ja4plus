@@ -239,7 +239,7 @@ class TestTheRegisterCitesTheLineThatDeletesTheKey:
         """
         register = (REPO_ROOT / "tests" / "foxio_deviations.json").read_text()
         assert "python/ja4.py:339` runs" not in register
-        assert register.count("python/ja4.py:340") == 8
+        assert register.count("python/ja4.py:340") == 10
 
     def test_the_page_cites_both_lines_of_the_two_line_block(self):
         text = live_page_text().replace("\n", " ")

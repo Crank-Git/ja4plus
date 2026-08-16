@@ -60,7 +60,7 @@ denies a citation in other words fails the gate. Reword the cause. A gate that m
 ruling costs more than a gate that asks a question.
 
 The rule runs in one direction. An entry that cites no ruling may still carry the
-marker, which 38 of the 139 decided entries do. A FoxIO Rust snapshot settled those by
+marker, which 38 of the 138 decided entries do. A FoxIO Rust snapshot settled those by
 measurement, and no person decided them. The 38 are the 34 entries of #138 and 4 of the 5
 entries of #151.
 
