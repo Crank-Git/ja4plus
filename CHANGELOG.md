@@ -6,6 +6,38 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The vector download filter now names the JA4H block, the JA4SSH block and the JA4X
+  list item** (#684).
+  Round
+  TBD. **`tests/download_test_vectors.py:141` held `RUST_COMPARED_FIELDS` with four
+  entries, and `tests/test_foxio_rust_parity.py` compares six methods.** #670 added the
+  JA4H comparison and #671 added the JA4SSH comparison, and neither round moved the field
+  list. **The issue body and the plan comment stated different forms, and a measurement
+  decided between them.** A read of 2026-08-15 applied each candidate form to the eleven
+  committed snapshots under `tests/foxio_vectors/rust_expected/`: `b"ja4h: "` matches 0
+  snapshots and `b"- ja4h: "` matches 5, and `b"ja4ssh: "` matches 0 and `b"ja4ssh:"`
+  matches 1. **The `http` block writes the value as a list item and the `ja4ssh` block
+  names no field at all**, so the list now holds `b"- ja4h: "` and the block opener
+  `b"ja4ssh:"`. **The same measurement falsified an entry the issue did not name, and this
+  round repairs it.** `b"ja4x: "` matches 0 of the 11 snapshots and `b"- ja4x: "` matches
+  5, because the snapshot writes `    - ja4x: <value>` inside the `tls_certs` block. That
+  is the defect the JA4H entry carried, on the entry that stood in the list already, so
+  the list now holds `b"- ja4x: "`. **The kept-snapshot count stands at 11 before this
+  round and 11 after it**, and a read after the JA4X repair alone reports 11 as well.
+  Every committed snapshot that holds a JA4H block, a JA4SSH block or a JA4X value holds a
+  JA4T value or a JA4 value as well. **The filter therefore refuses no snapshot it kept
+  before.** **New file `tests/test_download_filter_fields.py` holds the field list against
+  the parity module**, and no case held the two files together before it. Three of its ten
+  cases failed on the base commit `4d00e09`, one for each repaired form, and all ten pass
+  now. **`keeps_rust_snapshot` now holds the
+  condition that stood inside `download`**, so a case reads the condition the refresh runs
+  rather than a copy of it. **This round changes no file under `ja4plus/` and it moves no
+  fingerprint.** The conformance suite reports 1676 passed, 142 skipped and 138 xfailed on
+  the base and the same three counts after the change, and `tests/foxio_deviations.json`
+  holds 138 keys against those 138 xfailed cases. The unit suite reports 5745 passed, 8
+  skipped and 8 xfailed beside 114 subtests, and two of those cases parametrize over the
+  tracked file list and read the new module. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` each report no issue.
 - **`docs/specs/foxio/JA4SSH.md` now states what the parity harness compares** (#683).
   Round
   TBD. **The page carried a section named `Why the parity harness never compared this
