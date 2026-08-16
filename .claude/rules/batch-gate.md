@@ -31,13 +31,20 @@ the promotion, and it accepted no member pull request, so a pull request into an
 integration branch created no run at all. Pull request #519 carried a keyword-free head
 into `batch/510-dry-run-and-gates` and the provider held no run for it.
 
-**A check that reaches the batch pull request alone can pass by construction.**
-`tests/test_round_entry_existence.py` fails a change set that edits a tracked file and
-records no round. A batch pull request reads its change set against the tip of `dev`, and
-every member of a batch has already recorded a round, so that check finds an entry whatever
-one member did. **The member pull request is the change set the check exists to refuse, and
-the older filter kept it away from the job.** Read a new check against this shape before
-you trust it.
+**A check that reaches the batch pull request alone can pass by construction.** Read a new
+check against that shape before you trust it. #438 measured it on 2026-08-10, and the
+paragraph below records that reading. The sentences are quoted rather than rewritten.
+
+> `tests/test_round_entry_existence.py` fails a change set that edits a tracked file and
+> records no round. A batch pull request reads its change set against the tip of `dev`, and
+> every member of a batch has already recorded a round, so that check finds an entry whatever
+> one member did. **The member pull request is the change set the check exists to refuse, and
+> the older filter kept it away from the job.**
+
+**#727 superseded the example on 2026-08-15, and it left the shape standing.** That issue
+moved the round mandate from the change set to the batch pull request, so a member pull
+request records no round and this check refuses none.
+`## A round is a batch, and the batch pull request records it` below states the model.
 
 **The widened filter costs no run that the batch model saved.** A member commit ends with
 the keyword, so a member pull request still creates no run. Under the widened filter, a
@@ -242,27 +249,72 @@ every pull request into `dev` and it filters no path. `.github/workflows/docs-bu
 filters four paths, so the gate requires no run of it and a red run of it still refuses
 the merge.
 
-## Assign every round number at the batch gate
+## A round is a batch, and the batch pull request records it
 
-**Warning: assign a round number at the batch gate, and never at a sub-merge.** A
-sub-merge is the merge of one member branch into the integration branch. The project
-manager assigns the numbers of a whole batch in one pass, immediately before the batch
-pull request. `dev` holds a fixed row count at that moment, so the pass reads one
-sequence that no other writer moves.
+**Warning: record one round on the batch pull request, and none on a member pull
+request.** #727 moved the mandate on 2026-08-15. The project manager writes the entry and
+the row at the batch gate, immediately before the batch pull request, and it assigns the
+number in the same pass. `dev` holds a fixed row count at that moment, so the pass reads
+one sequence that no other writer moves.
 
-A member writes the literal `TBD` in place of its round number. The `TBD` reaches two
-records, and it stays in both through every sub-merge.
+The round reaches two records, and one number covers both.
 
-1. The entry of `CHANGELOG.md`, as `Round TBD.`.
-2. The Changelog row of `docs/specs/spec.md`, as `| TBD | 2026-08-10 | ... |`.
+1. The entry of `CHANGELOG.md`, as `Round 262.`.
+2. The Changelog row of `docs/specs/spec.md`, as `| 262 | 2026-08-15 | ... |`.
 
 `tests/test_changelog_round_agreement.py` holds the two records against each other, so an
-assignment that covers one file alone fails a case. An integration branch carries one
-`TBD` for each member that has not reached the gate, and every one of them is correct.
+assignment that covers one file alone fails a case.
+
+**#727 measured what the older model cost.** One issue recorded one round, so
+`tests/test_round_entry_existence.py` failed every change set that edited a tracked file
+and recorded no round. Each member therefore wrote the two most contended files of the
+repository, and each member then conflicted with every other member on them. A read of
+2026-08-15 covered the last 300 commits of `master`. 192 of them touch
+`docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against 56 that touch a file under
+`ja4plus/`.
+
+**Warning: the 261 rounds already recorded stay exactly as they are.** They record past
+measurements and `.claude/rules/ste.md` bars a rewrite of such a record. The new model
+begins at the next round this project assigns.
+
+### Which change set the mandate reads
+
+`tests/test_round_entry_existence.py` reads the branch the change set belongs to, and
+`records_a_round` holds the condition. A branch whose name opens with `batch/` or `epic/`
+records a round. Every other branch records none, and the reading refuses no round it
+finds on one.
+
+**The two prefixes match the two patterns of the base-branch filter above.** One model
+therefore names an integration branch in the filter and in the mandate.
+
+**The `test` job names that branch in `ROUND_ENTRY_BRANCH`, because a run of a pull request
+checks out a detached merge commit.** `git rev-parse --abbrev-ref HEAD` then answers the
+literal `HEAD` and names no branch. The case would then skip on every job, and `skip-gate`
+would fail the run. The step `Name the branch the change set belongs to` reads
+`github.head_ref` first and `github.ref_name` second. The two together name the head branch
+on every event the workflow accepts.
+
+### One guard still takes a record from a member
+
+**Warning: the routine `TBD` sweep goes out with the older model, and one exception keeps
+the form.** A member that writes no round record leaves nothing to assign later, so the
+sweep covers no member of a routine batch.
+
+**`tests/test_breaking_change_record.py` requires a record from the member that trips it.**
+It requires that `CHANGELOG.md` and `docs/specs/spec.md` each record the Python floor the
+package states. #575 moved that floor and met the result: a reader that demanded a number
+could not pass on the branch that made the move. Such a member writes `Round TBD.` and the
+matching row, and the project manager assigns the number at the batch gate.
+
+**#395 records why that guard stands.** A comparison between two records finds no change
+that is absent from both of them. The move of the floor from 3.8 to 3.9 was such a
+change. #727 therefore kept the guard, and it kept the `TBD` form the guard reads.
+
+### The race the older model measured
 
 **The round sequence is global to the repository, and a sub-merge is an event of one
-batch.** Two live integration branches therefore assign from one sequence at once, and
-neither branch reads the rows of the other until that other branch merges. #482 measured
+batch.** Two live integration branches therefore assigned from one sequence at once, and
+neither branch read the rows of the other until that other branch merged. #482 measured
 the result on 2026-08-10, at the sub-merge gate of #456.
 
 ```
@@ -270,9 +322,9 @@ AssertionError: the Changelog holds 169 rows and its highest round is 173
 assert 169 == 173
 ```
 
-**A project manager who assigns 168 and 169 on the second branch writes two rows numbered
-168 and two numbered 169.** That state merges cleanly, and the rule above removes it
-rather than reports it.
+**#727 removes that race for every routine member.** One batch writes one round at its own
+gate. The project manager runs one gate at a time, so no second writer moves the sequence
+between the read and the write.
 
 **Warning: a wrong pairing survives the row-count rule, so read the contiguity case
 instead.** `row count == highest round` reads a table that carries 168 twice and 170
@@ -281,7 +333,8 @@ pairing.
 `tests/test_specification_changelog.py::test_the_changelog_assigns_every_round_from_one_to_the_row_count`
 requires the rounds 1 to the row count, each on one row, and
 `test_the_row_count_rule_passes_on_a_table_that_repeats_a_round` holds the measurement of
-the older rule.
+the older rule. **That case stays.** It caught the duplicate rounds of #482, and it is
+cheap under the new model.
 
 **One integration branch at a time also removes the race, and this project declines that
 order.** It costs the concurrency the batch model exists to provide. #482 records the

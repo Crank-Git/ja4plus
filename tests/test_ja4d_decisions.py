@@ -142,7 +142,7 @@ def test_ja4d_reads_no_domain_from_an_option_81_that_carries_no_name():
 
 
 def test_ja4d_reads_no_domain_from_a_truncated_option_81():
-    """A length byte the payload does not honour gives `n`, not `d`.
+    """A length byte the payload does not honor gives `n`, not `d`.
 
     No parser trusts a length field it read from the packet. The option below claims ten
     bytes and the payload ends after one, so it carries no name.

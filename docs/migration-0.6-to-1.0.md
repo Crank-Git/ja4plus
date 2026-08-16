@@ -3,14 +3,17 @@
 Where `ja4plus --version` reports 0.6.0, read this page before you install version 1.0.0.
 That command names the version of the package your environment holds.
 
-This repository declares version 1.2.0, which is a minor release of version 1.1.1.
+This repository declares version 1.2.1, which is a patch release of version 1.2.0.
 **Python 3.9 leaves the supported set at version 1.1.0**, and version 1.0.1 is the release
 that still installs on it. Version 1.1.0 moves no other interface and no fingerprint, and
 version 1.1.1 repairs one crash of the ServerHello reader and moves neither.
 
 **Version 1.2.0 moves several fingerprint values, and it breaks no row of this page.** The
 rows below state what version 1.0.0 changed against version 0.6.0, and version 1.2.0
-changes none of them, so every row reads the same here. **A reader who moves from version
+changes none of them, so every row reads the same here. **Version 1.2.1 moves no
+fingerprint value at all**, so it breaks no row either. It repairs the address pair the
+command prints for a value that no packet released, and it moves the frame that carries
+the QUIC `JA4L-S` value without moving the text of that value. **A reader who moves from version
 1.1.1 rather than from version 0.6.0 reads the `## [1.2.0]` section of `CHANGELOG.md`
 instead**, which names each value that moves and the issue that carries it. Those values
 are JA4X and JA4H on an empty list, JA4TS on a reset of a one-SYN-ACK connection, JA4T on

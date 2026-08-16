@@ -61,7 +61,7 @@ Any sender can build bytes that produce a well formed fingerprint. That fingerpr
 no application on its own. `identified_as` reports what the mapping file holds for the
 value, and a sender who chooses the bytes chooses that value too.
 
-The behaviour follows the FoxIO reference. No FoxIO material rejects such a packet, so a
+The behavior follows the FoxIO reference. No FoxIO material rejects such a packet, so a
 guard here would make `ja4plus` answer differently from every FoxIO implementation on the
 same bytes. #343 holds the ruling, the `Divergence register` of `docs/specs/spec.md`
 holds the measurement, and `tests/fuzz/test_structural_validity.py` holds the cases.
@@ -135,7 +135,7 @@ belong to the command-line program, and the library result carries neither.
 ## The raw forms
 
 Four of the eleven `--types` tokens write a value into a raw field. The other seven write
-`null` into both raw fields. Read the table for the exact behaviour of each token.
+`null` into both raw fields. Read the table for the exact behavior of each token.
 
 | Method | `raw` | `raw_original_order` |
 |---|---|---|

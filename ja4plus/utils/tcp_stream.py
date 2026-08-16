@@ -179,7 +179,7 @@ class TCPStreamReassembler(StateTable):
             return by_seq
 
         # A stream occupies one arc of the sequence space, and one step between two
-        # neighbours closes that arc. The widest step is that one, so the segment after
+        # neighbors closes that arc. The widest step is that one, so the segment after
         # it holds the first byte. A comparison of each segment against a running
         # earliest value gives a different answer for a different arrival order,
         # because the comparison is not transitive once the segments span the space.
@@ -196,8 +196,9 @@ class TCPStreamReassembler(StateTable):
     def get_stream(self, key: Any) -> bytes:
         """Reassemble and return contiguous stream data from base_seq.
 
-        Returns data from the earliest sequence number up to the first gap. The order
-        holds across a wrap of the 32-bit sequence number.
+        Returns data from the earliest sequence number up to the first gap, or up to
+        `max_stream_bytes`, whichever comes first. The order holds across a wrap of the
+        32-bit sequence number.
         """
         if key not in self.streams:
             return b""
@@ -221,9 +222,22 @@ class TCPStreamReassembler(StateTable):
             else:
                 break
 
-        # `add_segment` bounds the bytes the stream stores, and the result never holds
-        # more than the stream stores, so this method needs no bound of its own.
-        return bytes(result)
+        # This truncation removes no byte today. `add_segment` refuses the segment that
+        # would cross the byte cap. One stream therefore stores no more bytes than the
+        # cap, and the run this method builds never reaches it. #697 records the reading.
+        #
+        # The truncation stands here because `GetStream` of `Crank-Git/ja4plus-go`
+        # truncates. FoxIO states no byte cap on a stream reader, so parity rule 2 of
+        # `CLAUDE.md` gives the port the interface.
+        #
+        # #654 records the admission rule of each port in the divergence register, and the
+        # user decides which form this project keeps. The port admits the crossing segment
+        # and stores 250 bytes past the cap. A move to that admission rule therefore
+        # reaches this line, and it moves no byte of the value this method returns.
+        #
+        # A byte cap below zero holds no byte, and the port states that rule too. A slice
+        # on the negative value would drop the last bytes of the run instead.
+        return bytes(result[: max(self.max_stream_bytes, 0)])
 
     def base_seq(self, key: Any) -> int | None:
         """Return the sequence number the reassembled stream starts at, or None.

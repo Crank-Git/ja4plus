@@ -820,9 +820,9 @@ class TestTheAgeClockOfOneShard:
     def test_one_shard_that_reads_past_the_maximum_age_writes_no_retransmission_field(self):
         """The same thread ages the connection out, so the case above can fail.
 
-        Clause 3 of `TestTheConcurrencyContract` states the behaviour this case pins: an
+        Clause 3 of `TestTheConcurrencyContract` states the behavior this case pins: an
         entry that receives no packet for its maximum age leaves the table. The case
-        above holds that behaviour for one shard, and this case proves it still runs.
+        above holds that behavior for one shard, and this case proves it still runs.
         """
         fingerprinter = JA4TSFingerprinter()
 

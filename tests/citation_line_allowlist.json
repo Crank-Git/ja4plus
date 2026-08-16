@@ -1,0 +1,140 @@
+[
+  {
+    "page": "JA4D.md",
+    "citation": "`ja4d.py:51`",
+    "reason": "The citation names a comment alone at commit ce2fa544. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4D.md",
+    "citation": "`ja4d6.py:282`",
+    "reason": "The citation names a blank line at commit ce2fa544. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4D.md",
+    "citation": "`ja4d6.py:286`",
+    "reason": "The citation names a blank line at commit ce2fa544. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4D.md",
+    "citation": "`ja4d6.py:288`",
+    "reason": "The citation names a blank line at commit ce2fa544. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4D.md",
+    "citation": "`ja4d6.py:292`",
+    "reason": "The citation names a blank line at commit ce2fa544. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4D.md",
+    "citation": "`ja4d6.py:75-80`",
+    "reason": "The citation names a comment alone at commit ce2fa544. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4H.md",
+    "citation": "`tests/test_foxio_rust_parity.py:72`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4L.md",
+    "citation": "`tests/test_foxio_rust_parity.py:72`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4S.md",
+    "citation": "`ja4s.py:200`",
+    "reason": "The citation names a comment alone at commit edfc7b2. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4S.md",
+    "citation": "`ja4s.py:393`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4S.md",
+    "citation": "`tests/test_foxio_rust_parity.py:72`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4SSH.md",
+    "citation": "`ja4plus/fingerprinters/ja4ssh.py:221-222`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4T.md",
+    "citation": "`tests/test_foxio_rust_parity.py:72`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4X.md",
+    "citation": "`ja4plus/fingerprinters/ja4x.py:65`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4X.md",
+    "citation": "`ja4x.py:182`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4X.md",
+    "citation": "`ja4x.py:75`",
+    "reason": "The citation names a blank line at commit edfc7b2. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4X.md",
+    "citation": "`ja4x.py:77`",
+    "reason": "The citation names a blank line at commit edfc7b2. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "JA4X.md",
+    "citation": "`tests/test_foxio_rust_parity.py:72`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "deleted-text-specifications.md",
+    "citation": "`ja4l.py:260`",
+    "reason": "The citation names a blank line at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "deleted-text-specifications.md",
+    "citation": "`ja4l.py:57`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "deleted-text-specifications.md",
+    "citation": "`ja4l.py:60`",
+    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "deleted-text-specifications.md",
+    "citation": "`ja4plus/fingerprinters/ja4l.py:72`",
+    "reason": "The citation names a blank line at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  },
+  {
+    "page": "deleted-text-specifications.md",
+    "citation": "`ja4s.py:306`",
+    "reason": "The citation names a blank line at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
+    "issue": 709
+  }
+]

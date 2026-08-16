@@ -38,7 +38,7 @@ CLIENT_VALUE_COUNTS = {
     "CVE-2018-6794.pcap": (3, 3),
     "badcurveball.pcap": (2, 1),
     "browsers-x509.pcapng": (6, 3),
-    "chrome-cloudflare-quic-with-secrets.pcapng": (3, 2),
+    "chrome-cloudflare-quic-with-secrets.pcapng": (2, 2),
     "gre-erspan-vxlan.pcap": (1, 1),
     "gre-sample.pcap": (2, 1),
     "http-empty-useragent.pcap": (3, 1),
@@ -55,17 +55,17 @@ CLIENT_VALUE_COUNTS = {
     "ssh-scp-1050.pcap": (2, 1),
     "ssh2-malformed.pcap": (2, 1),
     "ssh2-moloch-crash.pcap": (2, 1),
-    "ssh2.pcapng": (15, 9),
+    "ssh2.pcapng": (14, 9),
     "sshv1.pcap": (2, 1),
     "tcpdump-geneve.pcap": (2, 1),
     "tls-alpn-h2.pcap": (2, 1),
-    "tls3.pcapng": (20, 13),
+    "tls3.pcapng": (15, 13),
     "v6.pcap": (2, 1),
 }
 
 # The totals of the table above. The reference reports one client value for one
-# connection, so 60 is the count that matches the reference and 105 is the divergence.
-RETURNED_TOTAL = 105
+# connection, so 60 is the count that matches the reference and 98 is the divergence.
+RETURNED_TOTAL = 98
 STORED_TOTAL = 60
 
 
@@ -111,8 +111,8 @@ class TestTheJA4LReturnPathAgainstTheStoredList:
         assert client_value_counts(capture_name) == CLIENT_VALUE_COUNTS[capture_name]
 
     def test_the_return_path_reports_more_client_values_than_the_stored_list(self):
-        # The counts of #156. The return path reports 105 client values and the stored
-        # list holds 60, across the committed vectors.
+        # The counts of #156, re-measured under #606. The return path reports 98
+        # client values and the stored list holds 60, across the committed vectors.
         returned = sum(client_value_counts(name)[0] for name in CLIENT_VALUE_COUNTS)
         stored = sum(client_value_counts(name)[1] for name in CLIENT_VALUE_COUNTS)
         assert (returned, stored) == (RETURNED_TOTAL, STORED_TOTAL)

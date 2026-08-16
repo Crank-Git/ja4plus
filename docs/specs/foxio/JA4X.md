@@ -101,7 +101,7 @@ each register entry.
 proxy writes its own handshake into the TCP payload, and the TLS record layer follows it in
 the same byte stream. `ja4plus/utils/tunnels.py` reads a different case: Geneve, VXLAN and
 ERSPAN each carry a second address layer that scapy dissects. `ja4x.py` reads no tunnel
-header of either kind, and `ja4x.py:180` to `ja4x.py:182` state the one behaviour the
+header of either kind, and `ja4x.py:180` to `ja4x.py:182` state the one behavior the
 register records:
 
 ```python

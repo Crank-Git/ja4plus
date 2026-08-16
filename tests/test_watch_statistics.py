@@ -12,7 +12,7 @@ one instant. The counts of one test hold four different values, so a field wired
 another counter fails the test that names it.
 
 No test here opens a capture interface. Every test drives the monitor from an injected
-packet source, so the measured behaviour is the loop and not the capture layer.
+packet source, so the measured behavior is the loop and not the capture layer.
 """
 
 import io
@@ -428,7 +428,7 @@ class ScriptedReport:
     wait. The count of periodic lines is therefore the count the test states, and not the
     count the host delivered.
 
-    The call replaces no other behaviour. `report_statistics` builds the statistics
+    The call replaces no other behavior. `report_statistics` builds the statistics
     thread, starts it and stops it, and `stop` joins that thread. Every line the test
     counts therefore reaches the stream before `main` returns.
 

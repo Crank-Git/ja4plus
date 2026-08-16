@@ -537,7 +537,7 @@ hold the text `0.6.0`.
 
 **Two files declared the version and five name it in prose.** #67 removed one
 declaration, so a count of the text `0.6.0` reads six files today. The prose records the
-released behaviour, and a reader of `docs/migration-0.6-to-1.0.md` needs it. #456 measured
+released behavior, and a reader of `docs/migration-0.6-to-1.0.md` needs it. #456 measured
 this and #67 took the ruling: the criterion counts the declaration, and the prose stays.
 
 **The criterion therefore names a command that matches a declaration line.** A read of

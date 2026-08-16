@@ -1,4 +1,4 @@
-"""Read every line citation of `docs/specs/foxio/` that names a file this repository owns.
+"""Read every line citation of the transcription pages that names a file this repository owns.
 
 **A `file:line` citation of a repository-owned file goes stale on every change above the
 cited line, and nothing reported it before this reader.** #668 measured 282 citations over
@@ -29,6 +29,20 @@ the nearer statement, so it wins. `docs/specs/foxio/JA4H.md` carries one such ce
 no table a person keeps, and #668 measured that it fails exactly the ten wrong citations
 and passes the 272 correct ones.
 
+**The cited lines hold a statement.** #668 read the line count alone, so a citation of a
+blank line passed. A blank line names nothing, and a line that holds a comment alone names
+nothing either. #690 measured five such citations on `docs/implementation_notes.md` and 27
+on the pages of `docs/specs/foxio/`.
+
+**Warning: a citation of a comment line is not always wrong**, because a page may cite the
+comment that states a reason. `tests/citation_line_allowlist.json` holds every citation of
+the second class that stood before this condition, and #709 reads each one.
+
+## The pages this reader holds
+
+**#668 globbed `docs/specs/foxio/` alone, and `docs/implementation_notes.md` drifted
+outside it.** `PAGES` names both, so a citation of either one reaches this reader.
+
 **Warning: this reader reads no FoxIO citation.** `tests/test_ja4t_citation_lines.py` reads
 those at the FoxIO pin, against a recorded source line. The two readers answer different
 questions, and a reader that merged them would be wrong in both directions.
@@ -36,6 +50,7 @@ questions, and a reader that merged them would be wrong in both directions.
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from dataclasses import dataclass
@@ -44,6 +59,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 PAGE_DIRECTORY = REPO_ROOT / "docs" / "specs" / "foxio"
+
+# The pages this reader holds outside `PAGE_DIRECTORY`. No reader read this page before
+# #690. A review lens of #600 found the one falsified citation that round produced.
+OUTSIDE_PAGES = (REPO_ROOT / "docs" / "implementation_notes.md",)
+
+# The record of every citation that names no statement and stood before this condition.
+# #709 reads each entry and removes this file.
+ALLOWLIST = REPO_ROOT / "tests" / "citation_line_allowlist.json"
 
 # A citation names a path and one line, or a path and a line range. A range citation states
 # its first line and its last line, and both must exist.
@@ -167,18 +190,38 @@ def _section_start(lines: list[str], index: int) -> int:
     return 0
 
 
+def pages() -> list[Path]:
+    """Return every page this reader holds, in one order."""
+    return sorted(PAGE_DIRECTORY.glob("*.md")) + [page for page in OUTSIDE_PAGES if page.is_file()]
+
+
+def allowlist() -> list[dict[str, object]]:
+    """Return every recorded citation that names no statement, or nothing where #709 lands."""
+    if not ALLOWLIST.is_file():
+        return []
+    entries: list[dict[str, object]] = json.loads(ALLOWLIST.read_text(encoding="utf-8"))
+    return entries
+
+
+def _allowed() -> set[tuple[str, str]]:
+    """Return the page and the written form of each recorded citation."""
+    return {(str(entry["page"]), str(entry["citation"])) for entry in allowlist()}
+
+
 def all_citations() -> list[Citation]:
     """Return every repository-owned citation of every page, in page order."""
     found: list[Citation] = []
-    for page in sorted(PAGE_DIRECTORY.glob("*.md")):
+    for page in pages():
         found.extend(read_text(page.name, page.read_text(encoding="utf-8")))
     return found
 
 
 def page_declarations(name: str) -> list[tuple[int, list[str], str | None]]:
     """Return each pin declaration of one page, as its line index, subjects and commit."""
-    page = PAGE_DIRECTORY / name
-    return _declaration_blocks(page.read_text(encoding="utf-8").splitlines())
+    for page in pages():
+        if page.name == name:
+            return _declaration_blocks(page.read_text(encoding="utf-8").splitlines())
+    raise AssertionError(f"this reader holds no page named {name}")
 
 
 def declared_pins() -> list[str]:
@@ -209,7 +252,6 @@ def read_text(name: str, text: str) -> list[Citation]:
         The citations, read by the same rule as a page on disk. A reversal case calls this.
     """
     tracked = tracked_python_files()
-    page = PAGE_DIRECTORY / name
     lines = text.splitlines()
     blocks = _declaration_blocks(lines)
     by_basename = _basename_index(tracked)
@@ -228,21 +270,41 @@ def read_text(name: str, text: str) -> list[Citation]:
                 for start, subjects, commit in blocks:
                     if section <= start <= index and path in subjects:
                         pin = commit
-            found.append(Citation(page.name, index + 1, match.group(0), path, first, last, pin))
+            found.append(Citation(name, index + 1, match.group(0), path, first, last, pin))
     return found
 
 
-def wrong_citations(citations: list[Citation] | None = None) -> list[tuple[Citation, str]]:
+def names_a_statement(lines: list[str]) -> bool:
+    """Return True where one line of the range holds something other than a comment.
+
+    Args:
+        lines: The cited lines, as the file holds them.
+
+    Returns:
+        False where every line is blank or holds a comment alone. A docstring line and a
+        closing bracket each belong to a statement, so both return True.
+    """
+    return any(
+        stripped and not stripped.startswith("#") for stripped in (line.strip() for line in lines)
+    )
+
+
+def wrong_citations(
+    citations: list[Citation] | None = None, allow: bool = True
+) -> list[tuple[Citation, str]]:
     """Return every citation the file does not hold at the read the citation declares.
 
     Args:
-        citations: The citations to read. The pages of `docs/specs/foxio/` by default.
+        citations: The citations to read. Every page this reader holds by default.
+        allow: True to pass a citation `tests/citation_line_allowlist.json` records. One
+            case reads the corpus with False, so a stale entry fails there.
 
     Returns:
         Each wrong citation, with one sentence that states what the read found.
     """
     wrong: list[tuple[Citation, str]] = []
     blobs: dict[tuple[str | None, str], list[str] | None] = {}
+    allowed = _allowed() if allow else set()
     for citation in all_citations() if citations is None else citations:
         key = (citation.pin, citation.path)
         if key not in blobs:
@@ -260,16 +322,27 @@ def wrong_citations(citations: list[Citation] | None = None) -> list[tuple[Citat
                     f"{citation.path} holds {len(source)} lines at {citation.read_against}",
                 )
             )
+            continue
+        if names_a_statement(source[citation.first - 1 : citation.last]):
+            continue
+        if (citation.page, citation.written) in allowed:
+            continue
+        wrong.append(
+            (
+                citation,
+                f"the lines hold no statement at {citation.read_against}, because each one "
+                "is blank or holds a comment alone",
+            )
+        )
     return wrong
 
 
 def census() -> str:
     """Return one table row for each page, with the count of each class it holds."""
-    pages = sorted(page.name for page in PAGE_DIRECTORY.glob("*.md"))
     citations = all_citations()
     wrong = {(bad.page, bad.page_line, bad.written) for bad, _ in wrong_citations()}
     rows = ["| Page | Pinned | Unpinned | Total | Wrong |", "|---|---|---|---|---|"]
-    for name in pages:
+    for name in [page.name for page in pages()]:
         held = [citation for citation in citations if citation.page == name]
         pinned = sum(1 for citation in held if citation.pin)
         bad = sum(

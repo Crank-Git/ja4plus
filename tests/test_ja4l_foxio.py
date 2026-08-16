@@ -19,9 +19,10 @@ The QUIC form reads the Initial packets and the Handshake packets instead.
 from pathlib import Path
 
 import pytest
-from scapy.all import rdpcap
+from scapy.all import IP, UDP, Raw, rdpcap
 
 from ja4plus.fingerprinters.ja4l import JA4LFingerprinter
+from tests.quic_builder import handshake_packet
 
 VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 
@@ -62,7 +63,10 @@ TLS3_QUIC = "udp_104.21.234.234:443_192.168.1.169:61884"
 SSH2_QUIC_SERVER_ONLY = "udp_142.251.32.74:443_172.16.225.48:51810"
 
 # Every connection of `ssh2.pcapng` that produces a JA4L value. The capture also holds
-# 11 connections that carry a SYN and no SYN-ACK, and this list names none of them.
+# 11 connections that carry a SYN and no SYN-ACK, and this list names none of them. It
+# also names no QUIC connection whose capture ends before a client Handshake packet
+# fills point `D`, because the reference publishes no server value without that packet.
+# `udp_142.251.32.74:443_172.16.225.48:51810` is such a connection.
 SSH2_CONNECTIONS = [
     "tcp_146.112.255.155:443_172.16.225.48:57368",
     "tcp_172.16.225.48:57371_34.248.242.11:443",
@@ -72,7 +76,6 @@ SSH2_CONNECTIONS = [
     "tcp_172.16.225.48:57377_54.160.114.75:22",
     "tcp_172.16.225.48:57380_184.150.157.177:80",
     "tcp_172.16.225.48:57396_184.150.157.177:80",
-    "udp_142.251.32.74:443_172.16.225.48:51810",
     "udp_142.251.41.46:443_172.16.225.48:61861",
 ]
 
@@ -141,8 +144,37 @@ class TestJA4LAgainstTheFoxIOVectors:
     def test_the_quic_server_point_reads_the_second_initial_packet_of_a_short_handshake(self):
         # tls3.pcapng stream 25, port 61884. The server sends an Initial packet at
         # +6102 us that holds an ACK frame, and a second one at +7166 us that holds
-        # the whole ServerHello.
-        assert "JA4L-S=3583_57_quic" in values_on("tls3.pcapng", TLS3_QUIC)
+        # the whole ServerHello. The capture ends before a Handshake packet moves, so
+        # the reference publishes no server value from the capture alone. Two packets
+        # built here, past the end of the capture, complete the handshake and prove
+        # the value the two Initial packets gave.
+        fingerprinter = JA4LFingerprinter()
+        last_moment = 0.0
+        for packet in rdpcap(str(VECTORS_DIR / "tls3.pcapng")):
+            fingerprinter.process_packet(packet)
+            if hasattr(packet, "time"):
+                last_moment = max(last_moment, float(packet.time))
+        assert [
+            entry for entry in fingerprinter.get_fingerprints() if entry["connection"] == TLS3_QUIC
+        ] == []
+
+        server_handshake = (
+            IP(src="104.21.234.234", dst="192.168.1.169")
+            / UDP(sport=443, dport=61884)
+            / Raw(load=handshake_packet())
+        )
+        server_handshake.time = last_moment + 0.001
+        fingerprinter.process_packet(server_handshake)
+
+        client_handshake = (
+            IP(src="192.168.1.169", dst="104.21.234.234")
+            / UDP(sport=61884, dport=443)
+            / Raw(load=handshake_packet())
+        )
+        client_handshake.time = last_moment + 0.002
+        result = fingerprinter.process_packet(client_handshake)
+
+        assert result == "JA4L-S=3583_57_quic"
 
     def test_a_cut_short_connection_of_ssh2_produces_no_value(self):
         # ssh2.pcapng holds 11 TCP connections that carry a SYN and no SYN-ACK, such as
@@ -152,11 +184,41 @@ class TestJA4LAgainstTheFoxIOVectors:
         # when the key format changes. Read #156 for the measurement.
         assert sorted(values_of("ssh2.pcapng")) == SSH2_CONNECTIONS
 
-    def test_a_quic_connection_with_no_client_point_reports_the_server_value_alone(self):
+    def test_a_quic_connection_that_completes_the_handshake_after_the_capture_ends(self):
         # ssh2.pcapng stream 33 carries a client Initial packet and a server Initial
-        # packet, and the server sends no Handshake packet the capture holds alone. The
-        # reference reports JA4L-S 16192_57 and no JA4L-C.
-        assert values_on("ssh2.pcapng", SSH2_QUIC_SERVER_ONLY) == ["JA4L-S=16192_57_quic"]
+        # packet, and it ends before a Handshake packet moves. The reference publishes
+        # the server value on the packet that fills point `D`, so the capture alone
+        # gives no value. Two packets built here, past the end of the capture, complete
+        # the handshake and prove the value the capture's two Initial packets gave.
+        fingerprinter = JA4LFingerprinter()
+        last_moment = 0.0
+        for packet in rdpcap(str(VECTORS_DIR / "ssh2.pcapng")):
+            fingerprinter.process_packet(packet)
+            if hasattr(packet, "time"):
+                last_moment = max(last_moment, float(packet.time))
+        assert [
+            entry
+            for entry in fingerprinter.get_fingerprints()
+            if entry["connection"] == SSH2_QUIC_SERVER_ONLY
+        ] == []
+
+        server_handshake = (
+            IP(src="142.251.32.74", dst="172.16.225.48")
+            / UDP(sport=443, dport=51810)
+            / Raw(load=handshake_packet())
+        )
+        server_handshake.time = last_moment + 0.001
+        fingerprinter.process_packet(server_handshake)
+
+        client_handshake = (
+            IP(src="172.16.225.48", dst="142.251.32.74")
+            / UDP(sport=51810, dport=443)
+            / Raw(load=handshake_packet())
+        )
+        client_handshake.time = last_moment + 0.002
+        result = fingerprinter.process_packet(client_handshake)
+
+        assert result == "JA4L-S=16192_57_quic"
 
     def test_the_fingerprinter_emits_one_client_value_for_one_connection(self):
         produced = values_on("badcurveball.pcap", BADCURVEBALL)

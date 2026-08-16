@@ -6,6 +6,739 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **Every live prose of the repository takes the US spelling** (#663).
+  Round
+  266. **The maintainer ruled on 2026-08-16, and rule 17 of `.claude/rules/ste.md` records
+  the ruling.** **The prose of this repository is largely agent-written**, so a worker that
+  matched the surrounding spelling strengthened a convention no person chose, and each
+  round made the next round more certain of it. **The sweep found 282 matches across 48
+  files and it moved 109 words across 55 files**: 59 of `docs/`, 38 of `tests/`, 8 of
+  `.claude/rules/`, 2 of `ja4plus/`, one of `CLAUDE.md` and one of `README.md`. **A record
+  moved nowhere.** `CHANGELOG.md` holds 33 matches and the change set holds no line of it.
+  The `## Changelog` table of `docs/specs/spec.md` opens at line 693 and holds 45 matching
+  lines, and every hunk of that file stands between line 96 and line 632. **A quotation
+  moved nowhere either**, and `.claude/rules/conformance.md:246` holds the one Markdown
+  quotation that carries a British spelling. **No identifier moved and no name a caller
+  reads moved.** `## Behaviour rules` stays, because `tests/test_documentation_behaviour_rule.py:118`
+  reads that heading by string, and every citation of it stays with it. The seven
+  `NEIGHBOUR` constants stay, `_unlabelled` stays, and `cancelled` stays where it names a
+  run conclusion of the provider. **26 occurrences of `acknowledgement` stay**, because
+  American English holds that form beside `acknowledgment`. **`tests/test_us_english_spelling.py`
+  reads every exemption from the rule file** rather than from a list it keeps itself, so a
+  new record needs no edit of the case. **The conformance suite reports 1684 passed, 142
+  skipped and 138 xfailed before this round and after it.**
+
+- **Four guards, and two of them guarded less than a reader believed** (#738).
+  Round
+  265. **Batch #738 holds #736, #720, #697 and #742, and no member of it moves a
+  fingerprint value.** A replay of all 38 committed captures writes 788 values before the
+  batch and 788 after it, and the two dumps are byte-identical. **#736 measured that the
+  conformance suite discriminates no emission frame move.** #606 restored the point `B`
+  emission under a mutation and the suite reported 1676 passed, 142 skipped and 138
+  xfailed, which is byte-identical to the unmutated reading. **Only one of the four FoxIO
+  reference sources states the frame that carries a value.** The FoxIO Wireshark dissector
+  states `frame.number` on all 724 values of 26 files. The FoxIO Python expected output
+  holds 1203 values under 32 distinct keys and no frame key, the FoxIO Rust snapshots hold
+  460 method-keyed values and no frame key, and no `#fields` line of the seven Zeek
+  baselines names a frame. **The suite therefore reads a source that frames nothing**, and
+  `.claude/rules/conformance.md` records what a green conformance run does not measure.
+  **#720 states that a report an agent did not return is reported as absent.** A census of
+  1842 records read 1101 issue comments, 741 bodies and 0 pull-request review comments, and
+  **one record of the 1842 carries the shape**. That record is the one #720 was filed for.
+  **No case of this repository refuses the shape**, because the record a case would need is
+  the session transcript and git tracks no copy of it, so `.claude/rules/agent-reports.md`
+  states that rather than ships a guard that guards nothing. **#697 gives `get_stream` the
+  byte-cap truncation the port already holds**, under parity rule 2. **The truncation
+  removes no byte today**, because `add_segment` refuses the segment that would cross the
+  cap. **#742 repairs a user-visible output the conformance suite cannot read.**
+  `Processor.close_open_windows` dropped the four endpoint fields of every value it
+  published, so the command printed `unknown` in place of the address pair. **28 values of
+  the corpus reach that path and 22 of them printed `unknown`.** The 22 are JA4L, which the
+  #606 row counts, and the 6 JA4SSH values already printed a pair because the key parse read
+  their form. **A reader who takes the 22 of that row as a total under-counts by 6.** **The
+  loss sat downstream of every guard**, because each one read a fingerprint entry and the
+  entry always carried the correct pair.
+
+- **Five rows of the divergence register record the last of the ruled questions** (#731).
+  Round
+  264. **Batch #731 holds #714, #622, #625, #621 and #593, and no member of it moves
+  a fingerprint value.** The conformance suite reports 1676 passed, 142 skipped and 138
+  xfailed before the batch and after it, against the 138 keys of
+  `tests/foxio_deviations.json`. **#714 cites the JA4 transcription in the empty-list
+  sentinel row**, and it repaired the two sentences that the change of #691 falsified.
+  **#622 records the JA4L timing fork as permanent.** FoxIO publishes four readings that
+  split two against two, so rule 1 names no value and the maintainer ruled. This project
+  matches the FoxIO Python reading and the FoxIO Zeek reading, and `ja4plus-go` matches
+  the Wireshark reading and the FoxIO Rust reading. **#625 records that point `B` stays
+  the Initial packet that completes the ServerHello**, and the ruling of 2026-08-16
+  supersedes the reason of the 2026-08-15 ruling and keeps the outcome. That earlier
+  ruling read the FoxIO Rust reference and the FoxIO Zeek reference as silent, and a read
+  at the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` measured that sentence
+  false. **The four references state four mechanisms, which is a plurality and no
+  majority, and no plurality carries a fingerprint move.** **#621 keeps the decryption
+  non-goal of #129 and it replaces the reversal condition.** The condition of 2026-08-15
+  fired on 2026-08-16 in form and not in substance: the port closes 72 keys of its own
+  register against a weighing of about 90, `Crank-Git/ja4plus-go#164` shipped no line of
+  code, and no release of the port carries the capability. **The new condition holds two
+  parts.** The port cuts a release that carries the capability, and this project
+  re-measures the yield against its own corpus of 138 keys and 38 captures. **#593
+  declines the eight key-material names of the port** under the same reversal condition,
+  because an interface that carries key material has no consumer while the capability
+  stays declined. **The `gopacket` premise of #593 was stale and the row records the
+  correction.** The port pins `github.com/gopacket/gopacket v1.7.1`, which reads block
+  type 10 at `pcapgo/pcapng.go:43`, and the `v1.1.19` reading covers
+  `github.com/google/gopacket` alone. **`scapy` reads a Decryption Secrets Block at
+  `scapy/utils.py:1645`, so this project carries no reader gap and the decline rests on
+  the capability alone.** **The sub-merge of `dev` into this batch repaired six
+  citations that #606 moved, across two rows.** `_quic_server_initial` no longer emits the
+  QUIC `JA4L-S` value. The #625 row moved to `ja4plus/fingerprinters/ja4l.py:580-623`,
+  `:614-615`, `:618` and `:620-622`, and it names the new emission site at
+  `ja4plus/fingerprinters/ja4l.py:689`. The #622 row moved to
+  `ja4plus/fingerprinters/ja4l.py:580-623` and `:621`. **The batch review of this pull
+  request measured that count**, because the record first stated three and read the three
+  citations of `tests/test_ja4l_quic_point_b_ruling.py` rather than the repair.
+  **This batch is the first that records one round for a whole batch**, under the model
+  #727 built, and no member of it wrote a `CHANGELOG.md` entry or a `## Changelog` row.
+
+- **The QUIC `JA4L-S` value emits from the packet that fills point `D`** (#606).
+  Round
+  263. **The FoxIO Wireshark dissector writes `ja4.ja4ls` and `ja4.ja4l` inside the one
+  branch that fills `timestamp_D`, and this project wrote the server value on the packet
+  that fills point `B`.** `wireshark/source/packet-ja4.c:1432-1451` holds that branch at
+  the pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, `packet-ja4.c:1443` writes
+  `hf_ja4ls`, and `packet-ja4.c:1449` writes `hf_ja4l` after it. **A reader who compares
+  one frame of `tshark` against one frame of `ja4plus` therefore read the same value on
+  two frames.** **The maintainer ruled #606 on 2026-08-16, and the ruling has two halves.**
+  **The frame moves**, because one reference names a frame at all and it names that one.
+  **The value still publishes where a connection never fills point `D`**, because the four
+  references split two against two on that question and no majority exists. **The round
+  therefore adopts the uncontested half and declines the contested half.**
+  **`_quic_server_initial` now records point `B` and holds the value under
+  `pending_server_value`**, and `_quic_ja4l` returns it beside the client value on the
+  packet that fills point `D`. The server value comes first, which is the order the
+  dissector writes. **`JA4LFingerprinter.close_open_windows` publishes every value point
+  `D` never released**, and the caller already runs that method when the packet source
+  ends. **`JA4LFingerprinter.process_packet` returns one value and it holds the second in
+  `last_extra_fingerprints`**, and `ja4plus/processor.py` reports one `FingerprintResult`
+  for each of them, so the command prints both values of that frame. **A replay of the 38
+  committed captures moved 29 values and it removed none.** Each of the 38 captures holds
+  the same value count before and after, and every value carries the same text. **7 values
+  moved to the frame the dissector names**: frame 49 to 52 on
+  `chrome-cloudflare-quic-with-secrets.pcapng`, 1140 to 1147 on `ssh2.pcapng`, and 144 to
+  147, 149 to 153, 155 to 162, 159 to 167 and 303 to 312 on `tls3.pcapng`. **22 values
+  moved to the end of the capture**, because their connections never fill point `D`. 20 of
+  them sit on `tls-handshake.pcapng`, and the other two sit on `ssh2.pcapng` stream 33 and
+  `tls3.pcapng` stream 25, where the server datagram coalesces an Initial packet and a
+  Handshake packet. **34 of the 38 captures replayed byte-identical, and no value of any
+  other method moved.** **The conformance suite reports 1676 passed, 142 skipped and 138
+  xfailed before the change and after it**, and `tests/foxio_deviations.json` holds 138
+  keys against 138 xfailed cases. **The divergence register gains one row.** It names all
+  four readings, it states that no majority exists, and it states that the decline is
+  permanent rather than provisional. `wireshark/source/packet-ja4.c:1432` and
+  `rust/ja4/src/time/udp.rs:185-241` each require point `D`, and `python/ja4.py:154-157`
+  and `zeek/ja4l/main.zeek:222-233` each publish the value on point `B`. **This project
+  follows the Python and Zeek reading on whether the value exists, and the Wireshark
+  reading on which frame carries it.** **`Crank-Git/ja4plus-go` adopted the reading that
+  requires point `D` under its issue #447, so the two libraries now disagree on this
+  question**, and this repository edits no file of that port. **The row states nothing
+  about which packet fills point `B`**, which is the open question of #625.
+  `tests/test_ja4l_quic_point_d_emission.py` holds both halves of the ruling, and a return
+  of the server value from `_quic_server_initial` fails a case there.
+
+- **The filing rule of the port lands here, and a round is a batch** (#727).
+  Round
+  262. **`Crank-Git/ja4plus-go/CLAUDE.md` has held the five-case filing rule since
+  2026-08-13, and this repository never adopted it.** Parity rule 2 governs, because FoxIO
+  specifies no filing policy, so this round copies the rule verbatim into `CLAUDE.md` under
+  the new section `## How to file an issue`. **The copied rule names #410, #419, #436,
+  #398, #355 and #70, and every one of them is an issue of the port.** A warning stands
+  above the copy and states that, so no reader of this repository takes those numbers for
+  its own. The round adds the valve the user set on 2026-08-15, which `.issue-flow.json`
+  records under `filingRule`: no issue is filed whose only symptom is a stale citation, or
+  a record that describes a past state. **#708, #709 and #719 are the three issues the user
+  declined under that valve.**
+  **A round is a batch, and it is no longer an issue.**
+  `tests/test_round_entry_existence.py` failed every change set that edited a tracked file
+  and recorded no round, so every member wrote `CHANGELOG.md` and `docs/specs/spec.md`. A
+  read of 2026-08-15 covered the last 300 commits of `master`: 192 touch
+  `docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against 56 that touch a file under
+  `ja4plus/`. **The mandate now reads the branch the change set belongs to.**
+  `records_a_round` passes a branch whose name opens with `batch/` or `epic/`, and it
+  refuses no round it finds on any other branch. The two prefixes match the two patterns of
+  the base-branch filter of `.github/workflows/test.yml`, so one model names an integration
+  branch in both places.
+  **A run of a pull request checks out a detached merge commit**, so
+  `git rev-parse --abbrev-ref HEAD` answers the literal `HEAD` and names no branch. The new
+  step `Name the branch the change set belongs to` writes `ROUND_ENTRY_BRANCH` from
+  `github.head_ref` and `github.ref_name`, which names the head branch on every event the
+  workflow accepts. Verified against
+  https://docs.github.com/en/actions/reference/workflows-and-actions/contexts (retrieved
+  2026-08-15). **That step runs no `git fetch`**, so the one-command rule #586 measured
+  stands untouched and
+  `test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command` reads the same four steps.
+  **The 261 rounds already recorded stay byte for byte**, and the new model begins at round
+  262, which is this entry. **The dense sequence stays**, because
+  `test_the_changelog_assigns_every_round_from_one_to_the_row_count` caught the duplicate
+  rounds of #482 and it is cheap under the new model. **The two recorded commits stay and
+  the workflow keeps fetching both.** `test_the_reading_fails_the_change_set_of_the_defect`
+  and `test_the_reading_passes_the_change_set_that_records_a_round` now read each commit
+  under a batch branch, and a new case reads the defect commit under a member branch and
+  passes it. **The reading changed and the evidence did not.**
+  **The routine `TBD` sweep goes out and one guard keeps the form.**
+  `tests/test_breaking_change_record.py` requires that both records name the Python floor
+  the package states, and #575 met that reader on the branch that moved the floor. A member
+  that trips that guard still writes an unassigned round entry and the matching row, so
+  this round deleted no case of that module and changed no pattern of it.
+  `.claude/rules/batch-gate.md` records the reading under
+  `### One guard still takes a record from a member`.
+  **Three prose records stated the older model and this round repairs each one**, under the
+  valve above. The paragraph of `.claude/rules/batch-gate.md` that named the member pull
+  request as the change set the check exists to refuse now quotes that wording and states
+  that #727 superseded the example. The module docstring of
+  `tests/test_changelog_round_agreement.py` and the module docstring of
+  `tests/test_breaking_change_record.py` each carried the sentence that every member writes
+  `TBD`, and each one now states the new model and quotes the older wording. **This round
+  changes no file under `ja4plus/` and it moves no fingerprint.** The conformance suite
+  reports 1676 passed, 142 skipped and 138 xfailed on the base commit and the same three
+  counts after the change, and `tests/foxio_deviations.json` holds 138 keys against those
+  138 xfailed cases. **Eighteen cases of `tests/test_round_entry_existence.py` failed
+  before the reading changed**, and
+  `test_a_member_change_set_that_records_no_round_passes` was one of them.
+  **The self-review found sixteen defects and this round repairs every one.** The writing
+  lens read thirteen sentences past the limit of rule 1 of `.claude/rules/ste.md`, two
+  passive sentences that rule 11 bars, and the verb `parts` where `separates` reads
+  plainly. **The correctness lens walked the six events the workflow accepts and it found
+  no state where the reading passes a batch change set that records no round.**
+  **The `## Terms` table barred the word this round writes twenty times.** The
+  `delegation` row names `mandate` under `Do not use`, so `mandate` had one barred meaning
+  and no meaning of its own. `.claude/rules/ste.md` states that a writer who needs a word
+  the table does not hold adds it, so this round adds a `mandate` row. That row states the
+  one meaning the word carries, and it names the `delegation` row that bars the other. The
+  unit suite caught one more defect, in
+  `tests/test_documentation_version_claims.py::test_the_reader_cuts_every_changelog_entry`.
+  **That case cuts every entry below the first third-level heading, and it then bars the
+  opener of a round sentence**, and the entries of `## [Unreleased]` stand above that
+  heading. Each one therefore wraps that sentence, so the opener ends one line and the
+  number opens the next. This entry named an unassigned round inside its prose, which wrote
+  the barred opener on one line, and the repair names that round in words instead. The unit suite
+  reports 5856 passed, 8 skipped and 8 xfailed, and coverage holds at 94% with 4489
+  statements and 271 misses. `ruff check`, `ruff format --check` and
+  `mypy --strict ja4plus/` each report no issue.
+
+- **The divergence register states the JA4 ALPN condition as the printable ASCII range**
+  (#601).
+  Round
+  261. **Two rows of the divergence register stated the condition as `not alphanumeric`,
+  and `ja4plus/fingerprinters/ja4.py:99` tests the printable ASCII range `0x20-0x7E`.** A
+  reader who implemented a row implemented the wrong condition. **The Go port read these
+  rows**, and it carried the wording into the requirements FR-parity-8 and FR-parity-9 of
+  `Crank-Git/ja4plus-go`. The record of round 33 states the correction, dated 2026-08-07,
+  and that round corrected the code and `docs/implementation_notes.md` alone. **The row that #127 wrote now names a
+  byte outside `0x20-0x7E`**, and it keeps the value `99` and every ruling it carried.
+  **The ruling row of #522 now states the condition on the first byte and on the last
+  byte**, and it keeps the value `hh`, the ruling of 2026-08-10 and the citation of #522.
+  **A one-byte value reads the alphanumeric test and not the printable range**, and
+  `ja4plus/fingerprinters/ja4.py:85-89` holds that branch. It writes `hh` for a one-byte
+  value that is alphanumeric, and `99` for every other one-byte value. **The self-review
+  found that a restatement of the printable range alone loses that input class.** A first
+  ALPN value of one space falls inside `0x20-0x7E` and it is not alphanumeric, so a row
+  that states the range alone describes no output for it while the code writes `99`. The
+  ruling row therefore states three sentences: `hh` for one alphanumeric byte, `99` for
+  every other one-byte value, and `99` for a longer value whose first byte or last byte
+  falls outside the range. **A third row states the same one-byte rule, and this round
+  repairs it too.** `JA4 ALPN value for a first ALPN value of one byte` read
+  ``Repeats the byte and writes `hh`.``, which the repaired ruling row then contradicted.
+  **The change falsified it, so the same pull request repairs it**, under the filing rule
+  the user set on 2026-08-15. **This round changes no file under `ja4plus/` and it moves no
+  fingerprint.**
+  The conformance suite reports 1676 passed, 142 skipped and 138 xfailed on the base commit
+  `9e8aed4`, and it reports the same three counts after the change.
+  `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases. **Three new
+  cases of `tests/test_alpn_ruling_register.py` failed before the rows changed**, and the
+  first one reported ``AssertionError: the divergence register holds no row named 'JA4 ALPN
+  value for a byte outside `0x20-0x7E`'``. **Two cases read the three rows that state the
+  condition of a value of two bytes or more**, and the position rule that #162 wrote
+  already stated the range, so that row needed no change. **The third case reads the two
+  rows that state the one-byte rule.** **The module docstring of that file restated the
+  loose condition**, and this round repairs it, because the change falsifies it. The unit
+  suite
+  reports 5839 passed, 8 skipped and 8 xfailed, and coverage holds at 94% with 4489
+  statements and 271 misses. `ruff check`, `ruff format --check` and `mypy --strict
+  ja4plus/` each report no issue.
+
+- **The project manager files no issue for a stale citation or a spent record** (#704).
+  Round
+  258. **A read of 2026-08-15 measured the last 300 commits of `master`: 56 touch a file
+  under `ja4plus/`, 192 touch `docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against
+  333 closed issues.** The bookkeeping had become the deliverable, and a guard that
+  tightens finds more of what it now refuses, so the backlog regenerated itself. #708 and
+  #714 exist because a batch-ownership rule forbade a worker from repairing a file it had
+  just falsified. **The user set the rule on 2026-08-15 and `.issue-flow.json` records
+  it**: a worker repairs what its own change falsifies in the same pull request, a finding
+  that does not fit becomes a comment on an issue that exists, and a defect of the library
+  is still filed. #709, #708 and #719 are declined under it.
+
+- **The conformance rules now state what a delegated session may rule** (#597).
+  Round
+  260. **`.claude/rules/conformance.md` reserved every ruling to the user, and the
+  `## Terms` table of `docs/specs/spec.md` stated the same.** A delegated session met that
+  question with no guidance, so it had to stop or improvise. The new section
+  `## What a delegated session may rule` holds both delegations the user made. **The narrow
+  delegation of 2026-08-12 permits a ruling on a schema violation alone**, under the five
+  conditions of `Crank-Git/ja4plus-go#246`, and condition 2 bars a reference split.
+  **The recording delegation of 2026-08-15 permits a ruling that keeps the present
+  behaviour and writes one row of the divergence register.** Four ruling comments state
+  that second delegation in the same words, on #595, #607, #608 and #613, and the section
+  quotes them rather than rewrites them. **The two delegations reach different questions and
+  the section states how they relate.** #595 and #613 each rule a question the FoxIO
+  implementations split on, and each ruling of 2026-08-15 left every line of the
+  fingerprinter as it stood, so a section that stated the narrow delegation alone would
+  have contradicted four merged rulings. **A reference split is never delegable as a
+  schema violation**, and that sentence carries a case. The `## Terms` table gains the
+  four rows `delegation`, `delegated ruling`, `schema violation` and `reference split`,
+  and the `ruling` row now names the delegated case. New file
+  `tests/test_delegated_ruling_rule.py` holds 18 cases, and 15 of them failed before the
+  section existed. **The other three drive the three readers of the file in both
+  directions**, so a reader that reports nothing fails a case rather than passing every
+  other one. **The section reader of `tests/test_ported_pattern_cost.py` reads a line that
+  opens with an issue number as a heading**, and it then stops at that line; one paragraph
+  of the first draft reached no case for that reason, and the section states the warning.
+  **The self-review found two defects and this round repairs both.** The correctness lens
+  read one case whose name claimed the narrow subsection and whose body read the whole
+  section, and the case now names that scope. The writing lens read the noun `grant`
+  rotating against `delegation` across all four files, which rule 7 of
+  `.claude/rules/ste.md` bars, and every live sentence now writes `delegation`. **The
+  `delegation` row of the `## Terms` table rejects `grant`**, so no later writer
+  reintroduces the rotation. One comment of the test module stated that the quotation
+  names the user, and the quotation names the maintainer.
+  **This round changes no file under `ja4plus/` and it moves no fingerprint.** The
+  conformance suite reports 1676 passed, 142 skipped and 138 xfailed, and
+  `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases.
+
+- **The vector download filter now names the JA4H block, the JA4SSH block and the JA4X
+  list item** (#684).
+  Round
+  259. **`tests/download_test_vectors.py:141` held `RUST_COMPARED_FIELDS` with four
+  entries, and `tests/test_foxio_rust_parity.py` compares six methods.** #670 added the
+  JA4H comparison and #671 added the JA4SSH comparison, and neither round moved the field
+  list. **The issue body and the plan comment stated different forms, and a measurement
+  decided between them.** A read of 2026-08-15 applied each candidate form to the eleven
+  committed snapshots under `tests/foxio_vectors/rust_expected/`: `b"ja4h: "` matches 0
+  snapshots and `b"- ja4h: "` matches 5, and `b"ja4ssh: "` matches 0 and `b"ja4ssh:"`
+  matches 1. **The `http` block writes the value as a list item and the `ja4ssh` block
+  names no field at all**, so the list now holds `b"- ja4h: "` and the block opener
+  `b"ja4ssh:"`. **The same measurement falsified an entry the issue did not name, and this
+  round repairs it.** `b"ja4x: "` matches 0 of the 11 snapshots and `b"- ja4x: "` matches
+  5, because the snapshot writes `    - ja4x: <value>` inside the `tls_certs` block. That
+  is the defect the JA4H entry carried, on the entry that stood in the list already, so
+  the list now holds `b"- ja4x: "`. **The kept-snapshot count stands at 11 before this
+  round and 11 after it**, and a read after the JA4X repair alone reports 11 as well.
+  Every committed snapshot that holds a JA4H block, a JA4SSH block or a JA4X value holds a
+  JA4T value or a JA4 value as well. **The filter therefore refuses no snapshot it kept
+  before.** **New file `tests/test_download_filter_fields.py` holds the field list against
+  the parity module**, and no case held the two files together before it. Three of its ten
+  cases failed on the base commit `4d00e09`, one for each repaired form, and all ten pass
+  now. **`keeps_rust_snapshot` now holds the
+  condition that stood inside `download`**, so a case reads the condition the refresh runs
+  rather than a copy of it. **This round changes no file under `ja4plus/` and it moves no
+  fingerprint.** The conformance suite reports 1676 passed, 142 skipped and 138 xfailed on
+  the base and the same three counts after the change, and `tests/foxio_deviations.json`
+  holds 138 keys against those 138 xfailed cases. The unit suite reports 5745 passed, 8
+  skipped and 8 xfailed beside 114 subtests, and two of those cases parametrize over the
+  tracked file list and read the new module. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` each report no issue.
+- **`docs/specs/foxio/JA4SSH.md` now states what the parity harness compares** (#683).
+  Round
+  253. **The page carried a section named `Why the parity harness never compared this
+  value`, and #671 built that comparison in round 242.**
+  `tests/test_foxio_rust_parity.py:1717` opens `TestTheJa4sshValuesTheRustSnapshotHolds`,
+  which reads the `ja4ssh` block of
+  `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` and measures
+  `ja4plus` against both values. The heading therefore claimed an absence the suite fills.
+  **The section also carried a stale citation.** It named line 72 of
+  `tests/test_foxio_rust_parity.py` for the `SNAPSHOT_METHODS` declaration. #216 added
+  `JA4T` to that tuple and the declaration moved. Line 72 holds a comment about a capture
+  today. The declaration stands at `tests/test_foxio_rust_parity.py:148`, and it names the
+  five methods JA4, JA4S, JA4T, JA4L-C and JA4L-S. **The new
+  section cites that line and the class line, and it repeats the stale citation nowhere.**
+  **`SNAPSHOT_METHODS` names no JA4SSH field at all**, because the `ja4ssh` block writes
+  each value as a bare list item, so the class reads that block with its own reader.
+  `tests/citation_line_allowlist.json` recorded the stale citation under #709, and this
+  round removes that entry, so the file keeps 24 of the 25 entries. **The measurement table
+  of the page stays as it stands**, because a record of a past measurement records a past
+  state, and the page now states the date of 2026-08-08 beside it and names the value
+  `ja4plus` produces today. **`tests/test_ja4ssh_parity_record.py` asks a question
+  `tests/foxio_citation_lines.py` does not.** That reader asks whether the cited lines hold
+  a statement, and this one asks whether the page cites the line that holds the named
+  statement, so a third move of either declaration fails a case here. **No file under
+  `ja4plus/` changed, so no fingerprint moved and no output field moved.** The conformance
+  suite reports 1676 passed, 142 skipped and 138 xfailed before and after, against the 138
+  keys of `tests/foxio_deviations.json`. **The red-to-green is the five new cases**, and
+  all five fail on the page as it stood.
+- **`docs/specs/foxio/JA4.md` now transcribes the JA4 image and the JA4 text
+  specification** (#691). Round
+  252. **JA4 is the one method of the twelve that carries a
+  complete text specification beside its image**, and the transcription directory held a
+  page for every other method. A reader who searched it for a JA4 rule found silence.
+  **The page reads two files**, `technical_details/JA4.png` and
+  `technical_details/JA4.md`, and it states which one carries each rule. Both hashes
+  reproduce the inventory of `docs/specs/foxio/README.md` exactly: the text file reads
+  9153 bytes and `14a9623ad05d6f8b5ccbff2023dc6fce10ff012dc2d202b497e3bc029aa75c94`, and
+  the image reads 61637 bytes and
+  `1bd63c14b3b96c2b70bfa8e85632450c9396af9a13e274489c0cb02f2a7e9615`. **A read of the
+  provider on 2026-08-15 answers the second question of #691**, and it lists
+  `technical_details/` at the pinned commit: twelve files, nine images and three text
+  files. `JA4H.md` is 278 bytes and it builds no fingerprint, so **no method beside JA4
+  holds a live text specification and this round files no further issue.** **The image
+  draws a value that its own caption does not describe.** It captions `JA4_b` as the
+  sorted cipher hash and it draws `acb858a92679`, which is the hash of the unsorted list,
+  and `technical_details/JA4.md:219` names that same value as the part b of the
+  original-order form. The sorted list hashes to `8daaf6152771`. **No tool writes the
+  string the image draws**, and `t13d1516h2_acb858a92679_e5627efa2ab1` appears in no file
+  of `tests/` and in no file of `docs/`. **The text file states two example values and
+  they disagree**: `technical_details/JA4.md:36` reads `b186095e22b6` for part c and
+  `technical_details/JA4.md:194` reads `e5627efa2ab1`. The second is the value the stated
+  rule produces, and this round reproduced it from the input the file prints at
+  `technical_details/JA4.md:154`. `b186095e22b6` appears in no file of this repository.
+  **The Wireshark dissector writes no JA4 value at all.**
+  `wireshark/source/packet-ja4.c:1723-1741` registers fifteen header fields, none reads
+  `ja4.ja4`, and the dissector builds a client string nowhere. **Three references
+  therefore corroborate each rule**, and the page names the Python implementation, the
+  Rust implementation and the Zeek package. **The worked example reproduces in this
+  project byte for byte.** `tests/foxio_vectors/tls-sni.pcapng` holds the one stream whose
+  wire order matches, and `ja4plus` writes the `JA4`, `JA4_o`, `JA4_r` and `JA4_ro` values
+  that `technical_details/JA4.md:194`, `:219`, `:205` and `:213` state. **A client that
+  randomizes its extension order writes one `JA4` value and many `JA4_o` values**, which
+  is the reason JA4 sorts. **The page holds 16 rules and 3 disagreements**, and it changes
+  no fingerprinter. Two rules stay uncertain and keep the vector fallback: the `d`
+  protocol character, which the text states and no implementation writes, and the hex form
+  of an ALPN byte that is not ASCII alphanumeric, which
+  `technical_details/JA4.md:95-104` states and no implementation writes either. **167 JA4
+  values of the FoxIO Python expected-output files all open with `t`**, and the 191 values
+  of `tests/foxio_vectors/rust_expected/` open with `t` 140 times and with `q` 51 times,
+  so no vector measures the `d` character. **39 register entries name the JA4 family**,
+  23 under #138 and 16 under #162, and this round changes none of them. **The page
+  falsifies one live sentence of the divergence register**, which reads that
+  `docs/specs/foxio/` holds no `JA4.md` transcription. Batch #704 owns that table, so this
+  round edits no row of it and #691 records the constraint on that batch. **The Changelog
+  row of round 248 states the same sentence and it stays as written**, because a Changelog
+  row records a past measurement. New file `tests/test_foxio_ja4_transcription.py` holds
+  the page against the inventory, the register and the vector set, and nine of its twelve
+  cases failed before the page existed. **This round changes no file under `ja4plus/` and
+  it moves no fingerprint.** The conformance suite reports 1676 passed, 142 skipped and
+  138 xfailed on the base and the same three counts after the change, and
+  `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases.
+- **The citation guard now reads `docs/implementation_notes.md`, and it refuses a citation
+  whose lines hold no statement** (#690). Round
+  251. **A read of 2026-08-15 measures 19 repository-owned citations of that page, 0 past
+  the end of their file and 5 that name a blank line or a comment line.** That measurement
+  reproduces the one #690 records, at the tip of `batch/705-citation-records-a` rather than
+  at `dda5ae7`. **#668 globbed `docs/specs/foxio/` alone, so this page drifted while the
+  ten transcription pages stayed clean.** `tests/foxio_citation_lines.py` holds the new
+  name `OUTSIDE_PAGES`, and `pages()` returns the ten pages and this one. **The condition
+  of #668 read the line count alone, so a citation of a blank line passed it.** A blank
+  line names nothing, and a line that holds a comment alone names nothing either. The new
+  function `names_a_statement` reads the cited lines and it returns False where every one
+  of them is blank or opens with `#`. **A docstring line and a closing bracket each belong
+  to a statement, so both pass.** **Six citations of `docs/implementation_notes.md` moved.**
+  `ja4.py:193` named `# Form part_a of the fingerprint` and it now names `ja4.py:226`, which
+  holds `if sorted_ext_str:`, the guard the prose describes. `ja4ts.py:68` named a blank
+  line and it now names `ja4ts.py:332`, which states that the option list keeps the
+  original order.
+  `ja4d.py:212` named `# Get raw UDP payload` and it now names `ja4d.py:214`, which calls
+  `_parse_dhcp_options`. `ja4d6.py:277` named a blank line and it now names `ja4d6.py:287`,
+  which calls `_parse_dhcpv6_payload`. `ja4ssh.py:221-222` named a comment about the
+  message tracker where the prose states that `ja4plus` closes the last window on a FIN+ACK
+  packet, and it now names `ja4ssh.py:268`, which holds that test. **The sixth citation
+  stands outside the class this guard refuses, and the page named no statement it
+  describes.** `ja4t.py:67` closed the docstring of `process_packet`, which states what a
+  repeated SYN produces, and the prose states that the option list keeps the wire order;
+  the citation now names `ja4t.py:192`, which states that rule. **The widened condition
+  fails 27 citations of `docs/specs/foxio/` that #668 measured and passed.** 12 name a
+  blank line and 15 name a comment alone, and 8 of the 12 stand under a pin. New file
+  `tests/citation_line_allowlist.json` records all 27, as 25 entries keyed on the page and
+  the written citation, and every entry names #709. **A citation of a comment line is not
+  always wrong**, because a page may cite the comment that states a reason;
+  `tests/test_foxio_rust_parity.py:72` is such a line and six pages cite it. **#709 reads
+  each of the 25 and it removes that file.** **This round repairs no page a sibling of
+  batch #705 holds.** `docs/specs/foxio/JA4SSH.md:405` carries the same wrong
+  `ja4ssh.py:221-222` citation, #683 held that page in this batch, and the allowlist
+  records it instead. **The reversals prove the third class in both directions.** Two cases
+  read the first blank line and the first comment line of `ja4plus/fingerprinters/ja4h.py`
+  at run time, because a case that writes a fixed line number goes stale on the next edit
+  of that file, which is the defect class this guard reports. Seven cases failed before the
+  change. **One case reads the corpus with the allowlist off**, so an entry the repair
+  removes fails there rather than hiding the next defect of the same citation. **This round
+  changes no file under `ja4plus/` and it moves no fingerprint.** The conformance suite
+  reports 1676 passed, 142 skipped and 138 xfailed on the base and the same three counts
+  after the change, and `tests/foxio_deviations.json` holds 138 keys against those 138
+  xfailed cases.
+- **The parity rules now state that a pattern this project takes from the port carries no
+  statement of its cost** (#650). Round
+  250. **Parity rule 2 of `CLAUDE.md` adopts the interface the port ships, and it adopts
+  no statement of cost.** Go runs a finite automaton and it backtracks nowhere, Python
+  `re` backtracks, and one pattern therefore costs two amounts. **#612 followed parity rule 2 literally and it shipped a
+  backtracking defect to a branch.** Its own self-review measured `GET a` plus 32000
+  spaces plus `HTTPX` at **3017.9 milliseconds** under the ported form and at **0.630
+  milliseconds** under the repaired one. `is_http_request` reads 8192 bytes of every TCP
+  payload, so one crafted packet bought about 200 milliseconds of processor time.
+  **`.claude/rules/conformance.md` holds the new subsection `### A pattern the port ships
+  carries no statement of its cost`**, under the `## Parity` heading where parity rule 2
+  already stood. It requires a measurement against hostile input before a regular
+  expression from the port lands, and it quotes the two readings of #612. **The `## Parity
+  with ja4plus-go` section of `CLAUDE.md` names the rule file in one sentence**, so a
+  reader of the parity rules reaches the rule and its cause without opening #612. **The
+  subsection also records the repair this project cannot write.** Python accepts the
+  atomic group `(?>...)` from release 3.11, `pyproject.toml:24` reads
+  `requires-python = ">=3.10"`, and a repair that raises that floor is a ruling for the
+  user. **This round changes no file under `ja4plus/` and it moves no fingerprint.** The
+  conformance suite reports 1676 passed, 142 skipped and 138 xfailed on the base commit
+  `dda5ae7` and the same three counts after the change, and
+  `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases. **New file
+  `tests/test_ported_pattern_cost.py` holds ten cases, and five of them failed on that
+  base commit.** The other five drive the two readers of the file in both directions, so
+  a reader that reports nothing fails a case rather than passing every other one. **This
+  round sweeps no regular expression the tree already holds**, and #650 records that
+  boundary.
+- **The divergence register records the QUIC packets of one datagram that JA4L reads**
+  (#613). Round
+  257. **This project reads the first packet of a UDP datagram and no other packet of
+  it.** `long_header_packet_type` reads `first_byte = udp_payload[0]` at
+  `ja4plus/utils/quic_utils.py:65`, and `ja4plus/fingerprinters/ja4l.py:563` calls that
+  function once for each datagram. RFC 9000 Section 12.2 permits a datagram that carries
+  more than one QUIC packet. **A server datagram that coalesces an Initial packet and a
+  Handshake packet therefore returns at `ja4plus/fingerprinters/ja4l.py:582`, which fills
+  point `B`.** It reaches `ja4plus/fingerprinters/ja4l.py:599` nowhere, which is the line
+  that fills point `C`, so the client Handshake packet that follows gives no `JA4L-C`
+  value. **Three FoxIO references answer this question, and they split two against one.**
+  `python/ja4.py:403-404` holds `if isinstance(quic, list):` and `quic = quic[0]`.
+  `rust/ja4/src/time/udp.rs:278` calls `quic.first("quic.long.packet_type")`, and
+  `rust/ja4/src/pcap.rs:123` states that `first` returns the value of the first field.
+  `wireshark/source/packet-ja4.c:969` walks every field of the dissection tree, and
+  `wireshark/source/packet-ja4.c:1408` matches each `quic.long.packet_type` field of that
+  walk. **The Zeek reading is incomplete**, because `zeek/ja4l/main.zeek:237` hooks one
+  event for each QUIC Handshake packet and the QUIC analyzer of Zeek is not in the FoxIO
+  corpus. **The majority reading is the one this project already holds.** **This round
+  read all six FoxIO citations at the pinned commit
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved none of them.** **It did move
+  both citations of this repository.** The body of #613 names
+  `ja4plus/utils/quic_utils.py:64` for the read of the first byte and the tip holds it at
+  `:65`, and it names `ja4plus/fingerprinters/ja4l.py:558` for the read of the packet type
+  and the tip holds it at `:563`. **The corpus separates the two readings on two
+  captures.** `tests/foxio_vectors/wireshark_expected/ssh2.pcapng.json` holds no JA4L
+  value on frame 1042 and `279_128_quic` on frame 1046, and
+  `tests/foxio_vectors/wireshark_expected/tls3.pcapng.json` holds none on frame 295 and
+  `271_128_quic` on frame 297. **The FoxIO Python file agrees with this project on the two
+  connections those frames carry.** `tests/foxio_vectors/ssh2.pcapng.json` stream 33 holds
+  `16192_57` under `JA4L-S` and no `JA4L-C` key, and `tests/foxio_vectors/tls3.pcapng.json`
+  stream 25 holds `3583_57` under `JA4L-S` and no `JA4L-C` key. **The conformance suite of
+  this project compares one stream and never one frame**, so the four per-packet
+  comparisons the port declines reach no key here. `tests/foxio_deviations.json` already
+  declines `ssh2.pcapng/33:51810/JA4L-S.1` and `tls3.pcapng/25:61884/JA4L-S.1` under #225,
+  on the `quic` marker and never on this reading. **The port applied its half of the ruling
+  with five register entries and no code change.** `testdata/deviations.json` of the port
+  holds `ssh2.pcapng/1046/JA4L.1`, `ssh2.pcapng/1046/JA4LS.1`, `tls3.pcapng/297/JA4L.1`,
+  `tls3.pcapng/297/JA4LS.1` and `tls3.pcapng/153/JA4L.1` under the ruling `#449`, and batch
+  pull request #680 of the port merged them into `dev` at `56b9a52` on 2026-08-15. **The
+  row therefore records a reference split against FoxIO and no divergence from the port.**
+  **The two records name two dates for one ruling, and this round measured both.** A
+  comment of `Crank-Git/ja4plus-go#449` of 2026-08-14 states
+  `ruling: the maintainer ruled answer 2 on 2026-08-14`, and a second comment of
+  2026-08-15 states `The maintainer ruled this on 2026-08-15 UTC`. Each of the five
+  register entries of the port names 2026-08-15. New file
+  `tests/test_quic_coalesced_datagram_ruling.py` holds 16 cases. Eight read the row, two
+  read the two cited lines, three drive one synthetic QUIC connection, and three read the
+  two vector sets. The unit suite rises from 5749 collected to 5768, which is 16 cases of
+  the new file and 3 cases that parametrize over the tracked Python files. It reports 5752
+  passed, 8 skipped, 8 xfailed and 114 subtests passed, against a base of 5733 passed with
+  the same other counts. **Two of those three cases read `git ls-files`, so a read taken
+  before the new file was staged counted 5766 and not 5768.**
+  `tests/test_documented_method_count.py` counted the file at once, and
+  `tests/test_ruling_vocabulary.py` and `tests/test_statistics_thread_term.py` counted it
+  after the stage. **Warning: end a line of an entry with the round word, and put `TBD.` at
+  the head of the next line.**
+  `tests/test_documentation_version_claims.py::test_the_reader_cuts_every_changelog_entry`
+  cuts this file at its first `### ` heading, so the `## [Unreleased]` section stands above
+  the cut and that case reads it as prose. That case refuses the round word where a space
+  follows it. **The one-line form failed the case twice in this round**, once in the entry
+  itself and once in a sentence that quoted the refused text. Every other entry of this
+  section already carries the wrap. The conformance suite
+  reports 1676 passed, 142 skipped and 138 xfailed before this row and after it, against
+  the 138 keys of `tests/foxio_deviations.json`. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
+  **The cases came first, and each one can fail**: against the register with no row they
+  failed 8 of 16, and each failure read
+  `the divergence register holds no row named 'The QUIC packets of one datagram that JA4L reads'`.
+  **One control case separates the two readings on behaviour.** A connection whose server
+  Handshake packet reaches its own datagram gives `JA4L-C=5000_64_quic`, and the same four
+  QUIC packets under one coalesced server datagram give no client value at all. **This
+  round built no reversal of the reading, because a reversal is the code change the ruling
+  declines.** `Crank-Git/ja4plus-go#449` records that a reading of every packet closes 4
+  per-packet comparisons of the port and opens 2 per-stream comparisons there, and this
+  round re-measured no figure of that measurement. **The self-review made four repairs.**
+  `test_the_register_names_the_two_frames_that_carry_a_coalesced_datagram` read the two
+  JA4L values alone, so it passed where the row named the wrong frame. It now reads each
+  frame number as well, and a row that states `frame 9999` in place of `frame 1042` fails
+  it. One sentence of the divergence register row ran 29 words, over the 25 that rule 1 of
+  `.claude/rules/ste.md` allows, and it is now two sentences. **The exemption of that
+  standard covers the `## Changelog` table and the entries of this file, and it reaches no
+  row of the divergence register.** The docstring of `_server_initial` held the four-word
+  noun cluster `QUIC server Initial packet`, which rule 8 refuses. `CLIENT_DCID` carried no
+  reason comment, and the sibling file gives every constant one. No file under `ja4plus/`
+  changed, so no fingerprint moved and no register entry moved.
+- **The divergence register records the packets a JA4SSH window counts** (#608). Round
+  256. **This project counts the segment that completes an SSH message, and the
+  `ssh.direction` label of the `tshark` SSH dissector counts fewer frames on two
+  captures.** `ja4plus/fingerprinters/ja4ssh.py:247` holds the test, and `is_ssh_packet`
+  at `ja4plus/utils/ssh_utils.py:504` holds the banner read. `sshv1.pcap` and `v6.pcap`
+  each count 43 frames here and 39 there, and the extra frames are 63, 65, 68 and 70.
+  `ssh2-malformed.pcap` and `ssh2-moloch-crash.pcap` each count 13 frames here and 10
+  there, and the extra frames are 14, 19 and 21. **The dissector labels no frame that
+  this project leaves uncounted**, on all nine SSH captures of `tests/foxio_vectors/`.
+  **The server count of 21 describes the reassembly state of the dissector, and it
+  describes no property of the connection**, so `.claude/rules/conformance.md` declines
+  it. The dissector reassembles 480 bytes across frame 63 and frame 65 of `sshv1.pcap`,
+  and it reports `[2 Reassembled TCP Segments (480 bytes): #63(16), #65(464)]`. Its own
+  SSHv1 framing is `4 + (8 - length % 8) + length`, and that arithmetic asks for 484
+  bytes, so frame 68 and frame 70 reach no SSH dissection. Frame 68 holds 28 bytes and
+  opens `00000015`, and `4 + 3 + 21 = 28`. Frame 70 holds 20 bytes and opens `00000009`,
+  and `4 + 7 + 9 = 20`. **The 21 labeled server segments hold six lengths of 12 and six
+  lengths of 20, and frame 70 adds a seventh length of 20**, so a consistent framing rule
+  produces `s20` and never the `s12` of the plugin. **The reference is not unanimous on
+  this capture**: `tests/foxio_vectors/wireshark_expected/sshv1.pcap.json` holds
+  `c20s12_c18s21_c10s1` on frames 72 to 75, `tests/foxio_vectors/sshv1.pcap.json` holds
+  one stream entry with `ssh_extras` and no JA4SSH value, and the corpus holds no Rust
+  snapshot and no Zeek baseline for that capture. **#608 read two repairs and each one
+  costs more than the gap**, because the first writes a length computation that the same
+  dissector contradicts and the second states a boundary rule no FoxIO source holds.
+  **The maintainer ruled on 2026-08-15 that the present selection stands**, and
+  `Crank-Git/ja4plus-go#491` ruled the other half on 2026-08-14 and changed no line of
+  the port. `testdata/deviations.json` of the port holds `sshv1.pcap/72/JA4SSH.1` and
+  `v6.pcap/72/JA4SSH.1`, each recording `ours` as `c20s20_c18s25_c10s1`, which is the
+  value this project produces. **The row therefore records a declined defect against
+  FoxIO and no divergence from the port.** **This round re-measured every count of #608
+  on 2026-08-15, with TShark (Wireshark) 4.6.7**, and each one reproduced. **It corrects
+  one sentence of #608**, which states that this project labels no frame the dissector
+  leaves unlabeled; the measured relation runs the other way. New file
+  `tests/test_ja4ssh_packet_selection_ruling.py` holds 15 cases. Nine read the row, one
+  reads the module, and five drive the fingerprinter over two captures and one synthetic
+  connection. The unit suite rises from 5731 collected to 5749, which is 15 cases of the
+  new file and 3 cases that parametrize over the tracked Python files. **The register row
+  and the two round records add no case**, and #607 measured that a row of that table can
+  add two. It reports 5733 passed, 8 skipped,
+  8 xfailed and 114 subtests passed. The conformance suite reports 1676 passed, 142
+  skipped and 138 xfailed against the 138 keys of `tests/foxio_deviations.json`, which
+  are the counts #607 recorded. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
+  **The cases came first, and each one can fail**: against the register with no row they
+  failed 9 of 15, and each failure read
+  `the divergence register holds no row named 'The packets a JA4SSH window counts'`.
+  **Two reversals of the selection each fail a case, and this round measured both.** A
+  selection that counts a segment which completes no SSH message fails 2 of 15,
+  among them `test_a_segment_that_holds_part_of_a_message_counts_no_packet`. A selection
+  that drops the banner test fails 5 of 15, among them
+  `test_the_sshv1_capture_produces_the_value_of_the_present_selection`. **The self-review
+  made two repairs.** The row cited `ja4ssh.go:359` for the port and named no branch, and
+  the `dev` branch of the port holds that same test at `ja4ssh.go:368`, so the row now
+  names the branch of each line. `test_the_register_names_the_counts_of_both_selections`
+  read each count as a bare number, and `10` occurs in `c10s1` and in `#105`, so that case
+  passed where the sentence it reads was gone; it now reads the whole sentence. No file
+  under `ja4plus/` changed, so no fingerprint moved and no register entry moved.
+- **The divergence register records the frame that emits a JA4H value** (#607). Round
+  255. **This project emits at the end of the header block, and the port waits for the
+  body**, so the row records a divergence from the port as well as one from FoxIO.
+  `header_block_end` at `ja4plus/utils/http_utils.py:105` returns the offset past the
+  header block terminator, `ja4plus/fingerprinters/ja4h.py:154` reads that offset, and
+  `ja4plus/fingerprinters/ja4h.py:175` returns the value. The JA4H module names
+  `Content-Length` nowhere, so a request that declares a body and carries none produces a
+  value here. `HTTPMessageIsComplete` at `internal/parser/http.go:185` of the port holds
+  the value until the payload after the header block reaches the count that
+  `Content-Length` names, and `ja4h.go:130`, `ja4h.go:174` and `ja4h.go:387` are its three
+  call sites. **The maintainer ruled the port half on 2026-08-13 under
+  `Crank-Git/ja4plus-go#455`, and the ruling of 2026-08-15 on #607 keeps the present frame
+  here.** **The four FoxIO implementations state two triggers, and no FoxIO source states a
+  rule for an incomplete body.** `zeek/ja4h/main.zeek:186` computes the value in
+  `event http_message_done(c: connection, is_orig: bool, stat: http_message_stat)`, and
+  that file holds no handler for a partial request. `wireshark/source/packet-ja4.c:1634`
+  gates the emission on `if (http_req != -100) {`, and `wireshark/source/packet-ja4.c:1149`
+  sets that variable from the field `http.request.method`. That file names `Content-Length`
+  zero times. `rust/ja4/src/http.rs:64-68` reads the same field and no body length, and
+  `python/ja4h.py:17` decides no frame. **This round read all five FoxIO citations at the
+  pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved none of them.**
+  **It did move two citations of this repository.** The body of #607 names
+  `ja4plus/fingerprinters/ja4h.py:149-151` for the emission, and those three lines hold the
+  single-packet path, which runs where the buffer holds no HTTP request. **It moved the
+  citation of the port as well**, because the body names `ja4h.go:117-144` and
+  `ja4h.go:146-185`, and `Crank-Git/ja4plus-go#455` built the gate after that read.
+  **No vector separates the two frames.** A replay of the 38 captures of
+  `tests/foxio_vectors/` produces 74 JA4H values, and a body gate on the reassembled path
+  produces the same 74. **The two libraries therefore disagree on JA4H for a request whose
+  body never completes, and the maintainer holds that difference.** New file
+  `tests/test_ja4h_emission_frame_ruling.py` holds 14 cases. Seven read the row, three read
+  the module, and four drive the fingerprinter over a request that declares a body of 100
+  bytes. The unit suite rises from 5714 collected to 5731, which is 14 cases of the new
+  file, 1 case that parametrizes over the tracked Python files, and 2 cases that
+  parametrize over the sentences of the register row. It reports 5715 passed, 8 skipped, 8
+  xfailed and 114 subtests passed. The conformance suite reports 1676 passed,
+  142 skipped and 138 xfailed against the 138 keys of `tests/foxio_deviations.json`, which
+  are the counts of round 247. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
+  **The cases came first and they bite**: against the register with no row they failed 7 of
+  14, and each failure read
+  `the divergence register holds no row named 'The frame that emits a JA4H value'`.
+  **The red-to-green is the reversal.** A body gate after
+  `ja4plus/fingerprinters/ja4h.py:156` fails 4 further cases, among them
+  `test_a_request_that_declares_a_body_and_carries_none_produces_a_value`. Restore the
+  module and all 14 cases pass. No file under `ja4plus/` changed, so no fingerprint moved
+  and no output field moved.
+- **The divergence register records the JA4L measurement points a QUIC connection holds
+  at point D** (#595). Round
+  254. **The QUIC path evicts no measurement point, and both libraries hold that
+  behaviour.** `_restart_connection` at `ja4plus/fingerprinters/ja4l.py:411` drops every
+  measurement point of one connection, and `ja4plus/fingerprinters/ja4l.py:441` is its one
+  call site, inside the branch that `ja4plus/fingerprinters/ja4l.py:437` opens on a SYN
+  that carries no ACK. `_quic_ja4l` at `ja4plus/fingerprinters/ja4l.py:559-609` calls it
+  nowhere. `conn.restart()` of the port sits at `ja4l.go:180` under the same guard, and the
+  QUIC path of the port calls it nowhere. **A four-tuple that two QUIC connections reuse
+  therefore reports one server value and one client value, and the later connection reports
+  none.** **The four FoxIO references split two against two, so rule 1 settles nothing and
+  a person decided it.** `wireshark/source/packet-ja4.c:1409` reads the state by the
+  `udp.stream` number, `wireshark/source/packet-ja4.c:450-455` zeroes each timestamp on the
+  first allocation alone, and `wireshark/source/packet-ja4.c:1412-1434` guards every write
+  with `nstime_is_zero`. `rust/ja4/src/stream.rs:206-211` reuses the entry of the same
+  number. `python/ja4.py:585-588` completes the client value at point `D` and calls
+  `display`, `python/ja4.py:310` calls `clean_cache`, and `python/common.py:85-88` deletes
+  the entry. `zeek/ja4l/main.zeek:198` hooks `QUIC::initial_packet`, and the Zeek core
+  supplies a new connection record. **This round read all eleven cited lines at the pinned
+  commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved none of them.** **It did
+  move two citations of this repository.** The body of #595 names
+  `ja4plus/fingerprinters/ja4l.py:436` for the call site and `:554-604` for `_quic_ja4l`,
+  and the tip holds 441 and 559-609. The row states the lines this round measured.
+  **Eviction would break parity in one repository alone**, and it also drops a connection
+  that the caller never named, which reaches the exported surface of the port. **No vector
+  reaches the rule**, because no capture of `tests/foxio_vectors/` reuses a QUIC
+  four-tuple. **Warning: #623 asks what a second QUIC connection over one four-tuple
+  reports, and this row decides nothing about it.** #623 stays with the maintainer, because
+  an answer that emits a second value moves a fingerprint. **The trigger of the two
+  references that evict is the completion of the first connection, and never a
+  new-connection signal**, so a reversal states that trigger and it needs a FoxIO source.
+  **No file under `ja4plus/` changed, so no fingerprint moved and no output field moved.**
+  New file `tests/test_ja4l_quic_eviction_ruling.py` holds 13 cases. Five read the row,
+  three read the call sites out of the syntax tree of the module, four drive the
+  fingerprinter over two connections on one four-tuple, and one drives
+  `_restart_connection` on its own. The unit suite rises from 5698 collected to 5714, which
+  is 13 cases of the new file and 3 cases that parametrize over the tracked Python files. It
+  reports 5698 passed, 8 skipped, 8 xfailed and 114 subtests passed. The conformance suite reports 1676
+  passed, 142 skipped and 138 xfailed against the 138 keys of
+  `tests/foxio_deviations.json`, which are the counts of round 247.
+  `ruff check ja4plus/ tests/`, `ruff format --check ja4plus/ tests/` and
+  `mypy --strict ja4plus/` report no issue. **The cases came first and they bite**: against
+  the register with no row they failed 5 of 13, and each failure read
+  `the divergence register holds no row named 'The JA4L measurement points a QUIC connection holds at point D'`.
+  **The red-to-green is the reversal.** A call to `_restart_connection` after the point `D`
+  branch of `_quic_ja4l` fails 4 cases, among them
+  `test_a_second_quic_connection_on_one_four_tuple_reports_no_value`. Restore the module
+  and all 13 cases pass.
 - **Nine citations of `.claude/rules/external-apis.md` name a line that file no longer
   holds, and each one now names the line the sentence stands on** (#679). Round
   246. **Line 95 of that file holds the fragment `reaches it.`**, which is the tail of the
@@ -1335,6 +2068,51 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   prose, so `` `git gc --prune=now` `` failed a case that no prose sentence broke.
   **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
   reports 1635 passed, 143 skipped and 140 xfailed.
+
+## [1.2.1] - 2026-08-16
+
+Version 1.2.1 follows version 1.2.0, and no version stands between them. The date of the
+heading above is the date this release reaches `master`. It carries rounds 249 to 266.
+
+**The bump is patch and never minor.** This release adds no published name, it removes
+none, and it renames none. **No fingerprint value moves.** A replay of all 38 committed
+captures writes 788 values at version 1.2.0 and 788 at this version, and the two dumps are
+byte-identical.
+
+**One user-visible output is repaired.** `Processor.close_open_windows` dropped the four
+endpoint fields of every value it published, so the command printed `unknown` in place of
+the address pair (#742). **28 values of the committed corpus reach that path and 22 of
+them printed `unknown`.** The 22 are JA4L values, and the 6 JA4SSH values already printed
+a pair. **The loss sat downstream of every guard**, because each guard read a fingerprint
+entry and the entry always carried the correct pair.
+
+**One published value changes the frame that carries it, and it changes no text.** The
+QUIC `JA4L-S` value now emits from the packet that fills point `D` (#606). **Seven values
+move frame and no value is removed.** A caller that reads one value for one connection
+sees no change. A caller that correlates a value to a frame reads a different frame for
+those seven. `chrome-cloudflare-quic-with-secrets.pcapng` moves 49 to 52, `ssh2.pcapng`
+moves 1140 to 1147, and `tls3.pcapng` moves 144 to 147, 149 to 153, 155 to 162, 159 to 167
+and 303 to 312.
+
+**One reader adopts the bound the Go port already holds.** `get_stream` truncates the
+reassembled run at the byte cap, under parity rule 2 (#697). **The truncation removes no
+byte today**, because the admission rule refuses the segment that would cross the cap.
+
+**The conformance suite holds its reading.** It reports 1676 passed, 142 skipped and 138
+xfailed at version 1.2.0 and 1684 passed, 142 skipped and 138 xfailed here, against 138
+keys of `tests/foxio_deviations.json` on both sides. **The rise of 8 is the cases #736
+added and it is no value that moved.**
+
+**Three readings of this release record a limit rather than repair one.** The conformance
+suite discriminates no emission frame move, because only the FoxIO Wireshark dissector
+states the frame that carries a value (#736). No case of this repository refuses a
+written-up report that an agent never returned, because the record a case would need is
+the session transcript (#720). The decryption non-goal of #129 stands, and its reversal
+condition now names a release of the Go port and a re-measurement against this corpus
+(#621, #593).
+
+**The prose of the repository takes the US spelling** (#663). No identifier moved, no
+output field moved, and no name a caller reads moved.
 
 ## [1.2.0] - 2026-08-15
 

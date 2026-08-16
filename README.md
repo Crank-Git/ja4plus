@@ -457,7 +457,7 @@ fingerprint, whatever its body holds. Any sender can build bytes that produce a 
 formed fingerprint. Read a fingerprint from untrusted traffic as a description of those
 bytes and nothing more.
 
-The behaviour follows the FoxIO reference, because no FoxIO material rejects such a
+The behavior follows the FoxIO reference, because no FoxIO material rejects such a
 packet. [`docs/output-schema.md`](docs/output-schema.md) states the property in full.
 
 ## Spec Validation

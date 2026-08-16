@@ -62,9 +62,106 @@ method name plus an occurrence counter.
 method that emits more fingerprints than the reference is a defect, and so is one that
 emits fewer.
 
+## What a green conformance run does not measure
+
+**Warning: a green conformance run states nothing about the frame that carries a value.**
+The suite compares one value for each stream, and it never compares the packet that
+produced it. #736 measured the limit on 2026-08-16 and this section records it.
+
+**#606 moved seven values from one frame to another, and the suite discriminated none of
+them.** That issue moved the QUIC `JA4L-S` emission from the packet that fills point `B`
+to the packet that fills point `D`. #736 restored the point `B` emission and ran the suite
+again. The three counts held at 1676 passed, 142 skipped and 138 xfailed under the change
+and under the restored defect. These are the seven moves.
+
+| Capture | The move |
+|---|---|
+| `chrome-cloudflare-quic-with-secrets.pcapng` | 49 to 52 |
+| `ssh2.pcapng` | 1140 to 1147 |
+| `tls3.pcapng` | 144 to 147 |
+| `tls3.pcapng` | 149 to 153 |
+| `tls3.pcapng` | 155 to 162 |
+| `tls3.pcapng` | 159 to 167 |
+| `tls3.pcapng` | 303 to 312 |
+
+### One of the four reference sources states a frame
+
+**The conformance value comparison reads the one source that frames nothing.** A per-frame
+comparison is possible only where a source states the frame, and #736 read all four.
+
+| Source | States a frame | Values |
+|---|---|---|
+| FoxIO Python expected output, `tests/foxio_vectors/*.json` | No | 1203 |
+| FoxIO Rust snapshots, `tests/foxio_vectors/rust_expected/*.snap` | No | 460 |
+| Zeek baselines, `tests/foxio_vectors/zeek_expected/` | No | 7 baselines |
+| FoxIO Wireshark dissector, `tests/foxio_vectors/wireshark_expected/*.json` | Yes, `frame.number` | 724 |
+
+**The first three key a value on the stream or on the connection.** A Zeek baseline names
+`orig_pkts` and `resp_pkts`, and each one counts the packets of a connection rather than
+names one of them. **The dissector frames every value it writes**, and #736 measured 724
+framed values and none unframed across 26 files.
+
+**The conformance suite builds all 1203 of its value cases from the first source.** No case
+of the suite can read a frame, because the source it reads states none.
+
+### Why the suite compares no frame
+
+**The suite compares the FoxIO Python reference, and the dissector holds a different value
+set.** A per-frame comparison reads a new source. It therefore adds no discrimination to
+any case the suite runs today.
+
+**#736 measured what that comparison would report on 2026-08-16.** The measurement ran the
+`Processor` over each of the 26 captures this project holds, it numbered each packet, and
+it read the 445 dissector values of a hashed form against the result. **Warning: the three
+counts below are one measurement, and no case holds them.** Take them again before you
+build on them.
+
+| Reading | Values |
+|---|---|
+| The value agrees and the frame agrees | 206 |
+| The value agrees and the frame differs | 136 |
+| This project produces no such value | 103 |
+
+**The 136 frame disagreements are values this project already produces correctly.** Each
+one would enter `tests/foxio_deviations.json` as a new entry. Each entry would record a
+difference this project has already ruled.
+
+**The TCP `JA4L` and `JA4LS` values hold 70 of the 136.** The dissector writes each one on
+a later frame than this project, and none of the 70 is a QUIC value. **A comparison whose
+largest class is a recorded divergence measures the register and not the code.**
+
+**The frame is an artifact of one dissector, and the value is what the standard defines.**
+Two FoxIO implementations produce the same value on different packets, and neither one is
+wrong. This project therefore declines the per-frame comparison in the conformance suite.
+
+### Where the frame is measured instead
+
+**A frame this project rules on gets a case of its own.**
+`tests/test_ja4l_quic_point_d_emission.py` holds the frame of every QUIC `JA4L` value
+against `frame.number` of the dissector, and it runs in the unit suite. #736 restored the
+point `B` emission and measured 8 failures in that module, against 0 in the conformance
+suite.
+
+**Warning: leave that module in the unit suite, and never move it to the conformance
+suite.** The `test` job runs the unit suite on five environments. `.github/workflows/test.yml:86-91`
+holds that matrix: `ubuntu-latest` on Python 3.10, 3.11, 3.12 and 3.13, and `macos-latest`
+on Python 3.12. The `conformance` job runs the conformance suite on one environment. A move
+would therefore take four readings away from the one frame guard this project holds. #736
+declined the move on that reading.
+
+**Warning: the count of five is the matrix after #575, and an older record states six.**
+That issue dropped Python 3.9 on 2026-08-10. `.claude/rules/batch-gate.md` records a
+measurement of that date over six jobs, and that record stays exactly as it is. Read the
+workflow for the present count, and never a record of a past measurement.
+
+**Warning: read a frame ruling against the unit suite, and never against the conformance
+counts.** `tests/test_conformance_frame_discrimination.py` holds this whole reading. A
+source that starts to state a frame therefore fails a case there, and it leaves no reader
+with a stale rule.
+
 ## When the FoxIO reference holds a defect
 
-The FoxIO reference decides behaviour. It does not decide behaviour that the reference
+The FoxIO reference decides behavior. It does not decide behavior that the reference
 itself produces by accident.
 
 **A defect is proven, never asserted.** Instrument the FoxIO implementation at the pinned
@@ -91,6 +188,116 @@ direction.
 by analogy.
 
 Decided on 2026-08-07. #96, #97 and #105 are the first three.
+
+## What a delegated session may rule
+
+**The user delegates a session to a project manager, and this section states what that
+delegation permits.** The user granted two delegations, and both hold today. A question
+that fails both belongs to the user.
+
+| Delegation | Date | What it reaches | Where the delegation lives |
+|---|---|---|---|
+| The narrow delegation | 2026-08-12 | A schema violation. | `Crank-Git/ja4plus-go#246`, and #597 here |
+| The recording delegation | 2026-08-15 | A reading this project already holds. | The ruling comments of #595, #607, #608 and #613 |
+
+**A ruling lands in this repository and in the port together, or in neither.**
+`.claude/rules/parity.md` of `Crank-Git/ja4plus-go` states that rule, and
+`.claude/rules/rulings.md` of that repository holds the port half of the narrow
+delegation.
+
+### The narrow delegation of 2026-08-12
+
+**A schema violation has one right answer, and a reference split has none.** That sentence
+is the boundary. The project manager rules a schema violation under this delegation. It
+rules no reference split, and it rules no other question.
+
+**A delegated ruling is a ruling, and never a reading.** A reading concludes what one
+source states. A delegated ruling settles what this project does where a published FoxIO
+value contradicts a published FoxIO rule. No source settles that question, because FoxIO
+publishes both of them.
+
+A project manager makes a delegated ruling only where every one of these is true.
+
+1. A published FoxIO rule states the answer. The rule reaches the material under
+   `technical_details/`, the transcription of it under `docs/specs/foxio/<METHOD>.md`, or
+   a FoxIO reference implementation.
+2. Every FoxIO implementation enforces that rule. One implementation that departs makes
+   the question a reference split, and this delegation bars a reference split.
+3. A recorded measurement proves the violation, and each citation names a file and a line.
+   `## When the FoxIO reference holds a defect` above states that a defect is proven and
+   never asserted.
+4. The record of the ruling carries a provisional marker, and it names the issue.
+5. The record names a reversal path, so the user reverses the ruling with one action.
+
+**A question that fails one condition leaves this delegation.** The project manager reads
+it against the recording delegation below.
+
+### The recording delegation of 2026-08-15
+
+**The user granted a second delegation on 2026-08-15.** Four ruling comments each state it
+in these words: #595, #607, #608 and #613. This file quotes them, and it rewrites no word
+of the delegation.
+
+**Warning: never open a line of this file with an issue number.** The section reader of
+`tests/test_ported_pattern_cost.py` reads a line that opens with `#` as a heading, and it
+then stops at that line. A paragraph below such a line reaches no case.
+
+> The maintainer granted a delegated session this carve-out on 2026-08-15: a delegated
+> session may rule where the decision preserves the present behaviour, moves no
+> fingerprint, and records an existing reading as a divergence register row. A decision
+> that moves a value, that forks from `ja4plus-go`, or that changes the scope of the
+> project stays with the maintainer.
+
+**The delegation states three limits, and a permitted question meets every one of them.**
+
+- The ruling keeps the present behavior of this project.
+- The ruling moves no fingerprint value.
+- The ruling writes one row of the divergence register.
+
+**A ruling that moves a value stays with the user.** A ruling that parts this project from
+the port stays with the user. A ruling that changes the scope of this project stays with
+the user.
+
+**The project manager ruled each of the four issues under this delegation on 2026-08-15,
+and no line of a fingerprinter moved.** #595 records the JA4L eviction of the QUIC path, #607 records the
+JA4H emission frame, #608 records the JA4SSH packet selection, and #613 records the one
+QUIC packet each datagram fills point C from.
+
+### How the two delegations relate
+
+**The two delegations reach different questions, and neither one repeals the other.**
+
+- The narrow delegation settles what this project does, and it can move a fingerprint
+  value. It therefore bars a reference split: a wrong answer there makes this project
+  answer differently from a FoxIO implementation on the same bytes.
+- The recording delegation records what this project already does, and it moves no
+  fingerprint value. A reference split therefore reaches it. #595 and #613 are each such a
+  question, and each ruling of 2026-08-15 left every line of the fingerprinter as it
+  stood.
+- **A reference split is never delegable as a schema violation.** Condition 2 of the
+  narrow delegation bars it, and no reading of the evidence removes that bar.
+- **Every delegated ruling is provisional under both delegations**, and each one names a
+  reversal path.
+
+**A question that fails both delegations belongs to the user.** The project manager labels
+that issue `status:needs-feedback`. It records the reading it holds. It builds nothing that
+depends on the answer.
+
+**The user confirms a delegated ruling, or reverses it.** A delegated ruling that the user
+has not confirmed stays provisional. A later reader reads a provisional ruling as
+unconfirmed, and never as settled.
+
+### The worked example both repositories share
+
+`Crank-Git/ja4plus-go#223` is the first delegated ruling, and the user confirmed it on
+2026-08-12. A published FoxIO value contradicts a rule that four implementations enforce.
+`zeek/ja4ssh/main.zeek:63`, `wireshark/source/packet-ja4.c:400`, `rust/ja4/src/ssh.rs:284`
+and `python/ja4ssh.py:51` each state that the JA4SSH mode is `0` when the side sent no SSH
+packet. `python/test/testdata/ssh-scp-1050.pcap.json` holds `c112s1460_c0s200_c36s0`,
+which pairs a client mode of `112` with a client packet count of `0`.
+
+**This project already reads the mode of the window alone**, and #96 holds that rule. The
+narrow delegation therefore moved no fingerprint here, and it moved no exported name.
 
 ## When the FoxIO material is ambiguous
 
@@ -350,6 +557,33 @@ Where FoxIO specifies nothing — a field name, a default, a subcommand — the 
 `Crank-Git/ja4plus-go` has already shipped a choice. Adopt it. Where FoxIO does specify,
 FoxIO wins, even against the port. `docs/specs/spec.md` holds the divergence register.
 
+### A pattern the port ships carries no statement of its cost
+
+**Parity rule 2 adopts the interface the port ships. It adopts no statement of cost.** Go
+runs a finite automaton, and it backtracks nowhere. Python `re` backtracks. The two
+languages therefore read one pattern at two costs. The rule that carries the shape carries
+no proof that the shape is safe against hostile input.
+
+**Warning: a pattern that is safe in the port is a pattern this project has not
+measured.** Measure a regular expression this project takes from the port against hostile
+input before it lands. State the measurement where the change records its evidence.
+
+**#612 followed parity rule 2 literally, and it shipped a backtracking defect to a
+branch.** Its own self-review found the defect and measured it. `GET a` plus 32000 spaces
+plus `HTTPX` cost **3017.9 milliseconds** under the ported form. The repaired form reads
+the same payload at **0.630 milliseconds**. `REQUEST_LINE_LIMIT` of
+`ja4plus/utils/http_utils.py` reads 8192. `is_http_request` reads that many bytes of every
+TCP payload, so one crafted packet bought about 200 milliseconds of processor time.
+
+**The rule reaches every construct whose cost differs between a finite automaton and a
+backtracking engine.** A regular expression is the case this project has met.
+
+**Warning: an atomic group states the bound directly, and this project cannot write
+one.** Python accepts `(?>...)` from release 3.11, and `pyproject.toml:24` reads
+`requires-python = ">=3.10"`. A repair that raises the floor of the package is a ruling
+for the user. Verified against https://docs.python.org/3/library/re.html (retrieved
+2026-08-15).
+
 ## Measuring coverage
 
 Use the **directory** form, `--cov=ja4plus`. For one file, use the **path** form,
@@ -359,6 +593,6 @@ Use the **directory** form, `--cov=ja4plus`. For one file, use the **path** form
 QUIC cases fail, and the cause is not in this project. `coverage` resolves a dotted source
 name inside a `sys_modules_saved()` block, which imports `ja4plus`, scapy and
 `cryptography` and then deletes them. The second `cryptography` import builds Python
-classes the loaded Rust extension does not recognise, so every AES cipher raises
+classes the loaded Rust extension does not recognize, so every AES cipher raises
 `UnsupportedAlgorithm`, and the second scapy import changes the dissection of a committed
 capture. #177 holds the measurement, and Changelog round 47 records it.

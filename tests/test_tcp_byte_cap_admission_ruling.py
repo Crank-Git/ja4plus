@@ -6,7 +6,7 @@ read one feed, and they part on one condition: this project refuses the segment 
 cross the byte cap, and the port admits it and then refuses every segment after it.
 
 The divergence register of `docs/specs/spec.md` holds the ruling. This file holds that row
-against the module, and it holds the behaviour of this project against a constructed
+against the module, and it holds the behavior of this project against a constructed
 stream and against the capture that raised the question.
 
 **No case of this file builds, runs or imports the port.** Parity rule 3 bars that, so the

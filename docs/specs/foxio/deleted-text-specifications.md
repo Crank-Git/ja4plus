@@ -531,7 +531,7 @@ does not settle that divergence.**
 a latency and a TTL. `.claude/rules/external-apis.md` records that the Zeek script appends
 a third part and marks a QUIC connection with a `q` part. **The deleted text corroborates
 the two-field form that this project publishes**, and it corroborates the reading that the
-two Zeek behaviours are Zeek's alone.
+two Zeek behaviors are Zeek's alone.
 
 **Verdict for JA4L: the deleted text corroborates the whole distance model `ja4plus`
 already builds, and it settles neither the rounding divergence nor the third Zeek part.

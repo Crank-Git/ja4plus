@@ -10,7 +10,7 @@ one type. Read the `JA4L-S=` prefix of the value to tell the two apart.
 
 **The `--types` option holds one token for each of the two methods.** `--types ja4ls`
 writes the JA4LS values alone. `--types ja4l` writes the JA4L values and the JA4LS values
-together, which is the behaviour of version 1.1.1. #605 added the `ja4ls` token under
+together, which is the behavior of version 1.1.1. #605 added the `ja4ls` token under
 parity rule 2, and the Go port shipped it first.
 
 ## The facts
@@ -33,7 +33,7 @@ JA4L-S=<latency>_<ttl>_quic
 ```
 
 `ja4plus/fingerprinters/ja4l.py:446` builds the TCP form, and
-`ja4plus/fingerprinters/ja4l.py:549` builds the QUIC form.
+`ja4plus/fingerprinters/ja4l.py:620` builds the QUIC form.
 
 ## The parts
 
