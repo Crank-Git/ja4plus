@@ -2,6 +2,7 @@
 paths:
   - "*.md"
   - "docs/**/*.md"
+  - "docs/specs/*.html"
   - ".claude/rules/*.md"
   - "ja4plus/**/*.py"
   - "tests/**/*.py"
