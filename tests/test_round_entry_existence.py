@@ -1,4 +1,23 @@
-"""Tests that a change set which edits a tracked file also records a Changelog round.
+"""Tests that a batch change set which edits a tracked file also records a Changelog round.
+
+## Which change set the mandate reads
+
+**#727 moved the mandate from the change set to the batch pull request on 2026-08-15.** A
+branch whose name opens with `batch/` or `epic/` carries the change set of a whole batch,
+and that change set records one round. Every other branch records none, and this reading
+refuses no round it finds on one. `records_a_round` holds the condition and `head_branch`
+names the branch.
+
+**The older model recorded one round for one issue**, so this file failed every change set
+that edited a tracked file and recorded no round. Each member therefore wrote the two most
+contended files of the repository. A read of 2026-08-15 covered the last 300 commits of
+`master`: 192 touch `docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against 56 that
+touch a file under `ja4plus/`.
+
+**The `test` job names the branch in `ROUND_ENTRY_BRANCH`, because a run of a pull request
+checks out a detached merge commit.** `git rev-parse --abbrev-ref HEAD` then answers the
+literal `HEAD`, which names no branch, and this reading skips where it reads no branch at
+all. `.claude/rules/batch-gate.md` states the whole model.
 
 `tests/test_changelog_round_agreement.py` holds `CHANGELOG.md` and `docs/specs/spec.md`
 **against each other**. Each of its three cases reads one file and compares it against the
@@ -157,8 +176,58 @@ REFERENCE_BRANCHES = ("origin/dev", "dev")
 # a clone of depth 1 holds no merge base for `git merge-base` to report.
 REFERENCE_ENVIRONMENT_VARIABLE = "ROUND_ENTRY_REFERENCE"
 
+# The prefixes of an integration branch. #727 moved the mandate from the change set to the
+# batch pull request, so the mandate reads the branch the change set belongs to. The two
+# prefixes match the two patterns of `WORKFLOW_BASE_FILTER`, which the base-branch filter
+# of the workflow holds, so one model names an integration branch in both places.
+INTEGRATION_BRANCH_PREFIXES = ("batch/", "epic/")
+
+# The environment variable that names the branch the change set belongs to. The `test` job
+# writes it, because a run of a pull request checks out a detached merge commit and
+# `git rev-parse --abbrev-ref HEAD` then answers `HEAD` and no branch name.
+BRANCH_ENVIRONMENT_VARIABLE = "ROUND_ENTRY_BRANCH"
+
 # The workflow whose `test` job runs this case on the runner.
 WORKFLOW_PATH = ".github/workflows/test.yml"
+
+# The project file that holds the filing rule and the branch model.
+PROJECT_FILE_PATH = "CLAUDE.md"
+
+# The opener of the filing rule #727 copied from `Crank-Git/ja4plus-go/CLAUDE.md`.
+FILING_RULE_OPENER = "**A finding earns a tracker issue in five cases, and never otherwise.**"
+
+# The five cases of that rule, each one verbatim.
+FILING_RULE_CASES = (
+    "Behavior.",
+    "A fingerprint value.",
+    "A guard that guards nothing.",
+    "A blocked epic.",
+    "A question the maintainer must rule.",
+)
+
+# The sentence that parts the issue numbers of the copied rule from the issue numbers of
+# this repository. The rule names #410, #419, #436, #398, #355 and #70, and each one is an
+# issue of the port.
+PORT_ISSUE_DISCLAIMER = "every issue number it names is an issue of the port"
+
+# The step that names the branch of the change set, and the expression it reads.
+#
+# **`github.head_ref` holds the head branch of a pull request, and it holds nothing on any
+# other event.** `github.ref_name` holds the short ref of the branch a push or a manual run
+# names, and it holds `<number>/merge` on a pull request. The two together therefore name
+# the head branch on every event this workflow accepts. Verified against
+# https://docs.github.com/en/actions/reference/workflows-and-actions/contexts (retrieved
+# 2026-08-15).
+BRANCH_STEP = "Name the branch the change set belongs to"
+
+BRANCH_EXPRESSION = "BRANCH_NAME: ${{ github.head_ref || github.ref_name }}"
+
+# The two branch names the scratch cases and the recorded cases read. Neither name reaches
+# the provider. Each one states a kind of branch, so every case runs the one predicate
+# `records_a_round` rather than a second copy of it.
+BATCH_BRANCH = "batch/727-a-batch-change-set"
+
+MEMBER_BRANCH = "issue/727-a-member-change-set"
 
 # The base-branch filter of that workflow. `master` and `dev` accept the batch pull request
 # and the promotion, and the two patterns accept a member pull request. #438 measured that
@@ -371,6 +440,63 @@ def environment_reference(environment: Mapping[str, str] = os.environ) -> str:
     return environment.get(REFERENCE_ENVIRONMENT_VARIABLE, "").strip()
 
 
+def environment_branch(environment: Mapping[str, str] = os.environ) -> str:
+    """Return the branch the environment names for the change set.
+
+    Args:
+        environment: The environment to read.
+
+    Returns:
+        The name the `ROUND_ENTRY_BRANCH` variable holds, or an empty string where the
+        environment holds no such variable.
+    """
+    return environment.get(BRANCH_ENVIRONMENT_VARIABLE, "").strip()
+
+
+def head_branch(repository: Path, named: str = "") -> Optional[str]:
+    """Return the branch the change set belongs to.
+
+    A named branch outranks the branch of the repository, because a run of a pull request
+    checks out a detached merge commit and git then reports no branch name.
+
+    Args:
+        repository: The root of the repository.
+        named: The name of the branch, or an empty string where the caller names none.
+
+    Returns:
+        The branch name, or None where the caller names none and git reports a detached
+        `HEAD` or reads no repository.
+    """
+    name = named.strip()
+    if name:
+        return name
+    output = _git(repository, "rev-parse", "--abbrev-ref", "HEAD")
+    if output is None:
+        return None
+    name = output.strip()
+    # A detached `HEAD` answers the literal `HEAD`, which names no branch.
+    if not name or name == "HEAD":
+        return None
+    return name
+
+
+def records_a_round(branch: str) -> bool:
+    """Return whether a change set of one branch records a round.
+
+    #727 moved the mandate from the change set to the batch pull request. An integration
+    branch carries the change set of a whole batch, and that change set records one round.
+    Every other branch records none, and this reading refuses no round it finds there.
+
+    Args:
+        branch: The name of the branch the change set belongs to.
+
+    Returns:
+        True where the name carries one of `INTEGRATION_BRANCH_PREFIXES`.
+    """
+    name = branch.strip()
+    return any(name.startswith(prefix) for prefix in INTEGRATION_BRANCH_PREFIXES)
+
+
 def named_commit(repository: Path, name: str) -> Optional[str]:
     """Return the commit one name states.
 
@@ -542,6 +668,7 @@ def evaluate(
     repository: Path = REPO_ROOT,
     reference_branches: Sequence[str] = REFERENCE_BRANCHES,
     named: str = "",
+    branch: str = "",
 ) -> Verdict:
     """Return the verdict on the change set of one repository.
 
@@ -550,11 +677,24 @@ def evaluate(
         reference_branches: The refs that name the integration branch, in read order.
         named: The name of the reference commit, or an empty string where the caller
             names none. `environment_reference` reads the name the runner writes.
+        branch: The name of the branch the change set belongs to, or an empty string where
+            the caller names none. `environment_branch` reads the name the runner writes.
 
     Returns:
-        A verdict that carries a skip reason where the change set cannot be read, and a
-        failure reason where the change set records no round.
+        A verdict that carries a skip reason where the branch or the change set cannot be
+        read, and a failure reason where a batch change set records no round.
     """
+    name = head_branch(repository, branch)
+    if name is None:
+        return Verdict(
+            f"{BRANCH_ENVIRONMENT_VARIABLE} names no branch, and git reports a detached "
+            "HEAD or reads no repository here",
+            None,
+        )
+    # A member change set records no round, so the mandate reads it nowhere. #727 moved
+    # the mandate to the batch pull request, which is the change set of a whole batch.
+    if not records_a_round(name):
+        return Verdict(None, None)
     reference = reference_commit(repository, reference_branches, named)
     if reference is None:
         return Verdict(
@@ -576,7 +716,7 @@ def evaluate(
     return Verdict(None, missing_round_entry(paths, base, head))
 
 
-def recorded_change_set(repository: Path, commit: str) -> Verdict:
+def recorded_change_set(repository: Path, commit: str, branch: str) -> Verdict:
     """Return the verdict the reading gives one recorded commit.
 
     The reader compares the commit against its parent, so it needs the two commits and
@@ -585,11 +725,16 @@ def recorded_change_set(repository: Path, commit: str) -> Verdict:
     Args:
         repository: The root of the repository.
         commit: The whole identifier of the commit to read.
+        branch: The name of the branch the reading places the commit on. The two recorded
+            commits stand in the history under the model that preceded #727, so each case
+            states the branch kind it reads them under.
 
     Returns:
         A verdict that carries a skip reason where the repository holds no such pair, and
         the reading of the change set otherwise.
     """
+    if not records_a_round(branch):
+        return Verdict(None, None)
     parent = named_commit(repository, f"{commit}^")
     if parent is None:
         return Verdict(f"this clone holds no parent of commit {commit}", None)
@@ -679,16 +824,22 @@ def _commit(repository: Path, message: str) -> None:
     )
 
 
-def _scratch_repository(root: Path, initial_branch: str = "dev") -> Path:
+def _scratch_repository(
+    root: Path, initial_branch: str = "dev", work_branch: str = BATCH_BRANCH
+) -> Path:
     """Return a repository that holds the two records on one commit and a second branch.
+
+    The work branch carries an integration prefix by default, because the mandate reads a
+    batch change set alone. A case that reads a member change set names `MEMBER_BRANCH`.
 
     Args:
         root: The directory to make the repository in.
         initial_branch: The name of the first branch, which the case reads as the
             integration branch.
+        work_branch: The name of the branch the case works on.
 
     Returns:
-        The root of the repository, on a branch named `work`.
+        The root of the repository, on the work branch.
     """
     subprocess.run(
         ["git", "init", "-b", initial_branch, str(root)],
@@ -704,7 +855,7 @@ def _scratch_repository(root: Path, initial_branch: str = "dev") -> Path:
     # without a change set of its own.
     _write(root, ".gitignore", ".venv/\n")
     _commit(root, "the first commit")
-    _run(root, "checkout", "-b", "work")
+    _run(root, "checkout", "-b", work_branch)
     return root
 
 
@@ -723,16 +874,16 @@ def _record_a_round(
 
 
 def test_the_change_set_of_this_branch_records_a_round() -> None:
-    """The branch of this repository records a round for the files it changes."""
-    verdict = evaluate(named=environment_reference())
+    """The branch of this repository records a round where it is an integration branch."""
+    verdict = evaluate(named=environment_reference(), branch=environment_branch())
     if verdict.skip_reason is not None:
         pytest.skip(verdict.skip_reason)
     assert verdict.failure is None, verdict.failure
 
 
 def test_the_reading_fails_the_change_set_of_the_defect() -> None:
-    """The reading fails the defect commit, which changed six files and recorded no round."""
-    verdict = recorded_change_set(REPO_ROOT, DEFECT_COMMIT)
+    """The reading fails the defect commit of a batch branch, which recorded no round."""
+    verdict = recorded_change_set(REPO_ROOT, DEFECT_COMMIT, BATCH_BRANCH)
     if verdict.skip_reason is not None:
         pytest.skip(verdict.skip_reason)
     assert verdict.failure is not None
@@ -741,7 +892,7 @@ def test_the_reading_fails_the_change_set_of_the_defect() -> None:
 
 def test_the_reading_passes_the_change_set_that_records_a_round() -> None:
     """The reading passes the control commit, which changed one file and recorded one round."""
-    verdict = recorded_change_set(REPO_ROOT, CONTROL_COMMIT)
+    verdict = recorded_change_set(REPO_ROOT, CONTROL_COMMIT, BATCH_BRANCH)
     if verdict.skip_reason is not None:
         pytest.skip(verdict.skip_reason)
     assert verdict.failure is None, verdict.failure
@@ -883,7 +1034,9 @@ def _unrelated_head(repository: Path) -> str:
     """
     base = _git(repository, "rev-parse", "HEAD")
     assert base is not None
-    _run(repository, "checkout", "--orphan", "shallow")
+    # The orphan branch carries an integration prefix, because the mandate reads a batch
+    # change set alone and this reader tests the reference point rather than the branch.
+    _run(repository, "checkout", "--orphan", "batch/727-a-shallow-clone")
     return base.strip()
 
 
@@ -1117,3 +1270,111 @@ def test_the_reader_counts_no_round_a_quotation_holds() -> None:
     """The reader counts no entry whose prose quotes a round and states none of its own."""
     quotation = "- **A change** (#3) reports that eight entries read `Round TBD` and it stops.\n"
     assert read_record(BASE_CHANGELOG + quotation, BASE_SPECIFICATION).entries == 1
+
+
+@pytest.mark.parametrize("branch", ["batch/725-register-rows-c", "epic/510-dry-run-and-gates"])
+def test_the_mandate_reaches_an_integration_branch(branch: str) -> None:
+    """The mandate reaches a change set of a branch that carries an integration prefix."""
+    assert records_a_round(branch) is True
+
+
+@pytest.mark.parametrize("branch", ["issue/727-filing-rule-and-round-model", "dev", "master"])
+def test_the_mandate_reaches_no_other_branch(branch: str) -> None:
+    """The mandate reaches no change set of a member branch and none of a release branch."""
+    assert records_a_round(branch) is False
+
+
+def test_a_member_change_set_that_records_no_round_passes(tmp_path: Path) -> None:
+    """A change set of a member branch that edits a tracked file and records no round passes."""
+    repository = _scratch_repository(tmp_path / "member", work_branch=MEMBER_BRANCH)
+    _write(repository, "ja4plus/cli.py", "VALUE = 2\n")
+    verdict = evaluate(repository, ("dev",))
+    assert verdict.skip_reason is None
+    assert verdict.failure is None, verdict.failure
+
+
+def test_a_member_change_set_that_records_a_round_passes(tmp_path: Path) -> None:
+    """A change set of a member branch that records a round passes, because the mandate bars none."""
+    repository = _scratch_repository(tmp_path / "member-round", work_branch=MEMBER_BRANCH)
+    _write(repository, "ja4plus/cli.py", "VALUE = 2\n")
+    _record_a_round(repository, NUMBERED_ENTRY, NUMBERED_ROW)
+    verdict = evaluate(repository, ("dev",))
+    assert verdict.skip_reason is None
+    assert verdict.failure is None, verdict.failure
+
+
+def test_the_reading_passes_the_defect_change_set_of_a_member_branch() -> None:
+    """The reading passes the defect commit where a member branch carries it."""
+    verdict = recorded_change_set(REPO_ROOT, DEFECT_COMMIT, MEMBER_BRANCH)
+    if verdict.skip_reason is not None:
+        pytest.skip(verdict.skip_reason)
+    assert verdict.failure is None, verdict.failure
+
+
+def test_the_environment_names_the_branch_of_the_change_set() -> None:
+    """The reader returns the branch that `ROUND_ENTRY_BRANCH` names."""
+    environment = {BRANCH_ENVIRONMENT_VARIABLE: "  batch/725-register-rows-c  "}
+    assert environment_branch(environment) == "batch/725-register-rows-c"
+
+
+def test_an_environment_that_holds_no_branch_variable_names_no_branch() -> None:
+    """The reader returns an empty name where the environment holds no branch variable."""
+    assert environment_branch({}) == ""
+
+
+def test_a_named_branch_outranks_the_branch_of_the_repository(tmp_path: Path) -> None:
+    """The reader returns the named branch where the repository stands on another one."""
+    repository = _scratch_repository(tmp_path / "named-branch", work_branch=MEMBER_BRANCH)
+    assert head_branch(repository) == MEMBER_BRANCH
+    assert head_branch(repository, BATCH_BRANCH) == BATCH_BRANCH
+
+
+def test_a_named_branch_reads_through_the_space_around_the_name(tmp_path: Path) -> None:
+    """The reader drops the space at each end of a branch name."""
+    repository = _scratch_repository(tmp_path / "spaced-branch")
+    assert head_branch(repository, f"  {BATCH_BRANCH}  ") == BATCH_BRANCH
+
+
+def test_a_detached_head_that_names_no_branch_skips(tmp_path: Path) -> None:
+    """A change set of a detached `HEAD` produces a skip reason and no failure."""
+    repository = _scratch_repository(tmp_path / "detached")
+    head = _git(repository, "rev-parse", "HEAD")
+    assert head is not None
+    _run(repository, "checkout", "--detach", head.strip())
+    assert head_branch(repository) is None
+    verdict = evaluate(repository, ("dev",))
+    assert verdict.skip_reason is not None
+    assert BRANCH_ENVIRONMENT_VARIABLE in verdict.skip_reason
+    assert verdict.failure is None
+
+
+def test_a_directory_that_holds_no_repository_names_no_branch(tmp_path: Path) -> None:
+    """The branch reader returns no name where git cannot read the directory."""
+    plain = tmp_path / "plain-branch"
+    plain.mkdir()
+    assert head_branch(plain) is None
+
+
+def test_the_test_job_names_the_branch_of_the_change_set() -> None:
+    """The `test` job writes the branch of the change set into `ROUND_ENTRY_BRANCH`."""
+    workflow = (REPO_ROOT / WORKFLOW_PATH).read_text(encoding="utf-8")
+    block = step_block(workflow, BRANCH_STEP)
+    assert BRANCH_EXPRESSION in block
+    assert f'{BRANCH_ENVIRONMENT_VARIABLE}=$BRANCH_NAME" >> "$GITHUB_ENV"' in block
+    assert fetch_count(block) == 0
+
+
+def test_the_batch_gate_rule_states_that_a_round_is_a_batch() -> None:
+    """The batch-gate rule states that the batch pull request records the round."""
+    rule = (REPO_ROOT / BATCH_GATE_RULE_PATH).read_text(encoding="utf-8")
+    assert "#727" in rule
+    assert BRANCH_ENVIRONMENT_VARIABLE in rule
+
+
+def test_the_project_file_holds_the_five_case_filing_rule() -> None:
+    """`CLAUDE.md` holds the five cases that earn a tracker issue, and the port owns them."""
+    project_file = (REPO_ROOT / PROJECT_FILE_PATH).read_text(encoding="utf-8")
+    assert FILING_RULE_OPENER in project_file
+    for case in FILING_RULE_CASES:
+        assert case in project_file
+    assert PORT_ISSUE_DISCLAIMER in project_file

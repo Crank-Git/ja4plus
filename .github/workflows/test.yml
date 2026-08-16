@@ -28,6 +28,11 @@ name: Tests
 # never refused the member pull request it exists to refuse.** The user ruled on 2026-08-10
 # that the filter widens to the integration branches.
 #
+# **#727 superseded the example of that paragraph on 2026-08-15, and the filter stays.** It
+# moved the round mandate from the change set to the batch pull request, so a member pull
+# request records no round and that check refuses none. The filter still carries every
+# other check of this file to a member pull request, which is the reason it widened.
+#
 # **The widened filter costs no run that the batch model saved.** A member commit ends with
 # a skip keyword by design, and #459 measured that such a commit creates no run for any
 # event. A member pull request therefore still creates no run, and a keyword-free head is
@@ -170,6 +175,34 @@ jobs:
           MERGE_BASE=$(gh api "repos/$GITHUB_REPOSITORY/compare/dev...$GITHUB_SHA" --jq .merge_base_commit.sha)
           git fetch --depth=1 origin "+$MERGE_BASE:refs/ja4plus/round-entry-base"
           echo "ROUND_ENTRY_REFERENCE=$MERGE_BASE" >> "$GITHUB_ENV"
+
+      - name: Name the branch the change set belongs to
+        # `tests/test_round_entry_existence.py` reads the mandate against the branch the
+        # change set belongs to. #727 moved that mandate from the change set to the batch
+        # pull request: an integration branch records one round, and a member branch
+        # records none.
+        #
+        # **A run of a pull request checks out a detached merge commit**, so
+        # `git rev-parse --abbrev-ref HEAD` answers the literal `HEAD` and names no branch.
+        # The case would then skip on every job, and the `skip-gate` job would fail the run
+        # on a case the suite ran nowhere. This step names the branch instead.
+        #
+        # **`github.head_ref` holds the head branch of a pull request, and it holds nothing
+        # on any other event.** `github.ref_name` holds the short ref of the branch a push
+        # or a manual run names, and it holds `<number>/merge` on a pull request. The two
+        # together therefore name the head branch on every event this file accepts.
+        # Verified against
+        # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts
+        # (retrieved 2026-08-15).
+        #
+        # **This step carries no `if` condition, because every event names a branch.**
+        #
+        # `${{ }}` reaches the `env` block and never the `run` block, because an expression
+        # inside a shell command is a script-injection path.
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        run: |
+          echo "ROUND_ENTRY_BRANCH=$BRANCH_NAME" >> "$GITHUB_ENV"
 
       - name: Fetch the two recorded change sets
         # `tests/test_round_entry_existence.py` reads two commits of this repository, each
