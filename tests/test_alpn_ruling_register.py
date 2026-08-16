@@ -102,8 +102,20 @@ PRINTABLE_RANGE = "`0x20-0x7E`"
 # that states it sends a reader to the wrong test**, and the Go port read these rows.
 LOOSE_CONDITION = "not alphanumeric"
 
-# Every row of the register that states the JA4 ALPN condition.
+# Every row of the register that states the JA4 ALPN condition of a value of two bytes or
+# more.
 CONDITION_ROWS = (CONDITION_ITEM, POSITION_ITEM, RULING_ITEM)
+
+# The first cell of the row that states the one-byte rule.
+ONE_BYTE_ITEM = "JA4 ALPN value for a first ALPN value of one byte"
+
+# **A one-byte value reads the alphanumeric test and not the printable range**, which
+# `ja4plus/fingerprinters/ja4.py:86` applies. A row that states the range alone writes `hh`
+# for a first ALPN value of one space, and the code writes `99`.
+ONE_BYTE_CONDITION = "alphanumeric"
+
+# Every row of the register that states the JA4 ALPN condition of a one-byte value.
+ONE_BYTE_ROWS = (ONE_BYTE_ITEM, RULING_ITEM)
 
 # The issue that records the readings of 2026-08-07, and the count of entries that name it
 # in `tests/foxio_deviations.json`. **The ruling of #522 moves no entry**, so a change of
@@ -246,6 +258,15 @@ def test_no_alpn_row_states_the_condition_as_the_alphanumeric_test() -> None:
         assert LOOSE_CONDITION not in _row(item), (
             f"the row named {item!r} states the condition as {LOOSE_CONDITION!r}, and "
             f"`ja4plus/fingerprinters/ja4.py:99` tests the range {PRINTABLE_RANGE}"
+        )
+
+
+def test_every_one_byte_row_names_the_alphanumeric_condition() -> None:
+    """Each one-byte row of the register names the condition that writes `hh`."""
+    for item in ONE_BYTE_ROWS:
+        assert ONE_BYTE_CONDITION in _row(item), (
+            f"the row named {item!r} names no {ONE_BYTE_CONDITION} byte, and "
+            f"`ja4plus/fingerprinters/ja4.py:86` writes `hh` for no other one-byte value"
         )
 
 
