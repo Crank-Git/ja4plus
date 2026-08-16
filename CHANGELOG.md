@@ -6,6 +6,53 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the frame that emits a JA4H value** (#607). Round
+  TBD. **This project emits at the end of the header block, and the port waits for the
+  body**, so the row records a divergence from the port as well as one from FoxIO.
+  `header_block_end` at `ja4plus/utils/http_utils.py:105` returns the offset past the
+  header block terminator, `ja4plus/fingerprinters/ja4h.py:154` reads that offset, and
+  `ja4plus/fingerprinters/ja4h.py:175` returns the value. The JA4H module names
+  `Content-Length` nowhere, so a request that declares a body and carries none produces a
+  value here. `HTTPMessageIsComplete` at `internal/parser/http.go:185` of the port holds
+  the value until the payload after the header block reaches the count that
+  `Content-Length` names, and `ja4h.go:130`, `ja4h.go:174` and `ja4h.go:387` are its three
+  call sites. **The maintainer ruled the port half on 2026-08-13 under
+  `Crank-Git/ja4plus-go#455`, and the ruling of 2026-08-15 on #607 keeps the present frame
+  here.** **The four FoxIO implementations state two triggers, and no FoxIO source states a
+  rule for an incomplete body.** `zeek/ja4h/main.zeek:186` computes the value in
+  `event http_message_done(c: connection, is_orig: bool, stat: http_message_stat)`, and
+  that file holds no handler for a partial request. `wireshark/source/packet-ja4.c:1634`
+  gates the emission on `if (http_req != -100) {`, and `wireshark/source/packet-ja4.c:1149`
+  sets that variable from the field `http.request.method`. That file names `Content-Length`
+  zero times. `rust/ja4/src/http.rs:64-68` reads the same field and no body length, and
+  `python/ja4h.py:17` decides no frame. **This round read all five FoxIO citations at the
+  pinned commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved none of them.**
+  **It did move two citations of this repository.** The body of #607 names
+  `ja4plus/fingerprinters/ja4h.py:149-151` for the emission, and those three lines hold the
+  single-packet path, which runs where the buffer holds no HTTP request. **It moved the
+  citation of the port as well**, because the body names `ja4h.go:117-144` and
+  `ja4h.go:146-185`, and `Crank-Git/ja4plus-go#455` built the gate after that read.
+  **No vector separates the two frames.** A replay of the 38 captures of
+  `tests/foxio_vectors/` produces 74 JA4H values, and a body gate on the reassembled path
+  produces the same 74. **The two libraries therefore disagree on JA4H for a request whose
+  body never completes, and the maintainer holds that difference.** New file
+  `tests/test_ja4h_emission_frame_ruling.py` holds 14 cases. Seven read the row, three read
+  the module, and four drive the fingerprinter over a request that declares a body of 100
+  bytes. The unit suite rises from 5714 collected to 5731, which is 14 cases of the new
+  file, 1 case that parametrizes over the tracked Python files, and 2 cases that
+  parametrize over the sentences of the register row. It reports 5715 passed, 8 skipped, 8
+  xfailed and 114 subtests passed. The conformance suite reports 1676 passed,
+  142 skipped and 138 xfailed against the 138 keys of `tests/foxio_deviations.json`, which
+  are the counts of round 247. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
+  **The cases came first and they bite**: against the register with no row they failed 7 of
+  14, and each failure read
+  `the divergence register holds no row named 'The frame that emits a JA4H value'`.
+  **The red-to-green is the reversal.** A body gate after
+  `ja4plus/fingerprinters/ja4h.py:156` fails 4 further cases, among them
+  `test_a_request_that_declares_a_body_and_carries_none_produces_a_value`. Restore the
+  module and all 14 cases pass. No file under `ja4plus/` changed, so no fingerprint moved
+  and no output field moved.
 - **The divergence register records the JA4L measurement points a QUIC connection holds
   at point D** (#595). Round
   TBD. **The QUIC path evicts no measurement point, and both libraries hold that
