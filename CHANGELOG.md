@@ -6,6 +6,59 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **`docs/specs/foxio/JA4.md` now transcribes the JA4 image and the JA4 text
+  specification** (#691). Round
+  TBD. **JA4 is the one method of the twelve that carries a
+  complete text specification beside its image**, and the transcription directory held a
+  page for every other method. A reader who searched it for a JA4 rule found silence.
+  **The page reads two files**, `technical_details/JA4.png` and
+  `technical_details/JA4.md`, and it states which one carries each rule. Both hashes
+  reproduce the inventory of `docs/specs/foxio/README.md` exactly: the text file reads
+  9153 bytes and `14a9623ad05d6f8b5ccbff2023dc6fce10ff012dc2d202b497e3bc029aa75c94`, and
+  the image reads 61637 bytes and
+  `1bd63c14b3b96c2b70bfa8e85632450c9396af9a13e274489c0cb02f2a7e9615`. **A read of the
+  provider on 2026-08-15 answers the second question of #691**, and it lists
+  `technical_details/` at the pinned commit: twelve files, nine images and three text
+  files. `JA4H.md` is 278 bytes and it builds no fingerprint, so **no method beside JA4
+  holds a live text specification and this round files no further issue.** **The image
+  draws a value that its own caption does not describe.** It captions `JA4_b` as the
+  sorted cipher hash and it draws `acb858a92679`, which is the hash of the unsorted list,
+  and `technical_details/JA4.md:219` names that same value as the part b of the
+  original-order form. The sorted list hashes to `8daaf6152771`. **No tool writes the
+  string the image draws**, and `t13d1516h2_acb858a92679_e5627efa2ab1` appears in no file
+  of `tests/` and in no file of `docs/`. **The text file states two example values and
+  they disagree**: `technical_details/JA4.md:36` reads `b186095e22b6` for part c and
+  `technical_details/JA4.md:194` reads `e5627efa2ab1`. The second is the value the stated
+  rule produces, and this round reproduced it from the input the file prints at
+  `technical_details/JA4.md:154`. `b186095e22b6` appears in no file of this repository.
+  **The Wireshark dissector writes no JA4 value at all.**
+  `wireshark/source/packet-ja4.c:1723-1741` registers fifteen header fields, none reads
+  `ja4.ja4`, and the dissector builds a client string nowhere. **Three references
+  therefore corroborate each rule**, and the page names the Python implementation, the
+  Rust implementation and the Zeek package. **The worked example reproduces in this
+  project byte for byte.** `tests/foxio_vectors/tls-sni.pcapng` holds the one stream whose
+  wire order matches, and `ja4plus` writes the `JA4`, `JA4_o`, `JA4_r` and `JA4_ro` values
+  that `technical_details/JA4.md:194`, `:219`, `:205` and `:213` state. **A client that
+  randomizes its extension order writes one `JA4` value and many `JA4_o` values**, which
+  is the reason JA4 sorts. **The page holds 16 rules and 3 disagreements**, and it changes
+  no fingerprinter. Two rules stay uncertain and keep the vector fallback: the `d`
+  protocol character, which the text states and no implementation writes, and the hex form
+  of an ALPN byte that is not ASCII alphanumeric, which
+  `technical_details/JA4.md:95-104` states and no implementation writes either. **167 JA4
+  values of the FoxIO Python expected-output files all open with `t`**, and the 191 values
+  of `tests/foxio_vectors/rust_expected/` open with `t` 140 times and with `q` 51 times,
+  so no vector measures the `d` character. **39 register entries name the JA4 family**,
+  23 under #138 and 16 under #162, and this round changes none of them. **The page
+  falsifies one live sentence of the divergence register**, which reads that
+  `docs/specs/foxio/` holds no `JA4.md` transcription. Batch #704 owns that table, so this
+  round edits no row of it and #691 records the constraint on that batch. **The Changelog
+  row of round 248 states the same sentence and it stays as written**, because a Changelog
+  row records a past measurement. New file `tests/test_foxio_ja4_transcription.py` holds
+  the page against the inventory, the register and the vector set, and nine of its twelve
+  cases failed before the page existed. **This round changes no file under `ja4plus/` and
+  it moves no fingerprint.** The conformance suite reports 1676 passed, 142 skipped and
+  138 xfailed on the base and the same three counts after the change, and
+  `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases.
 - **The citation guard now reads `docs/implementation_notes.md`, and it refuses a citation
   whose lines hold no statement** (#690). Round
   TBD. **A read of 2026-08-15 measures 19 repository-owned citations of that page, 0 past
