@@ -98,3 +98,45 @@ register.
 - Prose and code comments follow `.claude/rules/ste.md`. The controlled vocabulary is
   the `## Terms` table in `docs/specs/spec.md`.
 - Commit messages use the form `type(scope): summary`, matching the existing history.
+
+## How to file an issue
+
+**Warning: the rule below is a verbatim copy from `Crank-Git/ja4plus-go/CLAUDE.md`, and
+every issue number it names is an issue of the port.** No issue of this repository carries
+those numbers under this rule. #727 adopted the rule under parity rule 2, because FoxIO
+specifies no filing policy.
+
+- **A finding earns a tracker issue in five cases, and never otherwise.** The maintainer
+  adopted this policy on 2026-08-13. A finding earns an issue when it touches one of these.
+  - Behavior.
+  - A fingerprint value.
+  - A guard that guards nothing.
+  - A blocked epic.
+  - A question the maintainer must rule.
+
+  **The batch documentation round repairs every other finding, in the batch that found it,
+  and it files no issue.** A falsified sentence, a moved citation, a missing term and a
+  stale count each reach the round. **The round reports a finding that turns out to touch
+  behavior**, and that finding then becomes an issue under the five cases above.
+
+  The measurement that earned the policy: of 42 loose open issues, about twenty repaired a
+  sentence, a citation, a term or a stale count. **Each repair produced more issues.** #410
+  exists because #398 edited a file. #419 exists because #355 edited a file. #436 exists
+  because #70 measured something. **The backlog regenerated at about the rate it closed.**
+
+**The maintainer set one valve on 2026-08-15, and `.issue-flow.json` records it under
+`filingRule`.** The project manager files no issue whose only symptom is a stale citation,
+or a record that describes a past state. Three rules follow.
+
+1. A worker repairs what its own change falsifies, in the same pull request, even where
+   another live batch owns the file. The project manager resolves the conflict once, at
+   the sub-merge.
+2. A finding that does not fit the change becomes a comment on an issue that exists, and
+   never a new issue.
+3. A finding that is a defect of the library, or that moves a fingerprint, still earns an
+   issue. This valve reaches a record, and it reaches no measurement of the product.
+
+**#708, #709 and #719 are the three issues the maintainer declined under this valve.** A
+read of 2026-08-15 measured the last 300 commits of `master`: 56 touch a file under
+`ja4plus/`, 192 touch `docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against 333 closed
+issues.

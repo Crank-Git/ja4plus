@@ -48,6 +48,86 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   against `tests/foxio_vectors/wireshark_expected/`, and a return of the server value from
   `_quic_server_initial` fails a case there.
 
+- **The filing rule of the port lands here, and a round is a batch** (#727).
+  Round
+  262. **`Crank-Git/ja4plus-go/CLAUDE.md` has held the five-case filing rule since
+  2026-08-13, and this repository never adopted it.** Parity rule 2 governs, because FoxIO
+  specifies no filing policy, so this round copies the rule verbatim into `CLAUDE.md` under
+  the new section `## How to file an issue`. **The copied rule names #410, #419, #436,
+  #398, #355 and #70, and every one of them is an issue of the port.** A warning stands
+  above the copy and states that, so no reader of this repository takes those numbers for
+  its own. The round adds the valve the user set on 2026-08-15, which `.issue-flow.json`
+  records under `filingRule`: no issue is filed whose only symptom is a stale citation, or
+  a record that describes a past state. **#708, #709 and #719 are the three issues the user
+  declined under that valve.**
+  **A round is a batch, and it is no longer an issue.**
+  `tests/test_round_entry_existence.py` failed every change set that edited a tracked file
+  and recorded no round, so every member wrote `CHANGELOG.md` and `docs/specs/spec.md`. A
+  read of 2026-08-15 covered the last 300 commits of `master`: 192 touch
+  `docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against 56 that touch a file under
+  `ja4plus/`. **The mandate now reads the branch the change set belongs to.**
+  `records_a_round` passes a branch whose name opens with `batch/` or `epic/`, and it
+  refuses no round it finds on any other branch. The two prefixes match the two patterns of
+  the base-branch filter of `.github/workflows/test.yml`, so one model names an integration
+  branch in both places.
+  **A run of a pull request checks out a detached merge commit**, so
+  `git rev-parse --abbrev-ref HEAD` answers the literal `HEAD` and names no branch. The new
+  step `Name the branch the change set belongs to` writes `ROUND_ENTRY_BRANCH` from
+  `github.head_ref` and `github.ref_name`, which names the head branch on every event the
+  workflow accepts. Verified against
+  https://docs.github.com/en/actions/reference/workflows-and-actions/contexts (retrieved
+  2026-08-15). **That step runs no `git fetch`**, so the one-command rule #586 measured
+  stands untouched and
+  `test_a_fetch_step_of_the_test_job_runs_one_git_fetch_command` reads the same four steps.
+  **The 261 rounds already recorded stay byte for byte**, and the new model begins at round
+  262, which is this entry. **The dense sequence stays**, because
+  `test_the_changelog_assigns_every_round_from_one_to_the_row_count` caught the duplicate
+  rounds of #482 and it is cheap under the new model. **The two recorded commits stay and
+  the workflow keeps fetching both.** `test_the_reading_fails_the_change_set_of_the_defect`
+  and `test_the_reading_passes_the_change_set_that_records_a_round` now read each commit
+  under a batch branch, and a new case reads the defect commit under a member branch and
+  passes it. **The reading changed and the evidence did not.**
+  **The routine `TBD` sweep goes out and one guard keeps the form.**
+  `tests/test_breaking_change_record.py` requires that both records name the Python floor
+  the package states, and #575 met that reader on the branch that moved the floor. A member
+  that trips that guard still writes an unassigned round entry and the matching row, so
+  this round deleted no case of that module and changed no pattern of it.
+  `.claude/rules/batch-gate.md` records the reading under
+  `### One guard still takes a record from a member`.
+  **Three prose records stated the older model and this round repairs each one**, under the
+  valve above. The paragraph of `.claude/rules/batch-gate.md` that named the member pull
+  request as the change set the check exists to refuse now quotes that wording and states
+  that #727 superseded the example. The module docstring of
+  `tests/test_changelog_round_agreement.py` and the module docstring of
+  `tests/test_breaking_change_record.py` each carried the sentence that every member writes
+  `TBD`, and each one now states the new model and quotes the older wording. **This round
+  changes no file under `ja4plus/` and it moves no fingerprint.** The conformance suite
+  reports 1676 passed, 142 skipped and 138 xfailed on the base commit and the same three
+  counts after the change, and `tests/foxio_deviations.json` holds 138 keys against those
+  138 xfailed cases. **Eighteen cases of `tests/test_round_entry_existence.py` failed
+  before the reading changed**, and
+  `test_a_member_change_set_that_records_no_round_passes` was one of them.
+  **The self-review found sixteen defects and this round repairs every one.** The writing
+  lens read thirteen sentences past the limit of rule 1 of `.claude/rules/ste.md`, two
+  passive sentences that rule 11 bars, and the verb `parts` where `separates` reads
+  plainly. **The correctness lens walked the six events the workflow accepts and it found
+  no state where the reading passes a batch change set that records no round.**
+  **The `## Terms` table barred the word this round writes twenty times.** The
+  `delegation` row names `mandate` under `Do not use`, so `mandate` had one barred meaning
+  and no meaning of its own. `.claude/rules/ste.md` states that a writer who needs a word
+  the table does not hold adds it, so this round adds a `mandate` row. That row states the
+  one meaning the word carries, and it names the `delegation` row that bars the other. The
+  unit suite caught one more defect, in
+  `tests/test_documentation_version_claims.py::test_the_reader_cuts_every_changelog_entry`.
+  **That case cuts every entry below the first third-level heading, and it then bars the
+  opener of a round sentence**, and the entries of `## [Unreleased]` stand above that
+  heading. Each one therefore wraps that sentence, so the opener ends one line and the
+  number opens the next. This entry named an unassigned round inside its prose, which wrote
+  the barred opener on one line, and the repair names that round in words instead. The unit suite
+  reports 5856 passed, 8 skipped and 8 xfailed, and coverage holds at 94% with 4489
+  statements and 271 misses. `ruff check`, `ruff format --check` and
+  `mypy --strict ja4plus/` each report no issue.
+
 - **The divergence register states the JA4 ALPN condition as the printable ASCII range**
   (#601).
   Round
