@@ -8,7 +8,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The project manager files no issue for a stale citation or a spent record** (#704).
   Round
-  TBD. **A read of 2026-08-15 measured the last 300 commits of `master`: 56 touch a file
+  258. **A read of 2026-08-15 measured the last 300 commits of `master`: 56 touch a file
   under `ja4plus/`, 192 touch `docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against
   333 closed issues.** The bookkeeping had become the deliverable, and a guard that
   tightens finds more of what it now refuses, so the backlog regenerated itself. #708 and
@@ -20,7 +20,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **The conformance rules now state what a delegated session may rule** (#597).
   Round
-  TBD. **`.claude/rules/conformance.md` reserved every ruling to the user, and the
+  260. **`.claude/rules/conformance.md` reserved every ruling to the user, and the
   `## Terms` table of `docs/specs/spec.md` stated the same.** A delegated session met that
   question with no guidance, so it had to stop or improvise. The new section
   `## What a delegated session may rule` holds both delegations the user made. **The narrow
@@ -58,7 +58,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The vector download filter now names the JA4H block, the JA4SSH block and the JA4X
   list item** (#684).
   Round
-  TBD. **`tests/download_test_vectors.py:141` held `RUST_COMPARED_FIELDS` with four
+  259. **`tests/download_test_vectors.py:141` held `RUST_COMPARED_FIELDS` with four
   entries, and `tests/test_foxio_rust_parity.py` compares six methods.** #670 added the
   JA4H comparison and #671 added the JA4SSH comparison, and neither round moved the field
   list. **The issue body and the plan comment stated different forms, and a measurement
@@ -89,7 +89,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` each report no issue.
 - **`docs/specs/foxio/JA4SSH.md` now states what the parity harness compares** (#683).
   Round
-  TBD. **The page carried a section named `Why the parity harness never compared this
+  253. **The page carried a section named `Why the parity harness never compared this
   value`, and #671 built that comparison in round 242.**
   `tests/test_foxio_rust_parity.py:1717` opens `TestTheJa4sshValuesTheRustSnapshotHolds`,
   which reads the `ja4ssh` block of
@@ -117,7 +117,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   all five fail on the page as it stood.
 - **`docs/specs/foxio/JA4.md` now transcribes the JA4 image and the JA4 text
   specification** (#691). Round
-  TBD. **JA4 is the one method of the twelve that carries a
+  252. **JA4 is the one method of the twelve that carries a
   complete text specification beside its image**, and the transcription directory held a
   page for every other method. A reader who searched it for a JA4 rule found silence.
   **The page reads two files**, `technical_details/JA4.png` and
@@ -170,7 +170,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases.
 - **The citation guard now reads `docs/implementation_notes.md`, and it refuses a citation
   whose lines hold no statement** (#690). Round
-  TBD. **A read of 2026-08-15 measures 19 repository-owned citations of that page, 0 past
+  251. **A read of 2026-08-15 measures 19 repository-owned citations of that page, 0 past
   the end of their file and 5 that name a blank line or a comment line.** That measurement
   reproduces the one #690 records, at the tip of `batch/705-citation-records-a` rather than
   at `dda5ae7`. **#668 globbed `docs/specs/foxio/` alone, so this page drifted while the
@@ -215,7 +215,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   xfailed cases.
 - **The parity rules now state that a pattern this project takes from the port carries no
   statement of its cost** (#650). Round
-  TBD. **Parity rule 2 of `CLAUDE.md` adopts the interface the port ships, and it adopts
+  250. **Parity rule 2 of `CLAUDE.md` adopts the interface the port ships, and it adopts
   no statement of cost.** Go runs a finite automaton and it backtracks nowhere, Python
   `re` backtracks, and one pattern therefore costs two amounts. **#612 followed parity rule 2 literally and it shipped a
   backtracking defect to a branch.** Its own self-review measured `GET a` plus 32000
@@ -242,7 +242,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   boundary.
 - **The divergence register records the QUIC packets of one datagram that JA4L reads**
   (#613). Round
-  TBD. **This project reads the first packet of a UDP datagram and no other packet of
+  257. **This project reads the first packet of a UDP datagram and no other packet of
   it.** `long_header_packet_type` reads `first_byte = udp_payload[0]` at
   `ja4plus/utils/quic_utils.py:65`, and `ja4plus/fingerprinters/ja4l.py:563` calls that
   function once for each datagram. RFC 9000 Section 12.2 permits a datagram that carries
@@ -327,7 +327,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reason comment, and the sibling file gives every constant one. No file under `ja4plus/`
   changed, so no fingerprint moved and no register entry moved.
 - **The divergence register records the packets a JA4SSH window counts** (#608). Round
-  TBD. **This project counts the segment that completes an SSH message, and the
+  256. **This project counts the segment that completes an SSH message, and the
   `ssh.direction` label of the `tshark` SSH dissector counts fewer frames on two
   captures.** `ja4plus/fingerprinters/ja4ssh.py:247` holds the test, and `is_ssh_packet`
   at `ja4plus/utils/ssh_utils.py:504` holds the banner read. `sshv1.pcap` and `v6.pcap`
@@ -385,7 +385,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   passed where the sentence it reads was gone; it now reads the whole sentence. No file
   under `ja4plus/` changed, so no fingerprint moved and no register entry moved.
 - **The divergence register records the frame that emits a JA4H value** (#607). Round
-  TBD. **This project emits at the end of the header block, and the port waits for the
+  255. **This project emits at the end of the header block, and the port waits for the
   body**, so the row records a divergence from the port as well as one from FoxIO.
   `header_block_end` at `ja4plus/utils/http_utils.py:105` returns the offset past the
   header block terminator, `ja4plus/fingerprinters/ja4h.py:154` reads that offset, and
@@ -433,7 +433,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and no output field moved.
 - **The divergence register records the JA4L measurement points a QUIC connection holds
   at point D** (#595). Round
-  TBD. **The QUIC path evicts no measurement point, and both libraries hold that
+  254. **The QUIC path evicts no measurement point, and both libraries hold that
   behaviour.** `_restart_connection` at `ja4plus/fingerprinters/ja4l.py:411` drops every
   measurement point of one connection, and `ja4plus/fingerprinters/ja4l.py:441` is its one
   call site, inside the branch that `ja4plus/fingerprinters/ja4l.py:437` opens on a SYN
