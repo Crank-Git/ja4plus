@@ -125,6 +125,32 @@ def test_the_reference_value_reaches_the_reference_frame_on_the_two_captures() -
             assert pair in produced, (capture, pair)
 
 
+def test_the_stored_quic_server_value_names_the_address_pair_of_the_server() -> None:
+    """The stored entry of a value names the pair of the packet that measured it.
+
+    One packet gives both QUIC values, and the two measurements read opposite
+    directions. A stored server value that names the client pair reports the wrong
+    direction to every caller of `get_fingerprints`.
+    """
+    fingerprinter = JA4LFingerprinter()
+    with PcapReader(str(VECTORS / "ssh2.pcapng")) as reader:
+        for packet in reader:
+            fingerprinter.process_packet(packet)
+    stored = [
+        entry
+        for entry in fingerprinter.get_fingerprints()
+        if str(entry["fingerprint"]).endswith(QUIC_SUFFIX)
+    ]
+    server = [entry for entry in stored if entry["fingerprint"].startswith("JA4L-S=")]
+    client = [entry for entry in stored if entry["fingerprint"].startswith("JA4L-C=")]
+    assert len(server) == 1
+    assert len(client) == 1
+    assert server[0]["srcport"] == 443
+    assert client[0]["dstport"] == 443
+    assert server[0]["src"] == client[0]["dst"]
+    assert server[0]["dst"] == client[0]["src"]
+
+
 def test_the_processor_reports_both_quic_values_on_the_frame_that_fills_point_d() -> None:
     """A caller of the processor reads both values from the one packet that gives them."""
     processor = Processor()

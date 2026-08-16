@@ -51,7 +51,7 @@ FIRST_BYTE_LINE = 65
 FIRST_BYTE_TEXT = "first_byte = udp_payload[0]"
 
 # The line of the fingerprinter that reads the packet type, and the text it holds.
-PACKET_TYPE_LINE = 600
+PACKET_TYPE_LINE = 609
 PACKET_TYPE_TEXT = "packet_type = long_header_packet_type(udp_payload)"
 
 # The addresses and the ports of the one QUIC connection the synthetic cases read.
@@ -215,7 +215,7 @@ def test_the_register_names_the_two_lines_that_read_the_first_packet() -> None:
         citation
         for citation in (
             "`ja4plus/utils/quic_utils.py:65`",
-            "`ja4plus/fingerprinters/ja4l.py:600`",
+            "`ja4plus/fingerprinters/ja4l.py:609`",
         )
         if citation not in row
     ]

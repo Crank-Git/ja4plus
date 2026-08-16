@@ -179,14 +179,23 @@ class JA4LFingerprinter(BaseFingerprinter):
                 self.grouping_keys.pop(conn.get("reported_key"), None)
                 conn["reported_key"] = _reported_key(proto, outer_layer, sport, dport)
                 self.grouping_keys[conn["reported_key"]] = conn_key
+            endpoints = packet_endpoints(packet)
+            filled_point_b = "B" in conn["timestamps"]
             values = _ja4l_values(packet, conn)
+
+            # The stored entry of a value names the address pair of the packet that
+            # measured it. A QUIC server value measures point `B`, and the packet that
+            # gives it fills point `D`, so the two packets carry opposite pairs.
+            if not filled_point_b and "B" in conn["timestamps"] and proto == "udp":
+                conn["server_endpoints"] = endpoints
 
             if not values:
                 return None
 
-            endpoints = packet_endpoints(packet)
+            server_endpoints = conn.pop("server_endpoints", None) or endpoints
             for value in values:
-                self._store_value(value, conn, endpoints)
+                pair = server_endpoints if value.startswith("JA4L-S=") else endpoints
+                self._store_value(value, conn, pair)
             self.last_extra_fingerprints = list(values[1:])
             return values[0]
 
@@ -558,9 +567,9 @@ def _quic_server_initial(conn: dict[str, Any], udp_payload: bytes, ttl: int, now
     Returns:
         None. The reference publishes the server value on the frame that fills point
         `D`, and `_quic_ja4l` returns it there. The function records no point while the
-        ServerHello is incomplete, and it records none when the packet does not
-        decrypt, because the fingerprinter then cannot tell which Initial packet
-        carries the ServerHello.
+        ServerHello is incomplete. It records none where the packet does not decrypt,
+        because the fingerprinter then cannot tell which Initial packet carries the
+        ServerHello.
     """
     timestamps = conn["timestamps"]
     if "A" not in timestamps or "B" in timestamps:
