@@ -6,6 +6,59 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the packets a JA4SSH window counts** (#608). Round
+  TBD. **This project counts the segment that completes an SSH message, and the
+  `ssh.direction` label of the `tshark` SSH dissector counts fewer frames on two
+  captures.** `ja4plus/fingerprinters/ja4ssh.py:247` holds the test, and `is_ssh_packet`
+  at `ja4plus/utils/ssh_utils.py:504` holds the banner read. `sshv1.pcap` and `v6.pcap`
+  each count 43 frames here and 39 there, and the extra frames are 63, 65, 68 and 70.
+  `ssh2-malformed.pcap` and `ssh2-moloch-crash.pcap` each count 13 frames here and 10
+  there, and the extra frames are 14, 19 and 21. **The dissector labels no frame that
+  this project leaves uncounted**, on all nine SSH captures of `tests/foxio_vectors/`.
+  **The server count of 21 describes the reassembly state of the dissector, and it
+  describes no property of the connection**, so `.claude/rules/conformance.md` declines
+  it. The dissector reassembles 480 bytes across frame 63 and frame 65 of `sshv1.pcap`,
+  and it reports `[2 Reassembled TCP Segments (480 bytes): #63(16), #65(464)]`. Its own
+  SSHv1 framing is `4 + (8 - length % 8) + length`, and that arithmetic asks for 484
+  bytes, so frame 68 and frame 70 reach no SSH dissection. Frame 68 holds 28 bytes and
+  opens `00000015`, and `4 + 3 + 21 = 28`. Frame 70 holds 20 bytes and opens `00000009`,
+  and `4 + 7 + 9 = 20`. **The 21 labeled server segments hold six lengths of 12 and six
+  lengths of 20, and frame 70 adds a seventh length of 20**, so a consistent framing rule
+  produces `s20` and never the `s12` of the plugin. **The reference is not unanimous on
+  this capture**: `tests/foxio_vectors/wireshark_expected/sshv1.pcap.json` holds
+  `c20s12_c18s21_c10s1` on frames 72 to 75, `tests/foxio_vectors/sshv1.pcap.json` holds
+  one stream entry with `ssh_extras` and no JA4SSH value, and the corpus holds no Rust
+  snapshot and no Zeek baseline for that capture. **#608 read two repairs and each one
+  costs more than the gap**, because the first writes a length computation that the same
+  dissector contradicts and the second states a boundary rule no FoxIO source holds.
+  **The maintainer ruled on 2026-08-15 that the present selection stands**, and
+  `Crank-Git/ja4plus-go#491` ruled the other half on 2026-08-14 and changed no line of
+  the port. `testdata/deviations.json` of the port holds `sshv1.pcap/72/JA4SSH.1` and
+  `v6.pcap/72/JA4SSH.1`, each recording `ours` as `c20s20_c18s25_c10s1`, which is the
+  value this project produces. **The row therefore records a declined defect against
+  FoxIO and no divergence from the port.** **This round re-measured every count of #608
+  on 2026-08-15, with TShark (Wireshark) 4.6.7**, and each one reproduced. **It corrects
+  one sentence of #608**, which states that this project labels no frame the dissector
+  leaves unlabeled; the measured relation runs the other way. New file
+  `tests/test_ja4ssh_packet_selection_ruling.py` holds 15 cases. Nine read the row, one
+  reads the module, and five drive the fingerprinter over two captures and one synthetic
+  connection. The unit suite rises from 5731 collected to 5747, which is 15 cases of the
+  new file and 1 case that parametrizes over the tracked Python files. **The register row
+  adds no case**, and #607 measured that a row of that table can add two.
+  It reports 5731 passed, 8 skipped,
+  8 xfailed and 114 subtests passed. The conformance suite reports 1676 passed, 142
+  skipped and 138 xfailed against the 138 keys of `tests/foxio_deviations.json`, which
+  are the counts #607 recorded. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
+  **The cases came first and they bite**: against the register with no row they failed 9
+  of 15, and each failure read
+  `the divergence register holds no row named 'The packets a JA4SSH window counts'`.
+  **Two reversals of the selection each fail a case, and this round measured both.** A
+  selection that counts the segment where the tracker completes no message fails 2 of 15,
+  among them `test_a_segment_that_holds_part_of_a_message_counts_no_packet`. A selection
+  that drops the banner test fails 5 of 15, among them
+  `test_the_sshv1_capture_produces_the_value_of_the_present_selection`. No file under
+  `ja4plus/` changed, so no fingerprint moved and no register entry moved.
 - **The divergence register records the frame that emits a JA4H value** (#607). Round
   TBD. **This project emits at the end of the header block, and the port waits for the
   body**, so the row records a divergence from the port as well as one from FoxIO.
