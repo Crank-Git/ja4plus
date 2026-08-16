@@ -78,12 +78,6 @@
     "issue": 709
   },
   {
-    "page": "JA4SSH.md",
-    "citation": "`tests/test_foxio_rust_parity.py:72`",
-    "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
-    "issue": 709
-  },
-  {
     "page": "JA4T.md",
     "citation": "`tests/test_foxio_rust_parity.py:72`",
     "reason": "The citation names a comment alone at the working tree. #668 measured it on 2026-08-15 and its condition read the line count alone.",
