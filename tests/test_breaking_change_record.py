@@ -13,10 +13,16 @@ a reader of the record meets the gap.
 
 ## Why the two floor cases read an unassigned record
 
-**A member writes `TBD` in place of its round number, and the project manager assigns the
-number at the batch gate.** #575 moved the Python floor and met the result: a reader that
-demanded a number could not pass on the branch that made the move, and no later branch
-makes it again. `FLOOR_ROUND` and `FLOOR_ROW` therefore accept `TBD` beside a number.
+**This file is the one guard that takes a round record from a member.** #727 moved the
+round mandate to the batch pull request on 2026-08-15, so a member records no round of its
+own. A member that moves the Python floor still meets the two floor cases below, and it
+therefore writes `Round TBD.` and the matching row. The project manager assigns the number
+at the batch gate. #575 moved the floor and met that result: a reader that demanded a
+number could not pass on the branch that made the move. No later branch makes it again, and
+`FLOOR_ROUND` and `FLOOR_ROW` therefore accept `TBD` beside a number.
+
+**#727 kept this guard and kept the `TBD` form it reads.** `.claude/rules/batch-gate.md`
+records the reading, under `### One guard still takes a record from a member`.
 
 **An entry that records no round at all still fails.** `tests/test_specification_changelog.py`
 requires the rounds 1 to the row count, each on one row, so a `TBD` reaches `dev` nowhere.

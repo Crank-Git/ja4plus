@@ -1,15 +1,24 @@
 """Tests that `CHANGELOG.md` and `docs/specs/spec.md` state the same Changelog round.
 
-Every worker writes the literal `TBD` and chooses no round number, because two members of
-one batch have claimed the same number before. The project manager assigns each number at
-the batch gate. **An assignment that covers one file and not the other leaves an orphan**,
-and a reader who follows `Round TBD` in a shipped `CHANGELOG.md` reaches nothing. #302
-found three such orphans, and the handoff of session 10 records six more from an earlier
-batch.
+The batch pull request records one round, and the project manager writes the number at the
+batch gate. **An assignment that covers one file and not the other leaves an orphan**, and
+a reader who follows `Round TBD` in a shipped `CHANGELOG.md` reaches nothing. #302 found
+three such orphans, and the handoff of session 10 records six more from an earlier batch.
 
-**A case here bars no `TBD`.** An integration branch carries one `TBD` for each member
-that has not reached the gate, and every one of them is correct. The defect is the
-disagreement between the two files, so these cases compare the files against each other.
+**A case here bars no `TBD`.** The defect is the disagreement between the two files, so
+these cases compare the files against each other.
+
+**#727 retired the routine `TBD` sweep on 2026-08-15, and it kept the form.** A member
+records no round, so no member writes `TBD` for a round of its own. One guard still takes a
+record from the member that trips it. `tests/test_breaking_change_record.py` requires that
+each file record the Python floor the package states. #575 met that reader on the branch
+that moved the floor, and such a member writes `Round TBD.` and the matching row.
+`.claude/rules/batch-gate.md` states the whole model. **The sentence below is the wording
+of the older model, quoted rather than rewritten.**
+
+> Every worker writes the literal `TBD` and chooses no round number, because two members of
+> one batch have claimed the same number before. The project manager assigns each number at
+> the batch gate.
 
 An entry matches a row on the issue the entry names. A numbered entry matches on the
 number alone, because a round number is an identifier that names one row.
