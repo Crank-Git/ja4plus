@@ -78,6 +78,11 @@ DECRYPTOR_CAPTURES = (
 # The issue of this repository that records the interface, and that runs after this row.
 INTERFACE_ISSUE = "#593"
 
+# The issue of the port that built the route carrying key material to a fingerprinter,
+# beside the moment it closed. #621 requires that the row name it.
+ROUTE_ISSUE = "Crank-Git/ja4plus-go#661"
+ROUTE_MOMENT = "2026-08-15T06:43:52Z"
+
 # The date of each ruling. The first one stands on the non-goal and the second one
 # replaces the reversal condition.
 FIRST_RULING = "2026-08-15"
@@ -226,6 +231,17 @@ def test_the_register_names_both_rulings_by_date() -> None:
     row = _register_row()
     assert FIRST_RULING in row
     assert SECOND_RULING in row
+
+
+def test_the_register_names_the_port_issue_that_built_the_route() -> None:
+    """The row names the port issue that carries key material to a fingerprinter.
+
+    #621 requires this name, because that issue is where the port crossed the boundary
+    #129 holds. A row that omits it states a capability gap and names no cause.
+    """
+    row = _register_row()
+    assert f"`{ROUTE_ISSUE}`" in row
+    assert ROUTE_MOMENT in row
 
 
 def test_the_register_leaves_the_interface_to_the_issue_that_records_it() -> None:
