@@ -12,7 +12,7 @@ outer header fails the port test and the method returns None. The QUIC branches 
 port test, so they decoded the tunnel bytes instead.
 
 No capture of the FoxIO corpus carries DHCP inside a tunnel, so no vector separates the
-two behaviours. Every packet of this module is therefore constructed. A replay of the 38
+two behaviors. Every packet of this module is therefore constructed. A replay of the 38
 committed captures produced 4 JA4D values and 6 JA4D6 values before the change and after
 it.
 

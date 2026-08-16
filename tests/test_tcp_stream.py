@@ -11,7 +11,7 @@ VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 WRAP_SEQ = 0xFFFFFFFE
 
 # The reads of the stored segments that `add_segment` may take for each segment it adds.
-# The current duplicate check reads none, and a check that peeks at one neighbour reads
+# The current duplicate check reads none, and a check that peeks at one neighbor reads
 # one. A scan of the stored segments reads half the stored count for each segment, which
 # is 2499.5 at 5000 segments and 9999.5 at 20000. The bound therefore sits far below the
 # scan at either count, and it needs no clock.

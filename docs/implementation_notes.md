@@ -378,7 +378,7 @@ That is the one case the #138 rule does not reach, because the rule rests on a r
 that holds the value.
 
 **The reading.** `ja4plus` reads the record layer without regard to the tunnel protocol
-that carries it. One behaviour produces both readings:
+that carries it. One behavior produces both readings:
 
 | Capture | Tunnel | FoxIO implementations that hold the JA4X values |
 |---|---|---|
@@ -781,7 +781,7 @@ Both branches now read `innermost_layer(packet, (UDP,))`, which
 reads the port pair through the same function, so one result names one port pair.
 
 No capture of the FoxIO corpus carries DHCP inside a tunnel, so no vector
-separates the two behaviours and no committed value moves.
+separates the two behaviors and no committed value moves.
 `tests/test_dhcp_tunnel_inner_udp.py` builds the packets that separate them. The
 result keeps the form the section on the connection key of a mirrored capture
 states: the outer address pair with the inner port pair. #242 decided that form,
@@ -862,7 +862,7 @@ Both branches now read `innermost_layer(packet, (UDP,))`, which
 reads the port pair through the same function, so one result names one port pair.
 
 No capture of the FoxIO corpus carries QUIC inside a tunnel, so no vector
-separates the two behaviours and no committed value moves.
+separates the two behaviors and no committed value moves.
 `tests/test_quic_tunnel_inner_udp.py` builds the packets that separate them. The
 connection key keeps the form the section below states: the outer address pair
 with the inner port pair. #242 decided that form, and #594 moves the port half
@@ -907,7 +907,7 @@ pair `10.16.27.12` and `10.16.27.131`. Both name the inner ports `65174` and
 
 `ja4plus` reports the outer pair with the inner ports, which is the pair the
 FoxIO Python file reports. No vector separates the two rules, so rule 1 of
-`CLAUDE.md` keeps that behaviour. #242 decided it.
+`CLAUDE.md` keeps that behavior. #242 decided it.
 
 `SNAPSHOT_ADDRESS_ALIASES` in `tests/test_foxio_rust_parity.py` records the pair.
 The map holds the identity the Rust snapshot names, and it returns the identity
@@ -1018,7 +1018,7 @@ relative numbers. A reader knows which packet is last only when the connection e
 | The end-of-connection point | Client values it reports |
 |---|---|
 | A FIN or a RST after the final client point | 26, and it loses 34 |
-| Every measurement point read | 105, which is the behaviour today |
+| Every measurement point read | 105, which is the behavior today |
 | A read of the stored list at the end of the capture | 60, and it loses none |
 
 Only the last point reproduces the reference, and 34 of the 60 connections never close
@@ -1387,7 +1387,7 @@ does. `get_stream` reads it for the gap test and the overlap arithmetic, so both
 across the wrap.
 
 `_ordered_segments` gives the segment order. A stream occupies one arc of the sequence
-space, and one step between two neighbours closes that arc. The method sorts the
+space, and one step between two neighbors closes that arc. The method sorts the
 segments on the raw number, finds the widest step, and starts the stream at the segment
 after it. `get_stream` and `base_seq` both read that order.
 
@@ -1847,7 +1847,7 @@ snapshot holds `ja4t`, `ja4l_c` and `ja4l_s` for it, and no `ja4s` and no `ja4`.
 implementation holds a JA4S value for the stream.
 
 `ja4plus` reads the record layer without regard to the tunnel protocol that carries it,
-which is the behaviour #138 decided to keep for the three JA4X values on the same stream.
+which is the behavior #138 decided to keep for the three JA4X values on the same stream.
 The register records the JA4S value under the same ruling.
 
 ### The register

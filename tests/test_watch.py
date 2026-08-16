@@ -15,7 +15,7 @@ Version 0.6.0 called `cleanup_connection` never, so a monitor grew until the hos
 stopped it. Each test below fails against that code.
 
 No test here opens a capture interface. Every test drives the monitor from an injected
-packet source, so the measured behaviour is the loop and not the capture layer.
+packet source, so the measured behavior is the loop and not the capture layer.
 """
 
 import io

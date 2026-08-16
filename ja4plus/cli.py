@@ -307,7 +307,7 @@ def _result_stream(args: argparse.Namespace) -> Iterator[TextIO]:
     """Yield the stream that carries the results, and close it at the end.
 
     FR-structured-output-9 gives standard output to the results alone, and
-    FR-structured-output-10 lets `--output` send them to a file instead. The behaviour
+    FR-structured-output-10 lets `--output` send them to a file instead. The behavior
     rules refuse to overwrite a file that exists, because a run that names the wrong file
     destroys the earlier run.
 

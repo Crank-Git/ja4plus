@@ -151,7 +151,7 @@ IMAGE_CLAIM = (
 )
 
 # **Warning: the window between the noun and the claim is 40 characters.** A longer window
-# reaches the claim of a neighbouring clause and reports a count that sentence never made.
+# reaches the claim of a neighboring clause and reports a count that sentence never made.
 CLAIM_WINDOW = r"[^.]{0,40}?"
 
 # The word order that states the claim first and the count last, as in `The count of FoxIO

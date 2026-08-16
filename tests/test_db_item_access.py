@@ -2,7 +2,7 @@
 
 `docs/specs/features/07-db-enrichment.md` states FR-db-enrichment-16 and
 FR-db-enrichment-17. `tests/test_types.py` holds the same cases for
-`FingerprintResult`, because this project holds one spelling of the behaviour.
+`FingerprintResult`, because this project holds one spelling of the behavior.
 
 Version 0.6.0 published the three keys `application`, `type` and `notes`, and
 `LookupResult` names a field for each one. No key of version 0.6.0 changed its name.

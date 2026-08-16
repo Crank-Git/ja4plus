@@ -33,28 +33,29 @@ misrepresents the person.
 
 ### The spellings rule 17 keeps
 
-**Warning: read this table before you move a British spelling.** Rule 17 moves no span this
-section names, and a sweep by pattern that skipped this section would falsify a record.
+**Warning: read this section before you move a British spelling.** Rule 17 moves no span
+this section names, and a sweep by pattern that skipped this section would falsify a
+record.
 
-**Rule 17 moves none of these four.**
+**Rule 17 moves none of these five.**
 
 1. A Markdown quotation, which opens the line with `>`. A quotation is evidence.
 2. A word inside a code span, which the list above already reproduces verbatim.
 3. The two records that `## The exemption` names.
 4. A span the list below names, in a file the same item names.
+5. `tests/test_us_english_spelling.py`, which states every British spelling it detects.
 
 **Each item names the span first and the path second, and each one is a code span.** The
-path is a git pathspec. `tests/test_us_english_spelling.py` reads this list, and it keeps
-no list of its own.
+path is a git pathspec, and the reader matches a span without regard to its case. This
+list keeps every span an identifier, a heading or a quotation holds.
 
-- `Behaviour rules` in `docs/specs/features/*.md`. It is the heading of eleven feature
-  pages, and `tests/test_documentation_behaviour_rule.py` reads it by string.
-- `Behaviour rules` in `tests/*.py`. Every citation of that heading holds it.
+- `Behaviour rule` in `*`. It opens the heading `## Behaviour rules` of eleven feature
+  pages, and it opens every citation of that heading. `tests/test_documentation_behaviour_rule.py`
+  reads the heading by string.
 - `BehaviourRules` in `tests/*.py`. The case name `TestTheBehaviourRulesNameOneCommand`
   holds the same heading as one word.
 - `behaviour_rules` in `tests/*.py`. It is a function name.
-- `test_documentation_behaviour_rule` in `tests/*.py`. It is a module name, which is a file
-  path.
+- `test_documentation_behaviour_rule` in `*`. It is a module name, which is a file path.
 - `neighbour` in `tests/state_readers.py`. The constant names `NEIGHBOUR_CLIENT` and
   `NEIGHBOUR_SERVER` hold it, and so do the parameter names that read them.
 - `neighbour` in `tests/test_cleanup_connection.py`. Four parameter names hold it.
@@ -63,6 +64,7 @@ no list of its own.
 - `cancelled` in `tests/test_batch_gate.py`. It is the run conclusion the provider writes.
 - `preserves the present behaviour` in `tests/test_delegated_ruling_rule.py`. The
   maintainer stated the delegation on 2026-08-15 in these words.
+- `unlabelled` in `tests/test_spec_validation.py`. It is a function name.
 - `acknowledgement` in `*`. American English holds this form beside `acknowledgment`, so
   rule 17 states no preference.
 
@@ -94,7 +96,7 @@ wants rule 17 to reach a word writes that word as prose.
 ### Grammar
 
 11. Active voice. "The processor evicts the entry", not "The entry is evicted."
-12. Present tense for behaviour. Imperative for instructions.
+12. Present tense for behavior. Imperative for instructions.
 13. Keep the articles. Write "the state table", not "state table".
 14. No `-ing` form as a noun or as a heading. "Batching" becomes "How to form a batch".
 15. Write positively. State what to do.
@@ -142,8 +144,9 @@ the rule-3 finding and #502 ends it.
 
 `tests/test_changelog_sentence_exemption.py` reads this section against the tracked
 document list of git and against the numbered rule list above. A third record that claims
-the exemption fails a case there. A rule the section places nowhere fails one too, so a
-seventeenth rule needs a reading before it ships.
+the exemption fails a case there. A rule the section places nowhere fails one too, so an
+eighteenth rule needs a reading before it ships. #663 gave rule 17 that reading on
+2026-08-16.
 
 ## Patterns
 
@@ -199,7 +202,7 @@ def lookup(fingerprint: str) -> LookupResult | None:
     """
 ```
 
-**A test name is a sentence.** One behaviour, present tense, active voice:
+**A test name is a sentence.** One behavior, present tense, active voice:
 `emits no fingerprint before the window fills`, not `test ssh window stuff 2`.
 
 **A marker comment** keeps its keyword, because tooling matches on it. Write the body to
@@ -224,4 +227,4 @@ this standard and name the issue:
 - [ ] Active voice, present tense, articles present, no `-ing` nouns or headings.
 - [ ] Quotes, evidence, code, paths and identifiers are verbatim.
 - [ ] Code comments state the reason. Docstrings open with the result. Test names read
-      as one behaviour.
+      as one behavior.

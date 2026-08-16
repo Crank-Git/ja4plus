@@ -141,7 +141,7 @@ This feature set has no screen. Its output is the test report.
 
 ## Behaviour rules
 
-- FoxIO specifies the behaviour. Where a reader reads the image and finds it
+- FoxIO specifies the behavior. Where a reader reads the image and finds it
   ambiguous, the expected-output file decides, and the reading goes into
   `docs/implementation_notes.md`. An image nobody read reaches no fallback.
 - The JA4SSH window counts SSH packets sent by either side. A bare ACK is not an
@@ -174,7 +174,7 @@ This feature set has no screen. Its output is the test report.
   `JA4L-C` is `32_128`, which is the bare ACK. `docs/implementation_notes.md` states
   the mechanism the project infers: the reference reads that packet as HTTP, and it
   holds the timestamps of each protocol in a separate table. The vectors prove the
-  behaviour. They do not prove the mechanism.
+  behavior. They do not prove the mechanism.
 - `FR-spec-conformance-18` to `FR-spec-conformance-21` describe the TCP form of
   JA4L. `FR-spec-conformance-17` applies to both forms. The QUIC form reads the
   Initial packets and the Handshake packets.
@@ -206,7 +206,7 @@ This feature set has no screen. Its output is the test report.
   stream, `python/test/testdata/` decides.
 - JA4X reads the record layer without regard to the tunnel protocol that carries it.
   `socks4-https.pcap` produces three JA4X values on the SOCKS4 tunnel on port 9901,
-  and no FoxIO implementation holds one. The same behaviour produces the
+  and no FoxIO implementation holds one. The same behavior produces the
   `https-connect.pcap` values that the FoxIO Rust snapshot and the Wireshark
   dissector both hold. #138 holds the ruling, and the register records the
   divergence.

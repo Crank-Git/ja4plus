@@ -63,7 +63,7 @@ class TestJA4SSHIPv6(unittest.TestCase):
         """JA4SSH reads an IPv6 packet and keys its connection by the IPv6 addresses.
 
         #339 records that this case read the result of `process_packet` and discarded
-        it. The values below are the measured behaviour of the unchanged code.
+        it. The values below are the measured behavior of the unchanged code.
         """
         from ja4plus.fingerprinters.ja4ssh import JA4SSHFingerprinter
 

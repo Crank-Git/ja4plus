@@ -2,7 +2,7 @@
 
 The QUIC path of JA4L evicts no measurement point at point `D`. A four-tuple that two
 QUIC connections reuse therefore reports one client value and one server value, and the
-later connection reports none. `ja4plus-go` holds the same behaviour, so the two
+later connection reports none. `ja4plus-go` holds the same behavior, so the two
 libraries agree.
 
 **A ruling that lives only in a closed issue is a ruling the next reader reverses by
@@ -232,7 +232,7 @@ def test_the_register_names_the_four_references_that_split() -> None:
 
 
 def test_the_register_row_reads_parity_rule_one() -> None:
-    """The row states rule 1, because FoxIO governs the behaviour of a fingerprinter."""
+    """The row states rule 1, because FoxIO governs the behavior of a fingerprinter."""
     assert _register_row().split("|")[4].strip() == "1"
 
 

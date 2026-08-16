@@ -26,6 +26,11 @@ verb form. The plural is the reading this corpus uses.
 **A word inside a code span reaches no case**, which bar 2 of the rule file states. A
 writer who wants rule 17 to reach a word writes that word as prose.
 
+**This file reaches no case either**, which bar 5 states. `BRITISH_SPANS` holds one British
+spelling for each class it detects, and a sweep of this file would empty the detector. The
+first sweep of #663 met that trap. It rewrote 89 words here, and it left a module that
+detected the US spelling and reported it as British.
+
 These cases read prose and the file list of git. They import nothing from `ja4plus` and
 they produce no fingerprint.
 """
@@ -39,6 +44,9 @@ from typing import Dict, List, NamedTuple, Tuple
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 RULE_PATH = ".claude/rules/ste.md"
+
+# The module that states the detection list, which bar 5 of the rule file keeps whole.
+DETECTOR_PATH = "tests/test_us_english_spelling.py"
 
 # The heading of each section this module reads. `## The exemption` names the two records,
 # and the spelling section names every span a case or a caller reads by string.
@@ -439,26 +447,34 @@ def _masked(line: str) -> str:
     return CODE_SPAN.sub(lambda match: " " * len(match.group(0)), line)
 
 
-def _exempt_at(path: str, line: str, start: int, spans: Tuple[ExemptSpan, ...]) -> bool:
-    """Return whether one span of the rule file covers the word at one offset.
+def _exempt_at(path: str, line: str, start: int, end: int, spans: Tuple[ExemptSpan, ...]) -> bool:
+    """Return whether one span of the rule file overlaps the word at one offset.
+
+    **The reader takes an overlap and not a containment.** `BehaviourRules` stands inside
+    the case name `TestTheBehaviourRulesNameOneCommand`, and a reader of the word start
+    alone would report that name. **The reader ignores the case of a letter**, because
+    `NEIGHBOUR_CLIENT` holds the span `neighbour` in upper case.
 
     Args:
         path: The path of the file, relative to the repository root.
         line: The whole line the word stands on.
-        start: The offset of the word inside the line.
+        start: The offset of the first letter of the word.
+        end: The offset past the last letter of the word.
         spans: Every span the rule file keeps.
 
     Returns:
-        True where a span the file matches covers the offset.
+        True where a span the file matches overlaps the word.
     """
+    lowered = line.lower()
     for entry in spans:
         if not fnmatch(path, entry.path):
             continue
-        offset = line.find(entry.span)
+        span = entry.span.lower()
+        offset = lowered.find(span)
         while offset != -1:
-            if offset <= start < offset + len(entry.span):
+            if offset < end and start < offset + len(span):
                 return True
-            offset = line.find(entry.span, offset + 1)
+            offset = lowered.find(span, offset + 1)
     return False
 
 
@@ -509,6 +525,8 @@ def failures(
     Returns:
         One entry for each word that carries a British spelling rule 17 reaches.
     """
+    if path == DETECTOR_PATH:
+        return []
     skipped = _exempt_lines(path, text, records)
     found: List[Failure] = []
     for number, line in enumerate(text.splitlines(), start=1):
@@ -517,7 +535,7 @@ def failures(
         masked = _masked(line)
         for match in WORD.finditer(masked):
             american = us_form(match.group(0))
-            if american and not _exempt_at(path, line, match.start(), spans):
+            if american and not _exempt_at(path, line, match.start(), match.end(), spans):
                 found.append(Failure(path, number, match.group(0), american))
     return found
 
@@ -567,7 +585,7 @@ def test_the_reader_takes_every_exempt_span_from_the_rule_file() -> None:
     """The reader reads the exempt spans from the spelling section and from no list here."""
     spans = exempt_spans(read_file(RULE_PATH))
     assert len(spans) >= SPAN_FLOOR, f"the reader names {len(spans)} spans"
-    assert ExemptSpan("Behaviour rules", "docs/specs/features/*.md") in spans
+    assert ExemptSpan("Behaviour rule", "*") in spans
     assert ExemptSpan("acknowledgement", "*") in spans
 
 
@@ -585,12 +603,31 @@ def test_the_rule_file_states_the_reason_the_maintainer_gave() -> None:
     assert "2026-08-16" in body
 
 
-def test_the_rule_file_states_the_four_bars_of_the_sweep() -> None:
-    """The spelling section states the quotation bar, the code-span bar and the two lists."""
+def test_the_rule_file_states_the_five_bars_of_the_sweep() -> None:
+    """The spelling section states the quotation bar, the code-span bar and the three lists."""
     body = section_body(read_file(RULE_PATH), SPELLING_HEADING)
     assert "quotation" in body
     assert "code span" in body
     assert EXEMPTION_HEADING in body
+    assert DETECTOR_PATH in body
+
+
+def test_the_reader_reads_no_line_of_the_module_that_states_the_detection_list() -> None:
+    """Bar 5 keeps this module, so a sweep never empties the list that detects a spelling."""
+    assert failures(DETECTOR_PATH, "The behaviour stands.\n", (), {}) == []
+
+
+def test_the_reader_keeps_a_span_that_stands_inside_a_longer_name() -> None:
+    """A case name holds `BehaviourRules` as one word, and the reader keeps the whole name."""
+    spans = (ExemptSpan("BehaviourRules", "tests/*.py"),)
+    line = "class TestTheBehaviourRulesNameOneCommand:\n"
+    assert failures("tests/test_made_up.py", line, spans, {}) == []
+
+
+def test_the_reader_keeps_a_span_an_upper_case_name_holds() -> None:
+    """A constant name holds `neighbour` in upper case, and the reader keeps that name."""
+    spans = (ExemptSpan("neighbour", "tests/state_readers.py"),)
+    assert failures("tests/state_readers.py", 'NEIGHBOUR_CLIENT = "1"\n', spans, {}) == []
 
 
 def test_the_reader_reports_a_british_spelling_of_a_page_it_writes() -> None:
