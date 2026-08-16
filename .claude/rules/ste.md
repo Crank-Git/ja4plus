@@ -28,6 +28,47 @@ misrepresents the person.
   `file:line` references.
 - Code, configuration, commands, JSON, file paths, identifiers and label names.
 - Third-party product names, API field names, and text copied from the FoxIO material.
+- A document heading a case reads by string, and every citation of that heading.
+
+### The spellings rule 17 keeps
+
+**Warning: read this table before you move a British spelling.** Rule 17 moves no span this
+section names, and a sweep by pattern that skipped this section would falsify a record.
+
+**Rule 17 moves none of these four.**
+
+1. A Markdown quotation, which opens the line with `>`. A quotation is evidence.
+2. A word inside a code span, which the list above already reproduces verbatim.
+3. The two records that `## The exemption` names.
+4. A span the list below names, in a file the same item names.
+
+**Each item names the span first and the path second, and each one is a code span.** The
+path is a git pathspec. `tests/test_us_english_spelling.py` reads this list, and it keeps
+no list of its own.
+
+- `Behaviour rules` in `docs/specs/features/*.md`. It is the heading of eleven feature
+  pages, and `tests/test_documentation_behaviour_rule.py` reads it by string.
+- `Behaviour rules` in `tests/*.py`. Every citation of that heading holds it.
+- `BehaviourRules` in `tests/*.py`. The case name `TestTheBehaviourRulesNameOneCommand`
+  holds the same heading as one word.
+- `behaviour_rules` in `tests/*.py`. It is a function name.
+- `test_documentation_behaviour_rule` in `tests/*.py`. It is a module name, which is a file
+  path.
+- `neighbour` in `tests/state_readers.py`. The constant names `NEIGHBOUR_CLIENT` and
+  `NEIGHBOUR_SERVER` hold it, and so do the parameter names that read them.
+- `neighbour` in `tests/test_cleanup_connection.py`. Four parameter names hold it.
+- `neighbour` in `tests/test_foxio_citation_lines.py`. The fixture file name `neighbour.md`
+  holds it, and so does the local name that reads it.
+- `cancelled` in `tests/test_batch_gate.py`. It is the run conclusion the provider writes.
+- `preserves the present behaviour` in `tests/test_delegated_ruling_rule.py`. The
+  maintainer stated the delegation on 2026-08-15 in these words.
+- `acknowledgement` in `*`. American English holds this form beside `acknowledgment`, so
+  rule 17 states no preference.
+
+**Warning: `towards` is a usage choice and it is no spelling.** Rule 17 reaches it nowhere.
+
+**Warning: bar 2 costs the sweep every word a writer puts in backticks.** A reader who
+wants rule 17 to reach a word writes that word as prose.
 
 ## The rules
 
@@ -46,6 +87,8 @@ misrepresents the person.
 8. Keep noun clusters to three words.
 9. No metaphor, idiom or slang. State the mechanism instead.
 10. No abbreviation the project has not defined.
+17. US English spelling. Write `behavior`, `neighbor`, `analyze` and `labeled`, and never
+    the British form of the same word.
 
 ### Grammar
 
@@ -58,8 +101,9 @@ misrepresents the person.
 
 ## The exemption
 
-**Rule 1 and rule 3 exempt two records, and they exempt no other document.** The user
-ruled on 2026-08-10, on #457 for rule 1 and on #502 for rule 3.
+**Rule 1, rule 3 and rule 17 exempt two records, and they exempt no other document.** The
+user ruled on 2026-08-10, on #457 for rule 1 and on #502 for rule 3. The maintainer ruled
+rule 17 on 2026-08-16, on #663.
 
 - The entries of `CHANGELOG.md`, which each record one round.
 - The `## Changelog` table of `docs/specs/spec.md`, which holds one row for each round.
@@ -72,8 +116,17 @@ saw is not the text a future reader sees.
 from how much that round measured. A read of 2026-08-10 reports 178 of the 190 rows past
 six sentences, and 113 of the 136 entries of `CHANGELOG.md` past six.
 
-**The exemption covers rule 1 and rule 3.** It covers the word limit of a sentence and the
-sentence limit of a paragraph, and it covers no other rule of this standard.
+**The exemption covers rule 1, rule 3 and rule 17.** It covers the word limit of a
+sentence, the sentence limit of a paragraph and the spelling of a word. It covers no other
+rule of this standard.
+
+**Rule 17 exempts the same two records, and the maintainer stated the reason on
+2026-08-16.** The documentation of this repository is largely agent-written, so a worker
+that matches the surrounding spelling strengthens a convention no person chose. The
+maintainer ruled US English to end that loop. **A record is the one text the ruling does
+not reach.** A record states a past measurement, and a rewrite of its spelling leaves a
+future reader a text that no past reader saw. The sweep of #663 therefore moved no entry of
+`CHANGELOG.md` and no row of the `## Changelog` table.
 
 **Every other rule reaches both records: rules 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
 and 16.** Among them stand one instruction per sentence, one word one meaning, active
