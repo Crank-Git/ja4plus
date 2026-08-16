@@ -98,7 +98,7 @@ Decided on 2026-08-07. #96, #97 and #105 are the first three.
 delegation permits.** The user granted two delegations, and both hold today. A question
 that fails both belongs to the user.
 
-| Delegation | Date | What it reaches | Where the grant lives |
+| Delegation | Date | What it reaches | Where the delegation lives |
 |---|---|---|---|
 | The narrow delegation | 2026-08-12 | A schema violation. | `Crank-Git/ja4plus-go#246`, and #597 here |
 | The recording delegation | 2026-08-15 | A reading this project already holds. | The ruling comments of #595, #607, #608 and #613 |
@@ -119,7 +119,7 @@ source states. A delegated ruling settles what this project does where a publish
 value contradicts a published FoxIO rule. No source settles that question, because FoxIO
 publishes both of them.
 
-A delegated ruling is permitted only when every one of these is true.
+A project manager makes a delegated ruling only where every one of these is true.
 
 1. A published FoxIO rule states the answer. The rule reaches the material under
    `technical_details/`, the transcription of it under `docs/specs/foxio/<METHOD>.md`, or
@@ -139,7 +139,7 @@ it against the recording delegation below.
 
 **The user granted a second delegation on 2026-08-15.** Four ruling comments each state it
 in these words: #595, #607, #608 and #613. This file quotes them, and it rewrites no word
-of the grant.
+of the delegation.
 
 **Warning: never open a line of this file with an issue number.** The section reader of
 `tests/test_ported_pattern_cost.py` reads a line that opens with `#` as a heading, and it
@@ -151,7 +151,7 @@ then stops at that line. A paragraph below such a line reaches no case.
 > that moves a value, that forks from `ja4plus-go`, or that changes the scope of the
 > project stays with the maintainer.
 
-**The grant states three limits, and a permitted question meets every one of them.**
+**The delegation states three limits, and a permitted question meets every one of them.**
 
 - The ruling keeps the present behaviour of this project.
 - The ruling moves no fingerprint value.
@@ -161,8 +161,8 @@ then stops at that line. A paragraph below such a line reaches no case.
 the port stays with the user. A ruling that changes the scope of this project stays with
 the user.
 
-**Each of the four issues was ruled under this grant on 2026-08-15, and no line of a
-fingerprinter moved.** #595 records the JA4L eviction of the QUIC path, #607 records the
+**The project manager ruled each of the four issues under this delegation on 2026-08-15,
+and no line of a fingerprinter moved.** #595 records the JA4L eviction of the QUIC path, #607 records the
 JA4H emission frame, #608 records the JA4SSH packet selection, and #613 records the one
 QUIC packet each datagram fills point C from.
 
@@ -183,8 +183,8 @@ QUIC packet each datagram fills point C from.
   reversal path.
 
 **A question that fails both delegations belongs to the user.** The project manager labels
-that issue `status:needs-feedback`, it records the reading it holds, and it builds nothing
-that depends on the answer.
+that issue `status:needs-feedback`. It records the reading it holds. It builds nothing that
+depends on the answer.
 
 **The user confirms a delegated ruling, or reverses it.** A delegated ruling that the user
 has not confirmed stays provisional. A later reader reads a provisional ruling as

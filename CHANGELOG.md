@@ -11,13 +11,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   TBD. **`.claude/rules/conformance.md` reserved every ruling to the user, and the
   `## Terms` table of `docs/specs/spec.md` stated the same.** A delegated session met that
   question with no guidance, so it had to stop or improvise. The new section
-  `## What a delegated session may rule` holds both grants the user made. **The narrow
+  `## What a delegated session may rule` holds both delegations the user made. **The narrow
   delegation of 2026-08-12 permits a ruling on a schema violation alone**, under the five
   conditions of `Crank-Git/ja4plus-go#246`, and condition 2 bars a reference split.
   **The recording delegation of 2026-08-15 permits a ruling that keeps the present
   behaviour and writes one row of the divergence register.** Four ruling comments state
-  that second grant in the same words, on #595, #607, #608 and #613, and the section
-  quotes them rather than rewrites them. **The two grants reach different questions and
+  that second delegation in the same words, on #595, #607, #608 and #613, and the section
+  quotes them rather than rewrites them. **The two delegations reach different questions and
   the section states how they relate.** #595 and #613 each rule a question the FoxIO
   implementations split on, and each ruling of 2026-08-15 left every line of the
   fingerprinter as it stood, so a section that stated the narrow delegation alone would
@@ -31,6 +31,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   other one. **The section reader of `tests/test_ported_pattern_cost.py` reads a line that
   opens with an issue number as a heading**, and it then stops at that line; one paragraph
   of the first draft reached no case for that reason, and the section states the warning.
+  **The self-review found two defects and this round repairs both.** The correctness lens
+  read one case whose name claimed the narrow subsection and whose body read the whole
+  section, and the case now names that scope. The writing lens read the noun `grant`
+  rotating against `delegation` across all four files, which rule 7 of
+  `.claude/rules/ste.md` bars, and every live sentence now writes `delegation`. **The
+  `delegation` row of the `## Terms` table rejects `grant`**, so no later writer
+  reintroduces the rotation. One comment of the test module stated that the quotation
+  names the user, and the quotation names the maintainer.
   **This round changes no file under `ja4plus/` and it moves no fingerprint.** The
   conformance suite reports 1676 passed, 142 skipped and 138 xfailed, and
   `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases.

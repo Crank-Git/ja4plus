@@ -1,8 +1,8 @@
 """Tests that the conformance rules state what a delegated session may rule.
 
 The `## Terms` table of `docs/specs/spec.md` defines a ruling as one determination the user
-makes. **The user delegates a session to a project manager, and the rules said nothing about
-what that delegation permits**, so the next delegated session met the question with no
+makes. **The user delegates a session to a project manager.** The rules said nothing about
+what that delegation permits, so the next delegated session met the question with no
 guidance.
 
 #597 writes that rule. The user granted two delegations, and each one reaches a different
@@ -16,8 +16,8 @@ class of question.
   and writes one row of the divergence register.
 
 **A reader who found one delegation alone would read a rule that four merged rulings
-contradict.** These cases therefore hold both grants against the file, and they hold the
-boundary that parts them.
+contradict.** These cases therefore hold both delegations against the file, and they hold
+the boundary that parts them.
 
 These cases read prose. They import nothing from `ja4plus` and they produce no fingerprint.
 """
@@ -41,10 +41,11 @@ NARROW_HEADING = "### The narrow delegation of 2026-08-12"
 RECORDING_HEADING = "### The recording delegation of 2026-08-15"
 RELATION_HEADING = "### How the two delegations relate"
 
-# The grant of 2026-08-15, as the ruling comments of #595, #607, #608 and #613 state it.
-# **The rule file quotes it and it rewrites no word of it.** `.claude/rules/ste.md` bars a
-# rewrite of anything a person said, and the grant names the user in the user's own words.
-GRANT_OF_2026_08_15 = (
+# The delegation of 2026-08-15, as the ruling comments of #595, #607, #608 and #613 state
+# it. **The rule file quotes it and it rewrites no word of it.** `.claude/rules/ste.md` bars
+# a rewrite of anything a person said. **The quotation names the maintainer**, and the prose
+# of this project names the user.
+DELEGATION_OF_2026_08_15 = (
     "The maintainer granted a delegated session this carve-out on 2026-08-15: a delegated "
     "session may rule where the decision preserves the present behaviour, moves no "
     "fingerprint, and records an existing reading as a divergence register row. A decision "
@@ -52,8 +53,9 @@ GRANT_OF_2026_08_15 = (
     "project stays with the maintainer."
 )
 
-# The four issues that state the grant. Each one was ruled under it on 2026-08-15.
-GRANT_ISSUES = ("#595", "#607", "#608", "#613")
+# The four issues that state the delegation. The project manager ruled each one under it on
+# 2026-08-15.
+DELEGATION_ISSUES = ("#595", "#607", "#608", "#613")
 
 # The issue of the port that records the narrow delegation.
 PORT_ISSUE = "Crank-Git/ja4plus-go#246"
@@ -154,7 +156,7 @@ def test_the_quotation_reader_joins_a_quotation_that_wraps_across_two_lines() ->
 
 def test_the_quotation_reader_leaves_a_line_that_carries_no_mark() -> None:
     """The reader leaves a plain line, so a case reads the prose beside the quotation."""
-    assert block_quotation("The grant states three limits.") == "The grant states three limits."
+    assert block_quotation("It states three limits.") == "It states three limits."
 
 
 def test_the_item_reader_reads_a_numbered_item_and_no_other_line() -> None:
@@ -221,8 +223,12 @@ def test_the_narrow_delegation_bars_a_reference_split() -> None:
     )
 
 
-def test_the_narrow_delegation_names_the_issue_of_the_port_that_records_it() -> None:
-    """The narrow delegation names the port issue, because a ruling lands in both repositories."""
+def test_the_section_names_the_issue_of_the_port_that_records_the_narrow_delegation() -> None:
+    """The section names the port issue, because a ruling lands in both repositories.
+
+    **The table of the section holds that issue, and the subsection below it does not.** The
+    case therefore reads the whole section, and the name states that scope.
+    """
     body = section(rule_text(), DELEGATION_HEADING)
     assert PORT_ISSUE in collapsed(body), (
         f"{RULE_FILE} names no `{PORT_ISSUE}`, so a reader reaches the port half through no path"
@@ -232,26 +238,26 @@ def test_the_narrow_delegation_names_the_issue_of_the_port_that_records_it() -> 
 # --- The recording delegation of 2026-08-15 ---------------------------------------------
 
 
-def test_the_recording_delegation_quotes_the_grant_of_the_user() -> None:
-    """The recording delegation quotes the grant of 2026-08-15 word for word.
+def test_the_recording_delegation_quotes_the_words_of_the_user() -> None:
+    """The recording delegation quotes the delegation of 2026-08-15 word for word.
 
-    **`.claude/rules/ste.md` bars a rewrite of anything a person said.** A reworded grant is
+    **`.claude/rules/ste.md` bars a rewrite of anything a person said.** A reworded quotation is
     no longer evidence of what the user permitted.
     """
     body = block_quotation(section(rule_text(), RECORDING_HEADING))
-    assert collapsed(GRANT_OF_2026_08_15) in body, (
-        f"{RULE_FILE} quotes no grant of 2026-08-15, so the rule states the permission in "
+    assert collapsed(DELEGATION_OF_2026_08_15) in body, (
+        f"{RULE_FILE} quotes no delegation of 2026-08-15, so the rule states the permission in "
         "the words of a writer rather than in the words of the user"
     )
 
 
-def test_the_recording_delegation_names_every_issue_that_states_the_grant() -> None:
-    """The recording delegation names all four issues that were ruled under the grant."""
+def test_the_recording_delegation_names_every_issue_that_states_it() -> None:
+    """The recording delegation names all four issues the project manager ruled under it."""
     body = section(rule_text(), RECORDING_HEADING)
-    missing = [issue for issue in GRANT_ISSUES if issue not in body]
+    missing = [issue for issue in DELEGATION_ISSUES if issue not in body]
     assert missing == [], (
         f"{RULE_FILE} names {missing} nowhere in the recording delegation, so a reader "
-        "cannot read the rulings the grant produced"
+        "cannot read the rulings the delegation produced"
     )
 
 
@@ -272,7 +278,7 @@ def test_the_section_states_that_neither_delegation_repeals_the_other() -> None:
     body = collapsed(section(rule_text(), RELATION_HEADING))
     assert "neither one repeals the other" in body, (
         f"{RULE_FILE} states no relation between the two delegations, so a reader takes the "
-        "later grant for a replacement of the earlier one"
+        "later delegation for a replacement of the earlier one"
     )
 
 
