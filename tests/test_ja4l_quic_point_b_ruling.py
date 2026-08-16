@@ -156,10 +156,14 @@ def test_the_register_names_both_ruling_dates() -> None:
 
 
 def test_the_register_states_that_no_majority_carries_a_change() -> None:
-    """The row states the reason the reading stands, and it names the plurality."""
+    """The row states the reason the reading stands, and it names the plurality.
+
+    The case reads the whole phrase. A row that states the opposite conclusion holds both
+    words, so a reader who tests the two words alone tests nothing.
+    """
     row = _register_row()
-    assert "plurality" in row
-    assert "majority" in row
+    assert "plurality and no majority" in row
+    assert "No plurality carries a fingerprint move." in row
 
 
 def test_the_register_carries_the_three_measured_fingerprinter_citations() -> None:
@@ -175,7 +179,7 @@ def test_the_register_names_the_transcription_gap_of_the_ja4l_page() -> None:
 
 
 def test_the_register_states_that_the_ruling_decides_nothing_about_the_emission() -> None:
-    """The row names #606 and bars a reader from taking this row as a decision about it."""
+    """The row names #606 and bars a reader from taking this row as a ruling about it."""
     assert "#606" in _register_row()
 
 
