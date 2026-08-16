@@ -18,6 +18,75 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that does not fit becomes a comment on an issue that exists, and a defect of the library
   is still filed. #709, #708 and #719 are declined under it.
 
+- **The conformance rules now state what a delegated session may rule** (#597).
+  Round
+  TBD. **`.claude/rules/conformance.md` reserved every ruling to the user, and the
+  `## Terms` table of `docs/specs/spec.md` stated the same.** A delegated session met that
+  question with no guidance, so it had to stop or improvise. The new section
+  `## What a delegated session may rule` holds both delegations the user made. **The narrow
+  delegation of 2026-08-12 permits a ruling on a schema violation alone**, under the five
+  conditions of `Crank-Git/ja4plus-go#246`, and condition 2 bars a reference split.
+  **The recording delegation of 2026-08-15 permits a ruling that keeps the present
+  behaviour and writes one row of the divergence register.** Four ruling comments state
+  that second delegation in the same words, on #595, #607, #608 and #613, and the section
+  quotes them rather than rewrites them. **The two delegations reach different questions and
+  the section states how they relate.** #595 and #613 each rule a question the FoxIO
+  implementations split on, and each ruling of 2026-08-15 left every line of the
+  fingerprinter as it stood, so a section that stated the narrow delegation alone would
+  have contradicted four merged rulings. **A reference split is never delegable as a
+  schema violation**, and that sentence carries a case. The `## Terms` table gains the
+  four rows `delegation`, `delegated ruling`, `schema violation` and `reference split`,
+  and the `ruling` row now names the delegated case. New file
+  `tests/test_delegated_ruling_rule.py` holds 18 cases, and 15 of them failed before the
+  section existed. **The other three drive the three readers of the file in both
+  directions**, so a reader that reports nothing fails a case rather than passing every
+  other one. **The section reader of `tests/test_ported_pattern_cost.py` reads a line that
+  opens with an issue number as a heading**, and it then stops at that line; one paragraph
+  of the first draft reached no case for that reason, and the section states the warning.
+  **The self-review found two defects and this round repairs both.** The correctness lens
+  read one case whose name claimed the narrow subsection and whose body read the whole
+  section, and the case now names that scope. The writing lens read the noun `grant`
+  rotating against `delegation` across all four files, which rule 7 of
+  `.claude/rules/ste.md` bars, and every live sentence now writes `delegation`. **The
+  `delegation` row of the `## Terms` table rejects `grant`**, so no later writer
+  reintroduces the rotation. One comment of the test module stated that the quotation
+  names the user, and the quotation names the maintainer.
+  **This round changes no file under `ja4plus/` and it moves no fingerprint.** The
+  conformance suite reports 1676 passed, 142 skipped and 138 xfailed, and
+  `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases.
+
+- **The vector download filter now names the JA4H block, the JA4SSH block and the JA4X
+  list item** (#684).
+  Round
+  TBD. **`tests/download_test_vectors.py:141` held `RUST_COMPARED_FIELDS` with four
+  entries, and `tests/test_foxio_rust_parity.py` compares six methods.** #670 added the
+  JA4H comparison and #671 added the JA4SSH comparison, and neither round moved the field
+  list. **The issue body and the plan comment stated different forms, and a measurement
+  decided between them.** A read of 2026-08-15 applied each candidate form to the eleven
+  committed snapshots under `tests/foxio_vectors/rust_expected/`: `b"ja4h: "` matches 0
+  snapshots and `b"- ja4h: "` matches 5, and `b"ja4ssh: "` matches 0 and `b"ja4ssh:"`
+  matches 1. **The `http` block writes the value as a list item and the `ja4ssh` block
+  names no field at all**, so the list now holds `b"- ja4h: "` and the block opener
+  `b"ja4ssh:"`. **The same measurement falsified an entry the issue did not name, and this
+  round repairs it.** `b"ja4x: "` matches 0 of the 11 snapshots and `b"- ja4x: "` matches
+  5, because the snapshot writes `    - ja4x: <value>` inside the `tls_certs` block. That
+  is the defect the JA4H entry carried, on the entry that stood in the list already, so
+  the list now holds `b"- ja4x: "`. **The kept-snapshot count stands at 11 before this
+  round and 11 after it**, and a read after the JA4X repair alone reports 11 as well.
+  Every committed snapshot that holds a JA4H block, a JA4SSH block or a JA4X value holds a
+  JA4T value or a JA4 value as well. **The filter therefore refuses no snapshot it kept
+  before.** **New file `tests/test_download_filter_fields.py` holds the field list against
+  the parity module**, and no case held the two files together before it. Three of its ten
+  cases failed on the base commit `4d00e09`, one for each repaired form, and all ten pass
+  now. **`keeps_rust_snapshot` now holds the
+  condition that stood inside `download`**, so a case reads the condition the refresh runs
+  rather than a copy of it. **This round changes no file under `ja4plus/` and it moves no
+  fingerprint.** The conformance suite reports 1676 passed, 142 skipped and 138 xfailed on
+  the base and the same three counts after the change, and `tests/foxio_deviations.json`
+  holds 138 keys against those 138 xfailed cases. The unit suite reports 5745 passed, 8
+  skipped and 8 xfailed beside 114 subtests, and two of those cases parametrize over the
+  tracked file list and read the new module. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` each report no issue.
 - **`docs/specs/foxio/JA4SSH.md` now states what the parity harness compares** (#683).
   Round
   TBD. **The page carried a section named `Why the parity harness never compared this
