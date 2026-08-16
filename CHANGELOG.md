@@ -6,6 +6,83 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register records the QUIC packets of one datagram that JA4L reads**
+  (#613). Round
+  TBD. **This project reads the first packet of a UDP datagram and no other packet of
+  it.** `long_header_packet_type` reads `first_byte = udp_payload[0]` at
+  `ja4plus/utils/quic_utils.py:65`, and `ja4plus/fingerprinters/ja4l.py:563` calls that
+  function once for each datagram. RFC 9000 Section 12.2 permits a datagram that carries
+  more than one QUIC packet. **A server datagram that coalesces an Initial packet and a
+  Handshake packet therefore returns at `ja4plus/fingerprinters/ja4l.py:582`, which fills
+  point `B`.** It reaches `ja4plus/fingerprinters/ja4l.py:599` nowhere, which is the line
+  that fills point `C`, so the client Handshake packet that follows gives no `JA4L-C`
+  value. **Three FoxIO references answer this question, and they split two against one.**
+  `python/ja4.py:403-404` holds `if isinstance(quic, list):` and `quic = quic[0]`.
+  `rust/ja4/src/time/udp.rs:278` calls `quic.first("quic.long.packet_type")`, and
+  `rust/ja4/src/pcap.rs:123` states that `first` returns the value of the first field.
+  `wireshark/source/packet-ja4.c:969` walks every field of the dissection tree, and
+  `wireshark/source/packet-ja4.c:1408` matches each `quic.long.packet_type` field of that
+  walk. **The Zeek reading is incomplete**, because `zeek/ja4l/main.zeek:237` hooks one
+  event for each QUIC Handshake packet and the QUIC analyzer of Zeek is not in the FoxIO
+  corpus. **The majority reading is the one this project already holds.** **This round
+  read all six FoxIO citations at the pinned commit
+  `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`, and it moved none of them.** **It did move
+  both citations of this repository.** The body of #613 names
+  `ja4plus/utils/quic_utils.py:64` for the read of the first byte and the tip holds it at
+  `:65`, and it names `ja4plus/fingerprinters/ja4l.py:558` for the read of the packet type
+  and the tip holds it at `:563`. **The corpus separates the two readings on two
+  captures.** `tests/foxio_vectors/wireshark_expected/ssh2.pcapng.json` holds no JA4L
+  value on frame 1042 and `279_128_quic` on frame 1046, and
+  `tests/foxio_vectors/wireshark_expected/tls3.pcapng.json` holds none on frame 295 and
+  `271_128_quic` on frame 297. **The FoxIO Python file agrees with this project on the two
+  connections those frames carry.** `tests/foxio_vectors/ssh2.pcapng.json` stream 33 holds
+  `16192_57` under `JA4L-S` and no `JA4L-C` key, and `tests/foxio_vectors/tls3.pcapng.json`
+  stream 25 holds `3583_57` under `JA4L-S` and no `JA4L-C` key. **The conformance suite of
+  this project compares one stream and never one frame**, so the four per-packet
+  comparisons the port declines reach no key here. `tests/foxio_deviations.json` already
+  declines `ssh2.pcapng/33:51810/JA4L-S.1` and `tls3.pcapng/25:61884/JA4L-S.1` under #225,
+  on the `quic` marker and never on this reading. **The port applied its half of the ruling
+  with five register entries and no code change.** `testdata/deviations.json` of the port
+  holds `ssh2.pcapng/1046/JA4L.1`, `ssh2.pcapng/1046/JA4LS.1`, `tls3.pcapng/297/JA4L.1`,
+  `tls3.pcapng/297/JA4LS.1` and `tls3.pcapng/153/JA4L.1` under the ruling `#449`, and batch
+  pull request #680 of the port merged them into `dev` at `56b9a52` on 2026-08-15. **The
+  row therefore records a reference split against FoxIO and no divergence from the port.**
+  **The two records name two dates for one ruling, and this round measured both.** A
+  comment of `Crank-Git/ja4plus-go#449` of 2026-08-14 states
+  `ruling: the maintainer ruled answer 2 on 2026-08-14`, and a second comment of
+  2026-08-15 states `The maintainer ruled this on 2026-08-15 UTC`. Each of the five
+  register entries of the port names 2026-08-15. New file
+  `tests/test_quic_coalesced_datagram_ruling.py` holds 16 cases. Eight read the row, two
+  read the two cited lines, three drive one synthetic QUIC connection, and three read the
+  two vector sets. The unit suite rises from 5749 collected to 5768, which is 16 cases of
+  the new file and 3 cases that parametrize over the tracked Python files. It reports 5752
+  passed, 8 skipped, 8 xfailed and 114 subtests passed, against a base of 5733 passed with
+  the same other counts. **Two of those three cases read `git ls-files`, so a read taken
+  before the new file was staged counted 5766 and not 5768.**
+  `tests/test_documented_method_count.py` counted the file at once, and
+  `tests/test_ruling_vocabulary.py` and `tests/test_statistics_thread_term.py` counted it
+  after the stage. **Warning: end a line of an entry with the round word, and put `TBD.` at
+  the head of the next line.**
+  `tests/test_documentation_version_claims.py::test_the_reader_cuts_every_changelog_entry`
+  cuts this file at its first `### ` heading, so the `## [Unreleased]` section stands above
+  the cut and that case reads it as prose. That case refuses the round word where a space
+  follows it. **The one-line form failed the case twice in this round**, once in the entry
+  itself and once in a sentence that quoted the refused text. Every other entry of this
+  section already carries the wrap. The conformance suite
+  reports 1676 passed, 142 skipped and 138 xfailed before this row and after it, against
+  the 138 keys of `tests/foxio_deviations.json`. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` report no issue.
+  **The cases came first, and each one can fail**: against the register with no row they
+  failed 8 of 16, and each failure read
+  `the divergence register holds no row named 'The QUIC packets of one datagram that JA4L reads'`.
+  **One control case separates the two readings on behaviour.** A connection whose server
+  Handshake packet reaches its own datagram gives `JA4L-C=5000_64_quic`, and the same four
+  QUIC packets under one coalesced server datagram give no client value at all. **This
+  round built no reversal of the reading, because a reversal is the code change the ruling
+  declines.** `Crank-Git/ja4plus-go#449` records that a reading of every packet closes 4
+  per-packet comparisons of the port and opens 2 per-stream comparisons there, and this
+  round re-measured no figure of that measurement. No file under `ja4plus/` changed, so no
+  fingerprint moved and no register entry moved.
 - **The divergence register records the packets a JA4SSH window counts** (#608). Round
   TBD. **This project counts the segment that completes an SSH message, and the
   `ssh.direction` label of the `tshark` SSH dissector counts fewer frames on two
