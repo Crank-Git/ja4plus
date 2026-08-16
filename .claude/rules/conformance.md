@@ -106,11 +106,15 @@ of the suite can read a frame, because the source it reads states none.
 
 ### Why the suite compares no frame
 
-**The suite compares the FoxIO Python reference, and the dissector is a different source
-with a different value set.** A per-frame comparison would therefore be a new comparison
-against a new source, and it would add no discrimination to any case the suite runs today.
-#736 measured what that comparison would report, over the 445 dissector values of a hashed
-form on the 26 captures this project holds.
+**The suite compares the FoxIO Python reference, and the dissector holds a different value
+set.** A per-frame comparison reads a new source. It therefore adds no discrimination to
+any case the suite runs today.
+
+**#736 measured what that comparison would report on 2026-08-16.** The measurement ran the
+`Processor` over each of the 26 captures this project holds, it numbered each packet, and
+it read the 445 dissector values of a hashed form against the result. **Warning: the three
+counts below are one measurement, and no case holds them.** Take them again before you
+build on them.
 
 | Reading | Values |
 |---|---|
@@ -118,11 +122,13 @@ form on the 26 captures this project holds.
 | The value agrees and the frame differs | 136 |
 | This project produces no such value | 103 |
 
-**The 136 frame disagreements are values this project already produces correctly**, so each
-one would enter `tests/foxio_deviations.json` as a new entry that records a difference this
-project has already ruled. The TCP `JA4L` and `JA4LS` values hold 70 of the 136: the
-dissector writes each one on a later frame than this project. **A comparison whose largest
-class is a recorded divergence measures the register and not the code.**
+**The 136 frame disagreements are values this project already produces correctly.** Each
+one would enter `tests/foxio_deviations.json` as a new entry. Each entry would record a
+difference this project has already ruled.
+
+**The TCP `JA4L` and `JA4LS` values hold 70 of the 136.** The dissector writes each one on
+a later frame than this project, and none of the 70 is a QUIC value. **A comparison whose
+largest class is a recorded divergence measures the register and not the code.**
 
 **The frame is an artifact of one dissector, and the value is what the standard defines.**
 Two FoxIO implementations produce the same value on different packets, and neither one is
@@ -137,14 +143,21 @@ point `B` emission and measured 8 failures in that module, against 0 in the conf
 suite.
 
 **Warning: leave that module in the unit suite, and never move it to the conformance
-suite.** The `test` job runs the unit suite on six environments and the `conformance` job
-runs the conformance suite on one. A move would therefore take five readings away from the
-one guard this project holds on a frame. #736 declined the move on that reading.
+suite.** The `test` job runs the unit suite on five environments. `.github/workflows/test.yml:86-91`
+holds that matrix: `ubuntu-latest` on Python 3.10, 3.11, 3.12 and 3.13, and `macos-latest`
+on Python 3.12. The `conformance` job runs the conformance suite on one environment. A move
+would therefore take four readings away from the one frame guard this project holds. #736
+declined the move on that reading.
+
+**Warning: the count of five is the matrix after #575, and an older record states six.**
+That issue dropped Python 3.9 on 2026-08-10. `.claude/rules/batch-gate.md` records a
+measurement of that date over six jobs, and that record stays exactly as it is. Read the
+workflow for the present count, and never a record of a past measurement.
 
 **Warning: read a frame ruling against the unit suite, and never against the conformance
-counts.** `tests/test_conformance_frame_discrimination.py` holds this whole reading, so a
-source that starts to state a frame fails a case here rather than leaving a reader with a
-stale rule.
+counts.** `tests/test_conformance_frame_discrimination.py` holds this whole reading. A
+source that starts to state a frame therefore fails a case there, and it leaves no reader
+with a stale rule.
 
 ## When the FoxIO reference holds a defect
 

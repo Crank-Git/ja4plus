@@ -1,9 +1,9 @@
 """What the conformance suite measures about the frame that carries a value.
 
 **A comparison that is never made reads as a comparison that passes.** #736 measured one.
-#606 moved the QUIC `JA4L-S` emission from the packet that fills point `B` to the packet
-that fills point `D`, and the conformance suite reported the identical three counts under
-the restored defect. Seven values changed frame and the suite discriminated none of them.
+#606 moved the QUIC `JA4L-S` emission to the packet that fills point `D`, from the packet
+that fills point `B`. Seven values changed frame. The conformance suite reported the
+identical three counts under the restored defect, so it discriminated none of them.
 
 This module holds the reading #736 took, so that no later reader derives it again.
 
@@ -39,11 +39,16 @@ RULE_SECTION = "## What a green conformance run does not measure"
 # A key of a reference source that would state the frame that carries a value. The
 # dissector writes `frame.number`, and this module reads every other source for a key of
 # the same kind. A frame states the position of one packet in the capture.
-FRAME_WORDS = ("frame", "packet_number", "packetno", "pktno")
+FRAME_WORDS = ("frame", "packet_number", "packet_num", "packetno", "pkt_num", "pktno")
 
 # The two Zeek fields that count packets. A count states how many packets a connection
 # holds, and it names none of them, so neither field states a frame.
 ZEEK_PACKET_COUNTS = ("orig_pkts", "resp_pkts")
+
+# The key of a method value in a FoxIO Rust snapshot. The rule file states the count these
+# keys reach, so a snapshot that gains or loses a value fails a case rather than leaves
+# that count stale.
+RUST_METHOD_KEYS = frozenset({"ja4", "ja4s", "ja4h", "ja4t", "ja4x", "ja4ssh", "ja4l_c", "ja4l_s"})
 
 # The frame each of the seven values of #606 moved to. The dissector writes the QUIC
 # `ja4.ja4ls` value on each one, and `tests/test_ja4l_quic_point_d_emission.py` holds
@@ -104,23 +109,33 @@ class TestTheSourcesThatStateNoFrame:
         )
 
     def test_the_foxio_rust_snapshot_states_no_frame(self):
-        """The Rust snapshots key a value on the stream, and they state no frame."""
+        """The Rust snapshots key a value on the stream, and they state no frame.
+
+        The reader matches a key of any letter case, so a key the snapshots later spell
+        with a capital reaches the heuristic too.
+        """
         files = _rust_snapshot_files()
         assert len(files) == 11, "the reading covered 11 snapshots"
         named = set()
+        values = 0
         for path in files:
             for line in path.read_text().splitlines():
-                match = re.match(r"^[- ]*([a-z0-9_]+):", line)
-                if match and _names_a_frame(match.group(1)):
-                    named.add(match.group(1))
+                match = re.match(r"^[- ]*([A-Za-z0-9_-]+):", line)
+                if not match:
+                    continue
+                key = match.group(1)
+                if _names_a_frame(key):
+                    named.add(key)
+                if key in RUST_METHOD_KEYS:
+                    values += 1
         assert named == set(), "a Rust snapshot now states a frame under {}".format(sorted(named))
+        assert values == 460, "the reading measured 460 method-keyed values"
 
     def test_the_zeek_baseline_states_no_frame(self):
         """A Zeek baseline keys a value on the connection, and it states no frame.
 
-        The `ts` field of a baseline states the time of the connection. A reader cannot
-        take a frame number from it, because a capture holds several packets at one time
-        and the baseline names no packet at all.
+        The `ts` field of a baseline states the time of the connection. A reader takes no
+        frame number from it, because a capture holds several packets at one time.
         """
         files = _zeek_baseline_files()
         assert len(files) == 7, "the reading covered 7 baselines"
@@ -135,8 +150,8 @@ class TestTheSourcesThatStateNoFrame:
         """`orig_pkts` and `resp_pkts` count packets, and they name no packet.
 
         A reader who searches a baseline for the word `pkt` finds these two fields. A
-        count of the packets of a connection locates no value in the capture, so neither
-        field turns a Zeek baseline into a source that states a frame.
+        count of the packets of a connection locates no value in the capture. Neither
+        field therefore states a frame.
         """
         baseline = VECTORS / "zeek_expected" / "Scripts.ja4-conn" / "conn.log"
         fields = []
