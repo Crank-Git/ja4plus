@@ -69,5 +69,20 @@
     "python": "python3.12 only",
     "note": "The development laptop is macOS, so a Linux-only failure was unreproducible before this host. It is shared: it runs an Elasticsearch node and continuous integration runners. Read `uptime` before a heavy run and never run a load generator on it.",
     "caveat": "It does not reproduce every ubuntu-latest failure. The memory ceiling controls of #279 failed on ubuntu-latest and passed here, because the failure needs an import transient that a constrained runner has and a 137 GiB host does not. Use it to verify a Linux code path, not to predict a Linux continuous integration result."
+  },
+  "filingRule": {
+    "decidedBy": "the user, 2026-08-15",
+    "rule": "No issue is filed whose only symptom is a stale citation, or a record that describes a past state.",
+    "howAWorkerApplies": [
+      "Repair what your own change falsifies, in the same pull request, even where another live batch owns the file. The project manager resolves the conflict once at sub-merge.",
+      "A finding that does not fit the change becomes a comment on an issue that exists, and never a new issue.",
+      "A finding that is a defect of the library, or that moves a fingerprint, is still filed. This rule reaches a record and it reaches no measurement of the product."
+    ],
+    "why": "A read of 2026-08-15 measured the last 300 commits of master. 56 touch a file under ja4plus/, 192 touch docs/specs/spec.md and 186 touch CHANGELOG.md, against 333 closed issues. The bookkeeping had become the deliverable. A guard that tightens finds more of what it now refuses, so the backlog regenerated itself. #708 and #714 exist only because a batch-ownership rule forbade a worker from repairing a file it had just falsified.",
+    "declined": [
+      709,
+      708,
+      719
+    ]
   }
 }
