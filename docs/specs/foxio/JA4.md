@@ -24,8 +24,8 @@ Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/J
 Verified against: https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4.png (retrieved 2026-08-15, commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`)
 
 **The two hashes reproduce the inventory of `docs/specs/foxio/README.md` exactly.** That
-inventory records 9153 bytes for the text file and 61637 bytes for the image, and a read
-of 2026-08-15 returned the same two counts and the same two hashes.
+inventory records 9153 bytes for the text file and 61637 bytes for the image. A read of
+2026-08-15 returned the same two counts and the same two hashes.
 
 Reproduce each hash from a checkout at the pinned commit.
 
@@ -220,7 +220,7 @@ characters. `technical_details/JA4.md:24-29` lists the six in that order.
 **This rule is uncertain for DTLS. Keep the vector fallback.** The text specification names
 three values and every implementation that writes JA4 names two.
 `rust/ja4/src/tls.rs:481-485` returns `q` or `t` alone. The dissector holds the `d` value at
-`wireshark/source/packet-ja4.c:732`, and it writes no JA4 value at all, so that line
+`wireshark/source/packet-ja4.c:732`, and it writes no JA4 value at all. That line therefore
 corroborates the character and never the method.
 
 **No vector measures the rule.** The FoxIO Python expected-output files of
