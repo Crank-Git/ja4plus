@@ -56,11 +56,12 @@ ZEEK_EVENT_CITATION = "`src/analyzer/protocol/quic/QUIC.evt:13`"
 # `.claude/rules/ste.md` bars a rewrite of a record.
 SUPERSEDED_SENTENCE = "One reference against one reference is not a majority."
 
-# The three citations of `ja4plus/fingerprinters/ja4l.py` the row states.
+# The three citations of `ja4plus/fingerprinters/ja4l.py` the row states. #606 moved the
+# emission off `_quic_server_initial`, so the sub-merge of this batch repaired all three.
 FINGERPRINTER_CITATIONS = (
-    "`ja4plus/fingerprinters/ja4l.py:516-556`",
-    "`ja4plus/fingerprinters/ja4l.py:548-549`",
-    "`ja4plus/fingerprinters/ja4l.py:554-556`",
+    "`ja4plus/fingerprinters/ja4l.py:580-623`",
+    "`ja4plus/fingerprinters/ja4l.py:614-615`",
+    "`ja4plus/fingerprinters/ja4l.py:620-622`",
 )
 
 # The transcription gap that let two live mechanisms enter the ruling table of
@@ -190,9 +191,9 @@ def test_the_fingerprinter_fills_point_b_on_the_serverhello_packet() -> None:
     one. This case reads the statement rather than the line, so it names the loss.
     """
     lines = FINGERPRINTER.read_text(encoding="utf-8").splitlines()
-    assert lines[547].strip() == "if not server_hello_is_complete(collected):"
-    assert lines[548].strip() == "return None"
-    assert lines[551].strip() == 'timestamps["B"] = now'
+    assert lines[613].strip() == "if not server_hello_is_complete(collected):"
+    assert lines[614].strip() == "return None"
+    assert lines[617].strip() == 'timestamps["B"] = now'
 
 
 def test_the_two_vector_sets_disagree_on_the_connection_the_row_names() -> None:
