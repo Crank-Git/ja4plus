@@ -274,7 +274,7 @@ def test_the_register_cites_the_transcribed_rule_that_states_the_sentinel() -> N
 
 
 def test_the_register_states_no_absence_of_a_ja4_transcription() -> None:
-    """The row claims no missing JA4 transcription, because #691 wrote that page.
+    """The row claims no absence of a JA4 transcription, because #691 wrote that page.
 
     Both sentences were true when #653 wrote them. `docs/specs/foxio/JA4.md` makes each
     one false, and `docs/specs/foxio/JA4.md:515-521` records the constraint.
