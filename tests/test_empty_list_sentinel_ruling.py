@@ -38,6 +38,12 @@ REGISTER_SEPARATOR = re.compile(r"^\|[\s\-|]+\|$")
 # The first cell of the row this issue writes.
 RULING_ITEM = "The zero sentinel of an empty list in JA4 and in JA4S"
 
+# The rule of the JA4 transcription that states the sentinel. #691 wrote that page, and
+# the row cites this rule in place of the absence #653 recorded.
+JA4_R13_HEADING = (
+    "### R13 — An empty cipher list and an empty extension list each write `000000000000`"
+)
+
 SENTINEL = "000000000000"
 
 # The first 12 characters of the SHA-256 hash of the empty string. JA4X and JA4H write
@@ -243,12 +249,42 @@ def test_the_register_names_the_transcription_that_holds_the_ja4s_image_rule() -
 
 
 def test_the_register_attributes_the_ja4_image_reading_to_the_issue() -> None:
-    """The row names the source of the one quotation this round did not re-take.
+    """The row names the source of the one quotation round 248 did not re-take.
 
-    This repository holds no JA4 transcription, so a reader must know that the
-    `JA4.png` reading rests on #653 and not on a read of this round.
+    #691 transcribed the image caption table and it re-took no reading of the sentinel,
+    so the sentinel reading still rests on #653 and not on a later round.
     """
     assert "The `JA4.png` reading rests on #653 alone" in _register_row()
+
+
+def test_the_register_names_the_transcription_that_holds_the_ja4_image_rule() -> None:
+    """The row rests the JA4 image quotation on the transcription of this repository."""
+    row = _register_row()
+    assert "`docs/specs/foxio/JA4.md:89`" in row
+    quoted = "Truncated SHA256 hash of the Cipher Suites, sorted"
+    assert quoted in row
+    assert quoted in _source_line("docs/specs/foxio/JA4.md", 89)
+
+
+def test_the_register_cites_the_transcribed_rule_that_states_the_sentinel() -> None:
+    """The row cites R13 of the transcription, which holds the JA4 sentinel rule."""
+    row = _register_row()
+    assert "R13 of `docs/specs/foxio/JA4.md`" in row
+    assert JA4_R13_HEADING in (REPO_ROOT / "docs/specs/foxio/JA4.md").read_text(encoding="utf-8")
+
+
+def test_the_register_states_no_absence_of_a_ja4_transcription() -> None:
+    """The row claims no absence of a JA4 transcription, because #691 wrote that page.
+
+    Both sentences were true when #653 wrote them. `docs/specs/foxio/JA4.md` makes each
+    one false, and `docs/specs/foxio/JA4.md:515-521` records the constraint.
+    """
+    row = _register_row()
+    for falsified in (
+        "This repository holds no JA4 transcription",
+        "holds no `JA4.md` transcription",
+    ):
+        assert falsified not in row, f"the row still states {falsified!r}"
 
 
 def test_the_register_states_the_reason_the_specification_gives() -> None:
