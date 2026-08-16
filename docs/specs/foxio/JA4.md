@@ -250,7 +250,7 @@ on 2026-08-08.
 
 A client hello that carries extension `0x002b` names its version there. The reader takes the
 highest value that is not GREASE. `technical_details/JA4.md:58` states the rule, and it
-states that the handshake version at the top of the packet is ignored.
+states that the reader ignores the handshake version at the top of the packet.
 
 - Corroboration 1: `python/common.py:154-156` drops the GREASE values, sorts the rest and
   returns the last.
@@ -403,15 +403,20 @@ original, under `-r` and `-o`. `technical_details/JA4.md:216` states that `-o` r
 unsorted form, under the `--original-order` flag. **The four-key shape therefore rests on the
 text specification, the Python implementation and the Zeek package.**
 
-### R16 — JA4 reads the TLS client hello, and it covers QUIC and DTLS
+### R16 — JA4 reads the TLS client hello, and it covers QUIC
 
 `technical_details/JA4.md:5` states that JA4 looks at the TLS Client Hello packet.
-`technical_details/JA4.md:49` states that QUIC encapsulates TLS 1.3 into UDP packets, and
-`technical_details/JA4.md:52` states that DTLS operates over UDP or SCTP.
+`technical_details/JA4.md:49` states that QUIC encapsulates TLS 1.3 into UDP packets.
 
 - Corroboration 1: `technical_details/README.md:5` reads
-  `| JA4 | JA4 | TLS Client Fingerprinting |`.
-- Corroboration 2: `rust/ja4/src/tls.rs:481-485` marks the QUIC case on the client path.
+  `| JA4 | JA4 | TLS Client Fingerprinting |`, and `rust/ja4/src/tls.rs:481-485` marks the
+  QUIC case on the client path.
+- Corroboration 2: `python/ja4.py:220` reads `x['quic']` on the client path, and
+  `zeek/ja4/main.zeek:66` reads `"QUIC" in c$service`.
+
+**This rule states no DTLS coverage, because no implementation that writes JA4 marks a DTLS
+client hello.** `technical_details/JA4.md:52` states that DTLS operates over UDP or SCTP,
+and R3 holds the whole reading of that character.
 
 ## The comparison against this project
 

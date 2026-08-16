@@ -94,6 +94,25 @@ def vector_values(method: str) -> list[str]:
     return found
 
 
+def rule_section(rule: str) -> str:
+    """Return the text of one rule section of the page.
+
+    Args:
+        rule: The rule name, as the heading writes it, such as `R13`.
+
+    Returns:
+        Every line from the heading of that rule to the next heading.
+    """
+    lines = page_text().splitlines()
+    opener = [index for index, line in enumerate(lines) if line.startswith(f"### {rule} — ")]
+    assert len(opener) == 1, f"the page holds {len(opener)} headings for {rule}"
+    start = opener[0]
+    end = start + 1
+    while end < len(lines) and not lines[end].startswith("#"):
+        end += 1
+    return "\n".join(lines[start:end])
+
+
 def test_the_directory_holds_a_transcription_page_for_ja4() -> None:
     """A reader who searches the transcription directory for a JA4 rule finds a page."""
     assert PAGE.is_file(), "docs/specs/foxio/JA4.md holds the JA4 transcription"
@@ -142,9 +161,18 @@ def test_the_page_records_the_two_sentinel_lines_of_the_text_specification() -> 
 
 
 def test_the_page_and_the_register_agree_on_the_sentinel_value() -> None:
-    """Two records state one rule, so a reader who finds one finds the other."""
-    assert "000000000000" in page_text()
-    assert "000000000000" in SPECIFICATION.read_text(encoding="utf-8")
+    """Two records state one rule, so a reader who finds one finds the other.
+
+    **A read of the whole page proves nothing here**, because the register names the
+    sentinel for three methods. This case reads the rule section of the page instead.
+    """
+    rule = rule_section("R13")
+    assert "000000000000" in rule
+    for line in ("technical_details/JA4.md:121", "technical_details/JA4.md:176"):
+        assert line in rule
+    register = SPECIFICATION.read_text(encoding="utf-8")
+    assert "000000000000" in register
+    assert "technical_details/JA4.md" in register
 
 
 def test_the_page_states_the_worked_example_the_text_specification_holds() -> None:
@@ -161,9 +189,17 @@ def test_the_vector_set_reproduces_the_worked_example_of_the_specification() -> 
 
 
 def test_no_expected_output_file_holds_the_string_the_image_draws() -> None:
-    """The image pairs the unsorted part b with the sorted part c, and no tool writes it."""
-    assert IMAGE_EXAMPLE not in vector_values("JA4")
-    assert IMAGE_EXAMPLE not in vector_values("JA4_o")
+    """The image pairs the unsorted part b with the sorted part c, and no tool writes it.
+
+    **A negative assertion over an empty corpus passes for the wrong reason**, so this case
+    states the floor first. A read of 2026-08-15 returned 167 JA4 values.
+    """
+    hashed = vector_values("JA4")
+    original = vector_values("JA4_o")
+    assert len(hashed) > 100, f"the vector set holds {len(hashed)} JA4 values"
+    assert len(original) > 100, f"the vector set holds {len(original)} JA4_o values"
+    assert IMAGE_EXAMPLE not in hashed
+    assert IMAGE_EXAMPLE not in original
 
 
 def test_the_page_records_the_string_the_image_draws() -> None:
