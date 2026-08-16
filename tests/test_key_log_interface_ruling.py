@@ -103,6 +103,7 @@ PORT_CAPTURE_CITATIONS = ("pcapgo/pcapng.go:43", "pcapgo/ngread.go:360")
 SECRETS_CAPTURE = "chrome-cloudflare-quic-with-secrets.pcapng"
 SECRETS_BLOCK_COUNT = 1
 SECRETS_LINE_COUNT = 10
+SECRETS_CONNECTION_COUNT = 2
 
 # The warning `scapy` writes for that capture, because this project loads no TLS session.
 SCAPY_WARNING = "PcapNg: TLS Key Log available, but the TLS layer is not loaded!"
@@ -290,7 +291,14 @@ def test_the_corpus_capture_holds_the_secrets_block_the_row_states() -> None:
     secrets_type, secrets_length = struct.unpack("<II", blocks[0][:8])
     assert secrets_type == KEY_LOG_SECRETS_TYPE
     secrets = blocks[0][8 : 8 + secrets_length]
-    assert len(secrets.splitlines()) == SECRETS_LINE_COUNT
+    lines = secrets.splitlines()
+    assert len(lines) == SECRETS_LINE_COUNT
+
+    # The second field of a line of the NSS key log format holds the client random, and
+    # one client random names one connection. The row states the connection count, so a
+    # case reads it here.
+    randoms = {line.split()[1] for line in lines if len(line.split()) > 1}
+    assert len(randoms) == SECRETS_CONNECTION_COUNT
 
 
 def test_the_register_states_what_the_corpus_capture_carries() -> None:
@@ -298,7 +306,8 @@ def test_the_register_states_what_the_corpus_capture_carries() -> None:
     row = _register_row()
     assert SECRETS_CAPTURE in row
     assert SCAPY_WARNING in row
-    assert str(SECRETS_LINE_COUNT) in row
+    assert f"{SECRETS_LINE_COUNT} lines" in row
+    assert f"{SECRETS_CONNECTION_COUNT} connections" in row
 
 
 def test_the_capture_the_row_names_stands_in_the_vector_directory() -> None:
