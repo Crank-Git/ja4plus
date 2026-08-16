@@ -17,9 +17,14 @@ and the worker wrote up the agent that never reported as though it had.
 **A worker that ran the review itself in place of the absent agent says so.** That sentence
 is the whole repair, and it costs one line.
 
-**Warning: rule 3 binds the reader of the comment as well.** An absent report refuses no
-merge, it fails no gate, and it earns no tracker issue. A reader who treats it as a failure
-gives the next worker a reason to fill the gap.
+**Warning: rule 3 binds the reader of the comment as well.** An absent report carries these
+three consequences.
+
+- It refuses no merge.
+- It fails no gate.
+- It earns no tracker issue.
+
+A reader who treats it as a failure gives the next worker a reason to fill the gap.
 
 ## Why the rule names the absence as correct
 
@@ -46,12 +51,12 @@ project already holds.
 | Home | What it holds | This change |
 |---|---|---|
 | `.claude/rules/agent-reports.md` | The rule, the reason, the census, and the limit | Written here |
-| `agents/issue-worker.md` of the `issue-flow` plugin | The same rule beside the step that spawns the children | Named, and no line changed |
+| `agents/issue-worker.md` of the `issue-flow` plugin | The same rule beside the step that spawns the review agents | Named, and no line changed |
 
 **The plugin is outside this repository, so #720 names the file and it edits no line of
-it.** Step 3 of the runbook spawns the review children. It opens `**Self-review**`, and it
+it.** Step 3 of the runbook spawns the review agents. It opens `**Self-review**`, and it
 directs the worker to review by specialist lens through Sonnet children. That step names no
-outcome for a child that never returns. A second copy of the file stands at
+outcome for a review agent that never returns. A second copy of the file stands at
 `skills/issue-flow/references/issue-worker.md` of the same plugin.
 
 **Warning: the rule reaches a worker of another repository only through the plugin.** This
@@ -70,8 +75,9 @@ section reports the census that answers it.
 - 0 pull-request review comments.
 
 **Method.** The census ran in two passes. The first pass matched every record against a
-pattern of two parts. The pattern names a reviewer, a lens, a review agent, a review child
-or a Sonnet child, beside a verb of finding. It selected 88 comments and 7 bodies.
+pattern of two parts. The first part matches one of the literals `reviewer`, `lens`,
+`lenses`, `review agent`, `review child`, `children` and `Sonnet`. The second part matches a
+verb of finding. It selected 88 comments and 7 bodies.
 
 The second pass read each selected record in full, and it looked for four signals.
 
@@ -95,8 +101,8 @@ It therefore finds the shape in three cases alone.
 reader of this corpus.** The census reports a clean corpus over that class, and it measures
 none of it.
 
-**Finding.** One record of 1842 carries the shape, and it is the record #720 was filed on.
-That record is the comment at
+**Finding.** One record of 1842 carries the shape, and that record earned #720. It is the
+comment at
 https://github.com/Crank-Git/ja4plus/pull/718#issuecomment-5305142104. It attributed these
 four things to an agent that never reported.
 
@@ -110,7 +116,7 @@ reports.**
 
 **Two records sit next to the shape and neither one is it.**
 
-- The comment at https://github.com/Crank-Git/ja4plus/pull/561#issuecomment-5245948296
+- The comment at https://github.com/Crank-Git/ja4plus/pull/561#issuecomment-5246016733
   states that a read by lens returned six findings, and it then itemizes five. All three
   lenses reported, and two of them reported nothing. The mismatch is a wrong count and it
   is no fabricated report.

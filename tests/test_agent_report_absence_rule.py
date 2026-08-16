@@ -38,19 +38,53 @@ REPAIR_HEADING = "## Where the repair belongs"
 CENSUS_HEADING = "## The census of 2026-08-16"
 NO_CASE_HEADING = "## No case of this repository refuses this shape"
 
-# The three statements of the rule. **A worker reads them and nothing else is needed.**
+# The three statements of the rule. **A worker reads these three and needs no other line.**
 RULE_STATEMENTS = (
     "A report an agent did not return is reported as absent.",
     "A worker names the agent that reported, and it names the agent that did not.",
     "An absent report is a normal outcome and it refuses nothing.",
 )
 
+# What rule 3 costs a reader. A reader who treats the absence as a failure gives the next
+# worker a reason to invent a report.
+ABSENCE_CONSEQUENCES = (
+    "It refuses no merge.",
+    "It fails no gate.",
+    "It earns no tracker issue.",
+)
+
 # The file of the `issue-flow` plugin that holds the other half of the repair. The plugin
 # is outside this repository, so #720 names the file and it edits no line of it.
 PLUGIN_FILE = "agents/issue-worker.md"
 
-# The step of that file which spawns the review children. A reader reaches the rule there.
+# The step of that file which spawns the review agents. A reader reaches the rule there.
 PLUGIN_STEP = "**Self-review**"
+
+# The verdict each row of the repair table carries. A case that reads the two paths alone
+# passes on a table whose verdict column says the opposite of what this change did.
+REPAIR_VERDICTS = (
+    "| `.claude/rules/agent-reports.md` | The rule, the reason, the census, and the limit "
+    "| Written here |",
+    "| `agents/issue-worker.md` of the `issue-flow` plugin | The same rule beside the step "
+    "that spawns the review agents | Named, and no line changed |",
+)
+
+# The two records that sit next to the shape. **The census names each one by its comment
+# anchor**, and a self-review of #720 found the first anchor wrong before this case existed.
+ADJACENT_RECORDS = (
+    "https://github.com/Crank-Git/ja4plus/pull/561#issuecomment-5246016733",
+    "https://github.com/Crank-Git/ja4plus/pull/222#issuecomment-5224677084",
+)
+
+# The counts the census states about its own two passes. A count no case reads goes stale.
+CENSUS_METHOD_COUNTS = ("88 comments and 7 bodies", "44 comments each")
+
+# The measurement the reason section rests on. It states that the absence is common and that
+# a worker reports it plainly, so a reader who doubts rule 3 reads these two numbers.
+STALL_COUNTS = (
+    "17 comments that state a review agent returned nothing",
+    "10 of them use the word",
+)
 
 # The four labels the census states. A census that reports a count and no bound reports a
 # clean corpus over the part it cannot see.
@@ -123,10 +157,11 @@ def test_the_rule_section_states_all_three_statements_of_the_rule():
     assert missing == [], f"{RULE_HEADING} states none of: {missing}"
 
 
-def test_the_rule_states_that_an_absent_report_refuses_nothing():
-    """A rule that refuses the work on an absent report buys a worker a reason to invent one."""
+def test_the_rule_states_the_three_consequences_an_absent_report_carries():
+    """A rule that refuses the work on an absent report gives a worker a reason to invent one."""
     body = collapsed(section(rule_text(), RULE_HEADING))
-    assert "refuses nothing" in body
+    missing = [line for line in ABSENCE_CONSEQUENCES if line not in body]
+    assert missing == [], f"{RULE_HEADING} states none of: {missing}"
 
 
 def test_the_rule_names_both_the_agent_that_reported_and_the_agent_that_did_not():
@@ -160,8 +195,8 @@ def test_the_rule_records_where_each_half_of_the_repair_belongs():
     """#720 asks which of two homes holds the rule, and the file answers with both."""
     body = collapsed(section(rule_text(), REPAIR_HEADING))
     assert body, f"the rule file holds no section {REPAIR_HEADING}"
-    assert ".claude/rules/agent-reports.md" in body
-    assert "issue-flow" in body
+    missing = [row for row in REPAIR_VERDICTS if row not in body]
+    assert missing == [], f"{REPAIR_HEADING} states none of: {missing}"
 
 
 def test_the_repair_section_names_the_plugin_file_and_the_step_that_holds_it():
@@ -203,9 +238,30 @@ def test_the_census_states_the_clean_negative_as_a_result():
 
 
 def test_the_census_names_the_one_record_it_found():
-    """The census found one record of the shape, and it is the record #720 was filed on."""
+    """The census found one record of the shape, and that record earned #720."""
     body = collapsed(section(rule_text(), CENSUS_HEADING))
     assert KNOWN_INSTANCE in body
+
+
+def test_the_census_names_both_records_that_sit_next_to_the_shape():
+    """A citation no case reads goes wrong without a reader noticing, and one did."""
+    body = collapsed(section(rule_text(), CENSUS_HEADING))
+    missing = [record for record in ADJACENT_RECORDS if record not in body]
+    assert missing == [], f"{CENSUS_HEADING} cites none of: {missing}"
+
+
+def test_the_census_states_the_selection_of_each_pass():
+    """A method that states no selection leaves a reader unable to re-take the census."""
+    body = collapsed(section(rule_text(), CENSUS_HEADING))
+    missing = [count for count in CENSUS_METHOD_COUNTS if count not in body]
+    assert missing == [], f"{CENSUS_HEADING} states none of: {missing}"
+
+
+def test_the_reason_section_states_the_measurement_that_the_absence_is_common():
+    """Rule 3 rests on a measurement, and a reader who doubts it reads these two numbers."""
+    body = collapsed(section(rule_text(), REASON_HEADING))
+    missing = [count for count in STALL_COUNTS if count not in body]
+    assert missing == [], f"{REASON_HEADING} states none of: {missing}"
 
 
 # --- What no case reads --------------------------------------------------------------
