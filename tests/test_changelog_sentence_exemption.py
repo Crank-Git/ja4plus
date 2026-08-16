@@ -1,10 +1,12 @@
-"""Tests that rule 1 and rule 3 exempt the two records and reach no other document.
+"""Tests that three rules exempt the two records and reach no other document.
 
 Rule 1 of `.claude/rules/ste.md` holds a description sentence to 25 words. Rule 3 holds a
-paragraph to six sentences. The user ruled on 2026-08-10, on #457 for rule 1 and on #502
-for rule 3, that the record is exempt from both. A Changelog row records one round, which
-is one topic, and the sentence count of that row follows from how much the round measured.
-This project quotes a dated record of a past measurement rather than rewriting it. A
+paragraph to six sentences. Rule 17 holds a word to the US spelling, and the maintainer
+exempted the record from it on 2026-08-16, on #663. The user ruled on 2026-08-10, on #457
+for rule 1 and on #502 for rule 3, that the record is exempt from both. A Changelog row
+records one round, which is one topic, and the sentence count of that row follows from how
+much the round measured. This project quotes a dated record of a past measurement rather
+than rewriting it. A
 rewrite of the rows falsifies nothing they record, and the text a past reader saw is then
 not the text a future reader sees.
 
@@ -13,10 +15,11 @@ not the text a future reader sees.
 1. The entries of `CHANGELOG.md`.
 2. The `## Changelog` table of `docs/specs/spec.md`.
 
-**The ruling names two rules and it names no third.** The exemption states which rules it
-covers and which rules reach both records, and `evaluate` holds the two statements against
-the numbered rule list of the standard. A rule the standard states and the exemption places
-nowhere fails a case here, so a seventeenth rule needs a reading before it ships.
+**The exemption names three rules and it names no fourth.** The exemption states which
+rules it covers and which rules reach both records, and `evaluate` holds the two statements
+against the numbered rule list of the standard. A rule the standard states and the
+exemption places nowhere fails a case here, so an eighteenth rule needs a reading before it
+ships. #663 gave rule 17 that reading on 2026-08-16.
 
 **A blanket exemption is the defect these cases exist to catch.** A rule that exempts any
 file whose name holds the word `changelog` reaches a file the ruling never read, and
@@ -78,14 +81,16 @@ PARAGRAPH_LIMIT = 6
 
 # The number of each rule the exemption covers. Rule 1 holds the word count of a sentence
 # and #457 exempted it. Rule 3 holds the sentence count of a paragraph and #502 exempted it.
+# Rule 17 holds the spelling of a word and #663 exempted it.
 SENTENCE_RULE = 1
 PARAGRAPH_RULE = 3
-EXEMPT_RULES = (SENTENCE_RULE, PARAGRAPH_RULE)
+SPELLING_RULE = 17
+EXEMPT_RULES = (SENTENCE_RULE, PARAGRAPH_RULE, SPELLING_RULE)
 
-# The count of numbered rules the standard states at the least. The standard states 16
+# The count of numbered rules the standard states at the least. The standard states 17
 # today. **An aggregate over an empty set passes**, so a reader that finds no numbered rule
 # fails here rather than reporting that the exemption places every rule.
-RULE_FLOOR = 16
+RULE_FLOOR = 17
 
 # The count of documents the reader names at the least. The repository tracks 59 Markdown
 # pages today, and the floor stands below that count so a new page needs no edit here.
@@ -742,14 +747,14 @@ LONG_SENTENCE = (
     "twenty-five words."
 )
 
-# The 16 numbered rules a fixture states, so that a fixture holds the rule floor and the
+# The 17 numbered rules a fixture states, so that a fixture holds the rule floor and the
 # placement reads against a whole standard.
 FIXTURE_RULES = "".join(
     f"{number}. A rule of the standard.\n" for number in range(1, RULE_FLOOR + 1)
 )
 
 # The two sentences that place every rule. The shipped rule states the same two.
-COVERED_SENTENCE = "**The exemption covers rule 1 and rule 3.**\n"
+COVERED_SENTENCE = "**The exemption covers rule 1, rule 3 and rule 17.**\n"
 REACHING_SENTENCE = (
     "**Every other rule reaches both records: rules 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,\n"
     "14, 15 and 16.**\n"
@@ -978,7 +983,7 @@ def test_the_reader_reads_a_sentence_of_the_limit_as_no_failure() -> None:
     assert over_limit_sentences(past_limit) == [past_limit]
 
 
-SHIPPED_COVERS = "The exemption covers rule 1 and rule 3."
+SHIPPED_COVERS = "The exemption covers rule 1, rule 3 and rule 17."
 SHIPPED_REACHES_OPENER = "rules 2, 4,"
 
 
@@ -1034,9 +1039,9 @@ def test_a_reader_that_names_no_rule_fails() -> None:
 
 def test_an_exemption_that_covers_a_rule_the_ruling_names_nowhere_fails() -> None:
     """A rule that exempts rule 2 as well fails, and the failure names the covered set."""
-    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1, rule 2 and rule 3.")
+    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1, rule 2, rule 3 and rule 17.")
     failures = rule_failures(rule)
-    assert any("[1, 2, 3]" in failure for failure in failures)
+    assert any("[1, 2, 3, 17]" in failure for failure in failures)
 
 
 def test_an_exemption_that_places_a_rule_nowhere_fails() -> None:
@@ -1048,7 +1053,7 @@ def test_an_exemption_that_places_a_rule_nowhere_fails() -> None:
 
 def test_an_exemption_that_covers_a_rule_and_states_that_it_reaches_fails() -> None:
     """A rule that puts rule 2 on both sides fails, and the failure names rule 2."""
-    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1, rule 2 and rule 3.")
+    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1, rule 2, rule 3 and rule 17.")
     failures = rule_failures(rule)
     assert any(
         "both covers these rules and states that they reach: [2]" in failure for failure in failures
@@ -1057,7 +1062,7 @@ def test_an_exemption_that_covers_a_rule_and_states_that_it_reaches_fails() -> N
 
 def test_a_rule_placement_failure_reaches_the_whole_reading() -> None:
     """A placement the ruling refuses fails `evaluate`, beside the record readings."""
-    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1.")
+    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1 and rule 17.")
     assert evaluate(rule, tracked_documents()) != ()
 
 
@@ -1095,7 +1100,7 @@ def test_the_shipped_exemption_measures_no_rule_against_the_specification_table(
 
 def test_an_exemption_that_drops_rule_three_reports_every_long_entry() -> None:
     """A rule that covers rule 1 alone reports the entries of `CHANGELOG.md` past six sentences."""
-    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1.")
+    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1 and rule 17.")
     failures = uncovered_failures(rule, CHANGELOG_PATH, read_document(CHANGELOG_PATH))
     assert len(failures) >= CHANGELOG_PARAGRAPH_FLOOR
     assert all(failure.startswith(f"rule {PARAGRAPH_RULE} ") for failure in failures)
@@ -1103,14 +1108,14 @@ def test_an_exemption_that_drops_rule_three_reports_every_long_entry() -> None:
 
 def test_an_exemption_that_drops_rule_three_reports_every_long_row() -> None:
     """A rule that covers rule 1 alone reports the rows of the `## Changelog` table."""
-    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1.")
+    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 1 and rule 17.")
     failures = uncovered_failures(rule, SPECIFICATION_PATH, read_document(SPECIFICATION_PATH))
     assert len(failures) >= SPECIFICATION_PARAGRAPH_FLOOR
 
 
 def test_an_exemption_that_drops_rule_one_reports_every_long_sentence() -> None:
     """A rule that covers rule 3 alone reports the sentences of `CHANGELOG.md` past 25 words."""
-    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 3.")
+    rule = mutated_rule(SHIPPED_COVERS, "The exemption covers rule 3 and rule 17.")
     failures = uncovered_failures(rule, CHANGELOG_PATH, read_document(CHANGELOG_PATH))
     assert len(failures) >= CHANGELOG_SENTENCE_FLOOR
     assert all(failure.startswith(f"rule {SENTENCE_RULE} ") for failure in failures)

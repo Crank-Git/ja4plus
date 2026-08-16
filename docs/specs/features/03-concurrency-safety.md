@@ -213,7 +213,7 @@ that the hook keeps the table away from.
 
 `TCPStreamReassembler.streams` stays an `OrderedDict`. It holds both bounds already, and
 `add_segment` applies two more per-stream caps that no mapping models. #39 records the
-ruling and changes no behaviour of that class.
+ruling and changes no behavior of that class.
 
 The `JA4HFingerprinter` tables and `JA4XFingerprinter.scan_offsets` read
 `TCPStreamReassembler.max_streams` and `max_stream_age` of the reassembler that

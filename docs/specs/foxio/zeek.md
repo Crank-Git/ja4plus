@@ -345,7 +345,7 @@ each one is answered.
    the option kind 0 rule that FoxIO's own JA4TScan documentation settles.
 2. **`ja4ls` carries three parts where `python/test/testdata/` carries two.** Confirmed.
    The Python reference and `ja4plus` both carry two parts, and the Zeek script carries a
-   third. The authority rule decides it in favour of the two-part form.
+   third. The authority rule decides it in favor of the two-part form.
    **#200 corrected the conclusion this reading drew.** The Zeek script is not alone: the
    specification labels three parts and every value under `wireshark/test/testdata/`
    holds three. This reading compared two sources of five, and the section above states
@@ -543,7 +543,7 @@ script builds. Cite the file path and the pinned commit when you use one.
   `c<client mode>s<server mode>_c<client packets>s<server packets>_c<client ACKs>s<server ACKs>`.
 - `zeek/ja4ssh/main.zeek:122-136` counts a packet that carries no payload and holds only
   the ACK flag as an ACK. It counts every other packet by its TCP payload length.
-- `zeek/ja4ssh/main.zeek:68-70` breaks a tie between two modes in favour of the smaller
+- `zeek/ja4ssh/main.zeek:68-70` breaks a tie between two modes in favor of the smaller
   value.
 - `zeek/ja4ssh/main.zeek:160-164` emits the window a connection holds open when it
   closes.

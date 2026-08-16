@@ -391,7 +391,7 @@ class TestTheReferenceOmitsTheStreamDeviations:
 
         Every other entry rests on a FoxIO implementation that holds the value, and no
         FoxIO implementation holds this one. ja4plus reads the record layer without
-        regard to the tunnel protocol, and that one behaviour also produces the
+        regard to the tunnel protocol, and that one behavior also produces the
         `https-connect.pcap` values two FoxIO implementations hold. #138 keeps the
         values, so the entry is decided.
         """

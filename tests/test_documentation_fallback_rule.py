@@ -15,7 +15,7 @@ states why the file exists.
 ## Why this file reads a shape and no phrase
 
 The user states the rule. **"A check that a rewording defeats is not a check."** #449
-measured that cost on the neighbouring bullet of the same page. A case held the fixed
+measured that cost on the neighboring bullet of the same page. A case held the fixed
 phrase `seven of the twelve` and the page wrote `Seven of twelve`. One missing article
 therefore carried a superseded count through 97 rounds of a passing case.
 
@@ -59,7 +59,7 @@ hole below is recorded and none is closed.
 - **A reader premise that belongs to another paragraph.** The window reads 600 characters
   before the statement and 200 after it, so a page that states the premise once at its top
   and the rule at its bottom fails a case here. A page states the premise beside the rule.
-- **A neighbouring premise.** A superseded statement passes where a corrected statement of
+- **A neighboring premise.** A superseded statement passes where a corrected statement of
   another rule stands inside the same window. The two windows are narrow for that reason,
   and no page of the corpus reaches the case today.
 - **A sentence of another subject that borrows this vocabulary.** `The expected-output

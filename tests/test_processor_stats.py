@@ -426,7 +426,7 @@ class PausingTable(BoundedStateTable):
 
     The window is one statement wide in the production code. This subclass holds the
     writer inside it, so a case forces the race rather than sampling it. The subclass
-    changes no other behaviour.
+    changes no other behavior.
     """
 
     def __init__(self, *args, **kwargs):

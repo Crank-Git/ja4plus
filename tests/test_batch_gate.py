@@ -142,7 +142,7 @@ def _pull_request_trigger(path: str) -> str:
     Raises:
         AssertionError: The block holds no `pull_request:` key, or the region the reader
             took holds no `branches:` key. The second check proves the reader found the
-            trigger and not a neighbouring region.
+            trigger and not a neighboring region.
     """
     block = _trigger_block(path)
     assert "  pull_request:" in block, f"{path} accepts no pull-request event"
@@ -529,7 +529,7 @@ class TestTheProcedureReachesTheLoop:
         """The configuration held the false claim that a batch pull request starts a run.
 
         That sentence is the belief that turns an absence into a pass, so the file now
-        names the rule instead of asserting the behaviour.
+        names the rule instead of asserting the behavior.
         """
         notes = " ".join(json.loads(LOOP_CONFIGURATION.read_text(encoding="utf-8"))["notes"])
         assert ".claude/rules/batch-gate.md" in notes, (

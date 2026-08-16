@@ -3,7 +3,7 @@
 One fingerprinter writes JA4L and JA4LS, and `ja4plus/processor.py` sets the type from
 `_SPEC`, so both methods report the type `ja4l`. The value prefix `JA4L-S=` is therefore
 the one discriminator the command holds. #605 adds the token under parity rule 2, and
-`cmd/ja4plus/types.go` of `Crank-Git/ja4plus-go` states the behaviour this file reads.
+`cmd/ja4plus/types.go` of `Crank-Git/ja4plus-go` states the behavior this file reads.
 """
 
 from __future__ import annotations

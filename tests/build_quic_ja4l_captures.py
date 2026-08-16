@@ -1,7 +1,7 @@
 """Build the two captures that measure the JA4L QUIC measurement points.
 
 No FoxIO vector holds a repeated QUIC connection, and none holds a server Initial
-packet that leads its client Initial packet. #123 asks for a behaviour change on both
+packet that leads its client Initial packet. #123 asks for a behavior change on both
 cases, so both need a measurement of the reference.
 
 These two captures supply it. They are synthetic. The packets carry no real handshake,

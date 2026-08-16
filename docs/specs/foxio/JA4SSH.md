@@ -196,7 +196,7 @@ a bare ACK in a separate field.
   `0` and builds two new mode maps.
 
 **The FoxIO Python implementation intends the same reset and does not achieve it.** See
-"The three declined reference behaviours" below.
+"The three declined reference behaviors" below.
 
 ### R9 — A connection produces several fingerprints
 
@@ -226,7 +226,7 @@ on one side.
 
 ### R11 — The specification states no rule that closes the last window
 
-**This rule is uncertain, and #214 settled the behaviour without it.** The specification
+**This rule is uncertain, and #214 settled the behavior without it.** The specification
 states nothing, so the user decided. `ja4plus` closes the last window at the end of the
 capture, as the FoxIO Rust implementation and the FoxIO Zeek package do. The section "The
 trailing window" holds the measurement, and the ruling is reversible.
@@ -277,12 +277,12 @@ fallback under `.claude/rules/conformance.md`.
    `zeek/ja4ssh/main.zeek` holds the option `ja4_ssh_max_fingerprints`, and no other
    reference holds a bound.
 
-## The three declined reference behaviours
+## The three declined reference behaviors
 
 `tests/foxio_deviations.json` holds 14 JA4SSH entries under four issues, and this section
 reads three of the four. #96 holds 4 entries, #97 holds 2 entries and #105 holds 3
 entries. The plan asked
-whether the specification explains each behaviour or contradicts it. **The specification
+whether the specification explains each behavior or contradicts it. **The specification
 explains none of the three, and it contradicts two.** No decline reopens.
 
 **#611 corrected the entry count of this section on 2026-08-15, and this record supersedes
@@ -294,7 +294,7 @@ rewritten.
 > `tests/foxio_deviations.json` holds ten JA4SSH entries under three issues.
 
 **The correction reopens no decline.** #611 read the count alone, and the three subsections
-below hold the same three reference behaviours they held before. The 5 entries of #214 are
+below hold the same three reference behaviors they held before. The 5 entries of #214 are
 a separate register family, and this section reads none of them.
 
 ### #96 — the reference mode reads the packet lengths of the whole capture
@@ -309,7 +309,7 @@ module-level dictionary whose values `client_payloads` and `server_payloads` are
 is a shallow copy, so every window of every connection appends to the same two list
 objects.
 
-**The specification contradicts the behaviour.** R2 and the deleted
+**The specification contradicts the behavior.** R2 and the deleted
 `technical_details/JA4SSH.md` state the measurement as
 `How to measure the mode for TCP payload lengths across 200 packets in the session`. The
 mode reads the 200 packets of the window, and not the packets of another connection.
@@ -317,7 +317,7 @@ mode reads the 200 packets of the window, and not the packets of another connect
 builds a new map at each boundary, so two references disagree with the Python
 implementation as well.
 
-**Status: the specification explains the behaviour as a defect. The decline stands.** The behaviour
+**Status: the specification explains the behavior as a defect. The decline stands.** The behavior
 also meets shape 1 of `.claude/rules/conformance.md`, because the value depends on the
 composition of the capture.
 
@@ -338,13 +338,13 @@ counters are `c0s0`, and whose mode comes from the previous window.
 `tests/foxio_vectors/ssh2.pcapng.json` holds the result on stream 14:
 `'JA4SSH.1': 'c36s36_c76s124_c74s5', 'JA4SSH.2': 'c36s36_c0s0_c2s0'`.
 
-**The specification contradicts the behaviour, and so does the Rust reference.** R5 states
+**The specification contradicts the behavior, and so does the Rust reference.** R5 states
 that part b holds the count of SSH packets, and `c0s0` states that the window holds none.
 `rust/ja4/src/ssh.rs:271-274` returns no fingerprint when both length maps are empty, and
 it carries the comment `This doesn't seem to be an *SSH* TCP stream after all.`
 **`ja4plus/fingerprinters/ja4ssh.py:342-343` holds the same guard as the Rust reference.**
 
-**Status: the specification explains the behaviour as a defect. The decline stands.** The behaviour
+**Status: the specification explains the behavior as a defect. The decline stands.** The behavior
 also meets shape 2 of `.claude/rules/conformance.md`, because the fingerprint describes
 no traffic.
 
@@ -359,11 +359,11 @@ the connection it holds at index 0.`
 `finalize_ja4ssh(x['stream'])`. The stream index of the first connection of a capture is
 `0`, which Python reads as false, so the body never runs for it.
 
-**The specification states no rule that the behaviour could follow.** R11 records that the
+**The specification states no rule that the behavior could follow.** R11 records that the
 image and the deleted text state nothing about the last window. The decline therefore
 rests on the shape rule and not on a statement of intent.
 
-**The behaviour meets shape 1 of `.claude/rules/conformance.md`.** The value depends on
+**The behavior meets shape 1 of `.claude/rules/conformance.md`.** The value depends on
 the position of the connection in the file. The same connection produces a trailing
 fingerprint at stream index 1, and it produces none at stream index 0.
 
@@ -374,8 +374,8 @@ emits from `connection_state_remove`. `wireshark/source/packet-ja4.c:1399-1404` 
 on a FIN+ACK packet, under the comment `// Fix to add JA4SSH when a connection
 terminates`, and it applies no test on the stream index.
 
-**Status: the specification does not explain the behaviour. The decline rests on the
-shape rule alone, and it stands.** Three references contradict the reference behaviour, and no reference supports
+**Status: the specification does not explain the behavior. The decline rests on the
+shape rule alone, and it stands.** Three references contradict the reference behavior, and no reference supports
 it.
 
 ## The trailing window, and the reading #214 needed

@@ -545,7 +545,7 @@ states that the bounds of the table are too small for the traffic. A connection 
 caller removed with `cleanup_connection` counts as a first sighting when it returns,
 because the caller asked for that removal.
 
-A table remembers the keys it evicted, so that it can recognise a return. The memory
+A table remembers the keys it evicted, so that it can recognize a return. The memory
 holds the entry bound of its own table. The seventeen tables of one processor hold 57400
 remembered keys between them, at 187 bytes for one key, so the memory costs 10.2 MiB
 when every table is full and every entry of every table has been replaced.

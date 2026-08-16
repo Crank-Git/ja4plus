@@ -193,7 +193,7 @@ def test_the_register_names_the_four_references_that_state_a_trigger() -> None:
 
 
 def test_the_register_row_reads_parity_rule_one() -> None:
-    """The row states rule 1, because FoxIO governs the behaviour of a fingerprinter."""
+    """The row states rule 1, because FoxIO governs the behavior of a fingerprinter."""
     assert _register_row().split("|")[4].strip() == "1"
 
 

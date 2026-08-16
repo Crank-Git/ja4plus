@@ -14,7 +14,7 @@ sentence below, and the read of 2026-08-10 that #577 took supersedes it.
 **Pages has therefore built nothing yet**, because `.github/workflows/docs.yml` deploys on
 a push to `master` alone. These cases read the workflow as text, and the deployment stays
 unverified until a promotion reaches the release branch.
-The issue body states the behaviour the workflow must have until then: the run fails with a
+The issue body states the behavior the workflow must have until then: the run fails with a
 message that names the setting.
 
 **The publish workflow builds nothing of its own.** `.github/workflows/docs-build.yml`

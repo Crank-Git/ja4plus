@@ -12,7 +12,7 @@ mockups: []
 A fingerprint on its own is an identifier. An analyst wants a name. `ja4plus`
 ships FoxIO's mapping file and looks a fingerprint up in it.
 
-One behaviour needs to change before version 1.0.0. `JA4DBClient.lookup` calls
+One behavior needs to change before version 1.0.0. `JA4DBClient.lookup` calls
 `https://ja4db.com/api/read/<fingerprint>` on every miss, with no opt-in at that
 layer. A fingerprint describes traffic the operator observed. Sending it to a
 third party discloses that traffic. The command-line flag `--lookup` reads as a

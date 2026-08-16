@@ -402,13 +402,13 @@ manual event and on a push, as well as on a pull-request event.
 | Service | What it does | Documentation |
 |---|---|---|
 | `build` | Writes the source distribution and the wheel. | https://build.pypa.io/en/stable/reference/cli.html |
-| `pip install` | Installs one artefact into the clean environment. | https://pip.pypa.io/en/stable/cli/pip_install/ |
+| `pip install` | Installs one artifact into the clean environment. | https://pip.pypa.io/en/stable/cli/pip_install/ |
 | `venv` | Creates the clean environment. | https://docs.python.org/3/library/venv.html |
 | `bigboy` | The granted Linux host. `.issue-flow.json` records it. | — |
 
 Verified against the pages above, retrieved 2026-08-09.
 
-`python -m build` writes both artefacts into `{srcdir}/dist` by default. It builds the
+`python -m build` writes both artifacts into `{srcdir}/dist` by default. It builds the
 source distribution from the source tree, and it builds the wheel from that source
 distribution. A wheel run therefore reads the source distribution already. #409 still
 installs the source distribution, because `pip` runs the build backend on the user's
@@ -504,7 +504,7 @@ the checkout is.
 3. **No check confirms that a worker proved a mutation live in both directions with
    `inspect.getsource`.** `FR-pre-release-validation-23a` states that procedure, and a
    case observes no worker. #419 found the statement among rules a check tests, and #414
-   split it. **The artefact keeps a check where the procedure keeps none**: a worker who
+   split it. **The artifact keeps a check where the procedure keeps none**: a worker who
    followed the procedure leaves a `repaired` verdict that names a case the suite
    collects, and `FR-pre-release-validation-23` states that condition.
    `tests/test_settlement_procedure.py` reads it. **That condition is necessary and it is

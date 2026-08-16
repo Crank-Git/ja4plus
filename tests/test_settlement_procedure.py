@@ -1,4 +1,4 @@
-"""The artefact of the settlement procedure, because no case watches a worker follow it.
+"""The artifact of the settlement procedure, because no case watches a worker follow it.
 
 `FR-pre-release-validation-23` read `A worker proves each mutation live in both directions
 with inspect.getsource before it settles the candidate.` **That is a procedure a worker
@@ -10,7 +10,7 @@ of statement.
 - **The procedure keeps no check.** `docs/specs/features/11-pre-release-validation.md`
   lists it among the statements it declares uncheckable, with its reason. A reader trusts
   the transcript in the pull request or repeats the run.
-- **The artefact of the procedure keeps one.** A worker who followed the procedure leaves
+- **The artifact of the procedure keeps one.** A worker who followed the procedure leaves
   a settlement record whose every `repaired` verdict names a case, and the suite collects
   that case. A worker who settled a candidate with a case name it invented fails
   `test_the_suite_collects_every_case_a_repaired_verdict_names` here.

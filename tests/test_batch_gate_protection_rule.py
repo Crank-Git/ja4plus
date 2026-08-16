@@ -1054,7 +1054,7 @@ def test_a_marked_superseded_claim_reaches_no_case(sentence: str) -> None:
     assert superseded_claims(paragraph) == []
 
 
-def test_an_unmarked_superseded_claim_of_a_neighbouring_paragraph_reaches_a_case() -> None:
+def test_an_unmarked_superseded_claim_of_a_neighboring_paragraph_reaches_a_case() -> None:
     """The marker covers one paragraph, so the next paragraph carries no exemption."""
     page = (
         "A read of 2026-08-09 is superseded.\n\n"

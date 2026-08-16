@@ -179,7 +179,7 @@ class TCPStreamReassembler(StateTable):
             return by_seq
 
         # A stream occupies one arc of the sequence space, and one step between two
-        # neighbours closes that arc. The widest step is that one, so the segment after
+        # neighbors closes that arc. The widest step is that one, so the segment after
         # it holds the first byte. A comparison of each segment against a running
         # earliest value gives a different answer for a different arrival order,
         # because the comparison is not transitive once the segments span the space.

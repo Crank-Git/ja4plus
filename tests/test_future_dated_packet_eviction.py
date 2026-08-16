@@ -4,8 +4,8 @@ The maintainer ruled the property on 2026-08-14, on `Crank-Git/ja4plus-go#577` a
 #618. Both projects accept it and document it, and no line of the age pass changes.
 `ja4plus/utils/state_table.py:414` holds the comparison that produces it.
 
-These cases hold the behaviour, so a later change to the age pass fails a run rather
-than removes a documented behaviour without a report. `docs/concurrency.md` states the
+These cases hold the behavior, so a later change to the age pass fails a run rather
+than removes a documented behavior without a report. `docs/concurrency.md` states the
 property, and the last case reads that page.
 """
 
