@@ -60,8 +60,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 PAGE_DIRECTORY = REPO_ROOT / "docs" / "specs" / "foxio"
 
-# The pages this reader holds outside `PAGE_DIRECTORY`. #600 falsified a citation of this
-# page and the review lens of that round found it, because no reader read the file.
+# The pages this reader holds outside `PAGE_DIRECTORY`. No reader read this page before
+# #690. A review lens of #600 found the one falsified citation that round produced.
 OUTSIDE_PAGES = (REPO_ROOT / "docs" / "implementation_notes.md",)
 
 # The record of every citation that names no statement and stood before this condition.

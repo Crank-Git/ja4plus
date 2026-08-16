@@ -21,7 +21,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   to a statement, so both pass.** **Six citations of `docs/implementation_notes.md` moved.**
   `ja4.py:193` named `# Form part_a of the fingerprint` and it now names `ja4.py:226`, which
   holds `if sorted_ext_str:`, the guard the prose describes. `ja4ts.py:68` named a blank
-  line and it now names `ja4ts.py:76`, which builds the delay list and sorts nothing.
+  line and it now names `ja4ts.py:332`, which states that the option list keeps the
+  original order.
   `ja4d.py:212` named `# Get raw UDP payload` and it now names `ja4d.py:214`, which calls
   `_parse_dhcp_options`. `ja4d6.py:277` named a blank line and it now names `ja4d6.py:287`,
   which calls `_parse_dhcpv6_payload`. `ja4ssh.py:221-222` named a comment about the

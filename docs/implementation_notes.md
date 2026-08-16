@@ -652,7 +652,7 @@ A packet that carries no option of the six gives the value `0`.
 
 The list keeps the wire order. `ja4plus` never sorts it.
 
-**Location:** `ja4plus/fingerprinters/ja4t.py:192` and `ja4plus/fingerprinters/ja4ts.py:76`.
+**Location:** `ja4plus/fingerprinters/ja4t.py:192` and `ja4plus/fingerprinters/ja4ts.py:332`.
 
 ---
 
