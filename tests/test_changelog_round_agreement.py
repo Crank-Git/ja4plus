@@ -10,9 +10,9 @@ these cases compare the files against each other.
 
 **#727 retired the routine `TBD` sweep on 2026-08-15, and it kept the form.** A member
 records no round, so no member writes `TBD` for a round of its own. One guard still takes a
-record from the member that trips it: `tests/test_breaking_change_record.py` requires that
-each file record the Python floor the package states, and #575 met that reader on the
-branch that moved the floor. Such a member writes `Round TBD.` and the matching row.
+record from the member that trips it. `tests/test_breaking_change_record.py` requires that
+each file record the Python floor the package states. #575 met that reader on the branch
+that moved the floor, and such a member writes `Round TBD.` and the matching row.
 `.claude/rules/batch-gate.md` states the whole model. **The sentence below is the wording
 of the older model, quoted rather than rewritten.**
 

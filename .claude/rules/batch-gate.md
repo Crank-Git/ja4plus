@@ -289,10 +289,10 @@ therefore names an integration branch in the filter and in the mandate.
 
 **The `test` job names that branch in `ROUND_ENTRY_BRANCH`, because a run of a pull request
 checks out a detached merge commit.** `git rev-parse --abbrev-ref HEAD` then answers the
-literal `HEAD` and names no branch, so the case would skip on every job and `skip-gate`
+literal `HEAD` and names no branch. The case would then skip on every job, and `skip-gate`
 would fail the run. The step `Name the branch the change set belongs to` reads
-`github.head_ref` first and `github.ref_name` second, which names the head branch on every
-event the workflow accepts.
+`github.head_ref` first and `github.ref_name` second. The two together name the head branch
+on every event the workflow accepts.
 
 ### One guard still takes a record from a member
 
@@ -307,7 +307,7 @@ could not pass on the branch that made the move. Such a member writes `Round TBD
 matching row, and the project manager assigns the number at the batch gate.
 
 **#395 records why that guard stands.** A comparison between two records finds no change
-that is absent from both of them, and the move of the floor from 3.8 to 3.9 was such a
+that is absent from both of them. The move of the floor from 3.8 to 3.9 was such a
 change. #727 therefore kept the guard, and it kept the `TBD` form the guard reads.
 
 ### The race the older model measured
@@ -323,8 +323,8 @@ assert 169 == 173
 ```
 
 **#727 removes that race for every routine member.** One batch writes one round at its own
-gate, and the project manager runs one gate at a time, so no second writer moves the
-sequence between the read and the write.
+gate. The project manager runs one gate at a time, so no second writer moves the sequence
+between the read and the write.
 
 **Warning: a wrong pairing survives the row-count rule, so read the contiguity case
 instead.** `row count == highest round` reads a table that carries 168 twice and 170

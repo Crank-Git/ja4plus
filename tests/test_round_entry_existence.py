@@ -11,8 +11,8 @@ names the branch.
 **The older model recorded one round for one issue**, so this file failed every change set
 that edited a tracked file and recorded no round. Each member therefore wrote the two most
 contended files of the repository. A read of 2026-08-15 covered the last 300 commits of
-`master`: 192 touch `docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against 56 that
-touch a file under `ja4plus/`.
+`master`. 192 touch `docs/specs/spec.md`, 186 touch `CHANGELOG.md`, and 56 touch a file
+under `ja4plus/`.
 
 **The `test` job names the branch in `ROUND_ENTRY_BRANCH`, because a run of a pull request
 checks out a detached merge commit.** `git rev-parse --abbrev-ref HEAD` then answers the
@@ -178,13 +178,13 @@ REFERENCE_ENVIRONMENT_VARIABLE = "ROUND_ENTRY_REFERENCE"
 
 # The prefixes of an integration branch. #727 moved the mandate from the change set to the
 # batch pull request, so the mandate reads the branch the change set belongs to. The two
-# prefixes match the two patterns of `WORKFLOW_BASE_FILTER`, which the base-branch filter
-# of the workflow holds, so one model names an integration branch in both places.
+# prefixes match the two patterns `WORKFLOW_BASE_FILTER` holds. One model therefore names
+# an integration branch in the base-branch filter and in the mandate.
 INTEGRATION_BRANCH_PREFIXES = ("batch/", "epic/")
 
-# The environment variable that names the branch the change set belongs to. The `test` job
-# writes it, because a run of a pull request checks out a detached merge commit and
-# `git rev-parse --abbrev-ref HEAD` then answers `HEAD` and no branch name.
+# The environment variable that names the branch the change set belongs to. A run of a
+# pull request checks out a detached merge commit, so `git rev-parse --abbrev-ref HEAD`
+# answers `HEAD` and no branch name. The `test` job writes the branch here instead.
 BRANCH_ENVIRONMENT_VARIABLE = "ROUND_ENTRY_BRANCH"
 
 # The workflow whose `test` job runs this case on the runner.
@@ -205,8 +205,8 @@ FILING_RULE_CASES = (
     "A question the maintainer must rule.",
 )
 
-# The sentence that parts the issue numbers of the copied rule from the issue numbers of
-# this repository. The rule names #410, #419, #436, #398, #355 and #70, and each one is an
+# The sentence that separates the issue numbers of the copied rule from the issue numbers
+# of this repository. The rule names #410, #419, #436, #398, #355 and #70, and each one is an
 # issue of the port.
 PORT_ISSUE_DISCLAIMER = "every issue number it names is an issue of the port"
 
@@ -456,8 +456,8 @@ def environment_branch(environment: Mapping[str, str] = os.environ) -> str:
 def head_branch(repository: Path, named: str = "") -> Optional[str]:
     """Return the branch the change set belongs to.
 
-    A named branch outranks the branch of the repository, because a run of a pull request
-    checks out a detached merge commit and git then reports no branch name.
+    A named branch outranks the branch of the repository. A run of a pull request checks
+    out a detached merge commit, and git then reports no branch name.
 
     Args:
         repository: The root of the repository.
@@ -682,7 +682,7 @@ def evaluate(
 
     Returns:
         A verdict that carries a skip reason where the branch or the change set cannot be
-        read, and a failure reason where a batch change set records no round.
+        read. It carries a failure reason where a batch change set records no round.
     """
     name = head_branch(repository, branch)
     if name is None:
@@ -1034,8 +1034,8 @@ def _unrelated_head(repository: Path) -> str:
     """
     base = _git(repository, "rev-parse", "HEAD")
     assert base is not None
-    # The orphan branch carries an integration prefix, because the mandate reads a batch
-    # change set alone and this reader tests the reference point rather than the branch.
+    # The mandate reads a batch change set alone, so the orphan branch carries an
+    # integration prefix. This reader tests the reference point, not the branch.
     _run(repository, "checkout", "--orphan", "batch/727-a-shallow-clone")
     return base.strip()
 

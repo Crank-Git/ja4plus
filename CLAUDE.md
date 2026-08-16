@@ -125,16 +125,16 @@ specifies no filing policy.
   because #70 measured something. **The backlog regenerated at about the rate it closed.**
 
 **The maintainer set one valve on 2026-08-15, and `.issue-flow.json` records it under
-`filingRule`.** No issue is filed whose only symptom is a stale citation, or a record that
-describes a past state. Three rules follow.
+`filingRule`.** The project manager files no issue whose only symptom is a stale citation,
+or a record that describes a past state. Three rules follow.
 
 1. A worker repairs what its own change falsifies, in the same pull request, even where
    another live batch owns the file. The project manager resolves the conflict once, at
    the sub-merge.
 2. A finding that does not fit the change becomes a comment on an issue that exists, and
    never a new issue.
-3. A finding that is a defect of the library, or that moves a fingerprint, is still filed.
-   This valve reaches a record, and it reaches no measurement of the product.
+3. A finding that is a defect of the library, or that moves a fingerprint, still earns an
+   issue. This valve reaches a record, and it reaches no measurement of the product.
 
 **#708, #709 and #719 are the three issues the maintainer declined under this valve.** A
 read of 2026-08-15 measured the last 300 commits of `master`: 56 touch a file under

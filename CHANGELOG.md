@@ -48,8 +48,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   **The routine `TBD` sweep goes out and one guard keeps the form.**
   `tests/test_breaking_change_record.py` requires that both records name the Python floor
   the package states, and #575 met that reader on the branch that moved the floor. A member
-  that trips that guard still writes `Round TBD.` and the matching row, so this round
-  deleted no case of that module and changed no pattern of it.
+  that trips that guard still writes an unassigned round entry and the matching row, so
+  this round deleted no case of that module and changed no pattern of it.
   `.claude/rules/batch-gate.md` records the reading under
   `### One guard still takes a record from a member`.
   **Three prose records stated the older model and this round repairs each one**, under the
@@ -65,6 +65,26 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   138 xfailed cases. **Eighteen cases of `tests/test_round_entry_existence.py` failed
   before the reading changed**, and
   `test_a_member_change_set_that_records_no_round_passes` was one of them.
+  **The self-review found sixteen defects and this round repairs every one.** The writing
+  lens read thirteen sentences past the limit of rule 1 of `.claude/rules/ste.md`, two
+  passive sentences that rule 11 bars, and the verb `parts` where `separates` reads
+  plainly. **The correctness lens walked the six events the workflow accepts and it found
+  no state where the reading passes a batch change set that records no round.**
+  **The `## Terms` table barred the word this round writes twenty times.** The
+  `delegation` row names `mandate` under `Do not use`, so `mandate` had one barred meaning
+  and no meaning of its own. `.claude/rules/ste.md` states that a writer who needs a word
+  the table does not hold adds it, so this round adds a `mandate` row. That row states the
+  one meaning the word carries, and it names the `delegation` row that bars the other. The
+  unit suite caught one more defect, in
+  `tests/test_documentation_version_claims.py::test_the_reader_cuts_every_changelog_entry`.
+  **That case cuts every entry below the first third-level heading, and it then bars the
+  opener of a round sentence**, and the entries of `## [Unreleased]` stand above that
+  heading. Each one therefore wraps that sentence, so the opener ends one line and the
+  number opens the next. This entry named an unassigned round inside its prose, which wrote
+  the barred opener on one line, and the repair names that round in words instead. The unit suite
+  reports 5856 passed, 8 skipped and 8 xfailed, and coverage holds at 94% with 4489
+  statements and 271 misses. `ruff check`, `ruff format --check` and
+  `mypy --strict ja4plus/` each report no issue.
 - **The divergence register states the JA4 ALPN condition as the printable ASCII range**
   (#601).
   Round
