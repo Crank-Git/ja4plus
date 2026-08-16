@@ -1,7 +1,8 @@
 """Tests that the divergence register records the JA4 ALPN ruling of 2026-08-10.
 
 **The user ruled on 2026-08-10 that the form of `ja4plus` stands.** A first ALPN value
-that is not alphanumeric writes `99`, and a first ALPN value of one byte writes `hh`.
+whose first byte or last byte falls outside `0x20-0x7E` writes `99`. A first ALPN value
+of one alphanumeric byte writes `hh`.
 
 The conformance audit of the same date named this the one condition where `ja4plus`
 matches no FoxIO implementation. The two references disagree with each other, and each
@@ -85,6 +86,24 @@ ONE_CONDITION = "the one condition where `ja4plus` matches no FoxIO implementati
 
 # The issue that records the ruling.
 RULING_ISSUE = "#522"
+
+# The first cell of the row that #127 wrote. **The row states the value `99`**, and #601
+# restated the condition that triggers it.
+CONDITION_ITEM = "JA4 ALPN value for a byte outside `0x20-0x7E`"
+
+# The first cell of the row that states the position rule. A byte outside the printable
+# range, in a position other than the first, keeps `99`.
+POSITION_ITEM = "JA4 ALPN value for a byte outside `0x20-0x7E` in a position other than the first"
+
+# The condition `compute_alpn_value` applies at `ja4plus/fingerprinters/ja4.py:99`.
+PRINTABLE_RANGE = "`0x20-0x7E`"
+
+# The condition the FoxIO prose states, which the measurement of #141 contradicts. **A row
+# that states it sends a reader to the wrong test**, and the Go port read these rows.
+LOOSE_CONDITION = "not alphanumeric"
+
+# Every row of the register that states the JA4 ALPN condition.
+CONDITION_ROWS = (CONDITION_ITEM, POSITION_ITEM, RULING_ITEM)
 
 # The issue that records the readings of 2026-08-07, and the count of entries that name it
 # in `tests/foxio_deviations.json`. **The ruling of #522 moves no entry**, so a change of
@@ -211,6 +230,23 @@ def test_the_register_names_this_the_one_condition_that_matches_no_reference() -
 def test_the_register_cites_the_issue_that_records_the_ruling() -> None:
     """The register names the issue a reader follows to the ruling."""
     assert RULING_ISSUE in _row(RULING_ITEM), f"the ruling row cites no {RULING_ISSUE}"
+
+
+def test_every_alpn_row_states_the_condition_as_the_printable_ascii_range() -> None:
+    """Each ALPN row of the register names the range `0x20-0x7E`."""
+    for item in CONDITION_ROWS:
+        assert PRINTABLE_RANGE in _row(item), (
+            f"the row named {item!r} states no range {PRINTABLE_RANGE}"
+        )
+
+
+def test_no_alpn_row_states_the_condition_as_the_alphanumeric_test() -> None:
+    """No ALPN row of the register states the condition the measurement contradicts."""
+    for item in CONDITION_ROWS:
+        assert LOOSE_CONDITION not in _row(item), (
+            f"the row named {item!r} states the condition as {LOOSE_CONDITION!r}, and "
+            f"`ja4plus/fingerprinters/ja4.py:99` tests the range {PRINTABLE_RANGE}"
+        )
 
 
 def test_the_ruling_moves_no_entry_of_the_deviation_register() -> None:

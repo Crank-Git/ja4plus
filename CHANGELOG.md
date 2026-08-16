@@ -6,6 +6,36 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The divergence register states the JA4 ALPN condition as the printable ASCII range**
+  (#601).
+  Round
+  TBD. **Two rows of the divergence register stated the condition as `not alphanumeric`,
+  and `ja4plus/fingerprinters/ja4.py:99` tests the printable ASCII range `0x20-0x7E`.** A
+  reader who implemented a row implemented the wrong condition. **The Go port read these
+  rows**, and it carried the wording into the requirements FR-parity-8 and FR-parity-9 of
+  `Crank-Git/ja4plus-go`. Round 33 recorded the correction on 2026-08-07, and it corrected
+  the code and `docs/implementation_notes.md` alone. **The row that #127 wrote now names a
+  byte outside `0x20-0x7E`**, and it keeps the value `99` and every ruling it carried.
+  **The ruling row of #522 now states the condition on the first byte and on the last
+  byte**, and it keeps the value `hh`, the ruling of 2026-08-10 and the citation of #522.
+  **The one-byte clause of that row now names an alphanumeric byte**, because
+  `ja4plus/fingerprinters/ja4.py:85-89` writes `hh` for a one-byte value that is
+  alphanumeric and `99` for every other one-byte value. A first ALPN value of one space
+  therefore reads `99`, and the two clauses of the earlier row read `99` and `hh` for that
+  same input. **This round changes no file under `ja4plus/` and it moves no fingerprint.**
+  The conformance suite reports 1676 passed, 142 skipped and 138 xfailed on the base commit
+  `9e8aed4`, and it reports the same three counts after the change.
+  `tests/foxio_deviations.json` holds 138 keys against those 138 xfailed cases. **Two new
+  cases of `tests/test_alpn_ruling_register.py` failed before the rows changed**, and the
+  reader reported ``AssertionError: the divergence register holds no row named 'JA4 ALPN
+  value for a byte outside `0x20-0x7E`'``. **The two cases read all three ALPN rows of the
+  register**, and the position rule that #162 wrote already stated the range, so one row of
+  the three needed no change. **The module docstring of that file restated the loose
+  condition**, and this round repairs it, because the change falsifies it. The unit suite
+  reports 5837 passed, 8 skipped and 8 xfailed, and coverage holds at 94% with 4489
+  statements and 271 misses. `ruff check`, `ruff format --check` and `mypy --strict
+  ja4plus/` each report no issue.
+
 - **The project manager files no issue for a stale citation or a spent record** (#704).
   Round
   TBD. **A read of 2026-08-15 measured the last 300 commits of `master`: 56 touch a file
