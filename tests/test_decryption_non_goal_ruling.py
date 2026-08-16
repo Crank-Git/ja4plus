@@ -63,8 +63,11 @@ QUIC_MODULE = "ja4plus/utils/quic_utils.py"
 
 # The count of values the port measures behind the record decryptor, and the split of
 # that count over the two captures that hold a protected certificate frame.
-DECRYPTOR_VALUES = "11"
-DECRYPTOR_SPLIT = ("9", "2")
+#
+# **Warning: each part of the split is one digit, so a bare substring reads a date and a
+# count elsewhere in the row.** The tuple therefore holds the whole phrase.
+DECRYPTOR_VALUES = "11 values"
+DECRYPTOR_SPLIT = ("holds 9 of them", "holds 2 of them")
 
 # The two captures that hold a protected certificate frame.
 DECRYPTOR_CAPTURES = (
@@ -128,7 +131,7 @@ def test_the_register_states_the_moment_each_port_issue_closed() -> None:
 
 
 def test_the_register_states_that_the_spent_condition_is_replaced() -> None:
-    """The row states that the earlier condition fired in form, and that it is replaced."""
+    """The row states that the earlier condition fired in form, and that this row replaces it."""
     row = _register_row()
     assert "in form and not in substance" in row
     assert "replaces" in row
@@ -149,10 +152,15 @@ def test_the_register_quotes_the_spent_condition_rather_than_deletes_it() -> Non
 
 
 def test_the_register_states_the_first_part_of_the_new_condition() -> None:
-    """The row requires a release of the port, and not a merge into a branch."""
+    """The row requires a release of the port, and it bars a merge into a branch.
+
+    **A row that states the release and omits the bar reads the opposite way to a
+    reader of the port**, because the port merges into an integration branch weekly.
+    This case therefore reads the exclusion and never the word `release` alone.
+    """
     row = _register_row()
-    assert "release" in row
-    assert "integration branch" in row
+    assert "published tag" in row
+    assert "A merge into an integration branch meets no part of this condition." in row
 
 
 def test_the_register_states_the_second_part_of_the_new_condition() -> None:
