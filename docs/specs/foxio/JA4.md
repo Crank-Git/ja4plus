@@ -75,8 +75,8 @@ JA4=t13d1516h2_acb858a92679_e5627efa2ab1
       JA4_a       JA4_b        JA4_c
 ```
 
-The image captions six fields. All six sit inside `JA4_a`, and the image draws a separate
-leader line to each one.
+The image captions eight fields. Six of the eight sit inside `JA4_a`, and the image draws a
+separate leader line to each one. Two bullets below the string caption `JA4_b` and `JA4_c`.
 
 | Field | The image's caption | Value in the example |
 |---|---|---|
