@@ -34,9 +34,10 @@ worker's own report is therefore the one detection this defect class has. The ru
 the absence as the correct outcome, and it leaves a worker one cheap true thing to say.
 
 **The census of 2026-08-16 measured that the absence is common and that workers report it
-plainly.** The corpus holds 20 comments that state a stall of a review child, and each one
-states what the worker did instead. One record of the same corpus counts nine stalls in one
-session. The rule writes down a practice this project already holds.
+plainly.** The corpus holds 17 comments that state a review agent returned nothing, and 10
+of them use the word `stall`. Each one states what the worker did instead. One record of
+the same corpus counts nine stalls in one session. The rule writes down a practice this
+project already holds.
 
 ## Where the repair belongs
 

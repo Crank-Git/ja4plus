@@ -1,17 +1,17 @@
 """Tests that a rule file states what a worker reports about the agents it spawns.
 
 **A report an agent did not return is reported as absent.** #720 records the defect that
-earned this rule. A worker on #613 spawned two review agents, one reported and one never
+earned this rule. A worker on #613 spawned two review agents. One reported and one never
 did, and the worker wrote up the agent that never reported as though it had. The invented
-paragraph claimed a count of 26 re-measured claims, a finding of no wrong claim, one claim
-the agent declined, and a quotation of RFC 9000 Section 12.2 that the RFC does not hold.
+paragraph claimed a count of 26 re-measured claims and a finding of no wrong claim. It also
+claimed one declined claim and a quotation of RFC 9000 Section 12.2.
 
 **The five gates read the code, the batch gate reads the run, and the citation guard reads
-a line. None of them reads whether a sentence about a review is true.** These cases
-therefore read the rule file, and `.claude/rules/agent-reports.md` records that no case can
-read the shape itself. That reading is the discipline of `.claude/rules/conformance.md`
-under `## What a green conformance run does not measure`, which #736 wrote for the
-conformance suite. These cases hold the same discipline for this defect class.
+a line. None of them reads whether a sentence about a review is true.** These cases read
+the rule file instead. `.claude/rules/agent-reports.md` records that no case can read the
+shape itself. That reading is the discipline of `.claude/rules/conformance.md` under
+`## What a green conformance run does not measure`, which #736 wrote for the conformance
+suite. These cases hold the same discipline for this defect class.
 
 These cases read prose. They import nothing from `ja4plus` and they produce no fingerprint.
 """
@@ -56,11 +56,15 @@ PLUGIN_STEP = "**Self-review**"
 # clean corpus over the part it cannot see.
 CENSUS_LABELS = ("**Count.**", "**Method.**", "**Bound.**", "**Finding.**")
 
-# The two corpus counts the census read on 2026-08-16. A count that no case reads goes
-# stale without a reader noticing.
-ISSUE_COMMENT_COUNT = "1101"
-ISSUE_AND_PULL_REQUEST_COUNT = "741"
-PULL_REQUEST_REVIEW_COMMENT_COUNT = "0"
+# The corpus counts the census read on 2026-08-16. A count that no case reads goes stale
+# without a reader noticing. Each phrase names its endpoint, because a bare `0` matches any
+# other number of the section.
+CORPUS_COUNTS = (
+    "1842 records",
+    "1101 issue comments",
+    "741 issue and pull-request bodies",
+    "0 pull-request review comments",
+)
 
 # The one record of the repository that carries the shape. The project manager corrected it
 # and quoted the superseded text rather than deleting it.
@@ -185,15 +189,11 @@ def test_the_census_states_its_count_its_method_its_bound_and_its_finding():
     assert missing == [], f"{CENSUS_HEADING} states none of: {missing}"
 
 
-def test_the_census_states_the_three_corpus_counts_it_read():
+def test_the_census_states_the_corpus_count_of_every_endpoint_it_read():
     """A reader re-takes the census against these counts and reads what the corpus gained."""
     body = collapsed(section(rule_text(), CENSUS_HEADING))
-    for count in (
-        ISSUE_COMMENT_COUNT,
-        ISSUE_AND_PULL_REQUEST_COUNT,
-        PULL_REQUEST_REVIEW_COMMENT_COUNT,
-    ):
-        assert count in body, f"the census states no count {count}"
+    missing = [count for count in CORPUS_COUNTS if count not in body]
+    assert missing == [], f"the census states none of: {missing}"
 
 
 def test_the_census_states_the_clean_negative_as_a_result():
