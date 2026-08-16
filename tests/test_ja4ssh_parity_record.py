@@ -1,10 +1,11 @@
 """Hold `docs/specs/foxio/JA4SSH.md` against the parity harness the repository runs today.
 
-**A page that records an absence goes wrong on the day the suite fills it, and no reader
-reported that before this file.** `docs/specs/foxio/JA4SSH.md` carried a section named
-`Why the parity harness never compared this value`. #671 built that comparison, and
-`tests/test_foxio_rust_parity.py` has held `TestTheJa4sshValuesTheRustSnapshotHolds` since
-round 242. The section therefore stated a fact the repository no longer held.
+**A page that records an absence states a wrong fact on the day the suite fills it.** No
+reader reported that class of defect before this file. `docs/specs/foxio/JA4SSH.md` carried
+a section named `Why the parity harness never compared this value`. #671 built that
+comparison in round 242, and `tests/test_foxio_rust_parity.py` holds
+`TestTheJa4sshValuesTheRustSnapshotHolds` today. The section therefore stated a fact the
+repository no longer held.
 
 **The section also carried a citation that named a comment.** It cited line 72 of
 `tests/test_foxio_rust_parity.py` for the `SNAPSHOT_METHODS` declaration, and #216 moved
@@ -12,8 +13,8 @@ that declaration when it added `JA4T`.
 
 **This reader answers a question `tests/foxio_citation_lines.py` does not.** That reader
 asks whether the cited lines hold a statement. This one asks whether the page cites the
-line that holds the named statement, so a move of either declaration fails a case here
-rather than leaving the page to name the wrong line.
+line that holds the named statement. A move of either declaration therefore fails a case
+here, and no reader of the page follows a wrong line.
 """
 
 from __future__ import annotations

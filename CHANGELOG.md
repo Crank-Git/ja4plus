@@ -15,9 +15,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` and measures
   `ja4plus` against both values. The heading therefore claimed an absence the suite fills.
   **The section also carried a stale citation.** It named line 72 of
-  `tests/test_foxio_rust_parity.py` for the `SNAPSHOT_METHODS` declaration, #216 added
-  `JA4T` to that tuple, and line 72 holds a comment about a capture today. The declaration
-  stands at `tests/test_foxio_rust_parity.py:148` and it names five methods. **The new
+  `tests/test_foxio_rust_parity.py` for the `SNAPSHOT_METHODS` declaration. #216 added
+  `JA4T` to that tuple and the declaration moved. Line 72 holds a comment about a capture
+  today. The declaration stands at `tests/test_foxio_rust_parity.py:148`, and it names the
+  five methods JA4, JA4S, JA4T, JA4L-C and JA4L-S. **The new
   section cites that line and the class line, and it repeats the stale citation nowhere.**
   **`SNAPSHOT_METHODS` names no JA4SSH field at all**, because the `ja4ssh` block writes
   each value as a bare list item, so the class reads that block with its own reader.
