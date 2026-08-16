@@ -92,6 +92,116 @@ by analogy.
 
 Decided on 2026-08-07. #96, #97 and #105 are the first three.
 
+## What a delegated session may rule
+
+**The user delegates a session to a project manager, and this section states what that
+delegation permits.** The user granted two delegations, and both hold today. A question
+that fails both belongs to the user.
+
+| Delegation | Date | What it reaches | Where the grant lives |
+|---|---|---|---|
+| The narrow delegation | 2026-08-12 | A schema violation. | `Crank-Git/ja4plus-go#246`, and #597 here |
+| The recording delegation | 2026-08-15 | A reading this project already holds. | The ruling comments of #595, #607, #608 and #613 |
+
+**A ruling lands in this repository and in the port together, or in neither.**
+`.claude/rules/parity.md` of `Crank-Git/ja4plus-go` states that rule, and
+`.claude/rules/rulings.md` of that repository holds the port half of the narrow
+delegation.
+
+### The narrow delegation of 2026-08-12
+
+**A schema violation has one right answer, and a reference split has none.** That sentence
+is the boundary. The project manager rules a schema violation under this delegation. It
+rules no reference split, and it rules no other question.
+
+**A delegated ruling is a ruling, and never a reading.** A reading concludes what one
+source states. A delegated ruling settles what this project does where a published FoxIO
+value contradicts a published FoxIO rule. No source settles that question, because FoxIO
+publishes both of them.
+
+A delegated ruling is permitted only when every one of these is true.
+
+1. A published FoxIO rule states the answer. The rule reaches the material under
+   `technical_details/`, the transcription of it under `docs/specs/foxio/<METHOD>.md`, or
+   a FoxIO reference implementation.
+2. Every FoxIO implementation enforces that rule. One implementation that departs makes
+   the question a reference split, and this delegation bars a reference split.
+3. A recorded measurement proves the violation, and each citation names a file and a line.
+   `## When the FoxIO reference holds a defect` above states that a defect is proven and
+   never asserted.
+4. The record of the ruling carries a provisional marker, and it names the issue.
+5. The record names a reversal path, so the user reverses the ruling with one action.
+
+**A question that fails one condition leaves this delegation.** The project manager reads
+it against the recording delegation below.
+
+### The recording delegation of 2026-08-15
+
+**The user granted a second delegation on 2026-08-15.** Four ruling comments each state it
+in these words: #595, #607, #608 and #613. This file quotes them, and it rewrites no word
+of the grant.
+
+**Warning: never open a line of this file with an issue number.** The section reader of
+`tests/test_ported_pattern_cost.py` reads a line that opens with `#` as a heading, and it
+then stops at that line. A paragraph below such a line reaches no case.
+
+> The maintainer granted a delegated session this carve-out on 2026-08-15: a delegated
+> session may rule where the decision preserves the present behaviour, moves no
+> fingerprint, and records an existing reading as a divergence register row. A decision
+> that moves a value, that forks from `ja4plus-go`, or that changes the scope of the
+> project stays with the maintainer.
+
+**The grant states three limits, and a permitted question meets every one of them.**
+
+- The ruling keeps the present behaviour of this project.
+- The ruling moves no fingerprint value.
+- The ruling writes one row of the divergence register.
+
+**A ruling that moves a value stays with the user.** A ruling that parts this project from
+the port stays with the user. A ruling that changes the scope of this project stays with
+the user.
+
+**Each of the four issues was ruled under this grant on 2026-08-15, and no line of a
+fingerprinter moved.** #595 records the JA4L eviction of the QUIC path, #607 records the
+JA4H emission frame, #608 records the JA4SSH packet selection, and #613 records the one
+QUIC packet each datagram fills point C from.
+
+### How the two delegations relate
+
+**The two delegations reach different questions, and neither one repeals the other.**
+
+- The narrow delegation settles what this project does, and it can move a fingerprint
+  value. It therefore bars a reference split: a wrong answer there makes this project
+  answer differently from a FoxIO implementation on the same bytes.
+- The recording delegation records what this project already does, and it moves no
+  fingerprint value. A reference split therefore reaches it. #595 and #613 are each such a
+  question, and each ruling of 2026-08-15 left every line of the fingerprinter as it
+  stood.
+- **A reference split is never delegable as a schema violation.** Condition 2 of the
+  narrow delegation bars it, and no reading of the evidence removes that bar.
+- **Every delegated ruling is provisional under both delegations**, and each one names a
+  reversal path.
+
+**A question that fails both delegations belongs to the user.** The project manager labels
+that issue `status:needs-feedback`, it records the reading it holds, and it builds nothing
+that depends on the answer.
+
+**The user confirms a delegated ruling, or reverses it.** A delegated ruling that the user
+has not confirmed stays provisional. A later reader reads a provisional ruling as
+unconfirmed, and never as settled.
+
+### The worked example both repositories share
+
+`Crank-Git/ja4plus-go#223` is the first delegated ruling, and the user confirmed it on
+2026-08-12. A published FoxIO value contradicts a rule that four implementations enforce.
+`zeek/ja4ssh/main.zeek:63`, `wireshark/source/packet-ja4.c:400`, `rust/ja4/src/ssh.rs:284`
+and `python/ja4ssh.py:51` each state that the JA4SSH mode is `0` when the side sent no SSH
+packet. `python/test/testdata/ssh-scp-1050.pcap.json` holds `c112s1460_c0s200_c36s0`,
+which pairs a client mode of `112` with a client packet count of `0`.
+
+**This project already reads the mode of the window alone**, and #96 holds that rule. The
+narrow delegation therefore moved no fingerprint here, and it moved no exported name.
+
 ## When the FoxIO material is ambiguous
 
 Eleven of the twelve methods are published as an image. Only JA4 holds a complete text
