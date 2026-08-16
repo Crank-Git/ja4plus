@@ -6,6 +6,51 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The citation guard now reads `docs/implementation_notes.md`, and it refuses a citation
+  whose lines hold no statement** (#690). Round
+  TBD. **A read of 2026-08-15 measures 19 repository-owned citations of that page, 0 past
+  the end of their file and 5 that name a blank line or a comment line.** That measurement
+  reproduces the one #690 records, at the tip of `batch/705-citation-records-a` rather than
+  at `dda5ae7`. **#668 globbed `docs/specs/foxio/` alone, so this page drifted while the
+  ten transcription pages stayed clean.** `tests/foxio_citation_lines.py` holds the new
+  name `OUTSIDE_PAGES`, and `pages()` returns the ten pages and this one. **The condition
+  of #668 read the line count alone, so a citation of a blank line passed it.** A blank
+  line names nothing, and a line that holds a comment alone names nothing either. The new
+  function `names_a_statement` reads the cited lines and it returns False where every one
+  of them is blank or opens with `#`. **A docstring line and a closing bracket each belong
+  to a statement, so both pass.** **Six citations of `docs/implementation_notes.md` moved.**
+  `ja4.py:193` named `# Form part_a of the fingerprint` and it now names `ja4.py:226`, which
+  holds `if sorted_ext_str:`, the guard the prose describes. `ja4ts.py:68` named a blank
+  line and it now names `ja4ts.py:332`, which states that the option list keeps the
+  original order.
+  `ja4d.py:212` named `# Get raw UDP payload` and it now names `ja4d.py:214`, which calls
+  `_parse_dhcp_options`. `ja4d6.py:277` named a blank line and it now names `ja4d6.py:287`,
+  which calls `_parse_dhcpv6_payload`. `ja4ssh.py:221-222` named a comment about the
+  message tracker where the prose states that `ja4plus` closes the last window on a FIN+ACK
+  packet, and it now names `ja4ssh.py:268`, which holds that test. **The sixth citation
+  stands outside the class this guard refuses, and the page named no statement it
+  describes.** `ja4t.py:67` closed the docstring of `process_packet`, which states what a
+  repeated SYN produces, and the prose states that the option list keeps the wire order;
+  the citation now names `ja4t.py:192`, which states that rule. **The widened condition
+  fails 27 citations of `docs/specs/foxio/` that #668 measured and passed.** 12 name a
+  blank line and 15 name a comment alone, and 8 of the 12 stand under a pin. New file
+  `tests/citation_line_allowlist.json` records all 27, as 25 entries keyed on the page and
+  the written citation, and every entry names #709. **A citation of a comment line is not
+  always wrong**, because a page may cite the comment that states a reason;
+  `tests/test_foxio_rust_parity.py:72` is such a line and six pages cite it. **#709 reads
+  each of the 25 and it removes that file.** **This round repairs no page a sibling of
+  batch #705 holds.** `docs/specs/foxio/JA4SSH.md:405` carries the same wrong
+  `ja4ssh.py:221-222` citation, #683 held that page in this batch, and the allowlist
+  records it instead. **The reversals prove the third class in both directions.** Two cases
+  read the first blank line and the first comment line of `ja4plus/fingerprinters/ja4h.py`
+  at run time, because a case that writes a fixed line number goes stale on the next edit
+  of that file, which is the defect class this guard reports. Seven cases failed before the
+  change. **One case reads the corpus with the allowlist off**, so an entry the repair
+  removes fails there rather than hiding the next defect of the same citation. **This round
+  changes no file under `ja4plus/` and it moves no fingerprint.** The conformance suite
+  reports 1676 passed, 142 skipped and 138 xfailed on the base and the same three counts
+  after the change, and `tests/foxio_deviations.json` holds 138 keys against those 138
+  xfailed cases.
 - **The parity rules now state that a pattern this project takes from the port carries no
   statement of its cost** (#650). Round
   TBD. **Parity rule 2 of `CLAUDE.md` adopts the interface the port ships, and it adopts
