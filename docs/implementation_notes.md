@@ -540,7 +540,7 @@ value. #132 holds the command and the full output.
 Before #132, `ja4plus` emitted `9af15b336e6a` on these four streams. `JA4_o` now matches
 all 160 reference values, and the count was 156 of 160.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:193`.
+**Location:** `ja4plus/fingerprinters/ja4.py:226`.
 
 The JA4S section below records the `JA4S_o` reading.
 
@@ -652,7 +652,7 @@ A packet that carries no option of the six gives the value `0`.
 
 The list keeps the wire order. `ja4plus` never sorts it.
 
-**Location:** `ja4plus/fingerprinters/ja4t.py:67` and `ja4plus/fingerprinters/ja4ts.py:68`.
+**Location:** `ja4plus/fingerprinters/ja4t.py:192` and `ja4plus/fingerprinters/ja4ts.py:76`.
 
 ---
 
@@ -731,7 +731,7 @@ reading, and #231 moved none of them.
 The user decided D1 to D6 of #231 on 2026-08-08. `tests/test_ja4d_decisions.py` holds the
 separating packet of each, because no vector carries one.
 
-**Location:** `ja4plus/fingerprinters/ja4d.py:46` and `ja4plus/fingerprinters/ja4d.py:212`.
+**Location:** `ja4plus/fingerprinters/ja4d.py:46` and `ja4plus/fingerprinters/ja4d.py:214`.
 
 ### How ja4plus reads JA4D6
 
@@ -761,7 +761,7 @@ and #231 ruled on nothing there**, because R16, R19 and R20 stay uncertain.
 The user decided D7 to D11 of #231 on 2026-08-08. `tests/test_ja4d_decisions.py` holds the
 separating packet of each, because no vector carries one.
 
-**Location:** `ja4plus/fingerprinters/ja4d6.py:81` and `ja4plus/fingerprinters/ja4d6.py:277`.
+**Location:** `ja4plus/fingerprinters/ja4d6.py:81` and `ja4plus/fingerprinters/ja4d6.py:287`.
 
 ### The DHCP layer of a tunneled packet
 
@@ -1259,7 +1259,7 @@ defect. `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217` 
 `c36s52_c42s76_c51s2`, and the Zeek baseline holds the same value.
 
 `ja4plus` closes the last window on a FIN+ACK packet, at
-`ja4plus/fingerprinters/ja4ssh.py:221-222`. That matches `python/ja4.py:554-556` and
+`ja4plus/fingerprinters/ja4ssh.py:268`. That matches `python/ja4.py:554-556` and
 `wireshark/source/packet-ja4.c:1399-1404`. It does not match `rust/ja4/src/ssh.rs:45-55`
 or `zeek/ja4ssh/main.zeek:160-164`, which close it at the end of the capture.
 
