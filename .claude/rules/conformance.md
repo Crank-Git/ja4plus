@@ -62,6 +62,90 @@ method name plus an occurrence counter.
 method that emits more fingerprints than the reference is a defect, and so is one that
 emits fewer.
 
+## What a green conformance run does not measure
+
+**Warning: a green conformance run states nothing about the frame that carries a value.**
+The suite compares one value for each stream, and it never compares the packet that
+produced it. #736 measured the limit on 2026-08-16 and this section records it.
+
+**#606 moved seven values from one frame to another, and the suite discriminated none of
+them.** That issue moved the QUIC `JA4L-S` emission from the packet that fills point `B`
+to the packet that fills point `D`. #736 restored the point `B` emission and ran the suite
+again. The three counts held at 1676 passed, 142 skipped and 138 xfailed under the change
+and under the restored defect. These are the seven moves.
+
+| Capture | The move |
+|---|---|
+| `chrome-cloudflare-quic-with-secrets.pcapng` | 49 to 52 |
+| `ssh2.pcapng` | 1140 to 1147 |
+| `tls3.pcapng` | 144 to 147 |
+| `tls3.pcapng` | 149 to 153 |
+| `tls3.pcapng` | 155 to 162 |
+| `tls3.pcapng` | 159 to 167 |
+| `tls3.pcapng` | 303 to 312 |
+
+### One of the four reference sources states a frame
+
+**The conformance value comparison reads the one source that frames nothing.** A per-frame
+comparison is possible only where a source states the frame, and #736 read all four.
+
+| Source | States a frame | Values |
+|---|---|---|
+| FoxIO Python expected output, `tests/foxio_vectors/*.json` | No | 1203 |
+| FoxIO Rust snapshots, `tests/foxio_vectors/rust_expected/*.snap` | No | 460 |
+| Zeek baselines, `tests/foxio_vectors/zeek_expected/` | No | 7 baselines |
+| FoxIO Wireshark dissector, `tests/foxio_vectors/wireshark_expected/*.json` | Yes, `frame.number` | 724 |
+
+**The first three key a value on the stream or on the connection.** A Zeek baseline names
+`orig_pkts` and `resp_pkts`, and each one counts the packets of a connection rather than
+names one of them. **The dissector frames every value it writes**, and #736 measured 724
+framed values and none unframed across 26 files.
+
+**The conformance suite builds all 1203 of its value cases from the first source.** No case
+of the suite can read a frame, because the source it reads states none.
+
+### Why the suite compares no frame
+
+**The suite compares the FoxIO Python reference, and the dissector is a different source
+with a different value set.** A per-frame comparison would therefore be a new comparison
+against a new source, and it would add no discrimination to any case the suite runs today.
+#736 measured what that comparison would report, over the 445 dissector values of a hashed
+form on the 26 captures this project holds.
+
+| Reading | Values |
+|---|---|
+| The value agrees and the frame agrees | 206 |
+| The value agrees and the frame differs | 136 |
+| This project produces no such value | 103 |
+
+**The 136 frame disagreements are values this project already produces correctly**, so each
+one would enter `tests/foxio_deviations.json` as a new entry that records a difference this
+project has already ruled. The TCP `JA4L` and `JA4LS` values hold 70 of the 136: the
+dissector writes each one on a later frame than this project. **A comparison whose largest
+class is a recorded divergence measures the register and not the code.**
+
+**The frame is an artifact of one dissector, and the value is what the standard defines.**
+Two FoxIO implementations produce the same value on different packets, and neither one is
+wrong. This project therefore declines the per-frame comparison in the conformance suite.
+
+### Where the frame is measured instead
+
+**A frame this project rules on gets a case of its own.**
+`tests/test_ja4l_quic_point_d_emission.py` holds the frame of every QUIC `JA4L` value
+against `frame.number` of the dissector, and it runs in the unit suite. #736 restored the
+point `B` emission and measured 8 failures in that module, against 0 in the conformance
+suite.
+
+**Warning: leave that module in the unit suite, and never move it to the conformance
+suite.** The `test` job runs the unit suite on six environments and the `conformance` job
+runs the conformance suite on one. A move would therefore take five readings away from the
+one guard this project holds on a frame. #736 declined the move on that reading.
+
+**Warning: read a frame ruling against the unit suite, and never against the conformance
+counts.** `tests/test_conformance_frame_discrimination.py` holds this whole reading, so a
+source that starts to state a frame fails a case here rather than leaving a reader with a
+stale rule.
+
 ## When the FoxIO reference holds a defect
 
 The FoxIO reference decides behaviour. It does not decide behaviour that the reference
