@@ -227,11 +227,23 @@ class TestWhatTheConformanceSuiteCompares:
             json_path = VECTORS / "{}.json".format(parameters.values[0].name)
             assert json_path in _python_expected_files(), json_path
 
+    @pytest.mark.skipif(
+        not RULE_FILE.exists(),
+        reason=(
+            "not applicable: the release verification root holds the suite alone and no "
+            "repository record, so this case reads the rule file on the checkout"
+        ),
+    )
     def test_the_rule_file_records_what_a_green_conformance_run_does_not_measure(self):
         """`.claude/rules/conformance.md` states the limit and names the measurement.
 
         A reading that lives only in a closed issue is a reading the next reader derives
         again. #736 records this one in the rule file, and this case holds it there.
+
+        The case reads a record of the repository, and `COPIED_NAMES` of
+        `tests/release_verification.py` copies `tests` and `pyproject.toml` alone. The
+        installed-package run therefore holds no rule file, and the case skips there and
+        runs on the `conformance` job of the checkout.
         """
         text = RULE_FILE.read_text()
         assert RULE_SECTION in text, "{} holds no section {!r}".format(RULE_FILE, RULE_SECTION)
