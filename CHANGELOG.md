@@ -6,6 +6,37 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **Four guards, and two of them guarded less than a reader believed** (#738).
+  Round
+  265. **Batch #738 holds #736, #720, #697 and #742, and no member of it moves a
+  fingerprint value.** A replay of all 38 committed captures writes 788 values before the
+  batch and 788 after it, and the two dumps are byte-identical. **#736 measured that the
+  conformance suite discriminates no emission frame move.** #606 restored the point `B`
+  emission under a mutation and the suite reported 1676 passed, 142 skipped and 138
+  xfailed, which is byte-identical to the unmutated reading. **Only one of the four FoxIO
+  reference sources states the frame that carries a value.** The FoxIO Wireshark dissector
+  states `frame.number` on all 724 values of 26 files. The FoxIO Python expected output
+  holds 1203 values under 32 distinct keys and no frame key, the FoxIO Rust snapshots hold
+  460 method-keyed values and no frame key, and no `#fields` line of the seven Zeek
+  baselines names a frame. **The suite therefore reads a source that frames nothing**, and
+  `.claude/rules/conformance.md` records what a green conformance run does not measure.
+  **#720 states that a report an agent did not return is reported as absent.** A census of
+  1842 records read 1101 issue comments, 741 bodies and 0 pull-request review comments, and
+  **one record of the 1842 carries the shape**. That record is the one #720 was filed for.
+  **No case of this repository refuses the shape**, because the record a case would need is
+  the session transcript and git tracks no copy of it, so `.claude/rules/agent-reports.md`
+  states that rather than ships a guard that guards nothing. **#697 gives `get_stream` the
+  byte-cap truncation the port already holds**, under parity rule 2. **The truncation
+  removes no byte today**, because `add_segment` refuses the segment that would cross the
+  cap. **#742 repairs a user-visible output the conformance suite cannot read.**
+  `Processor.close_open_windows` dropped the four endpoint fields of every value it
+  published, so the command printed `unknown` in place of the address pair. **28 values of
+  the corpus reach that path and 22 of them printed `unknown`.** The 22 are JA4L, which the
+  #606 row counts, and the 6 JA4SSH values already printed a pair because the key parse read
+  their form. **A reader who takes the 22 of that row as a total under-counts by 6.** **The
+  loss sat downstream of every guard**, because each one read a fingerprint entry and the
+  entry always carried the correct pair.
+
 - **Five rows of the divergence register record the last of the ruled questions** (#731).
   Round
   264. **Batch #731 holds #714, #622, #625, #621 and #593, and no member of it moves
