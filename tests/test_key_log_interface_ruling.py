@@ -113,7 +113,7 @@ SCAPY_WARNING = "PcapNg: TLS Key Log available, but the TLS layer is not loaded!
 PROJECT_CITATIONS = (
     ("ja4plus/utils/quic_utils.py", 96, "def derive_initial_secrets("),
     ("ja4plus/utils/quic_utils.py", 208, "def decrypt_initial_payload("),
-    ("ja4plus/cli.py", 527, "from scapy.utils import PcapReader"),
+    ("ja4plus/cli.py", 577, "from scapy.utils import PcapReader"),
     ("ja4plus/__init__.py", 116, "__all__ = ["),
     ("pyproject.toml", 46, '"scapy>=2.4.0",'),
 )
