@@ -67,7 +67,7 @@ FR-foundation-7 — `ruff check ja4plus/ tests/` runs on every pull request.
 FR-foundation-8 — `ruff format --check ja4plus/ tests/` runs on every pull request.
 
 FR-foundation-8a — One commit applies `ruff format` across `ja4plus/` and `tests/`,
-and that commit changes no behaviour.
+and that commit changes no behavior.
 
 > **Warning.** Land FR-foundation-8a before any other issue in this epic. The
 > repository has never been formatted, so `ruff format` rewrites 26 lines in

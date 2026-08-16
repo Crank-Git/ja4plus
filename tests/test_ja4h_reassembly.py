@@ -146,7 +146,7 @@ class TestJA4HUnreadableRequest(unittest.TestCase):
             stream = fp.reassembler.streams.get(self.KEY)
             if stream is not None:
                 widest = max(widest, stream["bytes"])
-        # The base behaviour holds every byte of the connection, which is 420036 bytes
+        # The base behavior holds every byte of the connection, which is 420036 bytes
         # over 300 packets. #190 records the measurement.
         self.assertLess(widest, 8192)
 

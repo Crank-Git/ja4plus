@@ -537,7 +537,7 @@ RFC 3396 allows a long option to split across several occurrences, and part c ho
 The comment read `Options to skip in section b (per FoxIO spec PR #267/#270)`. Neither
 number reads from a checkout at the pinned commit. `ja4d.py:42-46` now cites R9 of this
 page, and `ja4d6.py:1-5` drops the same citation. **No packet separates this item, because
-it changes no behaviour.** `tests/test_ja4d_decisions.py` holds two source-text cases
+it changes no behavior.** `tests/test_ja4d_decisions.py` holds two source-text cases
 instead, and both fail against the base.
 
 ### JA4D6 — the fields that agree
@@ -617,7 +617,7 @@ bytes. `_options_offset` at `ja4d6.py:107-119` reads that, at the top level and 
 option 9. **Before the ruling, a relay message read its link address as options** and part
 b of the case packet held `0-0-0-0-0-0-0-0`; it now holds `18-9-1-6`.
 
-**#231 repairs the comment that named option 17.** It described a behaviour the table does
+**#231 repairs the comment that named option 17.** It described a behavior the table does
 not build. Wireshark reports a vendor sub-option under another field name, so no
 `dhcpv6.option.type` field exists for it, and the table is right to hold no entry.
 `ja4d6.py:75-80` now states that reason. **This page still rules on nothing else about
@@ -742,7 +742,7 @@ rests on a packet no vector carries. All ten reference values match before the r
 after them, so the conformance suite proves nothing here. **Read the revert count of each
 item as the evidence instead.**
 
-Two of the eleven changed no behaviour, and the page says so plainly.
+Two of the eleven changed no behavior, and the page says so plainly.
 
 - **D2** keeps the present reading, because two references state it and one states the
   other.

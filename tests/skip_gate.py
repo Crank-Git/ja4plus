@@ -229,7 +229,7 @@ def read_report(path: Path) -> Report:
         path: The report file.
 
     Returns:
-        The report, labelled by the directory the download wrote it into.
+        The report, labeled by the directory the download wrote it into.
 
     Raises:
         ValueError: The file is no readable report, or it holds no case.

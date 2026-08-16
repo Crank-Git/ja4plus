@@ -161,7 +161,7 @@ with a stale rule.
 
 ## When the FoxIO reference holds a defect
 
-The FoxIO reference decides behaviour. It does not decide behaviour that the reference
+The FoxIO reference decides behavior. It does not decide behavior that the reference
 itself produces by accident.
 
 **A defect is proven, never asserted.** Instrument the FoxIO implementation at the pinned
@@ -250,7 +250,7 @@ then stops at that line. A paragraph below such a line reaches no case.
 
 **The delegation states three limits, and a permitted question meets every one of them.**
 
-- The ruling keeps the present behaviour of this project.
+- The ruling keeps the present behavior of this project.
 - The ruling moves no fingerprint value.
 - The ruling writes one row of the divergence register.
 
@@ -593,6 +593,6 @@ Use the **directory** form, `--cov=ja4plus`. For one file, use the **path** form
 QUIC cases fail, and the cause is not in this project. `coverage` resolves a dotted source
 name inside a `sys_modules_saved()` block, which imports `ja4plus`, scapy and
 `cryptography` and then deletes them. The second `cryptography` import builds Python
-classes the loaded Rust extension does not recognise, so every AES cipher raises
+classes the loaded Rust extension does not recognize, so every AES cipher raises
 `UnsupportedAlgorithm`, and the second scapy import changes the dissection of a committed
 capture. #177 holds the measurement, and Changelog round 47 records it.

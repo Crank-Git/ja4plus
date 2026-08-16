@@ -221,7 +221,7 @@ def _publishes(candidate: Path) -> bool:
     that raises that message, so this function is the only guard against it.
 
     Args:
-        candidate: The path the link resolves to, before normalisation.
+        candidate: The path the link resolves to, before normalization.
 
     Returns:
         True when the file exists inside `docs_dir` and outside the excluded directory.

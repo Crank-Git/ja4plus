@@ -12,7 +12,7 @@ class of question.
   `.claude/rules/rulings.md` of that repository holds the port half. It permits a ruling on
   a schema violation alone, under five conditions.
 - **The recording delegation of 2026-08-15.** The ruling comments of #595, #607, #608 and
-  #613 each state it in the same words. It permits a ruling that keeps the present behaviour
+  #613 each state it in the same words. It permits a ruling that keeps the present behavior
   and writes one row of the divergence register.
 
 **A reader who found one delegation alone would read a rule that four merged rulings
@@ -286,7 +286,7 @@ def test_the_section_states_that_a_reference_split_is_never_a_schema_violation()
     """The section states that no reading turns a reference split into a schema violation.
 
     **#595 and #613 each rule a question the FoxIO implementations split on**, and each
-    ruling of 2026-08-15 kept the present behaviour. A reader must not take either one for a
+    ruling of 2026-08-15 kept the present behavior. A reader must not take either one for a
     ruling under the narrow delegation.
     """
     body = collapsed(section(rule_text(), RELATION_HEADING))

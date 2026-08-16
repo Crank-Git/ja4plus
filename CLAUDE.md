@@ -68,7 +68,7 @@ anywhere in a head commit message creates no run for that commit.
 
 A Go port exists at `Crank-Git/ja4plus-go`. The two must not drift apart. Three rules:
 
-1. **FoxIO decides behaviour.** Where FoxIO specifies the output, the vectors decide.
+1. **FoxIO decides behavior.** Where FoxIO specifies the output, the vectors decide.
    This outranks the port.
 2. **The port decides interface.** Where FoxIO specifies nothing — a field name, a
    subcommand, a default — the port has already shipped a choice. Adopt it.

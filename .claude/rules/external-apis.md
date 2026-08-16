@@ -42,7 +42,7 @@ Code inside this repository is different. Read the code.
 
 ## Rules specific to this project
 
-**FoxIO is the authority on behaviour.** The specification decides intent and schema. The
+**FoxIO is the authority on behavior.** The specification decides intent and schema. The
 vectors decide the exact bytes where intent runs out. A provable reference defect is
 declined and recorded.
 

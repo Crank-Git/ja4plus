@@ -79,7 +79,7 @@ FLOOD_CONNECTIONS = 400
 # The memory ceiling this package states, in MiB. The user decided the number on
 # 2026-08-08, and `features/03-concurrency-safety.md` states it beside the defaults it
 # holds at. A measurement forces the floor and forces no ceiling, so the distance above
-# the floor is a product judgement and no case here may derive the number.
+# the floor is a product judgment and no case here may derive the number.
 MEMORY_CEILING_MIB = 512.0
 
 # The packets the ceiling case feeds. The acceptance criterion states 1000000 packets

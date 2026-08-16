@@ -6,6 +6,28 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **Every live prose of the repository takes the US spelling** (#663).
+  Round
+  266. **The maintainer ruled on 2026-08-16, and rule 17 of `.claude/rules/ste.md` records
+  the ruling.** **The prose of this repository is largely agent-written**, so a worker that
+  matched the surrounding spelling strengthened a convention no person chose, and each
+  round made the next round more certain of it. **The sweep found 282 matches across 48
+  files and it moved 109 words across 55 files**: 59 of `docs/`, 38 of `tests/`, 8 of
+  `.claude/rules/`, 2 of `ja4plus/`, one of `CLAUDE.md` and one of `README.md`. **A record
+  moved nowhere.** `CHANGELOG.md` holds 33 matches and the change set holds no line of it.
+  The `## Changelog` table of `docs/specs/spec.md` opens at line 693 and holds 45 matching
+  lines, and every hunk of that file stands between line 96 and line 632. **A quotation
+  moved nowhere either**, and `.claude/rules/conformance.md:246` holds the one Markdown
+  quotation that carries a British spelling. **No identifier moved and no name a caller
+  reads moved.** `## Behaviour rules` stays, because `tests/test_documentation_behaviour_rule.py:118`
+  reads that heading by string, and every citation of it stays with it. The seven
+  `NEIGHBOUR` constants stay, `_unlabelled` stays, and `cancelled` stays where it names a
+  run conclusion of the provider. **26 occurrences of `acknowledgement` stay**, because
+  American English holds that form beside `acknowledgment`. **`tests/test_us_english_spelling.py`
+  reads every exemption from the rule file** rather than from a list it keeps itself, so a
+  new record needs no edit of the case. **The conformance suite reports 1684 passed, 142
+  skipped and 138 xfailed before this round and after it.**
+
 - **Four guards, and two of them guarded less than a reader believed** (#738).
   Round
   265. **Batch #738 holds #736, #720, #697 and #742, and no member of it moves a
@@ -2046,6 +2068,51 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   prose, so `` `git gc --prune=now` `` failed a case that no prose sentence broke.
   **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
   reports 1635 passed, 143 skipped and 140 xfailed.
+
+## [1.2.1] - 2026-08-16
+
+Version 1.2.1 follows version 1.2.0, and no version stands between them. The date of the
+heading above is the date this release reaches `master`. It carries rounds 249 to 266.
+
+**The bump is patch and never minor.** This release adds no published name, it removes
+none, and it renames none. **No fingerprint value moves.** A replay of all 38 committed
+captures writes 788 values at version 1.2.0 and 788 at this version, and the two dumps are
+byte-identical.
+
+**One user-visible output is repaired.** `Processor.close_open_windows` dropped the four
+endpoint fields of every value it published, so the command printed `unknown` in place of
+the address pair (#742). **28 values of the committed corpus reach that path and 22 of
+them printed `unknown`.** The 22 are JA4L values, and the 6 JA4SSH values already printed
+a pair. **The loss sat downstream of every guard**, because each guard read a fingerprint
+entry and the entry always carried the correct pair.
+
+**One published value changes the frame that carries it, and it changes no text.** The
+QUIC `JA4L-S` value now emits from the packet that fills point `D` (#606). **Seven values
+move frame and no value is removed.** A caller that reads one value for one connection
+sees no change. A caller that correlates a value to a frame reads a different frame for
+those seven. `chrome-cloudflare-quic-with-secrets.pcapng` moves 49 to 52, `ssh2.pcapng`
+moves 1140 to 1147, and `tls3.pcapng` moves 144 to 147, 149 to 153, 155 to 162, 159 to 167
+and 303 to 312.
+
+**One reader adopts the bound the Go port already holds.** `get_stream` truncates the
+reassembled run at the byte cap, under parity rule 2 (#697). **The truncation removes no
+byte today**, because the admission rule refuses the segment that would cross the cap.
+
+**The conformance suite holds its reading.** It reports 1676 passed, 142 skipped and 138
+xfailed at version 1.2.0 and 1684 passed, 142 skipped and 138 xfailed here, against 138
+keys of `tests/foxio_deviations.json` on both sides. **The rise of 8 is the cases #736
+added and it is no value that moved.**
+
+**Three readings of this release record a limit rather than repair one.** The conformance
+suite discriminates no emission frame move, because only the FoxIO Wireshark dissector
+states the frame that carries a value (#736). No case of this repository refuses a
+written-up report that an agent never returned, because the record a case would need is
+the session transcript (#720). The decryption non-goal of #129 stands, and its reversal
+condition now names a release of the Go port and a re-measurement against this corpus
+(#621, #593).
+
+**The prose of the repository takes the US spelling** (#663). No identifier moved, no
+output field moved, and no name a caller reads moved.
 
 ## [1.2.0] - 2026-08-15
 

@@ -211,7 +211,7 @@ class TestTheResetWithoutADelay(unittest.TestCase):
 
         `generate_ja4ts` catches `TypeError`, so a tracker that raises on an absent
         connection still returns None through `process_packet`. The tracker call states
-        the behaviour the fingerprinter hides.
+        the behavior the fingerprinter hides.
         """
         fingerprinter = JA4TSFingerprinter()
         self.assertIsNone(fingerprinter.process_packet(reset(1004.0)))

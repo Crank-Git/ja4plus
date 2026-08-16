@@ -716,7 +716,7 @@ states that the specification decides intent and schema, and that the vectors de
 exact bytes where intent runs out. Here the two FoxIO references disagree with each other,
 so no vector decides. The ALPN disputed region of #162 settled this shape: a move is
 forbidden where the two implementations disagree. `ja4plus` already matches the FoxIO
-Python file, so the present behaviour stands.
+Python file, so the present behavior stands.
 
 ### How the harness names the stream
 
