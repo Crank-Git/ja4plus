@@ -6,6 +6,34 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The vector download filter now names the JA4H block and the JA4SSH block** (#684).
+  Round
+  TBD. **`tests/download_test_vectors.py:141` held `RUST_COMPARED_FIELDS` with four
+  entries, and `tests/test_foxio_rust_parity.py` compares six methods.** #670 added the
+  JA4H comparison and #671 added the JA4SSH comparison, and neither round moved the field
+  list. **The issue body and the plan comment stated different forms, and a measurement
+  decided between them.** A read of 2026-08-15 applied each candidate form to the eleven
+  committed snapshots under `tests/foxio_vectors/rust_expected/`: `b"ja4h: "` matches 0
+  snapshots and `b"- ja4h: "` matches 5, and `b"ja4ssh: "` matches 0 and `b"ja4ssh:"`
+  matches 1. **The `http` block writes the value as a list item and the `ja4ssh` block
+  names no field at all**, so the list now holds `b"- ja4h: "` and the block opener
+  `b"ja4ssh:"`. **The kept-snapshot count stands at 11 before the change and 11 after
+  it**, because every committed snapshot that holds a JA4H block or a JA4SSH block holds a
+  JA4T value as well. **The same measurement found a dead entry the issue did not name.**
+  `b"ja4x: "` matches 0 of the 11 snapshots, because the snapshot writes
+  `    - ja4x: <value>` inside the `tls_certs` block. This round repairs no such entry and
+  #719 records the defect and owns the repair. **New file
+  `tests/test_download_filter_fields.py` holds the field list against the parity module**,
+  and no case held the two files together before it. Two of its cases failed on the base
+  commit `4d00e09`, one case carries `pytest.mark.xfail(strict=True)` for #719, and that
+  mark fails the day the JA4X form is correct. **`keeps_rust_snapshot` now holds the
+  condition that stood inside `download`**, so a case reads the condition the refresh runs
+  rather than a copy of it. **This round changes no file under `ja4plus/` and it moves no
+  fingerprint.** The conformance suite reports 1676 passed, 142 skipped and 138 xfailed on
+  the base and the same three counts after the change, and `tests/foxio_deviations.json`
+  holds 138 keys against those 138 xfailed cases. The unit suite reports 5742 passed, 8
+  skipped and 9 xfailed beside 114 subtests. `ruff check ja4plus/ tests/`,
+  `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` each report no issue.
 - **`docs/specs/foxio/JA4SSH.md` now states what the parity harness compares** (#683).
   Round
   TBD. **The page carried a section named `Why the parity harness never compared this
