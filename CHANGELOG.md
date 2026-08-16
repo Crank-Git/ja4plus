@@ -31,8 +31,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   rather than a copy of it. **This round changes no file under `ja4plus/` and it moves no
   fingerprint.** The conformance suite reports 1676 passed, 142 skipped and 138 xfailed on
   the base and the same three counts after the change, and `tests/foxio_deviations.json`
-  holds 138 keys against those 138 xfailed cases. The unit suite reports 5742 passed, 8
-  skipped and 9 xfailed beside 114 subtests. `ruff check ja4plus/ tests/`,
+  holds 138 keys against those 138 xfailed cases. The unit suite reports 5744 passed, 8
+  skipped and 9 xfailed beside 114 subtests, and two of those cases parametrize over the
+  tracked file list and read the new module. `ruff check ja4plus/ tests/`,
   `ruff format --check ja4plus/ tests/` and `mypy --strict ja4plus/` each report no issue.
 - **`docs/specs/foxio/JA4SSH.md` now states what the parity harness compares** (#683).
   Round

@@ -4,8 +4,8 @@
 starts with an entry of `RUST_COMPARED_FIELDS`. `tests/test_foxio_rust_parity.py`
 compares six methods against such a snapshot. A method the field list names nowhere
 reaches the parity module only where the same snapshot carries a method the list does
-name. #670 added the JA4H comparison and #671 added the JA4SSH comparison, and neither
-one moved the field list, so this module holds the two files against each other.
+name. #670 added the JA4H comparison and #671 added the JA4SSH comparison. Neither round
+moved the field list, so this module holds the two files against each other.
 
 Every snapshot line below carries the indentation the FoxIO Rust implementation writes,
 because the filter strips each line before it matches.
@@ -51,11 +51,11 @@ METHOD_VALUE_LINES = {
     "JA4SSH": b"  ja4ssh:\n  - c36s36_c76s124_c74s5\n",
 }
 
-# The methods the parity module compares that the field list is expected to name. The two
-# latency methods stand outside it, because #684 read the field list as four entries of
-# six and named neither one. A read of 2026-08-15 measured that all seven committed
-# snapshots that hold a JA4L value hold a JA4T value as well, so no committed snapshot
-# rests on a latency entry.
+# The methods the field list names, against the methods the parity module compares. The
+# two latency methods stand outside the six, because #684 read the field list as four
+# entries of six and named neither one. A read of 2026-08-15 measured that all seven
+# committed snapshots that hold a JA4L value hold a JA4T value as well. No committed
+# snapshot therefore rests on a latency entry.
 EXPECTED_METHODS = frozenset(METHOD_VALUE_LINES)
 
 # The method the field list names with a form that matches no line the FoxIO Rust
@@ -105,7 +105,7 @@ def test_the_filter_keeps_a_snapshot_that_holds_one_method_alone(method):
     assert keeps_rust_snapshot(_snapshot_holding(METHOD_VALUE_LINES[method]))
 
 
-def test_the_filter_drops_a_snapshot_that_holds_no_fingerprint_value():
+def test_the_filter_refuses_a_snapshot_that_holds_no_fingerprint_value():
     """The filter refuses a snapshot of stream fields alone, which is the defect #115 closes."""
     assert not keeps_rust_snapshot(SNAPSHOT_HEAD)
 

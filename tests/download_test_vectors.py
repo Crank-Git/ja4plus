@@ -137,11 +137,12 @@ RUST_CAPTURES = [
 RUST_SNAPSHOT_NAME = "ja4__insta@{capture}.snap"
 
 # The snapshot fields `tests/test_foxio_rust_parity.py` compares. A snapshot that writes
-# none of them reaches no case. Each form carries the text the snapshot writes ahead of
-# the value, so a form that omits the list marker of a nested block matches nothing. The
-# `http` block writes `- ja4h: <value>`, and the `ja4ssh` block names no field at all, so
-# its opener `ja4ssh:` is the one line that carries the method. #670 added the JA4H
-# comparison and #671 added the JA4SSH comparison, and #684 added the two forms.
+# none of them reaches no case. #670 added the JA4H comparison and #671 added the JA4SSH
+# comparison, and #684 added the two forms below.
+#
+# Each form carries the text that stands ahead of the value. A form that omits the list
+# marker of a nested block matches nothing. The `http` block writes `- ja4h: <value>`.
+# The `ja4ssh` block names no field, so its opener `ja4ssh:` carries the method.
 RUST_COMPARED_FIELDS = (b"ja4: ", b"ja4s: ", b"ja4t: ", b"ja4x: ", b"- ja4h: ", b"ja4ssh:")
 
 # The seven btest baselines of the FoxIO Zeek package, each with the log it writes. The
@@ -300,7 +301,7 @@ def keeps_rust_snapshot(snapshot: bytes) -> bool:
 
     A snapshot that writes none of these fields compares no value, and the reference test
     would then report a pass on nothing. That is the defect #115 closes.
-    `gre-erspan-vxlan.pcap` writes `ja4t` alone, so a check for `ja4` alone rejects it.
+    `gre-erspan-vxlan.pcap` writes `ja4t` alone, so a check for `ja4` alone refuses it.
     `tests/test_foxio_rust_parity.py` strips each line before it matches, so this function
     strips too.
 
