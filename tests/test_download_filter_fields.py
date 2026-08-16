@@ -58,10 +58,6 @@ METHOD_VALUE_LINES = {
 # snapshot therefore rests on a latency entry.
 EXPECTED_METHODS = frozenset(METHOD_VALUE_LINES)
 
-# The method the field list names with a form that matches no line the FoxIO Rust
-# implementation writes. #719 records the measurement and owns the repair.
-UNMATCHED_METHOD = "JA4X"
-
 
 def _snapshot_holding(value_line: bytes) -> bytes:
     """Return a one-stream Rust snapshot that carries the value line and no other value.
@@ -83,23 +79,7 @@ def test_the_field_list_holds_the_methods_the_parity_module_compares():
     assert compared == EXPECTED_METHODS
 
 
-@pytest.mark.parametrize(
-    "method",
-    [
-        pytest.param(
-            method,
-            marks=(
-                pytest.mark.xfail(
-                    strict=True,
-                    reason="#719: the field list writes `ja4x: ` and the snapshot writes `- ja4x: `",
-                )
-                if method == UNMATCHED_METHOD
-                else ()
-            ),
-        )
-        for method in sorted(METHOD_VALUE_LINES)
-    ],
-)
+@pytest.mark.parametrize("method", sorted(METHOD_VALUE_LINES))
 def test_the_filter_keeps_a_snapshot_that_holds_one_method_alone(method):
     """The filter keeps a snapshot whose one value belongs to the method."""
     assert keeps_rust_snapshot(_snapshot_holding(METHOD_VALUE_LINES[method]))

@@ -141,9 +141,17 @@ RUST_SNAPSHOT_NAME = "ja4__insta@{capture}.snap"
 # comparison, and #684 added the two forms below.
 #
 # Each form carries the text that stands ahead of the value. A form that omits the list
-# marker of a nested block matches nothing. The `http` block writes `- ja4h: <value>`.
-# The `ja4ssh` block names no field, so its opener `ja4ssh:` carries the method.
-RUST_COMPARED_FIELDS = (b"ja4: ", b"ja4s: ", b"ja4t: ", b"ja4x: ", b"- ja4h: ", b"ja4ssh:")
+# marker of a nested block matches nothing. The `tls_certs` block writes `- ja4x: <value>`
+# and the `http` block writes `- ja4h: <value>`. The `ja4ssh` block names no field, so its
+# opener `ja4ssh:` carries the method.
+RUST_COMPARED_FIELDS = (
+    b"ja4: ",
+    b"ja4s: ",
+    b"ja4t: ",
+    b"- ja4x: ",
+    b"- ja4h: ",
+    b"ja4ssh:",
+)
 
 # The seven btest baselines of the FoxIO Zeek package, each with the log it writes. The
 # FoxIO Zeek package is the one FoxIO implementation that publishes a JA4TS value, so
