@@ -7,11 +7,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 - **Five rows of the divergence register record the last of the ruled questions** (#731).
-  Round 264. **Batch #731 holds #714, #622, #625, #621 and #593, and no member of it moves
+  Round
+  264. **Batch #731 holds #714, #622, #625, #621 and #593, and no member of it moves
   a fingerprint value.** The conformance suite reports 1676 passed, 142 skipped and 138
   xfailed before the batch and after it, against the 138 keys of
   `tests/foxio_deviations.json`. **#714 cites the JA4 transcription in the empty-list
-  sentinel row**, and it repaired the two sentences its own change of #691 falsified.
+  sentinel row**, and it repaired the two sentences that the change of #691 falsified.
   **#622 records the JA4L timing fork as permanent.** FoxIO publishes four readings that
   split two against two, so rule 1 names no value and the maintainer ruled. This project
   matches the FoxIO Python reading and the FoxIO Zeek reading, and `ja4plus-go` matches
@@ -35,10 +36,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   type 10 at `pcapgo/pcapng.go:43`, and the `v1.1.19` reading covers
   `github.com/google/gopacket` alone. **`scapy` reads a Decryption Secrets Block at
   `scapy/utils.py:1645`, so this project carries no reader gap and the decline rests on
-  the capability alone.** **The sub-merge of `dev` into this batch repaired three
-  citations that #606 moved.** `_quic_server_initial` no longer emits the QUIC `JA4L-S`
-  value, so the #625 row moved to `ja4plus/fingerprinters/ja4l.py:580-623`, `:614-615` and
-  `:620-622`, and it names the new emission site at `ja4plus/fingerprinters/ja4l.py:689`.
+  the capability alone.** **The sub-merge of `dev` into this batch repaired six
+  citations that #606 moved, across two rows.** `_quic_server_initial` no longer emits the
+  QUIC `JA4L-S` value. The #625 row moved to `ja4plus/fingerprinters/ja4l.py:580-623`,
+  `:614-615`, `:618` and `:620-622`, and it names the new emission site at
+  `ja4plus/fingerprinters/ja4l.py:689`. The #622 row moved to
+  `ja4plus/fingerprinters/ja4l.py:580-623` and `:621`. **The batch review of this pull
+  request measured that count**, because the record first stated three and read the three
+  citations of `tests/test_ja4l_quic_point_b_ruling.py` rather than the repair.
   **This batch is the first that records one round for a whole batch**, under the model
   #727 built, and no member of it wrote a `CHANGELOG.md` entry or a `## Changelog` row.
 
