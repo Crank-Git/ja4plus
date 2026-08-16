@@ -6,6 +6,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The project manager files no issue for a stale citation or a spent record** (#704).
+  Round
+  TBD. **A read of 2026-08-15 measured the last 300 commits of `master`: 56 touch a file
+  under `ja4plus/`, 192 touch `docs/specs/spec.md` and 186 touch `CHANGELOG.md`, against
+  333 closed issues.** The bookkeeping had become the deliverable, and a guard that
+  tightens finds more of what it now refuses, so the backlog regenerated itself. #708 and
+  #714 exist because a batch-ownership rule forbade a worker from repairing a file it had
+  just falsified. **The user set the rule on 2026-08-15 and `.issue-flow.json` records
+  it**: a worker repairs what its own change falsifies in the same pull request, a finding
+  that does not fit becomes a comment on an issue that exists, and a defect of the library
+  is still filed. #709, #708 and #719 are declined under it.
+
 - **`docs/specs/foxio/JA4SSH.md` now states what the parity harness compares** (#683).
   Round
   TBD. **The page carried a section named `Why the parity harness never compared this
