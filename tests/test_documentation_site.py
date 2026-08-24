@@ -531,7 +531,7 @@ DOCS_ENTRIES = [
     "mkdocs-material==9.7.7",
     "mkdocstrings==1.0.6",
     "mkdocstrings-python==2.0.7",
-    "griffe==2.1.0",
+    "griffe==2.2.0",
 ]
 
 
