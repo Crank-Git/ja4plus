@@ -96,7 +96,7 @@ dev = [
     # file under `.github/workflows/` and every second dependency record this repository
     # could carry. The `dev` extra therefore stays the one place a tool reads the version
     # from.
-    "ruff==0.16.4",
+    "ruff==0.16.5",
     # **The version floats, and #446 chose that shape against the four exact pins beside
     # it.** A pinned type checker falls behind, and a frozen release hides a defect that a
     # later release reports. A floating formatter turns a green tree red, which is noisy
