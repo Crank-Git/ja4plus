@@ -122,7 +122,7 @@ dev = [
     # `python -m tests.release_verification --dist dist` reads the wheel this release
     # builds, and #576 ran it by hand because no continuous-integration job runs it.
     # Verified against https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
-    "build==1.5.0",
+    "build==1.6.0",
     # `FR-release-9` states `twine check` on the built files, and
     # `tests/release_verification.py` runs it. The publish workflow installs this extra, so
     # the version lives here and no workflow states one of its own.
