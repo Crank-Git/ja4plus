@@ -96,7 +96,7 @@ dev = [
     # file under `.github/workflows/` and every second dependency record this repository
     # could carry. The `dev` extra therefore stays the one place a tool reads the version
     # from.
-    "ruff==0.16.2",
+    "ruff==0.16.6",
     # **The version floats, and #446 chose that shape against the four exact pins beside
     # it.** A pinned type checker falls behind, and a frozen release hides a defect that a
     # later release reports. A floating formatter turns a green tree red, which is noisy
@@ -122,7 +122,7 @@ dev = [
     # `python -m tests.release_verification --dist dist` reads the wheel this release
     # builds, and #576 ran it by hand because no continuous-integration job runs it.
     # Verified against https://pypi.org/pypi/build/1.5.0/json, retrieved 2026-08-10.
-    "build==1.5.0",
+    "build==1.6.0",
     # `FR-release-9` states `twine check` on the built files, and
     # `tests/release_verification.py` runs it. The publish workflow installs this extra, so
     # the version lives here and no workflow states one of its own.
@@ -182,8 +182,8 @@ docs = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
     "mkdocstrings==1.0.6",
-    "mkdocstrings-python==2.0.5",
-    "griffe==2.1.0",
+    "mkdocstrings-python==2.0.8",
+    "griffe==2.3.0",
 ]
 
 [project.urls]

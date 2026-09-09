@@ -511,9 +511,9 @@ def _dependency_block(text: str, opener: str) -> list[str]:
 DEV_ENTRIES = [
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
-    "ruff==0.16.2",
+    "ruff==0.16.6",
     "mypy>=1.11",
-    "build==1.5.0",
+    "build==1.6.0",
     "twine==7.0.0",
 ]
 
@@ -530,8 +530,8 @@ DOCS_ENTRIES = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
     "mkdocstrings==1.0.6",
-    "mkdocstrings-python==2.0.5",
-    "griffe==2.1.0",
+    "mkdocstrings-python==2.0.8",
+    "griffe==2.3.0",
 ]
 
 
