@@ -157,6 +157,23 @@ def tcp_prefix_from_header(header: bytes) -> str:
     return _prefix(window, header[TCP_HEADER_BYTES:])
 
 
+def tcp_prefix_from_fields(window: int, options: bytes) -> str:
+    """Return part a through part d from the window field and the raw option bytes.
+
+    The scanner of `ja4plus.scan` parses each response itself, so it holds the two
+    fields and no `scapy` layer. The maintainer ruled on 2026-09-30, in #775, that its
+    four parts equal the JA4TS parts of the same SYN-ACK.
+
+    Args:
+        window: The window field of the TCP header.
+        options: The raw TCP option bytes.
+
+    Returns:
+        The four parts, joined with `_`.
+    """
+    return _prefix(window, options)
+
+
 def _prefix(window: int, options: bytes) -> str:
     """Return part a through part d of a JA4T value or a JA4TS value.
 
