@@ -105,6 +105,46 @@ def parse_tls_handshake(raw_data: bytes) -> dict[str, Any] | None:
     return None
 
 
+# The four TLS record content types: ChangeCipherSpec, Alert, Handshake and
+# ApplicationData. A byte outside them opens no TLS record.
+TLS_RECORD_TYPES = frozenset((0x14, 0x15, 0x16, 0x17))
+
+
+def client_hello_end(data: bytes) -> int | None:
+    """Return the offset where the first ClientHello of the bytes ends, or None.
+
+    The walk reads records the way `parse_tls_handshake` reads them, so a
+    ChangeCipherSpec record before the hello counts toward the offset. A caller that
+    holds fewer bytes than the offset holds a hello that later segments complete.
+
+    Where the bytes cut the handshake header, the offset is the end of that header. The
+    offset then grows once the header arrives, because the header states the length.
+
+    Args:
+        data: The bytes of a TCP stream, from the first byte of a TLS record.
+
+    Returns:
+        The offset one past the last byte of the hello. Returns None where the bytes
+        open no TLS record, or where the first handshake message is no ClientHello.
+    """
+    offset = 0
+    # Each record length comes from the packet, so the walk bounds every read on the
+    # real buffer length. A record header is five bytes, so the walk always advances.
+    while offset + 5 <= len(data):
+        # A stream of another protocol can open with any byte. The version byte narrows
+        # the start to a record that names TLS or SSL 3.0.
+        if data[offset] not in TLS_RECORD_TYPES or data[offset + 1] != 0x03:
+            return None
+        if data[offset] == 0x16:
+            if offset + 5 < len(data) and data[offset + 5] != 0x01:
+                return None
+            if offset + 9 > len(data):
+                return offset + 9
+            return offset + 9 + int.from_bytes(data[offset + 6 : offset + 9], "big")
+        offset += 5 + ((data[offset + 3] << 8) | data[offset + 4])
+    return None
+
+
 def _parse_client_hello(raw_data: bytes) -> dict[str, Any] | None:
     """Parse a TLS ClientHello message."""
     if len(raw_data) < 11:
