@@ -6,6 +6,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **`ja4plus scan` adds JA4TScan, the FoxIO active TCP server fingerprint** (#775, #776).
+  Round
+  269. **The maintainer reversed the decline of 2026-08-08 on 2026-09-30.** The scanner sends
+  one SYN to each IPv4 target and reads the SYN-ACK and its retransmissions. Parts a to d
+  use the JA4TS form of this project, so a scan value and the passive JA4TS value of one
+  SYN-ACK hold the same four parts. A target whose first answer carries RST writes
+  `0_rst-ack`. **The library changes no firewall state.** The command prints the four
+  `iptables` rules of the FoxIO wrapper, or four pf rules on macOS, and it warns when a
+  SYN-ACK arrives with no retransmission. The scanner lives in `ja4plus/scan/` behind the
+  `scan` extra, and no passive module imports it. `docs/specs/foxio/JA4TScan.md` transcribes
+  `FoxIO-LLC/ja4tscan` at `d01bfec4`, and `docs/specs/features/12-active-scan.md` states 35
+  acceptance criteria. The divergence register records the three places where the FoxIO
+  module writes another form. **The project now implements all twelve FoxIO methods.**
+
 - **JA4 reads a ClientHello that spans TCP segments, and the FoxIO pin moves to `16b96d95`** (#772, #773, #774).
   Round
   268. **A post-quantum key share makes a browser ClientHello longer than one TCP segment**,
