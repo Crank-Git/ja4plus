@@ -208,8 +208,10 @@ def generate_ja4(tls_info: dict[str, Any] | None, original_order: bool = False) 
         sorted_extensions = sorted(e for e in extensions if e != 0x0000 and e != 0x0010)
         hashed_extensions = extensions if original_order else sorted_extensions
 
-        # 2. Get signature algorithms in original order
-        sig_algs = tls_info.get("signature_algorithms", [])
+        # 2. Get signature algorithms in original order. FoxIO removes GREASE values
+        #    here too, in Rust commit `d66336ef`. `extract_tls_info` keeps them as a
+        #    record of the wire, so the fingerprinter removes them.
+        sig_algs = [s for s in tls_info.get("signature_algorithms", []) if not is_grease_value(s)]
 
         # 3. Form extension string - extensions + underscore + sig algorithms if present
         ext_str = ",".join([f"{e:04x}" for e in hashed_extensions])
@@ -334,8 +336,9 @@ def get_raw_fingerprint(
                 [f"{e:04x}" for e in sorted([e for e in extensions if e != 0x0000 and e != 0x0010])]
             )
 
-        # Signature algorithms
-        sig_algs = tls_info.get("signature_algorithms", [])
+        # Signature algorithms, with GREASE values removed as in `generate_ja4`.
+        # FoxIO `JA4_r` and `JA4_ro` print no GREASE value, since Rust commit `d66336ef`.
+        sig_algs = [s for s in tls_info.get("signature_algorithms", []) if not is_grease_value(s)]
         sig_alg_list = ",".join([f"{s:04x}" for s in sig_algs])
 
         # Final format. FoxIO holds the signature algorithms in wire order for both

@@ -540,7 +540,7 @@ value. #132 holds the command and the full output.
 Before #132, `ja4plus` emitted `9af15b336e6a` on these four streams. `JA4_o` now matches
 all 160 reference values, and the count was 156 of 160.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:226`.
+**Location:** `ja4plus/fingerprinters/ja4.py:228`.
 
 The JA4S section below records the `JA4S_o` reading.
 
