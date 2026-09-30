@@ -135,9 +135,12 @@ def parse_targets(text: str) -> Iterable[str]:
         The targets, in order. A file names each address once, whatever its line count.
 
     Raises:
-        TargetError: The argument names an IPv6 target, or a file line holds no IPv4
-            address, or the argument is no address, no network and no readable file.
-            The scanner reads every target before it sends a SYN.
+        TargetError: The scanner reads every target before it sends a SYN, and it
+            raises in three cases.
+
+            - The argument names an IPv6 target.
+            - A file line holds no IPv4 address.
+            - The argument is no address, no network and no readable file.
     """
     try:
         network = ipaddress.ip_network(text, strict=False)
@@ -362,7 +365,7 @@ class Scanner:
             probe.closed = True
 
     def _finish(self, probe: Probe) -> None:
-        """Write the result of one target, and the warning where the target never retransmitted.
+        """Write the result of one target, and warn where the target never retransmitted.
 
         Args:
             probe: The target whose wait ended.

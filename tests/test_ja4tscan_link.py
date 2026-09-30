@@ -204,3 +204,13 @@ class TestTheReceive:
 )
 def test_privilege_refused_reads_the_error_number_and_the_text(error, refused):
     assert link.privilege_refused(error) is refused
+
+
+def test_the_next_hop_cache_holds_at_most_the_target_bound(fake_scapy, monkeypatch):
+    monkeypatch.setattr(link, "MAX_TARGETS", 2)
+    net, _ = network(first=NEIGHBOR)
+    sizes = []
+    for index in range(5):
+        net.send(f"198.51.100.{10 + index}", 50000 + index, index)
+        sizes.append(len(net.next_hops))
+    assert max(sizes) == 2

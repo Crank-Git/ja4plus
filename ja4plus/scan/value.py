@@ -2,9 +2,9 @@
 
 The maintainer ruled the form on 2026-09-30, at
 https://github.com/Crank-Git/ja4plus/issues/775#issuecomment-5921253786. Part a to part d
-are the JA4TS parts of the first response, so a scan value and the passive JA4TS value of
-the same SYN-ACK hold the same four parts. Part e follows the JA4TS delay rule, R12 and
-R13 of `docs/specs/foxio/JA4T.md`.
+are the JA4TS parts of the first response. A scan value and the passive JA4TS value of the
+same SYN-ACK therefore hold the same four parts. Part e follows the JA4TS delay rule, R12
+and R13 of `docs/specs/foxio/JA4T.md`.
 
 This module reads no packet. The scanner parses each packet into a `Response` first, so
 every value here comes from a field that a bounded parser already read.
@@ -67,9 +67,11 @@ def ja4tscan_value(responses: Sequence[Response]) -> str | None:
     for response in responses[1:]:
         delay = delay_seconds(response.seconds, previous)
         # R13 of `docs/specs/foxio/JA4T.md` reads the RST as the final packet, so a
-        # response after it adds nothing.
+        # response after it adds nothing. R13 rule 2 writes no reset letter where no
+        # retransmission came before the RST.
         if response.flags & TCP_RST_FLAG:
-            delays.append(f"R{delay}")
+            if delays:
+                delays.append(f"R{delay}")
             break
         # R12 rule 4 counts ten retransmissions. A later one adds no delay, and a RST
         # after it still counts from the tenth.

@@ -184,6 +184,22 @@ leaves through a raw IP socket passes the firewall, the tracker records it, and 
 rule then accepts the SYN-ACK. The kernel then sends the RST that the rules exist to
 stop. The capture of the scanner reads the SYN-ACK before the firewall on both systems.
 
+**#776 measured this reading on Linux on 2026-09-30, and the measurement confirms it.**
+The host ran kernel 6.11 and iptables 1.8.10 with the `nf_tables` backend. Two network
+namespaces joined by a veth pair held the scanner and a target that listened on port 80.
+The four rules stood in the namespace of the scanner alone, so the host firewall never
+changed.
+
+| The SYN left through | The four rules | What the target sent, and what came back |
+|---|---|---|
+| A raw IP socket | Absent | One SYN-ACK, and the kernel of the scanner sent a RST |
+| An `AF_PACKET` socket | Absent | One SYN-ACK, and the kernel of the scanner sent a RST |
+| A raw IP socket | Present | One SYN-ACK. The first rule accepted it, and the kernel sent a RST |
+| An `AF_PACKET` socket | Present | One SYN-ACK and three retransmissions at 1, 2 and 4 seconds. The last rule dropped all four |
+
+**No macOS measurement stands beside it.** The pf equivalent rests on the reading of the
+`pf.conf` manual above.
+
 ## User flows
 
 **An operator scans one network.**

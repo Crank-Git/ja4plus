@@ -1,7 +1,7 @@
 """Send each SYN as a link-layer frame, and read each response from the same interface.
 
 FR-active-scan-25 states that the scanner sends the SYN as a link-layer frame, as zmap
-does. #776 measured the reason on 2026-09-30, on Linux 6.11 with iptables 1.8.10 and
+does. #776 measured the reason on 2026-09-30. The host ran Linux 6.11, iptables 1.8.10 and
 the four FoxIO rules. A SYN from a raw IP socket passed the connection tracker. The
 first rule then accepted the SYN-ACK, and the kernel sent a RST. A SYN from an
 `AF_PACKET` socket left no tracker state, so the last rule dropped the SYN-ACK and the
@@ -27,6 +27,7 @@ from scapy.all import conf, get_if_hwaddr, getmacbyip
 from scapy.error import Scapy_Exception
 
 from ja4plus.scan.frames import build_syn
+from ja4plus.scan.scanner import MAX_TARGETS
 
 __all__ = ["LinkNetwork", "privilege_refused"]
 
@@ -106,8 +107,8 @@ class LinkNetwork:
         """
         iface, src_ip, gateway = conf.route.route(target)
         if iface == conf.loopback_name:
-            # The loopback interface of macOS carries no Ethernet header, so an Ethernet
-            # frame there reaches no stack.
+            # The loopback interface of macOS carries no Ethernet header, so the stack
+            # drops an Ethernet frame there.
             self.on_warning(
                 f"Warning: {target} routes through the loopback interface. The scan sends "
                 "it no SYN."
@@ -121,6 +122,10 @@ class LinkNetwork:
             return None
         hop = target if gateway == _NO_GATEWAY else gateway
         if hop not in self.next_hops:
+            # A scan of a large network on the link names one next hop for each target,
+            # so the cache holds a bound like the table of the scanner.
+            if len(self.next_hops) >= MAX_TARGETS:
+                self.next_hops.clear()
             mac = getmacbyip(hop)
             self.next_hops[hop] = _mac_bytes(mac) if mac else None
         dst_mac = self.next_hops[hop]
@@ -155,6 +160,8 @@ class LinkNetwork:
         if not self.socket.select([self.socket], timeout):
             return None
         _, data, seconds = self.socket.recv_raw()
+        # `scapy` 2.7.0 returns no data for an outgoing frame on Linux and for an empty
+        # read of a BPF device.
         if data is None:
             return None
         return (seconds if seconds is not None else time.time()), bytes(data)

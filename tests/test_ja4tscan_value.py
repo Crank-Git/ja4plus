@@ -176,6 +176,12 @@ def test_a_first_response_that_carries_rst_and_ack_with_a_window_produces_rst_ac
     assert ja4tscan_value([Response(0.0, RST_ACK, 512, b"")]) == "0_rst-ack"
 
 
+def test_a_rst_after_one_syn_ack_writes_four_parts_and_no_reset_letter():
+    # R13 rule 2 of `docs/specs/foxio/JA4T.md`, which the JA4TS tracker also follows.
+    sequence = [Response(0.0, SYN_ACK, 1024, mss(1460)), Response(3.0, RST, 0, b"")]
+    assert ja4tscan_value(sequence) == "1024_2_1460_00"
+
+
 def test_a_response_after_a_first_rst_changes_nothing():
     sequence = [Response(0.0, RST_ACK, 0, b""), Response(3.0, SYN_ACK, 1024, mss(1460))]
     assert ja4tscan_value(sequence) == "0_rst-ack"

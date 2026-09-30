@@ -909,10 +909,12 @@ COMMAND_ENTRY_POINTS = "ja4plus.commands"
 # `docs/specs/features/12-active-scan.md` name.
 SCAN_EXTRA_INSTALL = "pip install ja4plus[scan]"
 
-# The defaults and the three choices of the FoxIO wrapper, which S16 of
-# `docs/specs/foxio/JA4TScan.md` records.
+# The two defaults of the FoxIO wrapper, which S16 of `docs/specs/foxio/JA4TScan.md`
+# records.
 SCAN_DEFAULT_PORT = 80
 SCAN_DEFAULT_RATE = 10.0
+
+# The highest TCP port. RFC 9293 section 3.1 gives the port field 16 bits.
 HIGHEST_PORT = 65535
 
 
@@ -929,15 +931,15 @@ def cmd_scan(args: argparse.Namespace) -> None:
         SystemExit: The installation holds no scanner. The call exits with the status 1
             and names the `scan` extra.
     """
+    refusal = f"Error: ja4plus scan needs the scan extra. Install it with: {SCAN_EXTRA_INSTALL}"
+    found = list(entry_points(group=COMMAND_ENTRY_POINTS, name="scan"))
+    if len(found) != 1:
+        print(f"{refusal}\nThe installation holds {len(found)} scan entry points.", file=sys.stderr)
+        sys.exit(1)
     try:
-        (entry,) = entry_points(group=COMMAND_ENTRY_POINTS, name="scan")
-        run = entry.load()
-    except (ValueError, ImportError) as error:
-        print(
-            f"Error: ja4plus scan needs the scan extra. Install it with: {SCAN_EXTRA_INSTALL}\n"
-            f"The installation reported: {error or 'no scan entry point'}",
-            file=sys.stderr,
-        )
+        run = found[0].load()
+    except ImportError as error:
+        print(f"{refusal}\nThe installation reported: {error}", file=sys.stderr)
         sys.exit(1)
     run(args, _result_stream)
 
@@ -951,7 +953,9 @@ def _scan_port(value: str) -> int:
     try:
         port = int(value)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"--port needs a whole number, and it is {value}")
+        raise argparse.ArgumentTypeError(
+            f"--port needs a whole number, and it is {value}"
+        ) from None
     if not 1 <= port <= HIGHEST_PORT:
         raise argparse.ArgumentTypeError(f"--port must be 1 to {HIGHEST_PORT}, and it is {port}")
     return port
@@ -966,7 +970,7 @@ def _scan_rate(value: str) -> float:
     try:
         rate = float(value)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"--rate needs a number, and it is {value}")
+        raise argparse.ArgumentTypeError(f"--rate needs a number, and it is {value}") from None
     if not math.isfinite(rate) or rate <= 0:
         raise argparse.ArgumentTypeError(f"--rate must be more than 0, and it is {value}")
     return rate

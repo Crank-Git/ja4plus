@@ -102,9 +102,12 @@ def scan_command(
         rng: The source of the source port and the sequence number.
 
     Raises:
-        SystemExit: The platform is Windows, a target is unreadable, the target list is
-            empty, or the host refused the socket. Each one exits with the status 1
-            before the first SYN.
+        SystemExit: The call exits with the status 1 before the first SYN in four cases.
+
+            - The platform is Windows.
+            - A target is unreadable.
+            - The target list is empty.
+            - The host refused the socket.
     """
     refusal = unsupported_platform_message(platform, args.command)
     if refusal is not None:
@@ -130,8 +133,9 @@ def scan_command(
         _fail(f"Error: ja4plus scan could not open a raw socket: {error}")
     try:
         retransmit = args.retransmit == "yes"
-        # FR-active-scan-8 writes the rules before the first SYN. The kernel RST does no
-        # harm to a scan that reads the first response alone, so that mode writes none.
+        # FR-active-scan-8 writes the rules before the first SYN. The mode without
+        # retransmissions reads the first response alone, so a kernel RST changes no
+        # value there and the mode writes no rule.
         if retransmit:
             print(firewall_rules(platform), file=sys.stderr)
         with result_stream(args) as stream:
