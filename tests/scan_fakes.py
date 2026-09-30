@@ -52,9 +52,13 @@ class FakeNetwork:
         self.queue: list[tuple[float, int, bytes]] = []
         self.order = 0
         self.on_send = None
+        self.closed = False
 
     def clock(self) -> float:
         return self.now
+
+    def close(self) -> None:
+        self.closed = True
 
     def send(self, target: str, src_port: int, sequence: int) -> str | None:
         if self.on_send is not None:

@@ -23,12 +23,9 @@ from ja4plus.scan.frames import Reply, parse_frame
 from ja4plus.scan.value import Response, ja4tscan_value
 
 __all__ = [
-    "DEFAULT_PORT",
-    "DEFAULT_RATE",
     "MAX_TARGETS",
     "NO_RETRANSMIT_WAIT_SECONDS",
     "RETRANSMIT_WAIT_SECONDS",
-    "Probe",
     "ScanResult",
     "Scanner",
     "TargetError",
@@ -37,10 +34,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-# S16 of `docs/specs/foxio/JA4TScan.md` names both defaults of the FoxIO wrapper.
-DEFAULT_PORT = 80
-DEFAULT_RATE = 10.0
 
 # S13 of `docs/specs/foxio/JA4TScan.md`: the wrapper passes a cooldown of 120 seconds, and
 # the zmap default of 8 seconds applies when retransmissions are off.

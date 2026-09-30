@@ -174,7 +174,7 @@ class TestTheResponseParser:
 
     def test_a_tcp_header_cut_short_produces_nothing(self):
         frame = syn_ack_frame()
-        cut = bytearray(frame[:14 + 20 + 12])
+        cut = bytearray(frame[: 14 + 20 + 12])
         cut[16:18] = struct.pack("!H", 32)
         assert parse_frame(bytes(cut)) is None
 

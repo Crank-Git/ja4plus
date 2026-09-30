@@ -185,6 +185,13 @@ docs = [
     "mkdocstrings-python==2.0.9",
     "griffe==2.3.0",
 ]
+# **`ja4plus.scan` needs no dependency beyond the core install, so this extra names
+# none.** The scanner sends and reads frames through `scapy`, which `dependencies` above
+# names. FR-active-scan-6 asks this extra to name every other dependency of the package,
+# and `tests/test_ja4tscan_boundary.py` reads each import of `ja4plus/scan/` against the
+# two lists. The maintainer ruled the extra on 2026-09-30, in #775, so
+# `pip install ja4plus[scan]` stays the one command that names the scanner.
+scan = []
 
 [project.urls]
 Homepage = "https://github.com/Crank-Git/ja4plus"
@@ -195,6 +202,12 @@ Documentation = "https://github.com/Crank-Git/ja4plus/tree/main/docs"
 
 [project.scripts]
 ja4plus = "ja4plus.cli:main"
+
+# **`ja4plus/cli.py` loads the `scan` subcommand through this group, and it imports no
+# module of `ja4plus.scan`.** FR-active-scan-5 states that no module outside the package
+# imports it.
+[project.entry-points."ja4plus.commands"]
+scan = "ja4plus.scan.command:run"
 
 [tool.setuptools.dynamic]
 # The `dynamic` list of the `[project]` table names `version`, and this line states where

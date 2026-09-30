@@ -78,7 +78,7 @@ def _checksum(data: bytes) -> int:
     """
     if len(data) % 2:
         data += b"\x00"
-    total = sum(struct.unpack(f"!{len(data) // 2}H", data))
+    total: int = sum(struct.unpack(f"!{len(data) // 2}H", data))
     while total >> 16:
         total = (total & 0xFFFF) + (total >> 16)
     return ~total & 0xFFFF
@@ -115,18 +115,21 @@ def build_syn(
     source = ipaddress.IPv4Address(src_ip).packed
     destination = ipaddress.IPv4Address(dst_ip).packed
     options = SYN_OPTIONS_HEAD + struct.pack("!I", timestamp & 0xFFFFFFFF) + SYN_OPTIONS_TAIL
-    tcp = struct.pack(
-        "!HHIIBBHHH",
-        src_port,
-        dst_port,
-        sequence & 0xFFFFFFFF,
-        0,
-        (SYN_TCP_HEADER_BYTES // 4) << 4,
-        TCP_FLAG_SYN,
-        TCP_WINDOW,
-        0,
-        0,
-    ) + options
+    tcp = (
+        struct.pack(
+            "!HHIIBBHHH",
+            src_port,
+            dst_port,
+            sequence & 0xFFFFFFFF,
+            0,
+            (SYN_TCP_HEADER_BYTES // 4) << 4,
+            TCP_FLAG_SYN,
+            TCP_WINDOW,
+            0,
+            0,
+        )
+        + options
+    )
     pseudo = source + destination + struct.pack("!BBH", 0, PROTOCOL_TCP, len(tcp))
     tcp = tcp[:16] + struct.pack("!H", _checksum(pseudo + tcp)) + tcp[18:]
     ip = struct.pack(

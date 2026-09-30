@@ -127,7 +127,9 @@ class TestResults:
     def test_every_truncation_of_a_response_raises_nothing_and_writes_nothing(self):
         network = FakeNetwork()
         frame = bytes(
-            Ether() / IP(src=TARGET, dst=SCANNER_IP) / TCP(sport=80, flags="SA", options=[("MSS", 1460)])
+            Ether()
+            / IP(src=TARGET, dst=SCANNER_IP)
+            / TCP(sport=80, flags="SA", options=[("MSS", 1460)])
         )
         for end in range(len(frame)):
             network.push(network.now + 0.001 * end, frame[:end])
@@ -230,7 +232,9 @@ class TestTheStateTable:
             rng=random.Random(1),
         )
         network.on_send = lambda target: sizes.append(len(scanner.table))
-        targets = [f"10.{index >> 16 & 255}.{index >> 8 & 255}.{index & 255}" for index in range(20000)]
+        targets = [
+            f"10.{index >> 16 & 255}.{index >> 8 & 255}.{index & 255}" for index in range(20000)
+        ]
         scanner.run(targets)
         assert MAX_TARGETS == 10000
         assert len(network.sent) == 20000

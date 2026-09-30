@@ -64,26 +64,37 @@ def responses(window: int, options: bytes, delays: list[int], rst_delay: int | N
 EXAMPLES = [
     (
         "Windows 10",
-        responses(64240, mss(1460) + NOP + window_scale(8) + NOP + NOP + SACK_PERMITTED,
-                  [1, 2, 4, 8], rst_delay=6),
+        responses(
+            64240,
+            mss(1460) + NOP + window_scale(8) + NOP + NOP + SACK_PERMITTED,
+            [1, 2, 4, 8],
+            rst_delay=6,
+        ),
         "64240_2-1-3-1-1-4_1460_8_1-2-4-8-R6",
     ),
     (
         "Windows 2003",
-        responses(16384, mss(1460) + NOP + window_scale(0) + NOP + NOP + TIMESTAMP + NOP
-                  + NOP + SACK_PERMITTED, [2, 7]),
+        responses(
+            16384,
+            mss(1460) + NOP + window_scale(0) + NOP + NOP + TIMESTAMP + NOP + NOP + SACK_PERMITTED,
+            [2, 7],
+        ),
         "16384_2-1-3-1-1-8-1-1-4_1460_00_2-7",
     ),
     (
         "Amazon AWS Linux 2",
-        responses(62727, mss(8961) + SACK_PERMITTED + TIMESTAMP + NOP + window_scale(7),
-                  [1, 2, 4, 8, 16]),
+        responses(
+            62727, mss(8961) + SACK_PERMITTED + TIMESTAMP + NOP + window_scale(7), [1, 2, 4, 8, 16]
+        ),
         "62727_2-4-8-1-3_8961_7_1-2-4-8-16",
     ),
     (
         "Mac OSX / iPhone",
-        responses(65535, mss(1460) + NOP + window_scale(6) + NOP + NOP + TIMESTAMP
-                  + SACK_PERMITTED + EOL + EOL, [1, 2, 4, 8, 16, 32, 12]),
+        responses(
+            65535,
+            mss(1460) + NOP + window_scale(6) + NOP + NOP + TIMESTAMP + SACK_PERMITTED + EOL + EOL,
+            [1, 2, 4, 8, 16, 32, 12],
+        ),
         "65535_2-1-3-1-1-8-4-0-0_1460_6_1-2-4-8-16-32-12",
     ),
     (
@@ -93,14 +104,16 @@ EXAMPLES = [
     ),
     (
         "Epson Printer",
-        responses(28960, mss(1460) + SACK_PERMITTED + TIMESTAMP + NOP + window_scale(3),
-                  [1, 4, 8, 16]),
+        responses(
+            28960, mss(1460) + SACK_PERMITTED + TIMESTAMP + NOP + window_scale(3), [1, 4, 8, 16]
+        ),
         "28960_2-4-8-1-3_1460_3_1-4-8-16",
     ),
     (
         "Ubiquiti Router",
-        responses(43440, mss(1460) + SACK_PERMITTED + TIMESTAMP + NOP + window_scale(12),
-                  [1, 2, 4, 8, 17]),
+        responses(
+            43440, mss(1460) + SACK_PERMITTED + TIMESTAMP + NOP + window_scale(12), [1, 2, 4, 8, 17]
+        ),
         "43440_2-4-8-1-3_1460_12_1-2-4-8-17",
     ),
     (
@@ -203,8 +216,6 @@ def test_a_scan_value_holds_the_parts_a_to_d_of_the_passive_ja4ts_value():
     tcp = TCP(bytes(packet[TCP]))
     passive = generate_ja4ts(packet)
     header = bytes(tcp)
-    scan = ja4tscan_value(
-        [Response(0.0, int(tcp.flags), tcp.window, header[20 : tcp.dataofs * 4])]
-    )
+    scan = ja4tscan_value([Response(0.0, int(tcp.flags), tcp.window, header[20 : tcp.dataofs * 4])])
     assert passive is not None
     assert scan == passive
