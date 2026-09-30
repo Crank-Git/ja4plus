@@ -89,12 +89,14 @@ def read_options(data: bytes) -> tuple[list[int], int, int]:
         A tuple of the option kinds in wire order, the maximum segment size and the
         window scale. The segment size is 0 when the packet carries no such option, and
         the window scale is 0 when the packet carries no such option. A repeated option
-        keeps the first value, which `rust/ja4/src/tcp.rs` also does. #215 records that
-        reading as D5.
+        keeps the last value. At FoxIO `16b96d95`, `rust/ja4/src/tcp.rs:78` and `:83`
+        call `.last()`. `wireshark/source/packet-ja4.c:1461-1466` and
+        `zeek/src/ja4t.cc:87-93` overwrite the value on each option. #774 records the
+        reading, and it reverses D5 of #215.
     """
     kinds: list[int] = []
-    mss: int | None = None
-    window_scale: int | None = None
+    mss = 0
+    window_scale = 0
     offset = 0
     while offset < len(data):
         kind = data[offset]
@@ -111,13 +113,11 @@ def read_options(data: bytes) -> tuple[list[int], int, int]:
         # the reading as D3, and R4 names both FoxIO implementations.
         kinds.append(kind)
         if kind == MAXIMUM_SEGMENT_SIZE and length == MAXIMUM_SEGMENT_SIZE_LENGTH:
-            if mss is None:
-                mss = int.from_bytes(data[offset + 2 : offset + 4], "big")
+            mss = int.from_bytes(data[offset + 2 : offset + 4], "big")
         elif kind == WINDOW_SCALE and length == WINDOW_SCALE_LENGTH:
-            if window_scale is None:
-                window_scale = data[offset + 2]
+            window_scale = data[offset + 2]
         offset += length
-    return kinds, mss or 0, window_scale or 0
+    return kinds, mss, window_scale
 
 
 def tcp_prefix(tcp: Packet) -> str:
@@ -126,9 +126,9 @@ def tcp_prefix(tcp: Packet) -> str:
     The user decided the two-digit form on 2026-08-08, and #215 records it as D1. An
     empty option list writes `00`, part c writes two digits, and a window scale of zero
     writes `00`. `wireshark/source/packet-ja4.c:664` and `zeek/ja4t/main.zeek:195-211`
-    both write that form, and `rust/ja4/src/tcp.rs` writes one digit. The
-    `Divergence register` in `docs/specs/spec.md` records the cost against the Rust
-    implementation.
+    both write that form. FoxIO `08617cc3` moved `rust/ja4/src/tcp.rs` to the same form,
+    and `rust/ja4/src/tcp.rs:135-146` holds it at FoxIO `16b96d95`. The
+    `Divergence register` in `docs/specs/spec.md` records the reading.
 
     Args:
         tcp: The TCP layer of one SYN packet or one SYN-ACK packet.

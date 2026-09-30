@@ -43,9 +43,13 @@ writes `00`, the MSS part writes two digits, and a window scale of zero writes `
 window scale above zero writes its own digits and no padding, which is why the example
 below ends in `7` and not `07`.
 
-The Wireshark dissector and the Zeek script both write that form, and the FoxIO Rust
-implementation writes one digit. #215 records the ruling as D1, and the
-`Divergence register` of `docs/specs/spec.md` records the cost.
+The Wireshark dissector, the Zeek script and the FoxIO Rust implementation each write that
+form. The Rust implementation wrote one digit until FoxIO `08617cc3`. #215 records the
+ruling as D1, and the `Divergence register` of `docs/specs/spec.md` records the reading.
+
+**A repeated option keeps its last value.** A SYN that carries two MSS options writes the
+value of the second one, and a repeated window scale option works the same way. The three
+FoxIO implementations each keep the last value. #774 records the reading.
 
 ## The hash rule
 
