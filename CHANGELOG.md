@@ -6,6 +6,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **JA4 reads a ClientHello that spans TCP segments, and the FoxIO pin moves to `16b96d95`** (#772, #773, #774).
+  Round
+  268. **A post-quantum key share makes a browser ClientHello longer than one TCP segment**,
+  and the JA4 fingerprinter read each segment alone, so it wrote no value for such a hello.
+  `sigalg-grease.pcapng` of FoxIO release v1.0.1 holds a 2034-byte hello in two segments.
+  The fingerprinter now holds the client payload of a connection in a bounded table until
+  the hello is complete, and a gap stops the read at the first byte that has not arrived
+  (#772). **JA4 removes GREASE values from the signature algorithms** at both call sites, as
+  FoxIO `d66336ef` does, and the value of that capture now equals the FoxIO value in all
+  four forms (#773). **A repeated MSS option or window scale option keeps its last value**,
+  which the FoxIO Rust, Wireshark and Zeek sources each do at `16b96d95` (#774). The FoxIO
+  pin moves from `27f0cbf9` to `16b96d95`. The seven Zeek baselines stay at `27f0cbf9`
+  under `ZEEK_COMMIT`, because FoxIO `4e91886c` removed `zeek/tests/Traces`. **A replay of
+  77 captures writes one new value, the JA4 of `sigalg-grease.pcapng` frame 5, and every
+  other value is byte-identical.** The conformance suite reports 1684 passed, 142 skipped
+  and 138 xfailed before this round, and 1702 passed, 145 skipped and 137 xfailed after it.
+
 - **The QUIC CRYPTO reader stops at the first byte that has not arrived** (#762).
   Round
   267. **An outside reporter measured the defect on Windows against a live capture.**

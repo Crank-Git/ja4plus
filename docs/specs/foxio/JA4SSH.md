@@ -469,7 +469,7 @@ comes from the shared list of #96.
 ### What the parity harness compares today
 
 **The parity harness compares both JA4SSH values of the FoxIO Rust snapshot.**
-`tests/test_foxio_rust_parity.py:1717` opens `TestTheJa4sshValuesTheRustSnapshotHolds`.
+`tests/test_foxio_rust_parity.py:1718` opens `TestTheJa4sshValuesTheRustSnapshotHolds`.
 That class reads the `ja4ssh` block of
 `tests/foxio_vectors/rust_expected/ja4__insta@ssh2.pcapng.snap:215-217`, which holds
 `c36s36_c76s124_c74s5` and `c36s52_c42s76_c51s2`. It measures `ja4plus` against each one.

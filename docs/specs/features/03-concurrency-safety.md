@@ -176,6 +176,7 @@ every fingerprinter table onto `BoundedStateTable`, and wrote this form.
 | `TCPStreamReassembler.streams`, built by JA4X | 50 | 600 seconds | 1 |
 | `JA4Fingerprinter._quic_fragments` | 1000 | 30 seconds | 1 |
 | `JA4Fingerprinter._quic_dcid_to_tuple` | 1000 | 30 seconds | 1 |
+| `JA4Fingerprinter._tcp_hellos`, a `TCPStreamReassembler` | 1000 | 30 seconds | 1 |
 | `JA4SFingerprinter._quic_server_crypto` | 1000 | 30 seconds | 1 |
 | `JA4SFingerprinter._quic_dcids` | 10000 | 600 seconds | 1000 |
 | `JA4HFingerprinter.consumed_seq` | 100 | 600 seconds | 1 |
@@ -240,13 +241,13 @@ it grows without a limit, and Goal 3 covers it.
 - `TableStats` states six counts: `entries`, `max_entries`, `inserts`, `evictions`,
   `removals` and `returned_connections`. The six hold the invariant
   `inserts == entries + evictions + removals`.
-- **The report covers seventeen state tables, and not thirteen.** Round 82 counted the
+- **The report covers eighteen state tables, and not thirteen.** Round 82 counted the
   thirteen `BoundedStateTable` instances. `JA4HFingerprinter.reassembler` and
   `JA4XFingerprinter.reassembler` each hold per-connection data across packets, so the
   `## Terms` table names each one a state table too. `TCPStreamReassembler` therefore
   inherits `StateTable` and counts the same six things. Round 87 adds the sixteenth,
   `SynAckTracker.prefixes`, and round 93 adds the seventeenth,
-  `JA4TFingerprinter.connections`.
+  `JA4TFingerprinter.connections`. #772 adds the eighteenth, `JA4Fingerprinter._tcp_hellos`.
 - `StateTable` is the base class both hold. `BaseFingerprinter.state_tables` finds a
   state table by that type, so a new table reaches the report with no further change.
   The search descends one level, which reaches `SynAckTracker.times` and
@@ -254,8 +255,8 @@ it grows without a limit, and Goal 3 covers it.
 - A returned connection is a connection the table evicted and then saw again. The table
   remembers the keys it evicted, and it bounds that memory at its own entry count. A
   key the caller removed leaves no memory, so a connection that returns after
-  `cleanup_connection` counts as a first sighting. The seventeen tables hold 57400
-  remembered keys between them, at 187 bytes for one key, so the memory costs 10.2 MiB
+  `cleanup_connection` counts as a first sighting. The eighteen tables hold 58400
+  remembered keys between them, at 187 bytes for one key, so the memory costs 10.4 MiB
   at its worst.
 - `Processor.stats` holds the lock of one fingerprinter across the read of that
   fingerprinter, because the counts of one method describe one instant. It acquires one
@@ -444,16 +445,17 @@ connections raises the entry count by zero while the eviction count rises.
 
 **#41 landed before #43, so the contract states the statistics it built.**
 `docs/api_reference.md` holds a `stats()` row, the six fields of `ProcessorStats`, and
-the definition of a returned connection. **#215 re-measured the table count and reads
-seventeen.** `Processor.stats()` reports seventeen state tables across the ten
-fingerprinters. The walk of `tests/test_memory_bounds.py` reads seventeen state tables by
+the definition of a returned connection. **#215 re-measured the table count, and #772 moved it
+to eighteen.** `Processor.stats()` reports eighteen state tables across the ten
+fingerprinters. The walk of `tests/test_memory_bounds.py` reads eighteen state tables by
 an independent route.
 `test_the_walk_of_this_file_agrees_with_the_report_of_the_processor` compares the two, so
-a change that hides a table from one of them fails. The count moved four times, from six
-in #179 to thirteen in #39 to fifteen in #41 to sixteen in #285 to seventeen in #215. Two
-of the four moves followed a better walk rather than new code. Two followed new code:
-#246 added `SynAckTracker.prefixes` while Epic 3 was live, and #215 added
-`JA4TFingerprinter.connections`.
+a change that hides a table from one of them fails. The count moved five times, from six
+in #179 to thirteen in #39 to fifteen in #41 to sixteen in #285 to seventeen in #215 to
+eighteen in #772. Two
+of the first four moves followed a better walk rather than new code. Three followed new code:
+#246 added `SynAckTracker.prefixes` while Epic 3 was live, #215 added
+`JA4TFingerprinter.connections`, and #772 added `JA4Fingerprinter._tcp_hellos`.
 
 **This file stated sixteen until #453, and #215 moved the count without moving this
 file.** A count that a reader states in prose goes stale on the day the code moves.

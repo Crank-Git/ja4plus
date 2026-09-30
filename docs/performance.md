@@ -88,7 +88,7 @@ processor reads one capture. A processor shared across captures would carry the 
 an earlier capture into a later one.
 
 **The set is every capture under `tests/foxio_vectors/`.** #415 read the directory against
-`tests/foxio_vector_manifest.json`, and the two hold the same 38 names. The manifest is
+`tests/foxio_vector_manifest.json`, and the two hold the same 39 names. The manifest is
 therefore complete, and the two counts agree.
 
 | Host | Python | Commit | Captures | Packets | Fingerprints | Seconds | Packets per second |
@@ -147,6 +147,7 @@ must show.
 | `quic-tls-handshake.pcapng` | this laptop | 3.14.3 | `be91cc4` | 1 | 1 | 0.0005 | 2145 |
 | `quic-with-several-tls-frames.pcapng` | bigboy | 3.12.7 | `be91cc4` | 1 | 1 | 0.0006 | 1646 |
 | `quic-with-several-tls-frames.pcapng` | this laptop | 3.14.3 | `be91cc4` | 1 | 1 | 0.0004 | 2602 |
+| `sigalg-grease.pcapng` | this laptop | 3.14.7 | `3b1d609` | 37 | 7 | 0.0089 | 4134 |
 | `single-packets.pcap` | bigboy | 3.12.7 | `be91cc4` | 9 | 8 | 0.0072 | 1246 |
 | `single-packets.pcap` | this laptop | 3.14.3 | `be91cc4` | 9 | 8 | 0.0338 | 266 |
 | `socks-https-example.pcap` | bigboy | 3.12.7 | `be91cc4` | 93 | 24 | 0.0357 | 2606 |
@@ -183,6 +184,10 @@ must show.
 | `tls3.pcapng` | this laptop | 3.14.3 | `be91cc4` | 1189 | 77 | 0.3356 | 3543 |
 | `v6.pcap` | bigboy | 3.12.7 | `be91cc4` | 161 | 6 | 0.0462 | 3487 |
 | `v6.pcap` | this laptop | 3.14.3 | `be91cc4` | 161 | 6 | 0.0385 | 4185 |
+
+**#772 added `sigalg-grease.pcapng`, and its row stands on one host.** The laptop measured it
+with `python tests/throughput_run.py --captures sigalg-grease.pcapng`, at a load average of
+12.29. The two host rows of the table above cover the other 38 captures alone.
 
 ## What this page does not state
 

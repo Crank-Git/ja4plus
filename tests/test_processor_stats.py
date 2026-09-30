@@ -28,10 +28,10 @@ CAPTURE = "latest.pcapng"
 
 # The count of state tables the ten fingerprinters hold. #39 moved thirteen tables to
 # `BoundedStateTable`, #285 made `SynAckTracker.prefixes` the fourteenth, #215 made the
-# JA4T connection table the fifteenth, and the two reassemblers of JA4H and JA4X carry
-# their own bounds, so the report covers seventeen. The case below re-measures the count
+# JA4T connection table the fifteenth, and the three reassemblers of JA4H, JA4X and JA4 (#772) carry
+# their own bounds, so the report covers eighteen. The case below re-measures the count
 # rather than trusting this number.
-STATE_TABLE_COUNT = 17
+STATE_TABLE_COUNT = 18
 
 # The seconds a case waits for a thread. A case that hangs reports nothing, so every
 # wait states a limit.
@@ -329,7 +329,7 @@ class TestTheReturnedConnections:
 
 
 class TestTheReassembler:
-    """The two TCP reassemblers report the counts every state table reports."""
+    """The three TCP reassemblers report the counts every state table reports."""
 
     def test_the_reassembler_is_a_state_table(self):
         assert isinstance(TCPStreamReassembler(), StateTable)

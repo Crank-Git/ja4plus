@@ -41,7 +41,7 @@ result = fp.process_packet(packet)
 - `16` = 16 extensions (excluding GREASE, max 99)
 - `h2` = first and last character of first ALPN value (`00` if absent)
 - First hash = SHA-256 of sorted cipher suites, truncated to 12 hex chars
-- Second hash = SHA-256 of sorted extensions (excluding SNI/ALPN) + signature algorithms in original order
+- Second hash = SHA-256 of sorted extensions (excluding SNI/ALPN) + signature algorithms in original order (excluding GREASE)
 
 **Raw fingerprint** (unhashed, useful for debugging):
 

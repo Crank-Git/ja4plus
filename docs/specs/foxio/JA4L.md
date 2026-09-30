@@ -150,12 +150,12 @@ server SYN-ACK.
 the vector fallback, and it now states the reason rather than an open question. Two FoxIO
 implementations write three parts and two write two parts.
 
-The user decided on the conformance evidence. Every one of the 114 JA4L values in
+The user decided on the conformance evidence. Every one of the 116 JA4L values in
 `tests/foxio_vectors/*.json` holds two parts, and `tests/foxio_vectors/wireshark_expected/`
-holds 26 files, of which 15 carry a `ja4.ja4l` key. A three-part form deviates from all 114
+holds 26 files, of which 15 carry a `ja4.ja4l` key. A three-part form deviates from all 116
 comparisons, which moves the register from 116 entries to 230 and leaves no case that
-measures any JA4L value. **20 of the 114 sit on 10 captures that the Wireshark dissector
-publishes no JA4L value for**, so those 20 would carry a third part that no reference
+measures any JA4L value. **22 of the 116 sit on 11 captures that the Wireshark dissector
+publishes no JA4L value for**, so those 22 would carry a third part that no reference
 verifies.
 
 **#611 corrected the file count of the paragraph above on 2026-08-15, and this record
@@ -393,7 +393,7 @@ ja4plus JA4L-C on tests/foxio_vectors/https-connect.pcap          : 45_64
 Part a and part b agree. This project publishes no part c.
 
 **The Python reference and the Rust reference agree with this project**, and every one of
-the 114 JA4L values in `tests/foxio_vectors/*.json` holds two parts. **#225 settled this on
+the 116 JA4L values in `tests/foxio_vectors/*.json` holds two parts. **#225 settled this on
 2026-08-08: the two timing parts stay.** R4 holds the reason.
 
 **D2 — `ja4l.py:227` computes no distance for the VPN case the image works.**
@@ -554,7 +554,7 @@ PY
 Measured on 2026-08-08 at the pinned commit: `ja4.ja4l` reports 44 values in 15 files, and
 `ja4.ja4ls` reports 44 values in 15 files. Each key reports `{3: 44}`.
 
-**This repository already holds 114 JA4L values**, in `tests/foxio_vectors/*.json`, across 24
+**This repository already holds 116 JA4L values**, in `tests/foxio_vectors/*.json`, across 25
 captures. Reproduce that count from the root of this repository.
 
 ```bash

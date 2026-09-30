@@ -382,8 +382,8 @@ log the error inside the loop that reads it.
 reads no packet timestamp. The field holds `None`.
 
 `stats()` reports what the state tables hold, and #41 built it. One processor holds
-**seventeen** state tables across the ten fingerprinters: the fifteen `BoundedStateTable`
-instances and the two `TCPStreamReassembler` instances of JA4H and JA4X. A method that
+**eighteen** state tables across the ten fingerprinters: the fifteen `BoundedStateTable`
+instances and the three `TCPStreamReassembler` instances of JA4H, JA4X and JA4 (#772). A method that
 holds no state reports an empty `tables` list.
 
 | Field of `ProcessorStats` | Description |
@@ -435,8 +435,8 @@ one processor without that arrangement, and it guards a `reset` that runs beside
 
 #### The memory bound of the processor
 
-One processor holds seventeen state tables: fifteen `BoundedStateTable` instances and
-two `TCPStreamReassembler` instances. `features/03-concurrency-safety.md` states the maximum
+One processor holds eighteen state tables: fifteen `BoundedStateTable` instances and
+three `TCPStreamReassembler` instances. `features/03-concurrency-safety.md` states the maximum
 entry count and the maximum age of each one. A table that reaches its maximum entry count
 evicts the least recently used entry. A long capture can therefore evict a connection
 that later returns, and the fingerprint of a returned connection may be incomplete.
@@ -546,11 +546,11 @@ caller removed with `cleanup_connection` counts as a first sighting when it retu
 because the caller asked for that removal.
 
 A table remembers the keys it evicted, so that it can recognize a return. The memory
-holds the entry bound of its own table. The seventeen tables of one processor hold 57400
-remembered keys between them, at 187 bytes for one key, so the memory costs 10.2 MiB
+holds the entry bound of its own table. The eighteen tables of one processor hold 58400
+remembered keys between them, at 187 bytes for one key, so the memory costs 10.4 MiB
 when every table is full and every entry of every table has been replaced.
 
-Ten fingerprinters hold seventeen state tables between them. `JA4DFingerprinter` and
+Ten fingerprinters hold eighteen state tables between them. `JA4DFingerprinter` and
 `JA4D6Fingerprinter` hold none, and each reports an empty `tables` dict.
 
 `stats()` holds the lock of one fingerprinter across the read of that fingerprinter, so

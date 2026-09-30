@@ -54,20 +54,20 @@ from ja4plus.processor import Processor
 from ja4plus.utils.state_table import BoundedStateTable, StateTable
 from ja4plus.utils.tcp_stream import TCPStreamReassembler
 
-# The count of state tables one processor holds. The count moved four times, and each
+# The count of state tables one processor holds. The count moved five times, and each
 # move improved the way the project counts rather than the code: #179 read six, #39 read
 # thirteen, #41 read fifteen, and #43 re-measured fifteen. #285 re-measured it after the
 # merge of #246 and reads sixteen, because `SynAckTracker.prefixes` is now a
 # `BoundedStateTable`. #215 reads seventeen, because JA4T holds a connection table of
-# its own. The number is a literal, so a table that a later change adds fails this file
+# its own. #772 reads eighteen, because JA4 holds the partial hellos of TCP streams. The number is a literal, so a table that a later change adds fails this file
 # rather than passing it unread.
-STATE_TABLE_COUNT = 17
+STATE_TABLE_COUNT = 18
 
-# The count of those seventeen that are a `BoundedStateTable`. The other two are the
-# `TCPStreamReassembler` of JA4H and of JA4X. #41 made `TCPStreamReassembler` inherit
+# The count of those eighteen that are a `BoundedStateTable`. The other three are the
+# `TCPStreamReassembler` of JA4H, of JA4X and of JA4. #41 made `TCPStreamReassembler` inherit
 # `StateTable`, and each one keeps the two bounds it already held.
 BOUNDED_TABLE_COUNT = 15
-STREAM_TABLE_COUNT = 2
+STREAM_TABLE_COUNT = 3
 
 # The entry count each table holds while a case floods the processor. A small bound
 # saturates every table inside a few hundred connections, so the case stays cheap.
@@ -154,9 +154,10 @@ def walk_reassemblers(processor):
     """Return every `TCPStreamReassembler` of a processor, keyed by its path."""
     found = {}
     for name, fingerprinter in processor.fingerprinters.items():
-        reassembler = getattr(fingerprinter, "reassembler", None)
-        if isinstance(reassembler, TCPStreamReassembler):
-            found[f"{name}.reassembler"] = reassembler
+        for attribute in ("reassembler", "_tcp_hellos"):
+            reassembler = getattr(fingerprinter, attribute, None)
+            if isinstance(reassembler, TCPStreamReassembler):
+                found[f"{name}.{attribute}"] = reassembler
     return found
 
 

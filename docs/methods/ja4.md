@@ -21,8 +21,8 @@ fingerprint.
 <part a>_<cipher hash>_<extension hash>
 ```
 
-Part a holds ten characters. `ja4plus/fingerprinters/ja4.py:316` builds it, and
-`ja4plus/fingerprinters/ja4.py:231` joins the three parts.
+Part a holds ten characters. `ja4plus/fingerprinters/ja4.py:318` builds it, and
+`ja4plus/fingerprinters/ja4.py:233` joins the three parts.
 
 ## The parts
 
@@ -35,7 +35,7 @@ Part a holds ten characters. `ja4plus/fingerprinters/ja4.py:316` builds it, and
 | Extension count | 2 | The count of extensions, after the reader drops every GREASE value. It stops at `99`. |
 | ALPN | 2 | The first character and the last character of the first ALPN value, or `00` when the client offers none. |
 | Cipher hash | 12 | The hash of the sorted cipher list. |
-| Extension hash | 12 | The hash of the sorted extension list, with the signature algorithms appended. |
+| Extension hash | 12 | The hash of the sorted extension list, with the signature algorithms appended. The reader drops every GREASE value from the signature algorithms and keeps their wire order. |
 
 ## The hash rule
 

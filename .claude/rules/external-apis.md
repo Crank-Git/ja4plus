@@ -153,10 +153,12 @@ reader checks each one.
 5. The remaining sources hold one value between them.
 
 **Read fact 1 from the vectors, and not from the key form alone.** A value-form key
-states that the Python file holds a value, and on one row that statement is false.
-`gre-erspan-vxlan.pcap/0:65174/JA4T.1` carries the value form, the FoxIO Python file
-holds no JA4T value, and #215 declines the FoxIO Rust value `8192__0_0` rather than a
-Python one. The exception rests on a declined Python value, so it passes over that row.
+states that the Python file holds a value, and that statement can be false. Such a row
+declines the value of another source, and the exception passes over it, because the
+exception rests on a declined Python value. `gre-erspan-vxlan.pcap/0:65174/JA4T.1` was
+that row until #772. The FoxIO Python file holds no JA4T value, and #215 declined the
+FoxIO Rust value `8192__0_0`. The Rust snapshot at FoxIO commit `16b96d95` holds
+`8192_00_00_00`, which `ja4plus` writes, so #772 removed the row.
 
 **A capability decline bars the row.** The exception reaches a row only where the decline
 records a disagreement about the value. It does not reach a row whose decline records a
@@ -179,9 +181,11 @@ prose of its cause.** Read the field.
 values of #129 out of `SOURCE_VALUES`, so the exclusion enforced the bar a second time.
 No case could then read what the field does on the one issue the bar exists for. The
 table now holds all 35, measured against the pinned commit. With `capability` false on
-every #129 entry the reach rises from 6 rows to 25. The same flip on the earlier table
-moved nothing. The 16 JA4H rows of the 35 stay out under the disagreement bar, because
-the Rust value and the Wireshark value differ on each one.
+every #129 entry the reach rises from 6 rows to 41. The same flip on the earlier table
+moved nothing. **#772 read the table again at FoxIO `16b96d95`, and the flip reached 25
+rows before that read.** FoxIO `478359f3` moved the 16 Rust JA4H values, and each one now
+equals the Wireshark value. The disagreement bar therefore holds none of the 35, and the
+field alone bars all of them.
 
 **A disagreement between the remaining sources bars the row.** Where the remaining FoxIO
 sources hold different values, **no source holds the reference and the row stays declined
@@ -211,7 +215,7 @@ decides what the bar covers.
 reference value, and adoption is its own ruling. "Which baselines are usable as
 vectors" in `docs/specs/foxio/zeek.md` holds that ruling for the Zeek package.
 
-**The exception reaches 6 rows of the 138 the register holds.**
+**The exception reaches 6 rows of the 137 the register holds.**
 `tests/test_precedence_exception.py` measures the reach and both counts, and #334 records
 the search. A case reads this sentence, so a register move fails the gate here.
 
