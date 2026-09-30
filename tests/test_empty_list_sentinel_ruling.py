@@ -68,7 +68,7 @@ MEASURED_SENTINEL_FILES = {
 # cites all three, so a line that moves fails a case here and the row stays true.
 SENTINEL_LINES = (
     ("ja4plus/fingerprinters/ja4.py", 202, 'cipher_hash = "000000000000"'),
-    ("ja4plus/fingerprinters/ja4.py", 229, 'ext_hash = "000000000000"'),
+    ("ja4plus/fingerprinters/ja4.py", 231, 'ext_hash = "000000000000"'),
     ("ja4plus/fingerprinters/ja4s.py", 303, 'extensions_hash = "000000000000"'),
 )
 
