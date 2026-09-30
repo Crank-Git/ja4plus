@@ -224,9 +224,12 @@ the search. A case reads this sentence, so a register move fails the gate here.
 | `ssh2.pcapng/33:51810/JA4L-S.1` | #225 | Wireshark alone |
 | `tls3.pcapng/25:61884/JA4L-S.1` | #225 | Wireshark alone |
 
-**`FoxIO-LLC/ja4tscan` holds prose and no baseline.** Its `README.md` gives eight
-JA4TScan example values against named operating systems, and two of them record TCP
-option kind 0 inside the JA4T option list. #197 owns the scope ruling.
+**`FoxIO-LLC/ja4tscan` holds source code and no baseline.** Its `README.md` gives eight
+JA4TScan example values against named operating systems, and one of them records TCP
+option kind 0 twice inside the option list. **`module_ja4tscan.c` is the normative
+source**, and the maintainer named it so on 2026-09-30, in #775. Three of the eight
+values do not fit that module. `docs/specs/foxio/JA4TScan.md` holds the transcription and
+the measurement.
 
 **Warning: FoxIO states that `FoxIO-LLC/ja4-nginx-module` is not correct.** Its
 `README.md` opens with a `# NOTICE` section that reads "This version of JA4 has known

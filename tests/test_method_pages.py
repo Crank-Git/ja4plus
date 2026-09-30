@@ -45,15 +45,15 @@ FOXIO_INVENTORY = DOCS_DIR / "specs" / "foxio" / "README.md"
 SCHEMA_PAGE = DOCS_DIR / "output-schema.md"
 MIGRATION_PAGE = DOCS_DIR / "migration-0.6-to-1.0.md"
 
-# The one FoxIO method this project declines. `docs/specs/spec.md` § Non-goals holds the
-# ruling and #197 holds the reading. It reaches no method page, and
-# `docs/methods/index.md` states the decline.
-DECLINED_METHOD = "JA4TScan"
+# The one method that sends packets. #197 declined it, and the maintainer reversed the
+# decline on 2026-09-30, in #775. It reaches no method page until #776 builds the scanner
+# and writes the page, and `docs/methods/index.md` states why it stands apart.
+SCANNER_METHOD = "JA4TScan"
 
 # The eleven methods a page describes. Ten fingerprinter classes carry them, because
 # `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`. #387 records the counting
 # error that reads a count of classes as a count of methods.
-IMPLEMENTED_METHODS = tuple(name for name in FOXIO_METHODS if name != DECLINED_METHOD)
+IMPLEMENTED_METHODS = tuple(name for name in FOXIO_METHODS if name != SCANNER_METHOD)
 
 # Nine cases parametrize over the tuple above, and pytest reads it at collection time. A
 # tuple that shrank would collect fewer cases rather than fail one, which reads as a green
@@ -62,8 +62,8 @@ assert len(IMPLEMENTED_METHODS) == 11, (
     f"the case file parametrizes over {len(IMPLEMENTED_METHODS)} methods, and this "
     f"project implements eleven"
 )
-assert DECLINED_METHOD in FOXIO_METHODS, (
-    f"{DECLINED_METHOD} left FOXIO_METHODS, so the tuple above declines nothing"
+assert SCANNER_METHOD in FOXIO_METHODS, (
+    f"{SCANNER_METHOD} left FOXIO_METHODS, so the tuple above excludes nothing"
 )
 
 # The heading of the table that holds the machine-read facts of one page.
@@ -387,10 +387,10 @@ def test_the_documentation_holds_one_page_for_each_implemented_method() -> None:
     )
 
 
-def test_the_documentation_holds_no_page_for_the_declined_method() -> None:
-    """The site serves no method page for JA4TScan, which this project does not build."""
-    assert not _page(DECLINED_METHOD).exists(), (
-        f"{_page(DECLINED_METHOD).name} exists, and this project builds no {DECLINED_METHOD}"
+def test_the_documentation_holds_no_page_for_the_scanner_before_it_lands() -> None:
+    """The site serves no JA4TScan page until #776 builds the scanner and moves this case."""
+    assert not _page(SCANNER_METHOD).exists(), (
+        f"{_page(SCANNER_METHOD).name} exists, so #776 moves this case with the page"
     )
 
 
@@ -522,13 +522,14 @@ def test_the_example_of_each_method_page_comes_from_the_capture_it_names(method:
         )
 
 
-def test_the_index_of_the_methods_states_the_decline_of_the_one_method_not_built() -> None:
-    """`docs/methods/index.md` records the JA4TScan decline, so a reader finds the reason."""
+def test_the_index_of_the_methods_states_why_the_scanner_stands_apart() -> None:
+    """`docs/methods/index.md` records the JA4TScan reversal, so a reader finds the command."""
     index = METHODS_DIR / "index.md"
     assert index.is_file(), "docs/methods/index.md does not exist"
     text = index.read_text(encoding="utf-8")
-    assert DECLINED_METHOD in text, f"the index names no {DECLINED_METHOD}"
-    assert "#197" in text, "the index cites no issue for the decline"
+    assert SCANNER_METHOD in text, f"the index names no {SCANNER_METHOD}"
+    assert "#775" in text, "the index cites no issue for the reversal"
+    assert "`ja4plus scan`" in text, "the index names no command for the scanner"
 
 
 @pytest.mark.parametrize("method", FOXIO_METHODS)

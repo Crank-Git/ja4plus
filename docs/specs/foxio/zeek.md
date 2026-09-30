@@ -670,9 +670,17 @@ SYN packet to a target to read a server fingerprint.
 
 **It holds prose worth reading and it holds no baseline.** `README.md` gives eight
 JA4TScan example values against named operating systems, and those values carry the JA4T
-option list. Two of them record TCP option kind 0 inside the list, which corroborates the
-`ja4plus` rule. #197 owns the JA4TScan scope ruling, and `Non-goals` in
-`docs/specs/spec.md` records the decline.
+option list. One of them, the Mac OSX value, records TCP option kind 0 twice inside the
+list, which corroborates the `ja4plus` rule. **`module_ja4tscan.c` of the same repository
+writes one `0` for that list**, and S6 of `docs/specs/foxio/JA4TScan.md` measures it. The
+maintainer reversed the JA4TScan decline of #197 on 2026-09-30, in #775, and
+`docs/specs/foxio/JA4TScan.md` transcribes the repository.
+
+The superseded text is quoted below rather than rewritten.
+
+> option list. Two of them record TCP option kind 0 inside the list, which corroborates the
+> `ja4plus` rule. #197 owns the JA4TScan scope ruling, and `Non-goals` in
+> `docs/specs/spec.md` records the decline.
 
 ### `FoxIO-LLC/ja4-nginx-module`
 

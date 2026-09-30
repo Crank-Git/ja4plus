@@ -81,6 +81,7 @@ transcription and names the two sources that name JA4LS as a separate method.
 | JA4D and JA4D6 | `docs/specs/foxio/JA4D.md` | Complete. #204. One page transcribes the two images |
 | JA4X | `docs/specs/foxio/JA4X.md` | Complete. #202. The page also answers the tunnel question the register raises. |
 | The seven deleted text files | `docs/specs/foxio/deleted-text-specifications.md` | Complete. #221. It transcribes no image and it reconciles the deleted prose |
+| JA4TScan | `docs/specs/foxio/JA4TScan.md` | Complete. #775. The page reads `FoxIO-LLC/ja4tscan` at its own pinned commit, because JA4TScan holds no image. It measures each rule by compiling the cited lines. |
 
 ## A deleted text specification corroborates, and it never outranks the image
 

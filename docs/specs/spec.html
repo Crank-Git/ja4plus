@@ -161,7 +161,10 @@ and 9 make the documentation true and publish version 1.0.0.</p>
 
 <h3>Non-goals</h3>
 <ul>
-  <li><strong>JA4TScan.</strong> It is an active scanner and this project reads traffic only.</li>
+  <li><strong>A change of firewall state.</strong> The JA4TScan scanner states the rule the
+    operator adds, and the library never adds it. The maintainer reversed the JA4TScan
+    decline on 2026-09-30, in #775. The superseded item read: <q>JA4TScan. It is an active
+    scanner and this project reads traffic only.</q></li>
   <li><strong>Windows live capture.</strong> The monitor targets Linux and macOS.</li>
   <li><strong>A fingerprint database service.</strong> The project reads FoxIO's mapping file.</li>
   <li><strong>A throughput target.</strong> The project measures and reports; it sets no number.</li>
@@ -434,7 +437,9 @@ may not render in an iframe.</p>
   Epic 8 corrects the README's coverage claim instead. Round 3 recorded this as a
   permanent non-goal on 2026-08-06. <strong>The user restated it on 2026-08-08 as a
   decline that is reversible</strong>, and <code>Non-goals</code> in
-  <code>docs/specs/spec.md</code> holds the later form. #197 holds the reading.</p>
+  <code>docs/specs/spec.md</code> holds the later form. #197 holds the reading.
+  <strong>The maintainer reversed the decline on 2026-09-30, in #775</strong>, and
+  <code>docs/specs/features/12-active-scan.md</code> holds the design that replaces it.</p>
   <p><strong><code>dev</code> becomes the GitHub default branch.</strong> A pull request
   then opens against <code>dev</code> with no manual step. <code>master</code> stays the
   release branch and is protected. Epic 0 makes both changes.</p>

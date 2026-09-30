@@ -42,9 +42,10 @@ BOUNDS_HEADING = "#### The default bounds"
 # The heading of the paragraph that states whether threads may share one processor.
 CONCURRENCY_HEADING = "#### The concurrency contract"
 
-# The one method FoxIO publishes that this project declines. `docs/specs/spec.md`
-# § Non-goals holds the ruling and #197 holds the reading.
-DECLINED_METHOD = "JA4TScan"
+# The one method that sends packets. #197 declined it on 2026-08-08, and the maintainer
+# reversed the decline on 2026-09-30, in #775. #776 builds it as `ja4plus scan`, and the
+# README marks it unbuilt until then.
+SCANNER_METHOD = "JA4TScan"
 
 # The claim #62 removes. The project implements eleven of the twelve FoxIO methods, so a
 # claim of full coverage is false whatever count it names and whatever words it uses.
@@ -213,17 +214,20 @@ def test_the_readme_method_table_names_only_methods_foxio_publishes() -> None:
     assert extra == [], f"the method table names {extra}, which FoxIO does not publish"
 
 
-def test_the_readme_method_table_marks_ja4tscan_as_not_implemented() -> None:
-    """The README marks JA4TScan as the one FoxIO method this project does not build."""
-    row = _method_rows()[DECLINED_METHOD]
+def test_the_readme_method_table_names_the_issue_that_builds_ja4tscan() -> None:
+    """The README JA4TScan row marks the method unbuilt and names #776 and `ja4plus scan`."""
+    row = _method_rows()[SCANNER_METHOD]
     assert _implemented_cell(row) == "No", (
-        f"the {DECLINED_METHOD} row states {_implemented_cell(row)!r}, and it must state 'No'"
+        f"the {SCANNER_METHOD} row states {_implemented_cell(row)!r}, and #776 moves it to 'Yes'"
     )
+    text = " ".join(row)
+    assert "#776" in text, f"the {SCANNER_METHOD} row names no issue that builds it"
+    assert "`ja4plus scan`" in text, f"the {SCANNER_METHOD} row names no command"
 
 
-@pytest.mark.parametrize("method", [name for name in FOXIO_METHODS if name != DECLINED_METHOD])
+@pytest.mark.parametrize("method", [name for name in FOXIO_METHODS if name != SCANNER_METHOD])
 def test_the_readme_method_table_marks_every_other_method_implemented(method: str) -> None:
-    """The README marks the eleven methods this project builds as implemented."""
+    """The README marks the eleven passive methods this project builds as implemented."""
     row = _method_rows()[method]
     assert _implemented_cell(row) == "Yes", (
         f"the {method} row states {_implemented_cell(row)!r}, and it must state 'Yes'"
