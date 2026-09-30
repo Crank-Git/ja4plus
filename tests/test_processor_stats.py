@@ -329,7 +329,7 @@ class TestTheReturnedConnections:
 
 
 class TestTheReassembler:
-    """The two TCP reassemblers report the counts every state table reports."""
+    """The three TCP reassemblers report the counts every state table reports."""
 
     def test_the_reassembler_is_a_state_table(self):
         assert isinstance(TCPStreamReassembler(), StateTable)
