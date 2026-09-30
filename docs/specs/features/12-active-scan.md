@@ -32,11 +32,11 @@ The maintainer ruled on two questions on 2026-09-30.
 ## User stories
 
 - As a scan operator, I want one JA4TScan value for each host I name, so that I can
-  compare it against values another tool wrote.
-- As a scan operator, I want the scanner to tell me the firewall rule it needs, so that I
-  decide what changes on my host.
-- As a capture analyst, I want the passive methods to stay unable to send a packet, so that
-  reading a capture never reaches a network.
+  compare it with another tool.
+- As a scan operator, I want the scanner to state the firewall rule it needs, so that I
+  decide the change.
+- As a capture analyst, I want the passive methods unable to send a packet, so that a
+  capture read reaches no network.
 
 ## Functional requirements
 
@@ -76,7 +76,8 @@ FR-active-scan-13 — `--port` sets the one TCP port the scanner sends to, and t
 is 80.
 
 FR-active-scan-14 — The scanner accepts one IPv4 address, one IPv4 network in CIDR form,
-or the path of a file that holds one address on each line.
+or a file of addresses, one on each line. Open question 3 decides
+whether it accepts an IPv6 address.
 
 FR-active-scan-15 — The scanner reads a response only where it answers the SYN, under the
 acknowledgment rule of S4 of `docs/specs/foxio/JA4TScan.md`.

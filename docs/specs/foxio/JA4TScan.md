@@ -145,7 +145,7 @@ sends other options therefore reads another part b from the same server.
 `ja4tscan/module_ja4tscan.c:310` tests for an absent entry and reads no flag. A RST that
 arrives first therefore sets part a to part d, and S12 measures the result.
 
-**zmap passes a response to the module only where it answers the SYN.**
+**The module accepts a response only where it answers the SYN.**
 `ja4tscan/module_ja4tscan.c:250-262` requires an acknowledgment number of the sequence
 number plus one. A RST may also carry the sequence number itself.
 
