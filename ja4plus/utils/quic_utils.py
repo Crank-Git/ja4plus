@@ -329,11 +329,15 @@ def reassemble_crypto_fragments(fragments: Iterable[tuple[int, bytes]]) -> bytes
     if not by_offset:
         return b""
 
-    sorted_frags = sorted(by_offset.items())
-    total_len = max(off + len(data) for off, data in sorted_frags)
-    buf = bytearray(total_len)
-    for off, data in sorted_frags:
-        buf[off : off + len(data)] = data
+    # The reader returns the bytes from offset zero up to the first unreceived byte. A
+    # buffer that reached the highest offset held each gap as zero bytes, and a length
+    # check reads those as received. #762 measured a ClientHello whose tail arrived
+    # before its middle: the TLS reader parsed the zero bytes and produced a wrong JA4.
+    buf = bytearray()
+    for off, data in sorted(by_offset.items()):
+        if off > len(buf):
+            break
+        buf.extend(data[len(buf) - off :])
     return bytes(buf)
 
 

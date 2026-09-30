@@ -52,8 +52,15 @@ def test_the_reassembler_keeps_the_real_fragment_beside_a_hostile_one():
 
 
 def test_the_reassembler_allocates_no_more_than_the_limit():
-    """The buffer never passes `MAXIMUM_CRYPTO_BUFFER_BYTES`."""
-    fragments = [(MAXIMUM_CRYPTO_BUFFER_BYTES - 1, b"x")]
+    """The buffer never passes `MAXIMUM_CRYPTO_BUFFER_BYTES`.
+
+    The reader returns no byte past a gap, so the fragments cover every offset. #762
+    records that change.
+    """
+    fragments = [
+        (0, bytes(MAXIMUM_CRYPTO_BUFFER_BYTES - 1)),
+        (MAXIMUM_CRYPTO_BUFFER_BYTES - 1, b"x"),
+    ]
     assert len(reassemble_crypto_fragments(fragments)) == MAXIMUM_CRYPTO_BUFFER_BYTES
 
 
