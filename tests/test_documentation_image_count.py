@@ -578,11 +578,12 @@ def test_the_conformance_interface_table_names_every_foxio_method(method: str) -
     assert method in names, f"the table names no row for {method}"
 
 
-def test_the_conformance_feature_states_the_ja4tscan_decline() -> None:
-    """The `Out of scope` section records the JA4TScan decline, not an open question."""
+def test_the_conformance_feature_states_the_ja4tscan_reversal() -> None:
+    """The `Out of scope` section records the reversal of 2026-09-30 and names the feature."""
     out_of_scope = _section(CONFORMANCE_FEATURE.read_text(encoding="utf-8"), "## Out of scope")
     ja4tscan = _bullet(out_of_scope, "JA4TScan")
     assert ja4tscan, "the section names no JA4TScan bullet"
     text = "\n".join(ja4tscan)
     assert "open question" not in text, "the bullet still calls JA4TScan an open question"
-    assert "#197" in text, "the bullet cites no issue for the decline"
+    assert "#775" in text, "the bullet cites no issue for the reversal"
+    assert "12-active-scan.md" in text, "the bullet names no feature page for the scanner"

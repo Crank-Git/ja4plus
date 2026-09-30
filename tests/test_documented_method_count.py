@@ -77,7 +77,7 @@ import ja4plus
 from ja4plus import __all__ as PUBLIC_NAMES
 
 from tests.test_documentation_image_count import FOXIO_METHODS
-from tests.test_readme_contracts import COUNT_WORDS, DECLINED_METHOD
+from tests.test_readme_contracts import COUNT_WORDS, SCANNER_METHOD
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -568,11 +568,15 @@ def test_every_generator_of_the_public_interface_names_a_foxio_method() -> None:
     assert extra == [], f"the reader derives {extra}, which FoxIO does not publish"
 
 
-def test_the_package_implements_every_foxio_method_but_the_declined_one() -> None:
-    """The package implements every FoxIO method except the one it declines."""
+def test_the_passive_interface_implements_every_foxio_method_but_the_scanner() -> None:
+    """`__all__` carries a generator for every FoxIO method except JA4TScan.
+
+    `ja4plus.scan` holds JA4TScan apart from the passive interface, under the ruling of
+    2026-09-30 in #775, so no generator of `__all__` writes it.
+    """
     absent = sorted(set(FOXIO_METHODS) - implemented_methods())
-    assert absent == [DECLINED_METHOD], (
-        f"the package implements every method but {absent}, and it declines {DECLINED_METHOD} alone"
+    assert absent == [SCANNER_METHOD], (
+        f"the passive interface lacks {absent}, and it lacks {SCANNER_METHOD} alone"
     )
 
 

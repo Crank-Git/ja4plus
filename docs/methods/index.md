@@ -23,7 +23,7 @@ the standard itself, read the
 | JA4SSH | SSH | [The SSH session fingerprint](ja4ssh.md) | Yes |
 | JA4T | TCP | [The TCP client fingerprint](ja4t.md) | Yes |
 | JA4TS | TCP | [The TCP server fingerprint](ja4ts.md) | Yes |
-| JA4TScan | TCP | No page. Read the decline below. | No |
+| JA4TScan | TCP | No page yet. Read the section below. | No. #776 builds it |
 | JA4D | DHCPv4 | [The DHCPv4 fingerprint](ja4d.md) | Yes |
 | JA4D6 | DHCPv6 | [The DHCPv6 fingerprint](ja4d6.md) | Yes |
 
@@ -40,15 +40,24 @@ under parity rule 2.
 **Read the ten as a count of fingerprinter classes, and never as a count of methods.**
 #387 records the three documents that made that mistake.
 
-## Why this project builds no JA4TScan
+## Why JA4TScan stands apart from the other methods
 
-**This project declines JA4TScan by ruling, and the absence is no omission.** JA4TScan
-sends crafted packets to a host the operator names, and it reads the responses. Every
-other method reads traffic that already exists, so JA4TScan reaches a network the
-operator did not capture. That capability is larger than fingerprint production.
+**JA4TScan sends packets, and every other method reads traffic that already exists.**
+JA4TScan sends one TCP SYN to each host the operator names, and it reads the responses.
+#776 builds it as the `ja4plus scan` subcommand, in the `ja4plus.scan` module. No
+fingerprinter of this table can send a packet.
 
-`docs/specs/spec.md` holds the ruling under `Non-goals`, and #197 holds the reading.
-The ruling is reversible.
+The maintainer reversed the decline of 2026-08-08 on 2026-09-30, in #775.
+`docs/specs/features/12-active-scan.md` holds the design, and #776 writes the page of the
+method. The superseded text is quoted below rather than rewritten.
+
+> **This project declines JA4TScan by ruling, and the absence is no omission.** JA4TScan
+> sends crafted packets to a host the operator names, and it reads the responses. Every
+> other method reads traffic that already exists, so JA4TScan reaches a network the
+> operator did not capture. That capability is larger than fingerprint production.
+>
+> `docs/specs/spec.md` holds the ruling under `Non-goals`, and #197 holds the reading.
+> The ruling is reversible.
 
 ## What a fingerprint is evidence of
 

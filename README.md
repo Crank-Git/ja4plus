@@ -5,8 +5,9 @@ TCP, HTTP, SSH and DHCP traffic, and it reads an X.509 certificate. It supports 
 IPv4, IPv6 and multi-segment TCP reassembly.
 
 **FoxIO publishes twelve JA4+ methods, and this project implements eleven of them.** The
-twelfth is JA4TScan. `Methods` below names each method, and it states whether this
-project builds it.
+twelfth is JA4TScan, which sends packets, and #776 builds it as the `ja4plus scan`
+subcommand. `Methods` below names each method, and it states whether this project builds
+it.
 
 FoxIO owns the JA4+ standard, and [FoxIO](https://foxio.io) publishes it. This library is
 an independent implementation of that standard. FoxIO wrote no part of it. For the
@@ -35,16 +36,18 @@ The `Implemented` column states whether this project builds the method.
 | JA4SSH | SSH | Session type classification from traffic patterns | Yes |
 | JA4T | TCP | Client OS fingerprint from SYN packets | Yes |
 | JA4TS | TCP | Server fingerprint from SYN-ACK packets | Yes |
-| JA4TScan | TCP | Active TCP fingerprint scanner | No |
+| JA4TScan | TCP | Active TCP fingerprint scanner. #776 builds `ja4plus scan` | No |
 | JA4D | DHCPv4 | DHCP client/server fingerprint (FoxIO PR #267/#270) | Yes |
 | JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint (FoxIO PR #267/#270) | Yes |
 
-**JA4TScan is declined by ruling, and it is not an omission.** It sends crafted packets
-to a host the operator names and reads the responses. Every other method reads traffic
-that already exists, so JA4TScan reaches a network the operator did not capture. That
-capability is larger than fingerprint production.
-[`docs/specs/spec.md`](docs/specs/spec.md) holds the ruling under `Non-goals`, and the
-ruling is reversible.
+**JA4TScan sends packets, so this project keeps it apart from the other eleven.** It
+sends one TCP SYN to each host the operator names and reads the responses. The maintainer
+reversed the decline of 2026-08-08 on 2026-09-30, in #775, and #776 builds the scanner.
+The scanner installs with `pip install ja4plus[scan]` and runs as `ja4plus scan`. The
+`ja4plus.scan` module holds it, and no passive fingerprinter can send a packet. The
+scanner changes no firewall state, and it states the rule the operator adds.
+[`docs/specs/features/12-active-scan.md`](docs/specs/features/12-active-scan.md) holds the
+design.
 
 `JA4LFingerprinter` builds both JA4L and JA4LS, so ten fingerprinters carry eleven
 methods. `--types ja4l` names the two together, and `--types ja4ls` names JA4LS alone.
