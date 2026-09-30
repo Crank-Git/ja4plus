@@ -12,11 +12,20 @@ import json
 import urllib.request
 from pathlib import Path
 
-# The upstream commit that supplies every vector. A vector set that mixes commits
-# cannot be reproduced, so the whole set moves together.
-FOXIO_COMMIT = "27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8"
+# The upstream commit that supplies every vector except the Zeek baselines. A vector set
+# that mixes commits cannot be reproduced, so every source that exists at this commit
+# moves with it.
+FOXIO_COMMIT = "16b96d95c220762cf658f67d678cda2aac95c81e"
 FOXIO_REPO = "https://github.com/FoxIO-LLC/ja4"
 FOXIO_RAW = f"https://raw.githubusercontent.com/FoxIO-LLC/ja4/{FOXIO_COMMIT}"
+
+# The upstream commit that supplies the Zeek baselines. FoxIO commit `4e91886c` replaced
+# the Zeek scripts with a plugin and removed `zeek/tests/Traces/`, so `FOXIO_COMMIT` holds
+# none of the seven baselines. #772 kept them at the earlier pin. A move to the new
+# `zeek/testing/Baseline/` directory reads a different implementation, and
+# `docs/specs/foxio/zeek.md` holds the ruling on which baseline is usable as a vector.
+ZEEK_COMMIT = "27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8"
+ZEEK_RAW = f"https://raw.githubusercontent.com/FoxIO-LLC/ja4/{ZEEK_COMMIT}"
 
 PCAP_DIR = "pcap"
 EXPECTED_DIR = "python/test/testdata"
@@ -52,6 +61,7 @@ CAPTURES = [
     "macos_tcp_flags.pcap",
     "quic-tls-handshake.pcapng",
     "quic-with-several-tls-frames.pcapng",
+    "sigalg-grease.pcapng",
     "single-packets.pcap",
     "socks-https-example.pcap",
     "socks4-https.pcap",
@@ -119,6 +129,9 @@ WIRESHARK_CAPTURES = [
 # `gre-erspan-vxlan.pcap` is here for a fourth reason. The FoxIO Python implementation
 # writes no JA4T value for any capture, so its snapshot holds the one local JA4T value
 # that reaches D1 of `docs/specs/foxio/JA4T.md`. #242 added it.
+#
+# `sigalg-grease.pcapng` is here for the same reason. Its snapshot holds the JA4T value
+# of the capture, and the FoxIO Python implementation writes none. #772 added it.
 RUST_CAPTURES = [
     "browsers-x509.pcapng",
     "chrome-cloudflare-quic-with-secrets.pcapng",
@@ -127,6 +140,7 @@ RUST_CAPTURES = [
     "latest.pcapng",
     "quic-tls-handshake.pcapng",
     "quic-with-several-tls-frames.pcapng",
+    "sigalg-grease.pcapng",
     "ssh2.pcapng",
     "tls-handshake.pcapng",
     "tls-sni.pcapng",
@@ -232,7 +246,13 @@ writes no JA4T value for any capture, so its snapshot holds the one local JA4T v
 that reaches D1 of `docs/specs/foxio/JA4T.md`. The two references name that stream by
 different addresses, and issue #242 records the pair.
 
-The subdirectory `zeek_expected/` holds {zeek_count} btest baselines:
+`sigalg-grease.pcapng` is here for the same reason. Its snapshot holds the JA4T value
+of the capture, and the FoxIO Python implementation writes none. Issue #772 added it.
+
+The subdirectory `zeek_expected/` holds {zeek_count} btest baselines. They come from
+the commit below, because the commit above holds no `{zeek_dir}`:
+
+    {zeek_commit}
 
     {zeek_dir}/<directory>/<log>
         ->  tests/foxio_vectors/zeek_expected/<directory>/<log>
@@ -259,7 +279,11 @@ and `tests/build_alpn_condition_capture.py` writes it. The FoxIO vector set hold
 capture that separates the JA4 ALPN rules, so #141 built one.
 
 `alpn-condition.pcap.json` holds a measurement, not a copy. It records what the FoxIO
-Python implementation writes for the capture at the commit above. The FoxIO Rust
+Python implementation writes for the capture at the commit below, which was the pin of
+this directory when #141 measured it:
+
+    {zeek_commit}
+ The FoxIO Rust
 implementation writes the same two JA4 values. `docs/implementation_notes.md` holds
 both commands and their output.
 
@@ -373,7 +397,7 @@ def download() -> None:
 
     for directory, log_name in ZEEK_BASELINES:
         print(f"zeek_expected/{directory}/{log_name}")
-        baseline = _fetch(f"{FOXIO_RAW}/{ZEEK_EXPECTED_DIR}/{directory}/{log_name}")
+        baseline = _fetch(f"{ZEEK_RAW}/{ZEEK_EXPECTED_DIR}/{directory}/{log_name}")
         # A baseline with no `#fields` line names no column, so every reader of it
         # returns nothing and the comparison reports a pass on nothing. A baseline with
         # no data row compares no value for the same reason.
@@ -399,6 +423,7 @@ def download() -> None:
             rust_count=len(RUST_CAPTURES),
             rust_captures="\n".join("    {}".format(name) for name in RUST_CAPTURES),
             zeek_dir=ZEEK_EXPECTED_DIR,
+            zeek_commit=ZEEK_COMMIT,
             zeek_count=len(ZEEK_BASELINES),
             zeek_baselines="\n".join(
                 "    {}/{}".format(directory, log_name) for directory, log_name in ZEEK_BASELINES

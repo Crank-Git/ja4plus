@@ -153,10 +153,12 @@ reader checks each one.
 5. The remaining sources hold one value between them.
 
 **Read fact 1 from the vectors, and not from the key form alone.** A value-form key
-states that the Python file holds a value, and on one row that statement is false.
-`gre-erspan-vxlan.pcap/0:65174/JA4T.1` carries the value form, the FoxIO Python file
-holds no JA4T value, and #215 declines the FoxIO Rust value `8192__0_0` rather than a
-Python one. The exception rests on a declined Python value, so it passes over that row.
+states that the Python file holds a value, and that statement can be false. Such a row
+declines the value of another source, and the exception passes over it, because the
+exception rests on a declined Python value. `gre-erspan-vxlan.pcap/0:65174/JA4T.1` was
+that row until #772. The FoxIO Python file holds no JA4T value, and #215 declined the
+FoxIO Rust value `8192__0_0`. The Rust snapshot at FoxIO commit `16b96d95` holds
+`8192_00_00_00`, which `ja4plus` writes, so #772 removed the row.
 
 **A capability decline bars the row.** The exception reaches a row only where the decline
 records a disagreement about the value. It does not reach a row whose decline records a
@@ -211,7 +213,7 @@ decides what the bar covers.
 reference value, and adoption is its own ruling. "Which baselines are usable as
 vectors" in `docs/specs/foxio/zeek.md` holds that ruling for the Zeek package.
 
-**The exception reaches 6 rows of the 138 the register holds.**
+**The exception reaches 6 rows of the 137 the register holds.**
 `tests/test_precedence_exception.py` measures the reach and both counts, and #334 records
 the search. A case reads this sentence, so a register move fails the gate here.
 

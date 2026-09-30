@@ -88,11 +88,12 @@ and under the restored defect. These are the seven moves.
 
 **The conformance value comparison reads the one source that frames nothing.** A per-frame
 comparison is possible only where a source states the frame, and #736 read all four.
+#772 added `sigalg-grease.pcapng`, and the first two counts below include it.
 
 | Source | States a frame | Values |
 |---|---|---|
-| FoxIO Python expected output, `tests/foxio_vectors/*.json` | No | 1203 |
-| FoxIO Rust snapshots, `tests/foxio_vectors/rust_expected/*.snap` | No | 460 |
+| FoxIO Python expected output, `tests/foxio_vectors/*.json` | No | 1211 |
+| FoxIO Rust snapshots, `tests/foxio_vectors/rust_expected/*.snap` | No | 465 |
 | Zeek baselines, `tests/foxio_vectors/zeek_expected/` | No | 7 baselines |
 | FoxIO Wireshark dissector, `tests/foxio_vectors/wireshark_expected/*.json` | Yes, `frame.number` | 724 |
 
@@ -101,7 +102,7 @@ comparison is possible only where a source states the frame, and #736 read all f
 names one of them. **The dissector frames every value it writes**, and #736 measured 724
 framed values and none unframed across 26 files.
 
-**The conformance suite builds all 1203 of its value cases from the first source.** No case
+**The conformance suite builds all 1211 of its value cases from the first source.** No case
 of the suite can read a frame, because the source it reads states none.
 
 ### Why the suite compares no frame

@@ -1533,7 +1533,7 @@ class TestTheJa4hValuesTheRustSnapshotHolds:
     """
 
     def test_the_local_snapshots_hold_the_six_values_the_reading_counts(self):
-        """A sweep under #638 counts 6 JA4H values in the eleven local snapshots.
+        """A sweep under #638 counts 6 JA4H values in the twelve local snapshots.
 
         A snapshot that leaves the repository takes its cases away, and the suite still
         reports green. This check makes that loss as loud as a mismatch.
@@ -1649,7 +1649,7 @@ class TestTheJa4hValuesTheRustSnapshotHolds:
         ]
         assert not holders, "\n".join(holders)
         # Without this check, an empty snapshot directory would pass the check above.
-        assert len(list(RUST_DIR.glob("*.snap"))) == 11
+        assert len(list(RUST_DIR.glob("*.snap"))) == 12
 
 
 @pytest.mark.spec_validation
@@ -1663,23 +1663,24 @@ class TestTheQuicStreamTheRegisterDeclines:
     `.claude/rules/external-apis.md` states that no implementation change closes such a
     difference.
 
-    The two FoxIO references disagree on the value as well, and
-    `.claude/rules/external-apis.md` gives the stream to `python/test/testdata/` where
-    both hold one. The Rust value is therefore no reference value here. This class
-    records all three readings as measurements, so a reader takes none of them from
-    prose.
+    The two FoxIO references disagreed on the value at the earlier pin, and they agree
+    at the pin `16b96d95`. `.claude/rules/external-apis.md` gives the stream to
+    `python/test/testdata/` where both hold one, so the Python value stays the reference
+    value here. This class records all three readings as measurements, so a reader takes
+    none of them from prose.
     """
 
     QUIC_CAPTURE = "chrome-cloudflare-quic-with-secrets.pcapng"
 
-    def test_the_two_foxio_references_hold_different_ja4h_values(self):
-        """The disagreement is a measurement, and a vector refresh that ends it fails here.
+    def test_the_two_foxio_references_hold_one_ja4h_value(self):
+        """The agreement is a measurement, and a vector refresh that ends it fails here.
 
-        The Rust value reads 16 headers and the Python value reads 12, in part a of the
-        fingerprint. Both hold the zero sentinel in part c and in part d.
+        The Rust value read 16 headers at the earlier pin, and the Python value reads 12.
+        FoxIO commit `478359f3` removed the HTTP/2 pseudo-headers from the Rust value, so
+        the snapshot at the pin `16b96d95` reads 12 as well. #772 moved the pin.
         """
         [case] = http_cases(self.QUIC_CAPTURE)
-        assert case.value == "ge20nn16enus_0f5a7a41a252_000000000000_000000000000"
+        assert case.value == "ge20nn12enus_60f823d07c94_000000000000_000000000000"
         records = json.loads((VECTORS_DIR / "{}.json".format(self.QUIC_CAPTURE)).read_text())
         python_values = [record["JA4H"] for record in records if "JA4H" in record]
         assert python_values == ["ge20nn12enus_60f823d07c94_000000000000_000000000000"]
@@ -1717,7 +1718,7 @@ class TestTheQuicStreamTheRegisterDeclines:
 class TestTheJa4sshValuesTheRustSnapshotHolds:
     """Compare JA4SSH against every JA4SSH value the local Rust snapshots hold.
 
-    Before #671 `read_rust_snapshot` read no `ja4ssh` block, and one of the eleven local
+    Before #671 `read_rust_snapshot` read no `ja4ssh` block, and one of the twelve local
     snapshots holds such a block. `ja4__insta@ssh2.pcapng.snap:215-217` carries 2 JA4SSH
     values on stream 14, and no case here compared either one.
 
@@ -1743,7 +1744,7 @@ class TestTheJa4sshValuesTheRustSnapshotHolds:
     SSH_IDENTITY = stream_identity("172.16.225.48", "57377", "54.160.114.75", "22")
 
     def test_the_local_snapshots_hold_the_two_values_the_reading_counts(self):
-        """A sweep under #638 counts 2 JA4SSH values in the eleven local snapshots.
+        """A sweep under #638 counts 2 JA4SSH values in the twelve local snapshots.
 
         A snapshot that leaves the repository takes its cases away, and the suite still
         reports green. This check makes that loss as loud as a mismatch.
@@ -1753,7 +1754,7 @@ class TestTheJa4sshValuesTheRustSnapshotHolds:
         assert sum(counts.values()) == 2
         # Without this count, an empty snapshot directory would pass the check above on
         # nothing, because `ssh_captures` would then return no capture at all.
-        assert len(list(RUST_DIR.glob("*.snap"))) == 11
+        assert len(list(RUST_DIR.glob("*.snap"))) == 12
 
     def test_the_suite_collects_one_case_for_every_value_it_compares(self):
         """Fail when a snapshot value carries no case.
@@ -1900,7 +1901,7 @@ class TestTheJa4sshValuesTheRustSnapshotHolds:
         ]
         assert not holders, "\n".join(holders)
         # Without this count, an empty snapshot directory would pass the check above.
-        assert len(list(RUST_DIR.glob("*.snap"))) == 11
+        assert len(list(RUST_DIR.glob("*.snap"))) == 12
 
     def _python_values(self):
         """Return the JA4SSH values the FoxIO Python file holds for the one stream."""
@@ -1996,36 +1997,35 @@ class TestTheStreamIdentityOfTheTunneledCapture:
             path = RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=capture)
             assert not set(read_rust_snapshot(path)) & set(SNAPSHOT_ADDRESS_ALIASES.values())
 
-    def test_the_stream_measures_d1_and_the_two_forms_differ(self):
+    def test_the_stream_measures_d1_and_the_two_forms_agree(self):
         """The comparison D1 needs names both values, so a move of either one reports.
 
         The user decided the two-digit form on 2026-08-08, and #215 records it as D1.
-        `ja4plus` therefore writes `8192_00_00_00` where the FoxIO Rust snapshot holds
-        `8192__0_0`. This stream is the one local case that holds both forms, and the
-        divergence is decided rather than open.
+        `ja4plus` writes `8192_00_00_00`. The FoxIO Rust snapshot held `8192__0_0` at
+        the earlier pin, and FoxIO commit `08617cc3` moved it to the two-digit form. The
+        snapshot at the pin `16b96d95` holds the value `ja4plus` writes, and #772 moved
+        the pin.
         """
         streams = read_rust_snapshot(RUST_DIR / RUST_SNAPSHOT_NAME.format(capture=TUNNELED_CAPTURE))
         # The snapshot holds two JA4L values on the same stream, and #638 added them to
         # the reader. Both agree with the FoxIO Python file, so neither reaches a case
         # here and D1 stays the one divergence of this capture.
         assert streams[TUNNEL_OUTER_IDENTITY].values == {
-            SNAPSHOT_TCP_METHOD: "8192__0_0",
+            SNAPSHOT_TCP_METHOD: "8192_00_00_00",
             "JA4L-C": "953_64",
             "JA4L-S": "997_64",
         }
         produced = index_produced(VECTORS_DIR / TUNNELED_CAPTURE).get(TUNNEL_OUTER_IDENTITY, {})
         assert produced.get(SNAPSHOT_TCP_METHOD) == ("8192_00_00_00",)
 
-    def test_the_register_holds_the_one_entry_the_stream_needs(self):
-        """The value case is registered against #215, which decided D1.
+    def test_the_register_holds_no_entry_for_the_stream(self):
+        """The two forms agree, so the value case needs no register entry.
 
-        The entry carries `strict=True`, so the case fails the suite the moment the
-        two forms agree again. The user decided the divergence, so the entry carries
-        the marker.
+        The entry against #215 carried `strict=True`, so the refresh to the pin
+        `16b96d95` failed the suite the moment the two forms agreed. #772 removed it.
         """
         key = value_key(TUNNELED_CAPTURE, "0", "65174", SNAPSHOT_TCP_METHOD, 1)
-        assert DEVIATIONS[key].issue == 215
-        assert DEVIATIONS[key].decided
+        assert key not in DEVIATIONS
         # The count comparison passes, because ja4plus emits one value on the stream.
         assert occurrence_key(TUNNELED_CAPTURE, SNAPSHOT_TCP_METHOD) not in DEVIATIONS
 
@@ -2048,7 +2048,7 @@ class TestTheLocalSnapshotsHoldNoJa4tsValue:
         ]
         assert not holders, "\n".join(holders)
         # Without this check, an empty snapshot directory would pass the check above.
-        assert len(list(RUST_DIR.glob("*.snap"))) == 11
+        assert len(list(RUST_DIR.glob("*.snap"))) == 12
 
     def test_no_foxio_python_expected_output_holds_a_ja4t_or_a_ja4ts_key(self):
         """The FoxIO Python implementation writes neither method, so it decides neither."""

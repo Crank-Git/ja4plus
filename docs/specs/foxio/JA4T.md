@@ -638,11 +638,13 @@ the register does not name disagrees.
 | `ssh2.pcapng` | 19 | Each value matches, and D4 makes 10 streams carry more than one. | Each value matches, and each stream carries one. |
 | `tls3.pcapng` | 8 | Each value matches. | Each value matches. |
 
-One register entry remains, and #215 marked it decided.
+One register entry remained after #215, and #215 marked it decided. #772 removed it,
+because the Rust snapshot at FoxIO `16b96d95` holds `8192_00_00_00`, which `ja4plus`
+writes. The table records the entry as it stood at the pin of this page.
 
 | Key | Issue | The reading it records | State |
 |---|---|---|---|
-| `gre-erspan-vxlan.pcap/0:65174/JA4T.1` | 215 | D1 | Decided. `ja4plus` writes `8192_00_00_00` and the snapshot holds `8192__0_0`. |
+| `gre-erspan-vxlan.pcap/0:65174/JA4T.1` | 215 | D1 | Removed by #772. `ja4plus` writes `8192_00_00_00` and the snapshot at this pin holds `8192__0_0`. |
 
 The D2 entry and the D4 entry left the register when #215 landed, because each case
 resolves to a pass. The register falls from 137 keys to 135.
