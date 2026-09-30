@@ -90,6 +90,28 @@ def test_the_divergence_register_records_the_firewall_ruling() -> None:
     assert "#775" in rows[0], "the row names no ruling issue"
 
 
+def test_the_divergence_register_records_each_module_difference_the_form_ruling_keeps() -> None:
+    """The register holds one row for each of S6, S8 and S10 of the transcription."""
+    rows = [
+        line
+        for line in _read(SPECIFICATION).splitlines()
+        if line.startswith("|") and "`module_ja4tscan.c`, by ruling." in line
+    ]
+    for rule in ("S6", "S8", "S10"):
+        cited = [row for row in rows if f"{rule} of `docs/specs/foxio/JA4TScan.md`" in row]
+        assert len(cited) == 1, f"the register holds {len(cited)} rows for {rule}"
+
+
+def test_the_feature_page_holds_no_open_question() -> None:
+    """The four questions of 2026-09-30 carry a ruling, so the section reads `None.`."""
+    feature = _read(FEATURE)
+    open_questions = _section(feature, "## Open questions")
+    assert "\nNone." in open_questions, "the feature page still holds an open question"
+    rulings = _section(feature, "## The rulings on the four open questions")
+    assert "issuecomment-5921253786" in feature, "the page cites no ruling comment"
+    assert rulings.count("\n> ") == 4, "the section quotes no four rulings"
+
+
 def test_the_feature_page_states_both_rulings_of_the_reversal() -> None:
     """The feature page states the firewall ruling and the packaging ruling."""
     purpose = _section(_read(FEATURE), "## Purpose")

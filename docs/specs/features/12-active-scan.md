@@ -29,6 +29,11 @@ The maintainer ruled on two questions on 2026-09-30.
    `ja4plus scan` subcommand, and a `ja4plus.scan` module. Nothing in `Processor` or any
    passive fingerprinter can send a packet.
 
+**The maintainer ruled on four more questions on 2026-09-30**, at
+https://github.com/Crank-Git/ja4plus/issues/775#issuecomment-5921253786.
+`## The rulings on the four open questions` below quotes them, and the requirements below
+state each one.
+
 ## User stories
 
 - As a scan operator, I want one JA4TScan value for each host I name, so that I can
@@ -59,8 +64,8 @@ FR-active-scan-6 — The `scan` extra of `pyproject.toml` names every dependency
 FR-active-scan-7 — The scanner changes no firewall state. It runs no `iptables` command
 and no `pfctl` command.
 
-FR-active-scan-8 — Before it sends the first SYN, the scanner writes the firewall rule for
-the host system to standard error. Open question 4 decides the rule text.
+FR-active-scan-8 — Before it sends the first SYN, the scanner writes the firewall rules of
+`## The firewall rules the scanner states` to standard error, for the host system.
 
 FR-active-scan-9 — The scanner writes a warning to standard error for each target that
 sends one SYN-ACK and no later response within the wait.
@@ -76,13 +81,13 @@ FR-active-scan-13 — `--port` sets the one TCP port the scanner sends to, and t
 is 80.
 
 FR-active-scan-14 — The scanner accepts one IPv4 address, one IPv4 network in CIDR form,
-or a file of addresses, one on each line. Open question 3 decides
-whether it accepts an IPv6 address.
+or a file of IPv4 addresses, one on each line.
 
 FR-active-scan-15 — The scanner reads a response only where it answers the SYN, under the
 acknowledgment rule of S4 of `docs/specs/foxio/JA4TScan.md`.
 
-FR-active-scan-16 — The scanner writes one result for each target that sent a SYN-ACK.
+FR-active-scan-16 — The scanner writes one result for each target that sent a SYN-ACK or
+a RST.
 
 FR-active-scan-17 — The result uses the schema of `docs/specs/features/05-structured-output.md`,
 with the `type` value `ja4tscan`.
@@ -93,8 +98,91 @@ drops a target when the wait ends.
 FR-active-scan-19 — Without the privilege to open a raw socket, the scanner sends nothing
 and exits with status 1. The message names the required privilege.
 
-FR-active-scan-20 — The value that one target produces follows the form open question 1
-decides.
+FR-active-scan-20 — Part a to part d of the value are the JA4TS parts of the first SYN-ACK,
+which `tcp_prefix` of `ja4plus/utils/tcp_options.py` writes.
+
+FR-active-scan-21 — Part e follows R12 and R13 of `docs/specs/foxio/JA4T.md`, the JA4TS
+delay rule, and it counts each delay from the previous response of the target.
+
+FR-active-scan-22 — A target whose first response carries RST produces the value
+`0_rst-ack`.
+
+FR-active-scan-23 — An ICMP message that answers the SYN produces no value.
+
+FR-active-scan-24 — The scanner reads IPv4 alone. An IPv6 target stops the scan with
+status 1 before the first SYN.
+
+FR-active-scan-25 — The scanner sends the SYN as a link-layer frame, as zmap does.
+
+## The rulings on the four open questions
+
+The maintainer ruled on 2026-09-30. The comment reads, quoted rather than rewritten:
+
+> 1. **Form of parts a to e: reuse the JA4TS form of this project** (`tcp_prefix` and the JA4TS delay rule). A scan prefix then equals the passive JA4TS prefix of the same server. The three measured differences of `module_ja4tscan.c` (S6 End-of-Option-List run, S8 zero window scale, S10 rounding at 0.5 s) go into the divergence register.
+> 2. **A target that sends no SYN-ACK: publish `0_rst-ack` for a RST**, the final form of the FoxIO wrapper. ICMP or no answer gives no value.
+> 3. **IPv6: IPv4 only.** The FoxIO module reads IPv4 only.
+> 4. **Firewall rule text: FoxIO's four iptables INPUT rules** (accept established and related, accept ICMP, accept loopback, drop every other inbound packet), plus a pf equivalent. The library prints the rules and never applies them. That part of the 2026-09-30 ruling stands.
+
+**Ruling 1 parts the scanner from the FoxIO module in three places**, and the divergence
+register of `docs/specs/spec.md` holds one row for each.
+
+| Part | The FoxIO module | This project |
+|---|---|---|
+| b | One `0` for any run of End of Option List bytes (S6) | One `0` for each such byte (R5) |
+| d | A zero scale writes `0` (S8) | A zero scale writes `00` (R11) |
+| e | A delay of exactly one half second rounds down (S10) | It rounds away from zero (R12) |
+
+**Ruling 1 leaves one published value outside the form.** The F5 Big IP value writes part
+d as `0`, and this project writes `00` for the same responses. The other seven published
+values fit the form. `The published values` of `docs/specs/foxio/JA4TScan.md` holds the
+reading.
+
+**Ruling 2 names the value the wrapper publishes on real traffic.** The module writes
+`0_00_00_` for such a RST, and the wrapper rewrites it to `0_rst-ack` (S12 and S15). The
+wrapper writes the window of the RST in place of the first `0`, and a RST carries a window
+of 0 on real traffic. This project writes the ruled value `0_rst-ack` for every such
+target.
+
+## The firewall rules the scanner states
+
+**The scanner prints these rules and never applies them.** The operator adds them before
+the scan and removes them after it.
+
+On Linux, the scanner prints the four rules of `ja4tscan/ja4tscan.py:15-18`, verbatim.
+
+```
+iptables -t filter -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -t filter -A INPUT -p icmp -j ACCEPT
+iptables -t filter -A INPUT -i lo -j ACCEPT
+iptables -t filter -A INPUT -j DROP
+```
+
+The scanner also prints the four commands of `ja4tscan/ja4tscan.py:22-25`, which remove
+the rules.
+
+On macOS, the scanner prints the pf equivalent. Each line matches one rule above.
+
+```
+pass out all
+pass in quick inet proto icmp all
+pass in quick on lo0 all
+block drop in all
+```
+
+- `pass out all` keeps state for each connection the host opens, so pf passes its replies.
+  That is the `ESTABLISHED,RELATED` rule. The `pass out` example of the macOS `pf.conf`
+  manual keeps state with no option.
+- `quick` ends the evaluation at the first match, so ICMP and loopback traffic pass.
+- `block drop in all` drops every other inbound packet, and the SYN-ACK of a target among
+  them.
+
+**The rules work only where the SYN bypasses the firewall, and FR-active-scan-25 states
+that.** zmap writes an Ethernet frame at `ja4tscan/module_ja4tscan.c:178-179`, so the
+connection tracker of the host holds no state for the SYN. The SYN-ACK then matches no
+established connection, and the last rule drops it before the kernel reads it. A SYN that
+leaves through a raw IP socket passes the firewall, the tracker records it, and the first
+rule then accepts the SYN-ACK. The kernel then sends the RST that the rules exist to
+stop. The capture of the scanner reads the SYN-ACK before the firewall on both systems.
 
 ## User flows
 
@@ -102,11 +190,11 @@ decides.
 
 1. The operator installs the extra with `pip install ja4plus[scan]`.
 2. The operator runs `sudo ja4plus scan 203.0.113.0/28 --port 443`.
-3. The scanner writes the firewall rule for the host to standard error.
-4. The operator adds the rule, or the operator accepts a result with no part e.
+3. The scanner writes the firewall rules for the host to standard error.
+4. The operator adds the rules, or the operator accepts a result with no part e.
 5. The scanner sends one SYN to each address at 10 SYN packets each second.
 6. The scanner waits 120 seconds after the last SYN.
-7. The scanner writes one result for each target that sent a SYN-ACK.
+7. The scanner writes one result for each target that sent a SYN-ACK or a RST.
 8. The scanner warns about each target that sent one SYN-ACK and nothing more.
 
 **An operator scans with no retransmission.**
@@ -120,13 +208,13 @@ decides.
 
 | Screen | Purpose | States |
 |---|---|---|
-| The firewall rule | The operator reads the rule the scan needs. | Linux rule; macOS rule; no rule under `--retransmit no`. |
+| The firewall rules | The operator reads the rules the scan needs. | Linux rules; macOS rules; no rules under `--retransmit no`. |
 | The result | A person or a tool reads one value for each target. | Table, JSON Lines or CSV, as `05-structured-output.md` states. |
 | The warning | The operator learns that a target never retransmitted. | One line on standard error for each such target. |
 
 ## Behaviour rules
 
-- The library never changes firewall state. The operator adds the rule and removes it.
+- The library never changes firewall state. The operator adds the rules and removes them.
 - `Processor`, every fingerprinter and every module under `ja4plus/utils/` stay unable to
   send a packet. The boundary is a boundary between modules, and a case reads the imports.
 - The scanner sends to the targets the operator names and to no other address.
@@ -135,6 +223,8 @@ decides.
   FR-structured-output-9 states.
 - The source port, the sequence number and the timestamp value of the SYN vary between
   runs. None of them reaches the value.
+- A scan value of a server holds the same part a to part d as the passive JA4TS value of
+  that server, for the same SYN-ACK.
 
 ## Data touched
 
@@ -188,18 +278,18 @@ The JSON Lines object of one target:
 |---|---|
 | The target sends no response. | The scanner writes no result for it. |
 | The target sends one SYN-ACK and nothing more. | The scanner writes a result with no part e, and it writes the warning of FR-active-scan-9. |
-| The target answers the SYN with a RST. | Open question 2 decides it. |
-| An ICMP message answers the SYN. | Open question 2 decides it. |
-| A response carries an option length past the end of the options. | The scanner reads part b up to that option, as S6 states. It raises nothing. |
-| The target file holds a line that is no address. | The scanner exits with status 1 before it sends a SYN, and it names the line. |
-| The target is an IPv6 address. | Open question 3 decides it. |
+| The target answers the SYN with a RST. | The scanner writes one result with the value `0_rst-ack`. Later responses of the target change nothing. |
+| An ICMP message answers the SYN. | The scanner writes no result for the target. |
+| A response carries an option length past the end of the options. | `tcp_prefix` reads part b up to that option. It raises nothing. |
+| The target file holds a line that is no IPv4 address. | The scanner exits with status 1 before it sends a SYN, and it names the line. |
+| The target is an IPv6 address or network. | The scanner exits with status 1 before it sends a SYN, and it states that the scanner reads IPv4 alone. |
 | The `scan` extra is absent. | `ja4plus scan` exits with status 1 and names `pip install ja4plus[scan]`. |
 
 ## How the scanner is tested with no network
 
 **No case of this feature sends a packet, and no case opens a raw socket.** FoxIO
-publishes no JA4TScan capture, so each case feeds a recorded or constructed response
-sequence to the code under test.
+publishes no JA4TScan capture. Each case therefore feeds a recorded or constructed
+response sequence to the code under test.
 
 1. The formatter reads a list of responses. Each response holds a receive time, the TCP
    flags, the window and the option bytes. A case builds the list, and it compares the
@@ -209,8 +299,7 @@ sequence to the code under test.
    timestamp value masked.
 3. The scan loop takes the send function and the receive function as parameters. A case
    passes a fake pair, so the loop runs, waits and writes results with no network.
-4. The published values that fit the form open question 1 selects become constructed
-   cases. `The published values` of `docs/specs/foxio/JA4TScan.md` names which ones fit.
+4. The seven published values that fit the form become constructed cases.
 5. A case reads the imports of every module under `ja4plus/` and fails where a module
    outside `ja4plus/scan/` imports `ja4plus.scan`.
 
@@ -222,6 +311,7 @@ sequence to the code under test.
       timestamp value, four zero bytes and one zero byte.
 - [ ] The SYN builder writes the window 65535, the IP identification 54321 and the time to
       live 255.
+- [ ] The SYN builder returns a frame that opens with an Ethernet header.
 - [ ] A fake scan of one target that sends one SYN-ACK calls the send function once.
 - [ ] A fake scan of one target that sends a SYN-ACK and four retransmissions writes one
       result.
@@ -229,73 +319,63 @@ sequence to the code under test.
       standard error.
 - [ ] A fake scan under `--retransmit no` writes no warning line.
 - [ ] A fake scan writes no firewall rule under `--retransmit no`.
-- [ ] A fake scan on Linux writes the Linux rule to standard error before the first SYN.
-- [ ] A fake scan on macOS writes the macOS rule to standard error before the first SYN.
+- [ ] A fake scan on Linux writes the four `iptables` rules of
+      `## The firewall rules the scanner states` to standard error before the first SYN.
+- [ ] A fake scan on Linux writes the four `iptables -t filter -D INPUT` commands to
+      standard error.
+- [ ] A fake scan on macOS writes the four pf rules of
+      `## The firewall rules the scanner states` to standard error before the first SYN.
 - [ ] No module under `ja4plus/` calls `subprocess`, `os.system` or `os.popen` with
       `iptables` or `pfctl`.
 - [ ] No module outside `ja4plus/scan/` imports `ja4plus.scan`.
 - [ ] `import ja4plus` imports no module under `ja4plus/scan/`.
 - [ ] A fake scan without raw-socket privilege exits with status 1 and sends nothing.
-- [ ] A target file that holds a line that is no address exits with status 1 and sends
-      nothing.
+- [ ] A target file that holds a line that is no IPv4 address exits with status 1 and
+      sends nothing.
+- [ ] `ja4plus scan 2001:db8::1` exits with status 1 and sends nothing.
 - [ ] `ja4plus scan <target> --format json` writes objects that hold the 11 fields of
       `05-structured-output.md`, with `"type": "ja4tscan"`.
 - [ ] The response sequence of the Windows 10 example produces
       `64240_2-1-3-1-1-4_1460_8_1-2-4-8-R6`.
+- [ ] The response sequence of the Windows 2003 example produces
+      `16384_2-1-3-1-1-8-1-1-4_1460_00_2-7`.
 - [ ] The response sequence of the Amazon AWS Linux 2 example produces
       `62727_2-4-8-1-3_8961_7_1-2-4-8-16`.
+- [ ] The response sequence of the Mac OSX / iPhone example produces
+      `65535_2-1-3-1-1-8-4-0-0_1460_6_1-2-4-8-16-32-12`.
+- [ ] The response sequence of the HP ILO example produces
+      `5840_2_1460_00_3-6-12-24-48-60-60-60-60-60`.
+- [ ] The response sequence of the Epson Printer example produces
+      `28960_2-4-8-1-3_1460_3_1-4-8-16`.
+- [ ] The response sequence of the Ubiquiti Router example produces
+      `43440_2-4-8-1-3_1460_12_1-2-4-8-17`.
+- [ ] The responses of the F5 Big IP example produce `4380_2-4-8_1460_00_3-6-12`, and not
+      the published `4380_2-4-8_1460_0_3-6-12`.
+- [ ] A SYN-ACK that carries two End of Option List bytes produces a part b that ends with
+      `0-0`.
+- [ ] A retransmission 1.5 seconds after the SYN-ACK writes the delay `2`.
 - [ ] A response sequence of one SYN-ACK produces four parts and no part e.
+- [ ] A scan value and the passive JA4TS value of the same SYN-ACK hold the same part a to
+      part d.
+- [ ] A target whose first response carries RST produces `0_rst-ack`.
+- [ ] A target whose first response carries RST and ACK with a window of 512 produces
+      `0_rst-ack`.
+- [ ] A target that answers the SYN with an ICMP message produces no result.
 - [ ] The state table holds at most 10000 targets under a fake scan of 20000 targets.
-
-**Each answer to an open question below adds the criteria that answer implies.** The
-criteria above hold under every option each question names.
 
 ## Out of scope
 
 - `--lookup` on a scan result. `ja4plus/data/ja4plus-mapping.csv` holds a `ja4tscan`
   column, and a later issue may read it.
 - More than one port in one scan. The FoxIO wrapper scans one port.
+- IPv6. The maintainer ruled IPv4 alone on 2026-09-30.
 - JA4TScan inside `Processor`, `ja4plus analyze` or `ja4plus watch`.
 - Windows. Live capture already excludes it.
 
 ## Open questions
 
-**Each question below reaches no ruling of 2026-09-30, and #776 builds nothing that
-depends on the answer.** Each one names the options and the evidence.
-
-1. **Which form do part a to part e follow?** `docs/specs/foxio/JA4TScan.md` measures three
-   places where the FoxIO module and the JA4TS form of this project differ.
-   - Part b: the module writes one `0` for any run of End of Option List bytes (S6). JA4TS
-     writes one `0` for each byte (R5 of `docs/specs/foxio/JA4T.md`).
-   - Part d: the module writes a zero scale as `0` (S8). JA4TS writes `00` (R11).
-   - Part e: the module rounds a delay of exactly one half down (S10). JA4TS rounds it up
-     (R12).
-
-   Option A follows the module, and it fits five of the eight published values. Option B
-   reuses `tcp_prefix` and the JA4TS delay rule, and it fits seven of the eight. Neither
-   option fits the HP ILO value, whose delays exceed the wait.
-2. **What does a target produce where it answers with no SYN-ACK?** The module writes
-   `0_00_00_` for a RST that answers the SYN (S12). The wrapper rewrites that value to
-   `0_rst-ack` (S15). The module writes an ICMP row with an empty value (S11).
-   - Option A writes `0_rst-ack`, the bytes the FoxIO wrapper publishes.
-   - Option B writes the four parts of the RST in the form of question 1, with no
-     truncation.
-   - Option C writes no result for such a target, and writes one line to standard error.
-3. **Does the scanner read IPv6?** The FoxIO module reads IPv4 alone (S17). The passive
-   methods of this project read both.
-   - Option A scans IPv4 alone, as FoxIO does.
-   - Option B scans IPv4 and IPv6. The SYN then needs an IPv6 header that no FoxIO source
-     states.
-4. **Which firewall rule does the scanner state?** The FoxIO wrapper adds four `INPUT`
-   rules that drop every new inbound packet (S14).
-   - Option A states the four FoxIO rules on Linux, and a pf rule of the same effect on
-     macOS.
-   - Option B states one rule that drops each outbound RST to the scanned port. On Linux
-     that is `iptables -A OUTPUT -p tcp --tcp-flags RST RST --dport <port> -j DROP`. On
-     macOS that is `block drop out quick proto tcp to any port <port> flags R/R`.
-
-   Option B blocks no inbound traffic of the host. Option A leaves inbound connections of
-   the host dropped for the whole scan.
+None. The maintainer ruled on the four questions this page held on 2026-09-30, and
+`## The rulings on the four open questions` above quotes the ruling.
 
 Verified against: https://man7.org/linux/man-pages/man8/iptables-extensions.8.html (`--tcp-flags` and `--dport` of the `tcp` match, retrieved 2026-09-30)
-Verified against: `man pf.conf` of macOS 27.0 (`flags <a>/<b>`, read 2026-09-30)
+Verified against: `man pf.conf` of macOS 27.0 (`quick`, `flags <a>/<b>`, and the `pass out` example that keeps state, read 2026-09-30)

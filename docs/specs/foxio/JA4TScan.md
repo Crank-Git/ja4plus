@@ -268,8 +268,9 @@ traffic, a window of 0. S4 lets it set part a to part d, so the value reads `0_0
 
 **This is a defect, and this page proves it by measurement.** The format string at line 137
 states four parts, and the value holds three and a separator. `.claude/rules/conformance.md`
-states the two shapes that decline a defect. Whether either shape reaches this one is a
-question for the maintainer, and `docs/specs/features/12-active-scan.md` holds it.
+states the two shapes that decline a defect. **The maintainer ruled on the value this
+project writes for such a RST on 2026-09-30:** it writes `0_rst-ack`, the value the wrapper
+publishes. `docs/specs/features/12-active-scan.md` quotes the ruling.
 
 ### S13 — The scanner waits 120 seconds for retransmissions
 
@@ -392,13 +393,16 @@ replay the packets that produced it.
 ## What this page leaves to the feature
 
 `docs/specs/features/12-active-scan.md` states what this project builds. The rulings of
-2026-09-30 decide the firewall and the packaging. Four questions reach no ruling yet, and
-that page names each one with its options.
+2026-09-30 decide the firewall and the packaging. **The maintainer ruled on four more
+questions the same day**, and that page quotes the ruling.
 
-1. Which form parts a to e follow: the module bytes of S6, S8 and S10, or the JA4TS form
-   this project already writes.
-2. What a target that answers with no SYN-ACK produces, where S12 and S15 publish
-   `0_rst-ack`.
-3. Whether the scanner reads IPv6, which S17 leaves outside the FoxIO scanner.
-4. Which firewall rule the scanner states, where S14 records the four rules of the
-   wrapper.
+1. Part a to part e follow the JA4TS form this project already writes, and not the module
+   bytes of S6, S8 and S10. The divergence register of `docs/specs/spec.md` holds one row
+   for each of the three.
+2. A target whose first response carries RST produces `0_rst-ack`, the value S12 and S15
+   publish. An ICMP message or no answer produces no value.
+3. The scanner reads IPv4 alone, as S17 records for the module.
+4. The scanner prints the four rules of S14 and a pf equivalent, and it applies none.
+
+This page stays the record of the FoxIO source. **A ruling changes what this project
+builds, and it changes no rule above**, because each rule states what the module does.
