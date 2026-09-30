@@ -504,34 +504,45 @@ def _dependency_block(text: str, opener: str) -> list[str]:
     return dependency_entries(text, opener)
 
 
-# The entries of the `dev` extra, in file order. **Every one of them carries a comment
+def _distribution_names(entries: list[str]) -> list[str]:
+    """Return the distribution name of each entry, without its version specifier.
+
+    The cases below read which entries the reader returns, and no version. A literal
+    that named each version failed every dependabot pull request that moved a pin. #760
+    and the pull requests #764, #766 and #767 measured that failure.
+    """
+    return [re.split(r"[=<>!~ ]", entry, maxsplit=1)[0] for entry in entries]
+
+
+# The distribution names of the `dev` extra, in file order. **Every entry carries a comment
 # above it, and that is the shape no caller of this reader read before #452.** The runtime
 # block and the `docs` extra carry no comment inside their brackets. A reader that collects
 # a comment therefore stays correct against those two blocks, and it fails here.
 DEV_ENTRIES = [
-    "pytest==9.1.1",
-    "pytest-cov==7.1.0",
-    "ruff==0.16.6",
-    "mypy>=1.11",
-    "build==1.6.0",
-    "twine==7.0.0",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "build",
+    "twine",
 ]
 
-# The entries of the runtime block, in file order. A user who installs `ja4plus` installs
-# these two distributions and no other.
+# The distribution names of the runtime block, in file order. A user who installs
+# `ja4plus` installs these two distributions and no other.
 RUNTIME_ENTRIES = [
-    "scapy>=2.4.0",
-    "cryptography>=42.0.0",
+    "scapy",
+    "cryptography",
 ]
 
-# The entries of the `docs` extra, in file order. #391 records the pair of versions that
-# the site build needs, so a case names every entry rather than the two it reads.
+# The distribution names of the `docs` extra, in file order. #391 records the pair of
+# versions that the site build needs, so a case names every entry rather than the two it
+# reads.
 DOCS_ENTRIES = [
-    "mkdocs==1.6.1",
-    "mkdocs-material==9.7.7",
-    "mkdocstrings==1.0.6",
-    "mkdocstrings-python==2.0.8",
-    "griffe==2.3.0",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "griffe",
 ]
 
 
@@ -544,7 +555,7 @@ def test_the_reader_returns_the_entries_of_the_dev_extra_and_no_comment_fragment
     defect.
     """
     entries = _dependency_block(PYPROJECT.read_text(encoding="utf-8"), "dev = [")
-    assert entries == DEV_ENTRIES
+    assert _distribution_names(entries) == DEV_ENTRIES
 
 
 def test_the_reader_returns_every_entry_of_the_runtime_block_by_name() -> None:
@@ -554,13 +565,13 @@ def test_the_reader_returns_every_entry_of_the_runtime_block_by_name() -> None:
     fragment. This case therefore names every entry the block holds.
     """
     entries = _dependency_block(PYPROJECT.read_text(encoding="utf-8"), "dependencies = [")
-    assert entries == RUNTIME_ENTRIES
+    assert _distribution_names(entries) == RUNTIME_ENTRIES
 
 
 def test_the_reader_returns_every_entry_of_the_docs_extra_by_name() -> None:
     """`_dependency_block` returns the documentation dependencies and drops none of them."""
     entries = _dependency_block(PYPROJECT.read_text(encoding="utf-8"), "docs = [")
-    assert entries == DOCS_ENTRIES
+    assert _distribution_names(entries) == DOCS_ENTRIES
 
 
 def test_the_documentation_dependency_stays_out_of_the_runtime_dependencies() -> None:
