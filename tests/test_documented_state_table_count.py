@@ -280,7 +280,7 @@ DOCUMENT_IDS = [_name(path) for path in DOCUMENTS]
 
 
 def test_the_processor_holds_more_state_tables_than_the_reassemblers_alone() -> None:
-    """The live count stands above the two `TCPStreamReassembler` instances.
+    """The live count stands above the three `TCPStreamReassembler` instances.
 
     A reader that walked nothing would report zero, and every comparison below would then
     pass against a document that states any number.

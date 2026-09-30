@@ -300,17 +300,23 @@ reported green on a comparison it never made. #216 closed it, and
 | Measurement | Count |
 |---|---|
 | JA4T values in `python/test/testdata/` | 0 |
-| JA4T values in the seven local Rust snapshots that hold one | 39 |
-| Values `ja4plus` reproduces exactly | 38 |
-| Values that differ | 1 |
+| JA4T values in the eight local Rust snapshots that hold one | 40 |
+| Values `ja4plus` reproduces exactly | 40 |
+| Values that differ | 0 |
 | Streams on which `ja4plus` emits more than one value | 0 |
-| Cases that stop running when `("JA4T", "ja4t")` leaves `SNAPSHOT_METHODS` | 46 |
+| Cases that stop running when `("JA4T", "ja4t")` leaves `SNAPSHOT_METHODS` | 44 |
 
-**The one entry.** `tests/foxio_deviations.json` holds one JA4T key today, and it is
-`gre-erspan-vxlan.pcap/0:65174/JA4T.1`. The FoxIO Rust snapshot holds `8192__0_0` and
-`ja4plus` writes `8192_00_00_00`. The SYN carries no TCP option, and the three FoxIO forms
-disagree. The user chose the two-digit form on 2026-08-08, so the entry is `decided` and it
-stays. #215 records the ruling.
+**#772 took the four counts above again on 2026-09-30, after it moved the pin of
+`tests/foxio_vectors/` to FoxIO `16b96d95`.** `sigalg-grease.pcapng` adds one snapshot and
+one value. The last count is the drop in the collected cases of
+`tests/test_foxio_rust_parity.py` when the JA4T entry leaves `SNAPSHOT_METHODS`.
+
+**The register holds no JA4T key.** It held one until #772, which was
+`gre-erspan-vxlan.pcap/0:65174/JA4T.1`. The FoxIO Rust snapshot held `8192__0_0` at the
+earlier pin, and `ja4plus` writes `8192_00_00_00`. The user chose the two-digit form on
+2026-08-08, and #215 records the ruling. FoxIO `08617cc3` moved the Rust implementation to
+the same form, so the snapshot at `16b96d95` holds `8192_00_00_00` and #772 removed the
+entry.
 
 **Two entries this section named have gone, and the repairs removed them.**
 `chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4T.1` recorded a part b that held one
@@ -540,7 +546,7 @@ value. #132 holds the command and the full output.
 Before #132, `ja4plus` emitted `9af15b336e6a` on these four streams. `JA4_o` now matches
 all 160 reference values, and the count was 156 of 160.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:226`.
+**Location:** `ja4plus/fingerprinters/ja4.py:228`.
 
 The JA4S section below records the `JA4S_o` reading.
 

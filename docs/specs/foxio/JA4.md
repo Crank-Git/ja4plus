@@ -440,7 +440,7 @@ table does not name is a field nobody read.**
 | ALPN, the absent case | R9 | `ja4plus/fingerprinters/ja4.py:76-77` | Agrees. `compute_alpn_value` returns `00`. |
 | Cipher hash | R10 | `ja4plus/fingerprinters/ja4.py:198-200` | Agrees. The sorted list joins with `,` and the digest truncates to 12. |
 | Extension hash, the removal | R11 | `ja4plus/fingerprinters/ja4.py:208` | Agrees. The sorted list drops `0x0000` and `0x0010`. |
-| Extension hash, the signature algorithms | R11 | `ja4plus/fingerprinters/ja4.py:215-220` | Agrees. The list keeps wire order and follows one underscore. |
+| Extension hash, the signature algorithms | R11 | `ja4plus/fingerprinters/ja4.py:215-220` | Agrees. The list keeps wire order and follows one underscore. **A later change removes the GREASE values from that list first, as FoxIO does in `d66336ef` (#773).** |
 | The absent underscore | R12 | `ja4plus/fingerprinters/ja4.py:217` | Agrees. The test appends the underscore and the list together. |
 | The empty-list sentinel | R13 | `ja4plus/fingerprinters/ja4.py:202`, `ja4plus/fingerprinters/ja4.py:229` | Agrees. Both write `000000000000`. |
 | GREASE | R14 | `ja4plus/utils/tls_utils.py:444` | Agrees. The test reads the same two conditions the dissector macro reads. |
@@ -469,7 +469,7 @@ text specification tests for an alphanumeric byte.**
 `h ` rather than `99`. #141 measured that on `tests/foxio_vectors/alpn-condition.pcap`.
 **The range stops at `0x7E`**, because the two implementations agree only inside it.
 
-**D3 — `ja4plus/fingerprinters/ja4.py:226` reads the sorted extension string for the
+**D3 — `ja4plus/fingerprinters/ja4.py:228` reads the sorted extension string for the
 sentinel of both forms.**
 
 A client hello that carries SNI alone therefore gives `JA4_o` the sentinel, while its
