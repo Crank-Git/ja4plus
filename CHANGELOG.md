@@ -6,6 +6,24 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **The QUIC CRYPTO reader stops at the first byte that has not arrived** (#762).
+  Round
+  267. **An outside reporter measured the defect on Windows against a live capture.**
+  `reassemble_crypto_fragments` allocated a buffer to the highest fragment end, and each gap
+  read as zero bytes. **A ClientHello whose tail arrived before its middle passed the length
+  check**, and the TLS reader parsed the zero bytes as extension type 0. The reader now
+  returns the bytes from offset 0 to the first gap, which its docstring already stated. The
+  change reaches the ClientHello path, the ServerHello check and the JA4S reader.
+  `tests/test_quic_crypto_gap.py` replays the fragment layout of the report against the
+  ClientHello of `quic-with-several-tls-frames.pcapng`. **Before the repair the first
+  datagram wrote `q12d032700_55b375c5d22e_c65986f5733c`**, and after it the first datagram
+  writes nothing and the second writes the FoxIO value. **A replay of all 38 committed
+  captures writes 788 values at version 1.2.1 and 788 here, byte-identical.** The dependency
+  reader cases of `tests/test_documentation_site.py` now compare distribution names (#768),
+  so a pin bump fails no case there. Three pins of the `dev` and `docs` extras move: `build`
+  1.6.1, `ruff` 0.16.9 and `mkdocstrings-python` 2.0.9 (#764, #766, #767). **The conformance
+  suite reports 1684 passed, 142 skipped and 138 xfailed before this round and after it.**
+
 - **Every live prose of the repository takes the US spelling** (#663).
   Round
   266. **The maintainer ruled on 2026-08-16, and rule 17 of `.claude/rules/ste.md` records
@@ -2068,6 +2086,32 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   prose, so `` `git gc --prune=now` `` failed a case that no prose sentence broke.
   **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
   reports 1635 passed, 143 skipped and 140 xfailed.
+
+## [1.2.2] - 2026-09-29
+
+Version 1.2.2 follows version 1.2.1, and no version stands between them. The date of the
+heading above is the date this release reaches `master`. It carries round 267.
+
+**The bump is patch and never minor.** This release adds no published name, it removes
+none, and it renames none.
+
+**One reader stops producing a wrong value.** The QUIC CRYPTO reader filled each gap
+between fragments with zero bytes (#762). Where a ClientHello arrived out of order across
+datagrams, and its last fragment arrived before a middle one, the reader parsed the zero
+bytes and wrote a JA4 value that describes no traffic. **The reader now waits for every
+byte**, and it writes the correct value when the gap fills. The same reader serves the
+ServerHello check and the JA4S reader, so each one waits in the same way.
+
+**No value of the committed corpus moves.** A replay of all 38 committed captures writes
+788 values at version 1.2.1 and 788 here, and the two dumps are byte-identical. No committed
+capture carries a CRYPTO gap. **A caller whose traffic carried such a gap sees a wrong JA4
+value go away, and the correct one takes its place.**
+
+**The conformance suite holds its reading.** It reports 1684 passed, 142 skipped and 138
+xfailed at version 1.2.1 and here.
+
+**Three pins of the `dev` and `docs` extras move**, and no runtime dependency moves: `build`
+1.6.1, `ruff` 0.16.9 and `mkdocstrings-python` 2.0.9.
 
 ## [1.2.1] - 2026-08-16
 
