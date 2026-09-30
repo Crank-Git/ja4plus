@@ -157,10 +157,10 @@ table was prose that no case read until #65.
 
 ## The method of each output line
 
-The `type` field names the method. **Ten `type` values carry eleven methods**, because
+The `type` field names the method. **Eleven `type` values carry twelve methods**, because
 `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=` under the `type` value `ja4l`.
 Read the `JA4L-C=` prefix and the `JA4L-S=` prefix of the fingerprint to tell the two
-apart.
+apart. `ja4plus scan` writes the value `ja4tscan`, and no other command writes it.
 
 | `type` | The method it names |
 |---|---|
@@ -174,11 +174,18 @@ apart.
 | `ja4ts` | [JA4TS](methods/ja4ts.md) |
 | `ja4d` | [JA4D](methods/ja4d.md) |
 | `ja4d6` | [JA4D6](methods/ja4d6.md) |
+| `ja4tscan` | [JA4TScan](methods/ja4tscan.md) |
 
 [The method index](methods/index.md) states the output format, the part list and the hash
-rule of each method. `--types` accepts these ten tokens and the token `ja4ls`, which is
-eleven. `--types ja4l` writes both latency values, and `--types ja4ls` writes the JA4LS
-values alone.
+rule of each method. `--types` accepts eleven tokens in all: the ten tokens of the passive
+methods and the token `ja4ls`. `--types ja4l` writes both latency values, and
+`--types ja4ls` writes the JA4LS values alone. `--types` accepts no `ja4tscan` token,
+because `ja4plus analyze` and `ja4plus watch` send no packet.
+
+**A JA4TScan line names the target as the source.** `src_ip` and `src_port` name the target
+and the port the scanner sent to, because the target sent the responses the value reads.
+`dst_ip` and `dst_port` name the scanning host and the source port of its SYN. `timestamp`
+is the receive time of the last response, and both raw fields are `null`.
 
 ## An example JSON object
 

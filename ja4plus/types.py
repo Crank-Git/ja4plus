@@ -30,8 +30,9 @@ class FingerprintResult:
     changes it after a fingerprinter returns it.
 
     Attributes:
-        type: The method name, lowercase. One of ten values, and ten values carry eleven
-            methods, because `ja4l` names both JA4L and JA4LS. `--types` accepts these ten
+        type: The method name, lowercase. One of eleven values. Ten values carry the
+            eleven passive methods, because `ja4l` names both JA4L and JA4LS, and
+            `ja4plus scan` writes the value `ja4tscan`. `--types` accepts the ten passive
             tokens and the token `ja4ls`, which selects the JA4LS values alone.
         fingerprint: The fingerprint string. Never empty.
         raw: The raw form, when the method defines one.

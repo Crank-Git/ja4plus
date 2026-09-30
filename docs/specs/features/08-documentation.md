@@ -12,10 +12,10 @@ mockups: []
 The user asked for the documentation to be correct. Two statements in it are not.
 
 The README said the project implements "all ten JA4+ methods". FoxIO documents
-twelve, and counts JA4LS and JA4TScan separately. The project implements eleven of
-the twelve, and #776 builds JA4TScan as `ja4plus scan`. The maintainer reversed the
-JA4TScan decline on 2026-09-30, in #775. The superseded sentence is quoted below rather
-than rewritten.
+twelve, and counts JA4LS and JA4TScan separately. #776 built JA4TScan as `ja4plus scan`,
+so the project implements twelve of the twelve. The maintainer reversed the JA4TScan
+decline on 2026-09-30, in #775. The superseded sentence is quoted below rather than
+rewritten.
 
 > The project implements eleven of the twelve, and it declines JA4TScan.
 

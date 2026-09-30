@@ -1,6 +1,8 @@
 # The methods
 
-FoxIO publishes twelve JA4+ methods. This project implements eleven of them.
+FoxIO publishes twelve JA4+ methods. This project implements twelve of them. Ten
+fingerprinter classes carry eleven of them, because `JA4LFingerprinter` writes both JA4L
+and JA4LS. The `ja4plus scan` subcommand carries JA4TScan.
 
 Each page below describes one method. It states the output format, the parts of the
 value, the hash rule, and the FoxIO file that publishes the method. It also names one
@@ -23,7 +25,7 @@ the standard itself, read the
 | JA4SSH | SSH | [The SSH session fingerprint](ja4ssh.md) | Yes |
 | JA4T | TCP | [The TCP client fingerprint](ja4t.md) | Yes |
 | JA4TS | TCP | [The TCP server fingerprint](ja4ts.md) | Yes |
-| JA4TScan | TCP | No page yet. Read the section below. | No. #776 builds it |
+| JA4TScan | TCP | [The active TCP server fingerprint](ja4tscan.md) | Yes |
 | JA4D | DHCPv4 | [The DHCPv4 fingerprint](ja4d.md) | Yes |
 | JA4D6 | DHCPv6 | [The DHCPv6 fingerprint](ja4d6.md) | Yes |
 
@@ -44,12 +46,12 @@ under parity rule 2.
 
 **JA4TScan sends packets, and every other method reads traffic that already exists.**
 JA4TScan sends one TCP SYN to each host the operator names, and it reads the responses.
-#776 builds it as the `ja4plus scan` subcommand, in the `ja4plus.scan` module. No
+#776 built it as the `ja4plus scan` subcommand, in the `ja4plus.scan` module. No
 fingerprinter of this table can send a packet.
 
 The maintainer reversed the decline of 2026-08-08 on 2026-09-30, in #775.
-`docs/specs/features/12-active-scan.md` holds the design, and #776 writes the page of the
-method. The superseded text is quoted below rather than rewritten.
+`docs/specs/features/12-active-scan.md` holds the design, and [the JA4TScan page](ja4tscan.md)
+describes the command. The superseded text is quoted below rather than rewritten.
 
 > **This project declines JA4TScan by ruling, and the absence is no omission.** JA4TScan
 > sends crafted packets to a host the operator names, and it reads the responses. Every
