@@ -181,9 +181,11 @@ prose of its cause.** Read the field.
 values of #129 out of `SOURCE_VALUES`, so the exclusion enforced the bar a second time.
 No case could then read what the field does on the one issue the bar exists for. The
 table now holds all 35, measured against the pinned commit. With `capability` false on
-every #129 entry the reach rises from 6 rows to 25. The same flip on the earlier table
-moved nothing. The 16 JA4H rows of the 35 stay out under the disagreement bar, because
-the Rust value and the Wireshark value differ on each one.
+every #129 entry the reach rises from 6 rows to 41. The same flip on the earlier table
+moved nothing. **#772 read the table again at FoxIO `16b96d95`, and the flip reached 25
+rows before that read.** FoxIO `478359f3` moved the 16 Rust JA4H values, and each one now
+equals the Wireshark value. The disagreement bar therefore holds none of the 35, and the
+field alone bars all of them.
 
 **A disagreement between the remaining sources bars the row.** Where the remaining FoxIO
 sources hold different values, **no source holds the reference and the row stays declined

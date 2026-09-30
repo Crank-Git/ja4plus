@@ -72,7 +72,8 @@ JA4SSH_PAGE = REPO_ROOT / "docs" / "specs" / "foxio" / "JA4SSH.md"
 
 # The value every other FoxIO source holds for one register key, keyed by the register
 # key. The run of #334 measured 23 rows, and the run of #347 measured the 35 rows of
-# #129. The table holds every decided value-form key that a source covers. The capability
+# #129. #772 moved the pin to FoxIO `16b96d95` and read every Rust value again. FoxIO
+# `478359f3` changed the 16 Rust JA4H values, and every other Rust value holds. The table holds every decided value-form key that a source covers. The capability
 # field is the one fact that bars the 35.
 SOURCE_VALUES = {
     "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
@@ -86,70 +87,70 @@ SOURCE_VALUES = {
         "zeek": "10990_56_q",
     },
     "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
-        "rust": "ge20nn16enus_0f5a7a41a252_000000000000_000000000000",
+        "rust": "ge20nn12enus_60f823d07c94_000000000000_000000000000",
         "wireshark": "ge20nn12enus_60f823d07c94_000000000000_000000000000",
     },
     "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1": {
         "wireshark": "ge20nn12enus_sec-ch-ua,sec-ch-ua-mobile,sec-ch-ua-platform,upgrade-insecure-requests,user-agent,accept,sec-fetch-site,sec-fetch-mode,sec-fetch-user,sec-fetch-dest,accept-encoding,accept-language__",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.1": {
-        "rust": "ge20cn23enus_641f0b6ae3f0_c7713052b7e4_348cad68b6fb",
+        "rust": "ge20cn19enus_cb83bf27b7a9_c7713052b7e4_348cad68b6fb",
         "wireshark": "ge20cn19enus_cb83bf27b7a9_c7713052b7e4_348cad68b6fb",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.10": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.11": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.12": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.13": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.14": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.15": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.2": {
-        "rust": "ge20cn17enus_949f364da66f_e43af2e8abfe_015bb0ca5596",
+        "rust": "ge20cn13enus_8e33b43baae9_e43af2e8abfe_015bb0ca5596",
         "wireshark": "ge20cn13enus_8e33b43baae9_e43af2e8abfe_015bb0ca5596",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.3": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.4": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.5": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.6": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.7": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.8": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.9": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.1": {
@@ -325,10 +326,27 @@ CAPABILITY_ISSUE = 129
 
 # The measured #129 rows that the `capability` field alone holds out of the reach. Each
 # row carries a source value that the remaining sources agree on, so the field is the one
-# fact that bars it. The 16 JA4H rows are absent here. Each one carries a Rust value that
-# differs from the Wireshark value, so the disagreement bar holds it out as well.
+# fact that bars it. All 35 measured rows stand here. Before #772 the 16 JA4H rows stood
+# outside this set, because each Rust value differed from the Wireshark value. At FoxIO
+# `16b96d95` the two agree on each one.
 CAPABILITY_ROWS_THE_FIELD_ALONE_BARS = {
+    "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1",
     "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1",
+    "http2-with-cookies.pcapng/0:58847/JA4H.1",
+    "http2-with-cookies.pcapng/0:58847/JA4H.2",
+    "http2-with-cookies.pcapng/0:58847/JA4H.3",
+    "http2-with-cookies.pcapng/0:58847/JA4H.4",
+    "http2-with-cookies.pcapng/0:58847/JA4H.5",
+    "http2-with-cookies.pcapng/0:58847/JA4H.6",
+    "http2-with-cookies.pcapng/0:58847/JA4H.7",
+    "http2-with-cookies.pcapng/0:58847/JA4H.8",
+    "http2-with-cookies.pcapng/0:58847/JA4H.9",
+    "http2-with-cookies.pcapng/0:58847/JA4H.10",
+    "http2-with-cookies.pcapng/0:58847/JA4H.11",
+    "http2-with-cookies.pcapng/0:58847/JA4H.12",
+    "http2-with-cookies.pcapng/0:58847/JA4H.13",
+    "http2-with-cookies.pcapng/0:58847/JA4H.14",
+    "http2-with-cookies.pcapng/0:58847/JA4H.15",
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.1",
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.10",
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.11",
