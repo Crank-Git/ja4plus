@@ -74,8 +74,8 @@ UNCAPPED_CONNECTION = "142.250.187.206:443-192.168.2.200:58847"
 # 788 of the SSH stream, which is why the earlier attribution was wrong.
 UNCAPPED_VECTOR_COUNT_UNDER_THE_CAP = 757
 
-# The count of captures the corpus holds.
-CORPUS_VECTORS = 38
+# The count of captures the corpus holds. #772 added `sigalg-grease.pcapng`.
+CORPUS_VECTORS = 39
 
 
 def _register_row() -> str:

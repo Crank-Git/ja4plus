@@ -27,9 +27,11 @@ which value looks right.
    no source holds the reference and the row stays declined.
 
 **Fact 1 reads the vectors, which this repository holds, so a register change alone
-cannot move it.** `gre-erspan-vxlan.pcap/0:65174/JA4T.1` proves the fact carries weight:
-the key is the value form, the FoxIO Python file holds no JA4T value, and #215 declines
-the FoxIO Rust value rather than a Python one.
+cannot move it.** `gre-erspan-vxlan.pcap/0:65174/JA4T.1` proved the fact carries weight:
+the key is the value form, the FoxIO Python file holds no JA4T value, and #215 declined
+the FoxIO Rust value rather than a Python one. #772 removed that row, because the Rust
+snapshot at FoxIO commit `16b96d95` holds the value `ja4plus` writes. The case below
+therefore reads the key against a register it writes itself.
 
 **Facts 4 and 5 read `SOURCE_VALUES`, which the run of #334 measured against the pinned
 FoxIO checkout.** The measurement read all 135 register keys against 38 Rust snapshots,
@@ -70,7 +72,8 @@ JA4SSH_PAGE = REPO_ROOT / "docs" / "specs" / "foxio" / "JA4SSH.md"
 
 # The value every other FoxIO source holds for one register key, keyed by the register
 # key. The run of #334 measured 23 rows, and the run of #347 measured the 35 rows of
-# #129. The table holds every decided value-form key that a source covers. The capability
+# #129. #772 moved the pin to FoxIO `16b96d95` and read every Rust value again. FoxIO
+# `478359f3` changed the 16 Rust JA4H values, and every other Rust value holds. The table holds every decided value-form key that a source covers. The capability
 # field is the one fact that bars the 35.
 SOURCE_VALUES = {
     "chrome-cloudflare-quic-with-secrets.pcapng/0:50280/JA4L-C.1": {
@@ -84,73 +87,70 @@ SOURCE_VALUES = {
         "zeek": "10990_56_q",
     },
     "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1": {
-        "rust": "ge20nn16enus_0f5a7a41a252_000000000000_000000000000",
+        "rust": "ge20nn12enus_60f823d07c94_000000000000_000000000000",
         "wireshark": "ge20nn12enus_60f823d07c94_000000000000_000000000000",
     },
     "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1": {
         "wireshark": "ge20nn12enus_sec-ch-ua,sec-ch-ua-mobile,sec-ch-ua-platform,upgrade-insecure-requests,user-agent,accept,sec-fetch-site,sec-fetch-mode,sec-fetch-user,sec-fetch-dest,accept-encoding,accept-language__",
     },
-    "gre-erspan-vxlan.pcap/0:65174/JA4T.1": {
-        "rust": "8192__0_0",
-    },
     "http2-with-cookies.pcapng/0:58847/JA4H.1": {
-        "rust": "ge20cn23enus_641f0b6ae3f0_c7713052b7e4_348cad68b6fb",
+        "rust": "ge20cn19enus_cb83bf27b7a9_c7713052b7e4_348cad68b6fb",
         "wireshark": "ge20cn19enus_cb83bf27b7a9_c7713052b7e4_348cad68b6fb",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.10": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.11": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.12": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.13": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.14": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.15": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.2": {
-        "rust": "ge20cn17enus_949f364da66f_e43af2e8abfe_015bb0ca5596",
+        "rust": "ge20cn13enus_8e33b43baae9_e43af2e8abfe_015bb0ca5596",
         "wireshark": "ge20cn13enus_8e33b43baae9_e43af2e8abfe_015bb0ca5596",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.3": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.4": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.5": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.6": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.7": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.8": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H.9": {
-        "rust": "ge20cr22enus_265608141a12_10ff48fdaa11_ac323afc21f7",
+        "rust": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
         "wireshark": "ge20cr18enus_40430d236f7c_10ff48fdaa11_ac323afc21f7",
     },
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.1": {
@@ -326,10 +326,27 @@ CAPABILITY_ISSUE = 129
 
 # The measured #129 rows that the `capability` field alone holds out of the reach. Each
 # row carries a source value that the remaining sources agree on, so the field is the one
-# fact that bars it. The 16 JA4H rows are absent here. Each one carries a Rust value that
-# differs from the Wireshark value, so the disagreement bar holds it out as well.
+# fact that bars it. All 35 measured rows stand here. Before #772 the 16 JA4H rows stood
+# outside this set, because each Rust value differed from the Wireshark value. At FoxIO
+# `16b96d95` the two agree on each one.
 CAPABILITY_ROWS_THE_FIELD_ALONE_BARS = {
+    "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H.1",
     "chrome-cloudflare-quic-with-secrets.pcapng/0:57098/JA4H_ro.1",
+    "http2-with-cookies.pcapng/0:58847/JA4H.1",
+    "http2-with-cookies.pcapng/0:58847/JA4H.2",
+    "http2-with-cookies.pcapng/0:58847/JA4H.3",
+    "http2-with-cookies.pcapng/0:58847/JA4H.4",
+    "http2-with-cookies.pcapng/0:58847/JA4H.5",
+    "http2-with-cookies.pcapng/0:58847/JA4H.6",
+    "http2-with-cookies.pcapng/0:58847/JA4H.7",
+    "http2-with-cookies.pcapng/0:58847/JA4H.8",
+    "http2-with-cookies.pcapng/0:58847/JA4H.9",
+    "http2-with-cookies.pcapng/0:58847/JA4H.10",
+    "http2-with-cookies.pcapng/0:58847/JA4H.11",
+    "http2-with-cookies.pcapng/0:58847/JA4H.12",
+    "http2-with-cookies.pcapng/0:58847/JA4H.13",
+    "http2-with-cookies.pcapng/0:58847/JA4H.14",
+    "http2-with-cookies.pcapng/0:58847/JA4H.15",
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.1",
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.10",
     "http2-with-cookies.pcapng/0:58847/JA4H_ro.11",
@@ -629,12 +646,20 @@ class TestTheBarsOnTheException:
             if len(set(sources.values())) > 1:
                 assert key not in reach, "{} holds {} and stays declined".format(key, sources)
 
-    def test_the_exception_passes_over_a_row_the_python_file_holds_no_value_for(self):
+    def test_the_exception_passes_over_a_row_the_python_file_holds_no_value_for(
+        self, tmp_path, monkeypatch
+    ):
+        # The register held this row until #772, and the FoxIO Rust snapshot at the
+        # earlier pin held `8192__0_0` for it. The key still names a stream whose Python
+        # file holds no JA4T value. The case restores the row and its source value, so
+        # fact 1 is the one fact that keeps the key out of the reach.
         key = "gre-erspan-vxlan.pcap/0:65174/JA4T.1"
-        register = load_register()
-        assert key in register, "{} names no register entry".format(key)
+        monkeypatch.setitem(SOURCE_VALUES, key, {"rust": "8192__0_0"})
+        path = tmp_path / "register.json"
+        entry = {"issue": 215, "cause": "decided on #215", "decided": True, "capability": False}
+        path.write_text(json.dumps({key: entry}))
+        register = load_register(path)
         assert register[key].decided
-        assert SOURCE_VALUES[key], "{} names no source value".format(key)
         assert python_value(key) is None
         assert key not in exception_reach(register)
 

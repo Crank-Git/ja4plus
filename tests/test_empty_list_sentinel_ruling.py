@@ -56,8 +56,8 @@ JA4_KEY = re.compile(r"^JA4(\.\d+)?$")
 JA4S_KEY = re.compile(r"^JA4S(\.\d+)?$")
 
 # The measurement the register row states, over the FoxIO Python expected-output files.
-MEASURED_JA4_VALUES = 167
-MEASURED_JA4S_VALUES = 84
+MEASURED_JA4_VALUES = 168
+MEASURED_JA4S_VALUES = 85
 MEASURED_SENTINEL_VALUE = "t10d230100_6a57a6f57151_000000000000"
 MEASURED_SENTINEL_FILES = {
     "https3-301-get.pcap.json": 1,
@@ -362,7 +362,7 @@ def test_neither_method_writes_the_hash_of_the_empty_string() -> None:
 
 
 def test_the_vector_set_holds_the_measured_count_of_each_method() -> None:
-    """The FoxIO Python expected-output files hold 167 JA4 values and 84 JA4S values."""
+    """The FoxIO Python expected-output files hold 168 JA4 values and 85 JA4S values."""
     assert len(_vector_values(JA4_KEY)) == MEASURED_JA4_VALUES
     assert len(_vector_values(JA4S_KEY)) == MEASURED_JA4S_VALUES
 

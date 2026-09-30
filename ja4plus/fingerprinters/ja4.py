@@ -380,6 +380,7 @@ class JA4Fingerprinter(BaseFingerprinter):
         # together regardless of UDP 5-tuple changes.
         self._quic_fragments = quic_fragment_table()
         self._quic_dcid_to_tuple = quic_fragment_table()
+        self._tcp_hellos = tcp_hello_table()
 
     def process_packet(self, packet: Packet) -> str | None:
         """Process a packet and extract JA4 fingerprint if applicable.
@@ -391,7 +392,7 @@ class JA4Fingerprinter(BaseFingerprinter):
         with self._lock:
             tls_info = extract_tls_info(packet)
             if not tls_info:
-                tls_info = self._try_quic_multi_packet(packet)
+                tls_info = self._try_quic_multi_packet(packet) or self._try_tcp_segments(packet)
             if not tls_info:
                 return None
 
@@ -469,6 +470,83 @@ class JA4Fingerprinter(BaseFingerprinter):
         self._quic_fragments.pop(dcid_key, None)
         self._quic_dcid_to_tuple.pop(dcid_key, None)
 
+    def _try_tcp_segments(self, packet: Packet) -> dict[str, Any] | None:
+        """Return the ClientHello fields the collected TCP segments complete, or None.
+
+        A segment that opens a ClientHello and cuts it starts a stream. A later segment
+        of the same direction extends the stream. The stream stops at the first byte
+        that no segment carries, so a gap never reads as zeros.
+
+        Args:
+            packet: The packet the caller processes.
+
+        Returns:
+            The parsed ClientHello fields on the segment that completes the hello.
+            Returns None on every other segment, and for a packet that carries no TCP.
+        """
+        # The port pair names the innermost layer, as `packet_endpoints` does, so a
+        # tunnel keys one stream on the ports the result reports.
+        tcp = innermost_layer(packet, (TCP, UDP))
+        if not isinstance(tcp, TCP):
+            return None
+        endpoints = packet_endpoints(packet)
+        key = f"{endpoints['src']}:{endpoints['srcport']}-{endpoints['dst']}:{endpoints['dstport']}"
+
+        tls_info = None
+        if Raw in packet:
+            tls_info = self._add_tcp_segment(key, int(tcp.seq), bytes(packet[Raw]), packet)
+
+        if int(tcp.flags) & (FIN_FLAG | RST_FLAG):
+            reverse = f"{endpoints['dst']}:{endpoints['dstport']}-{endpoints['src']}:{endpoints['srcport']}"
+            self._tcp_hellos.remove_stream(key)
+            self._tcp_hellos.remove_stream(reverse)
+        return tls_info
+
+    def _add_tcp_segment(
+        self, key: str, seq: int, payload: bytes, packet: Packet
+    ) -> dict[str, Any] | None:
+        """Add one segment to the stream of its direction, and parse a complete hello.
+
+        Args:
+            key: The stream key of the direction.
+            seq: The 32-bit sequence number of the first payload byte.
+            payload: The payload bytes of the segment.
+            packet: The packet that carries the segment, for its timestamp.
+
+        Returns:
+            The parsed ClientHello fields, or None while the hello is incomplete.
+        """
+        base = self._tcp_hellos.base_seq(key)
+        if base is None:
+            end = client_hello_end(payload)
+            # A hello the segment holds whole needs no stream. The single-segment
+            # reader already read it, and it found no ClientHello.
+            if end is None or end <= len(payload) or end > MAX_TCP_HELLO_BYTES:
+                return None
+        elif sequence_before(seq, base):
+            # A byte before the first hello byte would move the start of the stream, and
+            # the stream would then open with no TLS record.
+            return None
+
+        self._tcp_hellos.add_segment(key, seq, payload, packet_seconds(packet))
+        data = self._tcp_hellos.get_stream(key)
+        end = client_hello_end(data)
+        if end is not None and len(data) < end <= MAX_TCP_HELLO_BYTES:
+            # A stream at the segment cap accepts no further segment, so it waits for
+            # nothing that can arrive.
+            if len(self._tcp_hellos.streams[key]["segments"]) < MAX_TCP_HELLO_SEGMENTS:
+                return None
+
+        self._tcp_hellos.remove_stream(key)
+        if end is None or end > len(data):
+            return None
+        # The untyped TLS reader gives this value as `Any`. The local annotation states
+        # the type the value holds, and it changes no value.
+        tls_info: dict[str, Any] | None = parse_tls_handshake(data)
+        if not tls_info or tls_info.get("type") != "client_hello":
+            return None
+        return tls_info
+
     def reset(self) -> None:
         with self._lock:
             super().reset()
@@ -477,17 +555,20 @@ class JA4Fingerprinter(BaseFingerprinter):
             self.last_fingerprint_original_order = None
             self._quic_fragments = quic_fragment_table()
             self._quic_dcid_to_tuple = quic_fragment_table()
+            self._tcp_hellos = tcp_hello_table()
 
     def cleanup_connection(
         self, src_ip: str, src_port: int, dst_ip: str, dst_port: int, proto: str
     ) -> None:
-        """Drop any accumulated QUIC CRYPTO fragments for the given 5-tuple."""
+        """Drop the QUIC CRYPTO fragments and the partial TCP ClientHello of the 5-tuple."""
         with self._lock:
             tuple_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
             rev_key = f"{dst_ip}:{dst_port}-{src_ip}:{src_port}"
             for dcid_key, tup in list(self._quic_dcid_to_tuple.items()):
                 if tup == tuple_key or tup == rev_key:
                     self._drop_quic_fragments(dcid_key)
+            self._tcp_hellos.remove_stream(tuple_key)
+            self._tcp_hellos.remove_stream(rev_key)
 
     def get_raw_fingerprint(self, packet: Packet, original_order: bool = False) -> str | None:
         """
@@ -505,3 +586,53 @@ class JA4Fingerprinter(BaseFingerprinter):
             return None
 
         return get_raw_fingerprint(tls_info, original_order)
+
+
+# The imports, the constants and the table below serve the TCP ClientHello path. They
+# stand at the end of the module, so every line that a document cites above keeps its
+# number. No module they import reads this one, so the late import binds no cycle.
+from scapy.all import TCP, Raw  # noqa: E402
+
+from ja4plus.utils.packet_utils import RST_FLAG, packet_seconds  # noqa: E402
+from ja4plus.utils.tcp_stream import TCPStreamReassembler, sequence_before  # noqa: E402
+from ja4plus.utils.tls_utils import client_hello_end, parse_tls_handshake  # noqa: E402
+
+# The highest number of TCP connections whose partial ClientHello one fingerprinter
+# holds. A sender opens a new connection at the cost of one segment, so the table needs
+# a limit. The QUIC fragment table holds the same limit.
+MAX_TCP_HELLO_STREAMS = 1000
+
+# The longest a connection holds a partial ClientHello without a further segment. The
+# segments of one hello arrive inside one round trip, and the QUIC fragment table holds
+# the same age.
+MAX_TCP_HELLO_AGE_SECONDS = 30
+
+# The most bytes one partial ClientHello holds. RFC 8446 Section 5.1 limits the
+# plaintext of one record to 2**14 bytes, and the record header adds 5. The last 6 bytes
+# hold the ChangeCipherSpec record that a client sends before its second hello.
+MAX_TCP_HELLO_BYTES = 2**14 + 5 + 6
+
+# The most segments one partial ClientHello holds. A hello at the byte cap spans 31
+# segments of 536 bytes, which is the least segment size RFC 9293 lets a host assume.
+# The cap stops a sender of one-byte segments from holding 16395 list entries.
+MAX_TCP_HELLO_SEGMENTS = 64
+
+# A segment with FIN or RST ends the stream, so no later segment completes its hello.
+FIN_FLAG = 0x01
+
+
+def tcp_hello_table() -> TCPStreamReassembler:
+    """Return one bounded reassembler for the partial TCP ClientHello of each stream.
+
+    A ClientHello that spans several TCP segments collects here, once for each direction
+    of a connection. The segment that completes it gives the value.
+
+    Returns:
+        A `TCPStreamReassembler` that holds the four TCP ClientHello limits.
+    """
+    return TCPStreamReassembler(
+        max_streams=MAX_TCP_HELLO_STREAMS,
+        max_stream_bytes=MAX_TCP_HELLO_BYTES,
+        max_stream_segments=MAX_TCP_HELLO_SEGMENTS,
+        max_stream_age=MAX_TCP_HELLO_AGE_SECONDS,
+    )

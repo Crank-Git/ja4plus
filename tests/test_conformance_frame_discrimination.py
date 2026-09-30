@@ -99,7 +99,7 @@ class TestTheSourcesThatStateNoFrame:
         stream. A value therefore rests on a connection and never on a packet.
         """
         files = _python_expected_files()
-        assert len(files) == 38, "the reading covered 38 expected-output files"
+        assert len(files) == 39, "the reading covered 39 expected-output files"
         named = set()
         for path in files:
             for record in json.loads(path.read_text()):
@@ -115,7 +115,7 @@ class TestTheSourcesThatStateNoFrame:
         with a capital reaches the heuristic too.
         """
         files = _rust_snapshot_files()
-        assert len(files) == 11, "the reading covered 11 snapshots"
+        assert len(files) == 12, "the reading covered 12 snapshots"
         named = set()
         values = 0
         for path in files:
@@ -129,7 +129,7 @@ class TestTheSourcesThatStateNoFrame:
                 if key in RUST_METHOD_KEYS:
                     values += 1
         assert named == set(), "a Rust snapshot now states a frame under {}".format(sorted(named))
-        assert values == 460, "the reading measured 460 method-keyed values"
+        assert values == 465, "the reading measured 465 method-keyed values"
 
     def test_the_zeek_baseline_states_no_frame(self):
         """A Zeek baseline keys a value on the connection, and it states no frame.
@@ -222,7 +222,7 @@ class TestWhatTheConformanceSuiteCompares:
         from tests.test_spec_validation import _value_params
 
         cases = _value_params()
-        assert len(cases) == 1203, "the reading measured 1203 value cases"
+        assert len(cases) == 1211, "the reading measured 1211 value cases"
         for parameters in cases:
             json_path = VECTORS / "{}.json".format(parameters.values[0].name)
             assert json_path in _python_expected_files(), json_path
