@@ -6,6 +6,25 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **JA4 and JA4S write `9` for each ALPN end byte of `0x80` or higher** (#789).
+  Round
+  270. **The maintainer ruled on 2026-10-01 UTC, and the ruling binds both repositories.**
+  Crank-Git/ja4plus-go#801 holds the Go half, and the Go library ships it in `v1.3.0`. The
+  ruling follows `python/ja4.py:156-157` and `rust/ja4/src/tls.rs:635-647` at `16b96d95`.
+  Each end byte of `0x80` or higher now writes `9`, one per end, so `68 ff` writes `h9` and
+  `ff 68` writes `9h`, where both wrote `99`. A one-byte printable value now writes the byte
+  twice, so `2d` writes `--` where it wrote `99`. A control byte below `0x20`, or the byte
+  `0x7F`, at either end still writes `99`, as #162 states. The vector
+  `tls-non-ascii-alpn.pcapng` holds `ba ad`, and it still writes `99`. **The ruling reverses
+  #127, #141 and #162 for those inputs.** `tests/test_alpn_end_byte_ruling.py` builds a
+  ClientHello and a ServerHello for each of 14 inputs. **A replay of the 41 committed
+  captures writes 826 values before the change and 826 after, and 2 differ.** Both sit on
+  `alpn-condition.pcap`, which this project built: stream 2 writes `h9` and stream 3 writes
+  `9h`, which are the FoxIO Rust values. No value of a FoxIO capture moves. The register
+  moves the four entries of stream 2 from #162 to #789 and adds four entries for stream 3, so
+  it holds 141 keys where it held 137. The conformance suite reports 1702 passed, 145 skipped
+  and 137 xfailed before this round, and 1698 passed, 145 skipped and 141 xfailed after it.
+
 - **`ja4plus scan` adds JA4TScan, the FoxIO active TCP server fingerprint** (#775, #776).
   Round
   269. **The maintainer reversed the decline of 2026-08-08 on 2026-09-30.** The scanner sends

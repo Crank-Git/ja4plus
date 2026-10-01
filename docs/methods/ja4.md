@@ -33,7 +33,7 @@ Part a holds ten characters. `ja4plus/fingerprinters/ja4.py:318` builds it, and
 | SNI | 1 | `d` when the client sends a server name, and `i` when it sends none. |
 | Cipher count | 2 | The count of cipher suites, after the reader drops every GREASE value. It stops at `99`. |
 | Extension count | 2 | The count of extensions, after the reader drops every GREASE value. It stops at `99`. |
-| ALPN | 2 | The first character and the last character of the first ALPN value, or `00` when the client offers none. |
+| ALPN | 2 | The first character and the last character of the first ALPN value, or `00` when the client offers none. A one-byte value writes its character twice. Each end byte of `0x80` or higher writes `9`. A control byte at either end makes the part `99`. |
 | Cipher hash | 12 | The hash of the sorted cipher list. |
 | Extension hash | 12 | The hash of the sorted extension list, with the signature algorithms appended. The reader drops every GREASE value from the signature algorithms and keeps their wire order. |
 

@@ -22,15 +22,17 @@ runs the divergence as a comparison. No reader has to find it in an issue commen
 |---|---|---|---|---|
 | 0 | `h\\x20` | `h ` | `h ` | `h ` |
 | 1 | `\\x20h` | ` h` | ` h` | ` h` |
-| 2 | `h\\xab` | `h\\ufffd` | `h9` | `99` |
-| 3 | `\\xabh` | `99` | `9h` | `99` |
+| 2 | `h\\xab` | `h\\ufffd` | `h9` | `h9` |
+| 3 | `\\xabh` | `99` | `9h` | `9h` |
 | 4 | `h\\x1f` | `h\\x1f` | `hf` | `99` |
 | 5 | `h\\x0a` | `h\\n` | no value | `99` |
 | 6 | `h` | `h` | `h0` | `hh` |
 
-Stream 3 is the one disputed input where `ja4plus` matches the FoxIO Python value, so
-it holds no register entry: it conforms. It stays in the capture because the dispute
-is real and a later change of the condition would move it.
+The maintainer ruled on 2026-10-01 UTC, under #789, that each end byte of `0x80` or
+higher writes `9`. Streams 2 and 3 therefore write the FoxIO Rust value. The two FoxIO
+columns hold the measurement at `27f0cbf9`, and the expected-output file holds the FoxIO
+Python column, so both streams now hold register entries under #789. Stream 3 conformed
+before the ruling, and the ruling moved it.
 
 `docs/implementation_notes.md` holds both measurement tables and the commands that
 produced them.

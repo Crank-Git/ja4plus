@@ -49,23 +49,38 @@ def quic_fragment_table() -> BoundedStateTable:
     )
 
 
-def _is_alnum_byte(b: int) -> bool:
-    """Return True when the byte is an ASCII alphanumeric: 0-9, A-Z, a-z."""
-    return (0x30 <= b <= 0x39) or (0x41 <= b <= 0x5A) or (0x61 <= b <= 0x7A)
-
-
 def _is_printable_ascii_byte(b: int) -> bool:
     """Return True when the byte is printable ASCII: 0x20-0x7E."""
     return 0x20 <= b <= 0x7E
 
 
+def _alpn_end_character(b: int) -> str | None:
+    """Return the character that one end byte of an ALPN value writes.
+
+    Args:
+        b: The first byte or the last byte of the first ALPN value.
+
+    Returns:
+        The byte itself for printable ASCII, `9` for a byte of `0x80` or higher, and
+        None for a control byte below `0x20` or the byte `0x7F`.
+    """
+    if _is_printable_ascii_byte(b):
+        return chr(b)
+    if b >= 0x80:
+        return "9"
+    return None
+
+
 def compute_alpn_value(first_alpn_bytes: bytes | None) -> str:
     """Return the two-character ALPN value that JA4 and JA4S carry.
 
-    The value is `00` for an absent ALPN extension. The value is the first byte and
-    the last byte when both bytes are printable ASCII, which is `0x20-0x7E`. A one-byte
-    value repeats that byte when the byte is ASCII alphanumeric. The value is `99` in
-    every other case.
+    The value is `00` for an absent ALPN extension and for an empty first ALPN value.
+    Otherwise the value holds one character for the first byte and one character for the
+    last byte. A one-byte value therefore writes its character twice.
+
+    - A printable ASCII byte, which is `0x20-0x7E`, writes itself.
+    - A byte of `0x80` or higher writes `9`.
+    - A control byte below `0x20`, or the byte `0x7F`, at either end makes the value `99`.
 
     Args:
         first_alpn_bytes: The bytes of the first ALPN value, or None.
@@ -76,37 +91,22 @@ def compute_alpn_value(first_alpn_bytes: bytes | None) -> str:
     if not first_alpn_bytes:
         return "00"
 
-    first = first_alpn_bytes[0]
-    last = first_alpn_bytes[-1]
-
-    # #141: the two FoxIO implementations disagree on a one-byte value. `python/ja4.py`
-    # writes one character and `rust/tls.rs` writes the byte and `0`. No measurement
-    # settles the case, so this project holds the value it wrote before #141.
-    if len(first_alpn_bytes) == 1:
-        if _is_alnum_byte(first):
-            ch = chr(first)
-            return ch + ch
+    # #789: the maintainer ruled the first two rules on 2026-10-01 UTC, and the ruling
+    # binds both repositories. `Crank-Git/ja4plus-go#801` holds the Go half. The ruling
+    # follows `python/ja4.py:156-157` and `rust/ja4/src/tls.rs:635-647` at the FoxIO
+    # commit `16b96d95`. It reverses #127, #141 and #162 for those inputs. The vector
+    # `tls-non-ascii-alpn.pcapng` holds `ba ad`, and both ends of it write `9`, so it
+    # still reads `99`.
+    #
+    # #789: the maintainer ruled a control byte on the same day, and a control byte at
+    # either end still writes the `99` of #162. The FoxIO Rust implementation reads a
+    # control byte as the tshark escape text, so it reads `h\x1f` as five characters and
+    # writes `hf`.
+    first = _alpn_end_character(first_alpn_bytes[0])
+    last = _alpn_end_character(first_alpn_bytes[-1])
+    if first is None or last is None:
         return "99"
-
-    # #141: the FoxIO prose tests for an alphanumeric byte, and the measurement
-    # contradicts it. Both FoxIO implementations pass a printable ASCII byte through, so
-    # `h\x20` reads `h ` and not `99`. `tests/foxio_vectors/alpn-condition.pcap` holds
-    # the measurement.
-    #
-    # The range stops at `0x7E`, because the two implementations agree only inside it.
-    # The FoxIO Rust implementation reads a control byte as the tshark escape text, so
-    # it reads `h\x1f` as five characters and writes `hf`.
-    if _is_printable_ascii_byte(first) and _is_printable_ascii_byte(last):
-        return chr(first) + chr(last)
-
-    # #127: the FoxIO prose gives the first and the last character of the hex form. The
-    # FoxIO Python implementation and the FoxIO Rust implementation give `99`, and the
-    # vector `tls-non-ascii-alpn.pcapng` holds `99`. This project follows the vector.
-    #
-    # #141: the two implementations disagree on every byte outside `0x20-0x7E` that
-    # sits in a position other than the first. This project holds `99` until the user
-    # decides.
-    return "99"
+    return first + last
 
 
 def generate_ja4(tls_info: dict[str, Any] | None, original_order: bool = False) -> str | None:

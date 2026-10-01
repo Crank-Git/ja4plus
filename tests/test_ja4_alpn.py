@@ -13,12 +13,12 @@ commands.
 | Input | The prose | `python/ja4.py` | `rust/tls.rs` | `ja4plus` |
 |---|---|---|---|---|
 | `b"\\xab"` | `ab` | `99` | `90` | `99` |
-| `b"\\x20"` | `20` | `' '` | `' 0'` | `99` |
+| `b"\\x20"` | `20` | `' '` | `' 0'` | `'  '` |
 | `b"\\xab\\xcd"` | `ad` | `99` | `99` | `99` |
 | `b"\\x20\\x61"` | `21` | `' a'` | `' a'` | `' a'` |
-| `b"\\x30\\xab"` | `3b` | `0?` | `09` | `99` |
+| `b"\\x30\\xab"` | `3b` | `0?` | `09` | `09` |
 | `b"\\x61\\x20"` | `60` | `'a '` | `'a '` | `'a '` |
-| `b"\\x30\\x31\\xab\\xcd"` | `3d` | `0?` | `09` | `99` |
+| `b"\\x30\\x31\\xab\\xcd"` | `3d` | `0?` | `09` | `09` |
 | `b"\\x30\\xab\\xcd\\x31"` | `01` | `01` | `01` | `01` |
 | `b"\\xba\\xad"` | `bd` | `99` | `99` | `99` |
 
@@ -28,8 +28,13 @@ outside the alphanumeric ranges, so a function of the bytes cannot separate them
 FoxIO prose and the FoxIO vector therefore contradict each other.
 
 #141 settled the ASCII part of the condition, so `ja4plus` now passes an ASCII byte
-through. A case the two FoxIO implementations dispute keeps the value `ja4plus` wrote
-before #141. A case that only the FoxIO prose produces carries a strict `xfail`.
+through. A case that only the FoxIO prose produces carries a strict `xfail`.
+
+The two implementation columns hold the measurement at `27f0cbf9`. **The `ja4plus` column
+holds the values of the ruling of #789**, which the maintainer made on 2026-10-01 UTC. Each
+end byte of `0x80` or higher writes `9`, and a one-byte printable value writes the byte
+twice. `tests/test_alpn_end_byte_ruling.py` holds the ruling, and
+`Crank-Git/ja4plus-go#801` holds the Go half.
 """
 
 import json
@@ -86,9 +91,9 @@ def _disputed(alpn_bytes, prose_value):
         (b"h2", "h2"),
         (b"http/1.1", "h1"),
         (b"h3", "h3"),
-        # TODO(#141): the measurement confirms that `python/ja4.py` gives `h` and that
-        # `rust/tls.rs` gives `h0`, so no FoxIO source produces `hh`. The two
-        # implementations disagree, so this project holds the value it wrote before.
+        # The measurement of #141 confirms that `python/ja4.py` gave `h` and that
+        # `rust/tls.rs` gave `h0` at `27f0cbf9`. `python/ja4.py:156-157` gives `hh` at
+        # `16b96d95`, and the ruling of #789 repeats a one-byte printable value.
         (b"h", "hh"),
     ],
 )

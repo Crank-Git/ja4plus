@@ -12,26 +12,50 @@
     "capability": false
   },
   "alpn-condition.pcap/2:44403/JA4.1": {
-    "issue": 162,
-    "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "issue": 789,
+    "cause": "The first ALPN value is the two bytes 0x68 0xAB. FoxIO Python at 27f0cbf9 writes h and the replacement character U+FFFD, and the expected-output file holds that measurement. FoxIO Rust writes h9. ja4plus writes h9, so it matches FoxIO Rust and differs from the file. The maintainer ruled on 2026-10-01 UTC that each end byte of 0x80 or higher writes 9, and the ruling binds Crank-Git/ja4plus-go#801 too. The ruling follows python/ja4.py:156-157 and rust/ja4/src/tls.rs:635-647 at 16b96d95. #789 records the decision.",
     "decided": true,
     "capability": false
   },
   "alpn-condition.pcap/2:44403/JA4_o.1": {
-    "issue": 162,
-    "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "issue": 789,
+    "cause": "The first ALPN value is the two bytes 0x68 0xAB. FoxIO Python at 27f0cbf9 writes h and the replacement character U+FFFD, and the expected-output file holds that measurement. FoxIO Rust writes h9. ja4plus writes h9, so it matches FoxIO Rust and differs from the file. The maintainer ruled on 2026-10-01 UTC that each end byte of 0x80 or higher writes 9, and the ruling binds Crank-Git/ja4plus-go#801 too. The ruling follows python/ja4.py:156-157 and rust/ja4/src/tls.rs:635-647 at 16b96d95. #789 records the decision.",
     "decided": true,
     "capability": false
   },
   "alpn-condition.pcap/2:44403/JA4_r.1": {
-    "issue": 162,
-    "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "issue": 789,
+    "cause": "The first ALPN value is the two bytes 0x68 0xAB. FoxIO Python at 27f0cbf9 writes h and the replacement character U+FFFD, and the expected-output file holds that measurement. FoxIO Rust writes h9. ja4plus writes h9, so it matches FoxIO Rust and differs from the file. The maintainer ruled on 2026-10-01 UTC that each end byte of 0x80 or higher writes 9, and the ruling binds Crank-Git/ja4plus-go#801 too. The ruling follows python/ja4.py:156-157 and rust/ja4/src/tls.rs:635-647 at 16b96d95. #789 records the decision.",
     "decided": true,
     "capability": false
   },
   "alpn-condition.pcap/2:44403/JA4_ro.1": {
-    "issue": 162,
-    "cause": "The first ALPN value is the two bytes 0x68 0xAB, and the two FoxIO implementations disagree on it. FoxIO Python writes h and the replacement character U+FFFD, which is a character no byte of the packet holds. FoxIO Rust writes h9, because rust/ja4/src/tls.rs reads the tshark escape text and not the byte. ja4plus writes 99, so it matches neither implementation. The user decided on 2026-08-07 that the value stays. No FoxIO vector separates the rules, and rule 1 of CLAUDE.md forbids a move that no vector requires. The entry is permanent, and #162 records the decision.",
+    "issue": 789,
+    "cause": "The first ALPN value is the two bytes 0x68 0xAB. FoxIO Python at 27f0cbf9 writes h and the replacement character U+FFFD, and the expected-output file holds that measurement. FoxIO Rust writes h9. ja4plus writes h9, so it matches FoxIO Rust and differs from the file. The maintainer ruled on 2026-10-01 UTC that each end byte of 0x80 or higher writes 9, and the ruling binds Crank-Git/ja4plus-go#801 too. The ruling follows python/ja4.py:156-157 and rust/ja4/src/tls.rs:635-647 at 16b96d95. #789 records the decision.",
+    "decided": true,
+    "capability": false
+  },
+  "alpn-condition.pcap/3:44404/JA4.1": {
+    "issue": 789,
+    "cause": "The first ALPN value is the two bytes 0xAB 0x68. FoxIO Python at 27f0cbf9 writes 99, and the expected-output file holds that measurement. FoxIO Rust writes 9h. ja4plus writes 9h, so it matches FoxIO Rust and differs from the file. The maintainer ruled on 2026-10-01 UTC that each end byte of 0x80 or higher writes 9, and the ruling binds Crank-Git/ja4plus-go#801 too. The ruling follows python/ja4.py:156-157 and rust/ja4/src/tls.rs:635-647 at 16b96d95. #789 records the decision.",
+    "decided": true,
+    "capability": false
+  },
+  "alpn-condition.pcap/3:44404/JA4_o.1": {
+    "issue": 789,
+    "cause": "The first ALPN value is the two bytes 0xAB 0x68. FoxIO Python at 27f0cbf9 writes 99, and the expected-output file holds that measurement. FoxIO Rust writes 9h. ja4plus writes 9h, so it matches FoxIO Rust and differs from the file. The maintainer ruled on 2026-10-01 UTC that each end byte of 0x80 or higher writes 9, and the ruling binds Crank-Git/ja4plus-go#801 too. The ruling follows python/ja4.py:156-157 and rust/ja4/src/tls.rs:635-647 at 16b96d95. #789 records the decision.",
+    "decided": true,
+    "capability": false
+  },
+  "alpn-condition.pcap/3:44404/JA4_r.1": {
+    "issue": 789,
+    "cause": "The first ALPN value is the two bytes 0xAB 0x68. FoxIO Python at 27f0cbf9 writes 99, and the expected-output file holds that measurement. FoxIO Rust writes 9h. ja4plus writes 9h, so it matches FoxIO Rust and differs from the file. The maintainer ruled on 2026-10-01 UTC that each end byte of 0x80 or higher writes 9, and the ruling binds Crank-Git/ja4plus-go#801 too. The ruling follows python/ja4.py:156-157 and rust/ja4/src/tls.rs:635-647 at 16b96d95. #789 records the decision.",
+    "decided": true,
+    "capability": false
+  },
+  "alpn-condition.pcap/3:44404/JA4_ro.1": {
+    "issue": 789,
+    "cause": "The first ALPN value is the two bytes 0xAB 0x68. FoxIO Python at 27f0cbf9 writes 99, and the expected-output file holds that measurement. FoxIO Rust writes 9h. ja4plus writes 9h, so it matches FoxIO Rust and differs from the file. The maintainer ruled on 2026-10-01 UTC that each end byte of 0x80 or higher writes 9, and the ruling binds Crank-Git/ja4plus-go#801 too. The ruling follows python/ja4.py:156-157 and rust/ja4/src/tls.rs:635-647 at 16b96d95. #789 records the decision.",
     "decided": true,
     "capability": false
   },
