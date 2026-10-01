@@ -307,13 +307,26 @@ value repeats that character.
 `zeek/ja4/main.zeek:84` opens at `"00"` and `zeek/ja4/main.zeek:86` writes the first and the
 last character.
 
-**This rule is uncertain for a byte that is not ASCII alphanumeric. Keep the vector
-fallback.** `technical_details/JA4.md:95-104` states a hex fallback and gives eight worked
-cases. **No FoxIO implementation writes that fallback.** `python/ja4.py:279-280` writes
-`'99'` where the first byte is above 127, and `rust/ja4/src/tls.rs:615-624` replaces each
-non-ASCII character with `'9'`. #127 and #141 measured the split, and
-`tests/foxio_vectors/tls-non-ascii-alpn.pcapng` holds `99`. **This project follows the
-vector and not the prose.**
+**This rule was uncertain for a byte that is not ASCII alphanumeric, and the maintainer
+ruled it on 2026-10-01 UTC.** `technical_details/JA4.md:95-104` states a hex fallback and
+gives eight worked cases. **No FoxIO implementation writes that fallback.** At `27f0cbf9`,
+`python/ja4.py:279-280` wrote `'99'` where the first byte is above 127, and
+`rust/ja4/src/tls.rs:615-624` replaced each non-ASCII character with `'9'`. #127 and #141
+measured the split, and `tests/foxio_vectors/tls-non-ascii-alpn.pcapng` holds `99`. **This
+project follows the vector and not the prose.**
+
+**The ruling of #789 settles the split.** At `16b96d95`, `python/ja4.py:156-157` writes `9`
+for each end character of 128 or higher, and `rust/ja4/src/tls.rs:635-647` writes `9` for
+each end character that is not ASCII. The ruling follows both.
+
+- Each end byte of `0x80` or higher writes `9`, so `68 ff` writes `h9` and `ff 68` writes
+  `9h`.
+- A one-byte printable value writes the byte twice, so `2d` writes `--`.
+- A control byte below `0x20`, or the byte `0x7F`, at either end still writes `99`, as #162
+  states.
+
+Both ends of `ba ad` write `9`, so the vector still reads `99`. `Crank-Git/ja4plus-go#801`
+holds the Go half, and `tests/test_alpn_end_byte_ruling.py` holds the separating packets.
 
 ### R10 — Part b is the SHA-256 of the sorted cipher list, truncated to 12 characters
 
@@ -453,9 +466,12 @@ table does not name is a field nobody read.**
 prints as hex.**
 
 `technical_details/JA4.md:95-104` states the hex fallback and gives eight worked cases.
-**No FoxIO implementation builds it.** `python/ja4.py:279-280` writes `'99'` and
-`rust/ja4/src/tls.rs:620` writes `'9'` for each non-ASCII character. #127 read the vector
-`tls-non-ascii-alpn.pcapng`, which holds `99`, and this project follows the vector.
+**No FoxIO implementation builds it.** At `27f0cbf9`, `python/ja4.py:279-280` wrote `'99'`
+and `rust/ja4/src/tls.rs:620` wrote `'9'` for each non-ASCII character. #127 read the vector
+`tls-non-ascii-alpn.pcapng`, which holds `99`, and this project follows the vector. The
+ruling of #789 writes `9` for each end byte of `0x80` or higher, as both implementations do
+at `16b96d95`, and R9 states it. `_alpn_end_character` of `ja4plus/fingerprinters/ja4.py`
+now holds the rule, and the line citations of this page read commit `47ad216`.
 
 **The prose and every implementation disagree, so the authority rule sends this to the
 vectors.** `.claude/rules/conformance.md` states that the vectors decide the exact bytes
@@ -467,7 +483,8 @@ text specification tests for an alphanumeric byte.**
 `technical_details/JA4.md:95` bars every byte outside `0x30-0x39`, `0x41-0x5A` and
 `0x61-0x7A`. Both FoxIO implementations pass a printable byte through, so `h\x20` reads
 `h ` rather than `99`. #141 measured that on `tests/foxio_vectors/alpn-condition.pcap`.
-**The range stops at `0x7E`**, because the two implementations agree only inside it.
+**The range stops at `0x7E`**, because the two implementations agree only inside it. The
+ruling of #789 applies the same range to a one-byte value, so `2d` writes `--`.
 
 **D3 — `ja4plus/fingerprinters/ja4.py:228` reads the sorted extension string for the
 sentinel of both forms.**
@@ -488,6 +505,10 @@ the JA4 family**, over the keys `JA4`, `JA4_o`, `JA4_r` and `JA4_ro`. Every one 
 | #138 | 23 | A stream the FoxIO Python expected-output file omits, and `ja4plus` fingerprints |
 | #162 | 16 | Four streams of `alpn-condition.pcap`, where the ALPN byte rule splits |
 
+**The ruling of #789 moved these counts on 2026-10-01 UTC.** Stream 2 moved its four entries
+from #162 to #789, and stream 3 gained four entries under #789, because both streams now
+write the FoxIO Rust value. #162 therefore holds 12 entries, and #789 holds 8.
+
 **The specification explains the 23 entries of #138 nowhere.** It states the schema of one
 value, and it states no rule about which stream a reader reaches.
 
@@ -502,8 +523,9 @@ publishes, or it records a rule that no vector measures. **This page changes no
 fingerprinter.**
 
 1. **D1 and D2.** Does JA4 print the hex form of a byte that is not ASCII alphanumeric?
-   The text specification says yes and every FoxIO implementation says no. `ja4plus` writes
-   `99`, which the vector holds.
+   The text specification says yes and every FoxIO implementation says no. The maintainer
+   ruled on 2026-10-01 UTC, under #789: each end byte of `0x80` or higher writes `9`, and
+   the vector still holds `99`.
 2. **R3.** Does a DTLS client hello write `d`? The text specification says yes and every
    implementation that writes JA4 says no. `ja4plus` writes it and no vector measures it.
 3. **The image draws `t13d1516h2_acb858a92679_e5627efa2ab1`**, and no tool writes that

@@ -4,15 +4,21 @@
 whose first byte or last byte falls outside `0x20-0x7E` writes `99`. A first ALPN value
 of one alphanumeric byte writes `hh`.
 
+**The maintainer narrowed that ruling on 2026-10-01 UTC, under #789.** Each end byte of
+`0x80` or higher now writes `9`, and a one-byte printable value writes the byte twice. A
+control byte at either end still writes `99`, so the ruling of 2026-08-10 stands for it.
+`Crank-Git/ja4plus-go#801` holds the Go half. The table below states the control byte
+`h\\x1f`, which is the input the narrowed ruling still covers.
+
 The conformance audit of the same date named this the one condition where `ja4plus`
 matches no FoxIO implementation. The two references disagree with each other, and each
 one reads its own tooling rather than the packet.
 
 | Implementation | Value | What it reads |
 |---|---|---|
-| `ja4plus` | `99`, `hh` | the packet bytes |
-| FoxIO Python | U+FFFD | a replacement character that no packet byte holds |
-| FoxIO Rust | `h9` | the escape text of `tshark` |
+| `ja4plus` | `99` | the packet bytes |
+| FoxIO Python | `h\\x1f` | a control byte, which reaches the fingerprint |
+| FoxIO Rust | `hf` | the escape text of `tshark` |
 
 **A match with either reference copies an artifact of that reference tool into the
 fingerprint**, and the user declines that. No FoxIO reading is therefore available to
@@ -23,8 +29,9 @@ accident.** These cases hold the register to the record. A later edit that drops
 ruling fails a case here rather than passing quietly.
 
 #141 holds the measurement of the disputed inputs, #162 records the readings of
-2026-08-07, and #522 records this ruling. The sixteen entries of
+2026-08-07, and #522 records this ruling. The twelve entries of
 `tests/foxio_deviations.json` that name #162 stand, and a case below reads that count.
+The eight entries that name #789 hold streams 2 and 3 of `alpn-condition.pcap`.
 
 These cases read prose and one JSON record. They import nothing from `ja4plus` and they
 produce no fingerprint.
@@ -70,9 +77,9 @@ SENTENCE_END = ". "
 # states. The phrase reaches one sentence of the row, so a row that moves a value to
 # another sentence fails the case.
 MEASUREMENT: Tuple[Tuple[str, str, Tuple[str, ...]], ...] = (
-    ("`ja4plus`", "reads the packet bytes", ("`99`", "`hh`")),
-    ("FoxIO Python", "FoxIO Python", ("`U+FFFD`",)),
-    ("FoxIO Rust", "FoxIO Rust", ("`h9`",)),
+    ("`ja4plus`", "reads the packet bytes", ("`99`",)),
+    ("FoxIO Python", "FoxIO Python", ("`h\\x1f`",)),
+    ("FoxIO Rust", "FoxIO Rust", ("`hf`",)),
 )
 
 # The sentence that states the ruling itself.
@@ -87,6 +94,10 @@ ONE_CONDITION = "the one condition where `ja4plus` matches no FoxIO implementati
 # The issue that records the ruling.
 RULING_ISSUE = "#522"
 
+# The issue that narrows the ruling, and the date the maintainer ruled.
+NARROWING_ISSUE = "#789"
+NARROWING_DATE = "2026-10-01"
+
 # The first cell of the row that #127 wrote. **The row states the value `99`**, and #601
 # restated the condition that triggers it.
 CONDITION_ITEM = "JA4 ALPN value for a byte outside `0x20-0x7E`"
@@ -95,7 +106,7 @@ CONDITION_ITEM = "JA4 ALPN value for a byte outside `0x20-0x7E`"
 # range, in a position other than the first, keeps `99`.
 POSITION_ITEM = "JA4 ALPN value for a byte outside `0x20-0x7E` in a position other than the first"
 
-# The condition `compute_alpn_value` applies at `ja4plus/fingerprinters/ja4.py:99`.
+# The condition `_alpn_end_character` applies at `ja4plus/fingerprinters/ja4.py:67`.
 PRINTABLE_RANGE = "`0x20-0x7E`"
 
 # The condition the FoxIO prose states, which the measurement of #141 contradicts. **A row
@@ -109,19 +120,25 @@ CONDITION_ROWS = (CONDITION_ITEM, POSITION_ITEM, RULING_ITEM)
 # The first cell of the row that states the one-byte rule.
 ONE_BYTE_ITEM = "JA4 ALPN value for a first ALPN value of one byte"
 
-# **A one-byte value reads the alphanumeric test and not the printable range**, which
-# `ja4plus/fingerprinters/ja4.py:86` applies. A row that states the range alone writes `hh`
-# for a first ALPN value of one space, and the code writes `99`.
-ONE_BYTE_CONDITION = "alphanumeric"
+# **A one-byte value reads the printable range since #789**, which
+# `ja4plus/fingerprinters/ja4.py:67` applies. Before #789 it read the alphanumeric test, and
+# the code wrote `99` for a first ALPN value of one `-`. The code now writes `--`.
+ONE_BYTE_CONDITION = "printable"
 
 # Every row of the register that states the JA4 ALPN condition of a one-byte value.
-ONE_BYTE_ROWS = (ONE_BYTE_ITEM, RULING_ITEM)
+ONE_BYTE_ROWS = (ONE_BYTE_ITEM,)
 
 # The issue that records the readings of 2026-08-07, and the count of entries that name it
 # in `tests/foxio_deviations.json`. **The ruling of #522 moves no entry**, so a change of
-# this count is a change the ruling did not authorize.
+# this count is a change a ruling did not authorize. #789 moved the four entries of stream
+# 2 to itself, so sixteen became twelve.
 DEVIATION_ISSUE = 162
-DEVIATION_ENTRIES = 16
+DEVIATION_ENTRIES = 12
+
+# The issue that narrows the ruling, and the count of entries that name it. Streams 2 and 3
+# of `alpn-condition.pcap` hold four entries each.
+NARROWING_DEVIATION_ISSUE = 789
+NARROWING_DEVIATION_ENTRIES = 8
 
 
 def _register_rows() -> Dict[str, str]:
@@ -220,7 +237,7 @@ def test_the_register_states_the_date_of_the_ruling() -> None:
 
 
 def test_the_register_states_the_value_of_each_implementation() -> None:
-    """The register binds `99` and `hh` to `ja4plus`, `U+FFFD` to Python and `h9` to Rust."""
+    """The register binds `99` to `ja4plus`, `h\\x1f` to Python and `hf` to Rust."""
     for implementation, phrase, values in MEASUREMENT:
         sentence = _sentence_of(phrase)
         for value in values:
@@ -244,6 +261,13 @@ def test_the_register_cites_the_issue_that_records_the_ruling() -> None:
     assert RULING_ISSUE in _row(RULING_ITEM), f"the ruling row cites no {RULING_ISSUE}"
 
 
+def test_the_register_states_the_narrowing_and_its_date() -> None:
+    """The register names #789 and the date the maintainer narrowed the ruling."""
+    sentence = _sentence_of("narrowed the ruling")
+    assert NARROWING_DATE in sentence, f"the narrowing sentence names no date {NARROWING_DATE}"
+    assert NARROWING_ISSUE in sentence, f"the narrowing sentence cites no {NARROWING_ISSUE}"
+
+
 def test_every_alpn_row_states_the_condition_as_the_printable_ascii_range() -> None:
     """Each ALPN row of the register names the range `0x20-0x7E`."""
     for item in CONDITION_ROWS:
@@ -261,12 +285,12 @@ def test_no_alpn_row_states_the_condition_as_the_alphanumeric_test() -> None:
         )
 
 
-def test_every_one_byte_row_names_the_alphanumeric_condition() -> None:
-    """Each one-byte row of the register names the condition that writes `hh`."""
+def test_every_one_byte_row_names_the_printable_condition() -> None:
+    """Each one-byte row of the register names the condition that repeats the byte."""
     for item in ONE_BYTE_ROWS:
         assert ONE_BYTE_CONDITION in _row(item), (
             f"the row named {item!r} names no {ONE_BYTE_CONDITION} byte, and "
-            f"`ja4plus/fingerprinters/ja4.py:86` writes `hh` for no other one-byte value"
+            f"`ja4plus/fingerprinters/ja4.py:67` repeats no other one-byte value"
         )
 
 
@@ -276,4 +300,13 @@ def test_the_ruling_moves_no_entry_of_the_deviation_register() -> None:
     assert len(entries) == DEVIATION_ENTRIES, (
         f"the deviation register holds {len(entries)} entries that name #{DEVIATION_ISSUE}, "
         f"and the ruling of {RULING_ISSUE} moves none of the {DEVIATION_ENTRIES}"
+    )
+
+
+def test_the_narrowing_names_eight_entries_of_the_deviation_register() -> None:
+    """The deviation register holds the eight entries of streams 2 and 3 under #789."""
+    entries = _entries_that_name(NARROWING_DEVIATION_ISSUE)
+    assert len(entries) == NARROWING_DEVIATION_ENTRIES, (
+        f"the deviation register holds {len(entries)} entries that name "
+        f"#{NARROWING_DEVIATION_ISSUE}, and the ruling recorded {NARROWING_DEVIATION_ENTRIES}"
     )

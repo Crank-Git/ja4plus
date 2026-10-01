@@ -31,7 +31,7 @@ fingerprint.
 | Transport | 1 | `t` for TLS over TCP, and `q` for TLS over QUIC. |
 | Version | 2 | The TLS version the server selects, as `13` for TLS 1.3. |
 | Extension count | 2 | The count of extensions the ServerHello carries. |
-| ALPN | 2 | The first character and the last character of the ALPN value the server selects, or `00` when it selects none. |
+| ALPN | 2 | The first character and the last character of the ALPN value the server selects, or `00` when it selects none. JA4 states the byte rule, and JA4S follows it. |
 | Cipher | 4 | The one cipher suite the server selects, as four lowercase hexadecimal digits. |
 | Extension hash | 12 | The hash of the extension list, in wire order. |
 

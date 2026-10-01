@@ -157,11 +157,17 @@ which the image calls the chosen one.
 - Corroboration 2: `zeek/ja4s/main.zeek:49` sets the default `alpn` to `"00"`, and
   `main.zeek:147-150` writes `alpn[0] + alpn[-1]`.
 
-**This rule is uncertain for a byte that is not ASCII alphanumeric. Keep the vector
-fallback.** The image states the absent case and no other case. `technical_details/JA4.md:86-99`
-states the hex fallback for JA4, and the four implementations disagree on the bytes it
-covers. #162 measured that disagreement on JA4 and no FoxIO source measures it on JA4S. See
-"What the register holds".
+**This rule was uncertain for a byte that is not ASCII alphanumeric, and the maintainer
+ruled it on 2026-10-01 UTC.** The image states the absent case and no other case.
+`technical_details/JA4.md:86-99` states the hex fallback for JA4, and the four
+implementations disagree on the bytes it covers. #162 measured that disagreement on JA4 and
+no FoxIO source measures it on JA4S. See "What the register holds".
+
+**The ruling of #789 reaches JA4S too**, because `_get_alpn_value` reads
+`compute_alpn_value`. Each end byte of `0x80` or higher writes `9`, a one-byte printable
+value writes the byte twice, and a control byte at either end writes `99`. R9 of
+`docs/specs/foxio/JA4.md` states the ruling, and `tests/test_alpn_end_byte_ruling.py` builds
+a ServerHello for each input.
 
 ### R8 — Part b is the one cipher the server chose, as four lowercase hex digits
 
@@ -260,8 +266,8 @@ table does not name is a field nobody read.**
 | Extension count digits | R6 | `ja4s.py:287` | Agrees. `f"{min(len(extensions), 99):02d}"`. |
 | GREASE in the extension list | R13 | `tls_utils.py:256` | Agrees with the Python and the Rust references, which R13 marks uncertain. Disagrees with the dissector and the Zeek script. |
 | ALPN, the absent case | R7 | `ja4s.py:413` | Agrees. `_get_alpn_value` returns `00`. |
-| ALPN, the first and the last character | R7 | `ja4s.py:297`, `ja4.py:74-75` | Agrees. 12 of the 126 measured values carry an ALPN. |
-| ALPN, a byte that is not alphanumeric | R7 | `ja4.py:37-84` | Uncertain. No FoxIO JA4S value measures it. |
+| ALPN, the first and the last character | R7 | `ja4s.py:297`, `ja4.py:105-109` | Agrees. 12 of the 126 measured values carry an ALPN. |
+| ALPN, a byte that is not alphanumeric | R7 | `ja4.py:57-109` | Ruled under #789 on 2026-10-01 UTC. No FoxIO JA4S value measures it. |
 | Cipher, four lowercase hex digits | R8 | `ja4s.py:303` | Agrees. `f"{cipher:04x}"`. |
 | Cipher, one value | R8 | `tls_utils.py:229-230` | Agrees. The reader takes the two bytes the ServerHello holds. |
 | Extension hash | R9 | `ja4s.py:305-307` | Agrees. `hashlib.sha256(ext_str.encode()).hexdigest()[:12]` over `",".join(f"{e:04x}")`. |
@@ -387,9 +393,10 @@ ja4plus JA4S on alpn-condition.pcap            : 0 values
 ```
 
 **The capture carries client traffic alone**, so no implementation writes a JA4S value for
-it and the ALPN disagreement of #162 never reaches this method. R7 marks the
-non-alphanumeric ALPN byte uncertain for JA4S, and it stays uncertain. The image states
-only the absent case, and no FoxIO JA4S value measures any other case.
+it and the ALPN disagreement of #162 never reaches this method. R7 marked the
+non-alphanumeric ALPN byte uncertain for JA4S, and the ruling of #789 settled it on
+2026-10-01 UTC. The image states only the absent case, and no FoxIO JA4S value measures any
+other case.
 
 ## The search for a reference value
 
