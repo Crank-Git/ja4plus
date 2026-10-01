@@ -2137,6 +2137,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
   reports 1635 passed, 143 skipped and 140 xfailed.
 
+## [1.4.0] - 2026-10-01
+
+Version 1.4.0 follows version 1.3.0, and no version stands between them. The date of the
+heading above is the date this release reaches `master`. It carries round 270.
+
+**The bump is minor and never patch**, because this release moves published values by a
+ruling that changes a rule, and not by the repair of a defect. It is never major, because it
+adds no name, it removes no name and it renames none.
+
+**The ALPN characters of JA4 and JA4S move on edge inputs** (#789). The maintainer ruled on
+2026-10-01 UTC, and Crank-Git/ja4plus-go#801 ships the same rule in the Go library at
+`v1.3.0`, so the two libraries write one value for each input.
+
+| The first ALPN value | Version 1.3.0 | Version 1.4.0 |
+|---|---|---|
+| `68 ff` | `99` | `h9` |
+| `ff 68` | `99` | `9h` |
+| `2d` | `99` | `--` |
+| `20` | `99` | two spaces |
+| `ba ad` | `99` | `99` |
+| A control byte at either end | `99` | `99` |
+
+**No value of a FoxIO capture moves.** A replay of the 41 committed captures writes 826 values
+at version 1.3.0 and 826 here, and 2 differ. Both sit on `alpn-condition.pcap`, which this
+project built. The conformance suite reports 1702 passed, 145 skipped and 137 xfailed at
+version 1.3.0, and 1698 passed, 145 skipped and 141 xfailed here.
+
 ## [1.3.0] - 2026-09-30
 
 Version 1.3.0 follows version 1.2.2, and no version stands between them. The date of the
