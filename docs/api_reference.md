@@ -280,7 +280,7 @@ dataclass, because a result describes something that already happened.
 
 | Field | Type | Constraint |
 |---|---|---|
-| `type` | `str` | The method name, lowercase. One of ten values, and ten values carry eleven methods. `--types` accepts these ten tokens and the token `ja4ls`. |
+| `type` | `str` | The method name, lowercase. One of eleven values. Ten values carry the eleven passive methods, and `ja4plus scan` writes the value `ja4tscan`. `--types` accepts the ten passive tokens and the token `ja4ls`. |
 | `fingerprint` | `str` | The fingerprint string. Never empty. |
 | `raw` | `str \| None` | The raw form, when the method defines one. |
 | `raw_original_order` | `str \| None` | The original-order raw form, when the method defines one. |
@@ -561,6 +561,61 @@ one. If you need one instant across the ten fingerprinters, stop the packet sour
 tables that the counts describe.
 
 `ProcessorStats` is a plain object. Epic 4 makes it a typed dataclass.
+
+## Active scan
+
+`ja4plus.scan` holds JA4TScan, the one method that sends packets. `import ja4plus` loads
+no module of it, and no module outside it imports it. The `ja4plus scan` subcommand
+reaches it through the `ja4plus.commands` entry point.
+[The JA4TScan page](methods/ja4tscan.md) describes the command.
+
+**The scan loop takes the send function, the receive function and the clock as
+parameters.** A caller therefore runs it on a fake network, and `tests/scan_fakes.py`
+holds one.
+
+### ja4plus.scan.value
+
+| Class/Function | Description |
+|---|---|
+| `Response(seconds, flags, window, options)` | The four fields of one TCP response that the value reads |
+| `ja4tscan_value(responses)` | Return the JA4TScan value of one target, or `None` when it sent no response |
+| `RST_ACK_VALUE` | The value `0_rst-ack`, which a target whose first response carries RST produces |
+
+### ja4plus.scan.frames
+
+| Class/Function | Description |
+|---|---|
+| `build_syn(*, src_mac, dst_mac, src_ip, dst_ip, src_port, dst_port, sequence, timestamp)` | Return the Ethernet frame of one FoxIO SYN, 74 bytes |
+| `parse_frame(frame)` | Return the TCP fields of one received Ethernet frame, or `None` for a frame it cannot read |
+| `Reply` | The TCP fields of one received segment that the scanner reads |
+
+### ja4plus.scan.scanner
+
+| Class/Function | Description |
+|---|---|
+| `Scanner(*, port, rate, retransmit, send, receive, clock, on_result, on_warning, rng)` | The scan loop. `run(targets)` sends one SYN to each target and waits for its responses |
+| `ScanResult` | The value of one target and the endpoints of its responses |
+| `parse_targets(text)` | Return the IPv4 targets that one address, one network or one file names |
+| `TargetError` | The error `parse_targets` raises for a target the scanner cannot read |
+| `firewall_rules(platform)` | Return the firewall rules the operator adds before a scan |
+| `MAX_TARGETS` | The largest target count the state table holds, 10000 |
+| `RETRANSMIT_WAIT_SECONDS` | The wait for later responses after each SYN, 120 seconds |
+| `NO_RETRANSMIT_WAIT_SECONDS` | The wait under `--retransmit no`, 8 seconds |
+
+### ja4plus.scan.command
+
+| Class/Function | Description |
+|---|---|
+| `run(args, result_stream)` | Run the scan on the network of this host. The `ja4plus.commands` entry point names it |
+| `scan_command(args, *, result_stream, platform, open_network, clock, rng)` | Run the scan over the network that `open_network` returns |
+| `METHOD_TYPE` | The `type` value of a scan output line, `ja4tscan` |
+
+### ja4plus.scan.link
+
+| Class/Function | Description |
+|---|---|
+| `LinkNetwork(port, first_target, on_warning)` | The link-layer socket that sends each SYN and reads each response. It needs the privilege to open a raw socket |
+| `privilege_refused(error)` | Return `True` when the error states that the host refused that privilege |
 
 ## Utility Modules
 

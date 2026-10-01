@@ -85,7 +85,17 @@ SUBJECT = re.compile(r"`(ja4plus/[A-Za-z0-9_./-]+\.py)`")
 
 # The directories of the FoxIO checkout. A citation under one of them names no file this
 # repository owns, whatever a basename of this repository matches.
-FOXIO_PREFIXES = ("python/", "rust/", "wireshark/", "zeek/", "epan/", "technical_details/")
+# `docs/specs/foxio/JA4TScan.md` cites `ja4tscan/ja4tscan.py` of `FoxIO-LLC/ja4tscan`. A
+# module of the same basename in this repository would otherwise capture that citation.
+FOXIO_PREFIXES = (
+    "python/",
+    "rust/",
+    "wireshark/",
+    "zeek/",
+    "epan/",
+    "technical_details/",
+    "ja4tscan/",
+)
 
 # The reference the workflow writes for a pin, because the clone of the runner holds depth 1
 # and reaches no pin on its own. `.github/workflows/test.yml` fetches each one.

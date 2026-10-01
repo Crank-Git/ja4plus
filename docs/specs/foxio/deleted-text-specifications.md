@@ -309,7 +309,7 @@ rule the image does not state. None contradicts the image.
 | A RST carries no state | `Note that RST packets do not contain TCP options or window sizes, as such the program will need to be aware of the previous JA4TS.` | A rule the image does not state |
 | The state bound | `The max is 10 retransmissions counted and the timeout is 2 minutes after the last SYNACK.` | **A rule the image does not state, and no other FoxIO source states it.** It stays uncertain |
 | JA4TS depends on the JA4T | `Note that the JA4TS is dependant on the JA4T that was sent to it.` | A statement about traffic. No implementation reads it |
-| JA4TScan | `JA4TScan is a tool that sends a very specific SYN packet` | Corroborates that JA4TScan is a separate tool. `docs/specs/spec.md` records JA4TScan as out of scope |
+| JA4TScan | `JA4TScan is a tool that sends a very specific SYN packet` | Corroborates that JA4TScan is a separate tool. `docs/specs/foxio/JA4TScan.md` transcribes that tool, and #775 reversed the decline that this cell stated as `docs/specs/spec.md records JA4TScan as out of scope` |
 
 **The state bound is the one rule with a single source.** `CLAUDE.md` requires a maximum
 entry count and a maximum age on every state table, and this project already sets its own.

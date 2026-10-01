@@ -130,8 +130,8 @@ nav:
   - Migration from 0.6.0: migration-0.6-to-1.0.md
   # `FR-documentation-10` asks for a page per method. Eleven methods reach ten
   # fingerprinter classes, because `JA4LFingerprinter` writes both `JA4L-C=` and
-  # `JA4L-S=`, so JA4L and JA4LS each hold a page. JA4TScan reaches no page, because this
-  # project declines it, and `methods/index.md` states the decline.
+  # `JA4L-S=`, so JA4L and JA4LS each hold a page. JA4TScan holds a page too, and
+  # `methods/index.md` states why it stands apart: it is the one method that sends packets.
   - Methods:
       - methods/index.md
       - JA4: methods/ja4.md
@@ -145,6 +145,7 @@ nav:
       - JA4TS: methods/ja4ts.md
       - JA4D: methods/ja4d.md
       - JA4D6: methods/ja4d6.md
+      - JA4TScan: methods/ja4tscan.md
   - API reference:
       - reference/index.md
       - Processor: reference/processor.md

@@ -42,12 +42,15 @@ BOUNDS_HEADING = "#### The default bounds"
 # The heading of the paragraph that states whether threads may share one processor.
 CONCURRENCY_HEADING = "#### The concurrency contract"
 
-# The one method FoxIO publishes that this project declines. `docs/specs/spec.md`
-# § Non-goals holds the ruling and #197 holds the reading.
-DECLINED_METHOD = "JA4TScan"
+# The one method that sends packets. #197 declined it on 2026-08-08, and the maintainer
+# reversed the decline on 2026-09-30, in #775. #776 built it as `ja4plus scan`.
+SCANNER_METHOD = "JA4TScan"
 
-# The claim #62 removes. The project implements eleven of the twelve FoxIO methods, so a
-# claim of full coverage is false whatever count it names and whatever words it uses.
+# The claim #62 removed, while the project implemented fewer methods than FoxIO publishes.
+# #776 built the twelfth, and the README states the count as `implements twelve of them`.
+# `test_the_readme_states_the_count_of_methods_its_own_table_marks` compares that phrase
+# against the table. A coverage phrase states a count that no case compares, so this case
+# still refuses one.
 # **A fixed list of three phrasings passes on the fourth phrasing**, and the first form of
 # this case held such a list, so these patterns match the shape of the claim instead.
 COVERAGE_CLAIMS = (
@@ -213,17 +216,15 @@ def test_the_readme_method_table_names_only_methods_foxio_publishes() -> None:
     assert extra == [], f"the method table names {extra}, which FoxIO does not publish"
 
 
-def test_the_readme_method_table_marks_ja4tscan_as_not_implemented() -> None:
-    """The README marks JA4TScan as the one FoxIO method this project does not build."""
-    row = _method_rows()[DECLINED_METHOD]
-    assert _implemented_cell(row) == "No", (
-        f"the {DECLINED_METHOD} row states {_implemented_cell(row)!r}, and it must state 'No'"
-    )
+def test_the_readme_method_table_names_the_command_of_the_scanner() -> None:
+    """The README JA4TScan row names `ja4plus scan`, because no passive command reads it."""
+    text = " ".join(_method_rows()[SCANNER_METHOD])
+    assert "`ja4plus scan`" in text, f"the {SCANNER_METHOD} row names no command"
 
 
-@pytest.mark.parametrize("method", [name for name in FOXIO_METHODS if name != DECLINED_METHOD])
-def test_the_readme_method_table_marks_every_other_method_implemented(method: str) -> None:
-    """The README marks the eleven methods this project builds as implemented."""
+@pytest.mark.parametrize("method", FOXIO_METHODS)
+def test_the_readme_method_table_marks_every_method_implemented(method: str) -> None:
+    """The README marks each of the twelve methods this project builds as implemented."""
     row = _method_rows()[method]
     assert _implemented_cell(row) == "Yes", (
         f"the {method} row states {_implemented_cell(row)!r}, and it must state 'Yes'"

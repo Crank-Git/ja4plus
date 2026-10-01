@@ -12,8 +12,12 @@ mockups: []
 The user asked for the documentation to be correct. Two statements in it are not.
 
 The README said the project implements "all ten JA4+ methods". FoxIO documents
-twelve, and counts JA4LS and JA4TScan separately. The project implements eleven of
-the twelve, and it declines JA4TScan.
+twelve, and counts JA4LS and JA4TScan separately. #776 built JA4TScan as `ja4plus scan`,
+so the project implements twelve of the twelve. The maintainer reversed the JA4TScan
+decline on 2026-09-30, in #775. The superseded sentence is quoted below rather than
+rewritten.
+
+> The project implements eleven of the twelve, and it declines JA4TScan.
 
 `JA4LFingerprinter` writes both JA4L and JA4LS, so ten fingerprinter classes carry
 eleven methods. **Read the ten as a count of fingerprinter classes, and never as a
@@ -197,8 +201,8 @@ and the repository must have GitHub Pages set to build from GitHub Actions.
 
 ## Acceptance criteria
 
-- [ ] The README method table lists twelve FoxIO methods and marks JA4TScan as not
-      implemented.
+- [ ] The README method table lists twelve FoxIO methods. It marks JA4TScan as not
+      implemented until #776 builds the scanner, and #776 then marks it implemented.
 - [ ] The README no longer claims that the project implements all JA4+ methods.
 - [ ] The README states, in one paragraph, whether a processor may be shared
       between threads.

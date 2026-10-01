@@ -75,9 +75,10 @@ import pytest
 
 import ja4plus
 from ja4plus import __all__ as PUBLIC_NAMES
+from ja4plus.scan import value as scan_value
 
 from tests.test_documentation_image_count import FOXIO_METHODS
-from tests.test_readme_contracts import COUNT_WORDS, DECLINED_METHOD
+from tests.test_readme_contracts import COUNT_WORDS, SCANNER_METHOD
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -139,6 +140,10 @@ CLASS_SUFFIX = "Fingerprinter"
 # removes the emitter drops JA4LS from the count, and every document that states eleven
 # then fails.
 SHARED_METHODS: Dict[str, Dict[str, str]] = {"generate_ja4l": {"JA4LS": "JA4L-S="}}
+
+# The function of `ja4plus/scan/value.py` that writes a JA4TScan value. #776 built it, and
+# `implemented_methods` counts the scanner while the scan package holds it.
+SCANNER_VALUE_WRITER = "ja4tscan_value"
 
 # A line that returns a value. `emitter_lines` reads these lines alone.
 #
@@ -280,6 +285,23 @@ def emitter_lines(name: str) -> List[str]:
 def implemented_methods() -> FrozenSet[str]:
     """Return the FoxIO methods `ja4plus` implements, read out of the package.
 
+    The passive methods come from `passive_methods`. The scanner stands outside `__all__`
+    by the ruling of 2026-09-30 in #775, so the reader counts JA4TScan where the scan
+    package writes a value. A package that loses the value writer drops the method, and
+    every document that states twelve then fails.
+
+    Returns:
+        The method names, in the spelling `FOXIO_METHODS` holds.
+    """
+    found = set(passive_methods())
+    if callable(getattr(scan_value, SCANNER_VALUE_WRITER, None)):
+        found.add(SCANNER_METHOD)
+    return frozenset(found)
+
+
+def passive_methods() -> FrozenSet[str]:
+    """Return the FoxIO methods the passive interface of `ja4plus` implements.
+
     A generator of the public interface names its method, and `SHARED_METHODS` names the
     method a generator writes beside it. The reader confirms the extra method against a
     return line of the module, so a generator that stops writing the prefix drops the
@@ -309,8 +331,21 @@ def fingerprinter_classes() -> FrozenSet[str]:
     return frozenset(name for name in PUBLIC_NAMES if name.endswith(CLASS_SUFFIX))
 
 
+def _without_quotations(text: str) -> str:
+    """Return the text with every line of a Markdown quotation dropped.
+
+    A Markdown quotation opens its line with `>`, and this project quotes a superseded
+    text that way rather than rewrite it. Rule 17 of `.claude/rules/ste.md` reads such a
+    line as evidence, so a count it states is no claim of the present.
+
+    Args:
+        text: The text of one document.
+    """
+    return "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(">"))
+
+
 def _plain(text: str) -> str:
-    """Return one line of text with no HTML tag and one space between words.
+    """Return one line of text with no HTML tag, no Markdown quotation and one space between words.
 
     Args:
         text: The text of one document.
@@ -318,7 +353,7 @@ def _plain(text: str) -> str:
     Returns:
         The text as one line.
     """
-    return " ".join(HTML_TAG.sub(" ", text).split())
+    return " ".join(HTML_TAG.sub(" ", _without_quotations(text)).split())
 
 
 def _unquoted(text: str) -> str:
@@ -333,7 +368,10 @@ def _unquoted(text: str) -> str:
     Returns:
         The text as one line, with no HTML tag and no quoted passage.
     """
-    lines = [QUOTED_PASSAGE.sub(" ", line) for line in HTML_TAG.sub(" ", text).splitlines()]
+    lines = [
+        QUOTED_PASSAGE.sub(" ", line)
+        for line in HTML_TAG.sub(" ", _without_quotations(text)).splitlines()
+    ]
     return " ".join(" ".join(lines).split())
 
 
@@ -568,12 +606,29 @@ def test_every_generator_of_the_public_interface_names_a_foxio_method() -> None:
     assert extra == [], f"the reader derives {extra}, which FoxIO does not publish"
 
 
-def test_the_package_implements_every_foxio_method_but_the_declined_one() -> None:
-    """The package implements every FoxIO method except the one it declines."""
-    absent = sorted(set(FOXIO_METHODS) - implemented_methods())
-    assert absent == [DECLINED_METHOD], (
-        f"the package implements every method but {absent}, and it declines {DECLINED_METHOD} alone"
+def test_the_passive_interface_implements_every_foxio_method_but_the_scanner() -> None:
+    """`__all__` carries a generator for every FoxIO method except JA4TScan.
+
+    `ja4plus.scan` holds JA4TScan apart from the passive interface, under the ruling of
+    2026-09-30 in #775, so no generator of `__all__` writes it.
+    """
+    absent = sorted(set(FOXIO_METHODS) - passive_methods())
+    assert absent == [SCANNER_METHOD], (
+        f"the passive interface lacks {absent}, and it lacks {SCANNER_METHOD} alone"
     )
+
+
+def test_the_package_implements_every_foxio_method() -> None:
+    """The passive interface and the scan package together write all twelve methods."""
+    assert implemented_methods() == frozenset(FOXIO_METHODS)
+
+
+def test_the_reader_counts_the_scanner_where_the_scan_package_writes_a_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A scan package without its value writer drops JA4TScan from the count."""
+    monkeypatch.delattr(scan_value, SCANNER_VALUE_WRITER)
+    assert SCANNER_METHOD not in implemented_methods()
 
 
 def test_the_shared_generator_carries_the_second_method_of_its_module() -> None:
@@ -746,6 +801,13 @@ def test_the_reader_reads_the_superseded_count_inside_a_paragraph_of_html() -> N
     """The reader reads a claim that an HTML tag splits."""
     passage = "<li>FoxIO documents twelve and this <strong>project implements ten</strong>.</li>"
     assert stated_counts(passage) == ["ten"]
+
+
+def test_the_reader_reads_no_count_inside_a_markdown_quotation() -> None:
+    """A superseded sentence quoted with `>` records a past text, so it states no count."""
+    page = "The count moved.\n\n> The project implements ten of the twelve.\n"
+    assert stated_counts(page) == []
+    assert stated_counts(page.replace("> ", "")) == ["ten"]
 
 
 def test_the_reader_reads_no_count_of_the_methods_foxio_publishes() -> None:
