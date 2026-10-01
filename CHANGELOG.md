@@ -6,6 +6,37 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **`ja4plus scan` adds JA4TScan, the FoxIO active TCP server fingerprint** (#775, #776).
+  Round
+  269. **The maintainer reversed the decline of 2026-08-08 on 2026-09-30.** The scanner sends
+  one SYN to each IPv4 target and reads the SYN-ACK and its retransmissions. Parts a to d
+  use the JA4TS form of this project, so a scan value and the passive JA4TS value of one
+  SYN-ACK hold the same four parts. A target whose first answer carries RST writes
+  `0_rst-ack`. **The library changes no firewall state.** The command prints the four
+  `iptables` rules of the FoxIO wrapper, or four pf rules on macOS, and it warns when a
+  SYN-ACK arrives with no retransmission. The scanner lives in `ja4plus/scan/` behind the
+  `scan` extra, and no passive module imports it. `docs/specs/foxio/JA4TScan.md` transcribes
+  `FoxIO-LLC/ja4tscan` at `d01bfec4`, and `docs/specs/features/12-active-scan.md` states 35
+  acceptance criteria. The divergence register records the three places where the FoxIO
+  module writes another form. **The project now implements all twelve FoxIO methods.**
+
+- **JA4 reads a ClientHello that spans TCP segments, and the FoxIO pin moves to `16b96d95`** (#772, #773, #774).
+  Round
+  268. **A post-quantum key share makes a browser ClientHello longer than one TCP segment**,
+  and the JA4 fingerprinter read each segment alone, so it wrote no value for such a hello.
+  `sigalg-grease.pcapng` of FoxIO release v1.0.1 holds a 2034-byte hello in two segments.
+  The fingerprinter now holds the client payload of a connection in a bounded table until
+  the hello is complete, and a gap stops the read at the first byte that has not arrived
+  (#772). **JA4 removes GREASE values from the signature algorithms** at both call sites, as
+  FoxIO `d66336ef` does, and the value of that capture now equals the FoxIO value in all
+  four forms (#773). **A repeated MSS option or window scale option keeps its last value**,
+  which the FoxIO Rust, Wireshark and Zeek sources each do at `16b96d95` (#774). The FoxIO
+  pin moves from `27f0cbf9` to `16b96d95`. The seven Zeek baselines stay at `27f0cbf9`
+  under `ZEEK_COMMIT`, because FoxIO `4e91886c` removed `zeek/tests/Traces`. **A replay of
+  77 captures writes one new value, the JA4 of `sigalg-grease.pcapng` frame 5, and every
+  other value is byte-identical.** The conformance suite reports 1684 passed, 142 skipped
+  and 138 xfailed before this round, and 1702 passed, 145 skipped and 137 xfailed after it.
+
 - **The QUIC CRYPTO reader stops at the first byte that has not arrived** (#762).
   Round
   267. **An outside reporter measured the defect on Windows against a live capture.**
@@ -2086,6 +2117,45 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   prose, so `` `git gc --prune=now` `` failed a case that no prose sentence broke.
   **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
   reports 1635 passed, 143 skipped and 140 xfailed.
+
+## [1.3.0] - 2026-09-30
+
+Version 1.3.0 follows version 1.2.2, and no version stands between them. The date of the
+heading above is the date this release reaches `master`. It carries rounds 268 and 269.
+
+**The bump is minor and never patch.** This release adds published names: the
+`ja4plus.scan` package, the `ja4plus scan` subcommand and the `scan` extra. It removes no
+name and it renames none.
+
+**JA4 reads a ClientHello that spans TCP segments** (#772). A post-quantum key share makes
+a current browser ClientHello longer than one TCP segment, and the fingerprinter read each
+segment alone, so it wrote no JA4 value for such a hello. **A caller now receives a JA4
+value for that traffic where it received none before.** The fingerprinter holds the client
+payload of a connection in a bounded table until the hello is complete, and a gap stops
+the read at the first byte that has not arrived.
+
+**Two readers now write the FoxIO value.**
+
+| Method | Input | Version 1.2.2 | Version 1.3.0 | Issue |
+|---|---|---|---|---|
+| JA4 | A ClientHello with a GREASE value among its signature algorithms | Hashes the GREASE value | Removes it, as FoxIO `d66336ef` does | #773 |
+| JA4T, JA4TS | A SYN or SYN-ACK with a repeated MSS option or window scale option | Keeps the first value | Keeps the last value, as the FoxIO Rust, Wireshark and Zeek sources do | #774 |
+
+**No value of the committed corpus moves.** A replay of 77 captures writes one new value,
+the JA4 of `sigalg-grease.pcapng` frame 5, which equals the FoxIO value. Every other value
+is byte-identical. No committed capture carries a repeated TCP option or a signature
+algorithm GREASE value.
+
+**`ja4plus scan` adds JA4TScan, the FoxIO active TCP server fingerprint** (#775, #776). The
+scanner sends one SYN to each IPv4 target and reads the SYN-ACK and its retransmissions.
+**It is the one part of the package that sends packets**, so it lives behind the `scan`
+extra and no passive module imports it. **The library changes no firewall state**, and
+the command prints the rules the operator adds. `docs/specs/features/12-active-scan.md`
+states the requirements. The project now implements all twelve FoxIO methods.
+
+**The FoxIO pin moves from `27f0cbf9` to `16b96d95`**, and `sigalg-grease.pcapng` joins the
+vectors. The conformance suite reports 1684 passed, 142 skipped and 138 xfailed at version
+1.2.2, and 1702 passed, 145 skipped and 137 xfailed here.
 
 ## [1.2.2] - 2026-09-29
 

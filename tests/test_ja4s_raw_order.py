@@ -99,8 +99,8 @@ def test_every_reference_raw_value_appears_in_the_raw_key_of_a_result():
         assert expected <= produced, name
         checked += len(expected)
         vectors += 1
-    # Fourteen committed vectors hold a `JA4S_r` key. The counts of the distinct values
-    # of each vector sum to 29. A drop in either count means a vector left the set, and
+    # Fifteen committed vectors hold a `JA4S_r` key. The counts of the distinct values
+    # of each vector sum to 30. #772 added `sigalg-grease.pcapng`, which holds one. A drop in either count means a vector left the set, and
     # the test then proves less than it claims.
-    assert vectors == 14
-    assert checked == 29
+    assert vectors == 15
+    assert checked == 30

@@ -3,24 +3,26 @@
 Where `ja4plus --version` reports 0.6.0, read this page before you install version 1.0.0.
 That command names the version of the package your environment holds.
 
-This repository declares version 1.2.2, which is a patch release of version 1.2.1.
+This repository declares version 1.3.0, which is a minor release of version 1.2.2.
 **Python 3.9 leaves the supported set at version 1.1.0**, and version 1.0.1 is the release
 that still installs on it. Version 1.1.0 moves no other interface and no fingerprint, and
 version 1.1.1 repairs one crash of the ServerHello reader and moves neither.
 
 **Version 1.2.0 moves several fingerprint values, and it breaks no row of this page.** The
-rows below state what version 1.0.0 changed against version 0.6.0, and version 1.2.0
-changes none of them, so every row reads the same here. **Version 1.2.1 moves no
-fingerprint value at all**, so it breaks no row either. It repairs the address pair the
-command prints for a value that no packet released, and it moves the frame that carries
-the QUIC `JA4L-S` value without moving the text of that value. **Version 1.2.2 moves no
-value of the committed corpus either**, so it breaks no row. It stops the QUIC ClientHello
-reader at the first CRYPTO byte that has not arrived (#762). **A reader who moves from version
-1.1.1 rather than from version 0.6.0 reads the `## [1.2.0]` section of `CHANGELOG.md`
-instead**, which names each value that moves and the issue that carries it. Those values
-are JA4X and JA4H on an empty list, JA4TS on a reset of a one-SYN-ACK connection, JA4T on
-the header an ICMP error message quotes, and JA4, JA4S, JA4D and JA4D6 on a tunneled
-packet.
+rows below state what version 1.0.0 changed against version 0.6.0, and version 1.2.0 changes
+none of them, so every row reads the same here. **Version 1.2.1 moves no fingerprint value
+at all**, so it breaks no row either. It repairs the address pair the command prints for a
+value that no packet released, and it moves the frame that carries the QUIC `JA4L-S` value
+without moving the text of that value. **Version 1.2.2 moves no value of the committed
+corpus either**, so it breaks no row. It stops the QUIC ClientHello reader at the first
+CRYPTO byte that has not arrived (#762). **Version 1.3.0 moves no value of the committed
+corpus either**, so it breaks no row. It adds the `ja4plus scan` subcommand behind the
+`scan` extra, and the `## [1.3.0]` section of `CHANGELOG.md` names the two readers that now
+write the FoxIO value. **A reader who moves from version 1.1.1 rather than from version
+0.6.0 reads the `## [1.2.0]` section of `CHANGELOG.md` instead**, which names each value
+that moves and the issue that carries it. Those values are JA4X and JA4H on an empty list,
+JA4TS on a reset of a one-SYN-ACK connection, JA4T on the header an ICMP error message
+quotes, and JA4, JA4S, JA4D and JA4D6 on a tunneled packet.
 
 This page states what a reader must change. It lists each breaking change with the old
 form, the new form and the reason. `CHANGELOG.md` and the `## Changelog` table of

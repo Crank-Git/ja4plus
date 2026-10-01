@@ -34,6 +34,7 @@ import pytest
 import ja4plus
 from ja4plus import __all__ as PUBLIC_NAMES
 from ja4plus.cli import VALID_TYPES, _selecting_token
+from ja4plus.scan.scanner import IPTABLES_RULES, PF_RULES
 
 from tests.test_documentation_image_count import FOXIO_METHODS
 
@@ -45,25 +46,27 @@ FOXIO_INVENTORY = DOCS_DIR / "specs" / "foxio" / "README.md"
 SCHEMA_PAGE = DOCS_DIR / "output-schema.md"
 MIGRATION_PAGE = DOCS_DIR / "migration-0.6-to-1.0.md"
 
-# The one FoxIO method this project declines. `docs/specs/spec.md` § Non-goals holds the
-# ruling and #197 holds the reading. It reaches no method page, and
-# `docs/methods/index.md` states the decline.
-DECLINED_METHOD = "JA4TScan"
+# The one method that sends packets. #197 declined it, and the maintainer reversed the
+# decline on 2026-09-30, in #775. #776 built it and wrote its page, and
+# `docs/methods/index.md` states why it stands apart.
+SCANNER_METHOD = "JA4TScan"
 
-# The eleven methods a page describes. Ten fingerprinter classes carry them, because
-# `JA4LFingerprinter` writes both `JA4L-C=` and `JA4L-S=`. #387 records the counting
-# error that reads a count of classes as a count of methods.
-IMPLEMENTED_METHODS = tuple(name for name in FOXIO_METHODS if name != DECLINED_METHOD)
+# The eleven passive methods, whose page names a fingerprinter, a `--types` token and a
+# committed capture. Ten fingerprinter classes carry them, because `JA4LFingerprinter`
+# writes both `JA4L-C=` and `JA4L-S=`. #387 records the counting error that reads a count
+# of classes as a count of methods. The scanner page names none of the three, because the
+# scanner reads no capture.
+PASSIVE_METHODS = tuple(name for name in FOXIO_METHODS if name != SCANNER_METHOD)
 
 # Nine cases parametrize over the tuple above, and pytest reads it at collection time. A
 # tuple that shrank would collect fewer cases rather than fail one, which reads as a green
 # run. This check runs at import and it names the shrink.
-assert len(IMPLEMENTED_METHODS) == 11, (
-    f"the case file parametrizes over {len(IMPLEMENTED_METHODS)} methods, and this "
+assert len(PASSIVE_METHODS) == 11, (
+    f"the case file parametrizes over {len(PASSIVE_METHODS)} methods, and this "
     f"project implements eleven"
 )
-assert DECLINED_METHOD in FOXIO_METHODS, (
-    f"{DECLINED_METHOD} left FOXIO_METHODS, so the tuple above declines nothing"
+assert SCANNER_METHOD in FOXIO_METHODS, (
+    f"{SCANNER_METHOD} left FOXIO_METHODS, so the tuple above excludes nothing"
 )
 
 # The heading of the table that holds the machine-read facts of one page.
@@ -379,7 +382,7 @@ def test_the_documentation_holds_one_page_for_each_implemented_method() -> None:
     """`FR-documentation-10`. `docs/methods/` holds one page per implemented method."""
     assert METHODS_DIR.is_dir(), "docs/methods/ does not exist"
     pages = {path.stem for path in METHODS_DIR.glob("*.md")} - {"index"}
-    wanted = {method.lower() for method in IMPLEMENTED_METHODS}
+    wanted = {method.lower() for method in FOXIO_METHODS}
     assert len(wanted) >= MINIMUM_PAGES, f"the case reads {len(wanted)} methods"
     assert pages == wanted, (
         f"docs/methods/ holds no page for {sorted(wanted - pages)} and holds an "
@@ -387,14 +390,22 @@ def test_the_documentation_holds_one_page_for_each_implemented_method() -> None:
     )
 
 
-def test_the_documentation_holds_no_page_for_the_declined_method() -> None:
-    """The site serves no method page for JA4TScan, which this project does not build."""
-    assert not _page(DECLINED_METHOD).exists(), (
-        f"{_page(DECLINED_METHOD).name} exists, and this project builds no {DECLINED_METHOD}"
+def test_the_scanner_page_names_the_command_and_the_installation() -> None:
+    """The JA4TScan page names `ja4plus scan` and the `scan` extra, because no capture reads it."""
+    text = _page(SCANNER_METHOD).read_text(encoding="utf-8")
+    assert "`ja4plus scan TARGET`" in text, "the scanner page names no command"
+    assert "`pip install ja4plus[scan]`" in text, "the scanner page names no installation"
+
+
+@pytest.mark.parametrize("rule", IPTABLES_RULES + PF_RULES)
+def test_the_scanner_page_states_each_firewall_rule_the_scanner_writes(rule: str) -> None:
+    """The JA4TScan page states each rule of `ja4plus/scan/scanner.py` verbatim."""
+    assert rule in _page(SCANNER_METHOD).read_text(encoding="utf-8").splitlines(), (
+        f"the scanner page states no {rule!r}"
     )
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", FOXIO_METHODS)
 def test_the_navigation_names_the_page_of_each_method(method: str) -> None:
     """A page outside the `nav` of `mkdocs.yml` is a page no reader reaches."""
     entry = f"methods/{method.lower()}.md"
@@ -403,7 +414,7 @@ def test_the_navigation_names_the_page_of_each_method(method: str) -> None:
     )
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", PASSIVE_METHODS)
 def test_each_method_page_names_a_types_token_the_command_accepts(method: str) -> None:
     """The `--types` token of each page is one `ja4plus/cli.py` accepts."""
     token = _fact(method, "The `--types` token")
@@ -419,12 +430,12 @@ def test_each_types_token_reaches_a_method_page(token: str) -> None:
     `ja4l` reaches two pages, because `JA4LFingerprinter` writes two methods.
     """
     claimed = {
-        method for method in IMPLEMENTED_METHODS if _fact(method, "The `--types` token") == token
+        method for method in PASSIVE_METHODS if _fact(method, "The `--types` token") == token
     }
     assert claimed, f"no method page describes the token {token!r}"
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", PASSIVE_METHODS)
 def test_each_method_page_names_a_fingerprinter_the_package_exports(method: str) -> None:
     """The class each page names is in `ja4plus.__all__`, so a reader may import it."""
     name = _fact(method, "The fingerprinter class")
@@ -432,7 +443,7 @@ def test_each_method_page_names_a_fingerprinter_the_package_exports(method: str)
     assert hasattr(ja4plus, name), f"`ja4plus` holds no attribute {name!r}"
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", PASSIVE_METHODS)
 def test_each_method_page_names_a_one_shot_function_the_package_exports(method: str) -> None:
     """The one-shot function each page names is in `ja4plus.__all__` and it is callable."""
     name = _fact(method, "The one-shot function")
@@ -440,7 +451,7 @@ def test_each_method_page_names_a_one_shot_function_the_package_exports(method: 
     assert callable(getattr(ja4plus, name)), f"`ja4plus.{name}` is not callable"
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", PASSIVE_METHODS)
 def test_each_method_page_states_the_hash_rule_its_module_holds(method: str) -> None:
     """The hash rule of each page is the truncation its own module applies.
 
@@ -457,7 +468,7 @@ def test_each_method_page_states_the_hash_rule_its_module_holds(method: str) -> 
     )
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", PASSIVE_METHODS)
 def test_each_method_page_cites_a_foxio_file_the_inventory_records(method: str) -> None:
     """Every method page cites its FoxIO source, and the inventory holds that file.
 
@@ -471,7 +482,7 @@ def test_each_method_page_cites_a_foxio_file_the_inventory_records(method: str) 
     assert unknown == [], f"{method} cites {unknown}, and the FoxIO inventory records none of them"
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", PASSIVE_METHODS)
 def test_each_method_page_states_the_raw_fields_the_method_writes(method: str) -> None:
     """The two raw rows of each page agree with the fields the method fills.
 
@@ -494,7 +505,7 @@ def test_each_method_page_states_the_raw_fields_the_method_writes(method: str) -
         )
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", PASSIVE_METHODS)
 def test_the_example_of_each_method_page_comes_from_the_capture_it_names(method: str) -> None:
     """Every example value of a method page is one its named capture produces.
 
@@ -522,13 +533,14 @@ def test_the_example_of_each_method_page_comes_from_the_capture_it_names(method:
         )
 
 
-def test_the_index_of_the_methods_states_the_decline_of_the_one_method_not_built() -> None:
-    """`docs/methods/index.md` records the JA4TScan decline, so a reader finds the reason."""
+def test_the_index_of_the_methods_states_why_the_scanner_stands_apart() -> None:
+    """`docs/methods/index.md` records the JA4TScan reversal, so a reader finds the command."""
     index = METHODS_DIR / "index.md"
     assert index.is_file(), "docs/methods/index.md does not exist"
     text = index.read_text(encoding="utf-8")
-    assert DECLINED_METHOD in text, f"the index names no {DECLINED_METHOD}"
-    assert "#197" in text, "the index cites no issue for the decline"
+    assert SCANNER_METHOD in text, f"the index names no {SCANNER_METHOD}"
+    assert "#775" in text, "the index cites no issue for the reversal"
+    assert "`ja4plus scan`" in text, "the index names no command for the scanner"
 
 
 @pytest.mark.parametrize("method", FOXIO_METHODS)
@@ -545,7 +557,7 @@ def test_the_index_of_the_methods_names_every_foxio_method(method: str) -> None:
 def test_the_index_of_the_methods_links_the_page_of_every_implemented_method() -> None:
     """Each row of the index table links the page of the method it names."""
     text = (METHODS_DIR / "index.md").read_text(encoding="utf-8")
-    missing = [method for method in IMPLEMENTED_METHODS if f"({method.lower()}.md)" not in text]
+    missing = [method for method in FOXIO_METHODS if f"({method.lower()}.md)" not in text]
     assert missing == [], f"the index links no page for {missing}"
 
 
@@ -557,7 +569,7 @@ def test_the_site_serves_the_output_schema_page() -> None:
     )
 
 
-@pytest.mark.parametrize("method", IMPLEMENTED_METHODS)
+@pytest.mark.parametrize("method", FOXIO_METHODS)
 def test_the_output_schema_page_links_the_page_of_every_method(method: str) -> None:
     """The schema page reaches the page that describes the method of each output line."""
     text = SCHEMA_PAGE.read_text(encoding="utf-8")
@@ -588,9 +600,7 @@ def test_the_raw_forms_table_of_the_schema_page_states_what_the_writer_writes(to
 
     # Run the capture the method page of this token names, and read the result itself.
     # A comparison against the method page alone would compare two documents.
-    method = next(
-        name for name in IMPLEMENTED_METHODS if _fact(name, "The `--types` token") == token
-    )
+    method = next(name for name in PASSIVE_METHODS if _fact(name, "The `--types` token") == token)
     capture, value = _examples(method)[0]
     result = _result_for(capture, value)
     for field, cell in zip(("raw", "raw_original_order"), stated[token]):

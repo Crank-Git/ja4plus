@@ -19,6 +19,7 @@
   "macos_tcp_flags.pcap": 19,
   "quic-tls-handshake.pcapng": 7,
   "quic-with-several-tls-frames.pcapng": 7,
+  "sigalg-grease.pcapng": 19,
   "single-packets.pcap": 24,
   "socks-https-example.pcap": 41,
   "socks4-https.pcap": 9,

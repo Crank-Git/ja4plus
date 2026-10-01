@@ -20,6 +20,7 @@ import math
 import os
 import sys
 from datetime import datetime, timezone
+from importlib.metadata import entry_points
 from typing import TYPE_CHECKING, Any, Iterator, TextIO
 
 from ja4plus import __version__
@@ -899,6 +900,82 @@ def cmd_db(args: argparse.Namespace) -> None:
     print(f"Updated: {entry_count} fingerprint entries written to {cache_file}")
 
 
+# The entry point group that names the `scan` subcommand. The command-line program loads
+# the scanner through it, so no line of this module imports `ja4plus.scan`.
+# FR-active-scan-5 states that boundary, and `pyproject.toml` names the one entry.
+COMMAND_ENTRY_POINTS = "ja4plus.commands"
+
+# The installation command that FR-active-scan-6 and the edge cases of
+# `docs/specs/features/12-active-scan.md` name.
+SCAN_EXTRA_INSTALL = "pip install ja4plus[scan]"
+
+# The two defaults of the FoxIO wrapper, which S16 of `docs/specs/foxio/JA4TScan.md`
+# records.
+SCAN_DEFAULT_PORT = 80
+SCAN_DEFAULT_RATE = 10.0
+
+# The highest TCP port. RFC 9293 section 3.1 gives the port field 16 bits.
+HIGHEST_PORT = 65535
+
+
+def cmd_scan(args: argparse.Namespace) -> None:
+    """Handle the `scan` subcommand, which sends one TCP SYN to each target.
+
+    The call loads the scanner through the `ja4plus.commands` entry point, and it passes
+    the result stream this module owns.
+
+    Args:
+        args: The parsed command line.
+
+    Raises:
+        SystemExit: The installation holds no scanner. The call exits with the status 1
+            and names the `scan` extra.
+    """
+    refusal = f"Error: ja4plus scan needs the scan extra. Install it with: {SCAN_EXTRA_INSTALL}"
+    found = list(entry_points(group=COMMAND_ENTRY_POINTS, name="scan"))
+    if len(found) != 1:
+        print(f"{refusal}\nThe installation holds {len(found)} scan entry points.", file=sys.stderr)
+        sys.exit(1)
+    try:
+        run = found[0].load()
+    except ImportError as error:
+        print(f"{refusal}\nThe installation reported: {error}", file=sys.stderr)
+        sys.exit(1)
+    run(args, _result_stream)
+
+
+def _scan_port(value: str) -> int:
+    """Return the TCP port the user stated after `--port`.
+
+    Raises:
+        argparse.ArgumentTypeError: The text is no whole number from 1 to 65535.
+    """
+    try:
+        port = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--port needs a whole number, and it is {value}"
+        ) from None
+    if not 1 <= port <= HIGHEST_PORT:
+        raise argparse.ArgumentTypeError(f"--port must be 1 to {HIGHEST_PORT}, and it is {port}")
+    return port
+
+
+def _scan_rate(value: str) -> float:
+    """Return the SYN count for each second that the user stated after `--rate`.
+
+    Raises:
+        argparse.ArgumentTypeError: The text is no number, or it is not above 0.
+    """
+    try:
+        rate = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"--rate needs a number, and it is {value}") from None
+    if not math.isfinite(rate) or rate <= 0:
+        raise argparse.ArgumentTypeError(f"--rate must be more than 0, and it is {value}")
+    return rate
+
+
 def _max_connections(value: str) -> int:
     """Return the maximum connection count the user stated.
 
@@ -1120,6 +1197,55 @@ def main() -> None:
     cert_parser.add_argument("cert_file", help="Path to certificate file (DER or PEM)")
     _add_output_options(cert_parser, defaults=False)
 
+    # scan subcommand. `docs/specs/features/12-active-scan.md` states the interface, and
+    # each option name and default comes from the FoxIO wrapper.
+    scan_parser = subparsers.add_parser(
+        "scan", help="Send one TCP SYN to each target and write its JA4TScan value"
+    )
+    scan_parser.add_argument(
+        "target",
+        help="One IPv4 address, one IPv4 network in CIDR form, or a file of IPv4 addresses",
+    )
+    scan_parser.add_argument(
+        "--port",
+        type=_scan_port,
+        default=SCAN_DEFAULT_PORT,
+        help=f"The TCP port of every target (default: {SCAN_DEFAULT_PORT})",
+    )
+    scan_parser.add_argument(
+        "--rate",
+        type=_scan_rate,
+        default=SCAN_DEFAULT_RATE,
+        help=f"The SYN count for each second (default: {int(SCAN_DEFAULT_RATE)})",
+    )
+    scan_parser.add_argument(
+        "--retransmit",
+        choices=["yes", "no"],
+        default="yes",
+        help=(
+            "yes reads every retransmission for 120 seconds. no reads the first response "
+            "alone for 8 seconds, and needs no firewall rule (default: yes)"
+        ),
+    )
+    scan_parser.add_argument(
+        "--format",
+        choices=["table", "json", "csv"],
+        default=argparse.SUPPRESS,
+        help="Output format (default: table)",
+    )
+    scan_parser.add_argument(
+        "--output",
+        default=argparse.SUPPRESS,
+        metavar="FILE",
+        help="Write the results to FILE instead of standard output",
+    )
+    scan_parser.add_argument(
+        "--force",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Overwrite the file that --output names when it exists",
+    )
+
     # db subcommand
     db_parser = subparsers.add_parser("db", help="Manage the fingerprint identification database")
     db_sub = db_parser.add_subparsers(dest="db_command", metavar="ACTION")
@@ -1143,6 +1269,8 @@ def main() -> None:
             cmd_cert(args)
         elif args.command == "db":
             cmd_db(args)
+        elif args.command == "scan":
+            cmd_scan(args)
         # The flush belongs inside the guard, so a pipe that closed early raises here
         # rather than during the flush the interpreter runs at exit.
         sys.stdout.flush()

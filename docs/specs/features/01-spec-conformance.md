@@ -285,9 +285,14 @@ inventory, every byte count and every SHA-256, measured at the pinned commit
 | JA4SSH | `technical_details/JA4SSH.png` | Image |
 | JA4T | `technical_details/JA4T.png` | Image |
 | JA4TS | No image carries its name. #196 read `JA4T.png`, which titles itself `JA4T/S: TCP Fingerprint`, so that image specifies JA4TS too | Image |
-| JA4TScan | No image and no text file. `Out of scope` below holds the decline | No FoxIO source |
+| JA4TScan | No image and no text file. `module_ja4tscan.c` of `FoxIO-LLC/ja4tscan` is the normative source, and `docs/specs/foxio/JA4TScan.md` transcribes it | Source code |
 | JA4D | `technical_details/JA4D.png` | Image |
 | JA4D6 | `technical_details/JA4D6.png` | Image |
+
+**The maintainer reversed the JA4TScan decline on 2026-09-30, in #775, and named the C
+module normative.** The superseded JA4TScan row is quoted below rather than rewritten.
+
+> | JA4TScan | No image and no text file. `Out of scope` below holds the decline | No FoxIO source |
 
 FoxIO published a text specification for seven methods, and commit `b6f3ff4` deleted all
 seven on 2024-02-22. `technical_details/JA4.md` and `technical_details/JA4H.md` carry the
@@ -449,10 +454,15 @@ https://www.rfc-editor.org/rfc/rfc9001.html (retrieved 2026-08-07).
 
 ## Out of scope
 
-- JA4TScan. The user declined it on 2026-08-08, and the ruling is reversible. It sends
-  crafted packets to a host the operator names, and every other method reads traffic that
-  already exists. #197 holds the reading, and `Non-goals` in `docs/specs/spec.md` holds
-  the ruling.
+- JA4TScan conformance. FoxIO publishes no JA4TScan vector, so the conformance suite
+  compares no JA4TScan value. The maintainer reversed the decline on 2026-09-30, in #775,
+  and `docs/specs/features/12-active-scan.md` states how the scanner is tested. The
+  superseded bullet is quoted below rather than rewritten.
+
+  > JA4TScan. The user declined it on 2026-08-08, and the ruling is reversible. It sends
+  > crafted packets to a host the operator names, and every other method reads traffic that
+  > already exists. #197 holds the reading, and `Non-goals` in `docs/specs/spec.md` holds
+  > the ruling.
 - Any change that no vector requires. That work is Epic 2.
 - Performance of the conformance suite.
 

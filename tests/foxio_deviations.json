@@ -209,12 +209,6 @@
     "decided": true,
     "capability": false
   },
-  "gre-erspan-vxlan.pcap/0:65174/JA4T.1": {
-    "issue": 215,
-    "cause": "The FoxIO Rust snapshot holds 8192__0_0 and ja4plus writes 8192_00_00_00. The SYN carries no TCP option, and the three FoxIO forms disagree: rust/ja4/src/tcp.rs writes one digit, wireshark/source/packet-ja4.c:664 and zeek/ja4t/main.zeek:195-211 write the two-digit form. The user chose the two-digit form on 2026-08-08, so this divergence is decided and it stays. #215 records the decision, D1 of docs/specs/foxio/JA4T.md states the reading, and the Divergence register in docs/specs/spec.md holds the cost.",
-    "decided": true,
-    "capability": false
-  },
   "gre-erspan-vxlan.pcap/JA4H": {
     "cause": "The FoxIO Python expected-output file holds no JA4H value for this capture, and ja4plus produces one on frame 4. The FoxIO Wireshark dissector holds that exact value, `ge10nn000000_e3b0c44298fc_000000000000_000000000000`, and `tests/foxio_vectors/wireshark_expected/gre-erspan-vxlan.pcap.json` records it. The frame holds `GET /Hello Arkime HTTP/1.0` and it carries no header. The value rests on two rulings the maintainer decided on 2026-08-14. The request-line path reads a space, and an empty header list hashes. R19 of `docs/specs/foxio/JA4H.md` holds the second rule. #612 records the decision, and #612 is the reversal path.",
     "issue": 612,

@@ -8,15 +8,21 @@ directory holds. It also states the procedure that every transcription under
 | Item | Value |
 |---|---|
 | Source | `https://github.com/FoxIO-LLC/ja4/tree/main/technical_details` |
-| Pinned commit | `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8` |
-| Retrieval date | 2026-08-08 |
+| Pinned commit | `16b96d95c220762cf658f67d678cda2aac95c81e` |
+| Retrieval date | 2026-09-30 |
 
-Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/technical_details (retrieved 2026-08-08, commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`)
+Verified against: https://github.com/FoxIO-LLC/ja4/tree/main/technical_details (retrieved 2026-09-30, commit `16b96d95c220762cf658f67d678cda2aac95c81e`)
 
 ## The inventory
 
 Each hash below comes from `shasum -a 256`, run on 2026-08-08 against a checkout at the
-pinned commit. Each size is the exact byte count.
+earlier pin `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`. Each size is the exact byte count.
+
+**#772 moved the pin to `16b96d95` and took the measurement again on 2026-09-30.** All
+twelve hashes and all twelve byte counts hold at the new pin. The GitHub contents
+interface reports the same blob for each of the twelve files at both commits. The new pin
+adds `pcap/sigalg-grease.pcapng`, which `tests/foxio_vectors/` holds, and it changes no
+file of `technical_details/`.
 
 | File | Bytes | SHA-256 | What it holds |
 |---|---|---|---|
@@ -81,6 +87,7 @@ transcription and names the two sources that name JA4LS as a separate method.
 | JA4D and JA4D6 | `docs/specs/foxio/JA4D.md` | Complete. #204. One page transcribes the two images |
 | JA4X | `docs/specs/foxio/JA4X.md` | Complete. #202. The page also answers the tunnel question the register raises. |
 | The seven deleted text files | `docs/specs/foxio/deleted-text-specifications.md` | Complete. #221. It transcribes no image and it reconciles the deleted prose |
+| JA4TScan | `docs/specs/foxio/JA4TScan.md` | Complete. #775. The page reads `FoxIO-LLC/ja4tscan` at its own pinned commit, because JA4TScan holds no image. It measures each rule by compiling the cited lines. |
 
 ## A deleted text specification corroborates, and it never outranks the image
 

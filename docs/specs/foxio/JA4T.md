@@ -429,7 +429,30 @@ agreed before the repair, so D4 changed the count and no value.
 **D4 reaches JA4T alone.** R12 rule 3 states that a JA4TS value grows with each SYN-ACK,
 so JA4TS keeps one value for each SYN-ACK packet.
 
-**D5 — repaired. A repeated option keeps the first value.**
+**D5 — reversed by #774. A repeated option keeps the last value.**
+
+**#774 reversed D5, and this record supersedes the first-value reading.** The line below is
+the superseded heading, quoted rather than rewritten.
+
+> **D5 — repaired. A repeated option keeps the first value.**
+
+FoxIO `08617cc3` moved `rust/ja4/src/tcp.rs` from `.next()` to `.last()`, and FoxIO merged
+it on 2026-08-27 in pull request 310. At FoxIO `16b96d95` the three implementations each
+keep the last value.
+
+| Implementation | MSS | Window scale | Reading |
+|---|---|---|---|
+| `rust/ja4/src/tcp.rs` | `:78` | `:83` | `.last()` on the field iterator |
+| `wireshark/source/packet-ja4.c` | `:1461-1463` | `:1464-1466` | Overwrites the value on each field that `proto_all_finfos` returns at `:967` |
+| `zeek/src/ja4t.cc` | `:87-89` | `:91-93` | Overwrites the value on each option of the wire loop at `:68` |
+
+**The Wireshark reading and the Zeek reading rest on the source alone.** No capture of
+this repository carries a repeated MSS option or a repeated window scale option on a SYN or
+a SYN-ACK, so no vector separates the two readings. #774 replayed all 40 committed
+captures and no JA4T value or JA4TS value moved. `tests/test_ja4t_form.py` holds five
+constructed cases instead.
+
+The paragraph below records the #215 reading, and it stays as #215 wrote it.
 
 The old lines `mss = str(int(opt[1]))` and `wscale = str(opt[1])` ran inside the loop, so a
 second Maximum Segment Size option overwrote the first. `rust/ja4/src/tcp.rs` calls
@@ -615,11 +638,13 @@ the register does not name disagrees.
 | `ssh2.pcapng` | 19 | Each value matches, and D4 makes 10 streams carry more than one. | Each value matches, and each stream carries one. |
 | `tls3.pcapng` | 8 | Each value matches. | Each value matches. |
 
-One register entry remains, and #215 marked it decided.
+One register entry remained after #215, and #215 marked it decided. #772 removed it,
+because the Rust snapshot at FoxIO `16b96d95` holds `8192_00_00_00`, which `ja4plus`
+writes. The table records the entry as it stood at the pin of this page.
 
 | Key | Issue | The reading it records | State |
 |---|---|---|---|
-| `gre-erspan-vxlan.pcap/0:65174/JA4T.1` | 215 | D1 | Decided. `ja4plus` writes `8192_00_00_00` and the snapshot holds `8192__0_0`. |
+| `gre-erspan-vxlan.pcap/0:65174/JA4T.1` | 215 | D1 | Removed by #772. `ja4plus` writes `8192_00_00_00` and the snapshot at this pin holds `8192__0_0`. |
 
 The D2 entry and the D4 entry left the register when #215 landed, because each case
 resolves to a pass. The register falls from 137 keys to 135.

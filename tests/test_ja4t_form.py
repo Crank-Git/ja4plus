@@ -10,14 +10,19 @@ defects and the issue body records why.
 | D2 | The parser reads the raw TCP option bytes, so each End of Option List byte adds one entry. |
 | D3 | Part b holds every option kind, and not the six kinds a name list holds. |
 | D4 | One connection produces one JA4T value, from its first SYN. |
-| D5 | A repeated option keeps the first value, and not the last. |
+| D5 | A repeated option keeps the last value, and not the first. |
 
-**D1 diverges from the FoxIO Rust implementation.** `packet-ja4.c:664` and
-`zeek/ja4t/main.zeek:195-211` write the two-digit form, and `rust/ja4/src/tcp.rs` writes
-one digit. Two of the three FoxIO forms agree, and the user follows them. The
-`Divergence register` in `docs/specs/spec.md` records the cost.
+**D1 agrees with all three FoxIO implementations at FoxIO `16b96d95`.** `packet-ja4.c:664`
+and `zeek/ja4t/main.zeek:195-211` write the two-digit form. FoxIO `08617cc3` moved
+`rust/ja4/src/tcp.rs` from one digit to the same form. The `Divergence register` in
+`docs/specs/spec.md` records the reading.
 
-Every case below fails on the base commit of #215.
+**#774 reversed D5.** #215 kept the first value because `rust/ja4/src/tcp.rs` called
+`.next()`. FoxIO `08617cc3` moved Rust to `.last()`, and the dissector and the Zeek parser
+already kept the last value.
+
+Every case below fails on the base commit of #215, except the D5 cases. The D5 cases fail
+on the base commit of #774.
 """
 
 import pytest
@@ -25,7 +30,12 @@ from scapy.all import IP, TCP, rdpcap
 
 from ja4plus.fingerprinters.ja4t import JA4TFingerprinter, generate_ja4t
 from ja4plus.fingerprinters.ja4ts import generate_ja4ts
-from ja4plus.utils.tcp_options import option_bytes, read_options, tcp_prefix
+from ja4plus.utils.tcp_options import (
+    option_bytes,
+    read_options,
+    tcp_prefix,
+    tcp_prefix_from_header,
+)
 
 VECTORS = "tests/foxio_vectors"
 
@@ -224,18 +234,39 @@ class TestD4OneValuePerConnection:
         assert len(fingerprinter.get_fingerprints()) == 2
 
 
-class TestD5TheFirstRepeatedOption:
-    """D5 — a repeated option keeps the first value."""
+class TestD5TheLastRepeatedOption:
+    """D5 — a repeated option keeps the last value.
 
-    def test_a_repeated_maximum_segment_size_keeps_the_first(self):
-        # Maximum Segment Size 1460, then Maximum Segment Size 536.
-        packet = syn_with_option_bytes(bytes.fromhex("020405b402040218"))
-        assert generate_ja4t(packet) == "65535_2-2_1460_00"
+    #774 reversed the first-value reading. The dissector, the Zeek parser and FoxIO Rust
+    at `16b96d95` each keep the last value.
+    """
 
-    def test_a_repeated_window_scale_keeps_the_first(self):
-        # Window Scale 7, Window Scale 2, and two pad bytes.
-        packet = syn_with_option_bytes(bytes.fromhex("0303070303020000"))
-        assert generate_ja4t(packet).split("_")[3] == "7"
+    # Maximum Segment Size 1460, then Maximum Segment Size 1400.
+    REPEATED_MSS = bytes.fromhex("020405b402040578")
+    # Window Scale 7, Window Scale 2, and two pad bytes.
+    REPEATED_WINDOW_SCALE = bytes.fromhex("0303070303020000")
+
+    def test_a_repeated_maximum_segment_size_keeps_the_last(self):
+        packet = syn_with_option_bytes(self.REPEATED_MSS)
+        assert generate_ja4t(packet) == "65535_2-2_1400_00"
+
+    def test_a_repeated_window_scale_keeps_the_last(self):
+        packet = syn_with_option_bytes(self.REPEATED_WINDOW_SCALE)
+        assert generate_ja4t(packet) == "65535_3-3-0-0_00_2"
+
+    def test_a_syn_ack_with_a_repeated_maximum_segment_size_keeps_the_last(self):
+        packet = syn_with_option_bytes(self.REPEATED_MSS, flags="SA")
+        assert generate_ja4ts(packet) == "65535_2-2_1400_00"
+
+    def test_a_syn_ack_with_a_repeated_window_scale_keeps_the_last(self):
+        packet = syn_with_option_bytes(self.REPEATED_WINDOW_SCALE, flags="SA")
+        assert generate_ja4ts(packet) == "65535_3-3-0-0_00_2"
+
+    def test_a_quoted_header_with_repeated_options_keeps_the_last(self):
+        # The ICMP path reads raw header bytes and reaches no scapy layer.
+        packet = syn_with_option_bytes(self.REPEATED_MSS + self.REPEATED_WINDOW_SCALE)
+        header = bytes(packet[TCP])
+        assert tcp_prefix_from_header(header) == "65535_2-2-3-3-0-0_1400_2"
 
 
 class TestTheOptionReaderTrustsNoLengthField:

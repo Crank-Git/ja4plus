@@ -4,9 +4,10 @@ A Python library and command-line program that produces JA4+ fingerprints. It re
 TCP, HTTP, SSH and DHCP traffic, and it reads an X.509 certificate. It supports QUIC,
 IPv4, IPv6 and multi-segment TCP reassembly.
 
-**FoxIO publishes twelve JA4+ methods, and this project implements eleven of them.** The
-twelfth is JA4TScan. `Methods` below names each method, and it states whether this
-project builds it.
+**FoxIO publishes twelve JA4+ methods, and this project implements twelve of them.**
+Eleven read traffic that already exists. The twelfth is JA4TScan, which sends packets, and
+the `ja4plus scan` subcommand runs it. Ten fingerprinter classes carry the other eleven,
+because `JA4LFingerprinter` writes both JA4L and JA4LS. `Methods` below names each method.
 
 FoxIO owns the JA4+ standard, and [FoxIO](https://foxio.io) publishes it. This library is
 an independent implementation of that standard. FoxIO wrote no part of it. For the
@@ -35,16 +36,19 @@ The `Implemented` column states whether this project builds the method.
 | JA4SSH | SSH | Session type classification from traffic patterns | Yes |
 | JA4T | TCP | Client OS fingerprint from SYN packets | Yes |
 | JA4TS | TCP | Server fingerprint from SYN-ACK packets | Yes |
-| JA4TScan | TCP | Active TCP fingerprint scanner | No |
+| JA4TScan | TCP | Active TCP server fingerprint from SYN-ACK retransmissions, through `ja4plus scan` | Yes |
 | JA4D | DHCPv4 | DHCP client/server fingerprint (FoxIO PR #267/#270) | Yes |
 | JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint (FoxIO PR #267/#270) | Yes |
 
-**JA4TScan is declined by ruling, and it is not an omission.** It sends crafted packets
-to a host the operator names and reads the responses. Every other method reads traffic
-that already exists, so JA4TScan reaches a network the operator did not capture. That
-capability is larger than fingerprint production.
-[`docs/specs/spec.md`](docs/specs/spec.md) holds the ruling under `Non-goals`, and the
-ruling is reversible.
+**JA4TScan sends packets, so this project keeps it apart from the other eleven.** It
+sends one TCP SYN to each host the operator names and reads the responses. The maintainer
+reversed the decline of 2026-08-08 on 2026-09-30, in #775, and #776 built the scanner.
+The scanner installs with `pip install ja4plus[scan]` and runs as `ja4plus scan`. The
+`ja4plus.scan` module holds it, and no passive fingerprinter can send a packet. The
+scanner changes no firewall state, and it states the rule the operator adds.
+[`docs/methods/ja4tscan.md`](docs/methods/ja4tscan.md) describes the command, and
+[`docs/specs/features/12-active-scan.md`](docs/specs/features/12-active-scan.md) holds the
+design.
 
 `JA4LFingerprinter` builds both JA4L and JA4LS, so ten fingerprinters carry eleven
 methods. `--types ja4l` names the two together, and `--types ja4ls` names JA4LS alone.
@@ -490,7 +494,7 @@ pytest tests/ -v
 
 This library is released under the **BSD 3-Clause License**.
 
-The JA4+ fingerprinting specifications were created by [FoxIO](https://foxio.io). JA4 (TLS Client) is open source under BSD-3-Clause per FoxIO. The other methods this project implements carry the [FoxIO License 1.1](https://github.com/FoxIO-LLC/ja4/blob/main/LICENSE): JA4S, JA4H, JA4L, JA4LS, JA4X, JA4SSH, JA4T, JA4TS, JA4D and JA4D6. That license is permissive for academic, internal business, and security research use. FoxIO names each of them at line 5 of [`License FAQ.md`](https://github.com/FoxIO-LLC/ja4/blob/main/License%20FAQ.md), at commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`. That FoxIO list is wider than this one, because it also names methods this project does not implement.
+The JA4+ fingerprinting specifications were created by [FoxIO](https://foxio.io). JA4 (TLS Client) is open source under BSD-3-Clause per FoxIO. The other methods this project implements carry the [FoxIO License 1.1](https://github.com/FoxIO-LLC/ja4/blob/main/LICENSE): JA4S, JA4H, JA4L, JA4LS, JA4X, JA4SSH, JA4T, JA4TS, JA4TScan, JA4D and JA4D6. That license is permissive for academic, internal business, and security research use. FoxIO names each of them at line 5 of [`License FAQ.md`](https://github.com/FoxIO-LLC/ja4/blob/main/License%20FAQ.md), at commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`. That FoxIO list is wider than this one, because it also names methods this project does not implement.
 
 See [LICENSE](LICENSE) for full details.
 

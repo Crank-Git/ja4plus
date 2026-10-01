@@ -91,11 +91,11 @@ def test_the_filter_refuses_a_snapshot_that_holds_no_fingerprint_value():
 
 
 def test_the_filter_keeps_every_committed_rust_snapshot():
-    """The field list keeps all eleven committed snapshots, so this change moves no vector."""
+    """The field list keeps all twelve committed snapshots, so this change moves no vector."""
     snapshots = sorted(RUST_DIR.glob("*.snap"))
-    assert len(snapshots) == 11
+    assert len(snapshots) == 12
     kept = [path.name for path in snapshots if keeps_rust_snapshot(path.read_bytes())]
-    assert len(kept) == 11
+    assert len(kept) == 12
 
 
 def test_the_field_list_holds_no_entry_twice():

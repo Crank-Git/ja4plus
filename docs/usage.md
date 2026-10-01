@@ -15,6 +15,7 @@ Detailed usage for each JA4+ fingerprinter.
 - [PCAP Analysis](#pcap-analysis)
 - [Live Capture](#live-capture)
 - [Read a network interface](#read-a-network-interface)
+- [JA4TScan - Active scan](#ja4tscan---active-scan)
 
 ---
 
@@ -40,7 +41,7 @@ result = fp.process_packet(packet)
 - `16` = 16 extensions (excluding GREASE, max 99)
 - `h2` = first and last character of first ALPN value (`00` if absent)
 - First hash = SHA-256 of sorted cipher suites, truncated to 12 hex chars
-- Second hash = SHA-256 of sorted extensions (excluding SNI/ALPN) + signature algorithms in original order
+- Second hash = SHA-256 of sorted extensions (excluding SNI/ALPN) + signature algorithms in original order (excluding GREASE)
 
 **Raw fingerprint** (unhashed, useful for debugging):
 
@@ -539,3 +540,29 @@ through the `BIOCGSTATS` ioctl. On Linux it reads the `PACKET_STATISTICS` socket
 itself, because `scapy` 2.7.0 reads that option nowhere. **The Linux kernel resets its
 counters as the read returns them**, so the monitor adds each reading to a running total.
 #326 records the whole measurement.
+
+---
+
+## JA4TScan - Active scan
+
+JA4TScan is the one method that sends packets. The `ja4plus scan` subcommand sends one TCP
+SYN to each target, and it writes one value for each target that answers.
+[The JA4TScan page](methods/ja4tscan.md) states every option and the firewall rules.
+
+<!-- sample: skip the command sends a packet to a host of the network -->
+```bash
+sudo ja4plus scan 203.0.113.0/28 --port 443 --format json
+```
+
+**The value writer reads no packet, so a caller can run it on responses it recorded.**
+
+```python
+from ja4plus.scan.value import Response, ja4tscan_value
+
+# One SYN-ACK that carries a Maximum Segment Size of 1460, and one retransmission a
+# second later.
+syn_ack = Response(seconds=0.0, flags=0x12, window=64240, options=bytes.fromhex("020405b4"))
+again = Response(seconds=1.0, flags=0x12, window=64240, options=bytes.fromhex("020405b4"))
+
+assert ja4tscan_value([syn_ack, again]) == "64240_2_1460_00_1"
+```
