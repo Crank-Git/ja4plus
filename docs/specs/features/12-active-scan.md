@@ -84,7 +84,10 @@ FR-active-scan-14 — The scanner accepts one IPv4 address, one IPv4 network in 
 or a file of IPv4 addresses, one on each line.
 
 FR-active-scan-15 — The scanner reads a response only where it answers the SYN, under the
-acknowledgment rule of S4 of `docs/specs/foxio/JA4TScan.md`.
+acknowledgment rule of S4 of `docs/specs/foxio/JA4TScan.md`. The response also carries one
+of three flag combinations: SYN and ACK, RST, or RST and ACK. The scanner drops a segment
+with any other combination. `ja4tscan/module_ja4tscan.c:310` reads no flag, and the
+divergence register of `docs/specs/spec.md` records the departure.
 
 FR-active-scan-16 — The scanner writes one result for each target that sent a SYN-ACK or
 a RST.
@@ -300,6 +303,7 @@ The JSON Lines object of one target:
 | The target file holds a line that is no IPv4 address. | The scanner exits with status 1 before it sends a SYN, and it names the line. |
 | The target is an IPv6 address or network. | The scanner exits with status 1 before it sends a SYN, and it states that the scanner reads IPv4 alone. |
 | The `scan` extra is absent. | `ja4plus scan` exits with status 1 and names `pip install ja4plus[scan]`. |
+| A socket call fails during the scan, for example on a downed interface or a full send buffer. | The scan stops. The results already written stay in the result stream, and the socket closes. The scanner writes one error line to standard error and exits with status 1. |
 
 ## How the scanner is tested with no network
 
@@ -377,6 +381,11 @@ response sequence to the code under test.
 - [ ] A target whose first response carries RST and ACK with a window of 512 produces
       `0_rst-ack`.
 - [ ] A target that answers the SYN with an ICMP message produces no result.
+- [ ] A segment with the expected acknowledgment number and ACK alone produces no result.
+- [ ] A segment with the expected acknowledgment number, ACK, PSH and data produces no
+      result.
+- [ ] A socket failure during a fake scan exits with status 1, writes one line to standard
+      error, and keeps the results already written.
 - [ ] The state table holds at most 10000 targets under a fake scan of 20000 targets.
 
 ## Out of scope
