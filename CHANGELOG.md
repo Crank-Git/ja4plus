@@ -2118,6 +2118,45 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   **No file under `ja4plus/` changes and no fingerprint moves**, and the conformance suite
   reports 1635 passed, 143 skipped and 140 xfailed.
 
+## [1.3.0] - 2026-09-30
+
+Version 1.3.0 follows version 1.2.2, and no version stands between them. The date of the
+heading above is the date this release reaches `master`. It carries rounds 268 and 269.
+
+**The bump is minor and never patch.** This release adds published names: the
+`ja4plus.scan` package, the `ja4plus scan` subcommand and the `scan` extra. It removes no
+name and it renames none.
+
+**JA4 reads a ClientHello that spans TCP segments** (#772). A post-quantum key share makes
+a current browser ClientHello longer than one TCP segment, and the fingerprinter read each
+segment alone, so it wrote no JA4 value for such a hello. **A caller now receives a JA4
+value for that traffic where it received none before.** The fingerprinter holds the client
+payload of a connection in a bounded table until the hello is complete, and a gap stops
+the read at the first byte that has not arrived.
+
+**Two readers now write the FoxIO value.**
+
+| Method | Input | Version 1.2.2 | Version 1.3.0 | Issue |
+|---|---|---|---|---|
+| JA4 | A ClientHello with a GREASE value among its signature algorithms | Hashes the GREASE value | Removes it, as FoxIO `d66336ef` does | #773 |
+| JA4T, JA4TS | A SYN or SYN-ACK with a repeated MSS option or window scale option | Keeps the first value | Keeps the last value, as the FoxIO Rust, Wireshark and Zeek sources do | #774 |
+
+**No value of the committed corpus moves.** A replay of 77 captures writes one new value,
+the JA4 of `sigalg-grease.pcapng` frame 5, which equals the FoxIO value. Every other value
+is byte-identical. No committed capture carries a repeated TCP option or a signature
+algorithm GREASE value.
+
+**`ja4plus scan` adds JA4TScan, the FoxIO active TCP server fingerprint** (#775, #776). The
+scanner sends one SYN to each IPv4 target and reads the SYN-ACK and its retransmissions.
+**It is the one part of the package that sends packets**, so it lives behind the `scan`
+extra and no passive module imports it. **The library changes no firewall state**, and
+the command prints the rules the operator adds. `docs/specs/features/12-active-scan.md`
+states the requirements. The project now implements all twelve FoxIO methods.
+
+**The FoxIO pin moves from `27f0cbf9` to `16b96d95`**, and `sigalg-grease.pcapng` joins the
+vectors. The conformance suite reports 1684 passed, 142 skipped and 138 xfailed at version
+1.2.2, and 1702 passed, 145 skipped and 137 xfailed here.
+
 ## [1.2.2] - 2026-09-29
 
 Version 1.2.2 follows version 1.2.1, and no version stands between them. The date of the
