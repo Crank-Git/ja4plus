@@ -349,3 +349,128 @@ class TestTheResult:
             )
         (line,) = stdout.getvalue().splitlines()
         assert json.loads(line)["fingerprint"] == "64240_2_1460_00_1"
+
+
+SECOND_TARGET = "192.0.2.11"
+
+
+class TestANetworkFailureStopsTheScan:
+    """A socket error during the scan ends the command with one line and the status 1.
+
+    A downed interface or a full send buffer raises `OSError` from the send call or the
+    receive call. The first target answers and ends its wait before the failure, so its
+    result is on the result stream when the command stops.
+    """
+
+    @staticmethod
+    def failing_network(*, on: str) -> FakeNetwork:
+        """Return a network that fails on the second send, or on the first receive after it."""
+        network = FakeNetwork({TARGET: syn_ack_script(0.1)})
+        start = network.now
+        send, receive = network.send, network.receive
+
+        def failing_send(target: str, src_port: int, sequence: int) -> str | None:
+            if on == "send" and target == SECOND_TARGET:
+                raise OSError(errno.ENETDOWN, "Network is down")
+            return send(target, src_port, sequence)
+
+        def failing_receive(timeout: float) -> tuple[float, bytes] | None:
+            if on == "receive" and network.now >= start + 10:
+                raise OSError(errno.ENOBUFS, "No buffer space available")
+            return receive(timeout)
+
+        network.send = failing_send
+        network.receive = failing_receive
+        return network
+
+    @staticmethod
+    def run_until_failure(monkeypatch, tmp_path, network: FakeNetwork):
+        """Run the scan of two targets into a file, and return the exit, the file and stderr."""
+        targets = tmp_path / "targets.txt"
+        targets.write_text(f"{TARGET}\n{SECOND_TARGET}\n", encoding="utf-8")
+        output = tmp_path / "out.json"
+        stderr = io.StringIO()
+        monkeypatch.setattr(sys, "stderr", stderr)
+        with pytest.raises(SystemExit) as exit_:
+            scan_command(
+                namespace(target=str(targets), retransmit="no", rate=0.1, output=str(output)),
+                result_stream=cli._result_stream,
+                platform="linux",
+                open_network=lambda port, first, warn: network,
+                clock=network.clock,
+                rng=random.Random(3),
+            )
+        return exit_.value.code, output.read_text(encoding="utf-8"), stderr.getvalue()
+
+    @pytest.mark.parametrize("on", ["send", "receive"])
+    def test_the_command_exits_with_status_1(self, monkeypatch, tmp_path, on):
+        code, _, _ = self.run_until_failure(monkeypatch, tmp_path, self.failing_network(on=on))
+        assert code == 1
+
+    @pytest.mark.parametrize("on", ["send", "receive"])
+    def test_the_result_written_before_the_failure_stays_in_the_file(
+        self, monkeypatch, tmp_path, on
+    ):
+        _, written, _ = self.run_until_failure(monkeypatch, tmp_path, self.failing_network(on=on))
+        (line,) = written.splitlines()
+        assert json.loads(line)["src_ip"] == TARGET
+
+    @pytest.mark.parametrize(
+        ("on", "reason"), [("send", "Network is down"), ("receive", "No buffer space available")]
+    )
+    def test_standard_error_holds_one_line_that_names_the_socket_error(
+        self, monkeypatch, tmp_path, on, reason
+    ):
+        _, _, err = self.run_until_failure(monkeypatch, tmp_path, self.failing_network(on=on))
+        (line,) = err.splitlines()
+        assert line.startswith("Error: ")
+        assert reason in line
+
+    @pytest.mark.parametrize("on", ["send", "receive"])
+    def test_the_socket_closes(self, monkeypatch, tmp_path, on):
+        network = self.failing_network(on=on)
+        self.run_until_failure(monkeypatch, tmp_path, network)
+        assert network.closed
+
+    def test_a_broken_pipe_reaches_the_caller_unchanged(self, monkeypatch):
+        network = FakeNetwork()
+
+        def broken_pipe(target: str, src_port: int, sequence: int) -> str | None:
+            raise BrokenPipeError(errno.EPIPE, "Broken pipe")
+
+        network.send = broken_pipe
+        with pytest.raises(BrokenPipeError):
+            fake_scan(monkeypatch, network, retransmit="no")
+        assert network.closed
+
+    def test_the_command_line_program_ends_with_no_traceback(self, monkeypatch, capsys):
+        network = self.failing_network(on="send")
+        monkeypatch.setattr(
+            cli, "entry_points", lambda group, name: [argparse.Namespace(load=lambda: run)]
+        )
+
+        def run(args, result_stream):
+            scan_command(
+                args,
+                result_stream=result_stream,
+                platform="linux",
+                open_network=lambda port, first, warn: network,
+                clock=network.clock,
+                rng=random.Random(3),
+            )
+
+        code, out, err = run_main(
+            monkeypatch,
+            capsys,
+            "scan",
+            f"{TARGET}/31",
+            "--retransmit",
+            "no",
+            "--rate",
+            "0.1",
+            "--format",
+            "json",
+        )
+        assert code == 1
+        assert "Traceback" not in err
+        assert json.loads(out.splitlines()[0])["src_ip"] == TARGET

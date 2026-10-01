@@ -108,6 +108,9 @@ def scan_command(
             - A target is unreadable.
             - The target list is empty.
             - The host refused the socket.
+
+            The call also exits with the status 1 when a socket call fails during the
+            scan. The results written before the failure stay in the result stream.
     """
     refusal = unsupported_platform_message(platform, args.command)
     if refusal is not None:
@@ -158,6 +161,14 @@ def scan_command(
                 # The operator stopped the wait, so each target writes what it sent.
                 scanner.flush()
                 raise
+            except BrokenPipeError:
+                # `BrokenPipeError` inherits `OSError`, and `ja4plus/cli.py` owns the exit
+                # of a reader that closed the result stream.
+                raise
+            except OSError as error:
+                # A downed interface or a full send buffer fails a socket call. The exit
+                # closes the result stream, so every result written so far stays in it.
+                _fail(f"Error: the scan stopped: {error}")
     finally:
         network.close()
 

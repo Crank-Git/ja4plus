@@ -165,6 +165,30 @@ class TestTheAcknowledgmentRule:
         assert results == []
 
 
+class TestTheFlagRule:
+    """A matching acknowledgment number alone makes no response, because a target sets it.
+
+    The loop reads a SYN-ACK, or a RST with or without ACK. A target that sends any other
+    segment with the right acknowledgment number moves no part of the value.
+    """
+
+    def test_a_segment_with_ack_alone_and_a_matching_acknowledgment_writes_nothing(self):
+        network = FakeNetwork({TARGET: Script([0.1], ["A"])})
+        results, _, _ = scan(network, [TARGET])
+        assert results == []
+
+    def test_a_segment_with_ack_and_psh_that_carries_data_writes_nothing(self):
+        network = FakeNetwork({TARGET: Script([0.1], ["PA"], payload=b"HTTP/1.1 200 OK\r\n")})
+        results, _, _ = scan(network, [TARGET])
+        assert results == []
+
+    def test_a_segment_with_ack_alone_after_a_syn_ack_adds_no_delay(self):
+        alone, _, _ = scan(FakeNetwork({TARGET: syn_ack_script(0.1)}), [TARGET])
+        network = FakeNetwork({TARGET: Script([0.1, 1.1, 2.1], ["SA", "A", "PA"])})
+        results, _, _ = scan(network, [TARGET])
+        assert [result.value for result in results] == [alone[0].value]
+
+
 class TestTheWarning:
     def test_one_syn_ack_and_no_later_response_writes_one_warning_line(self):
         network = FakeNetwork({TARGET: syn_ack_script(0.1)})

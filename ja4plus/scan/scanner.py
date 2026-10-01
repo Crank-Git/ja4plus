@@ -18,7 +18,7 @@ from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ja4plus.fingerprinters.ja4ts import MAX_SYN_ACK_DELAYS, TCP_RST_FLAG
+from ja4plus.fingerprinters.ja4ts import MAX_SYN_ACK_DELAYS, TCP_RST_FLAG, TCP_SYN_ACK_FLAGS
 from ja4plus.scan.frames import Reply, parse_frame
 from ja4plus.scan.value import Response, ja4tscan_value
 
@@ -53,6 +53,16 @@ SOURCE_PORT_HIGH = 65535
 # `ja4tscan/module_ja4tscan.c:250-262` accepts both, and every other response needs the
 # second.
 SEQUENCE_SPACE = 1 << 32
+
+TCP_ACK_FLAG = 0x10
+
+# A target can send any segment with the acknowledgment number the SYN expects, so that
+# number alone names no answer to the SYN. The mask covers FIN, SYN, RST, PSH, ACK and URG.
+# It leaves out ECE and CWR, because RFC 3168 section 6.1.1 lets a SYN-ACK carry ECE.
+SEGMENT_FLAG_MASK = 0x3F
+# The loop reads a SYN-ACK, a RST, and a RST that carries ACK. Every other combination
+# answers no SYN, and the loop drops it.
+ANSWER_FLAGS = frozenset({TCP_SYN_ACK_FLAGS, TCP_RST_FLAG, TCP_RST_FLAG | TCP_ACK_FLAG})
 
 SendFunction = Callable[[str, int, int], "str | None"]
 ReceiveFunction = Callable[[float], "tuple[float, bytes] | None"]
@@ -345,6 +355,8 @@ class Scanner:
         if probe is None or probe.closed:
             return
         if reply.src_port != self.port or reply.dst_port != probe.src_port:
+            return
+        if reply.flags & SEGMENT_FLAG_MASK not in ANSWER_FLAGS:
             return
         is_rst = bool(reply.flags & TCP_RST_FLAG)
         expected = {(probe.sequence + 1) % SEQUENCE_SPACE}

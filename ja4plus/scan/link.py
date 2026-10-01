@@ -27,7 +27,8 @@ from scapy.all import conf, get_if_hwaddr, getmacbyip
 from scapy.error import Scapy_Exception
 
 from ja4plus.scan.frames import build_syn
-from ja4plus.scan.scanner import MAX_TARGETS
+from ja4plus.scan.scanner import MAX_TARGETS, RETRANSMIT_WAIT_SECONDS
+from ja4plus.utils.state_table import BoundedStateTable
 
 __all__ = ["LinkNetwork", "privilege_refused"]
 
@@ -40,6 +41,12 @@ _PRIVILEGE_TEXT = "permission denied"
 
 # `conf.route.route` names no gateway with this address when the target is on the link.
 _NO_GATEWAY = "0.0.0.0"
+
+# The table of the scanner holds a target for at most the longest wait, so a next hop that
+# no send read for that long serves no target the table holds.
+NEXT_HOP_MAX_AGE = RETRANSMIT_WAIT_SECONDS
+# The age pass reads every entry, so it runs once for this many sends rather than on each.
+NEXT_HOP_EVICTION_INTERVAL = 1000
 
 
 def privilege_refused(error: BaseException) -> bool:
@@ -76,7 +83,14 @@ class LinkNetwork:
         self.on_warning = on_warning
         self.socket: Any = self._open()
         self.mac = _mac_bytes(get_if_hwaddr(self.iface))
-        self.next_hops: dict[str, bytes | None] = {}
+        # A scan of a large network on the link names one next hop for each target, so
+        # the cache holds the entry count bound of the table of the scanner.
+        self.next_hops = BoundedStateTable(
+            max_connections=MAX_TARGETS,
+            max_connection_age=NEXT_HOP_MAX_AGE,
+            eviction_interval=NEXT_HOP_EVICTION_INTERVAL,
+            track_evictions=False,
+        )
 
     def _open(self) -> Any:
         """Return a link-layer socket that reads the responses of the scanned port.
@@ -121,14 +135,12 @@ class LinkNetwork:
             )
             return None
         hop = target if gateway == _NO_GATEWAY else gateway
+        now = time.time()
+        self.next_hops.on_packet(now)
         if hop not in self.next_hops:
-            # A scan of a large network on the link names one next hop for each target,
-            # so the cache holds a bound like the table of the scanner.
-            if len(self.next_hops) >= MAX_TARGETS:
-                self.next_hops.clear()
             mac = getmacbyip(hop)
             self.next_hops[hop] = _mac_bytes(mac) if mac else None
-        dst_mac = self.next_hops[hop]
+        dst_mac: bytes | None = self.next_hops[hop]
         if dst_mac is None:
             self.on_warning(
                 f"Warning: the next hop {hop} of {target} answered no address request. "
@@ -143,7 +155,7 @@ class LinkNetwork:
             src_port=src_port,
             dst_port=self.port,
             sequence=sequence,
-            timestamp=int(time.time()),
+            timestamp=int(now),
         )
         self.socket.send(frame)
         return str(src_ip)

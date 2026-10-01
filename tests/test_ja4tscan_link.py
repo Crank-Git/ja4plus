@@ -206,6 +206,44 @@ def test_privilege_refused_reads_the_error_number_and_the_text(error, refused):
     assert link.privilege_refused(error) is refused
 
 
+class TestTheNextHopAge:
+    """The next-hop cache holds each entry for at most `NEXT_HOP_MAX_AGE` seconds unread.
+
+    CLAUDE.md requires a maximum age on every state table. A case moves the clock of the
+    module, and it runs the age pass on every send so that one send reads the bound.
+    """
+
+    @pytest.fixture
+    def clock(self, monkeypatch):
+        now = [1_000_000.0]
+        monkeypatch.setattr(link, "time", types.SimpleNamespace(time=lambda: now[0]))
+        monkeypatch.setattr(link, "NEXT_HOP_EVICTION_INTERVAL", 1)
+        return now
+
+    def test_a_next_hop_unread_past_the_maximum_age_leaves_the_cache(self, fake_scapy, clock):
+        net, _ = network(first=NEIGHBOR)
+        net.send(NEIGHBOR, 50001, 1)
+        clock[0] += link.NEXT_HOP_MAX_AGE + 1
+        net.send("198.51.100.8", 50002, 2)
+        assert NEIGHBOR not in net.next_hops.keys()
+
+    def test_a_next_hop_past_the_maximum_age_is_resolved_again(self, fake_scapy, clock):
+        net, _ = network(first=NEIGHBOR)
+        net.send(NEIGHBOR, 50001, 1)
+        clock[0] += link.NEXT_HOP_MAX_AGE + 1
+        net.send("198.51.100.8", 50002, 2)
+        net.send(NEIGHBOR, 50003, 3)
+        assert fake_scapy.count(NEIGHBOR) == 2
+
+    def test_a_next_hop_inside_the_maximum_age_stays_in_the_cache(self, fake_scapy, clock):
+        net, _ = network(first=NEIGHBOR)
+        net.send(NEIGHBOR, 50001, 1)
+        clock[0] += link.NEXT_HOP_MAX_AGE - 1
+        net.send("198.51.100.8", 50002, 2)
+        net.send(NEIGHBOR, 50003, 3)
+        assert fake_scapy.count(NEIGHBOR) == 1
+
+
 def test_the_next_hop_cache_holds_at_most_the_target_bound(fake_scapy, monkeypatch):
     monkeypatch.setattr(link, "MAX_TARGETS", 2)
     net, _ = network(first=NEIGHBOR)

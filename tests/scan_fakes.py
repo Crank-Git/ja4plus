@@ -10,7 +10,7 @@ from __future__ import annotations
 import heapq
 from dataclasses import dataclass, field
 
-from scapy.all import IP, TCP, Ether
+from scapy.all import IP, TCP, Ether, Raw
 
 SCANNER_IP = "198.51.100.1"
 
@@ -26,6 +26,7 @@ class Script:
         options: The option list of every response, in the form `scapy` accepts.
         ack_delta: The acknowledgment number minus the sequence number of the SYN.
         src_port: The source port of each response, or None for the scanned port.
+        payload: The TCP payload of every response.
     """
 
     offsets: list[float]
@@ -34,6 +35,7 @@ class Script:
     options: list = field(default_factory=lambda: [("MSS", 1460)])
     ack_delta: int = 1
     src_port: int | None = None
+    payload: bytes = b""
 
 
 def syn_ack_script(*offsets: float) -> Script:
@@ -76,7 +78,7 @@ class FakeNetwork:
                     window=script.window,
                     options=script.options if "S" in flags else [],
                 )
-                frame = bytes(Ether() / IP(src=target, dst=SCANNER_IP) / tcp)
+                frame = bytes(Ether() / IP(src=target, dst=SCANNER_IP) / tcp / Raw(script.payload))
                 self.push(self.now + offset, frame)
         return SCANNER_IP
 
