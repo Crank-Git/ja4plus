@@ -3,7 +3,7 @@
 Where `ja4plus --version` reports 0.6.0, read this page before you install version 1.0.0.
 That command names the version of the package your environment holds.
 
-This repository declares version 1.3.0, which is a minor release of version 1.2.2.
+This repository declares version 1.4.0, which is a minor release of version 1.3.0.
 **Python 3.9 leaves the supported set at version 1.1.0**, and version 1.0.1 is the release
 that still installs on it. Version 1.1.0 moves no other interface and no fingerprint, and
 version 1.1.1 repairs one crash of the ServerHello reader and moves neither.
@@ -18,7 +18,9 @@ corpus either**, so it breaks no row. It stops the QUIC ClientHello reader at th
 CRYPTO byte that has not arrived (#762). **Version 1.3.0 moves no value of the committed
 corpus either**, so it breaks no row. It adds the `ja4plus scan` subcommand behind the
 `scan` extra, and the `## [1.3.0]` section of `CHANGELOG.md` names the two readers that now
-write the FoxIO value. **A reader who moves from version 1.1.1 rather than from version
+write the FoxIO value. **Version 1.4.0 moves the JA4 and JA4S ALPN characters on edge
+inputs, and it breaks no row of this page.** The `## [1.4.0]` section of `CHANGELOG.md` names
+each input that moves (#789). **A reader who moves from version 1.1.1 rather than from version
 0.6.0 reads the `## [1.2.0]` section of `CHANGELOG.md` instead**, which names each value
 that moves and the issue that carries it. Those values are JA4X and JA4H on an empty list,
 JA4TS on a reset of a one-SYN-ACK connection, JA4T on the header an ICMP error message

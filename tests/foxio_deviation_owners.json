@@ -80,6 +80,11 @@
       "state": "open",
       "title": "Read a JA4H request path that holds a space, and rule the empty header list"
     },
+    "789": {
+      "epic": false,
+      "state": "open",
+      "title": "Reread the FoxIO references at 16b96d95"
+    },
     "96": {
       "epic": false,
       "state": "closed",

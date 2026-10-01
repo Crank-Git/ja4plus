@@ -20,6 +20,12 @@ are. The capture now carries the disputed inputs as well as the agreed ones, so 
 divergence is a comparison that runs. `STREAMS` holds the measured value of both FoxIO
 implementations and the produced value, one row per stream. The tests below compare all
 three against the capture and against the expected-output file.
+
+#789 records the maintainer ruling of 2026-10-01 UTC, and it reverses #162 for a byte of
+`0x80` or higher. Each such end byte writes `9`, so streams 2 and 3 now write the FoxIO Rust
+value. The expected-output file holds the FoxIO Python value at `27f0cbf9`, so both streams
+still differ from it, and the register holds them under #789. `Crank-Git/ja4plus-go#801`
+holds the Go half. A control byte keeps the `99` of #162.
 """
 
 import json
@@ -35,8 +41,10 @@ VECTORS_DIR = Path(__file__).parent / "foxio_vectors"
 CAPTURE_PATH = VECTORS_DIR / "alpn-condition.pcap"
 EXPECTED_PATH = VECTORS_DIR / "alpn-condition.pcap.json"
 
-# The issue that records the ruling, and the first client port of the capture.
+# The issue that records each ruling, and the first client port of the capture. #162
+# records the control byte and the one-byte value. #789 records a byte of `0x80` or higher.
 DECISION_ISSUE = 162
+HIGH_BYTE_ISSUE = 789
 FIRST_CLIENT_PORT = 44401
 
 # Every method of the expected-output file that carries the ALPN characters.
@@ -52,33 +60,53 @@ class Stream(NamedTuple):
         foxio_rust: The ALPN characters the FoxIO Rust implementation writes, or None
             when it writes no value at all.
         produced: The ALPN characters `ja4plus` writes.
+        issue: The issue that records the register entries of the stream, or None when
+            the produced value matches the expected-output file.
     """
 
     alpn: bytes
     foxio_python: str
     foxio_rust: Optional[str]
     produced: str
+    issue: Optional[int]
 
     @property
     def disputed(self):
         """True when the produced value matches neither FoxIO implementation."""
         return self.produced not in (self.foxio_python, self.foxio_rust)
 
+    @property
+    def departs(self):
+        """True when the produced value differs from the expected-output file.
+
+        The expected-output file holds the FoxIO Python value, so each such stream needs a
+        register entry.
+        """
+        return self.produced != self.foxio_python
+
 
 # The streams of `alpn-condition.pcap`, in wire order. The first two are the agreed
 # inputs #141 measured. The rest are the disputed inputs #162 records, and their values
 # come from the two tables of `docs/implementation_notes.md`. Nothing here derives a value.
+# The ruling of #789 moved the produced value of streams 2 and 3 to the FoxIO Rust value.
 STREAMS = (
-    Stream(b"h\x20", "h ", "h ", "h "),
-    Stream(b"\x20h", " h", " h", " h"),
-    Stream(b"h\xab", "h�", "h9", "99"),
-    Stream(b"\xabh", "99", "9h", "99"),
-    Stream(b"h\x1f", "h\x1f", "hf", "99"),
-    Stream(b"h\x0a", "h\n", None, "99"),
-    Stream(b"h", "h", "h0", "hh"),
+    Stream(b"h\x20", "h ", "h ", "h ", None),
+    Stream(b"\x20h", " h", " h", " h", None),
+    Stream(b"h\xab", "h�", "h9", "h9", HIGH_BYTE_ISSUE),
+    Stream(b"\xabh", "99", "9h", "9h", HIGH_BYTE_ISSUE),
+    Stream(b"h\x1f", "h\x1f", "hf", "99", DECISION_ISSUE),
+    Stream(b"h\x0a", "h\n", None, "99", DECISION_ISSUE),
+    Stream(b"h", "h", "h0", "hh", DECISION_ISSUE),
 )
 
 DISPUTED_STREAMS = tuple(index for index, stream in enumerate(STREAMS) if stream.disputed)
+
+DEPARTING_STREAMS = tuple(index for index, stream in enumerate(STREAMS) if stream.departs)
+
+# The streams whose produced value follows the ruling of #789.
+HIGH_BYTE_STREAMS = tuple(
+    index for index, stream in enumerate(STREAMS) if stream.issue == HIGH_BYTE_ISSUE
+)
 
 
 def _stream_id(index):
@@ -177,16 +205,19 @@ def test_the_tab_byte_keeps_the_value_99_although_the_references_agree():
 
 
 @pytest.mark.parametrize(
-    "alpn_bytes",
+    "alpn_bytes,expected",
     [
-        b"h\xab",  # FoxIO Python writes `h�`. FoxIO Rust writes `h9`.
-        b"\xabh",  # FoxIO Python writes `99`. FoxIO Rust writes `9h`.
-        b"\x30\x31\xab\xcd",  # FoxIO Python writes `0�`. FoxIO Rust writes `09`.
+        # FoxIO Python at `27f0cbf9` writes `h�`. FoxIO Rust writes `h9`.
+        (b"h\xab", "h9"),
+        # FoxIO Python at `27f0cbf9` writes `99`. FoxIO Rust writes `9h`.
+        (b"\xabh", "9h"),
+        # FoxIO Python at `27f0cbf9` writes `0�`. FoxIO Rust writes `09`.
+        (b"\x30\x31\xab\xcd", "09"),
     ],
 )
-def test_a_byte_outside_ascii_keeps_the_value_99_while_the_references_disagree(alpn_bytes):
-    """The two FoxIO implementations disagree, so `ja4plus` changes nothing here."""
-    assert compute_alpn_value(alpn_bytes) == "99"
+def test_a_byte_of_0x80_or_higher_writes_9_at_its_end(alpn_bytes, expected):
+    """The ruling of #789 writes `9` for each end byte of `0x80` or higher."""
+    assert compute_alpn_value(alpn_bytes) == expected
 
 
 def test_the_capture_carries_every_alpn_value_the_measurement_names():
@@ -266,26 +297,43 @@ def test_the_produced_value_matches_neither_foxio_implementation(index):
     assert produced != stream.foxio_rust
 
 
+@pytest.mark.parametrize("index", HIGH_BYTE_STREAMS, ids=_stream_id)
+def test_a_high_byte_stream_produces_the_foxio_rust_value(index):
+    """Each stream that the ruling of #789 reaches produces the FoxIO Rust value.
+
+    The expected-output file holds the FoxIO Python value at `27f0cbf9`, so the produced
+    value still differs from the file.
+    """
+    stream = STREAMS[index]
+    produced = alpn_characters(produced_ja4_values()[index])
+    expected = alpn_characters(load_expected()[index]["JA4.1"])
+
+    assert produced == stream.produced == stream.foxio_rust
+    assert expected == stream.foxio_python
+    assert produced != expected
+
+
 def test_the_agreed_streams_produce_the_reference_value():
     """Every stream the two FoxIO implementations agree on still matches the reference.
 
-    #162 records a divergence. It moves no value the measurement settled, so a stream
-    that conformed before it must conform after it.
+    #162 and #789 each record a divergence. Neither one moves a value the measurement
+    settled, so a stream that conformed before them must conform after them.
     """
     produced = produced_ja4_values()
     entries = load_expected()
 
-    agreed = [index for index in range(len(STREAMS)) if index not in DISPUTED_STREAMS]
+    agreed = [index for index in range(len(STREAMS)) if index not in DEPARTING_STREAMS]
     assert [produced[index] for index in agreed] == [entries[index]["JA4.1"] for index in agreed]
 
 
-@pytest.mark.parametrize("index", DISPUTED_STREAMS, ids=_stream_id)
-def test_the_deviation_register_holds_each_disputed_stream(index):
-    """Every disputed stream carries a decided register entry that #162 owns.
+@pytest.mark.parametrize("index", DEPARTING_STREAMS, ids=_stream_id)
+def test_the_deviation_register_holds_each_departing_stream(index):
+    """Every stream that differs from the file carries a decided entry of its ruling.
 
     The register entry is what makes the conformance suite report the divergence. An
-    unregistered disputed stream would fail the suite, and a stream that stops
-    diverging fails it too, because the entry is strict.
+    unregistered departing stream would fail the suite, and a stream that stops
+    diverging fails it too, because the entry is strict. #162 owns the control byte and
+    the one-byte value, and #789 owns a byte of `0x80` or higher.
     """
     register = load_register()
     port = FIRST_CLIENT_PORT + index
@@ -293,13 +341,13 @@ def test_the_deviation_register_holds_each_disputed_stream(index):
     for method in ALPN_METHODS:
         key = value_key(CAPTURE_PATH.name, index, port, method, 1)
         assert key in register, key
-        assert register[key].issue == DECISION_ISSUE, key
+        assert register[key].issue == STREAMS[index].issue, key
         assert register[key].decided is True, key
 
 
-@pytest.mark.parametrize("index", DISPUTED_STREAMS, ids=_stream_id)
+@pytest.mark.parametrize("index", DEPARTING_STREAMS, ids=_stream_id)
 def test_each_register_entry_states_the_output_of_both_foxio_implementations(index):
-    """The cause text of each disputed entry names both measured FoxIO values."""
+    """The cause text of each departing entry names both measured FoxIO values."""
     register = load_register()
     stream = STREAMS[index]
     cause = register[value_key(CAPTURE_PATH.name, index, FIRST_CLIENT_PORT + index, "JA4", 1)].cause
@@ -315,7 +363,7 @@ def test_the_agreed_streams_carry_no_register_entry():
     register = load_register()
 
     for index, stream in enumerate(STREAMS):
-        if stream.disputed:
+        if stream.departs:
             continue
         key = value_key(CAPTURE_PATH.name, index, FIRST_CLIENT_PORT + index, "JA4", 1)
         assert key not in register, key

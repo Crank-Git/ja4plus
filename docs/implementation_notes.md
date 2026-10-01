@@ -98,16 +98,17 @@ a FoxIO vector holds the value, and because a fingerprint exists so that one too
 can be compared against another tool output. The register holds no entry for this vector,
 and `tests/test_ja4_alpn.py` compares the produced value against the reference value.
 
-`compute_alpn_value` returns `99` when the first byte or the last byte of the first ALPN
-value falls outside `0x20-0x7E`. `ja4s.py` reads the same function, so JA4 and JA4S
-carry one rule.
+`compute_alpn_value` writes `9` for each end byte of `0x80` or higher, and it writes `99`
+when a control byte sits at either end. The ruling of #789 set that rule on 2026-10-01 UTC,
+and the section `### The ruling of #789 writes 9 for each high end byte` below states it.
+`ja4s.py` reads the same function, so JA4 and JA4S carry one rule.
 
 #127 settled the value that this vector produces. It settled no condition, because
 every rule fires on `0xba 0xad`. #141 measured the condition against a capture it built.
 The next section holds that measurement, and it holds the part of the condition the
 measurement leaves open.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:36`, in `compute_alpn_value`.
+**Location:** `ja4plus/fingerprinters/ja4.py:74`, in `compute_alpn_value`.
 
 ### The ALPN condition passes a printable ASCII byte through
 
@@ -220,9 +221,47 @@ in its invariant field.
 `test_every_stream_differs_from_the_others_in_the_alpn_characters_alone` proves the
 invariance.
 
-**Location:** `ja4plus/fingerprinters/ja4.py:36`, in `compute_alpn_value`. #162 changed
+**Location:** `ja4plus/fingerprinters/ja4.py:74`, in `compute_alpn_value`. #162 changed
 no line of it. `tests/test_ja4_alpn_condition.py` holds the measurement against
 `ja4plus`.
+
+**The tables above record the state before #789.** The next section states the values
+that `ja4plus` writes since that ruling.
+
+### The ruling of #789 writes 9 for each high end byte
+
+**The maintainer ruled on 2026-10-01 UTC, and the ruling binds both repositories.**
+`Crank-Git/ja4plus-go#801` holds the Go half, and the Go library ships it in `v1.3.0`.
+
+- Each end byte of `0x80` or higher writes `9`, one per end.
+- A one-byte printable value writes the byte twice.
+- A control byte below `0x20`, or the byte `0x7F`, at either end still writes `99`.
+
+The ruling follows `python/ja4.py:156-157` and `rust/ja4/src/tls.rs:635-647` at the
+pinned commit `16b96d95`. At that commit FoxIO Python tests each end character against
+128, and it no longer tests the first character alone.
+
+| The first ALPN value | Before #789 | Since #789 |
+|---|---|---|
+| `68` | `hh` | `hh` |
+| `2d` | `99` | `--` |
+| `20` | `99` | two spaces |
+| `68 ff` | `99` | `h9` |
+| `ff 68` | `99` | `9h` |
+| `ba ad` | `99` | `99` |
+| `68 1f` | `99` | `99` |
+| `01 68` | `99` | `99` |
+
+**Two streams of `alpn-condition.pcap` move.** Stream 2 (`h\xab`) now writes `h9`, and
+stream 3 (`\xabh`) now writes `9h`. Both values equal the FoxIO Rust measurement. The
+expected-output file holds the FoxIO Python measurement at `27f0cbf9`, so both streams
+differ from it. The register holds four entries for each stream under #789. **No FoxIO
+vector moves**, because `tls-non-ascii-alpn.pcapng` holds `ba ad` and it still writes `99`.
+
+`tests/test_alpn_end_byte_ruling.py` builds a ClientHello and a ServerHello for each input,
+so it holds the ruling for JA4 and for JA4S.
+
+**Location:** `ja4plus/fingerprinters/ja4.py:57`, in `_alpn_end_character`.
 
 ### The QUIC reference value comes from the FoxIO Rust implementation
 
