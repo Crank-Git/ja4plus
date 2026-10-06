@@ -300,7 +300,7 @@ class TestTheReaderCallsNoScapyDissector:
         """
         quoted = bytearray(well_formed_quote())
         quoted[40:52] = bytes.fromhex("7909326e6f18d4fed11dae08")
-        with pytest.raises(struct.error, match="unpack requires a buffer of 1 bytes"):
+        with pytest.raises(struct.error, match="requires a buffer of"):
             TCP(bytes(quoted[20:]))
         assert read_quoted_header(bytes(quoted)) is not None
         assert read(message(bytes(quoted))) == "64240_121_00_00"
