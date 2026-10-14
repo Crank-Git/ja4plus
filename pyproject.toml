@@ -169,19 +169,26 @@ lookup = [
 # builds the site. #576 ran `mkdocs build --strict` against these five versions and the
 # build reported no warning.
 #
-# **The extra needs Python 3.10 or later, and every interpreter of the supported set meets
-# that floor since #575.** `griffe` 2.1.0, `mkdocstrings` 1.0.6 and `mkdocstrings-python`
-# 2.0.5 each require it. The documentation job names one version.
+# **The extra needs Python 3.11 or later, and the package floor stays at 3.10.**
+# `mkdocstrings` 1.0.7 dropped Python 3.10. Every job that installs this extra runs
+# Python 3.13, so no job of the supported set loses the build.
+#
+# **`mkdocstrings` 1.0.7 is the first release that builds against `pymdown-extensions`
+# 12.2.** No entry pins `pymdown-extensions`, so 12.2 reached the job on 2026-10-10. With
+# `mkdocstrings` 1.0.6 the build then failed with
+# `TypeError: Highlight.__init__() missing 1 required positional argument: 'md'`.
 #
 # Verified against https://pypi.org/project/mkdocs-material/9.7.7/,
 # https://pypi.org/pypi/mkdocstrings-python/2.0.5/json,
 # https://pypi.org/pypi/griffe/2.1.0/json,
 # https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md and
 # https://mkdocstrings.github.io/python/usage/, retrieved 2026-08-10.
+# Verified against https://pypi.org/pypi/mkdocstrings/1.0.7/json and the 1.0.7 entry of
+# https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md, retrieved 2026-10-14.
 docs = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
-    "mkdocstrings==1.0.6",
+    "mkdocstrings==1.0.7",
     "mkdocstrings-python==2.0.9",
     "griffe==2.3.0",
 ]
