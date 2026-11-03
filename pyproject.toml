@@ -65,7 +65,7 @@ dev = [
     # `PytestRemovedIn9Warning` into an error and 9.1.0 removes the warned shapes, and this
     # suite holds none of them. Verified against
     # https://docs.pytest.org/en/stable/changelog.html, retrieved 2026-08-10.
-    "pytest==9.1.1",
+    "pytest==9.2.0",
     # **The version is exact, and #446 records the decision.** A `pytest-cov` release that
     # changes the report format moves the number the coverage gate reads. **A version
     # change is a deliberate commit, and this line is its whole diff.**
