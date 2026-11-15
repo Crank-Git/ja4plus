@@ -65,7 +65,7 @@ dev = [
     # `PytestRemovedIn9Warning` into an error and 9.1.0 removes the warned shapes, and this
     # suite holds none of them. Verified against
     # https://docs.pytest.org/en/stable/changelog.html, retrieved 2026-08-10.
-    "pytest==9.1.1",
+    "pytest==9.2.0",
     # **The version is exact, and #446 records the decision.** A `pytest-cov` release that
     # changes the report format moves the number the coverage gate reads. **A version
     # change is a deliberate commit, and this line is its whole diff.**
@@ -96,7 +96,7 @@ dev = [
     # file under `.github/workflows/` and every second dependency record this repository
     # could carry. The `dev` extra therefore stays the one place a tool reads the version
     # from.
-    "ruff==0.16.10",
+    "ruff==0.17.4",
     # **The version floats, and #446 chose that shape against the four exact pins beside
     # it.** A pinned type checker falls behind, and a frozen release hides a defect that a
     # later release reports. A floating formatter turns a green tree red, which is noisy
@@ -169,19 +169,26 @@ lookup = [
 # builds the site. #576 ran `mkdocs build --strict` against these five versions and the
 # build reported no warning.
 #
-# **The extra needs Python 3.10 or later, and every interpreter of the supported set meets
-# that floor since #575.** `griffe` 2.1.0, `mkdocstrings` 1.0.6 and `mkdocstrings-python`
-# 2.0.5 each require it. The documentation job names one version.
+# **The extra needs Python 3.11 or later, and the package floor stays at 3.10.**
+# `mkdocstrings` 1.0.7 dropped Python 3.10. Every job that installs this extra runs
+# Python 3.13, so no job of the supported set loses the build.
+#
+# **`mkdocstrings` 1.0.7 is the first release that builds against `pymdown-extensions`
+# 12.2.** No entry pins `pymdown-extensions`, so 12.2 reached the job on 2026-10-10. With
+# `mkdocstrings` 1.0.6 the build then failed with
+# `TypeError: Highlight.__init__() missing 1 required positional argument: 'md'`.
 #
 # Verified against https://pypi.org/project/mkdocs-material/9.7.7/,
 # https://pypi.org/pypi/mkdocstrings-python/2.0.5/json,
 # https://pypi.org/pypi/griffe/2.1.0/json,
 # https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md and
 # https://mkdocstrings.github.io/python/usage/, retrieved 2026-08-10.
+# Verified against https://pypi.org/pypi/mkdocstrings/1.0.7/json and the 1.0.7 entry of
+# https://github.com/mkdocstrings/mkdocstrings/blob/main/CHANGELOG.md, retrieved 2026-10-14.
 docs = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.7",
-    "mkdocstrings==1.0.6",
+    "mkdocstrings==1.0.7",
     "mkdocstrings-python==2.0.9",
     "griffe==2.3.0",
 ]
