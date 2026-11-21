@@ -225,7 +225,7 @@ version = {attr = "ja4plus.__version__"}
 # **This list is the one mechanism that keeps a tree out of the wheel, and `docs` and
 # `assets` each need an entry here.** #455 measured a wheel of 96 entries against the
 # requirement `FR-release-11b`. 56 of those entries lay under `docs/`, and one lay under
-# `assets/`. `assets/logo.png` holds 2423363 bytes, `README.md` is its one reader, and a
+# `assets/`. `assets/logo.png` holds 55709 bytes, `README.md` is its one reader, and a
 # logo is no run-time dependency of a fingerprinting library. Two defaults produce that
 # state together.
 #

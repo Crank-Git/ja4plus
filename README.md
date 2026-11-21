@@ -1,29 +1,31 @@
-<p align="center"><img src="assets/logo.png" width="300"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Crank-Git/ja4plus/master/assets/logo.png" alt="The ja4plus logo: a glowing fingerprint wired to TLS, terminal, and certificate icons, beside the JA4+ wordmark" width="300"></p>
 
-A Python library and command-line program that produces JA4+ fingerprints. It reads TLS,
-TCP, HTTP, SSH and DHCP traffic, and it reads an X.509 certificate. It supports QUIC,
-IPv4, IPv6 and multi-segment TCP reassembly.
+<h1 align="center">ja4plus</h1>
 
-**FoxIO publishes twelve JA4+ methods, and this project implements twelve of them.**
-Eleven read traffic that already exists. The twelfth is JA4TScan, which sends packets, and
-the `ja4plus scan` subcommand runs it. Ten fingerprinter classes carry the other eleven,
-because `JA4LFingerprinter` writes both JA4L and JA4LS. `Methods` below names each method.
+<p align="center"><b>JA4+ fingerprints from packet captures, live interfaces, and certificates, in Python.</b></p>
 
-FoxIO owns the JA4+ standard, and [FoxIO](https://foxio.io) publishes it. This library is
-an independent implementation of that standard. FoxIO wrote no part of it. For the
-standard itself, read the
-[FoxIO JA4+ repository](https://github.com/FoxIO-LLC/ja4).
+<p align="center"><a href="https://github.com/Crank-Git/ja4plus/actions/workflows/test.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Crank-Git/ja4plus/test.yml?branch=dev&style=flat-square&label=ci&labelColor=304655"></a> <a href="https://pypi.org/project/ja4plus/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/ja4plus?style=flat-square&labelColor=304655&color=36e3f6"></a> <a href="https://pypi.org/project/ja4plus/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/ja4plus?style=flat-square&labelColor=304655&color=36e3f6"></a> <a href="https://github.com/Crank-Git/ja4plus/blob/master/LICENSE"><img alt="License: BSD-3-Clause" src="https://img.shields.io/badge/license-BSD--3--Clause-36e3f6?style=flat-square&labelColor=304655"></a></p>
 
-[![Tests](https://github.com/Crank-Git/ja4plus/actions/workflows/test.yml/badge.svg)](https://github.com/Crank-Git/ja4plus/actions/workflows/test.yml)
-[![PyPI version](https://badge.fury.io/py/ja4plus.svg)](https://pypi.org/project/ja4plus/)
-[![Python versions](https://img.shields.io/pypi/pyversions/ja4plus.svg)](https://pypi.org/project/ja4plus/)
-[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+<p align="center"><a href="https://crank-git.github.io/ja4plus/"><b>Docs</b></a> · <a href="#install"><b>Install</b></a> · <a href="#quick-start"><b>Quick start</b></a> · <a href="https://github.com/Crank-Git/ja4plus/releases"><b>Releases</b></a></p>
+
+```mermaid
+flowchart LR
+  src["pcap file or interface"] -->|packets| proc["Processor"] --> fp["fingerprinters"] -->|results| out["table, JSON, or CSV"]
+```
+
+## Why ja4plus
+
+FoxIO owns the JA4+ standard, and [FoxIO](https://foxio.io) publishes it. This library is an independent implementation of that standard. FoxIO wrote no part of it, so for the standard itself, read the [FoxIO JA4+ repository](https://github.com/FoxIO-LLC/ja4).
+
+A JA4+ fingerprint is only worth something if another tool computes the same value from the same bytes. So the FoxIO test vectors decide the output here. The conformance suite runs the committed FoxIO captures against their expected values, and where the reference has a provable defect, the [implementation notes](https://crank-git.github.io/ja4plus/implementation_notes/) record it rather than copy it.
+
+It's pure Python on top of scapy, and it treats every packet as hostile. A parser that can't read a packet returns nothing instead of raising, and every per-connection table has an entry cap and an age limit, so a monitor that runs for a day stops growing.
 
 ## Methods
 
-The table holds the twelve methods FoxIO publishes at
-[`technical_details/README.md`](https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/README.md).
-The `Implemented` column states whether this project builds the method.
+FoxIO publishes twelve JA4+ methods, and this project implements twelve of them. Eleven read traffic that already exists. JA4TScan sends one TCP SYN to each host you name, so it lives apart in the `ja4plus.scan` module and runs as `ja4plus scan`. `JA4LFingerprinter` writes both JA4L and JA4LS, so ten fingerprinter classes carry the other eleven.
+
+FoxIO lists the twelve in [`technical_details/README.md`](https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/README.md).
 
 | Method | Protocol | Description | Implemented |
 |------|----------|-------------|-------------|
@@ -37,442 +39,118 @@ The `Implemented` column states whether this project builds the method.
 | JA4T | TCP | Client OS fingerprint from SYN packets | Yes |
 | JA4TS | TCP | Server fingerprint from SYN-ACK packets | Yes |
 | JA4TScan | TCP | Active TCP server fingerprint from SYN-ACK retransmissions, through `ja4plus scan` | Yes |
-| JA4D | DHCPv4 | DHCP client/server fingerprint (FoxIO PR #267/#270) | Yes |
-| JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint (FoxIO PR #267/#270) | Yes |
+| JA4D | DHCPv4 | DHCP client/server fingerprint | Yes |
+| JA4D6 | DHCPv6 | DHCPv6 client/server fingerprint | Yes |
 
-**JA4TScan sends packets, so this project keeps it apart from the other eleven.** It
-sends one TCP SYN to each host the operator names and reads the responses. The maintainer
-reversed the decline of 2026-08-08 on 2026-09-30, in #775, and #776 built the scanner.
-The scanner installs with `pip install ja4plus[scan]` and runs as `ja4plus scan`. The
-`ja4plus.scan` module holds it, and no passive fingerprinter can send a packet. The
-scanner changes no firewall state, and it states the rule the operator adds.
-[`docs/methods/ja4tscan.md`](docs/methods/ja4tscan.md) describes the command, and
-[`docs/specs/features/12-active-scan.md`](docs/specs/features/12-active-scan.md) holds the
-design.
+QUIC v1 and v2 Initial packets (RFC 9001, RFC 9369) are decrypted to reach the ClientHello, TCP payloads are reassembled across segments, and every method reads IPv4 and IPv6. Each method's format, parts, and example value are on its [method page](https://crank-git.github.io/ja4plus/methods/).
 
-`JA4LFingerprinter` builds both JA4L and JA4LS, so ten fingerprinters carry eleven
-methods. `--types ja4l` names the two together, and `--types ja4ls` names JA4LS alone.
+## Requirements
 
-QUIC Initial packets (RFC 9001/9369) are automatically decrypted to extract TLS ClientHellos. IPv4 and IPv6 are both supported across all fingerprinters.
+- **Python 3.10 or later.** CI runs 3.10 through 3.13.
+- **scapy** 2.4.0 or later and **cryptography** 42.0.0 or later. `pip` installs both.
+- **The capture privilege** (root, or `CAP_NET_RAW` on Linux) for `ja4plus watch` and `ja4plus scan`. Both run on Linux and macOS.
 
-## Installation
+| Extra | Adds | You need it for |
+|---|---|---|
+| `lookup` | `requests` | `--lookup-remote` and `JA4DBClient(allow_remote=True)`. The bundled mapping file needs no extra. |
+| `scan` | Nothing | `ja4plus scan` runs on the core install. The extra exists so the scanner has one install command. |
+| `dev` | pytest, ruff, mypy, build, twine | Running the test suite and building the package. |
+| `docs` | mkdocs, mkdocs-material, mkdocstrings | Building the documentation site. |
+
+## Install
 
 <!-- sample: skip the command reaches the Python Package Index -->
 ```bash
 pip install ja4plus
+
+# With the optional remote lookup
+pip install "ja4plus[lookup]"
 ```
 
-The bundled mapping file identifies browsers, malware and C2 frameworks, and it needs no
-extra. The `lookup` extra adds the optional remote lookup, which you ask for. Read
-[The lookup makes no network request unless you ask for one](#the-lookup-makes-no-network-request-unless-you-ask-for-one).
-
-<!-- sample: skip the command reaches the Python Package Index -->
-```bash
-pip install ja4plus[lookup]
-```
-
-## CLI
-
-The `ja4plus` command is available after installation:
+## Quick start
 
 ```bash
-# Analyze a PCAP file
 ja4plus analyze capture.pcap
-
-# JSON output for SIEM ingestion
-ja4plus --format json analyze capture.pcap
-
-# Only specific fingerprint types
-ja4plus --types ja4,ja4t analyze capture.pcap
-
-# Fingerprint a certificate
-ja4plus cert server.der
-
-# Identify known fingerprints from the bundled database. It makes no network request
-ja4plus --lookup analyze capture.pcap
-
-# Write the results to a file
-ja4plus analyze capture.pcap --format json --output results.json
-
-# Overwrite a file that exists
-ja4plus analyze capture.pcap --format json --output results.json --force
 ```
 
-The monitor reads an interface, so it needs the capture privilege:
+This prints a table with one row per fingerprint in the capture. Add `--format json` for one JSON object per line, or `--format csv`.
 
-<!-- sample: skip the command opens a capture socket, and continuous integration holds no capture privilege -->
-```bash
-# Read packets from an interface (needs the capture privilege)
-sudo ja4plus watch eth0
-
-# `live` is an alias of `watch`
-sudo ja4plus live eth0
-
-# Bound the connection table of the monitor
-sudo ja4plus watch eth0 --max-connections 50000 --connection-timeout 120
-
-# Apply a capture filter
-sudo ja4plus watch eth0 --bpf "tcp port 443"
-```
-
-`--lookup-remote` reaches the lookup service, so read
-[The lookup makes no network request unless you ask for one](#the-lookup-makes-no-network-request-unless-you-ask-for-one)
-before you pass it:
-
-<!-- sample: skip the command reaches the lookup service at https://ja4db.com -->
-```bash
-# Identify them, and ask https://ja4db.com about each fingerprint the database misses
-ja4plus --lookup-remote analyze capture.pcap
-```
-
-The six output options run before the subcommand name and after it.
-`ja4plus --format json analyze capture.pcap` and
-`ja4plus analyze capture.pcap --format json` do the same thing. The six are
-`--format`, `--types`, `--lookup`, `--lookup-remote`, `--output` and `--force`.
-
-`--max-connections`, `--connection-timeout`, `--stats-interval` and `--bpf` belong to
-`watch` alone, so they run after the subcommand name.
-
-`--bpf` passes a Berkeley Packet Filter expression to the capture layer, which drops
-every packet the filter rejects.
-
-The monitor reads no user identity. It attempts the capture and reads the failure, so a
-Linux host that grants `CAP_NET_RAW` without the user identity zero runs it. Where the
-capture fails, the command names the privilege, lists the interfaces of the host, or
-reports the filter error, and it ends the run with the status 1. The command runs on
-Linux and on macOS, and it reports that Windows carries no monitor.
-
-`SIGINT` and `SIGTERM` both stop the monitor, and both end the run with the status zero.
-The monitor finishes the line it writes, flushes the output, and exits, so the output
-file holds every fingerprint it reported.
-
-The monitor writes one statistics line to standard error when it exits, and
-`--stats-interval SECONDS` adds a line for each interval that passes.
-
-```
-[ja4plus] packets=1284302 fingerprints=48211 connections=8134 evicted=112094 dropped=0 uptime=3600s
-```
-
-Output formats: `--format table` (default), `json` (JSONL), `csv`
-
-The `json` and the `csv` formats write the same fields whatever flags you pass. Each
-output line carries the source address, the source port, the destination address and the
-destination port as separate fields, in this order:
-
-```
-schema_version,timestamp,type,fingerprint,raw,raw_original_order,src_ip,src_port,dst_ip,dst_port,identified_as
-```
-
-A field with no value is `null` in the `json` format and empty in the `csv` format. The
-`table` format is for a person reading a terminal, and it carries no stability promise.
-
-The command writes results to standard output and diagnostics to standard error, so a
-pipe that reads standard output reads results alone. A method that fails to read a
-packet writes one line that names the method, and the run continues:
-
-```
-Warning: ja4h could not read a packet: the parser read a length field it cannot trust
-```
-
-The command runs every method whatever `--types` names, and it selects the results it
-reports. It therefore reports the error of a method that `--types` leaves out.
-
-`--output FILE` writes the results to a file and leaves standard output empty. The
-command refuses to overwrite a file that exists, and it exits with the status 1:
-
-```
-Error: the output file exists: results.json. Pass --force to overwrite it.
-```
-
-`--force` overwrites that file. Without `--force` the command creates the file, so it
-writes through no symbolic link. A reader that closes the pipe early, such as `head -1`,
-ends the run without a traceback.
-
-## Fingerprint Lookup
-
-ja4plus includes a bundled database of known JA4+ fingerprints from FoxIO's [ja4plus-mapping.csv](https://github.com/FoxIO-LLC/ja4/blob/main/ja4plus-mapping.csv). Identifies Chrome, Firefox, Safari, Python, Cobalt Strike, Sliver, IcedID, and more.
-
-```python
-from ja4plus.ja4db import lookup
-
-result = lookup("t13d1516h2_8daaf6152771_02713d6af862")
-# LookupResult(application="Chromium Browser", type="ja4", notes="", source="embedded")
-```
-
-Every result records its source: `embedded` for the mapping file inside the package,
-`cache` for the file `ja4plus db update` wrote, and `remote` for the lookup service. You
-need to know where a name came from to judge how much to trust it.
-
-`lookup_many` identifies a sequence of fingerprints in one call, and it returns one entry
-per fingerprint:
-
-```python
-from ja4plus.ja4db import JA4DBClient
-
-results = JA4DBClient().lookup_many(fingerprints)
-# {"t13d1516h2_8daaf6152771_02713d6af862": LookupResult(...), "t99z9999h0_0_0": None}
-```
-
-### The lookup makes no network request unless you ask for one
-
-A fingerprint describes traffic you observed. A request to the lookup service
-`ja4db.com` tells that service which fingerprint your host saw. `ja4plus` therefore reads
-the bundled mapping file and reaches no network by default. `ja4plus --lookup analyze`
-and `ja4plus.ja4db.lookup` both hold that default, and neither one contacts a third
-party.
-
-To permit the request, build the client with `allow_remote=True`:
-
-```python
-from ja4plus.ja4db import JA4DBClient
-
-# The default. Every lookup reads the bundled mapping file.
-offline = JA4DBClient()
-
-# Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
-online = JA4DBClient(allow_remote=True)
-```
-
-The command asks for the same request with `--lookup-remote`:
-
-```bash
-# The default of the command. Every lookup reads the bundled mapping file.
-ja4plus analyze capture.pcap --lookup
-```
-
-<!-- sample: skip the command reaches the lookup service at https://ja4db.com -->
-```bash
-# Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
-ja4plus analyze capture.pcap --lookup-remote
-
-# The variable permits the same request, for a command line you cannot change.
-JA4PLUS_DB_LOOKUP=1 ja4plus analyze capture.pcap --lookup
-```
-
-The command writes one notice to standard error for a run that permits the remote
-lookup. The notice names the lookup service and the two ways to stop the request. It
-appears once whatever count of fingerprints the run looks up. It goes to standard error,
-so it enters no pipe that carries the results.
-
-The option and the variable each permit the request, and neither one refuses it.
-`JA4PLUS_DB_LOOKUP=0` therefore cancels no option. To stop the request, pass `--lookup`
-and unset the variable. The variable permits the request on the value `1` and on no
-other value. The variable asks for no lookup, so a command that names no option looks
-nothing up.
-
-The remote lookup needs the `requests` package. Where you ask for the remote lookup and
-the package is absent, the command names the extra to install and ends the run with the
-status 1.
-
-To stop the request again, build the client with no argument. The remote lookup waits 5
-seconds at most. A request that fails returns None, and it raises nothing. The `lookup`
-extra installs the `requests` package that the request needs, and a client without that
-package reports every miss as None.
-
-## Python API
-
-### Quick Start
+From Python, `Processor` runs every fingerprinter on each packet:
 
 ```python
 from scapy.all import rdpcap
-from ja4plus import JA4Fingerprinter
+from ja4plus import Processor
 
-packets = rdpcap("capture.pcap")
+processor = Processor()
+for packet in rdpcap("capture.pcap"):
+    for result in processor.process_packet(packet):
+        print(result.type, result.fingerprint)
+```
+
+## Usage
+
+```bash
+# Only some methods, as JSON
+ja4plus --format json --types ja4,ja4t analyze capture.pcap
+
+# Name each fingerprint from the mapping file, with no network request
+ja4plus --lookup analyze capture.pcap
+
+# Fingerprint a DER or PEM certificate
+ja4plus cert server.der
+
+# Show which mapping file the lookup reads, and how many entries it holds
+ja4plus db info
+```
+
+The interface commands need the capture privilege:
+
+<!-- sample: skip the commands open a capture socket or send packets, and continuous integration holds no capture privilege -->
+```bash
+# Read an interface until you stop it (`live` is an alias)
+sudo ja4plus watch eth0 --bpf "tcp port 443"
+
+# Send one SYN to each host and read its JA4TScan value
+sudo ja4plus scan 203.0.113.0/28 --port 443
+```
+
+`ja4plus db update` downloads FoxIO's latest mapping file into your cache directory, and `--lookup` reads that copy once it exists. The output options (`--format`, `--types`, `--lookup`, `--lookup-remote`, `--output`, `--force`) work before or after the subcommand. Results go to stdout and diagnostics to stderr, and `--output FILE` refuses to overwrite a file unless you add `--force`. The [output schema](https://crank-git.github.io/ja4plus/output-schema/) has every field, and says where output and errors go.
+
+**Heads up:** `--lookup` never touches the network, but `--lookup-remote` sends each fingerprint the mapping file misses to ja4db.com, which tells that service what your host saw. Read [the remote lookup](https://crank-git.github.io/ja4plus/api_reference/#the-remote-lookup-is-opt-in) before you turn it on.
+
+A fingerprint is evidence of the bytes a packet carried, not of a real client. Anyone can build a ClientHello that produces a well-formed fingerprint, so read [what a fingerprint is evidence of](https://crank-git.github.io/ja4plus/output-schema/#what-a-fingerprint-is-evidence-of) before you trust one from untrusted traffic.
+
+## API
+
+Each fingerprinter also works on its own. `process_packet` returns the fingerprint string, or `None` when the packet produces none:
+
+```python
+from ja4plus import JA4Fingerprinter
+from ja4plus.ja4db import lookup
 
 fp = JA4Fingerprinter()
 for packet in packets:
-    result = fp.process_packet(packet)
-    if result:
-        print(f"JA4: {result}")
+    if fingerprint := fp.process_packet(packet):
+        print(fingerprint, lookup(fingerprint))
 ```
 
-### All Fingerprinters
+`lookup` reads the mapping file (your `db update` copy if there is one, otherwise the bundled file) and returns a `LookupResult` or `None`. Several threads can share one `Processor` as long as each thread gets whole connections, which is what `Processor.get_shard_key` is for. The [concurrency page](https://crank-git.github.io/ja4plus/concurrency/) has the full contract, the default bounds, and the memory ceiling. The [public interface](https://crank-git.github.io/ja4plus/api_reference/) covers every class, the one-shot functions, and the certificate helpers.
 
-```python
-from ja4plus import (
-    JA4Fingerprinter,      # TLS Client
-    JA4SFingerprinter,     # TLS Server
-    JA4HFingerprinter,     # HTTP
-    JA4TFingerprinter,     # TCP Client (SYN)
-    JA4TSFingerprinter,    # TCP Server (SYN-ACK)
-    JA4LFingerprinter,     # Latency
-    JA4XFingerprinter,     # X.509 Certificate
-    JA4SSHFingerprinter,   # SSH
-    JA4DFingerprinter,     # DHCPv4
-    JA4D6Fingerprinter,    # DHCPv6
-)
-```
+## Documentation
 
-All fingerprinters share a common interface:
+Everything else is on the [documentation site](https://crank-git.github.io/ja4plus/).
 
-| Method | Description |
-|--------|-------------|
-| `process_packet(pkt)` | Process a packet, returns fingerprint string or `None` |
-| `get_fingerprints()` | Returns list of all collected fingerprint dicts |
-| `reset()` | Clears all collected state |
-
-### Function-Based API
-
-For one-shot fingerprinting without maintaining state:
-
-```python
-from ja4plus import generate_ja4, generate_ja4s, generate_ja4h
-from ja4plus.utils.tls_utils import extract_tls_info
-
-# `generate_ja4s` and `generate_ja4h` each read a packet.
-server_fingerprint = generate_ja4s(packet)
-
-# `generate_ja4` reads the TLS info that `extract_tls_info` returns.
-fingerprint = generate_ja4(extract_tls_info(packet))
-```
-
-### Aggregating Processor
-
-Run every fingerprinter on each packet and get a list of results:
-
-```python
-from ja4plus import Processor
-
-p = Processor()
-for packet in packets:
-    for r in p.process_packet(packet):
-        print(r.type, r.fingerprint, r.raw)
-
-# Read the errors as well when a failed parse must be told from no fingerprint.
-results, errors = p.process_packet_with_errors(packet)
-
-# The packet source ends here. JA4SSH emits the window each connection holds open.
-for r in p.close_open_windows():
-    print(r["type"], r["fingerprint"], r["connection"])
-
-# Use get_shard_key to bucket packets per connection
-shard_key = p.get_shard_key(packet)
-
-# Cleanup state for a finished connection
-p.cleanup_connection(src_ip, src_port, dst_ip, dst_port, "tcp")
-```
-
-#### The concurrency contract
-
-Several threads may share one `Processor()`, and each fingerprinter guards its own state
-with a reentrant lock. Give each thread whole connections, which is what `get_shard_key`
-returns, and eight threads read the value set one thread reads. A caller that splits the
-packets of one connection across threads gets undefined results. The state of that
-connection then advances out of capture order. A caller that runs one processor for each
-shard constructs `Processor(thread_safe=False)` to acquire no lock. `thread_safe=False`
-is a promise the caller makes, not a mode the library checks. Feed one processor the
-packets of one timeline. Every state table evicts an entry that receives no packet for
-its maximum age. Two packet sources whose clocks sit far apart therefore age out state
-that the later source still needs. The age pass of one thread reads the clock of that
-thread. It holds every entry of another thread, so the value set does not depend on how
-far one thread ran ahead of another. The entry of a thread that ends stays until the
-entry count bound removes it.
-
-#### The memory bound
-
-Every state table holds a maximum entry count and a maximum age. A monitor that runs for
-a day therefore stops growing rather than running out of memory.
-[`docs/specs/features/03-concurrency-safety.md`](docs/specs/features/03-concurrency-safety.md)
-states both numbers for each table. A table that reaches its maximum entry count evicts
-the least recently used entry. A connection can therefore leave a long capture and
-return, and the fingerprint of a returned connection may be incomplete.
-`Processor.stats()` reports the count of returned connections for each method. Eviction
-runs on packet arrival and the library starts no thread.
-
-#### The default bounds
-
-| Bound | Default |
+| Page | What's there |
 |---|---|
-| The maximum entry count of one state table | 10000 entries |
-| The maximum age of one entry of a state table | 600 seconds |
-| The maximum count of connections the monitor holds | 10000 connections |
-| The maximum age of one connection of the monitor | 300 seconds |
-
-`ja4plus/utils/state_table.py` sets the first two, and a table that needs a smaller bound
-states its own. `ja4plus/watch.py` sets the last two, and `--max-connections` and
-`--connection-timeout` change them for one run. **The monitor holds an idle connection
-for a shorter time than a state table does**, so the monitor evicts a connection first.
-[`docs/specs/features/03-concurrency-safety.md`](docs/specs/features/03-concurrency-safety.md)
-states the entry count and the age of every table.
-
-#### The memory ceiling
-
-This package states a memory ceiling of **512 MiB**. One `Processor()` at the shipped
-defaults reads 1000000 packets across 100000 distinct connections and holds resident
-memory below that number. Four runs measured 383.47 MiB, 388.25 MiB, 392.05 MiB and
-394.94 MiB.
-[`docs/specs/features/03-concurrency-safety.md`](docs/specs/features/03-concurrency-safety.md)
-states the defaults the ceiling holds at. **The ceiling covers that packet run and no
-longer run.** Each fingerprinter keeps every fingerprint it produces, and that list holds
-no bound, so a longer run reads more memory. The same traffic passes 512 MiB at 1500000
-packets. `Processor.reset()` drops those results, and
-it drops every state table with them, so a caller that runs it in the middle of a capture
-loses the connection state the next packet needs.
-
-JA4 and JA4S result dicts include the unhashed `raw` and
-`raw_original_order` variants — useful for human-readable output and
-fingerprint debugging.
-
-A JA4 result holds two different raw values. `raw` is the FoxIO `JA4_r` value,
-which sorts the ciphers and the extensions. `raw_original_order` is the FoxIO
-`JA4_ro` value, which holds every list in wire order. A JA4S result holds one
-raw value under both keys, because JA4S sorts no list. That value is the FoxIO
-`JA4S_r` value, and it holds the extensions in wire order.
-
-The same dicts include `fingerprint_original_order`, the FoxIO `JA4_o` value.
-It is the hashed form of `raw_original_order`, and its relationship to
-`fingerprint` matches the relationship of `raw_original_order` to `raw`. The
-`JA4Fingerprinter` and `JA4SFingerprinter` classes also hold the most recent
-one on `last_fingerprint_original_order`.
-
-### X.509 Helpers
-
-```python
-from ja4plus import compute_ja4x_from_pem, compute_ja4x_from_der
-
-ja4x = compute_ja4x_from_pem(pem_bytes)
-ja4x = compute_ja4x_from_der(der_bytes)
-```
-
-See [`docs/usage.md`](docs/usage.md) for detailed usage of each fingerprinter and [`docs/api_reference.md`](docs/api_reference.md) for the full API.
-
-## Fingerprint Formats
-
-| Type | Format | Example |
-|------|--------|---------|
-| JA4 | `{proto}{ver}{sni}{ciphers}{exts}{alpn}_{hash}_{hash}` | `t13d1516h2_8daaf6152771_e5627efa2ab1` |
-| JA4S | `{proto}{ver}{exts}{alpn}_{cipher}_{hash}` | `t130200_1301_a56c5b993250` |
-| JA4H | `{method}{ver}{cookie}{ref}{cnt}{lang}_{h}_{h}_{h}` | `ge11cr0800_edb4461d7a83_...` |
-| JA4T | `{window}_{options}_{mss}_{wscale}` | `65535_2-4-8-1-3_1460_7` |
-| JA4TS | `{window}_{options}_{mss}_{wscale}` | `14600_2-4-8-1-3_1460_00` |
-| JA4L | `JA4L-{C\|S}={latency_us}_{ttl}` | `JA4L-S=2500_56` |
-| JA4X | `{issuer}_{subject}_{extensions}` | `a37f49ba31e2_a37f49ba31e2_dd4f1a0ef8b2` |
-| JA4SSH | `c{mode}s{mode}_c{pkts}s{pkts}_c{acks}s{acks}` | `c36s36_c51s80_c69s0` |
-| JA4D | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `disco0000in_61-55_1-3-6-42` |
-| JA4D6 | `{type}{size}{ip}{fqdn}_{options}_{request_list}` | `solct0014nn_1-6-8-25_23-24` |
-
-## What a Fingerprint Is Evidence Of
-
-**A fingerprint is evidence of the bytes the packet carried. It is no evidence of a real
-client.**
-
-ja4plus adds no plausibility guard. A structurally valid ClientHello produces a
-fingerprint, whatever its body holds. Any sender can build bytes that produce a well
-formed fingerprint. Read a fingerprint from untrusted traffic as a description of those
-bytes and nothing more.
-
-The behavior follows the FoxIO reference, because no FoxIO material rejects such a
-packet. [`docs/output-schema.md`](docs/output-schema.md) states the property in full.
-
-## Spec Validation
-
-ja4plus is validated against [FoxIO's official test vectors](https://github.com/FoxIO-LLC/ja4):
-
-<!-- sample: skip the first command downloads the vectors from the FoxIO repository -->
-```bash
-python tests/download_test_vectors.py
-pytest -m spec_validation -v
-```
+| [Usage guide](https://crank-git.github.io/ja4plus/usage/) | Each fingerprinter with an example, QUIC, capture files, live capture, and the scanner. |
+| [Methods](https://crank-git.github.io/ja4plus/methods/) | One page per method: output format, parts, hash rule, and FoxIO source. |
+| [Output schema](https://crank-git.github.io/ja4plus/output-schema/) | The JSON and CSV fields, the raw forms, and where output and errors go. |
+| [Concurrency](https://crank-git.github.io/ja4plus/concurrency/) | The thread contract, the memory bounds and their defaults, and the memory ceiling. |
+| [Public interface](https://crank-git.github.io/ja4plus/api_reference/) | Fingerprinters, `Processor`, the lookup module, and the CLI options. |
+| [API reference](https://crank-git.github.io/ja4plus/reference/) | Generated from the docstrings. |
+| [Packet throughput](https://crank-git.github.io/ja4plus/performance/) | Measured packets per second. |
+| [Migration from 0.6.0](https://crank-git.github.io/ja4plus/migration-0.6-to-1.0/) | Every breaking change in 1.0.0, old form and new. |
+| [Implementation notes](https://crank-git.github.io/ja4plus/implementation_notes/) | Every place this project diverges from the FoxIO reference, and why. |
 
 ## Development
 
@@ -481,14 +159,11 @@ pytest -m spec_validation -v
 git clone https://github.com/Crank-Git/ja4plus.git
 cd ja4plus
 pip install -e ".[dev]"
-pytest tests/ -v
+pytest tests/ -m "not spec_validation"   # unit suite
+pytest tests/ -m spec_validation         # FoxIO conformance suite
 ```
 
-### Requirements
-
-- Python 3.10+
-- [scapy](https://scapy.net/) >= 2.4.0
-- [cryptography](https://cryptography.io/) >= 42.0.0
+The FoxIO vectors are committed under `tests/foxio_vectors/`, so neither suite needs the network. `python tests/download_test_vectors.py` refreshes them from the pinned upstream commit.
 
 ## License
 
@@ -496,8 +171,12 @@ This library is released under the **BSD 3-Clause License**.
 
 The JA4+ fingerprinting specifications were created by [FoxIO](https://foxio.io). JA4 (TLS Client) is open source under BSD-3-Clause per FoxIO. The other methods this project implements carry the [FoxIO License 1.1](https://github.com/FoxIO-LLC/ja4/blob/main/LICENSE): JA4S, JA4H, JA4L, JA4LS, JA4X, JA4SSH, JA4T, JA4TS, JA4TScan, JA4D and JA4D6. That license is permissive for academic, internal business, and security research use. FoxIO names each of them at line 5 of [`License FAQ.md`](https://github.com/FoxIO-LLC/ja4/blob/main/License%20FAQ.md), at commit `27f0cbf9fd3000c072f82a0f7d0361dc99acf6c8`. That FoxIO list is wider than this one, because it also names methods this project does not implement.
 
-See [LICENSE](LICENSE) for full details.
+See [LICENSE](https://github.com/Crank-Git/ja4plus/blob/master/LICENSE) for full details.
 
 ## Acknowledgments
 
 JA4+ was created by John Althouse at [FoxIO](https://foxio.io). This library is an independent implementation of the published specification. For the original spec and reference implementation, see [github.com/FoxIO-LLC/ja4](https://github.com/FoxIO-LLC/ja4).
+
+---
+
+<sub>Also in Go: <a href="https://github.com/Crank-Git/ja4plus-go">ja4plus-go</a> · Built by <a href="https://github.com/Crank-Git">Crank</a> · <a href="https://github.com/Crank-Git">More projects</a></sub>

@@ -3,9 +3,10 @@
 Read this page before you write threaded code against `ja4plus`, and before you run a
 monitor for a long time.
 
-`README.md` states the same contract for a reader of the front door, and
-`tests/test_readme_contracts.py` reads each number out of the code. `docs/specs/features/03-concurrency-safety.md`
-holds the design.
+This page is the one statement of the contract and the bounds. The README links it, and
+`tests/test_readme_contracts.py` reads each number of this page against the code.
+`docs/specs/features/03-concurrency-safety.md` holds the design and the bounds of each
+state table.
 
 ## The concurrency contract
 
@@ -29,6 +30,10 @@ receives no packet for its maximum age, and eviction reads the packet timestamp.
 
 Two packet sources whose clocks sit far apart therefore age out state that the later
 source still needs. A capture file and a live interface are two such sources.
+
+The age pass of one thread reads the clock of that thread. It holds every entry of another
+thread, so the value set does not depend on how far one thread ran ahead of another. The
+entry of a thread that ends stays until the entry count bound removes it.
 
 ## The memory bound
 
@@ -103,7 +108,9 @@ the monitor evicts a connection first.
 
 This package states a memory ceiling of **512 MiB**. One `Processor()` at the shipped
 defaults reads 1000000 packets across 100000 distinct connections, and it holds resident
-memory below that number.
+memory below that number. Four runs measured 383.47 MiB, 388.25 MiB, 392.05 MiB and
+394.94 MiB. `docs/specs/features/03-concurrency-safety.md` states the defaults the ceiling
+holds at.
 
 **The ceiling covers that packet run and no longer run.** Each fingerprinter keeps every
 fingerprint it produces, and that list holds no bound, so a longer run reads more memory.

@@ -467,7 +467,7 @@ TestPyPI site.
 | The wheel carries a file under `tests/` or under `examples/`. | `test_the_wheel_lists_no_file_under_an_excluded_tree` fails. |
 | The wheel lists no entry at all. | `test_the_wheel_lists_at_least_the_minimum_entry_count` fails. **An aggregate over an empty set passes**, so every exclusion rule reads an empty archive as correct. |
 | The wheel carries a file under `docs/`. | `test_the_wheel_carries_no_file_under_the_documentation_tree` fails. #455 records the defect and the exclusion rule that repairs it. |
-| The wheel carries a file under `assets/`. | `test_the_wheel_carries_no_file_under_the_assets_tree` fails. `assets/logo.png` holds 2423363 bytes, and `README.md` is its one reader. |
+| The wheel carries a file under `assets/`. | `test_the_wheel_carries_no_file_under_the_assets_tree` fails. `assets/logo.png` holds 55709 bytes, and `README.md` is its one reader. |
 | The wheel carries a tree that the exclusion list does not name. | `test_the_wheel_carries_no_file_outside_the_package_and_its_metadata` fails, and `test_the_wheel_declares_one_top_level_name` fails where the tree is a discovered package. |
 | The exclusion rule reaches the source distribution as well. | `test_the_source_distribution_carries_the_documentation_tree` and `test_the_source_distribution_carries_the_assets_tree` fail. A source distribution is the project at one revision. |
 | The changelog has no section for the version. | The version-check job fails before a release is created. |

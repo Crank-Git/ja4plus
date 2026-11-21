@@ -1,18 +1,24 @@
-"""Tests that the README states the method coverage and the two contracts correctly.
+"""Tests that the README and the pages it links state the coverage and the contracts.
 
 #62 carries four requirements of `docs/specs/features/08-documentation.md`.
 
 - FR-documentation-1 — The README states which FoxIO methods the project implements
   and which it does not.
-- FR-documentation-2 — The README states the concurrency contract.
-- FR-documentation-3 — The README states the memory bounds and their defaults.
+- FR-documentation-2 — `docs/concurrency.md` states the concurrency contract, and the
+  README links that page.
+- FR-documentation-3 — `docs/concurrency.md` states the memory bounds and their
+  defaults, and the README links that page.
 - FR-documentation-14 — The documentation states that FoxIO owns the JA4+ standard
   and that this project is an independent implementation.
 
-**A README claim goes stale the moment the code moves, and a reader catches nothing.**
-Each case here therefore reads the number out of the code and compares the README
-against it. A case that restated the number would pass on a README that contradicts
-`ja4plus/`.
+**The README is the front page, and the contracts live on the pages it links.** The
+maintainer moved the two contracts, the default bounds, the memory ceiling and the import
+block of every fingerprinter out of the README on 2026-11-21. Each case that read one of
+them from the README now reads it from the page that holds it.
+
+**A documented claim goes stale the moment the code moves, and a reader catches nothing.**
+Each case here therefore reads the number out of the code and compares the page against
+it. A case that restated the number would pass on a page that contradicts `ja4plus/`.
 
 These cases read prose. They produce no fingerprint and they open no capture socket.
 """
@@ -33,14 +39,24 @@ from tests.test_memory_bounds import MEMORY_CEILING_MIB
 REPO_ROOT = Path(__file__).resolve().parent.parent
 README = REPO_ROOT / "README.md"
 
+# The page that states the concurrency contract, the default bounds and the memory ceiling.
+CONCURRENCY_PAGE = REPO_ROOT / "docs" / "concurrency.md"
+
+# The page that holds the import block of every fingerprinter.
+INTERFACE_PAGE = REPO_ROOT / "docs" / "api_reference.md"
+
 # The heading of the method table. FR-documentation-1 rests on this one table.
 METHOD_HEADING = "## Methods"
 
-# The heading of the table that states the default of each bound.
-BOUNDS_HEADING = "#### The default bounds"
+# The heading of the table that states the default of each bound, on the concurrency page.
+BOUNDS_HEADING = "## The default bounds"
 
-# The heading of the paragraph that states whether threads may share one processor.
-CONCURRENCY_HEADING = "#### The concurrency contract"
+# The heading of the section that states whether threads may share one processor, on the
+# concurrency page.
+CONCURRENCY_HEADING = "## The concurrency contract"
+
+# The heading of the import block of every fingerprinter, on the interface page.
+IMPORT_HEADING = "### How to import every fingerprinter"
 
 # The one method that sends packets. #197 declined it on 2026-08-08, and the maintainer
 # reversed the decline on 2026-09-30, in #775. #776 built it as `ja4plus scan`.
@@ -105,7 +121,7 @@ METHOD_NAME = re.compile(r"\bJA4[A-Za-z0-9]*\b")
 # of this reader lost `JA4S` for that reason, so the reader removes these first.
 EMPHASIS = "_*"
 
-# One imported fingerprinter of the `All Fingerprinters` block. The name must open a line
+# One imported fingerprinter of the import block. The name must open a line
 # of the import statement, because a name inside a comment imports nothing.
 IMPORTED_FINGERPRINTER = re.compile(r"^\s+(JA4\w*Fingerprinter)\s*,", re.MULTILINE)
 
@@ -117,6 +133,15 @@ def _readme() -> str:
         The text of `README.md`.
     """
     return README.read_text(encoding="utf-8")
+
+
+def _concurrency_page() -> str:
+    """Return the whole concurrency page.
+
+    Returns:
+        The text of `docs/concurrency.md`.
+    """
+    return CONCURRENCY_PAGE.read_text(encoding="utf-8")
 
 
 def _section(text: str, heading: str) -> str:
@@ -134,8 +159,8 @@ def _section(text: str, heading: str) -> str:
     """
     page = text.splitlines()
     starts = [number for number, line in enumerate(page) if line.strip() == heading]
-    assert starts, f"the README holds no {heading!r} heading"
-    assert len(starts) == 1, f"the README holds {len(starts)} {heading!r} headings"
+    assert starts, f"the page holds no {heading!r} heading"
+    assert len(starts) == 1, f"the page holds {len(starts)} {heading!r} headings"
     lines: list[str] = []
     for line in page[starts[0] + 1 :]:
         if line.startswith("#"):
@@ -195,12 +220,12 @@ def _implemented_cell(row: list[str]) -> str:
 
 
 def _bounds() -> dict[str, str]:
-    """Return the default of each bound the README states.
+    """Return the default of each bound the concurrency page states.
 
     Returns:
         The stated default, keyed by the name of the bound.
     """
-    rows = _table_rows(_section(_readme(), BOUNDS_HEADING))
+    rows = _table_rows(_section(_concurrency_page(), BOUNDS_HEADING))
     return {row[0]: row[1] for row in rows}
 
 
@@ -257,11 +282,11 @@ def test_the_readme_states_the_count_of_methods_foxio_publishes() -> None:
     )
 
 
-def test_the_readme_import_block_imports_every_exported_fingerprinter() -> None:
-    """The README `All Fingerprinters` block imports each fingerprinter `__all__` holds."""
+def test_the_interface_page_import_block_imports_every_exported_fingerprinter() -> None:
+    """The import block of the interface page imports each fingerprinter `__all__` holds."""
     exported = {name for name in PUBLIC_NAMES if name.endswith("Fingerprinter")}
-    text = _readme()
-    start = text.index("### All Fingerprinters")
+    text = INTERFACE_PAGE.read_text(encoding="utf-8")
+    start = text.index(IMPORT_HEADING)
     opening = text.index("```python", start)
     block = text[opening : text.index("```", opening + 1)]
     # A name inside a comment imports nothing, so read the import lines and not the block.
@@ -272,51 +297,62 @@ def test_the_readme_import_block_imports_every_exported_fingerprinter() -> None:
     )
 
 
-def test_the_readme_states_the_default_maximum_entry_count_of_a_state_table() -> None:
-    """The README states the maximum entry count `ja4plus/utils/state_table.py` sets."""
+def test_the_concurrency_page_states_the_default_maximum_entry_count_of_a_state_table() -> None:
+    """The concurrency page states the maximum entry count `state_table.py` sets."""
     stated = _bounds()["The maximum entry count of one state table"]
     assert stated == f"{DEFAULT_MAX_CONNECTIONS} entries", (
-        f"the README states {stated!r} against a default of {DEFAULT_MAX_CONNECTIONS}"
+        f"the concurrency page states {stated!r} against a default of {DEFAULT_MAX_CONNECTIONS}"
     )
 
 
-def test_the_readme_states_the_default_maximum_age_of_a_state_table() -> None:
-    """The README states the maximum age `ja4plus/utils/state_table.py` sets."""
+def test_the_concurrency_page_states_the_default_maximum_age_of_a_state_table() -> None:
+    """The concurrency page states the maximum age `ja4plus/utils/state_table.py` sets."""
     stated = _bounds()["The maximum age of one entry of a state table"]
     assert stated == f"{DEFAULT_MAX_CONNECTION_AGE} seconds", (
-        f"the README states {stated!r} against a default of {DEFAULT_MAX_CONNECTION_AGE}"
+        f"the concurrency page states {stated!r} against a default of {DEFAULT_MAX_CONNECTION_AGE}"
     )
 
 
-def test_the_readme_states_the_default_maximum_connection_count_of_the_monitor() -> None:
-    """The README states the connection count `ja4plus/watch.py` sets."""
+def test_the_concurrency_page_states_the_default_maximum_connection_count_of_the_monitor() -> None:
+    """The concurrency page states the connection count `ja4plus/watch.py` sets."""
     stated = _bounds()["The maximum count of connections the monitor holds"]
     assert stated == f"{MONITOR_MAX_CONNECTIONS} connections", (
-        f"the README states {stated!r} against a default of {MONITOR_MAX_CONNECTIONS}"
+        f"the concurrency page states {stated!r} against a default of {MONITOR_MAX_CONNECTIONS}"
     )
 
 
-def test_the_readme_states_the_default_maximum_connection_age_of_the_monitor() -> None:
-    """The README states the connection age `ja4plus/watch.py` sets."""
+def test_the_concurrency_page_states_the_default_maximum_connection_age_of_the_monitor() -> None:
+    """The concurrency page states the connection age `ja4plus/watch.py` sets."""
     stated = _bounds()["The maximum age of one connection of the monitor"]
     assert stated == f"{int(DEFAULT_CONNECTION_TIMEOUT)} seconds", (
-        f"the README states {stated!r} against a default of {DEFAULT_CONNECTION_TIMEOUT}"
+        f"the concurrency page states {stated!r} against a default of {DEFAULT_CONNECTION_TIMEOUT}"
     )
 
 
-def test_the_readme_states_the_memory_ceiling_the_suite_measures_against() -> None:
-    """The README states the ceiling `tests/test_memory_bounds.py` measures against."""
-    assert f"**{int(MEMORY_CEILING_MIB)} MiB**" in _readme(), (
-        f"the README states no ceiling of {int(MEMORY_CEILING_MIB)} MiB"
+def test_the_concurrency_page_states_the_memory_ceiling_the_suite_measures_against() -> None:
+    """The concurrency page states the ceiling `tests/test_memory_bounds.py` measures against."""
+    assert f"**{int(MEMORY_CEILING_MIB)} MiB**" in _concurrency_page(), (
+        f"the concurrency page states no ceiling of {int(MEMORY_CEILING_MIB)} MiB"
     )
 
 
-def test_the_readme_states_whether_threads_may_share_one_processor() -> None:
-    """The README concurrency paragraph states that threads may share one processor."""
-    paragraph = _section(_readme(), CONCURRENCY_HEADING)
+def test_the_concurrency_page_states_whether_threads_may_share_one_processor() -> None:
+    """The concurrency section of the concurrency page states that threads may share one."""
+    paragraph = _section(_concurrency_page(), CONCURRENCY_HEADING)
     assert "Several threads may share one `Processor()`" in paragraph, (
         "the concurrency contract states no answer for a shared processor"
     )
+
+
+# The address of the concurrency page on the documentation site. FR-documentation-2 and
+# FR-documentation-3 ask the README to link it, because the README no longer states either
+# contract.
+CONCURRENCY_LINK = "https://crank-git.github.io/ja4plus/concurrency/"
+
+
+def test_the_readme_links_the_page_that_states_the_two_contracts() -> None:
+    """The README links the concurrency page, which states both contracts."""
+    assert CONCURRENCY_LINK in _readme(), f"the README holds no link to {CONCURRENCY_LINK}"
 
 
 def _introduction() -> str:

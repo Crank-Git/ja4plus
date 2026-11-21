@@ -48,6 +48,27 @@ Verified against: https://peps.python.org/pep-0561/ (retrieved 2026-08-08).
 
 All fingerprinters inherit from `BaseFingerprinter` and share a common interface.
 
+### How to import every fingerprinter
+
+The block below imports each fingerprinter class that `ja4plus.__all__` names.
+`tests/test_readme_contracts.py` reads the block against `__all__`, so a new class that
+the block omits fails a case.
+
+```python
+from ja4plus import (
+    JA4Fingerprinter,      # TLS Client
+    JA4SFingerprinter,     # TLS Server
+    JA4HFingerprinter,     # HTTP
+    JA4TFingerprinter,     # TCP Client (SYN)
+    JA4TSFingerprinter,    # TCP Server (SYN-ACK)
+    JA4LFingerprinter,     # Latency
+    JA4XFingerprinter,     # X.509 Certificate
+    JA4SSHFingerprinter,   # SSH
+    JA4DFingerprinter,     # DHCPv4
+    JA4D6Fingerprinter,    # DHCPv6
+)
+```
+
 ### Common Methods
 
 | Method | Returns | Description |
@@ -228,6 +249,18 @@ unhashed lists of the fingerprint, joined with `_`. JA4X sorts no list, so
 `raw_original_order` holds the same value. #267 decided the form, and
 `docs/implementation_notes.md` holds the reading.
 
+#### The certificate helpers
+
+The two helpers read certificate bytes directly. `compute_ja4x_from_der` reads DER bytes,
+and `compute_ja4x_from_pem` reads PEM bytes.
+
+```python
+from ja4plus import compute_ja4x_from_pem, compute_ja4x_from_der
+
+ja4x = compute_ja4x_from_pem(pem_bytes)
+ja4x = compute_ja4x_from_der(der_bytes)
+```
+
 ### JA4SSHFingerprinter
 
 SSH session classification.
@@ -339,6 +372,33 @@ carries a connection key and no `FingerprintResult` field holds one.
 | `.stats()` | Return one `ProcessorStats` for each of the ten fingerprinters |
 | `.thread_safe` | The value the constructor read |
 | `ProcessorStats` | The counts of one method, which `Processor.stats` reports |
+
+#### How to drive the processor
+
+The block below runs every fingerprinter on each packet, and it uses each call of the
+table above once.
+
+```python
+from ja4plus import Processor
+
+p = Processor()
+for packet in packets:
+    for r in p.process_packet(packet):
+        print(r.type, r.fingerprint, r.raw)
+
+# Read the errors as well when a failed parse must be told from no fingerprint.
+results, errors = p.process_packet_with_errors(packet)
+
+# The packet source ends here. JA4SSH emits the window each connection holds open.
+for r in p.close_open_windows():
+    print(r["type"], r["fingerprint"], r["connection"])
+
+# Use get_shard_key to bucket packets per connection
+shard_key = p.get_shard_key(packet)
+
+# Cleanup state for a finished connection
+p.cleanup_connection(src_ip, src_port, dst_ip, dst_port, "tcp")
+```
 
 #### How to read the parse failures
 
@@ -1035,6 +1095,18 @@ file holds no entry for, FR-db-enrichment-2. The request goes to
 `https://ja4db.com/api/read/<fingerprint>`, and it waits 5 seconds at most,
 FR-db-enrichment-14. `_REMOTE_TIMEOUT` in `ja4plus/ja4db.py` holds that interval, and no
 parameter of the client changes it.
+
+```python
+from ja4plus.ja4db import JA4DBClient
+
+# The default. Every lookup reads the bundled mapping file.
+offline = JA4DBClient()
+
+# Each fingerprint the mapping file holds no entry for reaches https://ja4db.com.
+online = JA4DBClient(allow_remote=True)
+```
+
+To stop the request again, build the client with no argument.
 
 `allow_remote` takes True or False, and the constructor raises `TypeError` for every
 other value. `cache_size` was the first parameter before #57, so `JA4DBClient(100)` asked

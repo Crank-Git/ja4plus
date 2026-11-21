@@ -103,8 +103,25 @@ plus one line on standard error:
 No fingerprint was produced.
 ```
 
-Every option runs before the subcommand name and after it. `ja4plus --format json analyze
-capture.pcap` and `ja4plus analyze capture.pcap --format json` do the same thing.
+Each of the six output options runs before the subcommand name and after it.
+`ja4plus --format json analyze capture.pcap` and
+`ja4plus analyze capture.pcap --format json` do the same thing. The six are `--format`,
+`--types`, `--lookup`, `--lookup-remote`, `--output` and `--force`.
+
+`--max-connections`, `--connection-timeout`, `--stats-interval` and `--bpf` belong to
+`watch` alone, so they run after the subcommand name.
+
+## How the command reports a method that fails
+
+A method that fails to read a packet writes one line to standard error. The line names
+the method, and the run continues:
+
+```
+Warning: ja4h could not read a packet: the parser read a length field it cannot trust
+```
+
+The command runs every method whatever `--types` names, and `--types` selects the results
+it reports. The command therefore reports the error of a method that `--types` leaves out.
 
 ## Fields
 
@@ -154,6 +171,13 @@ publishes.
 committed capture that each method page names, and it compares the two raw fields of the
 result against the row above. A row that disagrees with the writer fails that case. The
 table was prose that no case read until #65.
+
+**A result dict of the library holds one more form, and the output line omits it.** A
+JA4 result dict and a JA4S result dict each hold `fingerprint_original_order`. For JA4 it
+is the FoxIO `JA4_o` value. It is the hashed form of `raw_original_order`, and its
+relationship to `fingerprint` matches the relationship of `raw_original_order` to `raw`.
+`JA4Fingerprinter` and `JA4SFingerprinter` also hold the most recent value on
+`last_fingerprint_original_order`.
 
 ## The method of each output line
 
