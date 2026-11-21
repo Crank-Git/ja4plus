@@ -45,9 +45,33 @@ sample that stops working stops working silently.
 FR-documentation-1 — The README states which FoxIO methods the project implements
 and which it does not.
 
-FR-documentation-2 — The README states the concurrency contract.
+FR-documentation-2 — `docs/concurrency.md` states the concurrency contract. The README
+links that page.
 
-FR-documentation-3 — The README states the memory bounds and their defaults.
+FR-documentation-3 — `docs/concurrency.md` states the memory bounds, their defaults and
+the memory ceiling. The README links that page.
+
+FR-documentation-3a — `docs/api_reference.md` holds one block that imports every
+fingerprinter class that `ja4plus.__all__` names.
+
+**The maintainer moved the material of FR-documentation-2, FR-documentation-3 and
+FR-documentation-3a out of the README on 2026-11-21.** The README became a front page
+that links the documentation site. `tests/test_readme_contracts.py` reads each fact from
+the page that holds it now. The table below names that page for each fact.
+
+| Fact | The page that holds it |
+|---|---|
+| The concurrency contract | `docs/concurrency.md`, `## The concurrency contract` |
+| The default bounds | `docs/concurrency.md`, `## The default bounds` |
+| The memory ceiling | `docs/concurrency.md`, `## The memory ceiling` |
+| The import block of every fingerprinter | `docs/api_reference.md`, `### How to import every fingerprinter` |
+| The placement of each option, standard error and `--output` | `docs/output-schema.md`, `## Where the output goes` |
+| The warning line of a method that fails | `docs/output-schema.md`, `## How the command reports a method that fails` |
+| The raw forms and `fingerprint_original_order` | `docs/output-schema.md`, `## The raw forms` |
+| The privilege, the signals and the statistics of the monitor | `docs/usage.md`, `## Read a network interface` |
+| The opt-in remote lookup | `docs/api_reference.md`, `#### The remote lookup is opt-in` |
+| The format of each method | `docs/methods/`, `## The output format` of each page |
+| What a fingerprint is evidence of | `docs/output-schema.md` and `docs/methods/index.md` |
 
 FR-documentation-4 — Every code sample in the README runs in continuous
 integration.
@@ -142,6 +166,9 @@ project writes no theme, so this feature set has no mockup.
 ## Behaviour rules
 
 - The README stays the front door. It is short, and it links the site for detail.
+- The README holds the method table, the two FoxIO sentences of FR-documentation-14 in
+  its first 20 lines, and the license paragraph. Every other fact lives on a page of the
+  site, and the README links that page.
 - The README states method coverage as a table with an implemented column, so that
   the reader can see the two gaps rather than infer them.
 - Warning: the `--doctest-glob` option collects an interactive session, written as
@@ -157,7 +184,9 @@ project writes no theme, so this feature set has no mockup.
 - The migration page lists a breaking change with the old form, the new form, and
   the reason.
 - Documentation prose follows the writing standard in `.claude/rules/ste.md` and
-  uses the `## Terms` vocabulary from `docs/specs/spec.md`.
+  uses the `## Terms` vocabulary from `docs/specs/spec.md`. The README is exempt from
+  that standard, except rule 17. `.claude/rules/ste.md` states the exemption under
+  `## The README`.
 - The documentation build runs `mkdocs build --strict`, so a broken link fails it.
 
 ## Data touched
@@ -204,10 +233,11 @@ and the repository must have GitHub Pages set to build from GitHub Actions.
 - [ ] The README method table lists twelve FoxIO methods. It marks JA4TScan as not
       implemented until #776 builds the scanner, and #776 then marks it implemented.
 - [ ] The README no longer claims that the project implements all JA4+ methods.
-- [ ] The README states, in one paragraph, whether a processor may be shared
+- [ ] `docs/concurrency.md` states, in one section, whether a processor may be shared
       between threads.
-- [ ] The README states the default maximum connection count and the default
+- [ ] `docs/concurrency.md` states the default maximum connection count and the default
       maximum connection age.
+- [ ] The README links `docs/concurrency.md` on the documentation site.
 - [ ] `pytest tests/test_documentation_samples.py` passes.
 - [ ] `pytest tests/test_examples.py` runs every script in `examples/` and passes.
 - [ ] `mkdocs build --strict` succeeds.

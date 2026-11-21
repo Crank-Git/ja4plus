@@ -15,6 +15,9 @@ Every spec file, issue body, pull-request comment, manual page and **code commen
 this project uses Simplified Technical English. A requirement that reads two ways gets
 built two ways.
 
+`README.md` holds a wider exemption than the two records of `## The exemption`, and
+`## The README` states it.
+
 The project's controlled vocabulary is the `## Terms` table in `docs/specs/spec.md`.
 Read it before you write a domain word. A term renamed there is a spec change, not a
 wording change. When you need a word the table does not hold, add it to the table.
@@ -104,7 +107,7 @@ wants rule 17 to reach a word writes that word as prose.
 
 ## The exemption
 
-**Rule 1, rule 3 and rule 17 exempt two records, and they exempt no other document.** The
+**Rule 1, rule 3 and rule 17 exempt two records, and this section exempts no other document.** The
 user ruled on 2026-08-10, on #457 for rule 1 and on #502 for rule 3. The maintainer ruled
 rule 17 on 2026-08-16, on #663.
 
@@ -141,6 +144,21 @@ word `changelog` holds both limits. `docs/CHANGELOG.md` is such a file.
 Where a self-review finds a Changelog row past either limit, read this section and record
 nothing. #393 raised the rule-1 finding and #457 ended it. The self-review of #484 raised
 the rule-3 finding and #502 ends it.
+
+## The README
+
+**`README.md` is exempt from every rule of this standard except rule 17.** The maintainer
+ruled it on 2026-11-21. The README is the front page of the repository and the long
+description on PyPI, so it uses the voice of the maintainer. Rule 17 still reaches it, and
+the README keeps US spelling.
+
+- `README.md`
+
+**The ruling names one file.** Every page of the documentation site keeps the whole
+standard, and `docs/README.md` is such a page. `docs/specs/features/08-documentation.md`
+states which facts the README keeps and which page holds every other fact.
+`tests/test_changelog_sentence_exemption.py` reads this section, and a second path here
+fails a case.
 
 `tests/test_changelog_sentence_exemption.py` reads this section against the tracked
 document list of git and against the numbered rule list above. A third record that claims
