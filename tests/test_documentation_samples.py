@@ -70,11 +70,19 @@ MINIMUM_RUNNABLE_SAMPLES = 45
 #
 # A page absent from this table carries a floor of zero. It is still read, counted,
 # classified and run, because every one of those steps reads the filesystem.
+#
+# **The README floor fell from 21 to 8 on 2026-11-21, and no sample left the corpus.** The
+# README became a front page that links the documentation site. Its reference material
+# moved to the pages that already held the same topic, and four runnable samples moved with
+# it to `docs/api_reference.md`: the import block of every fingerprinter, the processor
+# walkthrough, the certificate helpers and the two lookup clients. That floor rose from 22
+# to 28, and the floor of `docs/output-schema.md` rose from 4 to 5 for the method warning
+# line. Each new floor is the count of the page on that date, measured by hand.
 MINIMUM_BLOCKS_PER_PAGE = {
-    "README.md": 21,
-    "docs/api_reference.md": 22,
+    "README.md": 8,
+    "docs/api_reference.md": 28,
     "docs/implementation_notes.md": 9,
-    "docs/output-schema.md": 4,
+    "docs/output-schema.md": 5,
     "docs/usage.md": 21,
 }
 

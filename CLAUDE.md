@@ -96,7 +96,8 @@ register.
   unbounded state tables that #179 records keep their bound.
 - No code holds a reference to a packet object after `process_packet` returns.
 - Prose and code comments follow `.claude/rules/ste.md`. The controlled vocabulary is
-  the `## Terms` table in `docs/specs/spec.md`.
+  the `## Terms` table in `docs/specs/spec.md`. `README.md` is exempt from every rule of
+  that standard except rule 17, and `## The README` of the rule file states the ruling.
 - Commit messages use the form `type(scope): summary`, matching the existing history.
 
 ## How to file an issue

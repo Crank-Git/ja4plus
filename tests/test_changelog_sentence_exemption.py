@@ -869,6 +869,52 @@ def test_this_repository_exempts_the_two_records_alone() -> None:
     assert failures == (), f"the exemption fails this reading: {failures}"
 
 
+# The section of the writing standard that exempts the README, and the one rule that still
+# reaches the README. The maintainer ruled both on 2026-11-21. The README exemption is wider
+# than the exemption of the two records, so it holds a section of its own, and `evaluate`
+# reads neither the section nor the README.
+README_HEADING = "## The README"
+README_PATH = "README.md"
+README_KEPT_RULE = f"except rule {SPELLING_RULE}"
+
+
+def _readme_paths(rule_text: str) -> List[str]:
+    """Return every path the list of `## The README` names.
+
+    Args:
+        rule_text: The whole text of `.claude/rules/ste.md`.
+
+    Returns:
+        One path for each code span of a list item that names a Markdown file.
+    """
+    return [
+        span
+        for item in _joined_items(section_body(rule_text, README_HEADING))
+        for span in CODE_SPAN.findall(item)
+        if PATH_SPAN.match(span)
+    ]
+
+
+def test_the_readme_ruling_names_the_readme_alone() -> None:
+    """`## The README` names `README.md` and no other document."""
+    paths = _readme_paths(read_document(RULE_PATH))
+    assert paths == [README_PATH], f"the README ruling names {paths}"
+
+
+def test_the_readme_ruling_keeps_the_spelling_rule() -> None:
+    """`## The README` states that rule 17 still reaches the README."""
+    body = " ".join(section_body(read_document(RULE_PATH), README_HEADING).split())
+    assert README_KEPT_RULE in body, f"the README ruling states no {README_KEPT_RULE!r}"
+
+
+def test_a_second_path_under_the_readme_ruling_fails() -> None:
+    """A README ruling that names `docs/README.md` as well names two paths."""
+    rule = read_document(RULE_PATH).replace(
+        f"- `{README_PATH}`\n", f"- `{README_PATH}`\n- `docs/README.md`\n"
+    )
+    assert _readme_paths(rule) == [README_PATH, "docs/README.md"]
+
+
 def test_a_third_record_that_claims_the_exemption_fails() -> None:
     """A rule that exempts a third record fails, and the failure names that record."""
     documents = sorted(tracked_documents() + ["docs/CHANGELOG.md"])

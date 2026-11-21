@@ -762,7 +762,7 @@ def test_the_wheel_carries_no_file_under_the_assets_tree(
 ) -> None:
     """`FR-release-11b`. The wheel lists no entry under `assets/`.
 
-    `assets/logo.png` holds 2423363 bytes, and the `README.md` of the repository is its one
+    `assets/logo.png` holds 55709 bytes, and the `README.md` of the repository is its one
     reader. A logo is no run-time dependency of a fingerprinting library, so every install
     paid those bytes for nothing.
     """
